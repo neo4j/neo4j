@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api.procs;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class DefaultParameterValue
 {
@@ -106,7 +107,7 @@ public class DefaultParameterValue
 
         DefaultParameterValue that = (DefaultParameterValue) o;
 
-        if ( value != null ? !value.equals( that.value ) : that.value != null )
+        if ( !Objects.equals( value, that.value ) )
         {
             return false;
         }

@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
+import org.neo4j.cypher.internal.evaluator.Evaluator;
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 
 import static java.util.Arrays.asList;
@@ -35,7 +36,7 @@ import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntMap;
 
 class MapConverterTest
 {
-    private final MapConverter converter = new MapConverter();
+    private final MapConverter converter = new MapConverter( Evaluator.expressionEvaluator() );
 
     @Test
     void shouldHandleNullString()
@@ -90,19 +91,6 @@ class MapConverterTest
     }
 
     @Test
-    void shouldHandleEscapedSingleQuotedInValue1()
-    {
-        // Given
-        String mapString = "{key: 'va\'lue'}";
-
-        // When
-        DefaultParameterValue converted = converter.apply( mapString );
-
-        // Then
-        assertThat( converted, equalTo( ntMap( map( "key", "va\'lue" ) ) ) );
-    }
-
-    @Test
     void shouldHandleEscapedSingleQuotedInValue2()
     {
         // Given
@@ -119,7 +107,7 @@ class MapConverterTest
     void shouldHandleEscapedDoubleQuotedInValue1()
     {
         // Given
-        String mapString = "{key: \"va\"lue\"}";
+        String mapString = "{key: \"va\\\"lue\"}";
 
         // When
         DefaultParameterValue converted = converter.apply( mapString );
@@ -155,36 +143,10 @@ class MapConverterTest
     }
 
     @Test
-    void shouldHandleSingleQuotedKey()
-    {
-        // Given
-        String mapString = "{'key;: 'value'}";
-
-        // When
-        DefaultParameterValue converted = converter.apply( mapString );
-
-        // Then
-        assertThat( converted, equalTo( ntMap( map( "key", "value" ) ) ) );
-    }
-
-    @Test
-    void shouldHandleDoubleQuotedKey()
-    {
-        // Given
-        String mapString = "{\"key\": \"value\"}";
-
-        // When
-        DefaultParameterValue converted = converter.apply( mapString );
-
-        // Then
-        assertThat( converted, equalTo( ntMap( map( "key", "value" ) ) ) );
-    }
-
-    @Test
     void shouldHandleKeyWithEscapedSingleQuote()
     {
         // Given
-        String mapString = "{\"k\'ey\": \"value\"}";
+        String mapString = "{`k\'ey`: \"value\"}";
 
         // When
         DefaultParameterValue converted = converter.apply( mapString );
@@ -197,7 +159,7 @@ class MapConverterTest
     void shouldHandleKeyWithEscapedDoubleQuote()
     {
         // Given
-        String mapString = "{\"k\"ey\": \"value\"}";
+        String mapString = "{`k\"ey`: \"value\"}";
 
         // When
         DefaultParameterValue converted = converter.apply( mapString );
@@ -284,16 +246,6 @@ class MapConverterTest
         assertThat( converted, equalTo( ntMap( map( "k1", 2.718281828, "k2", "e" ) ) ) );
     }
 
-    @Test
-    void shouldFailWhenDuplicateKey()
-    {
-        // Given
-        String mapString = "{k1: 2.718281828, k1: 'e'}";
-
-        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> converter.apply( mapString ) );
-        assertThat( exception.getMessage(), equalTo( "Multiple occurrences of key 'k1'" ) );
-    }
-
     @SuppressWarnings( "unchecked" )
     @Test
     void shouldHandleNestedMaps()
@@ -319,8 +271,7 @@ class MapConverterTest
         // Given
         String mapString = "{k1: 2.718281828, k2: 'e'}}";
 
-        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> converter.apply( mapString ) );
-        assertThat( exception.getMessage(), equalTo( "{k1: 2.718281828, k2: 'e'}} contains unbalanced '{', '}'." ) );
+        assertThrows( IllegalArgumentException.class, () -> converter.apply( mapString ) );
     }
 
     @SuppressWarnings( "unchecked" )

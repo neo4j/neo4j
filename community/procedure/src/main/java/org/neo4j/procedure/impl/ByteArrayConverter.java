@@ -22,31 +22,57 @@ package org.neo4j.procedure.impl;
 import java.util.List;
 import java.util.function.Function;
 
+import org.neo4j.cypher.internal.evaluator.EvaluationException;
+import org.neo4j.cypher.internal.evaluator.ExpressionEvaluator;
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 
+import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntByteArray;
-import static org.neo4j.procedure.impl.ParseUtil.parseList;
 
 public class ByteArrayConverter implements Function<String,DefaultParameterValue>
 {
+    private final ExpressionEvaluator evaluator;
+
+    ByteArrayConverter( ExpressionEvaluator evaluator )
+    {
+        this.evaluator = evaluator;
+    }
 
     @Override
     public DefaultParameterValue apply( String s )
     {
-        String value = s.trim();
-        if ( value.equalsIgnoreCase( "null" ) )
+        try
         {
-            return ntByteArray( null );
+            List<?> evaluate = evaluator.evaluate( s, List.class );
+            if ( evaluate == null )
+            {
+                return ntByteArray( null );
+            }
+            else
+            {
+                byte[] bytes = new byte[evaluate.size()];
+                for ( int i = 0; i < bytes.length; i++ )
+                {
+                    bytes[i] = safeGetByte( evaluate.get( i ) );
+                }
+                return ntByteArray( bytes );
+            }
+        }
+        catch ( EvaluationException e )
+        {
+            throw new IllegalArgumentException( format( "%s is not a valid list expression", s ), e );
+        }
+    }
+
+    private byte safeGetByte( Object value )
+    {
+        if ( value instanceof Number )
+        {
+            return ((Number) value).byteValue();
         }
         else
         {
-            List<Long> values = parseList( value, Long.class );
-            byte[] bytes = new byte[values.size()];
-            for ( int i = 0; i < bytes.length; i++ )
-            {
-                bytes[i] = values.get( i ).byteValue();
-            }
-            return ntByteArray( bytes );
+            throw new IllegalArgumentException( format( "Expected list to contain numbers but got %s", value ) );
         }
     }
 }

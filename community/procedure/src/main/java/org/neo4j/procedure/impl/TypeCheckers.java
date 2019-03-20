@@ -35,6 +35,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.neo4j.cypher.internal.evaluator.Evaluator;
+import org.neo4j.cypher.internal.evaluator.ExpressionEvaluator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
@@ -84,15 +86,17 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTTime;
 
 public class TypeCheckers
 {
+    private static ExpressionEvaluator EVALUATOR = Evaluator.expressionEvaluator();
+
     private static final DefaultValueConverter TO_ANY = new DefaultValueConverter( NTAny  );
     private static final DefaultValueConverter TO_STRING = new DefaultValueConverter( NTString, DefaultParameterValue::ntString );
     private static final DefaultValueConverter TO_INTEGER = new DefaultValueConverter( NTInteger, s -> ntInteger( parseLong( s ) ) );
     private static final DefaultValueConverter TO_FLOAT = new DefaultValueConverter( NTFloat, s -> ntFloat( parseDouble( s ) ) );
     private static final DefaultValueConverter TO_NUMBER = new DefaultValueConverter( NTNumber,  TypeCheckers::parseNumber );
     private static final DefaultValueConverter TO_BOOLEAN = new DefaultValueConverter( NTBoolean, s -> ntBoolean( parseBoolean( s ) ) );
-    private static final DefaultValueConverter TO_MAP = new DefaultValueConverter( NTMap, new MapConverter() );
+    private static final DefaultValueConverter TO_MAP = new DefaultValueConverter( NTMap, new MapConverter( EVALUATOR ) );
     private static final DefaultValueConverter TO_LIST = toList( TO_ANY, Object.class );
-    private final DefaultValueConverter TO_BYTE_ARRAY = new DefaultValueConverter( NTByteArray, new ByteArrayConverter() );
+    private final DefaultValueConverter TO_BYTE_ARRAY = new DefaultValueConverter( NTByteArray, new ByteArrayConverter( EVALUATOR ) );
 
     private final Map<Type,DefaultValueConverter> javaToNeo = new HashMap<>();
 
@@ -235,7 +239,7 @@ public class TypeCheckers
 
     private static DefaultValueConverter toList( DefaultValueConverter inner, Type type )
     {
-        return new DefaultValueConverter( NTList( inner.type() ), new ListConverter( type, inner.type() ) );
+        return new DefaultValueConverter( NTList( inner.type() ), new ListConverter( type, inner.type(), EVALUATOR ) );
     }
 
     private ProcedureException javaToNeoMappingError( Type cls )

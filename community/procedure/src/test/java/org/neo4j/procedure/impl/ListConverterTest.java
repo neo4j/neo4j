@@ -26,6 +26,7 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.cypher.internal.evaluator.Evaluator;
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 
 import static java.util.Arrays.asList;
@@ -36,6 +37,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.cypher.internal.evaluator.Evaluator.expressionEvaluator;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
@@ -52,7 +54,7 @@ class ListConverterTest
     void shouldHandleNullString()
     {
         // Given
-        ListConverter converter = new ListConverter( String.class, NTString );
+        ListConverter converter = new ListConverter( String.class, NTString, expressionEvaluator() );
         String listString = "null";
 
         // When
@@ -66,7 +68,7 @@ class ListConverterTest
     void shouldHandleEmptyList()
     {
         // Given
-        ListConverter converter = new ListConverter( String.class, NTString );
+        ListConverter converter = new ListConverter( String.class, NTString, expressionEvaluator() );
         String listString = "[]";
 
         // When
@@ -80,7 +82,7 @@ class ListConverterTest
     void shouldHandleEmptyListWithSpaces()
     {
         // Given
-        ListConverter converter = new ListConverter( String.class, NTString );
+        ListConverter converter = new ListConverter( String.class, NTString, expressionEvaluator() );
         String listString = " [  ]   ";
 
         // When
@@ -94,7 +96,7 @@ class ListConverterTest
     void shouldHandleSingleQuotedValue()
     {
         // Given
-        ListConverter converter = new ListConverter( String.class, NTString );
+        ListConverter converter = new ListConverter( String.class, NTString, expressionEvaluator() );
         String listString = "['foo', 'bar']";
 
         // When
@@ -108,7 +110,7 @@ class ListConverterTest
     void shouldHandleDoubleQuotedValue()
     {
         // Given
-        ListConverter converter = new ListConverter( String.class, NTString );
+        ListConverter converter = new ListConverter( String.class, NTString, expressionEvaluator() );
         String listString = "[\"foo\", \"bar\"]";
 
         // When
@@ -122,7 +124,7 @@ class ListConverterTest
     void shouldHandleIntegerValue()
     {
         // Given
-        ListConverter converter = new ListConverter( Long.class, NTInteger );
+        ListConverter converter = new ListConverter( Long.class, NTInteger, expressionEvaluator() );
         String listString = "[1337, 42]";
 
         // When
@@ -136,7 +138,7 @@ class ListConverterTest
     void shouldHandleFloatValue()
     {
         // Given
-        ListConverter converter = new ListConverter( Double.class, NTFloat );
+        ListConverter converter = new ListConverter( Double.class, NTFloat, expressionEvaluator() );
         String listSting = "[2.718281828, 3.14]";
 
         // When
@@ -150,7 +152,7 @@ class ListConverterTest
     void shouldHandleNullValue()
     {
         // Given
-        ListConverter converter = new ListConverter( Double.class, NTFloat );
+        ListConverter converter = new ListConverter( Double.class, NTFloat, expressionEvaluator() );
         String listString = "[null]";
 
         // When
@@ -164,7 +166,7 @@ class ListConverterTest
     void shouldHandleBooleanValues()
     {
         // Given
-        ListConverter converter = new ListConverter( Boolean.class, NTBoolean );
+        ListConverter converter = new ListConverter( Boolean.class, NTBoolean, expressionEvaluator() );
         String mapString = "[false, true]";
 
         // When
@@ -181,7 +183,7 @@ class ListConverterTest
         // Given
         ParameterizedType type = mock( ParameterizedType.class );
         when( type.getActualTypeArguments() ).thenReturn( new Type[]{Object.class} );
-        ListConverter converter = new ListConverter( type, NTList( NTAny ) );
+        ListConverter converter = new ListConverter( type, NTList( NTAny ), expressionEvaluator() );
         String mapString = "[42, [42, 1337]]";
 
         // When
@@ -194,10 +196,10 @@ class ListConverterTest
     }
 
     @Test
-    void shouldFailOnInvalidMixedTyoes()
+    void shouldFailOnInvalidMixedTypes()
     {
         // Given
-        ListConverter converter = new ListConverter( Long.class, NTInteger );
+        ListConverter converter = new ListConverter( Long.class, NTInteger, expressionEvaluator() );
         String listString = "[1337, 'forty-two']";
 
         IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> converter.apply( listString ) );
@@ -205,10 +207,10 @@ class ListConverterTest
     }
 
     @Test
-    void shouldPassOnValidMixedTyoes()
+    void shouldPassOnValidMixedTypes()
     {
         // Given
-        ListConverter converter = new ListConverter( Object.class, NTAny );
+        ListConverter converter = new ListConverter( Object.class, NTAny, expressionEvaluator() );
         String listString = "[1337, 'forty-two']";
 
         // When
@@ -223,7 +225,7 @@ class ListConverterTest
     void shouldHandleListsOfMaps()
     {
         // Given
-        ListConverter converter = new ListConverter( Map.class, NTMap );
+        ListConverter converter = new ListConverter( Map.class, NTMap, expressionEvaluator() );
         String mapString = "[{k1: 42}, {k1: 1337}]";
 
         // When

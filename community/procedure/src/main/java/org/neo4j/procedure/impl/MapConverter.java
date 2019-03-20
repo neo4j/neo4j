@@ -19,31 +19,35 @@
  */
 package org.neo4j.procedure.impl;
 
+import java.util.Map;
 import java.util.function.Function;
 
+import org.neo4j.cypher.internal.evaluator.EvaluationException;
+import org.neo4j.cypher.internal.evaluator.ExpressionEvaluator;
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntMap;
-import static org.neo4j.procedure.impl.ParseUtil.parseMap;
 
-/**
- * A naive implementation of a Cypher-map/json parser. If you find yourself using this
- * for parsing huge json-document in a place where performance matters - you probably need
- * to rethink your decision.
- */
 public class MapConverter implements Function<String,DefaultParameterValue>
 {
+    private final ExpressionEvaluator evaluator;
+
+    MapConverter( ExpressionEvaluator evaluator )
+    {
+        this.evaluator = evaluator;
+    }
+
+    @SuppressWarnings( "unchecked" )
     @Override
     public DefaultParameterValue apply( String s )
     {
-        String value = s.trim();
-        if ( value.equalsIgnoreCase( "null" ) )
+        try
         {
-            return ntMap( null );
+            return ntMap( (Map<String,Object>) evaluator.evaluate( s, Map.class ) );
         }
-        else
+        catch ( EvaluationException e )
         {
-            return ntMap( parseMap( value ) );
+            throw new IllegalArgumentException( String.format( "%s is not a valid map expression", s ), e );
         }
     }
 }
