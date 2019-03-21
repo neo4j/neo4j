@@ -68,7 +68,6 @@
         <lucene.version>5.5.5</lucene.version>
         <bouncycastle.version>1.61</bouncycastle.version>
         <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
-        <java.exports/>
         <test.runner.jvm/>
         <test.runner.jvm.settings.additional/>
         <test.runner.jvm.settings>-Xmx2G -XX:+UseG1GC -XX:-OmitStackTraceInFastThrow -XX:+HeapDumpOnOutOfMemoryError
@@ -78,7 +77,7 @@
             -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=true
             -Dorg.org.neo4j.kernel.impl.newapi.DefaultCursors.trackCursors=true
             -Djunit.jupiter.extensions.autodetection.enabled=true
-            -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${java.exports} ${test.runner.jvm.settings.additional}
+            -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${test.runner.jvm.settings.additional}
         </test.runner.jvm.settings>
         <jetty.version>9.4.11.v20180605</jetty.version>
         <findbugs.version>3.0.1</findbugs.version>
@@ -94,7 +93,6 @@
         <asm.version>7.0</asm.version>
         <metrics.version>4.0.2</metrics.version>
         <scala.target.vm>1.8</scala.target.vm>
-        <scala.java.additional.args/>
         <jersey.version>2.28</jersey.version>
         <junit.version>5.4.0</junit.version>
         <junit.platform.version>1.4.0</junit.platform.version>
@@ -668,7 +666,7 @@
                             <arg>100</arg>
                             <arg>-Xlint</arg>
                             <arg>-target:jvm-${scala.target.vm}</arg>
-                            <arg>${scala.java.additional.args}</arg>
+                            <arg>-nobootcp</arg>
                         </args>
                         <jvmArgs>
                             <jvmArg>-Xms256m</jvmArg>
@@ -736,7 +734,6 @@
                     <configuration>
                         <showDeprecation>true</showDeprecation>
                         <showWarnings>true</showWarnings>
-                        <compilerArgument>${java.exports}</compilerArgument>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -1070,18 +1067,6 @@
             </activation>
             <properties>
                 <git.commit>${env.GIT_COMMIT}</git.commit>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>java9AndLater</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-                <jdk>[9, )</jdk>
-            </activation>
-            <properties>
-                <java.exports/>
-                <scala.java.additional.args>-nobootcp</scala.java.additional.args>
             </properties>
         </profile>
 
