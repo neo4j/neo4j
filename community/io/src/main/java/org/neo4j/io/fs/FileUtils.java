@@ -571,16 +571,6 @@ public class FileUtils
         }
     }
 
-    public static String readTextFile( File file, Charset charset ) throws IOException
-    {
-        StringBuilder out = new StringBuilder();
-        for ( String s : Files.readAllLines( file.toPath(), charset ) )
-        {
-            out.append( s ).append( "\n" );
-        }
-        return out.toString();
-    }
-
     private static void deleteFile( Path path ) throws IOException
     {
         windowsSafeIOOperation( () -> Files.delete( path ) );

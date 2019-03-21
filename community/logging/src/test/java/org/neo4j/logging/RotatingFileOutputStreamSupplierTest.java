@@ -243,8 +243,7 @@ class RotatingFileOutputStreamSupplierTest
 
             shutDownExecutor( executor );
 
-            List<String> strings = Files.readAllLines( logFile.toPath() );
-            String actual = String.join( "", strings );
+            String actual = Files.readString( logFile.toPath() );
             assertEquals( logContent, actual );
             assertNull( listenerException.get() );
         } );

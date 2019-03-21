@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -56,7 +57,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -603,7 +603,7 @@ public class ImportToolTest
                         relationshipData( false, config, nodeIds, TRUE, true ).getAbsolutePath() );
 
         // THEN
-        String badContents = FileUtils.readTextFile( bad, Charset.defaultCharset() );
+        String badContents = Files.readString( bad.toPath(), Charset.defaultCharset() );
         assertTrue( badContents.contains( "Extra column not present in header on line" ) );
     }
 
@@ -942,7 +942,7 @@ public class ImportToolTest
                                    relationshipData2.getAbsolutePath() );
 
         // THEN
-        String badContents = FileUtils.readTextFile( bad, Charset.defaultCharset() );
+        String badContents = Files.readString( bad.toPath(), Charset.defaultCharset() );
         assertTrue( "Didn't contain first bad relationship", badContents.contains( "bogus" ) );
         assertTrue( "Didn't contain second bad relationship", badContents.contains( "missing" ) );
         verifyRelationships( relationships );
@@ -1911,7 +1911,7 @@ public class ImportToolTest
                 "--skip-bad-relationships", "true",
                 "--relationships", relationshipData.getAbsolutePath() );
 
-        String badContents = FileUtils.readTextFile( bad, Charset.defaultCharset() );
+        String badContents = Files.readString( bad.toPath(), Charset.defaultCharset() );
         assertEquals( badContents, 3, occurencesOf( badContents, "is missing data" ) );
     }
 

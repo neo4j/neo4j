@@ -27,7 +27,7 @@ import org.junit.rules.TestName;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -47,7 +47,6 @@ import static org.eclipse.jetty.http.HttpStatus.OK_200;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.io.fs.FileUtils.readTextFile;
 import static org.neo4j.server.helpers.CommunityServerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
@@ -134,7 +133,7 @@ public class HTTPLoggingIT extends ExclusiveServerTestBase
 
     private ThrowingSupplier<String, IOException> fileContentSupplier( final File file )
     {
-        return () -> readTextFile( file, StandardCharsets.UTF_8 );
+        return () -> Files.readString( file.toPath() );
     }
 
     private String randomString()

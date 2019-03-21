@@ -46,7 +46,6 @@ import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -106,8 +105,7 @@ public class AllNodesInStoreExistInLabelIndexTest
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
         assertFalse( "Expected consistency check to fail", result.isSuccessful() );
-        assertThat( readReport( result ),
-                hasItem( containsString("WARN : Label index was not properly shutdown and rebuild is required.") ) );
+        assertThat( readReport( result ), containsString("WARN : Label index was not properly shutdown and rebuild is required.") );
     }
 
     @Test
@@ -125,8 +123,7 @@ public class AllNodesInStoreExistInLabelIndexTest
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
         assertTrue( "Expected consistency check to fail", result.isSuccessful() );
-        assertThat( readReport( result ),
-                hasItem( containsString("WARN : Label index was not properly shutdown and rebuild is required.") ) );
+        assertThat( readReport( result ), containsString("WARN : Label index was not properly shutdown and rebuild is required.") );
     }
 
     @Test
@@ -221,10 +218,9 @@ public class AllNodesInStoreExistInLabelIndexTest
         assertFalse( "Expected consistency check to fail", result.isSuccessful() );
     }
 
-    private List<String> readReport( ConsistencyCheckService.Result result )
-            throws IOException
+    private String readReport( ConsistencyCheckService.Result result ) throws IOException
     {
-        return Files.readAllLines( result.reportFile().toPath() );
+        return Files.readString( result.reportFile().toPath() );
     }
 
     private void removeExistingNode( List<Pair<Long,Label[]>> nodesInStore )
@@ -363,7 +359,7 @@ public class AllNodesInStoreExistInLabelIndexTest
                 labels.add( label );
             }
         }
-        return labels.toArray( new Label[labels.size()] );
+        return labels.toArray( new Label[0] );
     }
 
     private ConsistencyCheckService.Result fullConsistencyCheck()

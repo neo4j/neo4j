@@ -116,7 +116,7 @@ public class ConsistencyCheckServiceIntegrationTest
         File reportFile = result.reportFile();
         assertTrue( "Consistency check report file should be generated.", reportFile.exists() );
         assertThat( "Expected to see report about not deleted relationship record present as part of a chain",
-                Files.readAllLines( reportFile.toPath() ).toString(),
+                Files.readString( reportFile.toPath() ),
                 containsString( "The relationship record is not in use, but referenced from relationships chain.") );
     }
 
@@ -273,7 +273,7 @@ public class ConsistencyCheckServiceIntegrationTest
         File reportFile = result.reportFile();
         assertTrue( "Consistency check report file should be generated.", reportFile.exists() );
         assertThat( "Expected to see report about schema index not being online",
-                Files.readAllLines( reportFile.toPath() ).toString(), allOf(
+                Files.readString( reportFile.toPath() ), allOf(
                         containsString( "schema rule" ),
                         containsString( "not online" )
                 ) );

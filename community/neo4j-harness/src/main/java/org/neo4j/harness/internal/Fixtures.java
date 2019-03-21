@@ -22,14 +22,13 @@ package org.neo4j.harness.internal;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.io.fs.FileUtils;
 
 /**
  * Manages user-defined cypher fixtures that can be exercised against the server.
@@ -68,7 +67,7 @@ public class Fixtures
                 }
                 return;
             }
-            add( FileUtils.readTextFile( fixturePath, StandardCharsets.UTF_8 ) );
+            add( Files.readString( fixturePath.toPath() ) );
         }
         catch ( IOException e )
         {
