@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.interpreted
 
 import org.neo4j.cypher.internal.runtime.spec.COMMUNITY
 import org.neo4j.cypher.internal.runtime.spec.interpreted.InterpretedSpecSuite.SIZE_HINT
-import org.neo4j.cypher.internal.runtime.spec.tests.{AggregationTestBase, AllNodeScanTestBase, ArgumentTestBase, DistinctTestBase, ExpandAllTestBase, ExpandAllWithOptionalTestBase, FilterTestBase, InputTestBase, LabelScanTestBase, NodeIndexContainsScanTestBase, NodeIndexScanTestBase, NodeIndexSeekRangeAndCompositeTestBase, NodeIndexSeekTestBase, NodeLockingUniqueIndexSeekTestBase, OrderedDistinctTestBase, PartialSortTestBase, PartialTop1TestBase, PartialTopNTestBase, ProjectionTestBase, UnwindTestBase}
+import org.neo4j.cypher.internal.runtime.spec.tests.{AggregationTestBase, AllNodeScanTestBase, ArgumentTestBase, DistinctTestBase, ExpandAllTestBase, ExpandAllWithOptionalTestBase, FilterTestBase, InputTestBase, LabelScanTestBase, LimitTestBase, NodeIndexContainsScanTestBase, NodeIndexScanTestBase, NodeIndexSeekRangeAndCompositeTestBase, NodeIndexSeekTestBase, NodeLockingUniqueIndexSeekTestBase, OrderedDistinctTestBase, PartialSortTestBase, PartialTop1TestBase, PartialTopNTestBase, ProjectionTestBase, UnwindTestBase}
 import org.neo4j.cypher.internal.{CommunityRuntimeContext, InterpretedRuntime}
 
 object InterpretedSpecSuite {
@@ -48,3 +48,4 @@ class InterpretedProjectionTest extends ProjectionTestBase(COMMUNITY.EDITION, In
 class InterpretedUnwindTest extends UnwindTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedDistinctTest extends DistinctTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedOrderedDistinctTest extends OrderedDistinctTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedLimitTest extends LimitTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
