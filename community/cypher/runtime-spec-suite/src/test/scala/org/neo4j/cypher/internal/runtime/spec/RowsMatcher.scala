@@ -115,11 +115,11 @@ trait RowOrderMatcher extends RowsMatcher {
     this
   }
   def groupBy(columns: String*): RowOrderMatcher = {
-    append(new GroupBy(None, columns:_*))
+    append(new GroupBy(None, None, columns:_*))
     this
   }
-  def groupBy(groupSize: Int, columns: String*): RowOrderMatcher = {
-    append(new GroupBy(Some(groupSize), columns:_*))
+  def groupBy(nGroups: Int, groupSize: Int, columns: String*): RowOrderMatcher = {
+    append(new GroupBy(Some(nGroups), Some(groupSize), columns:_*))
     this
   }
 
@@ -155,9 +155,14 @@ trait RowOrderMatcher extends RowsMatcher {
   def onComplete(): Boolean
 }
 
-class GroupBy(val groupSize: Option[Int], val groupingColumns: String*) extends RowOrderMatcher {
-  def description: String = s"grouped by '${groupingColumns.mkString(",")}'"
+class GroupBy(val nGroups: Option[Int], val groupSize: Option[Int], val groupingColumns: String*) extends RowOrderMatcher {
+  def description: String = {
+    val n = nGroups.map(n => s"$n ").getOrElse("")
+    val size = groupSize.map(n => s"of size $n ").getOrElse("")
+    s"in ${n}groups ${size}by '${groupingColumns.mkString(",")}'"
+  }
 
+  private var groupCount: Int = 0
   private var currentCount: Int = 0
   private var previous: Seq[AnyValue] = _
   private val seenGroupingKeys = mutable.Set[Seq[AnyValue]]()
@@ -187,6 +192,7 @@ class GroupBy(val groupSize: Option[Int], val groupingColumns: String*) extends 
         if (currentCount > 0 && groupSize.exists(_ != currentCount)) {
           return false
         }
+        groupCount += 1
         currentCount = 1
         previous = current
         inner.forall { tail =>
@@ -198,7 +204,7 @@ class GroupBy(val groupSize: Option[Int], val groupingColumns: String*) extends 
   }
 
   override def onComplete(): Boolean = {
-    groupSize.forall(_ == currentCount)
+    groupSize.forall(_ == currentCount) && nGroups.forall(_ == groupCount)
   }
 }
 

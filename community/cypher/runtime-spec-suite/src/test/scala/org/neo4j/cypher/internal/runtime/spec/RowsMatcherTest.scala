@@ -94,7 +94,7 @@ class RowsMatcherTest extends CypherFunSuite with TestName
   }
 
   test("GroupBy") {
-    assertOkSingleRow(new GroupBy(None, "a"))
+    assertOkSingleRow(new GroupBy(None, None, "a"))
 
     val rows = Array(
       row(1, 0, 4),
@@ -103,9 +103,9 @@ class RowsMatcherTest extends CypherFunSuite with TestName
       row(1, 2, 4),
       row(2, 2, 4))
 
-    new GroupBy(None, "a").matches(Array("a", "b", "c"), rows) should be(false)
-    new GroupBy(None, "b").matches(Array("a", "b", "c"), rows) should be(true)
-    new GroupBy(None, "c").matches(Array("a", "b", "c"), rows) should be(true)
+    new GroupBy(None, None, "a").matches(Array("a", "b", "c"), rows) should be(false)
+    new GroupBy(None, None, "b").matches(Array("a", "b", "c"), rows) should be(true)
+    new GroupBy(None, None, "c").matches(Array("a", "b", "c"), rows) should be(true)
   }
 
   test("GroupBy multi") {
@@ -118,13 +118,13 @@ class RowsMatcherTest extends CypherFunSuite with TestName
       row(2, 2),
       row(4, 1))
 
-    new GroupBy(None, "a", "b").matches(Array("a", "b"), rows) should be(true)
-    new GroupBy(None, "b", "a").matches(Array("a", "b"), rows) should be(true)
-    new GroupBy(None, "b", "a").matches(Array("a", "b"), rows :+ rows.head) should be(false)
-    new GroupBy(None, "b", "a").matches(Array("a", "b"), rows.last +: rows) should be(false)
+    new GroupBy(None, None, "a", "b").matches(Array("a", "b"), rows) should be(true)
+    new GroupBy(None, None, "b", "a").matches(Array("a", "b"), rows) should be(true)
+    new GroupBy(None, None, "b", "a").matches(Array("a", "b"), rows :+ rows.head) should be(false)
+    new GroupBy(None, None, "b", "a").matches(Array("a", "b"), rows.last +: rows) should be(false)
   }
 
-  test("GroupBy should assert on count") {
+  test("GroupBy should assert on group size") {
 
     val rows = Array(
       row(1, 0, 4),
@@ -134,12 +134,29 @@ class RowsMatcherTest extends CypherFunSuite with TestName
       row(3, 2, 4),
       row(3, 2, 4))
 
-    new GroupBy(Some(1), "a").matches(Array("a", "b", "c"), rows) should be(false)
-    new GroupBy(Some(4), "a").matches(Array("a", "b", "c"), rows) should be(false)
-    new GroupBy(Some(1), "b").matches(Array("a", "b", "c"), rows) should be(false)
-    new GroupBy(Some(3), "b").matches(Array("a", "b", "c"), rows) should be(true)
-    new GroupBy(Some(4), "b").matches(Array("a", "b", "c"), rows) should be(false)
-    new GroupBy(Some(6), "c").matches(Array("a", "b", "c"), rows) should be(true)
+    new GroupBy(None, Some(1), "a").matches(Array("a", "b", "c"), rows) should be(false)
+    new GroupBy(None, Some(4), "a").matches(Array("a", "b", "c"), rows) should be(false)
+    new GroupBy(None, Some(1), "b").matches(Array("a", "b", "c"), rows) should be(false)
+    new GroupBy(None, Some(3), "b").matches(Array("a", "b", "c"), rows) should be(true)
+    new GroupBy(None, Some(4), "b").matches(Array("a", "b", "c"), rows) should be(false)
+    new GroupBy(None, Some(6), "c").matches(Array("a", "b", "c"), rows) should be(true)
+  }
+
+  test("GroupBy should assert on number of groups") {
+
+    val rows = Array(
+      row(1, 0, 4),
+      row(1, 0, 4),
+      row(1, 0, 4),
+      row(1, 2, 4),
+      row(3, 2, 4),
+      row(3, 2, 4))
+
+    new GroupBy(Some(1), Some(3), "b").matches(Array("a", "b", "c"), rows) should be(false)
+    new GroupBy(Some(2), Some(3), "b").matches(Array("a", "b", "c"), rows) should be(true)
+    new GroupBy(Some(3), Some(3), "b").matches(Array("a", "b", "c"), rows) should be(false)
+    new GroupBy(Some(1), Some(6), "c").matches(Array("a", "b", "c"), rows) should be(true)
+    new GroupBy(Some(2), Some(6), "c").matches(Array("a", "b", "c"), rows) should be(false)
   }
 
   test("Ascending") {
@@ -185,9 +202,9 @@ class RowsMatcherTest extends CypherFunSuite with TestName
       row(2, 2, 6),
       row(2, 1, 6))
 
-    new GroupBy(None, "a").desc("b").asc("c").matches(Array("a", "b", "c"), rows) should be(true)
-    new GroupBy(None, "c").desc("a").matches(Array("a", "b", "c"), rows) should be(true)
-    new GroupBy(None, "c").groupBy("b").matches(Array("a", "b", "c"), rows) should be(true)
+    new GroupBy(None, None, "a").desc("b").asc("c").matches(Array("a", "b", "c"), rows) should be(true)
+    new GroupBy(None, None, "c").desc("a").matches(Array("a", "b", "c"), rows) should be(true)
+    new GroupBy(None, None, "c").groupBy("b").matches(Array("a", "b", "c"), rows) should be(true)
     new Ascending("c").desc("a").matches(Array("a", "b", "c"), rows) should be(true)
     new Ascending("c").desc("b").matches(Array("a", "b", "c"), rows) should be(false)
     new Descending("a").desc("b").asc("c").matches(Array("a", "b", "c"), rows) should be(true)
@@ -214,7 +231,7 @@ class RowsMatcherTest extends CypherFunSuite with TestName
       row(3, 3, 1),
       row(3, 3, 2))
 
-    new GroupBy(None, "a").groupBy("b").groupBy("c").matches(Array("a", "b", "c"), rows) should be(true)
+    new GroupBy(None, None, "a").groupBy("b").groupBy("c").matches(Array("a", "b", "c"), rows) should be(true)
     new Ascending("a").asc("b").asc("c").matches(Array("a", "b", "c"), rows) should be(true)
     new Descending("a").desc("b").desc("c").matches(Array("a", "b", "c"), rows.reverse) should be(true)
   }
