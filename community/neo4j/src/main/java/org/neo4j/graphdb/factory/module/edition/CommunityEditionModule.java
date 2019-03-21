@@ -68,7 +68,6 @@ import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
-import org.neo4j.udc.UsageData;
 
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockFactory;
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockManager;
@@ -132,8 +131,6 @@ public class CommunityEditionModule extends DefaultEditionModule
         ioLimiter = IOLimiter.UNLIMITED;
 
         connectionTracker = globalDependencies.satisfyDependency( createConnectionTracker() );
-
-        publishEditionInfo( globalDependencies.resolveDependency( UsageData.class ), globalModule.getDatabaseInfo(), globalConfig );
     }
 
     protected Function<String,TokenHolders> createTokenHolderProvider( GlobalModule platform )

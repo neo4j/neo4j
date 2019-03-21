@@ -49,10 +49,6 @@ import org.neo4j.server.rest.transactional.TransactionTerminationHandle;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
 import org.neo4j.server.web.HttpHeaderUtils;
-import org.neo4j.udc.UsageData;
-
-import static org.neo4j.udc.UsageDataKeys.Features.http_tx_endpoint;
-import static org.neo4j.udc.UsageDataKeys.features;
 
 /**
  * This does basic mapping from HTTP to {@link org.neo4j.server.rest.transactional.TransactionFacade}, and should not
@@ -62,15 +58,12 @@ import static org.neo4j.udc.UsageDataKeys.features;
 public class TransactionalService
 {
     private final TransactionFacade facade;
-    private final UsageData usage;
     private final TransactionUriScheme uriScheme;
     private Log log;
 
-    public TransactionalService( @Context TransactionFacade facade, @Context UriInfo uriInfo, @Context UsageData usage,
-            @Context Log log )
+    public TransactionalService( @Context TransactionFacade facade, @Context UriInfo uriInfo, @Context Log log )
     {
         this.facade = facade;
-        this.usage = usage;
         this.uriScheme = new TransactionUriBuilder( uriInfo );
         this.log = log;
     }
@@ -81,7 +74,6 @@ public class TransactionalService
     public Response executeStatementsInNewTransaction( final InputStream input, @Context final UriInfo uriInfo,
                                                        @Context final HttpServletRequest request )
     {
-        usage.get( features ).flag( http_tx_endpoint );
         LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest( request );
         long customTransactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
         ClientConnectionInfo connectionInfo = HttpConnectionInfoFactory.create( request );

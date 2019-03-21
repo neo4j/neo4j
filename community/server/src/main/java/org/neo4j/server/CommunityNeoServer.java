@@ -19,10 +19,8 @@
  */
 package org.neo4j.server;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
@@ -43,7 +41,6 @@ import org.neo4j.server.rest.discovery.DiscoverableURIs;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.server.web.WebServer;
-import org.neo4j.udc.UsageData;
 
 import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
 
@@ -64,7 +61,7 @@ public class CommunityNeoServer extends AbstractNeoServer
     {
         return Arrays.asList(
                 createDBMSModule(),
-                new RESTApiModule( webServer, getConfig(), getDependencyResolver().provideDependency( UsageData.class ), userLogProvider ),
+                new RESTApiModule( webServer, getConfig(), userLogProvider ),
                 new ManagementApiModule( webServer, getConfig() ),
                 new ThirdPartyJAXRSModule( webServer, getConfig(), userLogProvider, this ),
                 new Neo4jBrowserModule( webServer ),

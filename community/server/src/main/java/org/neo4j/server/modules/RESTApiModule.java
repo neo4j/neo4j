@@ -22,18 +22,13 @@ package org.neo4j.server.modules;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.rest.web.CollectUserAgentFilter;
 import org.neo4j.server.rest.web.CorsFilter;
 import org.neo4j.server.rest.web.TransactionalService;
 import org.neo4j.server.web.WebServer;
-import org.neo4j.udc.UsageData;
-import org.neo4j.udc.UsageDataKeys;
-import org.neo4j.util.concurrent.RecentK;
 
 import static org.neo4j.server.configuration.ServerSettings.http_access_control_allow_origin;
 
@@ -44,14 +39,12 @@ public class RESTApiModule implements ServerModule
 {
     private final Config config;
     private final WebServer webServer;
-    private final Supplier<UsageData> userDataSupplier;
     private final LogProvider logProvider;
 
-    public RESTApiModule( WebServer webServer, Config config, Supplier<UsageData> userDataSupplier, LogProvider logProvider )
+    public RESTApiModule( WebServer webServer, Config config, LogProvider logProvider )
     {
         this.webServer = webServer;
         this.config = config;
-        this.userDataSupplier = userDataSupplier;
         this.logProvider = logProvider;
     }
 
@@ -60,14 +53,8 @@ public class RESTApiModule implements ServerModule
     {
         URI restApiUri = restApiUri( );
 
-        webServer.addFilter( new CollectUserAgentFilter( clientNames() ), "/*" );
         webServer.addFilter( new CorsFilter( logProvider, config.get( http_access_control_allow_origin ) ), "/*" );
         webServer.addJAXRSClasses( getClassNames(), restApiUri.toString(), null );
-    }
-
-    private RecentK<String> clientNames()
-    {
-        return userDataSupplier.get().get( UsageDataKeys.clientNames );
     }
 
     private List<Class<?>> getClassNames()

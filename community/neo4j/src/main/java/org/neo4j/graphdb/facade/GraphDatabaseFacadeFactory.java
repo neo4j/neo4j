@@ -267,7 +267,7 @@ public class GraphDatabaseFacadeFactory
     private static BoltServer createBoltServer( GlobalModule platform, AbstractEditionModule edition, DatabaseManager databaseManager )
     {
         return new BoltServer( databaseManager, platform.getJobScheduler(), platform.getConnectorPortRegister(), edition.getConnectionTracker(),
-                platform.getUsageData(), platform.getGlobalConfig(), platform.getGlobalClock(), platform.getGlobalMonitors(), platform.getLogService(),
+                platform.getGlobalConfig(), platform.getGlobalClock(), platform.getGlobalMonitors(), platform.getLogService(),
                 platform.getGlobalDependencies() );
     }
 

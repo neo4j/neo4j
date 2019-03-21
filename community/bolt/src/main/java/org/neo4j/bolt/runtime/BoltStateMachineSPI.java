@@ -32,7 +32,5 @@ public interface BoltStateMachineSPI
 
     AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException;
 
-    void udcRegisterClient( String clientName );
-
     String version();
 }

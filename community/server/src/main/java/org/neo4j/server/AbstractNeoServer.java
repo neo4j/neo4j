@@ -75,7 +75,6 @@ import org.neo4j.server.web.WebServer;
 import org.neo4j.ssl.SslPolicy;
 import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.time.Clocks;
-import org.neo4j.udc.UsageData;
 
 import static java.lang.Math.round;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -420,23 +419,8 @@ public abstract class AbstractNeoServer implements NeoServer
         binder.addLazyBinding( userManagerSupplier, UserManagerSupplier.class );
         binder.addSingletonBinding( userLogProvider, LogProvider.class );
         binder.addSingletonBinding( userLogProvider.getLog( NeoServer.class ), Log.class );
-        binder.addSingletonBinding( resolveDependency( UsageData.class ), UsageData.class );
 
         return binder;
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private <T extends ServerModule> T getModule( Class<T> clazz )
-    {
-        for ( ServerModule sm : serverModules )
-        {
-            if ( sm.getClass() == clazz )
-            {
-                return (T) sm;
-            }
-        }
-
-        return null;
     }
 
     protected <T> T resolveDependency( Class<T> type )

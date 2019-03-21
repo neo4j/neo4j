@@ -28,10 +28,8 @@ import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.web.WebServer;
-import org.neo4j.udc.UsageData;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -56,7 +54,7 @@ public class RESTApiModuleTest
         Config config = Config.defaults( params );
 
         // When
-        RESTApiModule module = new RESTApiModule( webServer, config, () -> new UsageData( mock( JobScheduler.class ) ), NullLogProvider.getInstance() );
+        RESTApiModule module = new RESTApiModule( webServer, config, NullLogProvider.getInstance() );
         module.start();
 
         // Then

@@ -45,7 +45,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -146,15 +145,6 @@ class ConnectedStateTest
 
         assertEquals( readyState, newState );
         verify( connectionStateMock ).onMetadata( "server", stringValue( "42.42.42" ) );
-    }
-
-    @Test
-    void shouldRegisterClientInUDCOnInitMessage() throws Exception
-    {
-        BoltStateMachineState newState = state.process( INIT_MESSAGE, context );
-
-        assertEquals( readyState, newState );
-        verify( boltSpi ).udcRegisterClient( eq( USER_AGENT ) );
     }
 
     @Test

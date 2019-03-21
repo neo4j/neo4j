@@ -218,12 +218,6 @@ public class ResetFuzzTest
         }
 
         @Override
-        public void udcRegisterClient( String clientName )
-        {
-            // do nothing
-        }
-
-        @Override
         public String version()
         {
             return "<test-version>";

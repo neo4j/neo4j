@@ -49,7 +49,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.udc.UsageData;
 
 public class SessionRule implements TestRule
 {
@@ -76,7 +75,6 @@ public class SessionRule implements TestRule
                         resolver.resolveDependency( UserManagerSupplier.class ) );
                 boltFactory = new BoltStateMachineFactoryImpl(
                                         databaseManager,
-                                        new UsageData( null ),
                                         authentication,
                                         Clock.systemUTC(),
                                         config,

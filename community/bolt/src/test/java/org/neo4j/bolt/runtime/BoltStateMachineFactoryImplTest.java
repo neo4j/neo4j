@@ -40,8 +40,6 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.logging.internal.NullLogService;
-import org.neo4j.test.OnDemandJobScheduler;
-import org.neo4j.udc.UsageData;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -98,9 +96,7 @@ class BoltStateMachineFactoryImplTest
     private static BoltStateMachineFactoryImpl newBoltFactory( DatabaseManager databaseManager )
     {
         Config config = Config.defaults( GraphDatabaseSettings.default_database, CUSTOM_DB_NAME );
-        return new BoltStateMachineFactoryImpl( databaseManager, new UsageData( new OnDemandJobScheduler() ),
-                mock( Authentication.class ), CLOCK, config,
-                NullLogService.getInstance() );
+        return new BoltStateMachineFactoryImpl( databaseManager, mock( Authentication.class ), CLOCK, config, NullLogService.getInstance() );
     }
 
     private static DatabaseManager newDbMock()

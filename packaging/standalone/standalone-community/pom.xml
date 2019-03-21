@@ -78,9 +78,6 @@
                             <descriptors>
                                 <descriptor>src/main/assemblies/community-unix-dist.xml</descriptor>
                             </descriptors>
-                            <filters>
-                                <filter>${project.parent.basedir}/tarball.properties</filter>
-                            </filters>
                         </configuration>
                     </execution>
                     <execution>
@@ -93,9 +90,6 @@
                             <descriptors>
                                 <descriptor>src/main/assemblies/community-windows-dist.xml</descriptor>
                             </descriptors>
-                            <filters>
-                                <filter>${project.parent.basedir}/zip.properties</filter>
-                            </filters>
                         </configuration>
                     </execution>
                 </executions>

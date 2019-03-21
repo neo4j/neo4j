@@ -67,7 +67,6 @@ import org.neo4j.kernel.impl.util.watcher.DefaultFileSystemWatcherService;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
-import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.kernel.internal.locker.StoreLockerLifecycleAdapter;
@@ -86,8 +85,6 @@ import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
-import org.neo4j.udc.UsageData;
-import org.neo4j.udc.UsageDataKeys;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
@@ -119,7 +116,6 @@ public class GlobalModule
     private final SystemNanoClock globalClock;
     private final VersionContextSupplier versionContextSupplier;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
-    private final UsageData usageData;
     private final ConnectorPortRegister connectorPortRegister;
     private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
     private final FileSystemWatcherService fileSystemWatcher;
@@ -153,10 +149,6 @@ public class GlobalModule
 
         jobScheduler = globalLife.add( globalDependencies.satisfyDependency( createJobScheduler() ) );
         startDeferredExecutors( jobScheduler, externalDependencies.deferredExecutors() );
-
-        // Database system information, used by UDC
-        usageData = new UsageData( jobScheduler );
-        globalDependencies.satisfyDependency( globalLife.add( usageData ) );
 
         // If no logging was passed in from the outside then create logging and register
         // with this life
@@ -217,8 +209,6 @@ public class GlobalModule
         globalDependencies.satisfyDependency( storageEngineFactory );
 
         checkLegacyDefaultDatabase();
-
-        publishPlatformInfo( globalDependencies.resolveDependency( UsageData.class ) );
     }
 
     private void checkLegacyDefaultDatabase()
@@ -266,12 +256,6 @@ public class GlobalModule
     protected SystemNanoClock createClock()
     {
         return Clocks.nanoClock();
-    }
-
-    private static void publishPlatformInfo( UsageData sysInfo )
-    {
-        sysInfo.set( UsageDataKeys.version, Version.getNeo4jVersion() );
-        sysInfo.set( UsageDataKeys.revision, Version.getKernelVersion() );
     }
 
     public LifeSupport createLife()
@@ -412,11 +396,6 @@ public class GlobalModule
     public ConnectorPortRegister getConnectorPortRegister()
     {
         return connectorPortRegister;
-    }
-
-    public UsageData getUsageData()
-    {
-        return usageData;
     }
 
     CollectionsFactorySupplier getCollectionsFactorySupplier()

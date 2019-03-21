@@ -29,22 +29,18 @@ import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.udc.UsageData;
-import org.neo4j.udc.UsageDataKeys;
 
 public class BoltStateMachineV1SPI implements BoltStateMachineSPI
 {
     public static final String BOLT_SERVER_VERSION_PREFIX = "Neo4j/";
-    private final UsageData usageData;
     private final ErrorReporter errorReporter;
     private final Authentication authentication;
     private final String version;
     private final TransactionStateMachineSPIProvider transactionSpiProvider;
 
-    public BoltStateMachineV1SPI( UsageData usageData, LogService logging, Authentication authentication,
+    public BoltStateMachineV1SPI( LogService logging, Authentication authentication,
             TransactionStateMachineSPIProvider transactionSpiProvider )
     {
-        this.usageData = usageData;
         this.errorReporter = new ErrorReporter( logging );
         this.authentication = authentication;
         this.transactionSpiProvider = transactionSpiProvider;
@@ -67,12 +63,6 @@ public class BoltStateMachineV1SPI implements BoltStateMachineSPI
     public AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException
     {
         return authentication.authenticate( authToken );
-    }
-
-    @Override
-    public void udcRegisterClient( String clientName )
-    {
-        usageData.get( UsageDataKeys.clientNames ).add( clientName );
     }
 
     @Override

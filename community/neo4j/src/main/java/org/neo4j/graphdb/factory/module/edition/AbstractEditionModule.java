@@ -43,7 +43,6 @@ import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.AccessCapability;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
@@ -59,8 +58,6 @@ import org.neo4j.procedure.builtin.BuiltInProcedures;
 import org.neo4j.procedure.builtin.TokenProcedures;
 import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.service.Services;
-import org.neo4j.udc.UsageData;
-import org.neo4j.udc.UsageDataKeys;
 
 import static org.neo4j.procedure.impl.temporal.TemporalFunction.registerTemporalFunctions;
 
@@ -105,13 +102,6 @@ public abstract class AbstractEditionModule
     }
 
     protected abstract void registerEditionSpecificProcedures( GlobalProcedures globalProcedures ) throws KernelException;
-
-    protected void publishEditionInfo( UsageData sysInfo, DatabaseInfo databaseInfo, Config config )
-    {
-        sysInfo.set( UsageDataKeys.edition, databaseInfo.edition );
-        sysInfo.set( UsageDataKeys.operationalMode, databaseInfo.operationalMode );
-        config.augment( GraphDatabaseSettings.editionName, databaseInfo.edition.toString() );
-    }
 
     public DatabaseManager createDatabaseManager( GraphDatabaseFacade graphDatabaseFacade, GlobalModule globalModule, AbstractEditionModule edition,
             GlobalProcedures globalProcedures, Logger msgLog )

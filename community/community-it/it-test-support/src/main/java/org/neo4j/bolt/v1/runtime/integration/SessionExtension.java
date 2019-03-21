@@ -45,7 +45,6 @@ import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.udc.UsageData;
 
 public class SessionExtension implements BeforeEachCallback, AfterEachCallback
 {
@@ -100,7 +99,6 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         Config config = resolver.resolveDependency( Config.class );
         boltFactory = new BoltStateMachineFactoryImpl(
                 resolver.resolveDependency( DatabaseManager.class ),
-                new UsageData( null ),
                 authentication,
                 Clock.systemUTC(),
                 config,
