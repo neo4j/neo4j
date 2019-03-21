@@ -19,20 +19,14 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyAndValueFromUpdate;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyFromUpdate;
@@ -40,40 +34,25 @@ import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKe
 /**
  * Buffer {@link IndexEntryUpdate} by writing them out to a file. Can be read back in insert order through {@link #reader()}.
  */
-public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> implements Closeable
+public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
+        extends SimpleEntryStorage<IndexEntryUpdate<?>,IndexUpdateCursor<KEY,VALUE>>
 {
-    private static final int TYPE_SIZE = Byte.BYTES;
-    static final byte STOP_TYPE = -1;
-
     private final Layout<KEY,VALUE> layout;
-    private final FileSystemAbstraction fs;
-    private final File file;
-    private final ByteBufferFactory byteBufferFactory;
-    private final int blockSize;
-    private final ByteBuffer buffer;
-    private final ByteArrayPageCursor pageCursor;
-    private final StoreChannel storeChannel;
     private final KEY key1;
     private final KEY key2;
     private final VALUE value;
-    private volatile long count;
 
-    IndexUpdateStorage( Layout<KEY,VALUE> layout, FileSystemAbstraction fs, File file, ByteBufferFactory byteBufferFactory, int blockSize ) throws IOException
+    IndexUpdateStorage( FileSystemAbstraction fs, File file, ByteBufferFactory byteBufferFactory, int blockSize, Layout<KEY,VALUE> layout ) throws IOException
     {
+        super( fs, file, byteBufferFactory, blockSize );
         this.layout = layout;
-        this.fs = fs;
-        this.file = file;
-        this.byteBufferFactory = byteBufferFactory;
-        this.blockSize = blockSize;
-        this.buffer = byteBufferFactory.newBuffer( blockSize );
-        this.pageCursor = new ByteArrayPageCursor( buffer );
-        this.storeChannel = fs.create( file );
         this.key1 = layout.newKey();
         this.key2 = layout.newKey();
         this.value = layout.newValue();
     }
 
-    public void add( IndexEntryUpdate<?> update ) throws IOException
+    @Override
+    public void add( IndexEntryUpdate<?> update, PageCursor pageCursor ) throws IOException
     {
         int entrySize = TYPE_SIZE;
         UpdateMode updateMode = update.updateMode();
@@ -96,50 +75,15 @@ public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>,VALUE extends Na
             throw new IllegalArgumentException( "Unknown update mode " + updateMode );
         }
 
-        if ( entrySize > buffer.remaining() )
-        {
-            flush();
-        }
+        prepareWrite( entrySize );
 
         pageCursor.putByte( (byte) updateMode.ordinal() );
         IndexUpdateEntry.write( pageCursor, layout, updateMode, key1, key2, value );
-        // a single thread, and the same thread every time, increments this count
-        count++;
-    }
-
-    void doneAdding() throws IOException
-    {
-        if ( buffer.remaining() < TYPE_SIZE )
-        {
-            flush();
-        }
-        pageCursor.putByte( STOP_TYPE );
-        flush();
-    }
-
-    public IndexUpdateCursor<KEY,VALUE> reader() throws IOException
-    {
-        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( fs.open( file, OpenMode.READ ), byteBufferFactory.newBuffer( blockSize ) );
-        PageCursor pageCursor = new ReadableChannelPageCursor( channel );
-        return new IndexUpdateCursor<>( pageCursor, layout );
-    }
-
-    private void flush() throws IOException
-    {
-        buffer.flip();
-        storeChannel.write( buffer );
-        buffer.clear();
-    }
-
-    long count()
-    {
-        return count;
     }
 
     @Override
-    public void close() throws IOException
+    public IndexUpdateCursor<KEY,VALUE> reader( PageCursor pageCursor )
     {
-        storeChannel.close();
-        fs.deleteFile( file );
+        return new IndexUpdateCursor<>( pageCursor, layout );
     }
 }
