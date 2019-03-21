@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.collector
 
+import java.time.ZonedDateTime
+import java.util.{Locale, TimeZone}
+
 import org.neo4j.cypher._
 
 class DataCollectorMetaAcceptanceTest extends ExecutionEngineFunSuite {
@@ -30,6 +33,7 @@ class DataCollectorMetaAcceptanceTest extends ExecutionEngineFunSuite {
     val res = execute("CALL db.stats.retrieve('META')")
 
     // then
+    println(res.toList)
     res.toList.head should beMapContaining(
       "section" -> "META",
       "data" -> beMapContaining(
@@ -72,9 +76,9 @@ class DataCollectorMetaAcceptanceTest extends ExecutionEngineFunSuite {
       "jvmVendor" -> ofType[String],
       "jvmVersion" -> ofType[String],
       "jvmJITCompiler" -> ofType[String],
-      "userLanguage" -> ofType[String],
-      "userCountry" -> ofType[String],
-      "userTimezone" -> ofType[String],
-      "fileEncoding" -> ofType[String]
+      "userLanguage" -> Locale.getDefault.getLanguage,
+      "userCountry" -> Locale.getDefault.getCountry,
+      "userTimezone" -> TimeZone.getDefault.getID,
+      "fileEncoding" -> System.getProperty( "file.encoding" )
     )
 }
