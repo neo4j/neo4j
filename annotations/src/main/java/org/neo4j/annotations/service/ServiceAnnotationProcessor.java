@@ -22,17 +22,24 @@
  */
 package org.neo4j.annotations.service;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.multimap.MutableMultimap;
 import org.eclipse.collections.impl.factory.Multimaps;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
@@ -45,12 +52,12 @@ import javax.lang.model.util.Types;
 import javax.tools.FileObject;
 
 import static java.lang.String.format;
-import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static javax.tools.Diagnostic.Kind.ERROR;
 import static javax.tools.Diagnostic.Kind.NOTE;
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
+import static org.apache.commons.lang3.StringUtils.substringBefore;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 import static org.eclipse.collections.impl.set.mutable.UnifiedSet.newSetWith;
 
@@ -162,19 +169,59 @@ public class ServiceAnnotationProcessor extends AbstractProcessor
         {
             final String path = "META-INF/services/" + elementUtils.getBinaryName( service ).toString();
             info( "Generating service config file: " + path );
+
+            final SortedSet<String> oldProviders = loadIfExists( path );
+            final SortedSet<String> newProviders = new TreeSet<>();
+
+            serviceProviders.get( service ).forEach( providerType ->
+            {
+                final String providerName = elementUtils.getBinaryName( providerType ).toString();
+                newProviders.add( providerName );
+            } );
+
+            if ( oldProviders.containsAll( newProviders ) )
+            {
+                info( "No new service providers found" );
+                return;
+            }
+            newProviders.addAll( oldProviders );
+
             final FileObject file = processingEnv.getFiler().createResource( CLASS_OUTPUT, "", path );
             try ( Writer writer = file.openWriter(); PrintWriter out = new PrintWriter( new BufferedWriter( writer ) ) )
             {
-                serviceProviders.get( service ).stream()
-                        .sorted( comparing( typeElement -> typeElement.getQualifiedName().toString() ) )
-                        .forEach( provider ->
-                        {
-                            final String providerName = elementUtils.getBinaryName( provider ).toString();
-                            info( "Writing provider:  " + providerName );
-                            out.println( providerName );
-                        } );
+                info( "Writing service providers: " + newProviders );
+                newProviders.forEach( out::println );
             }
         }
+    }
+
+    private SortedSet<String> loadIfExists( String path )
+    {
+        final SortedSet<String> result = new TreeSet<>();
+        try
+        {
+            final FileObject file = processingEnv.getFiler().getResource( CLASS_OUTPUT, "", path );
+            final List<String> lines = new ArrayList<>();
+            try ( InputStream is = file.openInputStream(); BufferedReader in = new BufferedReader( new InputStreamReader( is ) ) )
+            {
+                String line;
+                while ( (line = in.readLine()) != null )
+                {
+                    lines.add( line );
+                }
+            }
+            lines.stream()
+                    .map( s -> substringBefore( s, "#" ) )
+                    .map( String::trim )
+                    .filter( StringUtils::isNotEmpty )
+                    .forEach( result::add );
+            info( "Loaded existing providers: " + result );
+        }
+        catch ( IOException ignore )
+        {
+            info( "No existing providers loaded" );
+        }
+        return result;
     }
 
     private void info( String msg )
