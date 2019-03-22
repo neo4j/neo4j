@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.RegularPlannerQuery
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.{ASC, BOTH, DESC}
-import org.neo4j.cypher.internal.v4_0.expressions.{LabelToken, SemanticDirection}
+import org.neo4j.cypher.internal.v4_0.expressions.{AndedPropertyInequalities, LabelToken, SemanticDirection}
 import org.neo4j.cypher.internal.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.v4_0.util._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
@@ -439,6 +439,120 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
             "n:Awesome(prop)", indexOrder = plannedOrder),
           Map("n.prop" -> prop("n", "prop")))
       )
+    }
+  }
+
+  // Composite index
+
+  test("Order by index backed for composite index on range") {
+    val projectionBoth = Map("n.prop1" -> prop("n", "prop1"), "n.prop2" -> prop("n", "prop2"))
+    val projectionProp1 = Map("n.prop1" -> prop("n", "prop1"))
+    val projectionProp2 = Map("n.prop2" -> prop("n", "prop2"))
+
+    val expr = ands(AndedPropertyInequalities(varFor("n"), prop("n", "prop2"),
+                      NonEmptyList(lessThanOrEqual(prop("n", "prop2"), literalInt(3)))))
+
+    Seq(
+      // Ascending index
+      ("n.prop1 ASC", ASC, IndexOrderAscending, false, false, Seq.empty, false, Seq.empty),
+      ("n.prop1 DESC", ASC, IndexOrderAscending, true, true, Seq(Descending("n.prop1")), false, Seq.empty),
+      ("n.prop1 ASC, n.prop2 ASC", ASC, IndexOrderAscending, false, false, Seq.empty, false, Seq.empty),
+      ("n.prop1 ASC, n.prop2 DESC", ASC, IndexOrderAscending, false, false, Seq(Descending("n.prop2")), true, Seq(Ascending("n.prop1"))),
+      ("n.prop1 DESC, n.prop2 ASC", ASC, IndexOrderAscending, true, false, Seq(Descending("n.prop1"), Ascending("n.prop2")), false, Seq.empty),
+      ("n.prop1 DESC, n.prop2 DESC", ASC, IndexOrderAscending, true, false, Seq(Descending("n.prop1"), Descending("n.prop2")), false, Seq.empty),
+
+      // Descending index
+      ("n.prop1 ASC", DESC, IndexOrderDescending, true, true, Seq(Ascending("n.prop1")), false, Seq.empty),
+      ("n.prop1 DESC", DESC, IndexOrderDescending, false, false, Seq.empty, false, Seq.empty),
+      ("n.prop1 ASC, n.prop2 ASC", DESC, IndexOrderDescending, true, false, Seq(Ascending("n.prop1"), Ascending("n.prop2")), false, Seq.empty),
+      ("n.prop1 ASC, n.prop2 DESC", DESC, IndexOrderDescending, true, false, Seq(Ascending("n.prop1"), Descending("n.prop2")), false, Seq.empty),
+      ("n.prop1 DESC, n.prop2 ASC", DESC, IndexOrderDescending, false, false, Seq(Ascending("n.prop2")), true, Seq(Descending("n.prop1"))),
+      ("n.prop1 DESC, n.prop2 DESC", DESC, IndexOrderDescending, false, false, Seq.empty, false, Seq.empty),
+
+      // Both index
+      ("n.prop1 ASC", BOTH, IndexOrderAscending, false, false, Seq.empty, false, Seq.empty),
+      ("n.prop1 DESC", BOTH, IndexOrderDescending, false, false, Seq.empty, false, Seq.empty),
+      ("n.prop1 ASC, n.prop2 ASC", BOTH, IndexOrderAscending, false, false, Seq.empty, false, Seq.empty),
+      ("n.prop1 ASC, n.prop2 DESC", BOTH, IndexOrderAscending, false, false, Seq(Descending("n.prop2")), true, Seq(Ascending("n.prop1"))),
+      ("n.prop1 DESC, n.prop2 ASC", BOTH, IndexOrderDescending, false, false, Seq(Ascending("n.prop2")), true, Seq(Descending("n.prop1"))),
+      ("n.prop1 DESC, n.prop2 DESC", BOTH, IndexOrderDescending, false, false, Seq.empty, false, Seq.empty)
+    ).foreach {
+      case (orderByString, orderCapability, indexOrder, shouldFullSort, sortOnOnyOne, sortItems, shouldPartialSort, alreadySorted) =>
+        // When
+        val query =
+          s"""MATCH (n:Label)
+             |WHERE n.prop1 >= 42 AND n.prop2 <= 3
+             |RETURN n.prop1, n.prop2
+             |ORDER BY $orderByString""".stripMargin
+        val plan = new given {
+          indexOn("Label", "prop1", "prop2").providesOrder(orderCapability)
+        } getLogicalPlanFor query
+
+        // Then
+        val leafPlan = IndexSeek("n:Label(prop1 >= 42, prop2 <= 3)", indexOrder = indexOrder)
+        plan._2 should equal {
+          if (shouldPartialSort) PartialSort(Projection(Selection(expr, leafPlan), projectionBoth), alreadySorted, sortItems)
+          else if (shouldFullSort && sortOnOnyOne) Projection(Sort(Projection(Selection(expr, leafPlan), projectionProp1), sortItems), projectionProp2)
+          else if (shouldFullSort && !sortOnOnyOne) Sort(Projection(Selection(expr, leafPlan), projectionBoth), sortItems)
+          else Projection(Selection(expr, leafPlan), projectionBoth)
+        }
+    }
+  }
+
+  test("Order by partially index backed for composite index on part of the order by") {
+    val asc = Seq(Ascending("n.prop1"), Ascending("n.prop2"))
+    val ascProp3 = Seq(Ascending("n.prop3"))
+    val desc = Seq(Descending("n.prop1"), Descending("n.prop2"))
+    val descProp3 = Seq(Descending("n.prop3"))
+
+    Seq(
+      // Ascending index
+      ("n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, asc, ascProp3),
+      ("n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", ASC, IndexOrderAscending, asc, descProp3),
+
+      // Descending index
+      ("n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", DESC, IndexOrderDescending, desc, ascProp3),
+      ("n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, desc, descProp3),
+
+      // Both index
+      ("n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", BOTH, IndexOrderAscending, asc, ascProp3),
+      ("n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", BOTH, IndexOrderAscending, asc, descProp3),
+      ("n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderDescending, desc, ascProp3),
+      ("n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", BOTH, IndexOrderDescending, desc, descProp3)
+    ).foreach {
+      case (orderByString, orderCapability, indexOrder, alreadySorted, toBeSorted) =>
+        // When
+        val query =
+          s"""MATCH (n:Label)
+             |WHERE n.prop1 >= 42 AND n.prop2 <= 3
+             |RETURN n.prop1, n.prop2, n.prop3
+             |ORDER BY $orderByString""".stripMargin
+        val plan = new given {
+          indexOn("Label", "prop1", "prop2").providesOrder(orderCapability)
+        } getLogicalPlanFor query
+
+        // Then
+        plan._2 should equal(
+          PartialSort(
+            Projection(
+              Selection(
+                ands(AndedPropertyInequalities(
+                  varFor("n"),
+                  prop("n", "prop2"),
+                  NonEmptyList(lessThanOrEqual(prop("n", "prop2"), literalInt(3)))
+                )),
+                IndexSeek("n:Label(prop1 >= 42, prop2)", indexOrder = indexOrder)
+              ),
+              Map(
+                "n.prop1" -> prop("n", "prop1"),
+                "n.prop2" -> prop("n", "prop2"),
+                "n.prop3" -> prop("n", "prop3")
+              )
+            ),
+            alreadySorted,
+            toBeSorted
+          )
+        )
     }
   }
 
