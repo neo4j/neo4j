@@ -16,12 +16,11 @@
  */
 package org.neo4j.cypher.internal.v4_0.frontend.phases
 
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.ast.Where
+import org.neo4j.cypher.internal.v4_0.expressions.{And, Equals, Or, _}
 import org.neo4j.cypher.internal.v4_0.util.Foldable._
 import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.v4_0.util.{Rewriter, bottomUp}
-import org.neo4j.cypher.internal.v4_0.ast.Where
-import org.neo4j.cypher.internal.v4_0.expressions.{And, Equals, Or}
 
 /**
   * TODO: This should instead implement Rewriter
@@ -59,6 +58,10 @@ case object transitiveClosure extends StatementRewriter {
     //NOTE that this might introduce duplicate predicates, however at a later rewrite
     //when AND is turned into ANDS we remove all duplicates
     private val whereRewriter: Rewriter = bottomUp(Rewriter.lift {
+      case and@And(lhs, sub@ExistsSubClause(pattern, optionalWhereExpression)) =>
+        and // TODO is this enough?
+      case and@And(sub@ExistsSubClause(pattern, optionalWhereExpression), rhs) =>
+        and // TODO is this enough?
       case and@And(lhs, rhs) =>
         val closures = collect(lhs) ++ collect(rhs)
         val inner = andRewriter(closures)
@@ -67,7 +70,8 @@ case object transitiveClosure extends StatementRewriter {
         //ALSO take care of case WHERE b.prop = a.prop AND b.prop = 42
         //turns into WHERE b.prop = a.prop AND b.prop = 42 AND a.prop = 42
         closures.emergentEqualities.foldLeft(newAnd) {
-          case (acc, (prop, expr)) => And(acc, Equals(prop, expr)(acc.position))(acc.position)
+          case (acc, (prop, expr)) =>
+            And(acc, Equals(prop, expr)(acc.position))(acc.position)
         }
     })
 
