@@ -53,7 +53,8 @@ public class EntityCommandGrouperTest
         EntityCommandGrouper<NodeCommand> grouper = new EntityCommandGrouper<>( NodeCommand.class, 8 );
 
         // when
-        boolean hasNext = grouper.nextEntity();
+        EntityCommandGrouper.Cursor cursor = grouper.sortAndAccessGroups();
+        boolean hasNext = cursor.nextEntity();
 
         // then
         assertFalse( hasNext );
@@ -71,10 +72,10 @@ public class EntityCommandGrouperTest
         grouper.add( property1 );
         grouper.add( property2 );
         grouper.add( node ); // <-- deliberately out-of-place
-        grouper.sort();
+        EntityCommandGrouper.Cursor cursor = grouper.sortAndAccessGroups();
 
         // when/then
-        assertGroups( grouper, group( nodeId, node, property1, property2 ) );
+        assertGroups( cursor, group( nodeId, node, property1, property2 ) );
     }
 
     @Test
@@ -87,10 +88,10 @@ public class EntityCommandGrouperTest
         Command.PropertyCommand property2 = property( nodeId );
         grouper.add( property1 );
         grouper.add( property2 );
-        grouper.sort();
+        EntityCommandGrouper.Cursor cursor = grouper.sortAndAccessGroups();
 
         // when/then
-        assertGroups( grouper, group( nodeId, null, property1, property2 ) );
+        assertGroups( cursor, group( nodeId, null, property1, property2 ) );
     }
 
     @Test
@@ -117,10 +118,10 @@ public class EntityCommandGrouperTest
             grouper.add( property );
         }
         // ^^^ OK so we've generated property commands for random nodes in random order, let's sort them
-        grouper.sort();
+        EntityCommandGrouper.Cursor cursor = grouper.sortAndAccessGroups();
 
         // then
-        assertGroups( grouper, groups );
+        assertGroups( cursor, groups );
     }
 
     private NodeCommand node( long nodeId )
@@ -128,7 +129,7 @@ public class EntityCommandGrouperTest
         return new NodeCommand( new NodeRecord( nodeId ), new NodeRecord( nodeId ) );
     }
 
-    private void assertGroups( EntityCommandGrouper grouper, Group... groups )
+    private void assertGroups( EntityCommandGrouper.Cursor cursor, Group... groups )
     {
         for ( Group group : groups )
         {
@@ -136,10 +137,10 @@ public class EntityCommandGrouperTest
             {
                 continue;
             }
-            assertTrue( grouper.nextEntity() );
-            group.assertGroup( grouper );
+            assertTrue( cursor.nextEntity() );
+            group.assertGroup( cursor );
         }
-        assertFalse( grouper.nextEntity() );
+        assertFalse( cursor.nextEntity() );
     }
 
     private Group group( long nodeId, NodeCommand nodeCommand, Command.PropertyCommand... properties )
@@ -172,14 +173,14 @@ public class EntityCommandGrouperTest
             properties.add( property );
         }
 
-        void assertGroup( EntityCommandGrouper grouper )
+        void assertGroup( EntityCommandGrouper.Cursor cursor )
         {
-            assertEquals( nodeId, grouper.getCurrentEntity() );
-            assertSame( nodeCommand, grouper.getCurrentEntityCommand() );
+            assertEquals( nodeId, cursor.currentEntityId() );
+            assertSame( nodeCommand, cursor.currentEntityCommand() );
             Set<Command.PropertyCommand> fromGrouper = new HashSet<>();
             while ( true )
             {
-                Command.PropertyCommand property = grouper.nextProperty();
+                Command.PropertyCommand property = cursor.nextProperty();
                 if ( property == null )
                 {
                     break;

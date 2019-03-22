@@ -289,18 +289,19 @@ public class OnlineIndexUpdatesTest
         assertThat( onlineIndexUpdates, not( containsInAnyOrder( indexDescriptor3 ) ) ); // This index is only for a different relationship type.
     }
 
-    private EntityCommandGrouper<Command.NodeCommand> nodeGroup( Command.NodeCommand nodeCommand, Command.PropertyCommand... propertyCommands )
+    private EntityCommandGrouper<Command.NodeCommand>.Cursor nodeGroup( Command.NodeCommand nodeCommand, Command.PropertyCommand... propertyCommands )
     {
         return group( nodeCommand, Command.NodeCommand.class, propertyCommands );
     }
 
-    private EntityCommandGrouper<Command.RelationshipCommand> relationshipGroup( Command.RelationshipCommand relationshipCommand,
+    private EntityCommandGrouper<Command.RelationshipCommand>.Cursor relationshipGroup( Command.RelationshipCommand relationshipCommand,
             Command.PropertyCommand... propertyCommands )
     {
         return group( relationshipCommand, Command.RelationshipCommand.class, propertyCommands );
     }
 
-    private <ENTITY extends Command> EntityCommandGrouper<ENTITY> group( ENTITY entityCommand, Class<ENTITY> cls, Command.PropertyCommand... propertyCommands )
+    private <ENTITY extends Command> EntityCommandGrouper<ENTITY>.Cursor group( ENTITY entityCommand, Class<ENTITY> cls,
+            Command.PropertyCommand... propertyCommands )
     {
         EntityCommandGrouper<ENTITY> grouper = new EntityCommandGrouper<>( cls, 8 );
         if ( entityCommand != null )
@@ -311,7 +312,7 @@ public class OnlineIndexUpdatesTest
         {
             grouper.add( propertyCommand );
         }
-        return grouper;
+        return grouper.sortAndAccessGroups();
     }
 
     private long createRelationshipProperty( RelationshipRecord relRecord, Value propertyValue, int propertyKey )

@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
+import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,6 +45,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.index.EntityCommandGrouper;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyCommandsExtractor;
@@ -242,12 +245,12 @@ public class TransactionRecordStateTest
         // -- later recovering that tx, there should be only one update for each type
         assertTrue( extractor.containsAnyEntityOrPropertyUpdate() );
         MutableLongSet recoveredNodeIds = new LongHashSet();
-        recoveredNodeIds.addAll( extractor.getNodeCommands().entityIds() );
+        recoveredNodeIds.addAll( entityIds( extractor.getNodeCommands() ) );
         assertEquals( 1, recoveredNodeIds.size() );
         assertEquals( nodeId, recoveredNodeIds.longIterator().next() );
 
         MutableLongSet recoveredRelIds = new LongHashSet();
-        recoveredRelIds.addAll( extractor.getRelationshipCommands().entityIds() );
+        recoveredRelIds.addAll( entityIds( extractor.getRelationshipCommands() ) );
         assertEquals( 1, recoveredRelIds.size() );
         assertEquals( relId, recoveredRelIds.longIterator().next() );
     }
@@ -1412,6 +1415,20 @@ public class TransactionRecordStateTest
     private RelationshipGroupCommand singleRelationshipGroupCommand( Collection<StorageCommand> commands )
     {
         return (RelationshipGroupCommand) Iterables.single( filter( t -> t instanceof RelationshipGroupCommand, commands ) );
+    }
+
+    public LongIterable entityIds( EntityCommandGrouper.Cursor cursor )
+    {
+        LongArrayList list = new LongArrayList();
+        if ( cursor.nextEntity() )
+        {
+            while ( cursor.nextProperty() != null )
+            {
+                // Just get any potential property commands out of the way
+            }
+            list.add( cursor.currentEntityId() );
+        }
+        return list;
     }
 
     private class CollectingIndexingUpdateService implements IndexingUpdateService

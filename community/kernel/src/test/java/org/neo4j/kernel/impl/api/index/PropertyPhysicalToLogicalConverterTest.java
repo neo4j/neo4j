@@ -236,8 +236,9 @@ public class PropertyPhysicalToLogicalConverterTest
         {
             grouper.add( change );
         }
-        assertTrue( grouper.nextEntity() );
-        converter.convertPropertyRecord( grouper, updates );
+        EntityCommandGrouper.Cursor cursor = grouper.sortAndAccessGroups();
+        assertTrue( cursor.nextEntity() );
+        converter.convertPropertyRecord( cursor, updates );
         return updates.build();
     }
 

@@ -885,7 +885,7 @@ public class IndexingServiceTest
             }
 
             @Override
-            public void feed( EntityCommandGrouper<NodeCommand> nodeCommands, EntityCommandGrouper<RelationshipCommand> relationshipCommands )
+            public void feed( EntityCommandGrouper<NodeCommand>.Cursor nodeCommands, EntityCommandGrouper<RelationshipCommand>.Cursor relationshipCommands )
             {
                 throw new UnsupportedOperationException();
             }

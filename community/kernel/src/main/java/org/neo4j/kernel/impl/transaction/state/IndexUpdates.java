@@ -31,10 +31,10 @@ public interface IndexUpdates extends Iterable<IndexEntryUpdate<SchemaDescriptor
 {
     /**
      * Feeds updates raw material in the form of node/property commands, to create updates from.
-     *  @param nodeCommands node data
+     * @param nodeCommands node data
      * @param relationshipCommands relationship data
      */
-    void feed( EntityCommandGrouper<Command.NodeCommand> nodeCommands, EntityCommandGrouper<Command.RelationshipCommand> relationshipCommands );
+    void feed( EntityCommandGrouper<Command.NodeCommand>.Cursor nodeCommands, EntityCommandGrouper<Command.RelationshipCommand>.Cursor relationshipCommands );
 
     boolean hasUpdates();
 }

@@ -45,7 +45,7 @@ public class PropertyPhysicalToLogicalConverter
     /**
      * Converts physical changes to PropertyRecords for a entity into logical updates
      */
-    public void convertPropertyRecord( EntityCommandGrouper<?> changes, EntityUpdates.Builder properties )
+    public void convertPropertyRecord( EntityCommandGrouper<?>.Cursor changes, EntityUpdates.Builder properties )
     {
         mapBlocks( changes );
 
@@ -115,7 +115,7 @@ public class PropertyPhysicalToLogicalConverter
         }
     }
 
-    private void mapBlocks( EntityCommandGrouper<?> changes )
+    private void mapBlocks( EntityCommandGrouper<?>.Cursor changes )
     {
         beforeBlocksCursor = 0;
         afterBlocksCursor = 0;

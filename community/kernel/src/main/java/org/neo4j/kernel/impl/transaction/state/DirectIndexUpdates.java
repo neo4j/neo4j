@@ -45,7 +45,8 @@ public class DirectIndexUpdates implements IndexUpdates
     }
 
     @Override
-    public void feed( EntityCommandGrouper<Command.NodeCommand> nodeCommands, EntityCommandGrouper<Command.RelationshipCommand> relationshipCommands )
+    public void feed( EntityCommandGrouper<Command.NodeCommand>.Cursor nodeCommands,
+            EntityCommandGrouper<Command.RelationshipCommand>.Cursor relationshipCommands )
     {
         throw new UnsupportedOperationException();
     }
