@@ -123,6 +123,29 @@ public class EntityCommandGrouperTest
         assertGroups( cursor, groups );
     }
 
+    @Test
+    public void shouldWorkOnADifferentSetOfCommandsAfterClear()
+    {
+        // given
+        EntityCommandGrouper<NodeCommand> grouper = new EntityCommandGrouper<>( NodeCommand.class, 16 );
+        grouper.add( node( 0 ) );
+        grouper.add( node( 1 ) );
+        grouper.add( property( 0 ) );
+        grouper.add( property( 1 ) );
+        grouper.clear();
+
+        // when
+        Command.NodeCommand node2 = node( 2 );
+        Command.PropertyCommand node2Property = property( 2 );
+        Command.NodeCommand node3 = node( 3 );
+        grouper.add( node2 );
+        grouper.add( node2Property );
+        grouper.add( node3 );
+
+        // then
+        assertGroups( grouper.sortAndAccessGroups(), group( node2.getKey(), node2, node2Property ), group( node3.getKey(), node3 ) );
+    }
+
     private NodeCommand node( long nodeId )
     {
         return new NodeCommand( new NodeRecord( nodeId ), new NodeRecord( nodeId ) );
