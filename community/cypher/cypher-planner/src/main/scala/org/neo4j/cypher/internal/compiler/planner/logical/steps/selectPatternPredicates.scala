@@ -38,6 +38,9 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
           case e:ExistsSubClause =>
             val innerPlan = planInnerOfSubquery(lhs, context, interestingOrder, e)
             context.logicalPlanProducer.planSemiApply(lhs, innerPlan, e, context)
+          case p@Not(e: ExistsSubClause) =>
+            val innerPlan = planInnerOfSubquery(lhs, context, interestingOrder, e)
+            context.logicalPlanProducer.planAntiSemiApply(lhs, innerPlan, p, context)
           case patternExpression: PatternExpression =>
             val rhs = rhsPlan(lhs, patternExpression, interestingOrder, context)
             context.logicalPlanProducer.planSemiApply(lhs, rhs, patternExpression, context)
