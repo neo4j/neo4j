@@ -34,7 +34,6 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRe
 public class PropertyCommandsExtractor extends TransactionApplier.Adapter
         implements BatchTransactionApplier
 {
-    // A list of relevant commands, sorted to be Node(N),Property(N),Property(N)...,Node(O),Property(O),Property(O)...,
     private final EntityCommandGrouper<NodeCommand> nodeCommands = new EntityCommandGrouper<>( NodeCommand.class, 16 );
     private final EntityCommandGrouper<RelationshipCommand> relationshipCommands = new EntityCommandGrouper<>( RelationshipCommand.class, 16 );
     private boolean hasUpdates;
@@ -108,15 +107,13 @@ public class PropertyCommandsExtractor extends TransactionApplier.Adapter
         return hasUpdates;
     }
 
-    public EntityCommandGrouper<NodeCommand> getNodeCommands()
+    public EntityCommandGrouper<NodeCommand>.Cursor getNodeCommands()
     {
-        nodeCommands.sort();
-        return nodeCommands;
+        return nodeCommands.sortAndAccessGroups();
     }
 
-    public EntityCommandGrouper<RelationshipCommand> getRelationshipCommands()
+    public EntityCommandGrouper<RelationshipCommand>.Cursor getRelationshipCommands()
     {
-        relationshipCommands.sort();
-        return relationshipCommands;
+        return relationshipCommands.sortAndAccessGroups();
     }
 }

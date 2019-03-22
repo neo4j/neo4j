@@ -1338,7 +1338,7 @@ public class IndexingServiceTest
 
     private static Matcher<? extends Throwable> causedBy( final Throwable exception )
     {
-        return new TypeSafeMatcher<Throwable>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( Throwable item )
@@ -1502,7 +1502,7 @@ public class IndexingServiceTest
         {
             final Visitor<EntityUpdates,IndexPopulationFailedKernelException> visitor =
                     visitor( invocation.getArgument( 2 ) );
-            return new StoreScan<IndexPopulationFailedKernelException>()
+            return new StoreScan<>()
             {
                 private volatile boolean stop;
 
@@ -1526,9 +1526,7 @@ public class IndexingServiceTest
                 }
 
                 @Override
-                public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater,
-                        IndexEntryUpdate<?> update,
-                        long currentlyIndexedNodeId )
+                public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update, long currentlyIndexedNodeId )
                 {
                     // no-op
                 }

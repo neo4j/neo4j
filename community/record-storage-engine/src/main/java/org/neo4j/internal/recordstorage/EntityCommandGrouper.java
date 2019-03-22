@@ -19,22 +19,37 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.eclipse.collections.api.LongIterable;
-import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
-
 import java.util.Arrays;
 import java.util.Comparator;
 
+import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
+import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
 
 /**
  * Groups property commands by entity. The commands are provided from a list of transaction commands.
  * Most entity updates include both the entity command as well as property commands, but sometimes
  * only property commands for an entity exists in the list and this grouper handles both scenarios.
  * Commands are appended to an array and then sorted before handed over for being processed.
+ * Hence one entity group can look like any of these combinations:
+ * <ul>
+ *     <li>Entity command ({@link NodeCommand} or {@link RelationshipCommand} followed by zero or more {@link PropertyCommand property commands}
+ *     for that entity</li>
+ *     <li>zero or more {@link PropertyCommand property commands}, all for the same node</li>
+ * </ul>
+ * <p>
+ * Typical interaction goes like this:
+ * <ol>
+ *     <li>All commands are added with {@link #add(Command)}</li>
+ *     <li>Get a cursor to the sorted commands using {@link #sortAndAccessGroups()}</li>
+ *     <li>Call {@link #clear()} and use this instance again for another set of commands</li>
+ * </ol>
  */
 public class EntityCommandGrouper<ENTITY extends Command>
 {
+    /**
+     * Enforces the order described on the class-level javadoc above.
+     */
     private final Comparator<Command> COMMAND_COMPARATOR = new Comparator<Command>()
     {
         @Override
@@ -55,20 +70,13 @@ public class EntityCommandGrouper<ENTITY extends Command>
 
         private int commandType( Command command )
         {
-            if ( command.getClass() == entityCommandClass )
-            {
-                return 0;
-            }
-            return 1;
+            return command.getClass() == entityCommandClass ? 0 : 1;
         }
     };
 
     private final Class<ENTITY> entityCommandClass;
     private Command[] commands;
     private int writeCursor;
-    private int readCursor;
-    private long currentEntity;
-    private ENTITY currentEntityCommand;
 
     public EntityCommandGrouper( Class<ENTITY> entityCommandClass, int sizeHint )
     {
@@ -85,54 +93,10 @@ public class EntityCommandGrouper<ENTITY extends Command>
         commands[writeCursor++] = command;
     }
 
-    public void sort()
+    public Cursor sortAndAccessGroups()
     {
         Arrays.sort( commands, 0, writeCursor, COMMAND_COMPARATOR );
-    }
-
-    public boolean nextEntity()
-    {
-        if ( readCursor >= writeCursor )
-        {
-            return false;
-        }
-
-        if ( commands[readCursor].getClass() == entityCommandClass )
-        {
-            currentEntityCommand = (ENTITY) commands[readCursor++];
-            currentEntity = currentEntityCommand.getKey();
-        }
-        else
-        {
-            PropertyCommand firstPropertyCommand = (PropertyCommand) commands[readCursor];
-            currentEntityCommand = null;
-            currentEntity = firstPropertyCommand.getEntityId();
-        }
-        return true;
-    }
-
-    public long getCurrentEntity()
-    {
-        return currentEntity;
-    }
-
-    public ENTITY getCurrentEntityCommand()
-    {
-        return currentEntityCommand;
-    }
-
-    public PropertyCommand nextProperty()
-    {
-        if ( readCursor < writeCursor )
-        {
-            Command command = commands[readCursor];
-            if ( command instanceof PropertyCommand && ((PropertyCommand) command).getEntityId() == currentEntity )
-            {
-                readCursor++;
-                return (PropertyCommand) command;
-            }
-        }
-        return null;
+        return new Cursor();
     }
 
     public void clear()
@@ -143,24 +107,66 @@ public class EntityCommandGrouper<ENTITY extends Command>
             Arrays.fill( commands, 1_000, writeCursor, null );
         }
         writeCursor = 0;
-        readCursor = 0;
     }
 
-    public LongIterable entityIds()
+    /**
+     * Interaction goes like this:
+     * <ol>
+     *     <li>Call {@link #nextEntity()} to go to the next group, if any</li>
+     *     <li>A group may or may not have the entity command, as accessed by {@link #currentEntityCommand()},
+     *         either way the node id is accessible using {@link #currentEntityId()}</li>
+     *     <li>Call {@link #nextProperty()} until it returns null, now all the {@link PropertyCommand} in this group have been accessed</li>
+     * </ol>
+     */
+    public class Cursor
     {
-        LongArrayList list = new LongArrayList();
-        int cursor = 0;
-        long currentNode = -1;
-        while ( cursor < writeCursor )
+        private int readCursor;
+        private long currentEntity;
+        private ENTITY currentEntityCommand;
+
+        public boolean nextEntity()
         {
-            Command candidate = commands[cursor++];
-            long nodeId = candidate.getClass() == entityCommandClass ? candidate.getKey() : ((PropertyCommand) candidate).getEntityId();
-            if ( nodeId != currentNode )
+            if ( readCursor >= writeCursor )
             {
-                currentNode = nodeId;
-                list.add( currentNode );
+                return false;
             }
+
+            if ( commands[readCursor].getClass() == entityCommandClass )
+            {
+                currentEntityCommand = (ENTITY) commands[readCursor++];
+                currentEntity = currentEntityCommand.getKey();
+            }
+            else
+            {
+                PropertyCommand firstPropertyCommand = (PropertyCommand) commands[readCursor];
+                currentEntityCommand = null;
+                currentEntity = firstPropertyCommand.getEntityId();
+            }
+            return true;
         }
-        return list;
+
+        public PropertyCommand nextProperty()
+        {
+            if ( readCursor < writeCursor )
+            {
+                Command command = commands[readCursor];
+                if ( command instanceof PropertyCommand && ((PropertyCommand) command).getEntityId() == currentEntity )
+                {
+                    readCursor++;
+                    return (PropertyCommand) command;
+                }
+            }
+            return null;
+        }
+
+        public long currentEntityId()
+        {
+            return currentEntity;
+        }
+
+        public ENTITY currentEntityCommand()
+        {
+            return currentEntityCommand;
+        }
     }
 }

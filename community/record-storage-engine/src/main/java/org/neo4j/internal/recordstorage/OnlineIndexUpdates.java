@@ -47,7 +47,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  * properties matching existing and online indexes; in that case the properties for that node needs to be read
  * from store since the commands in that transaction cannot itself provide enough information.
  *
- * One instance can be {@link IndexUpdates#feed(EntityCommandGrouper,EntityCommandGrouper) fed} data about
+ * One instance can be {@link IndexUpdates#feed(EntityCommandGrouper.Cursor,EntityCommandGrouper.Cursor) fed} data about
  * multiple transactions, to be {@link #iterator() accessed} later.
  */
 public class OnlineIndexUpdates implements IndexUpdates
@@ -76,15 +76,15 @@ public class OnlineIndexUpdates implements IndexUpdates
     }
 
     @Override
-    public void feed( EntityCommandGrouper<NodeCommand> nodeCommands, EntityCommandGrouper<RelationshipCommand> relationshipCommands )
+    public void feed( EntityCommandGrouper<NodeCommand>.Cursor nodeCommands, EntityCommandGrouper<RelationshipCommand>.Cursor relationshipCommands )
     {
         while ( nodeCommands.nextEntity() )
         {
-            gatherUpdatesFor( nodeCommands.getCurrentEntity(), nodeCommands.getCurrentEntityCommand(), nodeCommands );
+            gatherUpdatesFor( nodeCommands.currentEntityId(), nodeCommands.currentEntityCommand(), nodeCommands );
         }
         while ( relationshipCommands.nextEntity() )
         {
-            gatherUpdatesFor( relationshipCommands.getCurrentEntity(), relationshipCommands.getCurrentEntityCommand(), relationshipCommands );
+            gatherUpdatesFor( relationshipCommands.currentEntityId(), relationshipCommands.currentEntityCommand(), relationshipCommands );
         }
     }
 
@@ -94,13 +94,14 @@ public class OnlineIndexUpdates implements IndexUpdates
         return !updates.isEmpty();
     }
 
-    private void gatherUpdatesFor( long nodeId, NodeCommand nodeCommand, EntityCommandGrouper<NodeCommand> propertyCommands )
+    private void gatherUpdatesFor( long nodeId, NodeCommand nodeCommand, EntityCommandGrouper<NodeCommand>.Cursor propertyCommands )
     {
         EntityUpdates.Builder nodePropertyUpdate = gatherUpdatesFromCommandsForNode( nodeId, nodeCommand, propertyCommands );
         eagerlyGatherUpdates( nodePropertyUpdate, EntityType.NODE );
     }
 
-    private void gatherUpdatesFor( long relationshipId, RelationshipCommand relationshipCommand, EntityCommandGrouper<RelationshipCommand> propertyCommands )
+    private void gatherUpdatesFor( long relationshipId, RelationshipCommand relationshipCommand,
+            EntityCommandGrouper<RelationshipCommand>.Cursor propertyCommands )
     {
         EntityUpdates.Builder relationshipPropertyUpdate = gatherUpdatesFromCommandsForRelationship( relationshipId, relationshipCommand, propertyCommands );
         eagerlyGatherUpdates( relationshipPropertyUpdate, EntityType.RELATIONSHIP );
@@ -122,7 +123,7 @@ public class OnlineIndexUpdates implements IndexUpdates
 
     private EntityUpdates.Builder gatherUpdatesFromCommandsForNode( long nodeId,
             NodeCommand nodeChanges,
-            EntityCommandGrouper propertyCommandsForNode )
+            EntityCommandGrouper<NodeCommand>.Cursor propertyCommandsForNode )
     {
         long[] nodeLabelsBefore;
         long[] nodeLabelsAfter;
@@ -169,7 +170,7 @@ public class OnlineIndexUpdates implements IndexUpdates
     }
 
     private EntityUpdates.Builder gatherUpdatesFromCommandsForRelationship( long relationshipId, RelationshipCommand relationshipCommand,
-            EntityCommandGrouper<?> propertyCommands )
+            EntityCommandGrouper<RelationshipCommand>.Cursor propertyCommands )
     {
         long reltypeBefore;
         long reltypeAfter;

@@ -27,6 +27,8 @@ import java.util.Iterator;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.recordstorage.Command.NodeCommand;
+import org.neo4j.internal.recordstorage.Command.PropertyCommand;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -129,7 +131,7 @@ class OnlineIndexUpdatesTest
     }
 
     @Test
-    void shouldContainFedNodeUpdate() throws Exception
+    void shouldContainFedNodeUpdate()
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
                 new RecordStorageReader( neoStores ) );
@@ -141,10 +143,10 @@ class OnlineIndexUpdatesTest
         NodeRecord notInUse = getNode( nodeId, false );
         nodeStore.updateRecord( inUse );
 
-        Command.NodeCommand nodeCommand = new Command.NodeCommand( inUse, notInUse );
+        NodeCommand nodeCommand = new NodeCommand( inUse, notInUse );
         PropertyRecord propertyBlocks = new PropertyRecord( propertyId );
         propertyBlocks.setNodeId( nodeId );
-        Command.PropertyCommand propertyCommand = new Command.PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), propertyBlocks );
+        PropertyCommand propertyCommand = new PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), propertyBlocks );
 
         StorageIndexReference indexDescriptor = new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, NODE, 1, 4, 6 ), false, 0, null );
         createIndexes( indexDescriptor );
@@ -157,7 +159,7 @@ class OnlineIndexUpdatesTest
     }
 
     @Test
-    void shouldContainFedRelationshipUpdate() throws Exception
+    void shouldContainFedRelationshipUpdate()
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
                 new RecordStorageReader( neoStores ) );
@@ -172,7 +174,7 @@ class OnlineIndexUpdatesTest
         Command.RelationshipCommand relationshipCommand = new Command.RelationshipCommand( inUse, notInUse );
         PropertyRecord propertyBlocks = new PropertyRecord( propertyId );
         propertyBlocks.setRelId( relId );
-        Command.PropertyCommand propertyCommand = new Command.PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), propertyBlocks );
+        PropertyCommand propertyCommand = new PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), propertyBlocks );
 
         StorageIndexReference indexDescriptor = new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), false, 0, null );
         createIndexes( indexDescriptor );
@@ -185,7 +187,7 @@ class OnlineIndexUpdatesTest
     }
 
     @Test
-    void shouldDifferentiateNodesAndRelationships() throws Exception
+    void shouldDifferentiateNodesAndRelationships()
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
                 new RecordStorageReader( neoStores ) );
@@ -197,11 +199,11 @@ class OnlineIndexUpdatesTest
         NodeRecord notInUseNode = getNode( nodeId, false );
         nodeStore.updateRecord( inUseNode );
 
-        Command.NodeCommand nodeCommand = new Command.NodeCommand( inUseNode, notInUseNode );
+        NodeCommand nodeCommand = new NodeCommand( inUseNode, notInUseNode );
         PropertyRecord nodePropertyBlocks = new PropertyRecord( nodePropertyId );
         nodePropertyBlocks.setNodeId( nodeId );
-        Command.PropertyCommand nodePropertyCommand =
-                new Command.PropertyCommand( recordAccess.getIfLoaded( nodePropertyId ).forReadingData(), nodePropertyBlocks );
+        PropertyCommand nodePropertyCommand =
+                new PropertyCommand( recordAccess.getIfLoaded( nodePropertyId ).forReadingData(), nodePropertyBlocks );
 
         StorageIndexReference nodeIndexDescriptor = new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, NODE, 1, 4, 6 ), false, 0, null );
         createIndexes( nodeIndexDescriptor );
@@ -216,8 +218,8 @@ class OnlineIndexUpdatesTest
         Command.RelationshipCommand relationshipCommand = new Command.RelationshipCommand( inUse, notInUse );
         PropertyRecord relationshipPropertyBlocks = new PropertyRecord( propertyId );
         relationshipPropertyBlocks.setRelId( relId );
-        Command.PropertyCommand relationshipPropertyCommand =
-                new Command.PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), relationshipPropertyBlocks );
+        PropertyCommand relationshipPropertyCommand =
+                new PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), relationshipPropertyBlocks );
 
         StorageIndexReference relationshipIndexDescriptor =
                 new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), false, 1, null );
@@ -231,7 +233,7 @@ class OnlineIndexUpdatesTest
     }
 
     @Test
-    void shouldUpdateCorrectIndexes() throws Exception
+    void shouldUpdateCorrectIndexes()
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
                 new RecordStorageReader( neoStores ) );
@@ -248,11 +250,11 @@ class OnlineIndexUpdatesTest
         Command.RelationshipCommand relationshipCommand = new Command.RelationshipCommand( inUse, notInUse );
         PropertyRecord propertyBlocks = new PropertyRecord( propertyId );
         propertyBlocks.setRelId( relId );
-        Command.PropertyCommand propertyCommand = new Command.PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), propertyBlocks );
+        PropertyCommand propertyCommand = new PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), propertyBlocks );
 
         PropertyRecord propertyBlocks2 = new PropertyRecord( propertyId2 );
         propertyBlocks2.setRelId( relId );
-        Command.PropertyCommand propertyCommand2 = new Command.PropertyCommand( recordAccess.getIfLoaded( propertyId2 ).forReadingData(), propertyBlocks2 );
+        PropertyCommand propertyCommand2 = new PropertyCommand( recordAccess.getIfLoaded( propertyId2 ).forReadingData(), propertyBlocks2 );
 
         StorageIndexReference indexDescriptor0 = new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), false, 0, null );
         StorageIndexReference indexDescriptor1 = new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, RELATIONSHIP, 2, 4, 6 ), false, 1, null );
@@ -278,29 +280,30 @@ class OnlineIndexUpdatesTest
         }
     }
 
-    private EntityCommandGrouper<Command.NodeCommand> nodeGroup( Command.NodeCommand nodeCommand, Command.PropertyCommand... propertyCommands )
+    private EntityCommandGrouper<NodeCommand>.Cursor nodeGroup( NodeCommand nodeCommand, PropertyCommand... propertyCommands )
     {
-        return group( nodeCommand, Command.NodeCommand.class, propertyCommands );
+        return group( nodeCommand, NodeCommand.class, propertyCommands );
     }
 
-    private EntityCommandGrouper<Command.RelationshipCommand> relationshipGroup( Command.RelationshipCommand relationshipCommand,
-            Command.PropertyCommand... propertyCommands )
+    private EntityCommandGrouper<Command.RelationshipCommand>.Cursor relationshipGroup( Command.RelationshipCommand relationshipCommand,
+            PropertyCommand... propertyCommands )
     {
         return group( relationshipCommand, Command.RelationshipCommand.class, propertyCommands );
     }
 
-    private <ENTITY extends Command> EntityCommandGrouper<ENTITY> group( ENTITY entityCommand, Class<ENTITY> cls, Command.PropertyCommand... propertyCommands )
+    private <ENTITY extends Command> EntityCommandGrouper<ENTITY>.Cursor group( ENTITY entityCommand, Class<ENTITY> cls,
+            PropertyCommand... propertyCommands )
     {
         EntityCommandGrouper<ENTITY> grouper = new EntityCommandGrouper<>( cls, 8 );
         if ( entityCommand != null )
         {
             grouper.add( entityCommand );
         }
-        for ( Command.PropertyCommand propertyCommand : propertyCommands )
+        for ( PropertyCommand propertyCommand : propertyCommands )
         {
             grouper.add( propertyCommand );
         }
-        return grouper;
+        return grouper.sortAndAccessGroups();
     }
 
     private long createRelationshipProperty( RelationshipRecord relRecord, Value propertyValue, int propertyKey )
