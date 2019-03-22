@@ -66,6 +66,7 @@ object PredicateHelper {
       case f: FunctionInvocation => BOOLEAN_FUNCTIONS.contains(f.function)
       case f: ResolvedFunctionInvocation => f.fcnSignature.forall(_.outputType == symbols.CTBoolean)
       case  _:Ands | _: Ors | _: In | _:BooleanLiteral | _:HasLabels | _:AndedPropertyInequalities |  _:IterablePredicateExpression => true
+      case _:ExistsSubClause => true
       case _ => false
     }
   }

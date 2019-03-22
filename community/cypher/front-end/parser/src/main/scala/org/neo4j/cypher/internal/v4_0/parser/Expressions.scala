@@ -16,10 +16,9 @@
  */
 package org.neo4j.cypher.internal.v4_0.parser
 
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.{expressions => ast}
-import org.neo4j.cypher.internal.v4_0.expressions
 import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.v4_0.{expressions, expressions => ast}
 import org.parboiled.scala._
 
 import scala.collection.mutable.ListBuffer
@@ -169,6 +168,7 @@ trait Expressions extends Parser
     | group(keyword("ANY") ~~ "(" ~~ FilterExpression ~~ ")") ~~>> (ast.AnyIterablePredicate(_, _, _))
     | group(keyword("NONE") ~~ "(" ~~ FilterExpression ~~ ")") ~~>> (ast.NoneIterablePredicate(_, _, _))
     | group(keyword("SINGLE") ~~ "(" ~~ FilterExpression ~~ ")") ~~>> (ast.SingleIterablePredicate(_, _, _))
+    | group(keyword("EXISTS") ~~ "{" ~~ ExistsSubClauseExpression ~~ "}") ~~>> (ast.ExistsSubClause(_, _))  //TODO: This should NOT be a mere expression!
     | ShortestPathPattern ~~> expressions.ShortestPathExpression
     | RelationshipsPattern ~~> PatternExpression
     | parenthesizedExpression
@@ -185,6 +185,9 @@ trait Expressions extends Parser
   def PropertyLookup: ReductionRule1[org.neo4j.cypher.internal.v4_0.expressions.Expression, org.neo4j.cypher.internal.v4_0.expressions.Property] = rule("'.'") {
     operator(".") ~~ (PropertyKeyName ~~>> (ast.Property(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _)))
   }
+
+  private def ExistsSubClauseExpression: Rule2[Pattern, Option[Expression]] =
+    WS ~ optional(keyword("MATCH")) ~~ Pattern ~ optional(WS ~ keyword("WHERE") ~~ Expression) //TODO: Support more stuff here
 
   private def FilterExpression: Rule3[Variable, org.neo4j.cypher.internal.v4_0.expressions.Expression, Option[org.neo4j.cypher.internal.v4_0.expressions.Expression]] =
     IdInColl ~ optional(WS ~ keyword("WHERE") ~~ Expression)

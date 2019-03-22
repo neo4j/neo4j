@@ -26,6 +26,8 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
   def isEmpty = predicates.isEmpty
 
   def predicatesGiven(ids: Set[String]): Seq[Expression] = predicates.collect {
+    // TODO: fix, maybe we can divide existsPredicate into predicates with dependencies met and without here?
+    case p@Predicate(_, predicate:ExistsSubClause) =>  predicate
     case p@Predicate(_, predicate) if p.hasDependenciesMet(ids) => predicate
   }.toIndexedSeq
 
@@ -38,6 +40,7 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
   def patternPredicatesGiven(ids: Set[String]): Seq[Expression] = predicatesGiven(ids).filter(containsPatternPredicates)
 
   private def containsPatternPredicates(e: Expression): Boolean = e match {
+    case _: ExistsSubClause        => true
     case _: PatternExpression      => true
     case Not(_: PatternExpression) => true
     case Ors(exprs)                => exprs.exists(containsPatternPredicates)

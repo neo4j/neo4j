@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.{CandidateGenerator, LogicalPlanningContext}
-import org.neo4j.cypher.internal.ir.{QueryGraph, InterestingOrder}
+import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.FreshIdNameGenerator
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.PatternExpressionPatternElementNamer
+import org.neo4j.cypher.internal.v4_0.util.{FreshIdNameGenerator, UnNamedNameGenerator}
 
 case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
 
@@ -34,6 +35,9 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
       if applicable(lhs, queryGraph, pattern, context.planningAttributes.solveds))
       yield {
         pattern match {
+          case e:ExistsSubClause =>
+            val innerPlan = planInnerOfSubquery(lhs, context, interestingOrder, e)
+            context.logicalPlanProducer.planSemiApply(lhs, innerPlan, e, context)
           case patternExpression: PatternExpression =>
             val rhs = rhsPlan(lhs, patternExpression, interestingOrder, context)
             context.logicalPlanProducer.planSemiApply(lhs, rhs, patternExpression, context)
@@ -50,6 +54,38 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
             context.logicalPlanProducer.solvePredicate(plan, onePredicate(solvedPredicates), context)
         }
       }
+  }
+
+  // TODO: consider to put the 3 methods below in some helper class to be shared with PatternExpressionSolver
+  private def planInnerOfSubquery(lhs: LogicalPlan, context: LogicalPlanningContext, interestingOrder: InterestingOrder, e: ExistsSubClause): LogicalPlan = {
+
+    val patternExpr = PatternExpression(RelationshipsPattern(e.pattern.patternParts.head.element.asInstanceOf[RelationshipChain])(e.position))
+    val (namedExpr, namedMap) = PatternExpressionPatternElementNamer.apply(patternExpr)
+
+    val innerContext = createPlannerContext(context, namedMap)
+
+    var qg = extractQG(lhs, namedExpr, context)
+    e.optionalWhereExpression.foreach(p => qg = qg.addPredicates(p))
+
+    innerContext.strategy.plan(qg, interestingOrder, innerContext)
+  }
+
+  private def extractQG(source: LogicalPlan, namedExpr: PatternExpression, context: LogicalPlanningContext): QueryGraph = {
+    import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
+
+    val dependencies = namedExpr.
+      dependencies.
+      map(_.name).
+      filter(id => UnNamedNameGenerator.isNamed(id))
+
+    val qgArguments = source.availableSymbols intersect dependencies
+    asQueryGraph(namedExpr, context.innerVariableNamer).withArgumentIds(qgArguments)
+  }
+
+  private def createPlannerContext(context: LogicalPlanningContext, namedMap: Map[PatternElement, Variable]): LogicalPlanningContext = {
+    val namedNodes = namedMap.collect { case (elem: NodePattern, identifier) => identifier }
+    val namedRels = namedMap.collect { case (elem: RelationshipChain, identifier) => identifier }
+    context.forExpressionPlanning(namedNodes, namedRels)
   }
 
   private def planPredicates(lhs: LogicalPlan,

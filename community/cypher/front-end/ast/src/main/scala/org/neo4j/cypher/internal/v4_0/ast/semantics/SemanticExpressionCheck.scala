@@ -420,6 +420,15 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x:SemanticCheckableExpression =>
         x.semanticCheck(ctx)
 
+      // EXISTS
+      case x:ExistsSubClause =>
+        withScopedState { // saves us from leaking to the outside
+          SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
+            when(x.optionalWhereExpression.isDefined) {
+              check(ctx, x.optionalWhereExpression.get)
+            }
+        }
+
       case x:Expression => semanticCheckFallback(ctx, x)
     }
 

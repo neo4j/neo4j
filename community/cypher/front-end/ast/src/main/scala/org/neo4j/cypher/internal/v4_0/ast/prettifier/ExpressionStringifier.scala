@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast.prettifier
 
+import org.neo4j.cypher.internal.v4_0.ast.prettifier.ExpressionStringifier.backtick
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.InternalException
-import ExpressionStringifier.backtick
 
 case class ExpressionStringifier(extender: Expression => String = e => throw new InternalException(s"failed to pretty print $e")) {
   def apply(ast: Expression): String = {
@@ -132,6 +132,13 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
       case _: ExtractScope | _: FilterScope | _: ReduceScope =>
         // These are not really expressions, they are part of expressions
         ""
+      case ExistsSubClause(fullPattern, optionalWhereExpression) =>
+        s"EXISTS { MATCH ${
+            fullPattern.patternParts.head.element match {
+              case r:RelationshipChain => pattern(r)
+              case n:NodePattern => node(n)
+          }
+        }} ${optionalWhereExpression.map(w => s" WHERE ${this.apply(w)}").getOrElse("")} }"
       case _ =>
         extender(ast)
     }
