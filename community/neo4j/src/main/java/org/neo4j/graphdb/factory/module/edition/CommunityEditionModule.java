@@ -29,6 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dmbs.database.DefaultDatabaseManager;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -61,6 +62,7 @@ import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.procedure.builtin.routing.BaseRoutingProcedureInstaller;
 import org.neo4j.procedure.builtin.routing.SingleInstanceRoutingProcedureInstaller;
 import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.time.SystemNanoClock;
@@ -82,13 +84,11 @@ public class CommunityEditionModule extends StandaloneEditionModule
     public static final String COMMUNITY_SECURITY_MODULE_ID = "community-security-module";
 
     private final Config config;
-    private final ConnectorPortRegister portRegister;
     protected final SslPolicyLoader sslPolicyLoader;
 
     public CommunityEditionModule( GlobalModule globalModule )
     {
         this.config = globalModule.getGlobalConfig();
-        this.portRegister = globalModule.getConnectorPortRegister();
 
         Dependencies globalDependencies = globalModule.getGlobalDependencies();
         Config globalConfig = globalModule.getGlobalConfig();
@@ -132,6 +132,8 @@ public class CommunityEditionModule extends StandaloneEditionModule
         ioLimiter = IOLimiter.UNLIMITED;
 
         connectionTracker = globalDependencies.satisfyDependency( createConnectionTracker() );
+
+        routingProcedureInstaller = createRoutingProcedureInstaller( globalModule );
     }
 
     protected Function<DatabaseId,TokenHolders> createTokenHolderProvider( GlobalModule platform )
@@ -223,8 +225,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
     @Override
     public void registerEditionSpecificProcedures( GlobalProcedures globalProcedures ) throws KernelException
     {
-        SingleInstanceRoutingProcedureInstaller routingProcedureInstaller = new SingleInstanceRoutingProcedureInstaller( portRegister, config );
-        routingProcedureInstaller.install( globalProcedures );
+        // no additional procedures in community edition
     }
 
     @Override
@@ -244,5 +245,13 @@ public class CommunityEditionModule extends StandaloneEditionModule
             globalLife.add( noAuthSecurityProvider );
             this.securityProvider = noAuthSecurityProvider;
         }
+    }
+
+    private static BaseRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule )
+    {
+        Supplier<DatabaseManager> databaseManagerSupplier = globalModule.getGlobalDependencies().provideDependency( DatabaseManager.class );
+        ConnectorPortRegister portRegister = globalModule.getConnectorPortRegister();
+        Config config = globalModule.getGlobalConfig();
+        return new SingleInstanceRoutingProcedureInstaller( databaseManagerSupplier, portRegister, config );
     }
 }

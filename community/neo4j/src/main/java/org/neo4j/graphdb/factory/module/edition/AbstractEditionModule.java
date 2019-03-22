@@ -57,6 +57,7 @@ import org.neo4j.procedure.builtin.BuiltInDbmsProcedures;
 import org.neo4j.procedure.builtin.BuiltInFunctions;
 import org.neo4j.procedure.builtin.BuiltInProcedures;
 import org.neo4j.procedure.builtin.TokenProcedures;
+import org.neo4j.procedure.builtin.routing.BaseRoutingProcedureInstaller;
 import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.service.Services;
 
@@ -79,6 +80,7 @@ public abstract class AbstractEditionModule
     protected Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     protected SecurityProvider securityProvider;
     protected GlobalProcedures globalProcedures;
+    protected BaseRoutingProcedureInstaller routingProcedureInstaller;
 
     public abstract EditionDatabaseComponents createDatabaseComponents( DatabaseId databaseId );
 
@@ -101,6 +103,7 @@ public abstract class AbstractEditionModule
         registerTemporalFunctions( globalProcedures, procedureConfig );
 
         registerEditionSpecificProcedures( globalProcedures );
+        routingProcedureInstaller.install( globalProcedures );
         this.globalProcedures = globalProcedures;
     }
 

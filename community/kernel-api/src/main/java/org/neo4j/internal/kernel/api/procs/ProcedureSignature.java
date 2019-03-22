@@ -216,6 +216,12 @@ public class ProcedureSignature
             return this;
         }
 
+        public Builder in( String name, Neo4jTypes.AnyType type, DefaultParameterValue defaultValue )
+        {
+            inputSignature.add( FieldSignature.inputField( name, type, defaultValue ) );
+            return this;
+        }
+
         /** Define an output field */
         public Builder out( String name, Neo4jTypes.AnyType type )
         {

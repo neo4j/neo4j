@@ -27,19 +27,28 @@ public enum ParameterNames
 {
     /**
      * Type: IN
-     *
+     * <p>
      * An opaque key-value map for supplying client context.
-     *
+     * <p>
      * Refer to the specific routing plugin deployed to
      * understand which specific keys can be utilised.
      */
     CONTEXT( "context" ),
 
     /**
+     * Type: IN
+     * <p>
+     * A name of the database.
+     * <p>
+     * Describes for which database a routing table should be returned.
+     */
+    DATABASE( "database" ),
+
+    /**
      * Type: OUT
-     *
+     * <p>
      * Contains a map of endpoints and their associated capability.
-     *
+     * <p>
      * Refer to the protocol specification to understand the
      * exact format and how to utilise it.
      */
@@ -47,10 +56,10 @@ public enum ParameterNames
 
     /**
      * Type: OUT
-     *
+     * <p>
      * Defines the time-to-live of the returned information,
      * after which it shall be refreshed.
-     *
+     * <p>
      * Refer to the specific routing plugin deployed to
      * understand the impact of this setting.
      */

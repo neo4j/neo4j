@@ -21,29 +21,32 @@ package org.neo4j.procedure.builtin.routing;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.helpers.HostnamePort;
-import org.neo4j.values.AnyValue;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.values.virtual.MapValue;
 
-import static java.util.Objects.requireNonNull;
+import static java.util.Collections.emptyList;
 
 public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableProcedure
 {
     private static final String DESCRIPTION = "Returns endpoints of this instance.";
 
+    private final Supplier<DatabaseManager> databaseManagerSupplier;
     private final ConnectorPortRegister portRegister;
-    private final Config config;
 
-    public SingleInstanceGetRoutingTableProcedure( List<String> namespace, ConnectorPortRegister portRegister, Config config )
+    public SingleInstanceGetRoutingTableProcedure( List<String> namespace, Supplier<DatabaseManager> databaseManagerSupplier,
+            ConnectorPortRegister portRegister, Config config )
     {
-        super( namespace );
+        super( namespace, config );
+        this.databaseManagerSupplier = databaseManagerSupplier;
         this.portRegister = portRegister;
-        this.config = requireNonNull( config );
     }
 
     @Override
@@ -53,26 +56,36 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
     }
 
     @Override
-    protected final RoutingResult invoke( AnyValue[] input )
+    protected RoutingResult invoke( String databaseName, MapValue routingContext ) throws ProcedureException
     {
+        if ( !databaseExists( databaseName ) )
+        {
+            throw databaseNotFoundException( databaseName );
+        }
+
         return config.enabledBoltConnectors()
                 .stream()
                 .findFirst()
-                .map( this::findAdvertisedAddress )
-                .map( address -> createRoutingResult( address, configuredRoutingTableTtl() ) )
+                .map( this::createRoutingResult )
                 .orElseGet( this::createEmptyRoutingResult );
+    }
+
+    private RoutingResult createRoutingResult( BoltConnector connector )
+    {
+        var advertisedAddress = findAdvertisedAddress( connector );
+        var ttl = configuredRoutingTableTtl();
+        return createRoutingResult( advertisedAddress, ttl );
     }
 
     protected RoutingResult createRoutingResult( AdvertisedSocketAddress address, long routingTableTtl )
     {
-        List<AdvertisedSocketAddress> addresses = Collections.singletonList( address );
+        var addresses = Collections.singletonList( address );
         return new RoutingResult( addresses, addresses, addresses, routingTableTtl );
     }
 
     private RoutingResult createEmptyRoutingResult()
     {
-        List<AdvertisedSocketAddress> addresses = Collections.emptyList();
-        return new RoutingResult( addresses, addresses, addresses, configuredRoutingTableTtl() );
+        return new RoutingResult( emptyList(), emptyList(), emptyList(), configuredRoutingTableTtl() );
     }
 
     private long configuredRoutingTableTtl()
@@ -82,18 +95,23 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
 
     private AdvertisedSocketAddress findAdvertisedAddress( BoltConnector connector )
     {
-        AdvertisedSocketAddress advertisedAddress = config.get( connector.advertised_address );
+        var advertisedAddress = config.get( connector.advertised_address );
         if ( advertisedAddress.getPort() == 0 )
         {
             // advertised address with port zero is not useful for callers of the routing procedure
             // it is most likely inherited from the listen address
             // attempt to resolve the actual port using the port register
-            HostnamePort localAddress = portRegister.getLocalAddress( connector.key() );
+            var localAddress = portRegister.getLocalAddress( connector.key() );
             if ( localAddress != null )
             {
                 advertisedAddress = new AdvertisedSocketAddress( advertisedAddress.getHostname(), localAddress.getPort() );
             }
         }
         return advertisedAddress;
+    }
+
+    private boolean databaseExists( String databaseName )
+    {
+        return databaseManagerSupplier.get().getDatabaseContext( databaseName ).isPresent();
     }
 }

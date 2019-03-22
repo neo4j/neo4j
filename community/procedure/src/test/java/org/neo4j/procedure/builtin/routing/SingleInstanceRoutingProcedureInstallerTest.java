@@ -22,9 +22,11 @@ package org.neo4j.procedure.builtin.routing;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -44,8 +46,10 @@ class SingleInstanceRoutingProcedureInstallerTest
     @Test
     void shouldRegisterRoutingProcedures() throws Exception
     {
+        Supplier<DatabaseManager> databaseManagerSupplier = () -> mock( DatabaseManager.class );
         ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
-        SingleInstanceRoutingProcedureInstaller installer = new SingleInstanceRoutingProcedureInstaller( portRegister, Config.defaults() );
+        Config config = Config.defaults();
+        SingleInstanceRoutingProcedureInstaller installer = new SingleInstanceRoutingProcedureInstaller( databaseManagerSupplier, portRegister, config );
         GlobalProcedures procedures = spy( new GlobalProceduresRegistry() );
 
         installer.install( procedures );

@@ -23,30 +23,41 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
-import org.neo4j.values.AnyValue;
+import org.neo4j.kernel.database.Database;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.Settings.TRUE;
 import static org.neo4j.configuration.connectors.Connector.ConnectorType.BOLT;
+import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.nullValue;
 import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
 import static org.neo4j.internal.kernel.api.procs.FieldSignature.outputField;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTMap;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.procedure.builtin.routing.BaseRoutingProcedureInstaller.DEFAULT_NAMESPACE;
 
 public class SingleInstanceGetRoutingTableProcedureTest
@@ -60,12 +71,9 @@ public class SingleInstanceGetRoutingTableProcedureTest
 
         ProcedureSignature signature = proc.signature();
 
-        assertThat( signature.inputSignature(), containsInAnyOrder(
-                inputField( "context", NTMap ) ) );
+        assertEquals( List.of( inputField( "context", NTMap ), inputField( "database", NTString, nullValue( NTString ) ) ), signature.inputSignature() );
 
-        assertThat( signature.outputSignature(), containsInAnyOrder(
-                outputField( "ttl", NTInteger ),
-                outputField( "servers", NTList( NTMap ) ) ) );
+        assertEquals( List.of( outputField( "ttl", NTInteger ), outputField( "servers", NTList( NTMap ) ) ), signature.outputSignature() );
     }
 
     @Test
@@ -89,7 +97,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
 
         BaseGetRoutingTableProcedure proc = newProcedure( portRegister, config );
 
-        RoutingResult result = proc.invoke( new AnyValue[0] );
+        RoutingResult result = proc.invoke( DEFAULT_DATABASE_NAME, MapValue.EMPTY );
 
         assertEquals( Duration.ofSeconds( 123 ).toMillis(), result.ttlMillis() );
         assertEquals( emptyList(), result.readEndpoints() );
@@ -105,7 +113,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
 
         BaseGetRoutingTableProcedure proc = newProcedure( portRegister, config );
 
-        RoutingResult result = proc.invoke( new AnyValue[0] );
+        RoutingResult result = proc.invoke( DEFAULT_DATABASE_NAME, MapValue.EMPTY );
 
         assertEquals( Duration.ofMinutes( 42 ).toMillis(), result.ttlMillis() );
 
@@ -115,14 +123,38 @@ public class SingleInstanceGetRoutingTableProcedureTest
         assertEquals( singletonList( address ), result.routeEndpoints() );
     }
 
-    protected BaseGetRoutingTableProcedure newProcedure( ConnectorPortRegister portRegister, Config config )
+    @Test
+    void shouldThrowWhenDatabaseDoesNotExist()
     {
-        return new SingleInstanceGetRoutingTableProcedure( DEFAULT_NAMESPACE, portRegister, config );
+        String unknownDatabaseName = "unknown_database_name";
+        ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
+        Config config = Config.defaults();
+        BaseGetRoutingTableProcedure procedure = newProcedure( portRegister, config );
+
+        ProcedureException error = assertThrows( ProcedureException.class, () -> procedure.invoke( unknownDatabaseName, MapValue.EMPTY ) );
+
+        assertThat( error.getMessage(), both( containsString( unknownDatabaseName ) ).and( containsString( "does not exist" ) ) );
+    }
+
+    protected BaseGetRoutingTableProcedure newProcedure( DatabaseManager databaseManager, ConnectorPortRegister portRegister, Config config )
+    {
+        return new SingleInstanceGetRoutingTableProcedure( DEFAULT_NAMESPACE, () -> databaseManager, portRegister, config );
     }
 
     protected List<AdvertisedSocketAddress> expectedWriters( AdvertisedSocketAddress selfAddress )
     {
         return singletonList( selfAddress );
+    }
+
+    private BaseGetRoutingTableProcedure newProcedure( ConnectorPortRegister portRegister, Config config )
+    {
+        DatabaseManager databaseManager = mock( DatabaseManager.class );
+        DatabaseContext databaseContext = mock( DatabaseContext.class );
+        Database database = mock( Database.class );
+        when( databaseContext.getDatabase() ).thenReturn( database );
+        when( database.getConfig() ).thenReturn( config );
+        when( databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( databaseContext ) );
+        return newProcedure( databaseManager, portRegister, config );
     }
 
     private static Config newConfig( String routingTtl, String boltAddress )
