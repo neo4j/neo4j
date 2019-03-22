@@ -25,28 +25,29 @@ import java.util.function.Supplier;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dmbs.database.DefaultDatabaseManager;
 import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.graphdb.factory.module.edition.context.StandaloneDatabaseComponents;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
+import org.neo4j.graphdb.factory.module.edition.context.StandaloneDatabaseComponents;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
-import org.neo4j.token.TokenHolders;
 import org.neo4j.logging.Logger;
+import org.neo4j.token.TokenHolders;
 
 public abstract class StandaloneEditionModule extends AbstractEditionModule
 {
     protected CommitProcessFactory commitProcessFactory;
     protected IdContextFactory idContextFactory;
-    protected Function<String,TokenHolders> tokenHoldersProvider;
+    protected Function<DatabaseId,TokenHolders> tokenHoldersProvider;
     protected Supplier<Locks> locksSupplier;
     protected Function<Locks,StatementLocksFactory> statementLocksFactoryProvider;
 
     @Override
-    public EditionDatabaseComponents createDatabaseComponents( String databaseName )
+    public EditionDatabaseComponents createDatabaseComponents( DatabaseId databaseId )
     {
-        return new StandaloneDatabaseComponents( this, databaseName );
+        return new StandaloneDatabaseComponents( this, databaseId );
     }
 
     public CommitProcessFactory getCommitProcessFactory()
@@ -59,7 +60,7 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
         return idContextFactory;
     }
 
-    public Function<String,TokenHolders> getTokenHoldersProvider()
+    public Function<DatabaseId,TokenHolders> getTokenHoldersProvider()
     {
         return tokenHoldersProvider;
     }

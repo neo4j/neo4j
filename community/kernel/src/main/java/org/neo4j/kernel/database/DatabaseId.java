@@ -19,14 +19,18 @@
  */
 package org.neo4j.kernel.database;
 
+import java.util.Comparator;
 import java.util.Objects;
 
-public class DatabaseId
+import static java.util.Objects.requireNonNull;
+
+public class DatabaseId implements Comparable<DatabaseId>
 {
     private final String name;
 
     public DatabaseId( String name )
     {
+        requireNonNull( name, "Database name should be not null." );
         this.name = name;
     }
 
@@ -50,6 +54,8 @@ public class DatabaseId
         return Objects.equals( name, that.name );
     }
 
+    public static Comparator<DatabaseId> comparator = Comparator.comparing( DatabaseId::name );
+
     @Override
     public int hashCode()
     {
@@ -61,5 +67,11 @@ public class DatabaseId
     public String toString()
     {
         return "DatabaseId{" + "name='" + name + '\'' + '}';
+    }
+
+    @Override
+    public int compareTo( DatabaseId o )
+    {
+        return comparator.compare( this, o );
     }
 }

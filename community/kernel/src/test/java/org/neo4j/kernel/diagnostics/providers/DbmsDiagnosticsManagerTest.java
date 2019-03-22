@@ -48,6 +48,7 @@ import static org.mockito.Mockito.when;
 class DbmsDiagnosticsManagerTest
 {
     private static final String DEFAULT_DATABASE_NAME = "testDatabase";
+    private static final DatabaseId DEFAULT_DATABASE_ID = new DatabaseId( DEFAULT_DATABASE_NAME );
 
     private DbmsDiagnosticsManager diagnosticsManager;
     private AssertableLogProvider logProvider;
@@ -74,8 +75,8 @@ class DbmsDiagnosticsManagerTest
 
         StandaloneDatabaseContext context = mock( StandaloneDatabaseContext.class );
         when( context.database() ).thenReturn( defaultDatabase );
-        when( databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( context ) );
-        when( databaseManager.registeredDatabases() ).thenReturn( new TreeMap<>( singletonMap( DEFAULT_DATABASE_NAME, context ) ) );
+        when( databaseManager.getDatabaseContext( DEFAULT_DATABASE_ID ) ).thenReturn( Optional.of( context ) );
+        when( databaseManager.registeredDatabases() ).thenReturn( new TreeMap<>( singletonMap( DEFAULT_DATABASE_ID, context ) ) );
 
         diagnosticsManager = new DbmsDiagnosticsManager( dependencies, new SimpleLogService( logProvider ) );
     }
@@ -143,7 +144,7 @@ class DbmsDiagnosticsManagerTest
         databaseDependencies.satisfyDependency( storageEngineFactory );
         databaseDependencies.satisfyDependency( new DefaultFileSystemAbstraction() );
         when( database.getDependencyResolver() ).thenReturn( databaseDependencies );
-        when( database.getDatabaseId() ).thenReturn( new DatabaseId( DbmsDiagnosticsManagerTest.DEFAULT_DATABASE_NAME ) );
+        when( database.getDatabaseId() ).thenReturn( DEFAULT_DATABASE_ID );
         return database;
     }
 }

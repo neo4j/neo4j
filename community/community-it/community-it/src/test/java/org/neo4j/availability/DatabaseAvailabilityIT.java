@@ -28,12 +28,12 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.AvailabilityRequirement;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -76,8 +76,8 @@ class DatabaseAvailabilityIT
         CompositeDatabaseAvailabilityGuard compositeGuard = dependencyResolver.resolveDependency( CompositeDatabaseAvailabilityGuard.class );
         assertTrue( compositeGuard.isAvailable() );
 
-        DatabaseContext systemContext = databaseManager.getDatabaseContext( SYSTEM_DATABASE_NAME ).get();
-        DatabaseContext defaultContext = databaseManager.getDatabaseContext( config.get( default_database ) ).get();
+        DatabaseContext systemContext = databaseManager.getDatabaseContext( new DatabaseId( SYSTEM_DATABASE_NAME ) ).get();
+        DatabaseContext defaultContext = databaseManager.getDatabaseContext( new DatabaseId( config.get( default_database ) ) ).get();
 
         AvailabilityGuard systemGuard = systemContext.dependencies().resolveDependency( DatabaseAvailabilityGuard.class );
         systemGuard.require( outerSpaceRequirement );

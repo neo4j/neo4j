@@ -59,15 +59,6 @@ public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter impleme
         return guard;
     }
 
-    /**
-     * TODO remove
-     */
-    @Deprecated
-    public DatabaseAvailabilityGuard createDatabaseAvailabilityGuard( String databaseName )
-    {
-        return createDatabaseAvailabilityGuard( new DatabaseId( databaseName ) );
-    }
-
     void removeDatabaseAvailabilityGuard( DatabaseAvailabilityGuard guard )
     {
         guards.remove( guard );

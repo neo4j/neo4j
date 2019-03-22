@@ -19,20 +19,16 @@
  */
 package org.neo4j.dmbs.database;
 
-import java.util.Collections;
 import java.util.Optional;
-import java.util.SortedMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 
-import org.neo4j.dbms.database.DatabaseExistsException;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.Logger;
 
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.util.Preconditions.checkState;
 
@@ -45,19 +41,19 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     }
 
     @Override
-    public Optional<StandaloneDatabaseContext> getDatabaseContext( String name )
+    public Optional<StandaloneDatabaseContext> getDatabaseContext( DatabaseId databaseId )
     {
-        return Optional.ofNullable( databaseMap.get( name ) );
+        return Optional.ofNullable( databaseMap.get( databaseId ) );
     }
 
     @Override
-    public synchronized StandaloneDatabaseContext createDatabase( String databaseName )
+    public synchronized StandaloneDatabaseContext createDatabase( DatabaseId databaseId )
     {
-        requireNonNull( databaseName );
+        requireNonNull( databaseId );
         checkState( databaseMap.size() < 2,
-                format( "System and default database are already created. Fail to create another database: %s", databaseName ) );
-        StandaloneDatabaseContext databaseContext = createNewDatabaseContext( databaseName );
-        databaseMap.put( databaseName, databaseContext );
+                String.format( "System and default database are already created. Fail to create another database: %s", databaseId.name() ) );
+        StandaloneDatabaseContext databaseContext = createNewDatabaseContext( databaseId );
+        databaseMap.put( databaseId, databaseContext );
         return databaseContext;
     }
 
@@ -68,19 +64,19 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     }
 
     @Override
-    public void dropDatabase( String ignore )
+    public void dropDatabase( DatabaseId ignore )
     {
         throw new UnsupportedOperationException( "Default database manager does not support database drop." );
     }
 
     @Override
-    public void stopDatabase( String ignore )
+    public void stopDatabase( DatabaseId ignore )
     {
         throw new UnsupportedOperationException( "Default database manager does not support database stop." );
     }
 
     @Override
-    public void startDatabase( String databaseName )
+    public void startDatabase( DatabaseId databaseName )
     {
         throw new UnsupportedOperationException( "Default database manager does not support starting databases." );
     }

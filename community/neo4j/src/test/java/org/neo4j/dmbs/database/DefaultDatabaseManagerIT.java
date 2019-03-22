@@ -25,15 +25,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.Optional;
 
-import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseExistsException;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -49,6 +45,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 @ExtendWith( TestDirectoryExtension.class )
 class DefaultDatabaseManagerIT
 {
+    public static final DatabaseId DEFAULT_DATABASE_ID = new DatabaseId( DEFAULT_DATABASE_NAME );
+    public static final DatabaseId SYSTEM_DATABASE_ID = new DatabaseId( SYSTEM_DATABASE_NAME );
     @Inject
     private TestDirectory testDirectory;
     private GraphDatabaseService database;
@@ -69,15 +67,15 @@ class DefaultDatabaseManagerIT
     void createDatabase()
     {
         DatabaseManager<?> databaseManager = getDatabaseManager();
-        assertThrows( IllegalStateException.class, () -> databaseManager.createDatabase( DEFAULT_DATABASE_NAME ) );
+        assertThrows( IllegalStateException.class, () -> databaseManager.createDatabase( DEFAULT_DATABASE_ID ) );
     }
 
     @Test
     void lookupExistingDatabase()
     {
         DatabaseManager<?> databaseManager = getDatabaseManager();
-        var defaultDatabaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME );
-        var systemDatabaseContext = databaseManager.getDatabaseContext( SYSTEM_DATABASE_NAME );
+        var defaultDatabaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_ID );
+        var systemDatabaseContext = databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID );
 
         assertTrue( defaultDatabaseContext.isPresent() );
         assertTrue( systemDatabaseContext.isPresent() );
@@ -89,9 +87,9 @@ class DefaultDatabaseManagerIT
         DatabaseManager<?> databaseManager = getDatabaseManager();
         var databases = databaseManager.registeredDatabases();
         assertEquals( 2, databases.size()  );
-        ArrayList<String> databaseNames = new ArrayList<>( databases.keySet() );
-        assertEquals( SYSTEM_DATABASE_NAME, databaseNames.get( 0 ) );
-        assertEquals( DEFAULT_DATABASE_NAME, databaseNames.get( 1 ) );
+        ArrayList<DatabaseId> databaseNames = new ArrayList<>( databases.keySet() );
+        assertEquals( SYSTEM_DATABASE_ID, databaseNames.get( 0 ) );
+        assertEquals( DEFAULT_DATABASE_ID, databaseNames.get( 1 ) );
     }
 
     @Test

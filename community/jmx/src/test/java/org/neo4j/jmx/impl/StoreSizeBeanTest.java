@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
@@ -105,7 +106,7 @@ class StoreSizeBeanTest
         dependencies.satisfyDependency( logFiles );
         dependencies.satisfyDependency( indexProviderMap );
         dependencies.satisfyDependency( labelScanStore );
-        when( databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( context ) );
+        when( databaseManager.getDatabaseContext( new DatabaseId( DEFAULT_DATABASE_NAME ) ) ).thenReturn( Optional.of( context ) );
         when( context.dependencies() ).thenReturn( dependencies );
         when( db.getDependencyResolver() ).thenReturn( dependencies );
         when( database.getDependencyResolver() ).thenReturn( dependencies );

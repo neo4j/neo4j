@@ -24,17 +24,18 @@ import java.util.function.Predicate;
 
 import org.neo4j.io.fs.watcher.FileWatchEventListenerFactory;
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.logging.internal.LogService;
 
 public class DefaultFileDeletionListenerFactory implements FileWatchEventListenerFactory<DefaultFileDeletionEventListener>
 {
-    private final String databaseName;
+    private final DatabaseId databaseId;
     private final LogService logService;
     private final Predicate<String> fileNameFilter;
 
-    public DefaultFileDeletionListenerFactory( String databaseName, LogService logService, Predicate<String> fileNameFilter )
+    public DefaultFileDeletionListenerFactory( DatabaseId databaseId, LogService logService, Predicate<String> fileNameFilter )
     {
-        this.databaseName = databaseName;
+        this.databaseId = databaseId;
         this.logService = logService;
         this.fileNameFilter = fileNameFilter;
     }
@@ -42,6 +43,6 @@ public class DefaultFileDeletionListenerFactory implements FileWatchEventListene
     @Override
     public DefaultFileDeletionEventListener createListener( Set<WatchedResource> watchedResources )
     {
-        return new DefaultFileDeletionEventListener( databaseName, watchedResources, logService, fileNameFilter );
+        return new DefaultFileDeletionEventListener( databaseId, watchedResources, logService, fileNameFilter );
     }
 }

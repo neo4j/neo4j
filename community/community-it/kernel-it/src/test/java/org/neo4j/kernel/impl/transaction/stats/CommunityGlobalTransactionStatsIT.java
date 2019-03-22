@@ -24,16 +24,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -74,8 +72,8 @@ class CommunityGlobalTransactionStatsIT
     {
         ExecutorService transactionExecutor = Executors.newSingleThreadExecutor();
         DatabaseManager<?> databaseManager = getDatabaseManager();
-        var defaultDatabase = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME );
-        var systemDatabase = databaseManager.getDatabaseContext( SYSTEM_DATABASE_NAME );
+        var defaultDatabase = databaseManager.getDatabaseContext( new DatabaseId( DEFAULT_DATABASE_NAME ) );
+        var systemDatabase = databaseManager.getDatabaseContext( new DatabaseId( SYSTEM_DATABASE_NAME ) );
 
         assertTrue( defaultDatabase.isPresent() );
         assertTrue( systemDatabase.isPresent() );

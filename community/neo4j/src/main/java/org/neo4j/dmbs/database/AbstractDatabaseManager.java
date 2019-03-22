@@ -22,7 +22,6 @@ package org.neo4j.dmbs.database;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Map;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.BiConsumer;
@@ -36,6 +35,7 @@ import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Logger;
@@ -45,7 +45,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extends LifecycleAdapter implements DatabaseManager<DB>
 {
 
-    protected final ConcurrentSkipListMap<String,DB> databaseMap;
+    protected final ConcurrentSkipListMap<DatabaseId,DB> databaseMap;
     private final GlobalModule globalModule;
     private final AbstractEditionModule edition;
     private final GraphDatabaseFacade graphDatabaseFacade;
@@ -58,7 +58,7 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
     }
 
     protected AbstractDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Logger log, GraphDatabaseFacade graphDatabaseFacade,
-            Comparator<String> databasesOrdering )
+            Comparator<DatabaseId> databasesOrdering )
     {
         this.log = log;
         this.globalModule = globalModule;
@@ -82,18 +82,18 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
         forEachDatabase( this::stopDatabase, true );
     }
 
-    public final SortedMap<String,DB> registeredDatabases()
+    public final SortedMap<DatabaseId,DB> registeredDatabases()
     {
         return Collections.unmodifiableSortedMap( databaseMap );
     }
 
-    protected DB createNewDatabaseContext( String databaseName )
+    protected DB createNewDatabaseContext( DatabaseId databaseId )
     {
-        log.log( "Creating '%s' database.", databaseName );
+        log.log( "Creating '%s' database.", databaseId.name() );
         Config globalConfig = globalModule.getGlobalConfig();
         GraphDatabaseFacade facade =
-                globalConfig.get( default_database ).equals( databaseName ) ? graphDatabaseFacade : new GraphDatabaseFacade();
-        DatabaseModule dataSource = new DatabaseModule( databaseName, globalModule, edition, facade );
+                globalConfig.get( default_database ).equals( databaseId.name() ) ? graphDatabaseFacade : new GraphDatabaseFacade();
+        DatabaseModule dataSource = new DatabaseModule( databaseId, globalModule, edition, facade );
         ClassicCoreSPI spi = new ClassicCoreSPI( globalModule, dataSource, log, dataSource.coreAPIAvailabilityGuard, edition.getThreadToTransactionBridge() );
         Database database = dataSource.database;
         facade.init( spi, edition.getThreadToTransactionBridge(), globalConfig, database.getTokenHolders() );
@@ -102,7 +102,7 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
 
     protected abstract DB databaseContextFactory( Database database, GraphDatabaseFacade facade );
 
-    protected final void forEachDatabase( BiConsumer<String, DB> consumer, boolean reversed ) throws Exception
+    protected final void forEachDatabase( BiConsumer<DatabaseId, DB> consumer, boolean reversed ) throws Exception
     {
         Throwable error = null;
         var dbs = new ArrayList<>( registeredDatabases().entrySet() );
@@ -132,16 +132,16 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
         }
     }
 
-    protected void startDatabase( String databaseName, DB context )
+    protected void startDatabase( DatabaseId databaseId, DB context )
     {
-        log.log( "Starting '%s' database.", databaseName );
+        log.log( "Starting '%s' database.", databaseId.name() );
         Database database = context.database();
         database.start();
     }
 
-    protected void stopDatabase( String databaseName, DB context )
+    protected void stopDatabase( DatabaseId databaseId, DB context )
     {
-        log.log( "Stop '%s' database.", databaseName );
+        log.log( "Stop '%s' database.", databaseId.name() );
         Database database = context.database();
         database.stop();
     }

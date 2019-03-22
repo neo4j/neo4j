@@ -25,6 +25,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.io.fs.watcher.FileWatchEventListener;
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 
@@ -33,14 +34,14 @@ import org.neo4j.logging.internal.LogService;
  */
 public class DefaultFileDeletionEventListener implements FileWatchEventListener
 {
-    private final String databaseName;
+    private final DatabaseId databaseId;
     private final Set<WatchedResource> watchedResources;
     private final Log internalLog;
     private final Predicate<String> fileNameFilter;
 
-    DefaultFileDeletionEventListener( String databaseName, Set<WatchedResource> watchedResources, LogService logService, Predicate<String> fileNameFilter )
+    DefaultFileDeletionEventListener( DatabaseId databaseId, Set<WatchedResource> watchedResources, LogService logService, Predicate<String> fileNameFilter )
     {
-        this.databaseName = databaseName;
+        this.databaseId = databaseId;
         this.watchedResources = watchedResources;
         this.internalLog = logService.getInternalLog( getClass() );
         this.fileNameFilter = fileNameFilter;
@@ -51,7 +52,7 @@ public class DefaultFileDeletionEventListener implements FileWatchEventListener
     {
         if ( isListenedResource( key ) && !fileNameFilter.test( fileName ) )
         {
-            internalLog.error( "'%s' which belongs to the '%s' database was deleted while it was running.", fileName, databaseName );
+            internalLog.error( "'%s' which belongs to the '%s' database was deleted while it was running.", fileName, databaseId.name() );
         }
     }
 

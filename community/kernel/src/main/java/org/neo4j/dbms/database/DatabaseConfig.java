@@ -57,15 +57,6 @@ public class DatabaseConfig extends Config implements Lifecycle
         return new DatabaseConfig( globalConfig );
     }
 
-    /**
-     * TODO remove when spreading DatabaseId
-     */
-    @Deprecated
-    public static DatabaseConfig from( Config globalConfig, String databaseName )
-    {
-        return from( globalConfig, new DatabaseId( databaseName ) );
-    }
-
     DatabaseConfig( Config globalConfig )
     {
         this.globalConfig = globalConfig;

@@ -19,13 +19,12 @@
  */
 package org.neo4j.dbms.database;
 
-import org.eclipse.collections.impl.block.factory.Comparators;
-
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
 
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
@@ -35,41 +34,41 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
     /**
      * Returns a given {@link DatabaseContext} object by name, or `Optional.empty()` if the database does not exist
      *
-     * @param databaseName the name of the database to be returned
+     * @param databaseId the ID of the database to be returned
      * @return optionally, the database context instance with name databaseName
      */
-    Optional<DB> getDatabaseContext( String databaseName );
+    Optional<DB> getDatabaseContext( DatabaseId databaseId );
 
     /**
      * Create database with specified name.
      * Database name should be unique.
-     * @param databaseName name of database to create
+     * @param databaseId ID of database to create
      * @throws DatabaseExistsException In case if database with specified name already exists
      * @return database context for newly created database
      */
-    DB createDatabase( String databaseName ) throws DatabaseExistsException;
+    DB createDatabase( DatabaseId databaseId ) throws DatabaseExistsException;
 
     /**
      * Drop database with specified name.
      * Database that was requested to be dropped will be stopped first, and then completely removed.
      * If database with requested name does not exist exception will be thrown.
-     * @param databaseName name of database to drop.
+     * @param databaseId ID of database to drop.
      */
-    void dropDatabase( String databaseName ) throws DatabaseNotFoundException;
+    void dropDatabase( DatabaseId databaseId ) throws DatabaseNotFoundException;
 
     /**
      * Stop database with specified name.
      * Stopping already stopped database does not have any effect.
-     * @param databaseName database name to stop
+     * @param databaseId database ID to stop
      */
-    void stopDatabase( String databaseName ) throws DatabaseNotFoundException;
+    void stopDatabase( DatabaseId databaseId ) throws DatabaseNotFoundException;
 
     /**
      * Start database with specified name.
      * Starting already started database does not have any effect.
-     * @param databaseName database name to start
+     * @param databaseId database ID to start
      */
-    void startDatabase( String databaseName ) throws DatabaseNotFoundException;
+    void startDatabase( DatabaseId databaseId ) throws DatabaseNotFoundException;
 
     /**
      * Return all {@link DatabaseContext} instances created by this service, associated with their database names.
@@ -78,7 +77,7 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
      *
      * @return a Map from database names to database objects.
      */
-    SortedMap<String,DB> registeredDatabases();
+    SortedMap<DatabaseId,DB> registeredDatabases();
 
     /**
      * This is a custom comparator for databases, which always places the system database to be the first (lowest) in any sorted order.
@@ -87,22 +86,22 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
      *
      * If no custom comparator is provided then the databases are sorted lexicographically by their name.
      */
-    class DatabasesComparator implements Comparator<String>
+    class DatabasesComparator implements Comparator<DatabaseId>
     {
-        private final Comparator<String> delegate;
+        private final Comparator<DatabaseId> delegate;
 
-        public DatabasesComparator( Comparator<String> delegate )
+        public DatabasesComparator( Comparator<DatabaseId> delegate )
         {
             this.delegate = delegate;
         }
 
         public DatabasesComparator()
         {
-            this.delegate = Comparators.naturalOrder();
+            this.delegate = DatabaseId.comparator;
         }
 
         @Override
-        public int compare( String left, String right )
+        public int compare( DatabaseId left, DatabaseId right )
         {
             boolean leftIsSystem = isSystemDatabase( left );
             boolean rightIsSystem = isSystemDatabase( right );
@@ -116,9 +115,9 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
             }
         }
 
-        private boolean isSystemDatabase( String name )
+        private boolean isSystemDatabase( DatabaseId id )
         {
-            return Objects.equals( name, SYSTEM_DATABASE_NAME );
+            return Objects.equals( id.name(), SYSTEM_DATABASE_NAME );
         }
     }
 }

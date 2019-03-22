@@ -22,7 +22,6 @@ package org.neo4j.bolt.runtime;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Objects;
-import java.util.Optional;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltIOException;
@@ -30,6 +29,7 @@ import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.database.DatabaseId;
 
 import static java.lang.String.format;
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
@@ -70,7 +70,7 @@ public abstract class DefaultDatabaseTransactionStatementSPIProvider implements 
 
     private DatabaseContext getDefaultDatabase() throws BoltIOException
     {
-        return databaseManager.getDatabaseContext( defaultDatabaseName )
+        return databaseManager.getDatabaseContext( new DatabaseId( defaultDatabaseName ) )
                 .orElseThrow( () -> new BoltIOException( Status.Database.DatabaseNotFound,
                         format( "Default database does not exists. Default database name: '%s'", defaultDatabaseName ) ) );
     }

@@ -26,6 +26,7 @@ import javax.management.ObjectName;
 
 import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
@@ -53,7 +54,7 @@ public class KernelBean extends Neo4jMBean implements Kernel
             StoreId storeId = database.getStoreId();
             LogVersionRepository versionRepository = database.getDependencyResolver().resolveDependency( LogVersionRepository.class );
             return new DatabaseInfo( database.isReadOnly(), storeId.getCreationTime(), storeId.getRandomId(), versionRepository.getCurrentLogVersion(),
-                    database.getDatabaseId().name() );
+                    database.getDatabaseId() );
         } );
     }
 
@@ -107,7 +108,7 @@ public class KernelBean extends Neo4jMBean implements Kernel
     @Override
     public String getDatabaseName()
     {
-        return databaseInfoSupplier.get().getDatabaseName();
+        return databaseInfoSupplier.get().getDatabaseId().name();
     }
 
     private class DatabaseInfo
@@ -116,15 +117,15 @@ public class KernelBean extends Neo4jMBean implements Kernel
         private final long storeCreationDate;
         private final long storeId;
         private final long storeLogVersion;
-        private final String databaseName;
+        private final DatabaseId databaseId;
 
-        DatabaseInfo( boolean isReadOnly, long storeCreationDate, long storeId, long storeLogVersion, String databaseName )
+        DatabaseInfo( boolean isReadOnly, long storeCreationDate, long storeId, long storeLogVersion, DatabaseId databaseId )
         {
             this.readOnly = isReadOnly;
             this.storeCreationDate = storeCreationDate;
             this.storeId = storeId;
             this.storeLogVersion = storeLogVersion;
-            this.databaseName = databaseName;
+            this.databaseId = databaseId;
         }
 
         public boolean isReadOnly()
@@ -147,9 +148,9 @@ public class KernelBean extends Neo4jMBean implements Kernel
             return storeLogVersion;
         }
 
-        public String getDatabaseName()
+        public DatabaseId getDatabaseId()
         {
-            return databaseName;
+            return databaseId;
         }
     }
 

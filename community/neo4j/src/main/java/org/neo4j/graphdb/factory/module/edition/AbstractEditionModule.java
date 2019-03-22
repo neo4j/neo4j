@@ -24,8 +24,8 @@ import java.util.function.Predicate;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DatabaseExistsException;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.AccessCapability;
@@ -79,13 +80,13 @@ public abstract class AbstractEditionModule
     protected SecurityProvider securityProvider;
     protected GlobalProcedures globalProcedures;
 
-    public abstract EditionDatabaseComponents createDatabaseComponents( String databaseName );
+    public abstract EditionDatabaseComponents createDatabaseComponents( DatabaseId databaseId );
 
     protected DatabaseLayoutWatcher createDatabaseFileSystemWatcher( FileWatcher watcher, DatabaseLayout databaseLayout, LogService logging,
             Predicate<String> fileNameFilter )
     {
         DefaultFileDeletionListenerFactory listenerFactory =
-                new DefaultFileDeletionListenerFactory( databaseLayout.getDatabaseName(), logging, fileNameFilter );
+                new DefaultFileDeletionListenerFactory( new DatabaseId( databaseLayout.getDatabaseName() ), logging, fileNameFilter );
         return new DatabaseLayoutWatcher( watcher, databaseLayout, listenerFactory );
     }
 
@@ -176,8 +177,8 @@ public abstract class AbstractEditionModule
 
     public void createDatabases( DatabaseManager<?> databaseManager, Config config ) throws DatabaseExistsException
     {
-        databaseManager.createDatabase( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
-        databaseManager.createDatabase( config.get( GraphDatabaseSettings.default_database ) );
+        databaseManager.createDatabase( new DatabaseId( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) );
+        databaseManager.createDatabase( new DatabaseId( config.get( GraphDatabaseSettings.default_database ) ) );
     }
 
     public long getTransactionStartTimeout()

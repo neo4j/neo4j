@@ -71,7 +71,6 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
-import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -81,7 +80,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.monitoring.DatabaseEventHandlers;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
@@ -206,7 +205,7 @@ public class DatabaseRule extends ExternalResource
 
     private static class TestDatabaseCreationContext implements DatabaseCreationContext
     {
-        private final String databaseName;
+        private final DatabaseId databaseId;
         private final DatabaseLayout databaseLayout;
         private final Config config;
         private final DatabaseConfig databaseConfig;
@@ -257,10 +256,10 @@ public class DatabaseRule extends ExternalResource
                 GraphDatabaseFacade facade, Iterable<QueryEngineProvider> engineProviders, DatabaseMigratorFactory databaseMigratorFactory,
                 StorageEngineFactory storageEngineFactory )
         {
-            this.databaseName = databaseName;
+            this.databaseId = new DatabaseId( databaseName );
             this.databaseLayout = databaseLayout;
             this.config = config;
-            this.databaseConfig = DatabaseConfig.from( config, databaseName );
+            this.databaseConfig = DatabaseConfig.from( config, databaseId );
             this.idGeneratorFactory = idGeneratorFactory;
             this.logService = logService;
             this.scheduler = scheduler;
@@ -297,9 +296,9 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public String getDatabaseName()
+        public DatabaseId getDatabaseId()
         {
-            return databaseName;
+            return databaseId;
         }
 
         @Override
@@ -448,7 +447,7 @@ public class DatabaseRule extends ExternalResource
         public Factory<DatabaseAvailabilityGuard> getDatabaseAvailabilityGuardFactory()
         {
             return () -> new DatabaseAvailabilityGuard(
-                    new DatabaseId( databaseName ),
+                    databaseId,
                     clock,
                     NullLog.getInstance(),
                     mock( CompositeDatabaseAvailabilityGuard.class ) );

@@ -26,7 +26,6 @@ import java.util.function.Function;
 import org.neo4j.bolt.BoltServer;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -47,6 +46,7 @@ import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.availability.StartupWaiter;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.dbms.NonTransactionalDbmsOperations;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -166,7 +166,7 @@ public class GraphDatabaseFacadeFactory
         {
             edition.createDatabases( databaseManager, config );
             globalLife.start();
-            String defaultDatabase = config.get( GraphDatabaseSettings.default_database );
+            DatabaseId defaultDatabase = new DatabaseId( config.get( GraphDatabaseSettings.default_database ) );
             databaseFacade = databaseManager.getDatabaseContext( defaultDatabase ).orElseThrow( () -> new IllegalStateException(
                     String.format( "Database %s not found. Please check the logs for startup errors.", defaultDatabase ) ) ).databaseFacade();
 

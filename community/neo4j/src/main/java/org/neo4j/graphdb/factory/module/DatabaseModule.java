@@ -27,6 +27,7 @@ import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponent
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.storageengine.api.StoreId;
@@ -41,11 +42,11 @@ public class DatabaseModule
 
     public final CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
 
-    public DatabaseModule( String databaseName, GlobalModule globalModule, AbstractEditionModule editionModule, GraphDatabaseFacade graphDatabaseFacade )
+    public DatabaseModule( DatabaseId databaseId, GlobalModule globalModule, AbstractEditionModule editionModule, GraphDatabaseFacade graphDatabaseFacade )
     {
-        EditionDatabaseComponents editionDatabaseComponents = editionModule.createDatabaseComponents( databaseName );
+        EditionDatabaseComponents editionDatabaseComponents = editionModule.createDatabaseComponents( databaseId );
         GlobalProcedures globalProcedures = editionModule.getGlobalProcedures();
-        ModularDatabaseCreationContext context = new ModularDatabaseCreationContext( databaseName, globalModule, editionDatabaseComponents,
+        ModularDatabaseCreationContext context = new ModularDatabaseCreationContext( databaseId, globalModule, editionDatabaseComponents,
                 globalProcedures, graphDatabaseFacade );
         database = new Database( context );
 

@@ -63,7 +63,7 @@ import org.neo4j.token.TokenHolders;
 
 public interface DatabaseCreationContext
 {
-    String getDatabaseName();
+    DatabaseId getDatabaseId();
 
     DatabaseLayout getDatabaseLayout();
 

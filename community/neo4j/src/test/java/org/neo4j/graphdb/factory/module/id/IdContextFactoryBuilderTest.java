@@ -33,6 +33,7 @@ import org.neo4j.internal.id.IdGeneratorImpl;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
@@ -46,10 +47,8 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class IdContextFactoryBuilderTest
@@ -64,7 +63,7 @@ class IdContextFactoryBuilderTest
     void createCommunityBufferedContextByDefault()
     {
         IdContextFactory idContextFactory = IdContextFactoryBuilder.of( fs, jobScheduler ).build();
-        DatabaseIdContext idContext = idContextFactory.createIdContext( "database" );
+        DatabaseIdContext idContext = idContextFactory.createIdContext( new DatabaseId( "database" ) );
 
         IdGeneratorFactory idGeneratorFactory = idContext.getIdGeneratorFactory();
         assertThat( idContext.getIdController(), instanceOf( BufferedIdController.class ) );
@@ -92,7 +91,7 @@ class IdContextFactoryBuilderTest
     {
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
         IdContextFactory contextFactory = IdContextFactoryBuilder.of( fs, jobScheduler ).withIdGenerationFactoryProvider( any -> idGeneratorFactory ).build();
-        DatabaseIdContext idContext = contextFactory.createIdContext( "database" );
+        DatabaseIdContext idContext = contextFactory.createIdContext( new DatabaseId( "database" ) );
 
         IdGeneratorFactory bufferedGeneratorFactory = idContext.getIdGeneratorFactory();
         assertThat( idContext.getIdController(), instanceOf( BufferedIdController.class ) );
@@ -112,15 +111,14 @@ class IdContextFactoryBuilderTest
     @Test
     void createContextWithFactoryWrapper()
     {
-        Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper = mock( Function.class );
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
-        when( factoryWrapper.apply( any() ) ).thenReturn( idGeneratorFactory );
+        Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper = ignored -> idGeneratorFactory;
 
         IdContextFactory contextFactory = IdContextFactoryBuilder.of( fs, jobScheduler )
                                         .withFactoryWrapper( factoryWrapper )
                                         .build();
 
-        DatabaseIdContext idContext = contextFactory.createIdContext( "database" );
+        DatabaseIdContext idContext = contextFactory.createIdContext( new DatabaseId( "database" ) );
 
         assertSame( idGeneratorFactory, idContext.getIdGeneratorFactory() );
     }

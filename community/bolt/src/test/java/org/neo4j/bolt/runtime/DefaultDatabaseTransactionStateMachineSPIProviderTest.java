@@ -30,6 +30,7 @@ import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
+import org.neo4j.kernel.database.DatabaseId;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,7 +44,7 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
     @Test
     void shouldReturnDefaultTransactionStateMachineSPIWithEmptyDatabaseName() throws Throwable
     {
-        DatabaseManager<?> databaseManager = databaseManagerWithDatabase( "neo4j" );
+        DatabaseManager<?> databaseManager = databaseManagerWithDatabase( new DatabaseId( "neo4j" ) );
         TransactionStateMachineSPIProvider spiProvider = newSpiProvider( databaseManager );
 
         TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI( "", mock( StatementProcessorReleaseManager.class ) );
@@ -53,7 +54,7 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
     @Test
     void shouldErrorIfDatabaseNotFound() throws Throwable
     {
-        DatabaseManager<?> databaseManager = databaseManagerWithDatabase( "database" );
+        DatabaseManager<?> databaseManager = databaseManagerWithDatabase( new DatabaseId( "database" ) );
         TransactionStateMachineSPIProvider spiProvider = newSpiProvider( databaseManager );
 
         BoltProtocolBreachFatality error = assertThrows( BoltProtocolBreachFatality.class, () ->
@@ -61,12 +62,12 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
         assertThat( error.getMessage(), containsString( "Database selection by name not supported by Bolt protocol version lower than BoltV4." ) );
     }
 
-    private DatabaseManager<StandaloneDatabaseContext> databaseManagerWithDatabase( String databaseName )
+    private DatabaseManager<StandaloneDatabaseContext> databaseManagerWithDatabase( DatabaseId databaseId )
     {
         @SuppressWarnings( "unchecked" )
         DatabaseManager<StandaloneDatabaseContext> databaseManager = mock( DatabaseManager.class );
         StandaloneDatabaseContext databaseContext = mock( StandaloneDatabaseContext.class );
-        when( databaseManager.getDatabaseContext( databaseName ) ).thenReturn( Optional.of( databaseContext ) );
+        when( databaseManager.getDatabaseContext( databaseId ) ).thenReturn( Optional.of( databaseContext ) );
         return databaseManager;
     }
 

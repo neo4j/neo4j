@@ -46,7 +46,6 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.LoggingMonitor;
 import org.neo4j.internal.index.label.NativeLabelScanStore;
 import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -228,7 +227,7 @@ public class Database extends LifecycleAdapter
 
     public Database( DatabaseCreationContext context )
     {
-        this.databaseId = new DatabaseId( context.getDatabaseName() );
+        this.databaseId = context.getDatabaseId();
         this.databaseLayout = context.getDatabaseLayout();
         this.config = context.getDatabaseConfig();
         this.idGeneratorFactory = context.getIdGeneratorFactory();

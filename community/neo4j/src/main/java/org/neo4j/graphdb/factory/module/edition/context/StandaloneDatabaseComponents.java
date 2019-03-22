@@ -26,6 +26,7 @@ import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapability;
@@ -33,9 +34,6 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
-import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.logging.Log;
-import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.token.TokenHolders;
 
 public class StandaloneDatabaseComponents implements EditionDatabaseComponents
@@ -53,7 +51,7 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
     private final DatabaseIdContext idContext;
     private final StatementLocksFactory statementLocksFactory;
 
-    public StandaloneDatabaseComponents( StandaloneEditionModule editionModule, String databaseName )
+    public StandaloneDatabaseComponents( StandaloneEditionModule editionModule, DatabaseId databaseId )
     {
         this.transactionStartTimeout = editionModule.getTransactionStartTimeout();
         this.headerInformationFactory = editionModule.getHeaderInformationFactory();
@@ -62,8 +60,8 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
         this.ioLimiter = editionModule.getIoLimiter();
         this.accessCapability = editionModule.getAccessCapability();
         this.watcherServiceFactory = editionModule.getWatcherServiceFactory();
-        this.idContext = editionModule.getIdContextFactory().createIdContext( databaseName );
-        this.tokenHolders = editionModule.getTokenHoldersProvider().apply( databaseName );
+        this.idContext = editionModule.getIdContextFactory().createIdContext( databaseId );
+        this.tokenHolders = editionModule.getTokenHoldersProvider().apply( databaseId );
         this.locks = editionModule.getLocksSupplier().get();
         this.statementLocksFactory = editionModule.getStatementLocksFactoryProvider().apply( locks );
         this.transactionMonitor = editionModule.createTransactionMonitor();

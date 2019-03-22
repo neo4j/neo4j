@@ -30,6 +30,7 @@ import org.neo4j.bolt.v4.runtime.TransactionStateMachineV4SPI;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.database.DatabaseId;
 
 import static java.lang.String.format;
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
@@ -58,7 +59,7 @@ public class TransactionStateMachineSPIProviderV4 implements TransactionStateMac
     {
         String databaseName = Objects.equals( providedDatabaseName, ABSENT_DB_NAME ) ? defaultDatabaseName : providedDatabaseName;
 
-        DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseName )
+        DatabaseContext databaseContext = databaseManager.getDatabaseContext( new DatabaseId( databaseName ) )
                 .orElseThrow( () -> new BoltIOException( Status.Database.DatabaseNotFound,
                     format( "The database requested does not exist. Requested database name: '%s'.", databaseName ) ) );
 

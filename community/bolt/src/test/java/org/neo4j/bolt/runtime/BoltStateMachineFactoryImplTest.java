@@ -36,10 +36,10 @@ import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.logging.internal.NullLogService;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -110,7 +110,7 @@ class BoltStateMachineFactoryImplTest
         when( dependencies.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
         @SuppressWarnings( "unchecked" )
         DatabaseManager<StandaloneDatabaseContext> databaseManager = (DatabaseManager<StandaloneDatabaseContext>) mock( DatabaseManager.class );
-        when( databaseManager.getDatabaseContext( CUSTOM_DB_NAME ) ).thenReturn( Optional.of( db ) );
+        when( databaseManager.getDatabaseContext( new DatabaseId( CUSTOM_DB_NAME ) ) ).thenReturn( Optional.of( db ) );
         return databaseManager;
     }
 }

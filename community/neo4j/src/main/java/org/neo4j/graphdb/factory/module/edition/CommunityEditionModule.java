@@ -29,8 +29,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.dmbs.database.DefaultDatabaseManager;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -44,6 +42,7 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
@@ -135,12 +134,12 @@ public class CommunityEditionModule extends StandaloneEditionModule
         connectionTracker = globalDependencies.satisfyDependency( createConnectionTracker() );
     }
 
-    protected Function<String,TokenHolders> createTokenHolderProvider( GlobalModule platform )
+    protected Function<DatabaseId,TokenHolders> createTokenHolderProvider( GlobalModule platform )
     {
         Config globalConfig = platform.getGlobalConfig();
         Supplier<Kernel> kernelSupplier = () ->
                 platform.getGlobalDependencies().resolveDependency( DefaultDatabaseManager.class )
-                        .getDatabaseContext( config.get( GraphDatabaseSettings.default_database ) )
+                        .getDatabaseContext( new DatabaseId( config.get( GraphDatabaseSettings.default_database ) ) )
                         .map( DatabaseContext::database )
                         .map( Database::getKernel )
                         .orElseThrow( () -> new IllegalStateException( "Default database kernel should be always accessible" ) );

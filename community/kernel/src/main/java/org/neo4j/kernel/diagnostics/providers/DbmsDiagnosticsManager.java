@@ -26,6 +26,7 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
@@ -66,14 +67,14 @@ public class DbmsDiagnosticsManager
         dumpAllDatabases( log );
     }
 
-    public void dump( String databaseName )
+    public void dump( DatabaseId databaseId )
     {
-        dump( databaseName, log );
+        dump( databaseId, log );
     }
 
-    public void dump( String databaseName, Log log )
+    public void dump( DatabaseId databaseId, Log log )
     {
-        getDatabaseManager().getDatabaseContext( databaseName ).map( DatabaseContext::database )
+        getDatabaseManager().getDatabaseContext( databaseId ).map( DatabaseContext::database )
                 .ifPresent( database -> dumpDatabaseDiagnostics( database, log ) );
     }
 
