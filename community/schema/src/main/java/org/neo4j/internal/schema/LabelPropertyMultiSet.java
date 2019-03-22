@@ -60,7 +60,7 @@ public class LabelPropertyMultiSet
     {
         int label = schemaDescriptor.keyId();
         PropertyMultiSet byProperty = byLabel.get( label );
-        if ( byProperty.remove( schemaDescriptor ) )
+        if ( byProperty != null && byProperty.remove( schemaDescriptor ) )
         {
             byLabel.remove( label );
         }
@@ -142,13 +142,28 @@ public class LabelPropertyMultiSet
          */
         boolean remove( SchemaDescriptor schemaDescriptor )
         {
+            // Remove from the optimized path
             descriptors.remove( schemaDescriptor );
             int[] propertyKeyIds = sortedPropertyKeyIds( schemaDescriptor );
             int propertyKeyId = propertyKeyIds[0];
             PropertySet firstPropertySet = next.get( propertyKeyId );
-            if ( firstPropertySet.remove( schemaDescriptor, propertyKeyIds, 0 ) )
+            if ( firstPropertySet != null && firstPropertySet.remove( schemaDescriptor, propertyKeyIds, 0 ) )
             {
                 next.remove( propertyKeyId );
+            }
+
+            // Remove from the fall-back path
+            for ( int keyId : propertyKeyIds )
+            {
+                Set<SchemaDescriptor> byProperty = byAnyProperty.get( keyId );
+                if ( byProperty != null )
+                {
+                    byProperty.remove( schemaDescriptor );
+                    if ( byProperty.isEmpty() )
+                    {
+                        byAnyProperty.remove( keyId );
+                    }
+                }
             }
             return descriptors.isEmpty() && next.isEmpty();
         }
@@ -240,7 +255,7 @@ public class LabelPropertyMultiSet
             {
                 int nextPropertyKeyId = propertyKeyIds[++cursor];
                 PropertySet propertySet = next.get( nextPropertyKeyId );
-                if ( propertySet.remove( schemaDescriptor, propertyKeyIds, cursor ) )
+                if ( propertySet != null && propertySet.remove( schemaDescriptor, propertyKeyIds, cursor ) )
                 {
                     next.remove( nextPropertyKeyId );
                 }
