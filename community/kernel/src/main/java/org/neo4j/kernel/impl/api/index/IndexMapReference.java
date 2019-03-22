@@ -103,10 +103,10 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return indexMap.getAllIndexProxies();
     }
 
-    public Collection<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, int[] sortedProperties, boolean mode,
-            EntityType entityType )
+    public Collection<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, int[] sortedProperties,
+            boolean propertyListIsComplete, EntityType entityType )
     {
-        return indexMap.getRelatedIndexes( changedEntityTokens, unchangedEntityTokens, sortedProperties, mode, entityType );
+        return indexMap.getRelatedIndexes( changedEntityTokens, unchangedEntityTokens, sortedProperties, propertyListIsComplete, entityType );
     }
 
     public IndexUpdaterMap createIndexUpdaterMap( IndexUpdateMode mode )
