@@ -55,4 +55,10 @@ class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
     val grouping = Map("newA" -> varFor("a"),  "newC" -> varFor("c"))
     leverageOrder(po, grouping) should be(Seq(varFor("a")))
   }
+
+  test("should leverage order for prefix match with one of grouping columns as prefix and one as suffix") {
+    val po = ProvidedOrder(Seq(Asc(varFor("a")), Desc(varFor("b")), Asc(varFor("c"))))
+    val grouping = Map("newA" -> varFor("a"), "newC" -> varFor("c"))
+    leverageOrder(po, grouping) should be(Seq(varFor("a")))
+  }
 }
