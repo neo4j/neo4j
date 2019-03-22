@@ -39,18 +39,18 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-class CommunityRoutingProcedureInstallerTest
+class SingleInstanceRoutingProcedureInstallerTest
 {
     @Test
     void shouldRegisterRoutingProcedures() throws Exception
     {
         ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
-        CommunityRoutingProcedureInstaller installer = new CommunityRoutingProcedureInstaller( portRegister, Config.defaults() );
+        SingleInstanceRoutingProcedureInstaller installer = new SingleInstanceRoutingProcedureInstaller( portRegister, Config.defaults() );
         GlobalProcedures procedures = spy( new GlobalProceduresRegistry() );
 
         installer.install( procedures );
 
-        verify( procedures, times( 2 ) ).register( any( CommunityGetRoutingTableProcedure.class ) );
+        verify( procedures, times( 2 ) ).register( any( SingleInstanceGetRoutingTableProcedure.class ) );
 
         Set<QualifiedName> expectedNames = newSetWith(
                 new QualifiedName( new String[]{"dbms", "routing"}, "getRoutingTable" ),

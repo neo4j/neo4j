@@ -32,14 +32,14 @@ import org.neo4j.values.AnyValue;
 
 import static java.util.Objects.requireNonNull;
 
-public class CommunityGetRoutingTableProcedure extends BaseGetRoutingTableProcedure
+public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableProcedure
 {
     private static final String DESCRIPTION = "Returns endpoints of this instance.";
 
     private final ConnectorPortRegister portRegister;
     private final Config config;
 
-    public CommunityGetRoutingTableProcedure( List<String> namespace, ConnectorPortRegister portRegister, Config config )
+    public SingleInstanceGetRoutingTableProcedure( List<String> namespace, ConnectorPortRegister portRegister, Config config )
     {
         super( namespace );
         this.portRegister = portRegister;

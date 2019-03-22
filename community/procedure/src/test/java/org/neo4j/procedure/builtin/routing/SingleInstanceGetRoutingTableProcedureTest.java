@@ -49,7 +49,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTMap;
 import static org.neo4j.procedure.builtin.routing.BaseRoutingProcedureInstaller.DEFAULT_NAMESPACE;
 
-public class CommunityGetRoutingTableProcedureTest
+public class SingleInstanceGetRoutingTableProcedureTest
 {
     @Test
     void shouldHaveCorrectSignature()
@@ -117,7 +117,7 @@ public class CommunityGetRoutingTableProcedureTest
 
     protected BaseGetRoutingTableProcedure newProcedure( ConnectorPortRegister portRegister, Config config )
     {
-        return new CommunityGetRoutingTableProcedure( DEFAULT_NAMESPACE, portRegister, config );
+        return new SingleInstanceGetRoutingTableProcedure( DEFAULT_NAMESPACE, portRegister, config );
     }
 
     protected List<AdvertisedSocketAddress> expectedWriters( AdvertisedSocketAddress selfAddress )

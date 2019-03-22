@@ -25,12 +25,12 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 
-public class CommunityRoutingProcedureInstaller extends BaseRoutingProcedureInstaller
+public class SingleInstanceRoutingProcedureInstaller extends BaseRoutingProcedureInstaller
 {
     protected final ConnectorPortRegister portRegister;
     protected final Config config;
 
-    public CommunityRoutingProcedureInstaller( ConnectorPortRegister portRegister, Config config )
+    public SingleInstanceRoutingProcedureInstaller( ConnectorPortRegister portRegister, Config config )
     {
         this.portRegister = portRegister;
         this.config = config;
@@ -38,6 +38,6 @@ public class CommunityRoutingProcedureInstaller extends BaseRoutingProcedureInst
 
     protected CallableProcedure createProcedure( List<String> namespace )
     {
-        return new CommunityGetRoutingTableProcedure( namespace, portRegister, config );
+        return new SingleInstanceGetRoutingTableProcedure( namespace, portRegister, config );
     }
 }
