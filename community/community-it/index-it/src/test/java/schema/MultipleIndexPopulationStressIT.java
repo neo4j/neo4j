@@ -58,7 +58,7 @@ import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
-import org.neo4j.tooling.TransactionLogsInitializer;
+import org.neo4j.unsafe.batchinsert.internal.TransactionLogsInitializer;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.GeneratingInputIterator;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;

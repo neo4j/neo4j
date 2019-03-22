@@ -23,8 +23,8 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 public class RecoveryStartInformation
 {
-    static RecoveryStartInformation NO_RECOVERY_REQUIRED = new RecoveryStartInformation( LogPosition.UNSPECIFIED, -1 );
-    static RecoveryStartInformation MISSING_LOGS = new RecoveryStartInformation( null, -1, true );
+    static final RecoveryStartInformation NO_RECOVERY_REQUIRED = new RecoveryStartInformation( LogPosition.UNSPECIFIED, -1 );
+    static final RecoveryStartInformation MISSING_LOGS = new RecoveryStartInformation( null, -1, true );
 
     private final long firstTxIdAfterLastCheckPoint;
     private final LogPosition recoveryPosition;

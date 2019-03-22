@@ -82,7 +82,7 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.token.api.NamedToken;
-import org.neo4j.tooling.TransactionLogsInitializer;
+import org.neo4j.unsafe.batchinsert.internal.TransactionLogsInitializer;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
@@ -98,6 +98,7 @@ import org.neo4j.values.storable.PointValue;
 import static java.lang.String.format;
 import static java.nio.charset.Charset.defaultCharset;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -324,7 +325,7 @@ class CsvInputBatchImportIT
             {
                 String name = (String) node.getProperty( "name" );
                 String[] labels = expectedNodeNames.remove( name );
-                Assertions.assertEquals( asSet( labels ), names( node.getLabels() ) );
+                assertEquals( asSet( labels ), names( node.getLabels() ) );
 
                 // Verify node properties
                 Map<String,Consumer<Object>> expectedPropertyVerifiers = expectedNodePropertyVerifiers.remove( name );
@@ -339,7 +340,7 @@ class CsvInputBatchImportIT
                     }
                 }
             }
-            Assertions.assertEquals( 0, expectedNodeNames.size() );
+            assertEquals( 0, expectedNodeNames.size() );
 
             // Verify relationships
             for ( Relationship relationship : db.getAllRelationships() )
@@ -364,7 +365,7 @@ class CsvInputBatchImportIT
                     }
                 }
             }
-            Assertions.assertEquals( 0, expectedRelationships.size() );
+            assertEquals( 0, expectedRelationships.size() );
 
             // Verify counts, TODO how to get counts store other than this way?
             RecordStorageEngine storageEngine = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( RecordStorageEngine.class );
@@ -374,7 +375,7 @@ class CsvInputBatchImportIT
                     translationTable( neoStores.getLabelTokenStore(), ANY_LABEL );
             for ( Pair<Integer,Long> count : allNodeCounts( labelTranslationTable, expectedNodeCounts ) )
             {
-                Assertions.assertEquals( count.other().longValue(),
+                assertEquals( count.other().longValue(),
                         counts.nodeCount( count.first(), newDoubleLongRegister() ).readSecond(), "Label count mismatch for label " + count.first() );
             }
 
@@ -384,7 +385,7 @@ class CsvInputBatchImportIT
                     relationshipTypeTranslationTable, expectedRelationshipCounts ) )
             {
                 RelationshipCountKey key = count.first();
-                Assertions.assertEquals( count.other().longValue(),
+                assertEquals( count.other().longValue(),
                         counts.relationshipCount( key.startLabel, key.type, key.endLabel, newDoubleLongRegister() ).readSecond(),
                         "Label count mismatch for label " + key );
             }
@@ -498,7 +499,7 @@ class CsvInputBatchImportIT
                         LocalDateTime referenceTemporal = LocalDateTime.of( 0, 1, 1, 0, 0 );
                         LocalDateTime expected = referenceTemporal.plus( (TemporalAmount) expectedValue );
                         LocalDateTime actual = referenceTemporal.plus( (TemporalAmount) actualValue );
-                        Assertions.assertEquals( expected, actual );
+                        assertEquals( expected, actual );
                     };
                 }
                 else if ( expectedValue instanceof Temporal )
@@ -513,25 +514,25 @@ class CsvInputBatchImportIT
                         LocalTime actualTime = ((Temporal) actualValue).query( TemporalQueries.localTime() );
                         ZoneId actualZoneId = ((Temporal) actualValue).query( TemporalQueries.zone() );
 
-                        Assertions.assertEquals( expectedDate, actualDate );
-                        Assertions.assertEquals( expectedTime, actualTime );
+                        assertEquals( expectedDate, actualDate );
+                        assertEquals( expectedTime, actualTime );
                         if ( expectedZoneId == null )
                         {
                             if ( actualZoneId != null )
                             {
                                 // If the actual value is zoned it should have the default zone
-                                Assertions.assertEquals( testDefaultTimeZone.get(), actualZoneId );
+                                assertEquals( testDefaultTimeZone.get(), actualZoneId );
                             }
                         }
                         else
                         {
-                            Assertions.assertEquals( expectedZoneId, actualZoneId );
+                            assertEquals( expectedZoneId, actualZoneId );
                         }
                     };
                 }
                 else
                 {
-                    verify = actualValue -> Assertions.assertEquals( expectedValue, actualValue );
+                    verify = actualValue -> assertEquals( expectedValue, actualValue );
                 }
                 propertyVerifiers.put( (String) node.propertyKey( i ), verify  );
             }
@@ -544,9 +545,9 @@ class CsvInputBatchImportIT
                 double actualY = v.getCoordinates().get( 0 ).getCoordinate().get( 1 );
                 double expectedY = indexOf( node );
                 String message = actualValue.toString() + " does not have y=" + expectedY;
-                Assertions.assertEquals( expectedY, actualY, 0.1, message );
+                assertEquals( expectedY, actualY, 0.1, message );
                 message = actualValue.toString() + " does not have crs=wgs-84";
-                Assertions.assertEquals( CoordinateReferenceSystem.WGS84.getName(), v.getCoordinateReferenceSystem().getName(), message );
+                assertEquals( CoordinateReferenceSystem.WGS84.getName(), v.getCoordinateReferenceSystem().getName(), message );
             };
             propertyVerifiers.put( "pointA", verifyPointA );
 
@@ -558,9 +559,9 @@ class CsvInputBatchImportIT
                 double actualY = v.getCoordinates().get( 0 ).getCoordinate().get( 1 );
                 double expectedY = indexOf( node );
                 String message = actualValue.toString() + " does not have y=" + expectedY;
-                Assertions.assertEquals( expectedY, actualY, 0.1, message );
+                assertEquals( expectedY, actualY, 0.1, message );
                 message = actualValue.toString() + " does not have crs=cartesian";
-                Assertions.assertEquals( CoordinateReferenceSystem.Cartesian.getName(), v.getCoordinateReferenceSystem().getName(), message );
+                assertEquals( CoordinateReferenceSystem.Cartesian.getName(), v.getCoordinateReferenceSystem().getName(), message );
             };
             propertyVerifiers.put( "pointB", verifyPointB );
 

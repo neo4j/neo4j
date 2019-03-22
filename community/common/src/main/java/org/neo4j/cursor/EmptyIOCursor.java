@@ -21,7 +21,7 @@ package org.neo4j.cursor;
 
 public class EmptyIOCursor<M> implements IOCursor<M>
 {
-    public static IOCursor INSTANCE = new org.neo4j.cursor.EmptyIOCursor<>();
+    public static final IOCursor INSTANCE = new EmptyIOCursor<>();
 
     @SuppressWarnings( "unchecked" )
     public static <M> IOCursor<M> empty()
@@ -29,7 +29,7 @@ public class EmptyIOCursor<M> implements IOCursor<M>
         return (IOCursor<M>) INSTANCE;
     }
 
-    EmptyIOCursor()
+    private EmptyIOCursor()
     {
     }
 

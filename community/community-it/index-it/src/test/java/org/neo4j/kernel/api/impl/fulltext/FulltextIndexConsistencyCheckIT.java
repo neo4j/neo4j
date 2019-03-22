@@ -109,10 +109,7 @@ class FulltextIndexConsistencyCheckIT
     {
         if ( database != null )
         {
-            if ( database.isAvailable( 0 ) )
-            {
-                database.shutdown();
-            }
+            database.shutdown();
         }
     }
 

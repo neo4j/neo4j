@@ -145,11 +145,6 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
@@ -157,7 +152,6 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
@@ -583,21 +577,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private void createEmptyTransactionLog()
     {
-        try
-        {
-            final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-            LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
-                                               .withLogEntryReader( logEntryReader )
-                                               .withTransactionIdStore( neoStores.getMetaDataStore() )
-                                               .withLogVersionRepository( neoStores.getMetaDataStore() )
-                                               .withConfig( config )
-                                               .build();
-            new Lifespan( logFiles ).close();
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Fail to create empty transaction log file.", e );
-        }
+        TransactionLogsInitializer.INSTANCE.initializeLogFiles( config, databaseLayout, neoStores, fileSystem );
     }
 
     private StorageIndexReference[] getIndexesNeedingPopulation()

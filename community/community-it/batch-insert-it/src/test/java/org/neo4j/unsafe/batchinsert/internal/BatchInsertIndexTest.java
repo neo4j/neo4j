@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.batchinsert.internal;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -87,7 +86,6 @@ public class BatchInsertIndexTest
     }
 
     @Test
-    @Ignore
     public void batchInserterShouldUseConfiguredIndexProvider() throws Exception
     {
         Config config = Config.defaults( stringMap( default_schema_provider.name(), schemaIndex.providerName() ) );
