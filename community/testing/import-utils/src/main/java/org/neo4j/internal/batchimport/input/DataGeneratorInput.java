@@ -161,7 +161,10 @@ public class DataGeneratorInput implements Input
         int labels = 0;
         for ( InputEntity node : nodes )
         {
-            labels += node.labels().length;
+            if ( node != null )
+            {
+                labels += node.labels().length;
+            }
         }
         return (double) labels / nodes.length;
     }
@@ -172,7 +175,10 @@ public class DataGeneratorInput implements Input
         long propertiesSize = 0;
         for ( InputEntity entity : sample )
         {
-            propertiesSize += Inputs.calculatePropertySize( entity, valueSizeCalculator );
+            if ( entity != null )
+            {
+                propertiesSize += Inputs.calculatePropertySize( entity, valueSizeCalculator );
+            }
         }
         double propertySizePerEntity = (double) propertiesSize / sample.length;
         return new double[] {propertiesPerEntity, propertySizePerEntity};
