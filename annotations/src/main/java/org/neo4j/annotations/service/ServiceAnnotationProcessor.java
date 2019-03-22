@@ -31,7 +31,6 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -187,10 +186,14 @@ public class ServiceAnnotationProcessor extends AbstractProcessor
             newProviders.addAll( oldProviders );
 
             final FileObject file = processingEnv.getFiler().createResource( CLASS_OUTPUT, "", path );
-            try ( Writer writer = file.openWriter(); PrintWriter out = new PrintWriter( new BufferedWriter( writer ) ) )
+            try ( Writer writer = file.openWriter(); BufferedWriter out = new BufferedWriter( writer ) )
             {
                 info( "Writing service providers: " + newProviders );
-                newProviders.forEach( out::println );
+                for ( final String provider : newProviders )
+                {
+                    out.write( provider );
+                    out.write( "\n" );
+                }
             }
         }
     }
