@@ -33,6 +33,7 @@ public class RingRecentBuffer<T> implements RecentBuffer<T>
 
     private final AtomicLong produceCount;
     private final AtomicLong consumeCount;
+    private final AtomicLong dropEvents;
 
     public RingRecentBuffer( int bitSize )
     {
@@ -44,10 +45,17 @@ public class RingRecentBuffer<T> implements RecentBuffer<T>
         for ( int i = 0; i < size; i++ )
         {
             data[i] = new VolatileRef<>();
+            data[i].produceNumber = i - size;
         }
 
         produceCount = new AtomicLong( 0 );
         consumeCount = new AtomicLong( 0 );
+        dropEvents = new AtomicLong( 0 );
+    }
+
+    long nSilentQueryDrops()
+    {
+        return dropEvents.get();
     }
 
     /* ---- many producers ---- */
@@ -58,8 +66,42 @@ public class RingRecentBuffer<T> implements RecentBuffer<T>
         long produceNumber = produceCount.getAndIncrement();
         int offset = (int) (produceNumber & mask);
         VolatileRef<T> volatileRef = data[offset];
-        volatileRef.ref = t;
-        volatileRef.produceNumber = produceNumber;
+        if ( assertPreviousCompleted( produceNumber, volatileRef ) )
+        {
+            volatileRef.ref = t;
+            volatileRef.produceNumber = produceNumber;
+        }
+        else
+        {
+            // If we don't manage to wait for the previous produce to complete even after
+            // all the yields in `assertPreviousCompleted`, we drop `t` to avoid causing
+            // a problem in db operation. We increment dropEvents to so the RecentBuffer
+            // consumer can detect that there has been a drop.
+            dropEvents.incrementAndGet();
+        }
+    }
+
+    private boolean assertPreviousCompleted( long produceNumber, VolatileRef<T> volatileRef )
+    {
+        int attempts = 100;
+        long prevProduceNumber = volatileRef.produceNumber;
+        while ( prevProduceNumber != produceNumber - size && attempts > 0 )
+        {
+            // Coming in here is expected to be very rare, because it means that producers have
+            // circled around the ring buffer, and the producer `size` elements ago hasn't finished
+            // writing to the buffer. We yield and hope the previous produce is done when we get back.
+            try
+            {
+                Thread.sleep(0, 1000);
+            }
+            catch ( InterruptedException e )
+            {
+                // continue
+            }
+            prevProduceNumber = volatileRef.produceNumber;
+            attempts--;
+        }
+        return attempts > 0;
     }
 
     /* ---- single consumer ---- */

@@ -57,6 +57,11 @@ class QueryCollector extends CollectorStateMachine<Iterator<QuerySnapshot>> impl
         queries = new RingRecentBuffer<>( 13 );
     }
 
+    long nSilentQueryDrops()
+    {
+        return queries.nSilentQueryDrops();
+    }
+
     // CollectorStateMachine
 
     @Override

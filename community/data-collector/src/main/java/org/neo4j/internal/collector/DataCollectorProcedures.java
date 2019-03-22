@@ -63,7 +63,7 @@ public class DataCollectorProcedures
             return TokensSection.retrieve( dataCollector.kernel );
 
         case Sections.META:
-            return MetaSection.retrieve( null, dataCollector.kernel );
+            return MetaSection.retrieve( null, dataCollector.kernel, dataCollector.queryCollector.nSilentQueryDrops() );
 
         case Sections.QUERIES:
             return QueriesSection.retrieve( dataCollector.queryCollector.getData(),
@@ -87,7 +87,7 @@ public class DataCollectorProcedures
             throw new InvalidArgumentsException( "Graph token must be a non-empty string" );
         }
 
-        return Stream.of( MetaSection.retrieve( graphToken, dataCollector.kernel ),
+        return Stream.of( MetaSection.retrieve( graphToken, dataCollector.kernel, dataCollector.queryCollector.nSilentQueryDrops() ),
                           GraphCountsSection.retrieve( dataCollector.kernel, Anonymizer.IDS ),
                           QueriesSection.retrieve( dataCollector.queryCollector.getData(),
                                                    new IdAnonymizer( transaction.tokenRead() ),

@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 import static java.lang.String.format;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -60,6 +61,8 @@ class RingRecentBufferTest
             buffer.produce( i );
         }
         buffer.foreach( Assertions::assertNotNull );
+
+        assertEquals( 0, buffer.nSilentQueryDrops() );
     }
 
     @Test
@@ -72,25 +75,32 @@ class RingRecentBufferTest
         RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferBitSize );
         ExecutorService executor = Executors.newFixedThreadPool( 2 );
 
-        UniqueElementsConsumer consumer = new UniqueElementsConsumer();
+        try
+        {
+            UniqueElementsConsumer consumer = new UniqueElementsConsumer();
 
-        // when
-        // producer thread
-        CountDownLatch latch = new CountDownLatch( 1 );
-        Future<?> produce = executor.submit( stressUntil( latch, buffer::produce ) );
+            // when
+            // producer thread
+            CountDownLatch latch = new CountDownLatch( 1 );
+            Future<?> produce = executor.submit( stressUntil( latch, buffer::produce ) );
 
-        // consumer thread
-        Future<?> consume = executor.submit( stress( n, i -> {
-            consumer.reset();
-            buffer.foreach( consumer );
-            assertTrue( consumer.values.size() <= bufferSize, format( "Should see at most %d elements", bufferSize ) );
-        } ) );
+            // consumer thread
+            Future<?> consume = executor.submit( stress( n, i -> {
+                consumer.reset();
+                buffer.foreach( consumer );
+                assertTrue( consumer.values.size() <= bufferSize, format( "Should see at most %d elements", bufferSize ) );
+            } ) );
 
-        // then without illegal transitions or exceptions
-        consume.get();
-        latch.countDown();
-        produce.get();
-        executor.shutdown();
+            // then without illegal transitions or exceptions
+            consume.get();
+            latch.countDown();
+            produce.get();
+        }
+        finally
+        {
+            executor.shutdown();
+        }
+        assertEquals( 0, buffer.nSilentQueryDrops() );
     }
 
     @Test
@@ -102,21 +112,28 @@ class RingRecentBufferTest
         RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferBitSize );
         ExecutorService executor = Executors.newFixedThreadPool( 2 );
 
-        // when
-        // producer thread
-        CountDownLatch latch = new CountDownLatch( 1 );
-        Future<?> produce = executor.submit( stressUntil( latch, buffer::produce ) );
-        // consumer thread
-        Future<?> consume = executor.submit( stress( n, i -> {
-            buffer.clear();
-            buffer.foreach( Assertions::assertNotNull );
-        } ) );
+        try
+        {
+            // when
+            // producer thread
+            CountDownLatch latch = new CountDownLatch( 1 );
+            Future<?> produce = executor.submit( stressUntil( latch, buffer::produce ) );
+            // consumer thread
+            Future<?> consume = executor.submit( stress( n, i -> {
+                buffer.clear();
+                buffer.foreach( Assertions::assertNotNull );
+            } ) );
 
-        // then without illegal transitions or exceptions
-        consume.get();
-        latch.countDown();
-        produce.get();
-        executor.shutdown();
+            // then without illegal transitions or exceptions
+            consume.get();
+            latch.countDown();
+            produce.get();
+        }
+        finally
+        {
+            executor.shutdown();
+        }
+        assertEquals( 0, buffer.nSilentQueryDrops() );
     }
 
     @Test
@@ -128,25 +145,32 @@ class RingRecentBufferTest
         RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferBitSize );
         ExecutorService executor = Executors.newFixedThreadPool( 4 );
 
-        // when
-        // producer threads
-        CountDownLatch latch = new CountDownLatch( 1 );
-        Future<?> produce1 = executor.submit( stressUntil( latch, buffer::produce ) );
-        Future<?> produce2 = executor.submit( stressUntil( latch, buffer::produce ) );
-        Future<?> produce3 = executor.submit( stressUntil( latch, buffer::produce ) );
-        // consumer thread
-        Future<?> consume = executor.submit( stress( n, i -> {
-            buffer.clear();
-            buffer.foreach( Assertions::assertNotNull );
-        } ) );
+        try
+        {
+            // when
+            // producer threads
+            CountDownLatch latch = new CountDownLatch( 1 );
+            Future<?> produce1 = executor.submit( stressUntil( latch, buffer::produce ) );
+            Future<?> produce2 = executor.submit( stressUntil( latch, buffer::produce ) );
+            Future<?> produce3 = executor.submit( stressUntil( latch, buffer::produce ) );
+            // consumer thread
+            Future<?> consume = executor.submit( stress( n, i -> {
+                buffer.clear();
+                buffer.foreach( Assertions::assertNotNull );
+            } ) );
 
-        // then without illegal transitions or exceptions
-        consume.get();
-        latch.countDown();
-        produce1.get();
-        produce2.get();
-        produce3.get();
-        executor.shutdown();
+            // then without illegal transitions or exceptions
+            consume.get();
+            latch.countDown();
+            produce1.get();
+            produce2.get();
+            produce3.get();
+        }
+        finally
+        {
+            executor.shutdown();
+        }
+        assertEquals( 0, buffer.nSilentQueryDrops() );
     }
 
     private <T> Runnable stress( int n, LongConsumer action )
