@@ -35,7 +35,32 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
  * The property grouping works on sorted property key id lists as to minimize deduplication when selecting for composite indexes.
  * <p>
  * The selection works efficiently when providing complete list of properties, but will have to resort to some amount of over-selection and union
- * when caller can only provide partial list of properties.
+ * when caller can only provide partial list of properties. The most efficient linking starts from label id and traverses through the property key ids
+ * of the schema descriptor (single or multiple for composite index) in sorted order where each property key id (for this label) links to the next
+ * property key. From all leaves along the way the descriptors can be collected. This way only the actually matching indexes will be collected
+ * instead of collecting all indexes matching any property key and doing a union of those. Example:
+ *
+ * <pre>
+ *     Descriptors
+ *     A: label[0]properties[4, 7, 3]
+ *     B: label[0]properties[7, 4]
+ *     C: label[0]properties[3, 4]
+ *     D: label[0]properties[3, 4, 7]
+ *     E: label[1]properties[7]
+ *     F: label[1]properties[5, 6]
+ *
+ *     Will result in a data structure (for the optimized path):
+ *     label[0]
+ *        -> property[3]
+ *           -> property[4]: C
+ *              -> property[7]: A, D
+ *        -> property[4]
+ *           -> property[7]: B
+ *     label[1]
+ *        -> property[5]
+ *           -> property[6]: F
+ *        -> property[7]: E
+ * </pre>
  */
 public class LabelPropertyMultiSet
 {
