@@ -18,4 +18,20 @@ package org.neo4j.cypher.internal.v4_0.expressions
 
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
-case class ExistsSubClause(pattern: Pattern, optionalWhereExpression: Option[Expression])(val position: InputPosition) extends Expression
+case class ExistsSubClause(pattern: Pattern, optionalWhereExpression: Option[Expression])
+                          (val position: InputPosition, val outerScope: Set[LogicalVariable]) extends ScopeExpression {
+
+  self =>
+
+  def withOuterScope(outerScope: Set[LogicalVariable]): ExistsSubClause =
+    copy()(position, outerScope)
+
+  override val introducedVariables: Set[LogicalVariable] = pattern.patternParts.head.element.allVariables -- outerScope
+
+  override def dup(children: Seq[AnyRef]): this.type = {
+    ExistsSubClause(
+      children(0).asInstanceOf[Pattern],
+      children(1).asInstanceOf[Option[Expression]],
+    )(position, outerScope).asInstanceOf[this.type]
+  }
+}

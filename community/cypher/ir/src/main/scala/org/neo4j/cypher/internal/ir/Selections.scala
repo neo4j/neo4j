@@ -26,10 +26,6 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
   def isEmpty = predicates.isEmpty
 
   def predicatesGiven(ids: Set[String]): Seq[Expression] = predicates.collect {
-    // TODO: fix, maybe we can divide existsPredicate into predicates with dependencies met and without here?
-    case p@Predicate(_, predicate:ExistsSubClause) =>  predicate
-      //TODO: make pretty
-    case p@Predicate(_, predicate:Not) if predicate.rhs.isInstanceOf[ExistsSubClause] =>  predicate
     case p@Predicate(_, predicate) if p.hasDependenciesMet(ids) => predicate
   }.toIndexedSeq
 

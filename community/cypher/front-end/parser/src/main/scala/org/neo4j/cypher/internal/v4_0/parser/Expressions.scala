@@ -168,7 +168,7 @@ trait Expressions extends Parser
     | group(keyword("ANY") ~~ "(" ~~ FilterExpression ~~ ")") ~~>> (ast.AnyIterablePredicate(_, _, _))
     | group(keyword("NONE") ~~ "(" ~~ FilterExpression ~~ ")") ~~>> (ast.NoneIterablePredicate(_, _, _))
     | group(keyword("SINGLE") ~~ "(" ~~ FilterExpression ~~ ")") ~~>> (ast.SingleIterablePredicate(_, _, _))
-    | group(keyword("EXISTS") ~~ "{" ~~ ExistsSubClauseExpression ~~ "}") ~~>> (ast.ExistsSubClause(_, _))  //TODO: This should NOT be a mere expression!
+    | Exists
     | ShortestPathPattern ~~> ast.ShortestPathExpression
     | RelationshipsPattern ~~> PatternExpression
     | parenthesizedExpression
@@ -210,6 +210,11 @@ trait Expressions extends Parser
     group("[" ~~ optional(Variable ~~ operator("=")) ~~ RelationshipsPattern ~ optional(WS ~ keyword("WHERE") ~~ Expression) ~~ "|" ~~ Expression ~~ "]") ~~>> (
       (a, b, c, d) => pos => ast.PatternComprehension(a, b, c, d)(pos, Set.empty))
   }
+
+  def Exists: Rule1[ExistsSubClause] =
+    group(keyword("EXISTS") ~~ "{" ~~ ExistsSubClauseExpression ~~ "}") ~~>> (
+      (a, b) => pos => ast.ExistsSubClause(a, b)(pos, Set.empty)) //TODO: This should NOT be a mere expression!
+
 
   def CaseExpression: Rule1[org.neo4j.cypher.internal.v4_0.expressions.CaseExpression] = rule("CASE") {
     (group((

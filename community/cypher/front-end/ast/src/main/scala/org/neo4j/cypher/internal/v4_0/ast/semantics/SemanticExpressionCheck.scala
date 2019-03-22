@@ -422,6 +422,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
       // EXISTS
       case x:ExistsSubClause =>
+        SemanticState.recordCurrentScope(x) chain
         withScopedState { // saves us from leaking to the outside
           SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
             when(x.optionalWhereExpression.isDefined) {
