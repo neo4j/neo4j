@@ -138,7 +138,7 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
               case r:RelationshipChain => pattern(r)
               case n:NodePattern => node(n)
           }
-        }} ${optionalWhereExpression.map(w => s" WHERE ${this.apply(w)}").getOrElse("")} }"
+        } ${optionalWhereExpression.map(w => s"WHERE ${this.apply(w)}").getOrElse("")} }"
       case _ =>
         extender(ast)
     }

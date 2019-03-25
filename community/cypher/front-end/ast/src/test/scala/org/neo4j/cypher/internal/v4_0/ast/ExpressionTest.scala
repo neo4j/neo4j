@@ -95,6 +95,41 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     expr.withOuterScope(Set.empty).dependencies should equal(Set.empty)
   }
 
+  test("should compute dependencies for exists subclause with node predicate") {
+    // MATCH (n) WHERE EXISTS { (n)-[r]->(p) WHERE n.prop = p.prop }
+    val relChain = RelationshipChain(
+      NodePattern(Some(varFor("n")), Seq.empty, None)_,
+      RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, SemanticDirection.OUTGOING)_,
+      NodePattern(Some(varFor("p")), Seq.empty, None)_
+    )_
+
+    val pattern = Pattern(Seq(EveryPath(relChain)))_
+
+    val where = equals(prop(varFor("n"), "prop"), prop(varFor("p"), "prop"))
+
+    val expr = ExistsSubClause(pattern, Some(where))(pos, Set.empty)
+
+    expr.withOuterScope(Set(varFor("n"))).dependencies should equal(Set(varFor("n")))
+  }
+
+  test("should compute dependencies for exists subclause with relationship predicate") {
+    // MATCH (n)-[r1]->(p1) WHERE EXISTS { (n)-[r2]->(p2) WHERE r1.prop = r2.prop }
+    val relChain = RelationshipChain(
+      NodePattern(Some(varFor("n")), Seq.empty, None)_,
+      RelationshipPattern(Some(varFor("r2")), Seq.empty, None, None, SemanticDirection.OUTGOING)_,
+      NodePattern(Some(varFor("p2")), Seq.empty, None)_
+    )_
+
+    val pattern = Pattern(Seq(EveryPath(relChain)))_
+
+    val where = equals(prop(varFor("r1"), "prop"), prop(varFor("r2"), "prop"))
+
+    val expr = ExistsSubClause(pattern, Some(where))(pos, Set.empty)
+
+    val outerVariables: Set[LogicalVariable] = Set(varFor("n"), varFor("r1"), varFor("p1"))
+    expr.withOuterScope(outerVariables).dependencies should equal(Set(varFor("n"), varFor("r1")))
+  }
+
   test("should compute inputs of composite expressions") {
     val identA = varFor("a")
     val identB = varFor("b")

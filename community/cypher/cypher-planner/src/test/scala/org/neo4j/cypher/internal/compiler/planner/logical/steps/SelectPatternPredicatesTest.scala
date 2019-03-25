@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner._
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -33,11 +34,15 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   private val patternRel = PatternRelationship("  UNNAMED1", ("a", nodeName), dir, types, SimplePatternLength)
 
   // MATCH (a) WHERE (a)-->()
-  private val patternExp = PatternExpression(RelationshipsPattern(RelationshipChain(
+  private val relChain = RelationshipChain(
     NodePattern(Some(varFor("a")), Seq(), None)_,
     RelationshipPattern(Some(varFor("  UNNAMED1")), types, None, None, dir) _,
     NodePattern(Some(varFor(nodeName)), Seq(), None)_
-  )_)_)
+  )_
+
+  private val patternExp = PatternExpression(RelationshipsPattern(relChain)_)
+
+  private val pattern: Pattern = Pattern(Seq(EveryPath(relChain)))_
 
   test("should introduce semi apply for unsolved exclusive pattern predicate") {
     // Given
@@ -65,6 +70,75 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val notExpr = not(patternExp)
     // Given
     val predicate = Predicate(Set("a"), notExpr)
+    val selections = Selections(Set(predicate))
+
+    val qg = QueryGraph(
+      patternNodes = Set("a"),
+      selections = selections
+    )
+
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
+
+    val aPlan = newMockedLogicalPlan(context.planningAttributes, "a")
+    val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
+
+    // When
+    val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
+
+    // Then
+    result should equal(Seq(AntiSemiApply(aPlan, inner)))
+  }
+
+  test("should introduce semi apply for pattern predicate in EXISTS") {
+    // Given
+    val exists = ExistsSubClause(pattern, None)(InputPosition.NONE, Set.empty)
+    val predicate = Predicate(Set("a"), exists)
+    val selections = Selections(Set(predicate))
+
+    val qg = QueryGraph(
+      patternNodes = Set("a"),
+      selections = selections
+    )
+
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
+
+    val aPlan = newMockedLogicalPlan(context.planningAttributes, "a")
+    val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
+
+    // When
+    val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
+
+    // Then
+    result should equal(Seq(SemiApply(aPlan, inner)))
+  }
+
+  test("should introduce semi apply for pattern predicate in EXISTS where node variable comes from outer scope") {
+    // Given
+    val exists = ExistsSubClause(pattern, None)(InputPosition.NONE, Set(Variable("a")_))
+    val predicate = Predicate(Set("a"), exists)
+    val selections = Selections(Set(predicate))
+
+    val qg = QueryGraph(
+      patternNodes = Set.empty,
+      selections = selections
+    )
+
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
+
+    val aPlan = newMockedLogicalPlan(context.planningAttributes, "a")
+    val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
+
+    // When
+    val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
+
+    // Then
+    result should equal(Seq(SemiApply(aPlan, inner)))
+  }
+
+  test("should introduce anti semi apply for negated pattern predicate in EXISTS") {
+    // Given
+    val notExists = not(ExistsSubClause(pattern, None)(InputPosition.NONE, Set(Variable("a")_)))
+    val predicate = Predicate(Set("a"), notExists)
     val selections = Selections(Set(predicate))
 
     val qg = QueryGraph(
