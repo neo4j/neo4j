@@ -68,7 +68,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.graphdb.Label.label;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
@@ -91,7 +90,7 @@ class ConsistencyCheckToolTest
         runConsistencyCheckToolWith( service, args );
 
         // then
-        verify( service ).runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ),
+        verify( service ).runFullConsistencyCheck( any( DatabaseLayout.class ), any( Config.class ),
                 any( ProgressMonitorFactory.class ), any( LogProvider.class ), any( FileSystemAbstraction.class ),
                 anyBoolean(), any( ConsistencyFlags.class ) );
     }
@@ -141,7 +140,7 @@ class ConsistencyCheckToolTest
 
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
-        verify( service ).runFullConsistencyCheck( eq( databaseLayout ), config.capture(),
+        verify( service ).runFullConsistencyCheck( any( DatabaseLayout.class ), config.capture(),
                 any( ProgressMonitorFactory.class ), any( LogProvider.class ), any( FileSystemAbstraction.class ),
                 anyBoolean(), any( ConsistencyFlags.class ) );
         assertFalse( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
@@ -213,7 +212,7 @@ class ConsistencyCheckToolTest
         {
             File customConfigFile = testDirectory.file( "customConfig" );
             File otherLocation = testDirectory.directory( "otherLocation" );
-            Config customConfig = Config.defaults( transaction_logs_root_path, otherLocation.getAbsolutePath() );
+            Config customConfig = Config.defaults();
             createGraphDbAndKillIt( customConfig );
             MapUtil.store( customConfig.getRaw(), fs.openAsOutputStream( customConfigFile, false ) );
             String[] args = {testDirectory.databaseDir().getPath(), "-config", customConfigFile.getPath()};

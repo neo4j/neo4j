@@ -115,7 +115,7 @@ class TransactionLogFileTest
         life.shutdown();
 
         // THEN
-        File file =  LogFilesBuilder.logFilesBasedOnlyBuilder( directory.databaseDir(), fileSystem )
+        File file =  LogFilesBuilder.logFilesBasedOnlyBuilder( directory.databaseLayout().getTransactionLogsDirectory(), fileSystem )
                 .withLogEntryReader( logEntryReader() )
                 .build().getLogFileForVersion( 1L );
         LogHeader header = readLogHeader( fileSystem, file );

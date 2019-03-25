@@ -39,6 +39,7 @@ import java.util.function.Function;
 import org.neo4j.common.Validator;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.configuration.Settings;
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
 import org.neo4j.helpers.Args;
@@ -431,10 +432,6 @@ public class ImportTool
 
             databaseDirectory = args.interpretOption( Options.STORE_DIR.key(), Converters.mandatory(),
                     Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE );
-            DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory );
-            Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, databaseDirectory.getAbsolutePath() );
-            logsDir = config.get( GraphDatabaseSettings.logs_directory );
-            fs.mkdirs( logsDir );
 
             skipBadEntriesLogging = args.getBoolean( Options.SKIP_BAD_ENTRIES_LOGGING.key(),
                     (Boolean) Options.SKIP_BAD_ENTRIES_LOGGING.defaultValue(), false);
@@ -468,10 +465,11 @@ public class ImportTool
             badCollector = getBadCollector( badTolerance, skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns,
                     skipBadEntriesLogging, badOutput );
 
-            dbConfig = loadDbConfig( args.interpretOption( Options.DATABASE_CONFIG.key(), Converters.optional(),
-                    Converters.toFile(), Validators.REGEX_FILE_EXISTS ) );
-            dbConfig.augment( loadDbConfig( args.interpretOption( Options.ADDITIONAL_CONFIG.key(), Converters.optional(),
-                    Converters.toFile(), Validators.REGEX_FILE_EXISTS ) ) );
+            dbConfig = buildDbConfig( args, databaseDirectory );
+
+            logsDir = dbConfig.get( GraphDatabaseSettings.logs_directory );
+            fs.mkdirs( logsDir );
+            DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory, LayoutConfig.of( dbConfig ) );
             boolean allowCacheOnHeap = args.getBoolean( Options.CACHE_ON_HEAP.key(),
                     (Boolean) Options.CACHE_ON_HEAP.defaultValue() );
             configuration = importConfiguration(
@@ -501,6 +499,16 @@ public class ImportTool
                 badCollector.close();
             }
         }
+    }
+
+    private static Config buildDbConfig( Args args, File databaseDirectory )
+    {
+        Config dbConfig = Config.defaults( GraphDatabaseSettings.neo4j_home, databaseDirectory.getAbsolutePath() );
+        dbConfig.augment( loadDbConfig( args.interpretOption( Options.DATABASE_CONFIG.key(), Converters.optional(),
+                Converters.toFile(), Validators.REGEX_FILE_EXISTS ) ) );
+        dbConfig.augment( loadDbConfig( args.interpretOption( Options.ADDITIONAL_CONFIG.key(), Converters.optional(),
+                Converters.toFile(), Validators.REGEX_FILE_EXISTS ) ) );
+        return dbConfig;
     }
 
     public static Args useArgumentsFromFileArgumentIfPresent( Args args ) throws IOException

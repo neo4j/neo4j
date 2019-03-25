@@ -82,17 +82,17 @@ class RecoverIndexDropIT
     {
         // given a transaction stream ending in an INDEX DROP command.
         CommittedTransactionRepresentation dropTransaction = prepareDropTransaction();
-        File storeDir = directory.databaseDir();
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        var databaseLayout = directory.databaseLayout();
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( databaseLayout.databaseDirectory() );
         createIndex( db );
         db.shutdown();
-        appendDropTransactionToTransactionLog( directory.databaseDir(), dropTransaction );
+        appendDropTransactionToTransactionLog( directory.databaseLayout().getTransactionLogsDirectory(), dropTransaction );
 
         // when recovering this (the drop transaction with the index file intact)
         Monitors monitors = new Monitors();
         AssertRecoveryIsPerformed recoveryMonitor = new AssertRecoveryIsPerformed();
         monitors.addMonitorListener( recoveryMonitor );
-        db = new TestGraphDatabaseFactory().setMonitors( monitors ).newEmbeddedDatabase( storeDir );
+        db = new TestGraphDatabaseFactory().setMonitors( monitors ).newEmbeddedDatabase( databaseLayout.databaseDirectory() );
         try
         {
             assertTrue( recoveryMonitor.recoveryWasPerformed );
@@ -121,9 +121,9 @@ class RecoverIndexDropIT
         }
     }
 
-    private void appendDropTransactionToTransactionLog( File databaseDirectory, CommittedTransactionRepresentation dropTransaction ) throws IOException
+    private void appendDropTransactionToTransactionLog( File transactionLogsDirectory, CommittedTransactionRepresentation dropTransaction ) throws IOException
     {
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseDirectory, fs ).build();
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( transactionLogsDirectory, fs ).build();
         File logFile = logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() );
         StoreChannel writeStoreChannel = fs.open( logFile, OpenMode.READ_WRITE );
         writeStoreChannel.position( writeStoreChannel.size() );

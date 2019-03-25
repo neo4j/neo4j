@@ -56,6 +56,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.layout.StoreLayoutConfig.NOT_CONFIGURED;
 
 @ExtendWith( TestDirectoryExtension.class )
 class CheckConsistencyCommandTest
@@ -266,7 +267,7 @@ class CheckConsistencyCommandTest
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
-        DatabaseLayout backupLayout = testDir.databaseLayout( "backup" );
+        DatabaseLayout backupLayout = testDir.databaseLayout( "backup", NOT_CONFIGURED );
         Path homeDir = testDir.directory( "home" ).toPath();
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), consistencyCheckService );

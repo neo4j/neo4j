@@ -43,6 +43,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.io.fs.IoPrimitiveUtils;
+import org.neo4j.io.layout.DatabaseLayout;
+
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 
 public class DbRepresentation
 {
@@ -65,9 +68,7 @@ public class DbRepresentation
                     NodeRep nodeRep = new NodeRep( node );
                     result.nodes.put( node.getId(), nodeRep );
                     result.highestNodeId = Math.max( node.getId(), result.highestNodeId );
-                    result.highestRelationshipId =
-                            Math.max( nodeRep.highestRelationshipId, result.highestRelationshipId );
-
+                    result.highestRelationshipId = Math.max( nodeRep.highestRelationshipId, result.highestRelationshipId );
                 }
                 for ( IndexDefinition indexDefinition : db.schema().getIndexes() )
                 {
@@ -108,6 +109,18 @@ public class DbRepresentation
         {
             db.shutdown();
         }
+    }
+
+    public static DbRepresentation of( DatabaseLayout databaseLayout )
+    {
+        return of( databaseLayout.databaseDirectory(), Config.defaults( transaction_logs_root_path,
+                databaseLayout.getTransactionLogsDirectory().getParentFile().getAbsolutePath() ) );
+    }
+
+    public static DbRepresentation of( DatabaseLayout databaseLayout, Config config )
+    {
+        config.augment( transaction_logs_root_path, databaseLayout.getTransactionLogsDirectory().getParentFile().getAbsolutePath() );
+        return of( databaseLayout.databaseDirectory(), config );
     }
 
     @Override

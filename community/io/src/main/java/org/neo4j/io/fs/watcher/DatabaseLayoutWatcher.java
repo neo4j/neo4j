@@ -76,8 +76,11 @@ public class DatabaseLayoutWatcher extends LifecycleAdapter
     private void watchDirectories()
     {
         File databaseDirectory = databaseLayout.databaseDirectory();
+        File transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
         watch( databaseDirectory );
         watch( databaseDirectory.getParentFile() );
+        watch( transactionLogsDirectory );
+        watch( transactionLogsDirectory.getParentFile() );
         startWatching();
     }
 

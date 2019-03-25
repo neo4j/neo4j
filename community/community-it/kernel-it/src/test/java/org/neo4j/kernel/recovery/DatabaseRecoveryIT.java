@@ -163,10 +163,9 @@ class DatabaseRecoveryIT
             transaction.success();
         }
 
-        // copying only transaction log simulate non clean shutdown db that should be able to recover just from logs
-        File restoreDbStoreDir = copyStore();
+        var restoreDbLayout = copyStore();
 
-        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir );
+        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbLayout.databaseDirectory() );
         try ( Transaction tx = recoveredDatabase.beginTx() )
         {
             assertEquals( numberOfNodes, count( recoveredDatabase.getAllNodes() ) );
@@ -192,8 +191,8 @@ class DatabaseRecoveryIT
             }
         }
 
-        File restoreDbStoreDir = copyStore();
-        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir );
+        var restoreDbLayout = copyStore();
+        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbLayout.databaseDirectory() );
         try ( Transaction transaction = recoveredDatabase.beginTx() )
         {
             assertEquals( 10, count( recoveredDatabase.getAllNodes() ) );
@@ -236,10 +235,10 @@ class DatabaseRecoveryIT
         }
 
         // copying only transaction log simulate non clean shutdown db that should be able to recover just from logs
-        File restoreDbStoreDir = copyStore();
+        var restoreDbLayout = copyStore();
 
         // database should be restored and node should have expected properties
-        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir );
+        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbLayout.databaseDirectory() );
         try ( Transaction ignored = recoveredDatabase.beginTx() )
         {
             Node node = findNodeByLabel( recoveredDatabase, testLabel );
@@ -798,12 +797,13 @@ class DatabaseRecoveryIT
         return Arrays.toString( strings );
     }
 
-    private File copyStore() throws IOException
+    private DatabaseLayout copyStore() throws IOException
     {
         File restoreDbStore = directory.storeDir( "restore-db" );
-        File restoreDbStoreDir = directory.databaseDir( restoreDbStore );
-        copy( fileSystem, this.directory.databaseDir(), restoreDbStoreDir );
-        return restoreDbStoreDir;
+        DatabaseLayout restoreDbLayout = directory.databaseLayout( restoreDbStore );
+        copy( fileSystem, directory.databaseLayout().getTransactionLogsDirectory(), restoreDbLayout.getTransactionLogsDirectory() );
+        copy( fileSystem, directory.databaseLayout().databaseDirectory(), restoreDbLayout.databaseDirectory() );
+        return restoreDbLayout;
     }
 
     private static void copy( FileSystemAbstraction fs, File fromDirectory, File toDirectory ) throws IOException

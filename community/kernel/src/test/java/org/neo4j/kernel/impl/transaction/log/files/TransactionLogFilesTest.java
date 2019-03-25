@@ -67,7 +67,7 @@ class TransactionLogFilesTest
 
         // then
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        final File expected = databaseLayout.file( getVersionedLogFileName( version ) );
+        final File expected = createTransactionLogFile( databaseLayout, getVersionedLogFileName( version ) );
         assertEquals( expected, versionFileName );
     }
 
@@ -78,10 +78,10 @@ class TransactionLogFilesTest
         LogFiles files = createLogFiles();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
 
-        fileSystem.create( databaseLayout.file( getVersionedLogFileName( "1" ) ) ).close();
-        fileSystem.create( databaseLayout.file( getVersionedLogFileName( "some", "2" ) ) ).close();
-        fileSystem.create( databaseLayout.file( getVersionedLogFileName( "3" ) ) ).close();
-        fileSystem.create( databaseLayout.file( filename ) ).close();
+        fileSystem.create( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "1" ) ) ).close();
+        fileSystem.create( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "some", "2" ) ) ).close();
+        fileSystem.create( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "3" ) ) ).close();
+        fileSystem.create( createTransactionLogFile( databaseLayout, filename ) ).close();
 
         // when
         final List<File> seenFiles = new ArrayList<>();
@@ -95,8 +95,8 @@ class TransactionLogFilesTest
 
         // then
         assertThat( seenFiles, containsInAnyOrder(
-                databaseLayout.file( getVersionedLogFileName( filename, "1" ) ),
-                databaseLayout.file( getVersionedLogFileName( filename, "3" ) ) )  );
+                createTransactionLogFile( databaseLayout, getVersionedLogFileName( filename, "1" ) ),
+                createTransactionLogFile( databaseLayout, getVersionedLogFileName( filename, "3" ) ) )  );
         assertThat( seenVersions, containsInAnyOrder( 1L, 3L ) );
         files.shutdown();
     }
@@ -108,10 +108,10 @@ class TransactionLogFilesTest
         LogFiles files = createLogFiles();
 
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        fileSystem.create( databaseLayout.file( getVersionedLogFileName( "1" ) ) ).close();
-        fileSystem.create( databaseLayout.file( getVersionedLogFileName( "some", "4" ) ) ).close();
-        fileSystem.create( databaseLayout.file( getVersionedLogFileName( "3" ) ) ).close();
-        fileSystem.create( databaseLayout.file( filename ) ).close();
+        fileSystem.create( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "1" ) ) ).close();
+        fileSystem.create( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "some", "4" ) ) ).close();
+        fileSystem.create( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "3" ) ) ).close();
+        fileSystem.create( createTransactionLogFile( databaseLayout, filename ) ).close();
 
         // when
         final long highestLogVersion = files.getHighestLogVersion();
@@ -183,6 +183,12 @@ class TransactionLogFilesTest
         assertFalse( logFiles.isLogFile( new File( "aaa.tx.log" ) ) );
         assertTrue( logFiles.isLogFile( new File( "filename.0" ) ) );
         assertTrue( logFiles.isLogFile( new File( "filename.17" ) ) );
+    }
+
+    private File createTransactionLogFile( DatabaseLayout databaseLayout, String fileName )
+    {
+        File transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
+        return new File( transactionLogsDirectory, fileName );
     }
 
     private LogFiles createLogFiles() throws IOException

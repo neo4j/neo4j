@@ -82,6 +82,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.ArrayUtil.join;
@@ -135,10 +136,12 @@ public class ImportToolTest
         // GIVEN
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.COMMAS;
+        File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                 "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
 
@@ -153,10 +156,12 @@ public class ImportToolTest
         // GIVEN
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.TABS;
+        File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--delimiter", "TAB",
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
                 "--nodes",
@@ -193,8 +198,11 @@ public class ImportToolTest
             writer.println( "FIRST 4096|SECOND 4096|THIRD 4096" );
         }
 
+        File dbConfig = prepareDefaultConfigFile();
+
         // WHEN
         importTool( "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--delimiter", "TAB",
                 "--array-delimiter", "|",
                 "--nodes", header.getAbsolutePath() + MULTI_FILE_DELIMITER + data.getAbsolutePath() );
@@ -240,8 +248,13 @@ public class ImportToolTest
             }
         }
 
+        File dbConfig = prepareDefaultConfigFile();
+
         // WHEN
-        importTool( "--into", dbRule.getDatabaseDirAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
+        importTool( "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
+                "--quote", "'",
+                "--nodes", data.getAbsolutePath() );
 
         // THEN
         int nodeCount = 0;
@@ -305,8 +318,12 @@ public class ImportToolTest
             }
         }
 
+        File dbConfig = prepareDefaultConfigFile();
+
         // WHEN
-        importTool( "--into", dbRule.getDatabaseDirAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
+        importTool( "--into", dbRule.getDatabaseDirAbsolutePath(), "--quote", "'",
+                "--additional-config", dbConfig.getAbsolutePath(),
+                "--nodes", data.getAbsolutePath() );
 
         // THEN
         int nodeCount = 0;
@@ -359,9 +376,13 @@ public class ImportToolTest
 
             writer.println( "PERSON,'f6',  non true things are interpreted as false  " );
         }
+        File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool( "--into", dbRule.getDatabaseDirAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
+        importTool( "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
+                "--quote", "'",
+                "--nodes", data.getAbsolutePath() );
 
         // THEN
         try ( Transaction tx = dbRule.beginTx() )
@@ -394,9 +415,13 @@ public class ImportToolTest
 
         File data = writeArrayCsv(
                 new String[]{ "s:short[]", "b:byte[]", "i:int[]", "l:long[]", "f:float[]", "d:double[]" }, values );
+        File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool( "--into", dbRule.getDatabaseDirAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
+        importTool( "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
+                "--quote", "'",
+                "--nodes", data.getAbsolutePath() );
 
         // THEN
         // Expected value for integer types
@@ -467,9 +492,13 @@ public class ImportToolTest
                         "   -5.12   " };
 
         File data = writeArrayCsv( new String[]{ "f:float[]", "d:double[]" }, values );
+        File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool( "--into", dbRule.getDatabaseDirAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
+        importTool( "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
+                "--quote", "'",
+                "--nodes", data.getAbsolutePath() );
 
         // THEN
         String expected = joinStringArray( values );
@@ -520,8 +549,13 @@ public class ImportToolTest
 
         File data = writeArrayCsv( new String[]{ "b:boolean[]" }, values );
 
+        File dbConfig = prepareDefaultConfigFile();
+
         // WHEN
-        importTool( "--into", dbRule.getDatabaseDirAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
+        importTool( "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
+                "--quote", "'",
+                "--nodes", data.getAbsolutePath() );
 
         // THEN
         int nodeCount = 0;
@@ -614,9 +648,12 @@ public class ImportToolTest
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.COMMAS;
 
+        File dbConfig = prepareDefaultConfigFile();
+
         // WHEN
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", // One group with one header file and one data file
                 nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
                 nodeData( false, config, nodeIds, lines( 0, NODE_COUNT / 2 ) ).getAbsolutePath(),
@@ -643,9 +680,12 @@ public class ImportToolTest
         final String firstType = "TYPE_1";
         final String secondType = "TYPE_2";
 
+        File dbConfig = prepareDefaultConfigFile();
+
         // WHEN
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes:" + join( firstLabels, ":" ),
                 nodeData( true, config, nodeIds, lines( 0, NODE_COUNT / 2 ) ).getAbsolutePath(),
                 "--nodes:" + join( secondLabels, ":" ),
@@ -726,10 +766,12 @@ public class ImportToolTest
         // GIVEN
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.COMMAS;
+        File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath() );
         // no relationships
 
@@ -762,10 +804,12 @@ public class ImportToolTest
         Configuration config = Configuration.COMMAS;
         String groupOne = "Actor";
         String groupTwo = "Movie";
+        File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", nodeHeader( config, groupOne ) + MULTI_FILE_DELIMITER +
                            nodeData( false, config, groupOneNodeIds, TRUE ),
                 "--nodes", nodeHeader( config, groupTwo ) + MULTI_FILE_DELIMITER +
@@ -796,10 +840,12 @@ public class ImportToolTest
         List<String> groupOneNodeIds = asList( "1", "2", "3" );
         List<String> groupTwoNodeIds = asList( "4", "5", "2" );
         Configuration config = Configuration.COMMAS;
+        File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", nodeHeader( config, "MyGroup" ).getAbsolutePath() + MULTI_FILE_DELIMITER +
                            nodeData( false, config, groupOneNodeIds, TRUE ).getAbsolutePath(),
                 "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
@@ -817,9 +863,12 @@ public class ImportToolTest
         Configuration config = Configuration.COMMAS;
         String type = randomType();
 
+        File dbConfig = prepareDefaultConfigFile();
+
         // WHEN
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                 // there will be no :TYPE specified in the header of the relationships below
                 "--relationships:" + type,
@@ -866,9 +915,12 @@ public class ImportToolTest
         File nodeData1 = nodeData( false, config, nodeIds, lines( 0, 4 ) );
         File nodeData2 = nodeData( false, config, nodeIds, lines( 4, nodeIds.size() ) );
 
+        File dbConfig = prepareDefaultConfigFile();
+
         // WHEN
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--skip-duplicate-nodes",
                 "--nodes", nodeHeaderFile.getAbsolutePath() + MULTI_FILE_DELIMITER +
                            nodeData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
@@ -931,6 +983,7 @@ public class ImportToolTest
         File relationshipData1 = relationshipData( true, config, relationships.iterator(), lines( 0, 2 ), true );
         File relationshipData2 = relationshipData( false, config, relationships.iterator(), lines( 2, 5 ), true );
         File bad = badFile();
+        File dbConfig = prepareDefaultConfigFile();
 
         // WHEN importing data where some relationships refer to missing nodes
         importTool(
@@ -938,6 +991,7 @@ public class ImportToolTest
                 "--nodes", nodeData.getAbsolutePath(),
                 "--bad", bad.getAbsolutePath(),
                 "--bad-tolerance", "2",
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--relationships", relationshipData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
                                    relationshipData2.getAbsolutePath() );
 
@@ -965,9 +1019,12 @@ public class ImportToolTest
         File relationshipData1 = relationshipData( true, config, relationships.iterator(), lines( 0, 2 ), true );
         File relationshipData2 = relationshipData( false, config, relationships.iterator(), lines( 2, 5 ), true );
 
+        File dbConfig = prepareDefaultConfigFile();
+
         // WHEN importing data where some relationships refer to missing nodes
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", nodeData.getAbsolutePath(),
                 "--bad-tolerance", "2",
                 "--skip-bad-entries-logging", "true",
@@ -1059,9 +1116,12 @@ public class ImportToolTest
         final Label label1 = label( "My First Label" );
         final Label label2 = label( "My Other Label" );
 
+        File dbConfig = prepareDefaultConfigFile();
+
         // WHEN
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes:My First Label:My Other Label",
                 nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                 "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
@@ -1082,9 +1142,12 @@ public class ImportToolTest
         Configuration config = Configuration.COMMAS;
         Charset charset = StandardCharsets.UTF_16;
 
+        File dbConfig = prepareDefaultConfigFile();
+
         // WHEN
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--input-encoding", charset.name(),
                 "--nodes", nodeData( true, config, nodeIds, TRUE, charset ).getAbsolutePath(),
                 "--relationships", relationshipData( true, config, nodeIds, TRUE, true, charset )
@@ -1124,10 +1187,12 @@ public class ImportToolTest
         List<String> nodeIds = asList( "1", "", "", "", "3", "", "", "", "", "", "5" );
         Configuration config = Configuration.COMMAS;
         List<RelationshipDataLine> relationshipData = asList( relationship( "1", "3", "KNOWS" ) );
+        File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                 "--relationships", relationshipData( true, config, relationshipData.iterator(),
                         TRUE, true ).getAbsolutePath() );
@@ -1181,10 +1246,12 @@ public class ImportToolTest
         // GIVEN
         String name = "  This is a line with leading and trailing whitespaces   ";
         File data = data( ":ID,name", "1,\"" + name + "\"");
+        File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", data.getAbsolutePath() );
 
         // THEN
@@ -1211,9 +1278,12 @@ public class ImportToolTest
                 "1,\"" + name + "\"",
                 "2," + name );
 
+        File dbConfig = prepareDefaultConfigFile();
+
         // WHEN
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", data.getAbsolutePath(),
                 "--trim-strings", "true" );
 
@@ -1318,11 +1388,13 @@ public class ImportToolTest
     {
         // GIVEN
         File data = data( ":ID,name", "1,\"This is a line with\nnewlines in\"" );
+        File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
                 "--nodes", data.getAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--multiline-fields", "true" );
 
         // THEN
@@ -1345,8 +1417,11 @@ public class ImportToolTest
         // GIVEN
         File data = data( "" );
 
+        File dbConfig = prepareDefaultConfigFile();
+
         // WHEN
         importTool( "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", data.getAbsolutePath() );
 
         // THEN
@@ -1366,10 +1441,12 @@ public class ImportToolTest
         File data = data(
                 ":ID,one,two,three",
                 "1,\"\",,value" );
+        File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", data.getAbsolutePath(),
                 "--ignore-empty-strings", "true" );
 
@@ -1421,10 +1498,12 @@ public class ImportToolTest
                 ":ID,name",
                 "1," + name1,
                 "2," + name2 );
+        File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", data.getAbsolutePath(),
                 "--quote", String.valueOf( weirdDelimiter ) );
 
@@ -1450,9 +1529,12 @@ public class ImportToolTest
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.TABS;
 
+        File dbConfig = prepareDefaultConfigFile();
+
         // WHEN
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--delimiter", "\\t",
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
                 "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
@@ -1520,10 +1602,12 @@ public class ImportToolTest
                 ":ID,name",
                 "1," + name1,
                 "2," + name2 );
+        File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", data.getAbsolutePath(),
                 "--quote", "\\1" );
 
@@ -1575,10 +1659,12 @@ public class ImportToolTest
                 ":ID,name",
                 "1," + name1,
                 "2," + name2 );
+        File dbConfig = prepareDefaultConfigFile();
 
         // WHEN given as raw ascii
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", data.getAbsolutePath(),
                 "--quote", weirdStringDelimiter );
 
@@ -1657,10 +1743,12 @@ public class ImportToolTest
                 ":ID,name",
                 "1," + name1,
                 "2," + name2 );
+        File dbConfig = prepareDefaultConfigFile();
 
         // WHEN given as string
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", data.getAbsolutePath(),
                 "--quote", weirdStringDelimiter );
 
@@ -1689,9 +1777,10 @@ public class ImportToolTest
         int arrayBlockSize = 10;
         int stringBlockSize = 12;
         File dbConfig = file( "neo4j.properties" );
-        store( stringMap(
+        store( Map.of(
                 GraphDatabaseSettings.array_block_size.name(), String.valueOf( arrayBlockSize ),
-                GraphDatabaseSettings.string_block_size.name(), String.valueOf( stringBlockSize ) ), dbConfig );
+                GraphDatabaseSettings.string_block_size.name(), String.valueOf( stringBlockSize ),
+                transaction_logs_root_path.name(), getTransactionLogsRoot() ), dbConfig );
         List<String> nodeIds = nodeIds();
 
         // WHEN
@@ -1717,7 +1806,8 @@ public class ImportToolTest
         File dbConfig = file( "neo4j.properties" );
         store( stringMap(
                 GraphDatabaseSettings.array_block_size.name(), String.valueOf( arrayBlockSize ),
-                GraphDatabaseSettings.string_block_size.name(), String.valueOf( stringBlockSize ) ), dbConfig );
+                GraphDatabaseSettings.string_block_size.name(), String.valueOf( stringBlockSize ),
+                transaction_logs_root_path.name(), getTransactionLogsRoot() ), dbConfig );
         List<String> nodeIds = nodeIds();
 
         // WHEN
@@ -1745,7 +1835,8 @@ public class ImportToolTest
         store( stringMap(
                 GraphDatabaseSettings.string_block_size.name(), String.valueOf( stringBlockSize ) ), dbConfig );
         store( stringMap(
-                GraphDatabaseSettings.array_block_size.name(), String.valueOf( arrayBlockSize ) ), additionalConfig );
+                GraphDatabaseSettings.array_block_size.name(), String.valueOf( arrayBlockSize ),
+                transaction_logs_root_path.name(), getTransactionLogsRoot() ), additionalConfig );
         List<String> nodeIds = nodeIds();
 
         // WHEN
@@ -1801,9 +1892,12 @@ public class ImportToolTest
         lines.add( ":ID,name,:LABEL" );
         lines.add( nodeId + "," + "\"abc\"\"def\\\"\"ghi\"" + "," + labelName );
 
+        File dbConfig = prepareDefaultConfigFile();
+
         // WHEN
         importTool(
                 "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", data( lines.toArray( new String[lines.size()] ) ).getAbsolutePath(),
                 "--legacy-style-quoting", "false",
                 "--stacktrace" );
@@ -1824,11 +1918,14 @@ public class ImportToolTest
         lines.add( ":ID,name,:LABEL" );
         lines.add( "id," + repeat( 'l', 2_000 ) + ",Person" );
 
+        File dbConfig = prepareDefaultConfigFile();
+
         // WHEN
         try
         {
             importTool(
                     "--into", dbRule.getDatabaseDirAbsolutePath(),
+                    "--additional-config", dbConfig.getAbsolutePath(),
                     "--nodes", data( lines.toArray( new String[lines.size()] ) ).getAbsolutePath(),
                     "--read-buffer-size", "1k"
                     );
@@ -1955,9 +2052,12 @@ public class ImportToolTest
         File argumentFile = file( "args" );
         String nodesEscapedSpaces = escapePath( nodeData( true, config, nodeIds, TRUE ).getAbsolutePath() );
         String relationshipsEscapedSpaced = escapePath( relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
+        File dbConfig = prepareDefaultConfigFile();
         String arguments = format(
+                "--additional-config %s%n" +
                 "--into %s%n" +
                 "--nodes %s --relationships %s",
+                escapePath( dbConfig.getAbsolutePath() ),
                 escapePath( dbRule.getDatabaseDirAbsolutePath() ), nodesEscapedSpaces, relationshipsEscapedSpaced );
         writeToFile( argumentFile, arguments, false );
 
@@ -2498,6 +2598,18 @@ public class ImportToolTest
     private IntPredicate lines( final int startingAt, final int endingAt /*excluded*/ )
     {
         return line -> line >= startingAt && line < endingAt;
+    }
+
+    private String getTransactionLogsRoot()
+    {
+        return dbRule.databaseLayout().getTransactionLogsDirectory().getParentFile().getAbsolutePath();
+    }
+
+    private File prepareDefaultConfigFile() throws IOException
+    {
+        File dbConfig = file( "neo4j.properties" );
+        store( Map.of( transaction_logs_root_path.name(), getTransactionLogsRoot() ), dbConfig );
+        return dbConfig;
     }
 
     private static String escapePath( String path )

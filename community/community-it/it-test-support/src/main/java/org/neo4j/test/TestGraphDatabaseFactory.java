@@ -88,7 +88,6 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         GraphDatabaseBuilder databaseBuilder = newImpermanentDatabaseBuilder( absoluteDirectory );
         databaseBuilder.setConfig( GraphDatabaseSettings.default_database, absoluteDirectory.getName() );
         databaseBuilder.setConfig( GraphDatabaseSettings.databases_root_path, parentAbsolutePath );
-        databaseBuilder.setConfig( GraphDatabaseSettings.transaction_logs_root_path, parentAbsolutePath );
         return databaseBuilder.newGraphDatabase();
     }
 
@@ -293,10 +292,6 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             File databasesRoot = absoluteStoreDir.getParentFile();
             config.augment( GraphDatabaseSettings.default_database, absoluteStoreDir.getName() );
             config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
-            if ( !config.isConfigured( GraphDatabaseSettings.transaction_logs_root_path ) )
-            {
-                config.augment( GraphDatabaseSettings.transaction_logs_root_path, databasesRoot.getAbsolutePath() );
-            }
             return databasesRoot;
         }
 

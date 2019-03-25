@@ -49,6 +49,7 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.dbms.archive.TestUtils.withPermissions;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
@@ -64,7 +65,7 @@ class LoaderTest
     {
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        fileSystem.deleteRecursively( databaseLayout.databaseDirectory() );
+        deleteLayoutFolders( databaseLayout );
 
         NoSuchFileException exception = assertThrows( NoSuchFileException.class, () -> new Loader().load( archive, databaseLayout ) );
         assertEquals( archive.toString(), exception.getMessage() );
@@ -76,7 +77,7 @@ class LoaderTest
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         Files.write( archive, singletonList( "some incorrectly formatted data" ) );
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        fileSystem.deleteRecursively( databaseLayout.databaseDirectory() );
+        deleteLayoutFolders( databaseLayout );
 
         IncorrectFormat incorrectFormat = assertThrows( IncorrectFormat.class, () -> new Loader().load( archive, databaseLayout ) );
         assertEquals( archive.toString(), incorrectFormat.getMessage() );
@@ -95,7 +96,7 @@ class LoaderTest
         }
 
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        fileSystem.deleteRecursively( databaseLayout.databaseDirectory() );
+        deleteLayoutFolders( databaseLayout );
 
         IncorrectFormat incorrectFormat = assertThrows( IncorrectFormat.class, () -> new Loader().load( archive, databaseLayout ) );
         assertEquals( archive.toString(), incorrectFormat.getMessage() );
@@ -112,13 +113,15 @@ class LoaderTest
     }
 
     @Test
-    void shouldGiveAClearErrorIfTheDestinationTxLogAlreadyExists() throws IOException
+    void shouldGiveAClearErrorIfTheDestinationTxLogAlreadyExists()
     {
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
 
-        FileAlreadyExistsException exception =
-                assertThrows( FileAlreadyExistsException.class, () -> new Loader().load( archive, databaseLayout ) );
+        assertTrue( databaseLayout.databaseDirectory().delete() );
+        assertTrue( databaseLayout.getTransactionLogsDirectory().exists() );
+
+        FileAlreadyExistsException exception = assertThrows( FileAlreadyExistsException.class, () -> new Loader().load( archive, databaseLayout ) );
         assertEquals( databaseLayout.getTransactionLogsDirectory().toString(), exception.getMessage() );
     }
 
@@ -189,5 +192,11 @@ class LoaderTest
             AccessDeniedException exception = assertThrows( AccessDeniedException.class, () -> new Loader().load( archive, databaseLayout ) );
             assertEquals( txLogsRoot.toString(), exception.getMessage() );
         }
+    }
+
+    private void deleteLayoutFolders( DatabaseLayout databaseLayout ) throws IOException
+    {
+        fileSystem.deleteRecursively( databaseLayout.databaseDirectory() );
+        fileSystem.deleteRecursively( databaseLayout.getTransactionLogsDirectory() );
     }
 }

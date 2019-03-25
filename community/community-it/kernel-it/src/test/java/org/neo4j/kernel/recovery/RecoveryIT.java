@@ -500,7 +500,7 @@ class RecoveryIT
 
     private LogFiles buildLogFiles() throws IOException
     {
-        return LogFilesBuilder.logFilesBasedOnlyBuilder( directory.databaseDir(), fileSystem ).build();
+        return LogFilesBuilder.logFilesBasedOnlyBuilder( directory.databaseLayout().getTransactionLogsDirectory(), fileSystem ).build();
     }
 
     private void removeTransactionLogs() throws IOException

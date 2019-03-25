@@ -392,9 +392,9 @@ public class ConsistencyCheckServiceIntegrationTest
     {
         File tmpLogDir = new File( testDirectory.directory(), "logs" );
         fs.mkdir( tmpLogDir );
-        File storeDir = testDirectory.databaseDir();
+        var databaseLayout = testDirectory.databaseLayout();
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( storeDir )
+                .newEmbeddedDatabaseBuilder( databaseLayout.databaseDirectory() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
                 .setConfig( "dbms.backup.enabled", "false" )
                 .newGraphDatabase();
@@ -407,7 +407,7 @@ public class ConsistencyCheckServiceIntegrationTest
             node1.createRelationshipTo( node2, relationshipType );
             tx.success();
         }
-        File[] txLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDir, fs ).build().logFiles();
+        File[] txLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fs ).build().logFiles();
         for ( File file : txLogs )
         {
             fs.copyToDirectory( file, tmpLogDir );
@@ -420,7 +420,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
         for ( File file : LogFilesBuilder.logFilesBasedOnlyBuilder( tmpLogDir, fs ).build().logFiles() )
         {
-            fs.moveToDirectory( file, storeDir );
+            fs.moveToDirectory( file, databaseLayout.getTransactionLogsDirectory() );
         }
     }
 

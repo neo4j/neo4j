@@ -129,7 +129,7 @@ class CheckPointerIntegrationTest
         db.shutdown();
 
         // then - 2 check points have been written in the log
-        List<CheckPoint> checkPoints = new CheckPointCollector( testDirectory.databaseDir(), fs ).find( 0 );
+        List<CheckPoint> checkPoints = new CheckPointCollector( logsDirectory(), fs ).find( 0 );
 
         assertTrue( checkPoints.size() >= 2, "Expected at least two (at least one for time interval and one for shutdown), was " +
                 checkPoints.toString() );
@@ -179,7 +179,7 @@ class CheckPointerIntegrationTest
         db.shutdown();
 
         // then - 2 check points have been written in the log
-        List<CheckPoint> checkPoints = new CheckPointCollector( testDirectory.databaseDir(), fs ).find( 0 );
+        List<CheckPoint> checkPoints = new CheckPointCollector( logsDirectory(), fs ).find( 0 );
 
         assertEquals( 2, checkPoints.size() );
     }
@@ -204,7 +204,7 @@ class CheckPointerIntegrationTest
         db.shutdown();
 
         // then - 1 check point has been written in the log
-        List<CheckPoint> checkPoints = new CheckPointCollector( testDirectory.databaseDir(), fs ).find( 0 );
+        List<CheckPoint> checkPoints = new CheckPointCollector( logsDirectory(), fs ).find( 0 );
 
         assertEquals( 1, checkPoints.size() );
     }
@@ -223,7 +223,7 @@ class CheckPointerIntegrationTest
         graphDatabaseBuilder.newGraphDatabase().shutdown();
 
         // then - 2 check points have been written in the log
-        List<CheckPoint> checkPoints = new CheckPointCollector( testDirectory.databaseDir(), fs ).find( 0 );
+        List<CheckPoint> checkPoints = new CheckPointCollector( logsDirectory(), fs ).find( 0 );
 
         assertEquals( 2, checkPoints.size() );
     }
@@ -234,6 +234,11 @@ class CheckPointerIntegrationTest
         // or not there's a need to perform a checkpoint.
         ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( CheckPointer.class ).checkPointIfNeeded(
                 new SimpleTriggerInfo( "Test" ) );
+    }
+
+    private File logsDirectory()
+    {
+        return testDirectory.databaseLayout().getTransactionLogsDirectory();
     }
 
     private static class CheckPointCollector

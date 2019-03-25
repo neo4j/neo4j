@@ -244,8 +244,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
         {
             if ( foundPosition == null )
             {
-                throw new NoSuchTransactionException( transactionId,
-                        "Couldn't find any log containing " + transactionId );
+                throw new NoSuchTransactionException( transactionId, "Couldn't find any log containing " + transactionId );
             }
             return foundPosition;
         }
