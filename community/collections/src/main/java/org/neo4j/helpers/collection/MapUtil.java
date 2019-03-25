@@ -55,7 +55,7 @@ public abstract class MapUtil
      */
     public static <K, V> Map<K, V> genericMap( Object... objects )
     {
-        return genericMap( new HashMap<K, V>(), objects );
+        return genericMap( new HashMap<>(), objects );
     }
 
     /**
@@ -148,27 +148,6 @@ public abstract class MapUtil
     }
 
     /**
-     * Loads a {@link Map} from a {@link Reader} assuming strings as keys
-     * and values. Any {@link IOException} is wrapped and thrown as a
-     * {@link RuntimeException} instead.
-     *
-     * @param reader the {@link Reader} containing a {@link Properties}-like
-     * layout of keys and values.
-     * @return the read data as a {@link Map}.
-     */
-    public static Map<String, String> loadStrictly( Reader reader )
-    {
-        try
-        {
-            return load( reader );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    /**
      * Loads a {@link Map} from an {@link InputStream} assuming strings as keys
      * and values.
      *
@@ -190,27 +169,6 @@ public abstract class MapUtil
         }
 
         return result;
-    }
-
-    /**
-     * Loads a {@link Map} from an {@link InputStream} assuming strings as keys
-     * and values. Any {@link IOException} is wrapped and thrown as a
-     * {@link RuntimeException} instead.
-     *
-     * @param stream the {@link InputStream} containing a
-     * {@link Properties}-like layout of keys and values.
-     * @return the read data as a {@link Map}.
-     */
-    public static Map<String, String> loadStrictly( InputStream stream )
-    {
-        try
-        {
-            return load( stream );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
     }
 
     /**
@@ -266,25 +224,6 @@ public abstract class MapUtil
     }
 
     /**
-     * Stores the data in {@code config} into {@code file} in a standard java
-     * {@link Properties} format. Any {@link IOException} is wrapped and thrown as a
-     * {@link RuntimeException} instead.
-     * @param config the data to store in the properties file.
-     * @param file the file to store the properties in.
-     */
-    public static void storeStrictly( Map<String, String> config, File file )
-    {
-        try
-        {
-            store( config, file );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    /**
      * Stores the data in {@code config} into {@code stream} in a standard java
      * {@link Properties} format.
      * @param config the data to store in the properties file.
@@ -302,25 +241,6 @@ public abstract class MapUtil
     }
 
     /**
-     * Stores the data in {@code config} into {@code stream} in a standard java
-     * {@link Properties} format. Any {@link IOException} is wrapped and thrown as a
-     * {@link RuntimeException} instead.
-     * @param config the data to store in the properties file.
-     * @param stream the {@link OutputStream} to store the properties in.
-     */
-    public static void storeStrictly( Map<String, String> config, OutputStream stream )
-    {
-        try
-        {
-            store( config, stream );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    /**
      * Stores the data in {@code config} into {@code writer} in a standard java
      * {@link Properties} format.
      *
@@ -333,26 +253,6 @@ public abstract class MapUtil
         Properties properties = new Properties();
         properties.putAll( config );
         properties.store( writer, null );
-    }
-
-    /**
-     * Stores the data in {@code config} into {@code writer} in a standard java
-     * {@link Properties} format. Any {@link IOException} is wrapped and thrown
-     * as a {@link RuntimeException} instead.
-     *
-     * @param config the data to store in the properties file.
-     * @param writer the {@link Writer} to store the properties in.
-     */
-    public static void storeStrictly( Map<String, String> config, Writer writer )
-    {
-        try
-        {
-            store( config, writer );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
     }
 
     /**
@@ -374,20 +274,6 @@ public abstract class MapUtil
             reversedMap.put( entry.getValue(), entry.getKey() );
         }
         return reversedMap;
-    }
-
-    public static <K, V> Map<K,V> copyAndPut( Map<K,V> map, K key, V value )
-    {
-        Map<K,V> copy = new HashMap<>( map );
-        copy.put( key, value );
-        return copy;
-    }
-
-    public static <K, V> Map<K,V> copyAndRemove( Map<K,V> map, K key )
-    {
-        Map<K,V> copy = new HashMap<>( map );
-        copy.remove( key );
-        return copy;
     }
 
     public static <K,V> Map<K, V> toMap( Iterable<Pair<K, V>> pairs )
