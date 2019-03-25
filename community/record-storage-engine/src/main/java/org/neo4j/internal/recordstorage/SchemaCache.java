@@ -19,12 +19,10 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.eclipse.collections.api.iterator.IntIterator;
-import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.StampedLock;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.neo4j.common.EntityType;
@@ -43,10 +40,15 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.LabelPropertyMultiSet;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorPredicates;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageIndexReference;
+
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 
 /**
  * A cache of {@link SchemaRule schema rules} as well as enforcement of schema consistency.
@@ -166,11 +168,6 @@ public class SchemaCache
         return schemaCacheState.indexDescriptorsForLabel( labelId );
     }
 
-    Iterator<StorageIndexReference> indexesByNodeProperty( int propertyId )
-    {
-        return schemaCacheState.indexesByNodeProperty( propertyId );
-    }
-
     StorageIndexReference indexDescriptorForName( String name )
     {
         return schemaCacheState.indexDescriptorByName( name );
@@ -183,6 +180,22 @@ public class SchemaCache
         return schemaCacheState.getIndexesRelatedTo( entityType, changedEntityTokens, unchangedEntityTokens, properties, propertyListIsComplete );
     }
 
+    public Collection<IndexBackedConstraintDescriptor> getUniquenessConstraintsRelatedTo( long[] changedLabels, long[] unchangedLabels, int[] properties,
+            boolean propertyListIsComplete, EntityType entityType )
+    {
+        return schemaCacheState.getUniquenessConstraintsRelatedTo( entityType, changedLabels, unchangedLabels, properties, propertyListIsComplete );
+    }
+
+    public boolean hasRelatedSchema( long[] labels, int propertyKey, EntityType entityType )
+    {
+        return schemaCacheState.hasRelatedSchema( labels, propertyKey, entityType );
+    }
+
+    public boolean hasRelatedSchema( int label, EntityType entityType )
+    {
+        return schemaCacheState.hasRelatedSchema( label, entityType );
+    }
+
     private static class SchemaCacheState
     {
         private final ConstraintRuleAccessor constraintSemantics;
@@ -191,8 +204,10 @@ public class SchemaCache
         private final MutableLongObjectMap<ConstraintRule> constraintRuleById;
 
         private final Map<SchemaDescriptor,StorageIndexReference> indexDescriptors;
-        private final LabelPropertyMultiSet indexDescriptorsByNode;
-        private final LabelPropertyMultiSet indexDescriptorsByRelationship;
+        private final LabelPropertyMultiSet<SchemaDescriptor> indexDescriptorsByNode;
+        private final LabelPropertyMultiSet<SchemaDescriptor> indexDescriptorsByRelationship;
+        private final LabelPropertyMultiSet<IndexBackedConstraintDescriptor> uniquenessConstraintsByNode;
+        private final LabelPropertyMultiSet<IndexBackedConstraintDescriptor> uniquenessConstraintsByRelationship;
         private final Map<String,StorageIndexReference> indexDescriptorsByName;
 
         private final Map<Class<?>,Object> dependantState;
@@ -205,8 +220,10 @@ public class SchemaCache
             this.constraintRuleById = new LongObjectHashMap<>();
 
             this.indexDescriptors = new HashMap<>();
-            this.indexDescriptorsByNode = new LabelPropertyMultiSet();
-            this.indexDescriptorsByRelationship = new LabelPropertyMultiSet();
+            this.indexDescriptorsByNode = new LabelPropertyMultiSet<>();
+            this.indexDescriptorsByRelationship = new LabelPropertyMultiSet<>();
+            this.uniquenessConstraintsByNode = new LabelPropertyMultiSet<>();
+            this.uniquenessConstraintsByRelationship = new LabelPropertyMultiSet<>();
             this.indexDescriptorsByName = new HashMap<>();
             this.dependantState = new ConcurrentHashMap<>();
             load( rules );
@@ -220,12 +237,24 @@ public class SchemaCache
             this.constraints = new HashSet<>( schemaCacheState.constraints );
 
             this.indexDescriptors = new HashMap<>( schemaCacheState.indexDescriptors );
-            this.indexDescriptorsByNode = new LabelPropertyMultiSet();
-            this.indexDescriptorsByRelationship = new LabelPropertyMultiSet();
-            // Now fill the indexDescriptorsByNode/Relationship
-            this.indexDescriptorById.forEachValue( index -> selectSetByEntityType( index.schema().entityType() ).add( index.schema() ) );
+            this.indexDescriptorsByNode = new LabelPropertyMultiSet<>();
+            this.indexDescriptorsByRelationship = new LabelPropertyMultiSet<>();
+            this.uniquenessConstraintsByNode = new LabelPropertyMultiSet<>();
+            this.uniquenessConstraintsByRelationship = new LabelPropertyMultiSet<>();
+            // Now fill the node/relationship sets
+            this.indexDescriptorById.forEachValue( index -> selectIndexSetByEntityType( index.schema().entityType() ).add( index.schema() ) );
+            this.constraintRuleById.forEachValue( this::cacheUniquenessConstraint );
             this.indexDescriptorsByName = new HashMap<>( schemaCacheState.indexDescriptorsByName );
             this.dependantState = new ConcurrentHashMap<>();
+        }
+
+        private void cacheUniquenessConstraint( ConstraintRule constraint )
+        {
+            ConstraintDescriptor descriptor = constraint.getConstraintDescriptor();
+            if ( descriptor.enforcesUniqueness() )
+            {
+                selectUniquenessConstraintSetByEntityType( descriptor.schema().entityType() ).add( (IndexBackedConstraintDescriptor) descriptor );
+            }
         }
 
         private void load( Iterable<SchemaRule> schemaRuleIterator )
@@ -276,23 +305,27 @@ public class SchemaCache
             return indexDescriptorsByName.get( name );
         }
 
-        Iterator<StorageIndexReference> indexesByNodeProperty( int propertyId )
-        {
-            throw new UnsupportedOperationException( "It'll go away the next commit anyway" );
-        }
-
         Iterator<StorageIndexReference> indexDescriptorsForLabel( int labelId )
         {
-            throw new UnsupportedOperationException( "It'll go away the next commit anyway" );
+            return Iterators.map( indexDescriptors::get,
+                    getSchemaRelatedTo( indexDescriptorsByNode, new long[]{labelId}, EMPTY_LONG_ARRAY, EMPTY_INT_ARRAY, false ).iterator() );
         }
 
         Set<SchemaDescriptor> getIndexesRelatedTo( EntityType entityType, long[] changedEntityTokens,
                 long[] unchangedEntityTokens, int[] properties, boolean propertyListIsComplete )
         {
-            return getIndexesRelatedTo( selectSetByEntityType( entityType ), changedEntityTokens, unchangedEntityTokens, properties, propertyListIsComplete );
+            return getSchemaRelatedTo( selectIndexSetByEntityType( entityType ), changedEntityTokens, unchangedEntityTokens, properties,
+                    propertyListIsComplete );
         }
 
-        Set<SchemaDescriptor> getIndexesRelatedTo( LabelPropertyMultiSet set, long[] changedEntityTokens,
+        Set<IndexBackedConstraintDescriptor> getUniquenessConstraintsRelatedTo( EntityType entityType, long[] changedEntityTokens,
+                long[] unchangedEntityTokens, int[] properties, boolean propertyListIsComplete )
+        {
+            return getSchemaRelatedTo( selectUniquenessConstraintSetByEntityType( entityType ), changedEntityTokens, unchangedEntityTokens, properties,
+                    propertyListIsComplete );
+        }
+
+        <T extends SchemaDescriptorSupplier> Set<T> getSchemaRelatedTo( LabelPropertyMultiSet<T> set, long[] changedEntityTokens,
                 long[] unchangedEntityTokens, int[] properties, boolean propertyListIsComplete )
         {
             if ( indexDescriptorById.isEmpty() )
@@ -300,7 +333,7 @@ public class SchemaCache
                 return Collections.emptySet();
             }
 
-            Set<SchemaDescriptor> descriptors = new HashSet<>();
+            Set<T> descriptors = new HashSet<>();
             if ( propertyListIsComplete )
             {
                 set.matchingDescriptorsForCompleteListOfProperties( descriptors, changedEntityTokens, properties );
@@ -333,7 +366,19 @@ public class SchemaCache
             return descriptors;
         }
 
-        private LabelPropertyMultiSet selectSetByEntityType( EntityType entityType )
+        boolean hasRelatedSchema( long[] labels, int propertyKey, EntityType entityType )
+        {
+            return selectIndexSetByEntityType( entityType ).has( labels, propertyKey ) ||
+                    selectUniquenessConstraintSetByEntityType( entityType ).has( labels, propertyKey );
+        }
+
+        boolean hasRelatedSchema( int label, EntityType entityType )
+        {
+            return selectIndexSetByEntityType( entityType ).has( label ) ||
+                    selectUniquenessConstraintSetByEntityType( entityType ).has( label );
+        }
+
+        private LabelPropertyMultiSet<SchemaDescriptor> selectIndexSetByEntityType( EntityType entityType )
         {
             switch ( entityType )
             {
@@ -346,34 +391,17 @@ public class SchemaCache
             }
         }
 
-        private void visitIndexesByEntityTokens( long[] entityTokenIds, IntObjectMap<Set<StorageIndexReference>> descriptors,
-                Consumer<StorageIndexReference> visitor )
+        private LabelPropertyMultiSet<IndexBackedConstraintDescriptor> selectUniquenessConstraintSetByEntityType( EntityType entityType )
         {
-            for ( long label : entityTokenIds )
+            switch ( entityType )
             {
-                Set<StorageIndexReference> forLabel = descriptors.get( (int) label );
-                if ( forLabel != null )
-                {
-                    for ( StorageIndexReference match : forLabel )
-                    {
-                        visitor.accept( match );
-                    }
-                }
+            case NODE:
+                return uniquenessConstraintsByNode;
+            case RELATIONSHIP:
+                return uniquenessConstraintsByRelationship;
+            default:
+                throw new IllegalArgumentException( entityType.name() );
             }
-        }
-
-        private Set<StorageIndexReference> extractIndexesByProperties( IntSet properties, IntObjectMap<Set<StorageIndexReference>> descriptorsByProperty )
-        {
-            Set<StorageIndexReference> set = new HashSet<>();
-            for ( IntIterator iterator = properties.intIterator(); iterator.hasNext(); )
-            {
-                Set<StorageIndexReference> forProperty = descriptorsByProperty.get( iterator.next() );
-                if ( forProperty != null )
-                {
-                    set.addAll( forProperty );
-                }
-            }
-            return set;
         }
 
         <P, T> T getOrCreateDependantState( Class<T> type, Function<P,T> factory, P parameter )
@@ -388,6 +416,7 @@ public class SchemaCache
                 ConstraintRule constraintRule = (ConstraintRule) rule;
                 constraintRuleById.put( constraintRule.getId(), constraintRule );
                 constraints.add( constraintSemantics.readConstraint( constraintRule ) );
+                cacheUniquenessConstraint( constraintRule );
             }
             else if ( rule instanceof StorageIndexReference )
             {
@@ -396,7 +425,7 @@ public class SchemaCache
                 SchemaDescriptor schemaDescriptor = index.schema();
                 indexDescriptors.put( schemaDescriptor, index );
                 indexDescriptorsByName.put( rule.name(), index );
-                selectSetByEntityType( schemaDescriptor.entityType() ).add( schemaDescriptor );
+                selectIndexSetByEntityType( schemaDescriptor.entityType() ).add( schemaDescriptor );
             }
         }
 
@@ -405,7 +434,13 @@ public class SchemaCache
             if ( constraintRuleById.containsKey( id ) )
             {
                 ConstraintRule rule = constraintRuleById.remove( id );
-                constraints.remove( rule.getConstraintDescriptor() );
+                ConstraintDescriptor constraintDescriptor = rule.getConstraintDescriptor();
+                constraints.remove( constraintDescriptor );
+                if ( constraintDescriptor.enforcesUniqueness() )
+                {
+                    selectUniquenessConstraintSetByEntityType( constraintDescriptor.schema().entityType() ).remove(
+                            (IndexBackedConstraintDescriptor) constraintDescriptor );
+                }
             }
             else if ( indexDescriptorById.containsKey( id ) )
             {
@@ -413,7 +448,7 @@ public class SchemaCache
                 SchemaDescriptor schema = index.schema();
                 indexDescriptors.remove( schema );
                 indexDescriptorsByName.remove( index.name(), index );
-                selectSetByEntityType( schema.entityType() ).remove( schema );
+                selectIndexSetByEntityType( schema.entityType() ).remove( schema );
             }
         }
     }

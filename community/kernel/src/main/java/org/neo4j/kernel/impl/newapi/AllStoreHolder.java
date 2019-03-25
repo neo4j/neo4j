@@ -85,7 +85,6 @@ import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.singleOrNull;
-import static org.neo4j.internal.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
@@ -709,18 +708,6 @@ public class AllStoreHolder extends Read
             constraints = ktx.txState().constraintsChanges().apply( constraints );
         }
         return Iterators.map( this::lockConstraint, constraints );
-    }
-
-    Iterator<ConstraintDescriptor> constraintsGetForProperty( int propertyKey )
-    {
-        ktx.assertOpen();
-        Iterator<ConstraintDescriptor> constraints = storageReader.constraintsGetAll();
-        if ( ktx.hasTxStateWithChanges() )
-        {
-            constraints = ktx.txState().constraintsChanges().apply( constraints );
-        }
-        return Iterators.map( this::lockConstraint,
-                              Iterators.filter( hasProperty( propertyKey ), constraints ) );
     }
 
     @Override

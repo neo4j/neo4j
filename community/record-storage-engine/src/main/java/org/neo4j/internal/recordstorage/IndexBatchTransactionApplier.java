@@ -230,6 +230,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         {
             if ( schemaRule instanceof StorageIndexReference )
             {
+                StorageIndexReference indexRule = (StorageIndexReference) schemaRule;
                 // Why apply index updates here? Here's the thing... this is a batch applier, which means that
                 // index updates are gathered throughout the batch and applied in the end of the batch.
                 // Assume there are some transactions creating or modifying nodes that may not be covered
@@ -244,22 +245,22 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                 case UPDATE:
                     // Shouldn't we be more clear about that we are waiting for an index to come online here?
                     // right now we just assume that an update to index records means wait for it to be online.
-                    if ( ((StorageIndexReference) schemaRule).isUnique() )
+                    if ( indexRule.isUnique() )
                     {
                         // Register activations into the IndexActivator instead of IndexingService to avoid deadlock
                         // that could insue for applying batches of transactions where a previous transaction in the same
                         // batch acquires a low-level commit lock that prevents the very same index population to complete.
-                        indexActivator.activateIndex( (StorageIndexReference) schemaRule );
+                        indexActivator.activateIndex( indexRule );
                     }
                     break;
                 case CREATE:
                     // Add to list so that all these indexes will be created in one call later
                     createdIndexes = createdIndexes == null ? new ArrayList<>() : createdIndexes;
-                    createdIndexes.add( (StorageIndexReference) schemaRule );
+                    createdIndexes.add( indexRule );
                     break;
                 case DELETE:
-                    indexUpdateListener.dropIndex( (StorageIndexReference) schemaRule );
-                    indexActivator.indexDropped( (StorageIndexReference) schemaRule );
+                    indexUpdateListener.dropIndex( indexRule );
+                    indexActivator.indexDropped( indexRule );
                     break;
                 default:
                     throw new IllegalStateException( commandMode.name() );

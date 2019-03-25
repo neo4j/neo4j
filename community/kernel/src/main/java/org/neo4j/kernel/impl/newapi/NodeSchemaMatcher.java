@@ -19,15 +19,10 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.eclipse.collections.api.set.primitive.IntSet;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
-
+import java.util.Arrays;
 import java.util.Iterator;
 
-import org.neo4j.function.ThrowingBiConsumer;
-import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 
@@ -52,8 +47,6 @@ public class NodeSchemaMatcher
      * @param <SUPPLIER> the type to match. Must implement SchemaDescriptorSupplier
      * @param <EXCEPTION> The type of exception that can be thrown when taking the action
      * @param schemaSuppliers The suppliers to match
-     * @param node The node cursor
-     * @param property The property cursor
      * @param specialPropertyId This property id will always count as a match for the descriptor, regardless of
      * whether the node has this property or not
      * @param callback The action to take on match
@@ -61,32 +54,19 @@ public class NodeSchemaMatcher
      */
     static <SUPPLIER extends SchemaDescriptorSupplier, EXCEPTION extends Exception> void onMatchingSchema(
             Iterator<SUPPLIER> schemaSuppliers,
-            NodeCursor node,
-            PropertyCursor property,
             int specialPropertyId,
-            ThrowingBiConsumer<SUPPLIER,MutableIntSet,EXCEPTION> callback
+            int[] existingPropertyIds,
+            ThrowingConsumer<SUPPLIER,EXCEPTION> callback
     ) throws EXCEPTION
     {
-        MutableIntSet nodePropertyIds = null;
         while ( schemaSuppliers.hasNext() )
         {
             SUPPLIER schemaSupplier = schemaSuppliers.next();
             SchemaDescriptor schema = schemaSupplier.schema();
 
-            // Get the property key set the first time it's needed
-            if ( nodePropertyIds == null )
+            if ( nodeHasSchemaProperties( existingPropertyIds, schema.getPropertyIds(), specialPropertyId ) )
             {
-                nodePropertyIds = new IntHashSet();
-                node.properties( property );
-                while ( property.next() )
-                {
-                    nodePropertyIds.add( property.propertyKey() );
-                }
-            }
-
-            if ( nodeHasSchemaProperties( nodePropertyIds, schema.getPropertyIds(), specialPropertyId ) )
-            {
-                callback.accept( schemaSupplier, nodePropertyIds );
+                callback.accept( schemaSupplier );
             }
         }
     }
@@ -103,8 +83,6 @@ public class NodeSchemaMatcher
      * @param <SUPPLIER> the type to match. Must implement SchemaDescriptorSupplier
      * @param <EXCEPTION> The type of exception that can be thrown when taking the action
      * @param schemaSuppliers The suppliers to match
-     * @param node The node cursor
-     * @param property The property cursor
      * @param specialPropertyId This property id will always count as a match for the descriptor, regardless of
      * whether the node has this property or not
      * @param callback The action to take on match
@@ -112,14 +90,12 @@ public class NodeSchemaMatcher
      */
     static <SUPPLIER extends SchemaDescriptorSupplier, EXCEPTION extends Exception> void onMatchingSchema(
             Iterator<SUPPLIER> schemaSuppliers,
-            NodeCursor node,
-            PropertyCursor property,
             long[] labels,
             int specialPropertyId,
-            ThrowingBiConsumer<SUPPLIER,MutableIntSet,EXCEPTION> callback
+            int[] existingPropertyIds,
+            ThrowingConsumer<SUPPLIER,EXCEPTION> callback
     ) throws EXCEPTION
     {
-        MutableIntSet nodePropertyIds = null;
         while ( schemaSuppliers.hasNext() )
         {
             SUPPLIER schemaSupplier = schemaSuppliers.next();
@@ -130,34 +106,28 @@ public class NodeSchemaMatcher
                 continue;
             }
 
-            // Get the property key set the first time it's needed
-            if ( nodePropertyIds == null )
+            if ( nodeHasSchemaProperties( existingPropertyIds, schema.getPropertyIds(), specialPropertyId ) )
             {
-                nodePropertyIds = new IntHashSet();
-                node.properties( property );
-                while ( property.next() )
-                {
-                    nodePropertyIds.add( property.propertyKey() );
-                }
-            }
-
-            if ( nodeHasSchemaProperties( nodePropertyIds, schema.getPropertyIds(), specialPropertyId ) )
-            {
-                callback.accept( schemaSupplier, nodePropertyIds );
+                callback.accept( schemaSupplier );
             }
         }
     }
 
     private static boolean nodeHasSchemaProperties(
-            IntSet nodeProperties, int[] indexPropertyIds, int changedPropertyId )
+            int[] existingPropertyIds, int[] indexPropertyIds, int changedPropertyId )
     {
         for ( int indexPropertyId : indexPropertyIds )
         {
-            if ( indexPropertyId != changedPropertyId && !nodeProperties.contains( indexPropertyId ) )
+            if ( indexPropertyId != changedPropertyId && !contains( existingPropertyIds, indexPropertyId ) )
             {
                 return false;
             }
         }
         return true;
+    }
+
+    private static boolean contains( int[] existingPropertyIds, int indexPropertyId )
+    {
+        return Arrays.binarySearch( existingPropertyIds, indexPropertyId ) >= 0;
     }
 }

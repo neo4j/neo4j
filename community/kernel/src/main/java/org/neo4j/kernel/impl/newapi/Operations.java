@@ -23,6 +23,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Optional;
 
@@ -30,7 +31,6 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.helpers.collection.CastingIterator;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
@@ -84,11 +84,13 @@ import org.neo4j.kernel.impl.locking.ResourceIds;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.internal.schema.SchemaDescriptor.schemaTokenLockingIds;
@@ -109,8 +111,11 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  */
 public class Operations implements Write, SchemaWrite
 {
+    private static final int[] EMPTY_INT_ARRAY = new int[0];
+
     private final KernelTransactionImplementation ktx;
     private final AllStoreHolder allStoreHolder;
+    private final StorageReader storageReader;
     private final CommandCreationContext commandCreationContext;
     private final KernelToken token;
     private final IndexTxStateUpdater updater;
@@ -123,11 +128,12 @@ public class Operations implements Write, SchemaWrite
     private DefaultPropertyCursor propertyCursor;
     private DefaultRelationshipScanCursor relationshipCursor;
 
-    public Operations( AllStoreHolder allStoreHolder, IndexTxStateUpdater updater,
+    public Operations( AllStoreHolder allStoreHolder, StorageReader storageReader, IndexTxStateUpdater updater,
             CommandCreationContext commandCreationContext, KernelTransactionImplementation ktx,
             KernelToken token, DefaultPooledCursors cursors, ConstraintIndexCreator constraintIndexCreator,
             ConstraintSemantics constraintSemantics, IndexingProvidersService indexProviders, Config config )
     {
+        this.storageReader = storageReader;
         this.commandCreationContext = commandCreationContext;
         this.token = token;
         this.allStoreHolder = allStoreHolder;
@@ -266,28 +272,57 @@ public class Operations implements Write, SchemaWrite
     private void checkConstraintsAndAddLabelToNode( long node, int nodeLabel )
             throws UniquePropertyValueValidationException, UnableToValidateConstraintException
     {
+        // Load the property key id list for this node. We may need it for constraint validation if there are any related constraints,
+        // but regardless we need it for tx state updating
+        int[] existingPropertyKeyIds = loadSortedPropertyKeyList();
+
         //Check so that we are not breaking uniqueness constraints
         //We do this by checking if there is an existing node in the index that
         //with the same label and property combination.
-        Iterator<ConstraintDescriptor> constraints = allStoreHolder.constraintsGetForLabel( nodeLabel );
-        while ( constraints.hasNext() )
+        if ( existingPropertyKeyIds.length > 0 )
         {
-            ConstraintDescriptor constraint = constraints.next();
-            if ( constraint.enforcesUniqueness() )
+            for ( IndexBackedConstraintDescriptor uniquenessConstraint : storageReader.uniquenessConstraintsGetRelated( new long[]{nodeLabel},
+                    existingPropertyKeyIds, NODE ) )
             {
-                IndexBackedConstraintDescriptor uniqueConstraint = (IndexBackedConstraintDescriptor) constraint;
-                IndexQuery.ExactPredicate[] propertyValues = getAllPropertyValues( uniqueConstraint.schema(),
+                IndexQuery.ExactPredicate[] propertyValues = getAllPropertyValues( uniquenessConstraint.schema(),
                         StatementConstants.NO_SUCH_PROPERTY_KEY, Values.NO_VALUE );
                 if ( propertyValues != null )
                 {
-                    validateNoExistingNodeWithExactValues( uniqueConstraint, propertyValues, node );
+                    validateNoExistingNodeWithExactValues( uniquenessConstraint, propertyValues, node );
                 }
             }
         }
 
         //node is there and doesn't already have the label, let's add
         ktx.txState().nodeDoAddLabel( nodeLabel, node );
-        updater.onLabelChange( nodeLabel, nodeCursor, propertyCursor, ADDED_LABEL );
+        updater.onLabelChange( nodeLabel, existingPropertyKeyIds, nodeCursor, propertyCursor, ADDED_LABEL );
+    }
+
+    private int[] loadSortedPropertyKeyList()
+    {
+        nodeCursor.properties( propertyCursor );
+        if ( !propertyCursor.next() )
+        {
+            return EMPTY_INT_ARRAY;
+        }
+
+        int[] propertyKeyIds = new int[4]; // just some arbitrary starting point, it grows on demand
+        int cursor = 0;
+        do
+        {
+            if ( cursor == propertyKeyIds.length )
+            {
+                propertyKeyIds = Arrays.copyOf( propertyKeyIds, cursor * 2 );
+            }
+            propertyKeyIds[cursor++] = propertyCursor.propertyKey();
+        }
+        while ( propertyCursor.next() );
+        if ( cursor != propertyKeyIds.length )
+        {
+            propertyKeyIds = Arrays.copyOf( propertyKeyIds, cursor );
+        }
+        Arrays.sort( propertyKeyIds );
+        return propertyKeyIds;
     }
 
     private boolean nodeDelete( long node, boolean lock )
@@ -377,7 +412,7 @@ public class Operations implements Write, SchemaWrite
         allStoreHolder.singleNode( node, nodeCursor );
         if ( !nodeCursor.next() )
         {
-            throw new EntityNotFoundException( EntityType.NODE, node );
+            throw new EntityNotFoundException( NODE, node );
         }
     }
 
@@ -493,7 +528,10 @@ public class Operations implements Write, SchemaWrite
 
         sharedSchemaLock( ResourceTypes.LABEL, labelId );
         ktx.txState().nodeDoRemoveLabel( labelId, node );
-        updater.onLabelChange( labelId, nodeCursor, propertyCursor, REMOVED_LABEL );
+        if ( storageReader.hasRelatedSchema( labelId, NODE ) )
+        {
+            updater.onLabelChange( labelId, loadSortedPropertyKeyList(), nodeCursor, propertyCursor, REMOVED_LABEL );
+        }
         return true;
     }
 
@@ -507,34 +545,33 @@ public class Operations implements Write, SchemaWrite
         singleNode( node );
         long[] labels = acquireSharedNodeLabelLocks();
         Value existingValue = readNodeProperty( propertyKey );
+        int[] existingPropertyKeyIds = null;
+        boolean hasRelatedSchema = storageReader.hasRelatedSchema( labels, propertyKey, NODE );
+        if ( hasRelatedSchema )
+        {
+            existingPropertyKeyIds = loadSortedPropertyKeyList();
+        }
+
         if ( !existingValue.equals( value ) )
         {
-            // The value changed so let's check uniqueness constraints.
-            Iterator<ConstraintDescriptor> constraints = allStoreHolder.constraintsGetForProperty( propertyKey );
-            Iterator<IndexBackedConstraintDescriptor> uniquenessConstraints =
-                    new CastingIterator<>( constraints, IndexBackedConstraintDescriptor.class );
-            NodeSchemaMatcher.onMatchingSchema( uniquenessConstraints, nodeCursor, propertyCursor, labels, propertyKey,
-                    ( constraint, propertyIds ) ->
+            // The value changed and there may be relevant constraints to check so let's check those now.
+            Collection<IndexBackedConstraintDescriptor> uniquenessConstraints = storageReader.uniquenessConstraintsGetRelated( labels, propertyKey, NODE );
+            NodeSchemaMatcher.onMatchingSchema( uniquenessConstraints.iterator(), propertyKey, existingPropertyKeyIds,
+                    uniquenessConstraint ->
                     {
-                        if ( propertyIds.contains( propertyKey ) )
-                        {
-                            Value previousValue = readNodeProperty( propertyKey );
-                            if ( value.equals( previousValue ) )
-                            {
-                                // since we are changing to the same value, there is no need to check
-                                return;
-                            }
-                        }
-                        validateNoExistingNodeWithExactValues( constraint,
-                                getAllPropertyValues( constraint.schema(), propertyKey, value ), node );
-                    } );
+                        validateNoExistingNodeWithExactValues( uniquenessConstraint, getAllPropertyValues( uniquenessConstraint.schema(), propertyKey, value ),
+                                node );
+                    });
         }
 
         if ( existingValue == NO_VALUE )
         {
             //no existing value, we just add it
             ktx.txState().nodeDoAddProperty( node, propertyKey, value );
-            updater.onPropertyAdd( nodeCursor, propertyCursor, labels, propertyKey, value );
+            if ( hasRelatedSchema )
+            {
+                updater.onPropertyAdd( nodeCursor, propertyCursor, labels, propertyKey, existingPropertyKeyIds, value );
+            }
             return NO_VALUE;
         }
         else
@@ -543,7 +580,10 @@ public class Operations implements Write, SchemaWrite
             {
                 //the value has changed to a new value
                 ktx.txState().nodeDoChangeProperty( node, propertyKey, value );
-                updater.onPropertyChange( nodeCursor, propertyCursor, labels, propertyKey, existingValue, value );
+                if ( hasRelatedSchema )
+                {
+                    updater.onPropertyChange( nodeCursor, propertyCursor, labels, propertyKey, existingPropertyKeyIds, existingValue, value );
+                }
             }
             return existingValue;
         }
@@ -562,7 +602,10 @@ public class Operations implements Write, SchemaWrite
         {
             long[] labels = acquireSharedNodeLabelLocks();
             ktx.txState().nodeDoRemoveProperty( node, propertyKey );
-            updater.onPropertyRemove( nodeCursor, propertyCursor, labels, propertyKey, existingValue );
+            if ( storageReader.hasRelatedSchema( labels, propertyKey, NODE ) )
+            {
+                updater.onPropertyRemove( nodeCursor, propertyCursor, labels, propertyKey, loadSortedPropertyKeyList(), existingValue );
+            }
         }
 
         return existingValue;
@@ -1042,7 +1085,7 @@ public class Operations implements Write, SchemaWrite
     {
         if ( !allStoreHolder.nodeExists( sourceNode ) )
         {
-            throw new EntityNotFoundException( EntityType.NODE, sourceNode );
+            throw new EntityNotFoundException( NODE, sourceNode );
         }
     }
 

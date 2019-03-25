@@ -101,6 +101,28 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return indexMap.getAllIndexProxies();
     }
 
+//    public Collection<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, int[] sortedProperties,
+//            boolean propertyListIsComplete, EntityType entityType )
+//    {
+//        return indexMap.getRelatedIndexes( changedEntityTokens, unchangedEntityTokens, sortedProperties, propertyListIsComplete, entityType );
+//    }
+//
+//    public Collection<IndexBackedConstraintDescriptor> getRelatedConstraints( long[] changedLabels, long[] unchangedLabels, int[] sortedProperties,
+//            boolean propertyListIsComplete, EntityType entityType )
+//    {
+//        return indexMap.getRelatedConstraints( changedLabels, unchangedLabels, sortedProperties, propertyListIsComplete, entityType );
+//    }
+//
+//    public boolean hasRelatedSchema( long[] labels, int propertyKey, EntityType entityType )
+//    {
+//        return indexMap.hasRelatedSchema( labels, propertyKey, entityType );
+//    }
+//
+//    public boolean hasRelatedSchema( int label, EntityType entityType )
+//    {
+//        return indexMap.hasRelatedSchema( label, entityType );
+//    }
+
     public IndexUpdaterMap createIndexUpdaterMap( IndexUpdateMode mode )
     {
         return new IndexUpdaterMap( indexMap, mode );

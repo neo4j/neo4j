@@ -311,10 +311,6 @@ public class SchemaCacheTest
         {
             assertEquals( 1, Iterators.count( cache.indexDescriptorsForLabel( labelId ) ) );
         }
-        for ( int propertyId = 0; propertyId < indexNumber; propertyId++ )
-        {
-            assertEquals( 1, Iterators.count( cache.indexesByNodeProperty( propertyId ) ) );
-        }
     }
 
     @Test
@@ -339,10 +335,6 @@ public class SchemaCacheTest
         for ( int labelId = numberOfDeletions; labelId < indexNumber; labelId++ )
         {
             assertEquals( 1, Iterators.count( cache.indexDescriptorsForLabel( labelId ) ) );
-        }
-        for ( int propertyId = numberOfDeletions; propertyId < indexNumber; propertyId++ )
-        {
-            assertEquals( 1, Iterators.count( cache.indexesByNodeProperty( propertyId ) ) );
         }
     }
 

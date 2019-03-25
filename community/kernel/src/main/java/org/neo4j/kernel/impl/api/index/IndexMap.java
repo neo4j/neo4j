@@ -21,10 +21,8 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.map.primitive.LongObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
-import org.eclipse.collections.impl.block.factory.Functions;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
@@ -50,11 +48,6 @@ public final class IndexMap implements Cloneable
     public IndexMap()
     {
         this( new LongObjectHashMap<>(), new HashMap<>(), new ObjectLongHashMap<>() );
-    }
-
-    IndexMap( MutableLongObjectMap<IndexProxy> indexesById )
-    {
-        this( indexesById, indexesByDescriptor( indexesById ), indexIdsByDescriptor( indexesById ) );
     }
 
     private IndexMap(
@@ -142,17 +135,5 @@ public final class IndexMap implements Cloneable
         Map<K, V> shallowCopy = new HashMap<>( map.size() );
         shallowCopy.putAll( map );
         return shallowCopy;
-    }
-
-    private static Map<SchemaDescriptor, IndexProxy> indexesByDescriptor( LongObjectMap<IndexProxy> indexesById )
-    {
-        return indexesById.toMap( indexProxy -> indexProxy.getDescriptor().schema(), Functions.identity() );
-    }
-
-    private static MutableObjectLongMap<SchemaDescriptor> indexIdsByDescriptor( LongObjectMap<IndexProxy> indexesById )
-    {
-        final MutableObjectLongMap<SchemaDescriptor> map = new ObjectLongHashMap<>( indexesById.size() );
-        indexesById.forEachKeyValue( ( id, indexProxy ) -> map.put( indexProxy.getDescriptor().schema(), id ) );
-        return map;
     }
 }

@@ -235,6 +235,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.operations =
                 new Operations(
                         allStoreHolder,
+                        storageReader,
                         new IndexTxStateUpdater( storageReader, allStoreHolder, indexingService ),
                         commandCreationContext,
                         this,
