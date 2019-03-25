@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -54,7 +53,6 @@ import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.config.SettingGroup;
 import org.neo4j.graphdb.config.SettingValidator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.diagnostics.DiagnosticsPhase;
@@ -94,7 +92,7 @@ public class Config implements DiagnosticsProvider, Configuration
     private final Map<String,String> overriddenDefaults = new CopyOnWriteHashMap<>();
     private final Map<String,BaseSetting<?>> settingsMap; // Only contains fixed settings and not groups
 
-    // Messages to this log get replayed into a real logger once logging has been instantiated.
+    // Messages to this log get replayed target a real logger once logging has been instantiated.
     private Log log = new BufferingLog();
 
     /**
@@ -851,26 +849,7 @@ public class Config implements DiagnosticsProvider, Configuration
         }
         try
         {
-            @SuppressWarnings( "MismatchedQueryAndUpdateOfCollection" )
-            Properties loader = new Properties()
-            {
-                @Override
-                public Object put( Object key, Object val )
-                {
-                    String setting = key.toString();
-                    String value = val.toString();
-                    // We use the 'super' Hashtable as a set of all the settings we have logged warnings about.
-                    // We only want to warn about each duplicate setting once.
-                    if ( into.putIfAbsent( setting, value ) != null &&
-                            super.put( key, val ) == null &&
-                            !key.equals( ExternalSettings.additionalJvm.name() ) )
-                    {
-                        log.warn( "The '%s' setting is specified more than once. Settings only be specified once, to avoid ambiguity. " +
-                                "The setting value that will be used is '%s'.", setting, into.get( setting ) );
-                    }
-                    return null;
-                }
-            };
+            PropertiesLoader loader = new PropertiesLoader( into, log );
             try ( FileInputStream stream = new FileInputStream( file ) )
             {
                 loader.load( stream );
@@ -1010,5 +989,31 @@ public class Config implements DiagnosticsProvider, Configuration
                 .sorted( Comparator.comparing( Map.Entry::getKey ) )
                 .map( entry -> entry.getKey() + "=" + obsfucateIfSecret( entry ) )
                 .collect( Collectors.joining( ", ") );
+    }
+
+    private static class PropertiesLoader extends Properties
+    {
+        private final Map<String,String> target;
+        private final Log log;
+
+        PropertiesLoader( Map<String,String> target, Log log )
+        {
+            this.target = target;
+            this.log = log;
+        }
+
+        @Override
+        public Object put( Object key, Object val )
+        {
+            String setting = key.toString();
+            String value = val.toString();
+
+            String oldValue = target.put( setting, value );
+            if ( oldValue != null && !key.equals( ExternalSettings.additionalJvm.name() ) )
+            {
+                log.warn( "The '%s' setting is overridden. Setting value changed from '%s' to '%s'.", setting, oldValue, value );
+            }
+            return null;
+        }
     }
 }

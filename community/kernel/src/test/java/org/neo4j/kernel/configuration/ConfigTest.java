@@ -27,7 +27,6 @@ import org.mockito.InOrder;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
@@ -309,18 +308,18 @@ public class ConfigTest
                 ExternalSettings.initialHeapSize.name() + "=4g",
                 ExternalSettings.initialHeapSize.name() + "=3g",
                 ExternalSettings.maxHeapSize.name() + "=10g",
-                ExternalSettings.maxHeapSize.name() + "=10g" ) );
+                ExternalSettings.maxHeapSize.name() + "=11g" ) );
 
         Config config = Config.fromFile( confFile ).build();
         config.setLogger( log );
 
         // We should only log the warning once for each.
-        verify( log ).warn( "The '%s' setting is specified more than once. Settings only be specified once, to avoid ambiguity. " +
-                        "The setting value that will be used is '%s'.",
-                ExternalSettings.initialHeapSize.name(), "5g" );
-        verify( log ).warn( "The '%s' setting is specified more than once. Settings only be specified once, to avoid ambiguity. " +
-                        "The setting value that will be used is '%s'.",
-                ExternalSettings.maxHeapSize.name(), "10g" );
+        verify( log ).warn( "The '%s' setting is overridden. Setting value changed from '%s' to '%s'.",
+                ExternalSettings.initialHeapSize.name(), "5g", "4g" );
+        verify( log ).warn( "The '%s' setting is overridden. Setting value changed from '%s' to '%s'.",
+                ExternalSettings.initialHeapSize.name(), "4g", "3g" );
+        verify( log ).warn( "The '%s' setting is overridden. Setting value changed from '%s' to '%s'.",
+                ExternalSettings.maxHeapSize.name(), "10g", "11g" );
     }
 
     @Test
