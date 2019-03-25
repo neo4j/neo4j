@@ -116,7 +116,7 @@ public class Config implements DiagnosticsProvider, Configuration
      */
     public static class Builder
     {
-        private Map<String,String> initialSettings = stringMap();
+        private Map<String,String> overriddenSettings = stringMap();
         private Map<String,String> overriddenDefaults = stringMap();
         private List<ConfigurationValidator> validators = new ArrayList<>();
         private File configFile;
@@ -143,7 +143,7 @@ public class Config implements DiagnosticsProvider, Configuration
          */
         public Builder withSetting( final String setting, final String value )
         {
-            initialSettings.put( setting, value );
+            overriddenSettings.put( setting, value );
             return this;
         }
 
@@ -154,7 +154,7 @@ public class Config implements DiagnosticsProvider, Configuration
          */
         public Builder withSettings( final Map<String,String> initialSettings )
         {
-            this.initialSettings.putAll( initialSettings );
+            this.overriddenSettings.putAll( initialSettings );
             return this;
         }
 
@@ -258,7 +258,7 @@ public class Config implements DiagnosticsProvider, Configuration
         @Nonnull
         public Builder withHome( final File homeDir )
         {
-            initialSettings.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.getAbsolutePath() );
+            overriddenSettings.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.getAbsolutePath() );
             return this;
         }
 
@@ -304,12 +304,12 @@ public class Config implements DiagnosticsProvider, Configuration
                     Optional.ofNullable( settingsClasses ).orElseGet( LoadableConfig::allConfigClasses );
 
             // If reading from a file, make sure we always have a neo4j_home
-            if ( configFile != null && !initialSettings.containsKey( GraphDatabaseSettings.neo4j_home.name() ) )
+            if ( configFile != null && !overriddenSettings.containsKey( GraphDatabaseSettings.neo4j_home.name() ) )
             {
-                initialSettings.put( GraphDatabaseSettings.neo4j_home.name(), System.getProperty( "user.dir" ) );
+                overriddenSettings.put( GraphDatabaseSettings.neo4j_home.name(), System.getProperty( "user.dir" ) );
             }
 
-            Config config = new Config( configFile, throwOnFileLoadFailure, initialSettings, overriddenDefaults, validators, loadableConfigs );
+            Config config = new Config( configFile, throwOnFileLoadFailure, overriddenSettings, overriddenDefaults, validators, loadableConfigs );
 
             if ( connectorsDisabled )
             {
@@ -365,7 +365,7 @@ public class Config implements DiagnosticsProvider, Configuration
 
     /**
      * @param initialSettings a map with settings to be present in the config.
-     * @return a configuration with default values augmented with the provided <code>initialSettings</code>.
+     * @return a configuration with default values augmented with the provided <code>overriddenSettings</code>.
      */
     @Nonnull
     public static Config defaults( @Nonnull final Map<String,String> initialSettings )
@@ -386,7 +386,7 @@ public class Config implements DiagnosticsProvider, Configuration
 
     private Config( File configFile,
             boolean throwOnFileLoadFailure,
-            Map<String,String> initialSettings,
+            Map<String,String> overriddenSettings,
             Map<String,String> overriddenDefaults,
             Collection<ConfigurationValidator> additionalValidators,
             List<LoadableConfig> settingsClasses )
@@ -408,20 +408,31 @@ public class Config implements DiagnosticsProvider, Configuration
         this.overriddenDefaults.putAll( overriddenDefaults );
 
         boolean fromFile = configFile != null;
-        if ( fromFile )
-        {
-            loadFromFile( configFile, log, throwOnFileLoadFailure, initialSettings );
-        }
+        Map<String,String> settings = buildConfiguredSettings( configFile, throwOnFileLoadFailure, overriddenSettings, overriddenDefaults, fromFile );
 
-        overriddenDefaults.forEach( initialSettings::putIfAbsent );
-
-        migrateAndValidateAndUpdateSettings( initialSettings, fromFile );
+        migrateAndValidateAndUpdateSettings( settings, fromFile );
 
         // Only warn for deprecations if red from a file
         if ( fromFile )
         {
             warnAboutDeprecations( params );
         }
+    }
+
+    private Map<String,String> buildConfiguredSettings( File configFile, boolean throwOnFileLoadFailure, Map<String,String> overriddenSettings,
+            Map<String,String> overriddenDefaults, boolean fromFile )
+    {
+        Map<String,String> settings = new HashMap<>();
+        if ( fromFile )
+        {
+            loadFromFile( configFile, log, throwOnFileLoadFailure, settings );
+        }
+        for ( Map.Entry<String,String> overriddenSetting : overriddenSettings.entrySet() )
+        {
+            addSettingToMap( settings, overriddenSetting.getKey(), overriddenSetting.getValue(), log );
+        }
+        overriddenDefaults.forEach( settings::putIfAbsent );
+        return settings;
     }
 
     /**
@@ -991,6 +1002,15 @@ public class Config implements DiagnosticsProvider, Configuration
                 .collect( Collectors.joining( ", ") );
     }
 
+    private static void addSettingToMap( Map<String,String> settingMap, String setting, String newValue, Log log )
+    {
+        String oldValue = settingMap.put( setting, newValue );
+        if ( oldValue != null && !setting.equals( ExternalSettings.additionalJvm.name() ) )
+        {
+            log.warn( "The '%s' setting is overridden. Setting value changed from '%s' to '%s'.", setting, oldValue, newValue );
+        }
+    }
+
     private static class PropertiesLoader extends Properties
     {
         private final Map<String,String> target;
@@ -1008,11 +1028,7 @@ public class Config implements DiagnosticsProvider, Configuration
             String setting = key.toString();
             String value = val.toString();
 
-            String oldValue = target.put( setting, value );
-            if ( oldValue != null && !key.equals( ExternalSettings.additionalJvm.name() ) )
-            {
-                log.warn( "The '%s' setting is overridden. Setting value changed from '%s' to '%s'.", setting, oldValue, value );
-            }
+            addSettingToMap( target, setting, value, log );
             return null;
         }
     }
