@@ -298,13 +298,10 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
 
   test("[retrieveAllAnonymized] should anonymize tokens inside queries") {
     // given
-    execute("CALL db.stats.stop('QUERIES')").single
     execute("CREATE (:User {age: 99})-[:KNOWS]->(:Buddy {p: 42})-[:WANTS]->(:Raccoon)") // create tokens
 
-    execute("CALL db.stats.collect('QUERIES')").single
     execute("MATCH (:User)-[:KNOWS]->(:Buddy)-[:WANTS]->(:Raccoon) RETURN 1")
     execute("MATCH ({p: 42}), ({age: 43}) RETURN 1")
-    execute("CALL db.stats.stop('QUERIES')").single
 
     // when
     val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
@@ -319,10 +316,9 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
   test("[retrieveAllAnonymized] should handle pre-parser options") {
     // given
     execute("CREATE (:User {age: 99})-[:KNOWS]->(:Buddy {p: 42})-[:WANTS]->(:Raccoon)") // create tokens
-    execute("CALL db.stats.collect('QUERIES')").single
+
     execute("EXPLAIN MATCH (:User)-[:KNOWS]->(:Buddy)-[:WANTS]->(:Raccoon) RETURN 1")
     execute("CYPHER 3.4 runtime=interpreted PROFILE CREATE ()")
-    execute("CALL db.stats.stop('QUERIES')").single
 
     // when
     val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
@@ -338,10 +334,9 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     // given
     val path = Files.createTempFile("data", ".csv")
     val url = path.toUri.toURL.toString
-    execute("CALL db.stats.collect('QUERIES')").single
+
     execute(s"LOAD CSV FROM '$url' AS row CREATE ({key: row[0]})")
     execute(s"USING PERIODIC COMMIT 30 LOAD CSV FROM '$url' AS row CREATE ({key: row[0]})")
-    execute("CALL db.stats.stop('QUERIES')").single
 
     // when
     val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")

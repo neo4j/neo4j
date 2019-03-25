@@ -45,7 +45,9 @@ final class MetaSection
     { // only static methods
     }
 
-    static Stream<RetrieveResult> retrieve( String graphToken, Kernel kernel, long nSilentQueryDrops ) throws TransactionFailureException
+    static Stream<RetrieveResult> retrieve( String graphToken,
+                                            Kernel kernel,
+                                            long numSilentQueryDrops ) throws TransactionFailureException
     {
         Map<String, Object> systemData = new HashMap<>();
         systemData.put( "jvmMemoryFree", Runtime.getRuntime().freeMemory() );
@@ -77,7 +79,7 @@ final class MetaSection
         systemData.put( "fileEncoding",  System.getProperty( "file.encoding" ) );
 
         Map<String, Object> internalData = new HashMap<>();
-        internalData.put( "numSilentQueryCollectionMisses", nSilentQueryDrops );
+        internalData.put( "numSilentQueryCollectionMisses", numSilentQueryDrops );
 
         Map<String, Object> metaData = new HashMap<>();
         metaData.put( "graphToken", graphToken );

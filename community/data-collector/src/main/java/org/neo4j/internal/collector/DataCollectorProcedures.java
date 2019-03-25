@@ -19,9 +19,7 @@
  */
 package org.neo4j.internal.collector;
 
-import java.time.ZonedDateTime;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -63,7 +61,7 @@ public class DataCollectorProcedures
             return TokensSection.retrieve( dataCollector.kernel );
 
         case Sections.META:
-            return MetaSection.retrieve( null, dataCollector.kernel, dataCollector.queryCollector.nSilentQueryDrops() );
+            return MetaSection.retrieve( null, dataCollector.kernel, dataCollector.queryCollector.numSilentQueryDrops() );
 
         case Sections.QUERIES:
             return QueriesSection.retrieve( dataCollector.queryCollector.getData(),
@@ -87,7 +85,7 @@ public class DataCollectorProcedures
             throw new InvalidArgumentsException( "Graph token must be a non-empty string" );
         }
 
-        return Stream.of( MetaSection.retrieve( graphToken, dataCollector.kernel, dataCollector.queryCollector.nSilentQueryDrops() ),
+        return Stream.of( MetaSection.retrieve( graphToken, dataCollector.kernel, dataCollector.queryCollector.numSilentQueryDrops() ),
                           GraphCountsSection.retrieve( dataCollector.kernel, Anonymizer.IDS ),
                           QueriesSection.retrieve( dataCollector.queryCollector.getData(),
                                                    new IdAnonymizer( transaction.tokenRead() ),

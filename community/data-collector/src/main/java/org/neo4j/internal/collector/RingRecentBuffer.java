@@ -53,7 +53,7 @@ public class RingRecentBuffer<T> implements RecentBuffer<T>
         dropEvents = new AtomicLong( 0 );
     }
 
-    long nSilentQueryDrops()
+    long numSilentQueryDrops()
     {
         return dropEvents.get();
     }

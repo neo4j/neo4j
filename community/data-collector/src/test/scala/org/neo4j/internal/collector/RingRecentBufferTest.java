@@ -62,7 +62,7 @@ class RingRecentBufferTest
         }
         buffer.foreach( Assertions::assertNotNull );
 
-        assertEquals( 0, buffer.nSilentQueryDrops() );
+        assertEquals( 0, buffer.numSilentQueryDrops() );
     }
 
     @Test
@@ -100,7 +100,7 @@ class RingRecentBufferTest
         {
             executor.shutdown();
         }
-        assertEquals( 0, buffer.nSilentQueryDrops() );
+        assertEquals( 0, buffer.numSilentQueryDrops() );
     }
 
     @Test
@@ -133,7 +133,7 @@ class RingRecentBufferTest
         {
             executor.shutdown();
         }
-        assertEquals( 0, buffer.nSilentQueryDrops() );
+        assertEquals( 0, buffer.numSilentQueryDrops() );
     }
 
     @Test
@@ -170,7 +170,7 @@ class RingRecentBufferTest
         {
             executor.shutdown();
         }
-        assertEquals( 0, buffer.nSilentQueryDrops() );
+        assertEquals( 0, buffer.numSilentQueryDrops() );
     }
 
     private <T> Runnable stress( int n, LongConsumer action )
