@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.hamcrest.core.CombinableMatcher;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -41,7 +42,10 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Collections.singletonList;
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -73,16 +77,21 @@ public class UniqueIndexSeekIT
             assertNotNull( indexExtensionFactory.getIndexProvider() );
             assertThat( numberOfClosedReaders(), greaterThan( 0L ) );
             assertThat( numberOfOpenReaders(), greaterThan( 0L ) );
-            assertEquals( numberOfClosedReaders(), numberOfOpenReaders() );
+            assertThat( numberOfClosedReaders(), closeTo( numberOfOpenReaders(), 1 ) );
 
             lockNodeUsingUniqueIndexSeek( database, label, nameProperty );
 
-            assertEquals( numberOfClosedReaders(), numberOfOpenReaders() );
+            assertThat( numberOfClosedReaders(), closeTo( numberOfOpenReaders(), 1 ) );
         }
         finally
         {
             database.shutdown();
         }
+    }
+
+    private static CombinableMatcher<Long> closeTo( long from, long delta )
+    {
+        return both( greaterThanOrEqualTo( from ) ).and( lessThanOrEqualTo( from + delta ) );
     }
 
     private GraphDatabaseAPI createDatabase( TrackingIndexExtensionFactory indexExtensionFactory )
