@@ -244,7 +244,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "score :: FLOAT?)", "Query the given fulltext index. Returns the matching relationships and their lucene query score, ordered by " +
                         "score.", "READ" ),
                 proc( "db.stats.retrieve", "(section :: STRING?, config = {} :: MAP?) :: (section :: STRING?, data :: MAP?)",
-                      "Retrieve statistical data about the current database. Valid sections are 'GRAPH COUNTS', 'TOKENS', 'QUERIES'", "READ" ),
+                      "Retrieve statistical data about the current database. Valid sections are 'GRAPH COUNTS', 'TOKENS', 'QUERIES', 'META'", "READ" ),
                 proc( "db.stats.retrieveAllAnonymized", "(graphToken :: STRING?, config = {} :: MAP?) :: (section :: STRING?, data :: MAP?)",
                       "Retrieve all available statistical data about the current database, in an anonymized form.", "READ" ),
                 proc( "db.stats.status", "() :: (section :: STRING?, status :: STRING?, data :: MAP?)",
