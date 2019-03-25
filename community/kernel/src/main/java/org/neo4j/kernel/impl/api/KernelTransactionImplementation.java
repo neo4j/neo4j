@@ -229,7 +229,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.operations =
                 new Operations(
                         allStoreHolder,
-                        new IndexTxStateUpdater( storageReader, allStoreHolder, indexingService ), storageReader,
+                        new IndexTxStateUpdater( allStoreHolder, indexingService ), storageReader,
                         this,
                         new KernelToken( storageReader, this, tokenHolders ),
                         cursors,

@@ -85,6 +85,7 @@ import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.values.storable.Values;
@@ -386,9 +387,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 .toArray( StoreIndexDescriptor[]::new );
     }
 
-    private List<StoreIndexDescriptor> getIndexRules( NeoStores neoStores )
+    private List<SchemaRule> getIndexRules( NeoStores neoStores )
     {
-        return Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).indexesGetAll() );
+        return Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).loadAllSchemaRules() );
     }
 
     private Map<String, Integer> getLabelIdsByName( String... names )

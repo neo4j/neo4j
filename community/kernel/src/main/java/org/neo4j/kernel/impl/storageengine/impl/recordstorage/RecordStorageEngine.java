@@ -201,7 +201,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             this.indexProviderMap = indexProviderMap;
             indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, indexProviderMap,
                     indexStoreView, tokenNameLookup,
-                    Iterators.asList( schemaStorage.indexesGetAll() ), logProvider, userLogProvider,
+                    Iterators.asList( schemaStorage.loadAllSchemaRules() ), logProvider, userLogProvider,
                     indexingServiceMonitor, schemaState );
 
             integrityValidator = new IntegrityValidator( neoStores, indexingService );

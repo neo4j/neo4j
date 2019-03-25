@@ -21,20 +21,14 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.api.set.primitive.IntSet;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.Collection;
-import java.util.Iterator;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 
@@ -47,15 +41,11 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  */
 public class IndexTxStateUpdater
 {
-    private final StorageReader storageReader;
     private final Read read;
     private final IndexingService indexingService;
 
-    // We can use the StorageReader directly instead of the SchemaReadOps, because we know that in transactions
-    // where this class is needed we will never have index changes.
-    public IndexTxStateUpdater( StorageReader storageReader, Read read, IndexingService indexingService )
+    public IndexTxStateUpdater( Read read, IndexingService indexingService )
     {
-        this.storageReader = storageReader;
         this.read = read;
         this.indexingService = indexingService;
     }
@@ -72,38 +62,23 @@ public class IndexTxStateUpdater
      * A label has been changed, figure out what updates are needed to tx state.
      *
      * @param labelId The id of the changed label
+     * @param existingPropertyKeyIds all property key ids the node has, sorted by id
      * @param node cursor to the node where the change was applied
      * @param propertyCursor cursor to the properties of node
      * @param changeType The type of change event
      */
-    void onLabelChange( int labelId, NodeCursor node, PropertyCursor propertyCursor, LabelChangeType changeType )
+    void onLabelChange( int labelId, int[] existingPropertyKeyIds, NodeCursor node, PropertyCursor propertyCursor, LabelChangeType changeType )
     {
         assert noSchemaChangedInTx();
 
         // Check all indexes of the changed label
-        Iterator<? extends IndexDescriptor> indexes = storageReader.indexesGetForLabel( labelId );
-
-        if ( !indexes.hasNext() )
+        Collection<SchemaDescriptor> indexes = indexingService.getRelatedIndexes( new long[]{labelId}, existingPropertyKeyIds, NODE );
+        if ( !indexes.isEmpty() )
         {
-            return;
-        }
-
-        // Find properties of the changed node
-        final MutableIntSet nodePropertyIds = new IntHashSet();
-        node.properties( propertyCursor );
-        while ( propertyCursor.next() )
-        {
-            nodePropertyIds.add( propertyCursor.propertyKey() );
-        }
-
-        // Check all indexes of the changed label
-        MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
-        while ( indexes.hasNext() )
-        {
-            IndexDescriptor index = indexes.next();
-            int[] indexPropertyIds = index.schema().getPropertyIds();
-            if ( nodeHasIndexProperties( nodePropertyIds, indexPropertyIds ) )
+            MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
+            for ( SchemaDescriptor index : indexes )
             {
+                int[] indexPropertyIds = index.schema().getPropertyIds();
                 Value[] values = getValueTuple( node, propertyCursor, NO_SUCH_PROPERTY_KEY, NO_VALUE, indexPropertyIds, materializedProperties );
                 switch ( changeType )
                 {
@@ -128,15 +103,15 @@ public class IndexTxStateUpdater
 
     //PROPERTY CHANGES
 
-    void onPropertyAdd( NodeCursor node, PropertyCursor propertyCursor, long[] labels, int propertyKeyId, Value value )
+    void onPropertyAdd( NodeCursor node, PropertyCursor propertyCursor, long[] labels, int propertyKeyId, int[] existingPropertyKeyIds, Value value )
     {
         assert noSchemaChangedInTx();
         Collection<SchemaDescriptor> indexes = indexingService.getRelatedIndexes( labels, propertyKeyId, NODE );
         if ( !indexes.isEmpty() )
         {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
-            NodeSchemaMatcher.onMatchingSchema( indexes.iterator(), node, propertyCursor, propertyKeyId,
-                    ( index, propertyKeyIds ) ->
+            NodeSchemaMatcher.onMatchingSchema( indexes.iterator(), propertyKeyId, existingPropertyKeyIds,
+                    index ->
                     {
                         Value[] values = getValueTuple( node, propertyCursor, propertyKeyId, value, index.schema().getPropertyIds(), materializedProperties );
                         indexingService.validateBeforeCommit( index.schema(), values );
@@ -145,15 +120,15 @@ public class IndexTxStateUpdater
         }
     }
 
-    void onPropertyRemove( NodeCursor node, PropertyCursor propertyCursor, long[] labels, int propertyKeyId, Value value )
+    void onPropertyRemove( NodeCursor node, PropertyCursor propertyCursor, long[] labels, int propertyKeyId, int[] existingPropertyKeyIds, Value value )
     {
         assert noSchemaChangedInTx();
         Collection<SchemaDescriptor> indexes = indexingService.getRelatedIndexes( labels, propertyKeyId, NODE );
         if ( !indexes.isEmpty() )
         {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
-            NodeSchemaMatcher.onMatchingSchema( indexes.iterator(), node, propertyCursor, propertyKeyId,
-                    ( index, propertyKeyIds ) ->
+            NodeSchemaMatcher.onMatchingSchema( indexes.iterator(), propertyKeyId, existingPropertyKeyIds,
+                    index ->
                     {
                         Value[] values = getValueTuple( node, propertyCursor, propertyKeyId, value, index.schema().getPropertyIds(), materializedProperties );
                         read.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(), ValueTuple.of( values ), null );
@@ -161,7 +136,7 @@ public class IndexTxStateUpdater
         }
     }
 
-    void onPropertyChange( NodeCursor node, PropertyCursor propertyCursor, long[] labels, int propertyKeyId,
+    void onPropertyChange( NodeCursor node, PropertyCursor propertyCursor, long[] labels, int propertyKeyId, int[] existingPropertyKeyIds,
             Value beforeValue, Value afterValue )
     {
         assert noSchemaChangedInTx();
@@ -169,8 +144,8 @@ public class IndexTxStateUpdater
         if ( !indexes.isEmpty() )
         {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
-            NodeSchemaMatcher.onMatchingSchema( indexes.iterator(), node, propertyCursor, propertyKeyId,
-                    ( index, propertyKeyIds ) ->
+            NodeSchemaMatcher.onMatchingSchema( indexes.iterator(), propertyKeyId, existingPropertyKeyIds,
+                    index ->
                     {
                         int[] propertyIds = index.getPropertyIds();
                         Value[] valuesAfter = getValueTuple( node, propertyCursor, propertyKeyId, afterValue, propertyIds, materializedProperties );
@@ -228,17 +203,5 @@ public class IndexTxStateUpdater
         }
 
         return values;
-    }
-
-    private static boolean nodeHasIndexProperties( IntSet nodeProperties, int[] indexPropertyIds )
-    {
-        for ( int indexPropertyId : indexPropertyIds )
-        {
-            if ( !nodeProperties.contains( indexPropertyId ) )
-            {
-                return false;
-            }
-        }
-        return true;
     }
 }

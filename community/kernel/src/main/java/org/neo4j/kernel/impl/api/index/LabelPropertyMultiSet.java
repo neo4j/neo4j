@@ -28,6 +28,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
+
+import static java.lang.Math.toIntExact;
 
 /**
  * Collects and provides efficient access to {@link SchemaDescriptor}, based on label ids and partial or full list of properties.
@@ -62,18 +65,51 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
  *        -> property[7]: E
  * </pre>
  */
-public class LabelPropertyMultiSet
+public class LabelPropertyMultiSet<T extends SchemaDescriptorSupplier>
 {
     private final MutableIntObjectMap<PropertyMultiSet> byLabel = IntObjectMaps.mutable.empty();
 
-    public void add( SchemaDescriptor schemaDescriptor )
+    boolean isEmpty()
     {
-        if ( schemaDescriptor.getEntityTokenIds().length > 1 )
+        return byLabel.isEmpty();
+    }
+
+    boolean has( long[] labels, int propertyKey )
+    {
+        if ( byLabel.isEmpty() )
+        {
+            return false;
+        }
+
+        for ( long label : labels )
+        {
+            PropertyMultiSet byProperty = byLabel.get( toIntExact( label ) );
+            if ( byProperty != null && byProperty.has( propertyKey ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    boolean has( int label )
+    {
+        if ( byLabel.isEmpty() )
+        {
+            return false;
+        }
+
+        return byLabel.containsKey( label );
+    }
+
+    public void add( T schemaDescriptor )
+    {
+        if ( schemaDescriptor.schema().getEntityTokenIds().length > 1 )
         {
             throw new UnsupportedOperationException();
         }
 
-        int label = schemaDescriptor.keyId();
+        int label = schemaDescriptor.schema().keyId();
         PropertyMultiSet byProperty = byLabel.get( label );
         if ( byProperty == null )
         {
@@ -83,9 +119,9 @@ public class LabelPropertyMultiSet
         byProperty.add( schemaDescriptor );
     }
 
-    public void remove( SchemaDescriptor schemaDescriptor )
+    public void remove( T schemaDescriptor )
     {
-        int label = schemaDescriptor.keyId();
+        int label = schemaDescriptor.schema().keyId();
         PropertyMultiSet byProperty = byLabel.get( label );
         if ( byProperty != null && byProperty.remove( schemaDescriptor ) )
         {
@@ -93,7 +129,7 @@ public class LabelPropertyMultiSet
         }
     }
 
-    void matchingDescriptorsForCompleteListOfProperties( Collection<SchemaDescriptor> into, long[] labels, int[] sortedProperties )
+    void matchingDescriptorsForCompleteListOfProperties( Collection<T> into, long[] labels, int[] sortedProperties )
     {
         for ( long label : labels )
         {
@@ -105,7 +141,7 @@ public class LabelPropertyMultiSet
         }
     }
 
-    void matchingDescriptorsForPartialListOfProperties( Collection<SchemaDescriptor> into, long[] labels, int[] sortedProperties )
+    void matchingDescriptorsForPartialListOfProperties( Collection<T> into, long[] labels, int[] sortedProperties )
     {
         for ( long label : labels )
         {
@@ -117,7 +153,7 @@ public class LabelPropertyMultiSet
         }
     }
 
-    void matchingDescriptors( Collection<SchemaDescriptor> into, long[] labels )
+    void matchingDescriptors( Collection<T> into, long[] labels )
     {
         for ( long label : labels )
         {
@@ -129,17 +165,17 @@ public class LabelPropertyMultiSet
         }
     }
 
-    private static class PropertyMultiSet
+    private class PropertyMultiSet
     {
-        private final Set<SchemaDescriptor> descriptors = new HashSet<>();
+        private final Set<T> descriptors = new HashSet<>();
         private final MutableIntObjectMap<PropertySet> next = IntObjectMaps.mutable.empty();
-        private final MutableIntObjectMap<Set<SchemaDescriptor>> byAnyProperty = IntObjectMaps.mutable.empty();
+        private final MutableIntObjectMap<Set<T>> byAnyProperty = IntObjectMaps.mutable.empty();
 
-        void add( SchemaDescriptor schemaDescriptor )
+        void add( T schemaDescriptor )
         {
             // Add optimized path for when property list is fully known
             descriptors.add( schemaDescriptor );
-            int[] propertyKeyIds = sortedPropertyKeyIds( schemaDescriptor );
+            int[] propertyKeyIds = sortedPropertyKeyIds( schemaDescriptor.schema() );
             int propertyKeyId = propertyKeyIds[0];
             PropertySet firstPropertySet = next.get( propertyKeyId );
             if ( firstPropertySet == null )
@@ -152,7 +188,7 @@ public class LabelPropertyMultiSet
             // Add fall-back path for when property list is only partly known
             for ( int keyId : propertyKeyIds )
             {
-                Set<SchemaDescriptor> byProperty = byAnyProperty.get( keyId );
+                Set<T> byProperty = byAnyProperty.get( keyId );
                 if ( byProperty == null )
                 {
                     byProperty = new HashSet<>();
@@ -167,11 +203,11 @@ public class LabelPropertyMultiSet
          * @param schemaDescriptor the {@link SchemaDescriptor} to remove.
          * @return {@code true} if this multi-set ended up empty after removing this descriptor.
          */
-        boolean remove( SchemaDescriptor schemaDescriptor )
+        boolean remove( T schemaDescriptor )
         {
             // Remove from the optimized path
             descriptors.remove( schemaDescriptor );
-            int[] propertyKeyIds = sortedPropertyKeyIds( schemaDescriptor );
+            int[] propertyKeyIds = sortedPropertyKeyIds( schemaDescriptor.schema() );
             int propertyKeyId = propertyKeyIds[0];
             PropertySet firstPropertySet = next.get( propertyKeyId );
             if ( firstPropertySet != null && firstPropertySet.remove( schemaDescriptor, propertyKeyIds, 0 ) )
@@ -182,7 +218,7 @@ public class LabelPropertyMultiSet
             // Remove from the fall-back path
             for ( int keyId : propertyKeyIds )
             {
-                Set<SchemaDescriptor> byProperty = byAnyProperty.get( keyId );
+                Set<T> byProperty = byAnyProperty.get( keyId );
                 if ( byProperty != null )
                 {
                     byProperty.remove( schemaDescriptor );
@@ -195,7 +231,7 @@ public class LabelPropertyMultiSet
             return descriptors.isEmpty() && next.isEmpty();
         }
 
-        void collectForCompleteListOfProperties( Collection<SchemaDescriptor> descriptors, int[] sortedProperties )
+        void collectForCompleteListOfProperties( Collection<T> descriptors, int[] sortedProperties )
         {
             for ( int i = 0; i < sortedProperties.length; i++ )
             {
@@ -207,11 +243,11 @@ public class LabelPropertyMultiSet
             }
         }
 
-        void collectForPartialListOfProperties( Collection<SchemaDescriptor> descriptors, int[] sortedProperties )
+        void collectForPartialListOfProperties( Collection<T> descriptors, int[] sortedProperties )
         {
             for ( int propertyKeyId : sortedProperties )
             {
-                Set<SchemaDescriptor> propertyDescriptors = byAnyProperty.get( propertyKeyId );
+                Set<T> propertyDescriptors = byAnyProperty.get( propertyKeyId );
                 if ( propertyDescriptors != null )
                 {
                     descriptors.addAll( propertyDescriptors );
@@ -219,12 +255,12 @@ public class LabelPropertyMultiSet
             }
         }
 
-        void collectAll( Collection<SchemaDescriptor> descriptors )
+        void collectAll( Collection<T> descriptors )
         {
             descriptors.addAll( this.descriptors );
         }
 
-        private static int[] sortedPropertyKeyIds( SchemaDescriptor schemaDescriptor )
+        private int[] sortedPropertyKeyIds( SchemaDescriptor schemaDescriptor )
         {
             int[] propertyKeyIds = schemaDescriptor.getPropertyIds();
             if ( propertyKeyIds.length > 1 )
@@ -234,12 +270,17 @@ public class LabelPropertyMultiSet
             }
             return propertyKeyIds;
         }
+
+        boolean has( int propertyKey )
+        {
+            return byAnyProperty.containsKey( propertyKey );
+        }
     }
 
-    private static class PropertySet
+    private class PropertySet
     {
         private final int propertyKey;
-        private final Set<SchemaDescriptor> fullDescriptors = new HashSet<>();
+        private final Set<T> fullDescriptors = new HashSet<>();
         private final MutableIntObjectMap<PropertySet> next = IntObjectMaps.mutable.empty();
 
         PropertySet( int propertyKey )
@@ -247,7 +288,7 @@ public class LabelPropertyMultiSet
             this.propertyKey = propertyKey;
         }
 
-        void add( SchemaDescriptor schemaDescriptor, int[] propertyKeyIds, int cursor )
+        void add( T schemaDescriptor, int[] propertyKeyIds, int cursor )
         {
             if ( cursor == propertyKeyIds.length - 1 )
             {
@@ -272,7 +313,7 @@ public class LabelPropertyMultiSet
          * @param cursor which property key among the sorted property keys that this set deals with.
          * @return {@code true} if this {@link PropertySet} ends up empty after this removal.
          */
-        boolean remove( SchemaDescriptor schemaDescriptor, int[] propertyKeyIds, int cursor )
+        boolean remove( T schemaDescriptor, int[] propertyKeyIds, int cursor )
         {
             if ( cursor == propertyKeyIds.length - 1 )
             {
@@ -290,7 +331,7 @@ public class LabelPropertyMultiSet
             return fullDescriptors.isEmpty() && next.isEmpty();
         }
 
-        void collectForCompleteListOfProperties( Collection<SchemaDescriptor> descriptors, int[] sortedProperties, int cursor )
+        void collectForCompleteListOfProperties( Collection<T> descriptors, int[] sortedProperties, int cursor )
         {
             assert sortedProperties[cursor] == propertyKey;
             descriptors.addAll( fullDescriptors );

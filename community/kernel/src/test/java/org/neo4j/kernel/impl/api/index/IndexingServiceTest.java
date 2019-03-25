@@ -96,6 +96,7 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
@@ -1145,7 +1146,7 @@ public class IndexingServiceTest
         IndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( provider ), config ) );
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
-        List<StoreIndexDescriptor> indexes = new ArrayList<>();
+        List<SchemaRule> indexes = new ArrayList<>();
         int nextIndexId = 1;
         StoreIndexDescriptor populatingIndex = storeIndex( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
         when( provider.getInitialState( populatingIndex ) ).thenReturn( POPULATING );
@@ -1192,7 +1193,7 @@ public class IndexingServiceTest
         providerMap.init();
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
-        List<StoreIndexDescriptor> indexes = new ArrayList<>();
+        List<SchemaRule> indexes = new ArrayList<>();
         int nextIndexId = 1;
         StoreIndexDescriptor populatingIndex = storeIndex( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
         when( provider.getInitialState( populatingIndex ) ).thenReturn( POPULATING );

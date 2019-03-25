@@ -52,7 +52,7 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaState;
-import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -140,7 +140,7 @@ public class OperationsLockTest
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),storageReader,
                  transaction, new KernelToken( storageReader, transaction, mockedTokenHolders() ), cursors, autoindexing,
-                constraintIndexCreator, mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults() );
+                constraintIndexCreator, mock( ConstraintSemantics.class ), mock( IndexingService.class ), Config.defaults() );
         operations.initialize();
 
         this.order = inOrder( locks, txState, storageReader );
@@ -308,19 +308,17 @@ public class OperationsLockTest
     public void shouldAcquireSchemaReadLockBeforeSettingPropertyOnNode() throws Exception
     {
         // given
-        when( nodeCursor.next() ).thenReturn( true );
-        when( nodeCursor.labels() ).thenReturn( LabelSet.NONE );
         int relatedLabelId = 50;
         int unrelatedLabelId = 51;
         int propertyKeyId = 8;
-        int unrelatedPropertyKeyId = 88;
+        when( nodeCursor.next() ).thenReturn( true );
+        LabelSet labelSet = mock( LabelSet.class );
+        when( labelSet.all() ).thenReturn( new long[]{relatedLabelId} );
+        when( nodeCursor.labels() ).thenReturn( labelSet );
         Value value = Values.of( 9 );
         when( propertyCursor.next() ).thenReturn( true );
         when( propertyCursor.propertyKey() ).thenReturn( propertyKeyId );
         when( propertyCursor.propertyValue() ).thenReturn( NO_VALUE );
-        when( storageReader.constraintsGetAll() ).thenReturn(
-                Iterators.iterator( ConstraintDescriptorFactory.uniqueForLabel( relatedLabelId, propertyKeyId ),
-                                    ConstraintDescriptorFactory.uniqueForLabel( unrelatedLabelId, unrelatedPropertyKeyId )) );
 
         // when
         operations.nodeSetProperty( 123, propertyKeyId, value );

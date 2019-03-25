@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,13 +49,12 @@ public class IndexMapTest
     @Before
     public void setup()
     {
-        MutableLongObjectMap<IndexProxy> map = new LongObjectHashMap<>();
-        map.put( 1L, new TestIndexProxy( forSchema( schema3_4 ).withId( 1 ).withoutCapabilities() ) );
-        map.put( 2L, new TestIndexProxy( forSchema( schema5_6_7 ).withId( 2 ).withoutCapabilities() ) );
-        map.put( 3L, new TestIndexProxy( forSchema( schema5_8 ).withId( 3 ).withoutCapabilities() ) );
-        map.put( 4L, new TestIndexProxy( forSchema( node35_8 ).withId( 4 ).withoutCapabilities() ) );
-        map.put( 5L, new TestIndexProxy( forSchema( rel35_8 ).withId( 5 ).withoutCapabilities() ) );
-        indexMap = new IndexMap( map );
+        indexMap = new IndexMap();
+        indexMap.putIndexProxy( new TestIndexProxy( forSchema( schema3_4 ).withId( 1 ).withoutCapabilities() ) );
+        indexMap.putIndexProxy( new TestIndexProxy( forSchema( schema5_6_7 ).withId( 2 ).withoutCapabilities() ) );
+        indexMap.putIndexProxy( new TestIndexProxy( forSchema( schema5_8 ).withId( 3 ).withoutCapabilities() ) );
+        indexMap.putIndexProxy( new TestIndexProxy( forSchema( node35_8 ).withId( 4 ).withoutCapabilities() ) );
+        indexMap.putIndexProxy( new TestIndexProxy( forSchema( rel35_8 ).withId( 5 ).withoutCapabilities() ) );
     }
 
     @Test

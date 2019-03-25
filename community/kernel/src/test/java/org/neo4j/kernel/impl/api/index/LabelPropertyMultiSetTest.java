@@ -50,7 +50,7 @@ public class LabelPropertyMultiSetTest
     public void shouldLookupSingleKeyDescriptors()
     {
         // given
-        LabelPropertyMultiSet set = new LabelPropertyMultiSet();
+        LabelPropertyMultiSet<SchemaDescriptor> set = new LabelPropertyMultiSet<>();
         LabelSchemaDescriptor expected = SchemaDescriptorFactory.forLabel( 1, 2 );
         set.add( expected );
 
@@ -66,7 +66,7 @@ public class LabelPropertyMultiSetTest
     public void shouldLookupSingleKeyAndSharedCompositeKeyDescriptors()
     {
         // given
-        LabelPropertyMultiSet set = new LabelPropertyMultiSet();
+        LabelPropertyMultiSet<SchemaDescriptor> set = new LabelPropertyMultiSet<>();
         LabelSchemaDescriptor expected1 = SchemaDescriptorFactory.forLabel( 1, 2 );
         LabelSchemaDescriptor expected2 = SchemaDescriptorFactory.forLabel( 1, 2, 3 );
         set.add( expected1 );
@@ -84,7 +84,7 @@ public class LabelPropertyMultiSetTest
     public void shouldLookupCompositeKeyDescriptor()
     {
         // given
-        LabelPropertyMultiSet set = new LabelPropertyMultiSet();
+        LabelPropertyMultiSet<SchemaDescriptor> set = new LabelPropertyMultiSet<>();
         LabelSchemaDescriptor descriptor1 = SchemaDescriptorFactory.forLabel( 1, 2, 3 );
         LabelSchemaDescriptor descriptor2 = SchemaDescriptorFactory.forLabel( 1, 2, 4 );
         LabelSchemaDescriptor descriptor3 = SchemaDescriptorFactory.forLabel( 1, 2, 5, 6 );
@@ -104,7 +104,7 @@ public class LabelPropertyMultiSetTest
     public void shouldLookupAllByLabel()
     {
         // given
-        LabelPropertyMultiSet set = new LabelPropertyMultiSet();
+        LabelPropertyMultiSet<SchemaDescriptor> set = new LabelPropertyMultiSet<>();
         LabelSchemaDescriptor descriptor1 = SchemaDescriptorFactory.forLabel( 1, 2, 3 );
         LabelSchemaDescriptor descriptor2 = SchemaDescriptorFactory.forLabel( 1, 2, 4 );
         LabelSchemaDescriptor descriptor3 = SchemaDescriptorFactory.forLabel( 1, 2, 5, 6 );
@@ -140,7 +140,7 @@ public class LabelPropertyMultiSetTest
     {
         // given
         List<SchemaDescriptor> all = new ArrayList<>();
-        LabelPropertyMultiSet set = new LabelPropertyMultiSet();
+        LabelPropertyMultiSet<SchemaDescriptor> set = new LabelPropertyMultiSet<>();
         int highLabelId = 10;
         int highPropertyKeyId = 10;
         int maxNumberOfPropertyKeys = 3;

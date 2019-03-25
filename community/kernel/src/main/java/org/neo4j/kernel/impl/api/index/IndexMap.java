@@ -36,6 +36,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
+import org.neo4j.kernel.api.schema.constraints.IndexBackedConstraintDescriptor;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
@@ -48,34 +51,40 @@ import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 public final class IndexMap implements Cloneable
 {
     private final MutableLongObjectMap<IndexProxy> indexesById;
+    private final MutableLongObjectMap<IndexBackedConstraintDescriptor> uniquenessConstraintsById;
     private final Map<SchemaDescriptor,IndexProxy> indexesByDescriptor;
     private final MutableObjectLongMap<SchemaDescriptor> indexIdsByDescriptor;
-    private final LabelPropertyMultiSet descriptorsByLabelThenProperty;
-    private final LabelPropertyMultiSet descriptorsByReltypeThenProperty;
+    private final LabelPropertyMultiSet<SchemaDescriptor> descriptorsByLabelThenProperty;
+    private final LabelPropertyMultiSet<SchemaDescriptor> descriptorsByReltypeThenProperty;
+    private final LabelPropertyMultiSet<IndexBackedConstraintDescriptor> constraintsByLabelThenProperty;
+    private final LabelPropertyMultiSet<IndexBackedConstraintDescriptor> constraintsByRelTypeThenProperty;
 
     public IndexMap()
     {
-        this( new LongObjectHashMap<>(), new HashMap<>(), new ObjectLongHashMap<>() );
-    }
-
-    IndexMap( MutableLongObjectMap<IndexProxy> indexesById )
-    {
-        this( indexesById, indexesByDescriptor( indexesById ), indexIdsByDescriptor( indexesById ) );
+        this( new LongObjectHashMap<>(), new HashMap<>(), new ObjectLongHashMap<>(), new LongObjectHashMap<>() );
     }
 
     private IndexMap(
             MutableLongObjectMap<IndexProxy> indexesById,
             Map<SchemaDescriptor,IndexProxy> indexesByDescriptor,
-            MutableObjectLongMap<SchemaDescriptor> indexIdsByDescriptor )
+            MutableObjectLongMap<SchemaDescriptor> indexIdsByDescriptor,
+            MutableLongObjectMap<IndexBackedConstraintDescriptor> uniquenessConstraintsById )
     {
         this.indexesById = indexesById;
         this.indexesByDescriptor = indexesByDescriptor;
         this.indexIdsByDescriptor = indexIdsByDescriptor;
-        this.descriptorsByLabelThenProperty = new LabelPropertyMultiSet();
-        this.descriptorsByReltypeThenProperty = new LabelPropertyMultiSet();
+        this.uniquenessConstraintsById = uniquenessConstraintsById;
+        this.descriptorsByLabelThenProperty = new LabelPropertyMultiSet<>();
+        this.descriptorsByReltypeThenProperty = new LabelPropertyMultiSet<>();
         for ( SchemaDescriptor schema : indexesByDescriptor.keySet() )
         {
             addDescriptorToLookups( schema );
+        }
+        this.constraintsByLabelThenProperty = new LabelPropertyMultiSet<>();
+        this.constraintsByRelTypeThenProperty = new LabelPropertyMultiSet<>();
+        for ( IndexBackedConstraintDescriptor constraint : uniquenessConstraintsById.values() )
+        {
+            addConstraintToLookups( constraint );
         }
     }
 
@@ -114,14 +123,7 @@ public final class IndexMap implements Cloneable
 
         SchemaDescriptor schema = removedProxy.getDescriptor().schema();
         indexesByDescriptor.remove( schema );
-        if ( schema.entityType() == EntityType.NODE )
-        {
-            descriptorsByLabelThenProperty.remove( schema );
-        }
-        else if ( schema.entityType() == EntityType.RELATIONSHIP )
-        {
-            descriptorsByReltypeThenProperty.remove( schema );
-        }
+        selectIndexesByEntityType( schema.entityType() ).remove( schema );
 
         return removedProxy;
     }
@@ -136,9 +138,61 @@ public final class IndexMap implements Cloneable
         return indexesById.values();
     }
 
+    void putUniquenessConstraint( ConstraintRule rule )
+    {
+        IndexBackedConstraintDescriptor constraintDescriptor = (IndexBackedConstraintDescriptor) rule.getConstraintDescriptor();
+        uniquenessConstraintsById.put( rule.getId(), constraintDescriptor );
+        constraintsByLabelThenProperty.add( constraintDescriptor );
+    }
+
+    void removeUniquenessConstraint( long constraintId )
+    {
+        IndexBackedConstraintDescriptor constraint = uniquenessConstraintsById.remove( constraintId );
+        if ( constraint != null )
+        {
+            selectConstraintsByEntityType( constraint.schema().entityType() ).remove( constraint );
+        }
+    }
+
+    private LabelPropertyMultiSet<IndexBackedConstraintDescriptor> selectConstraintsByEntityType( EntityType entityType )
+    {
+        switch ( entityType )
+        {
+        case NODE:
+            return constraintsByLabelThenProperty;
+        case RELATIONSHIP:
+            return constraintsByRelTypeThenProperty;
+        default:
+            throw new IllegalArgumentException( "Unknown entity type " + entityType );
+        }
+    }
+
+    private LabelPropertyMultiSet<SchemaDescriptor> selectIndexesByEntityType( EntityType entityType )
+    {
+        switch ( entityType )
+        {
+        case NODE:
+            return descriptorsByLabelThenProperty;
+        case RELATIONSHIP:
+            return descriptorsByReltypeThenProperty;
+        default:
+            throw new IllegalArgumentException( "Unknown entity type " + entityType );
+        }
+    }
+
+    boolean hasRelatedSchema( long[] labels, int propertyKey, EntityType entityType )
+    {
+        return selectIndexesByEntityType( entityType ).has( labels, propertyKey ) || selectConstraintsByEntityType( entityType ).has( labels, propertyKey );
+    }
+
+    boolean hasRelatedSchema( int label, EntityType entityType )
+    {
+        return selectIndexesByEntityType( entityType ).has( label ) || selectConstraintsByEntityType( entityType ).has( label );
+    }
+
     /**
-     * Get all indexes that would be affected by changes in the input labels and/or properties. The returned
-     * indexes are guaranteed to contain all affected indexes, but might also contain unaffected indexes as
+     * Get all descriptors that would be affected by changes in the input labels and/or properties. The returned
+     * descriptors are guaranteed to contain all affected indexes, but might also contain unaffected indexes as
      * we cannot provide matching without checking unaffected properties for composite indexes.
      *
      * @param changedEntityTokens set of labels that have changed
@@ -150,17 +204,26 @@ public final class IndexMap implements Cloneable
     public Set<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, int[] sortedProperties,
             boolean propertyListIsComplete, EntityType entityType )
     {
-        switch ( entityType )
-        {
-        case NODE:
-            return getRelatedDescriptors( changedEntityTokens, unchangedEntityTokens, sortedProperties, propertyListIsComplete,
-                    descriptorsByLabelThenProperty );
-        case RELATIONSHIP:
-            return getRelatedDescriptors( changedEntityTokens, unchangedEntityTokens, sortedProperties, propertyListIsComplete,
-                    descriptorsByReltypeThenProperty );
-        default:
-            throw new IllegalArgumentException( "The given EntityType cannot be indexed: " + entityType );
-        }
+        return getRelatedDescriptors( selectIndexesByEntityType( entityType ), changedEntityTokens, unchangedEntityTokens, sortedProperties,
+                propertyListIsComplete );
+    }
+
+    /**
+     * Get all uniqueness constraints that would be affected by changes in the input labels and/or properties. The returned
+     * set is guaranteed to contain all affected constraints, but might also contain unaffected constraints as
+     * we cannot provide matching without checking unaffected properties for composite indexes.
+     *
+     * @param changedEntityTokens set of labels that have changed
+     * @param unchangedEntityTokens set of labels that are unchanged
+     * @param sortedProperties sorted list of properties
+     * @param entityType type of indexes to get
+     * @return set of SchemaDescriptors describing the potentially affected indexes
+     */
+    public Set<IndexBackedConstraintDescriptor> getRelatedConstraints( long[] changedEntityTokens, long[] unchangedEntityTokens, int[] sortedProperties,
+            boolean propertyListIsComplete, EntityType entityType )
+    {
+        return getRelatedDescriptors( selectConstraintsByEntityType( entityType ), changedEntityTokens, unchangedEntityTokens, sortedProperties,
+                propertyListIsComplete );
     }
 
     /**
@@ -170,15 +233,15 @@ public final class IndexMap implements Cloneable
      * @param propertyListIsComplete whether or not the property list is complete. For CREATE/DELETE the list is complete, but may not be for UPDATEs.
      * @return set of SchemaDescriptors describing the potentially affected indexes
      */
-    Set<SchemaDescriptor> getRelatedDescriptors( long[] changedLabels, long[] unchangedLabels, int[] sortedProperties, boolean propertyListIsComplete,
-            LabelPropertyMultiSet set )
+    private <T extends SchemaDescriptorSupplier> Set<T> getRelatedDescriptors( LabelPropertyMultiSet<T> set, long[] changedLabels, long[] unchangedLabels,
+            int[] sortedProperties, boolean propertyListIsComplete )
     {
-        if ( indexesById.isEmpty() )
+        if ( set.isEmpty() )
         {
             return Collections.emptySet();
         }
 
-        Set<SchemaDescriptor> descriptors = new HashSet<>();
+        Set<T> descriptors = new HashSet<>();
         if ( propertyListIsComplete )
         {
             set.matchingDescriptorsForCompleteListOfProperties( descriptors, changedLabels, sortedProperties );
@@ -214,7 +277,8 @@ public final class IndexMap implements Cloneable
     @Override
     public IndexMap clone()
     {
-        return new IndexMap( LongObjectHashMap.newMap( indexesById ), cloneMap( indexesByDescriptor ), new ObjectLongHashMap<>( indexIdsByDescriptor ) );
+        return new IndexMap( LongObjectHashMap.newMap( indexesById ), cloneMap( indexesByDescriptor ), new ObjectLongHashMap<>( indexIdsByDescriptor ),
+                LongObjectHashMap.newMap( uniquenessConstraintsById ) );
     }
 
     public Iterator<SchemaDescriptor> descriptors()
@@ -243,14 +307,12 @@ public final class IndexMap implements Cloneable
 
     private void addDescriptorToLookups( SchemaDescriptor schema )
     {
-        if ( schema.entityType() == EntityType.NODE )
-        {
-            descriptorsByLabelThenProperty.add( schema );
-        }
-        else if ( schema.entityType() == EntityType.RELATIONSHIP )
-        {
-            descriptorsByReltypeThenProperty.add( schema );
-        }
+        selectIndexesByEntityType( schema.entityType() ).add( schema );
+    }
+
+    private void addConstraintToLookups( IndexBackedConstraintDescriptor constraint )
+    {
+        selectConstraintsByEntityType( constraint.schema().entityType() ).add( constraint );
     }
 
     private static Map<SchemaDescriptor, IndexProxy> indexesByDescriptor( LongObjectMap<IndexProxy> indexesById )
