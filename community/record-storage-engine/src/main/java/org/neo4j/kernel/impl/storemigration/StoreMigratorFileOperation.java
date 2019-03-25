@@ -27,8 +27,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 
-import static org.neo4j.collection.Streams.ofOptional;
-
 class StoreMigratorFileOperation
 {
     /**
@@ -45,7 +43,7 @@ class StoreMigratorFileOperation
     {
         for ( DatabaseFile databaseStore : databaseFiles )
         {
-            File[] files = Stream.concat( fromLayout.file( databaseStore ), ofOptional( fromLayout.idFile( databaseStore ) ) ).toArray( File[]::new );
+            File[] files = Stream.concat( fromLayout.file( databaseStore ), fromLayout.idFile( databaseStore ).stream() ).toArray( File[]::new );
             perform( operation, fs, fromLayout, toLayout, allowSkipNonExistentFiles, existingTargetStrategy, files );
         }
     }

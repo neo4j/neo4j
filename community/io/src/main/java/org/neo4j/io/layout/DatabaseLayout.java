@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.collection.Streams;
 import org.neo4j.helpers.collection.Iterables;
 
 import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
@@ -204,7 +203,7 @@ public class DatabaseLayout
     {
         return Arrays.stream( DatabaseFile.values() )
                      .filter( DatabaseFile::hasIdFile )
-                    .flatMap( value -> Streams.ofOptional( idFile( value ) ) )
+                    .flatMap( value -> idFile( value ).stream() )
                      .collect( Collectors.toSet() );
     }
 
