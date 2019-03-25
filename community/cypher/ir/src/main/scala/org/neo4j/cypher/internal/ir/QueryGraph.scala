@@ -130,6 +130,11 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     copy(selections = selections ++ newSelections)
   }
 
+  def addPredicates(outerScope: Set[String], predicates: Expression*): QueryGraph = {
+    val newSelections = Selections(predicates.flatMap(_.asPredicates(outerScope)).toSet)
+    copy(selections = selections ++ newSelections)
+  }
+
   def addHints(addedHints: GenTraversableOnce[Hint]): QueryGraph = {
     copy(hints = hints ++ addedHints)
   }

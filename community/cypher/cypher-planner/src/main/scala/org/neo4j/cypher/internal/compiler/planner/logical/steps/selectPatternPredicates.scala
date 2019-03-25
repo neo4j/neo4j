@@ -61,7 +61,7 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
 
   private def planInnerOfSubquery(lhs: LogicalPlan, context: LogicalPlanningContext, interestingOrder: InterestingOrder, e: ExistsSubClause): LogicalPlan = {
 
-    var (namedMap, qg) = e.pattern.patternParts.head.element match {
+    var (namedMap, qg) = e.patternElement match {
       case elem: RelationshipChain =>
         val patternExpr = PatternExpression(RelationshipsPattern(elem)(elem.position))
         val (namedExpr, namedMap) = PatternExpressionPatternElementNamer.apply(patternExpr)
@@ -78,7 +78,7 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
     }
 
     // TODO: Can we do this more efficient (without a var qg)
-    e.optionalWhereExpression.foreach(p => qg = qg.addPredicates(p))
+    e.optionalWhereExpression.foreach(p => qg = qg.addPredicates(e.outerScope.map(id => id.name), p))
 
     val innerContext = createPlannerContext(context, namedMap)
     innerContext.strategy.plan(qg, interestingOrder, innerContext)

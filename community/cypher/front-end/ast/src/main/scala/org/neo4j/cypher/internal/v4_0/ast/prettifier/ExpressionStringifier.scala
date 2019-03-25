@@ -132,9 +132,9 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
       case _: ExtractScope | _: FilterScope | _: ReduceScope =>
         // These are not really expressions, they are part of expressions
         ""
-      case ExistsSubClause(fullPattern, optionalWhereExpression) =>
+      case e@ExistsSubClause(_, optionalWhereExpression) =>
         s"EXISTS { MATCH ${
-            fullPattern.patternParts.head.element match {
+            e.patternElement match {
               case r:RelationshipChain => pattern(r)
               case n:NodePattern => node(n)
           }

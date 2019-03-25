@@ -86,6 +86,10 @@ object ExpressionConverters {
 
   implicit class PredicateConverter(val predicate: Expression) extends AnyVal {
     def asPredicates: Set[Predicate] = {
+      asPredicates(Set.empty)
+    }
+
+    def asPredicates(outerScope: Set[String]): Set[Predicate] = {
       predicate.treeFold(Set.empty[Predicate]) {
         // n:Label
         case p@HasLabels(Variable(name), labels) =>
@@ -97,7 +101,7 @@ object ExpressionConverters {
         case _: Ands =>
           acc => (acc, Some(identity))
         case p: Expression =>
-          acc => (acc + Predicate(p.idNames, p), None)
+          acc => (acc + Predicate(p.idNames -- outerScope, p), None)
       }.map(filterUnnamed)
     }
 
