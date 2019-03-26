@@ -27,7 +27,6 @@ import org.apache.lucene.codecs.lucene80.Lucene80Codec;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
-import org.apache.lucene.index.PooledConcurrentMergeScheduler;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 
 import org.neo4j.util.FeatureToggles;
@@ -50,8 +49,6 @@ public final class IndexWriterConfigs
     private static final double STANDARD_RAM_BUFFER_SIZE_MB =
             FeatureToggles.getDouble( IndexWriterConfigs.class, "standard.ram.buffer.size", IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB );
     private static final double POPULATION_RAM_BUFFER_SIZE_MB = FeatureToggles.getDouble( IndexWriterConfigs.class, "population.ram.buffer.size", 50 );
-
-    private static final boolean CUSTOM_MERGE_SCHEDULER = FeatureToggles.flag( IndexWriterConfigs.class, "custom.merge.scheduler", true );
 
     /**
      * Default postings format for schema and label scan store indexes.
@@ -85,10 +82,6 @@ public final class IndexWriterConfigs
                 return CODEC_BLOCK_TREE_ORDS_POSTING_FORMAT ? blockTreeOrdsPostingsFormat : postingFormat;
             }
         } );
-        if ( CUSTOM_MERGE_SCHEDULER )
-        {
-            writerConfig.setMergeScheduler( new PooledConcurrentMergeScheduler() );
-        }
 
         LogByteSizeMergePolicy mergePolicy = new LogByteSizeMergePolicy();
         mergePolicy.setNoCFSRatio( MERGE_POLICY_NO_CFS_RATIO );
