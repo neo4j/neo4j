@@ -327,7 +327,7 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
   test("[retrieveAllAnonymized] should handle load csv") {
     // given
     val path = Files.createTempFile("data", ".csv")
-    val url = s"file://$path"
+    val url = path.toUri.toURL.toString
     execute("CALL db.stats.collect('QUERIES')").single
     execute(s"LOAD CSV FROM '$url' AS row CREATE ({key: row[0]})")
     execute(s"USING PERIODIC COMMIT 30 LOAD CSV FROM '$url' AS row CREATE ({key: row[0]})")
