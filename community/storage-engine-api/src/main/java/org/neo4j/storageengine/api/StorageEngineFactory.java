@@ -32,6 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
@@ -53,10 +54,10 @@ public interface StorageEngineFactory
 
     /**
      * Returns a {@link StoreMigrationParticipant} which will be able to participate in a store migration.
-     * @param dependencyResolver {@link DependencyResolver} for all dependency needs.
      * @return StoreMigrationParticipant for migration.
      */
-    StoreMigrationParticipant migrationParticipant( DependencyResolver dependencyResolver );
+    StoreMigrationParticipant migrationParticipant( FileSystemAbstraction fs, Config config, PageCache pageCache,
+            JobScheduler jobScheduler, LogService logService );
 
     /**
      * Instantiates a {@link StorageEngine} where all dependencies can be retrieved from the supplied {@code dependencyResolver}.

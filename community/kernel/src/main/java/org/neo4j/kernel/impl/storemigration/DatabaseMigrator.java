@@ -21,14 +21,12 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.IOException;
 
-import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.recovery.LogTailScanner;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -76,19 +74,13 @@ public class DatabaseMigrator
      */
     public void migrate() throws IOException
     {
-        LogProvider logProvider = logService.getInternalLogProvider();
-
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( fs, pageCache, databaseLayout, config, jobScheduler, logService );
         StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, config, pageCache, logService );
-
         StoreUpgrader storeUpgrader = new StoreUpgrader( storeVersionCheck,
-                new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigrator.class ) ), config, fs, logProvider,
+                new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigrator.class ) ), config, fs, logService.getInternalLogProvider(),
                 tailScanner, legacyLogsLocator );
 
-        this.indexProviderMap.accept(
-            provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache, storageEngineFactory ) ) );
-        storeUpgrader.addParticipant( storageEngineFactory.migrationParticipant( dependencies ) );
+        this.indexProviderMap.accept( provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache, storageEngineFactory ) ) );
+        storeUpgrader.addParticipant( storageEngineFactory.migrationParticipant( fs, config, pageCache, jobScheduler, logService ) );
         storeUpgrader.addParticipant( new NativeLabelScanStoreMigrator( fs, pageCache, storageEngineFactory ) );
         storeUpgrader.migrateIfNeeded( databaseLayout );
     }

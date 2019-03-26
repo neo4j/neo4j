@@ -84,14 +84,10 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public StoreMigrationParticipant migrationParticipant( DependencyResolver dependencyResolver )
+    public StoreMigrationParticipant migrationParticipant( FileSystemAbstraction fs, Config config, PageCache pageCache,
+            JobScheduler jobScheduler, LogService logService )
     {
-        return new RecordStorageMigrator(
-                dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
-                dependencyResolver.resolveDependency( PageCache.class ),
-                dependencyResolver.resolveDependency( Config.class ),
-                dependencyResolver.resolveDependency( LogService.class ),
-                dependencyResolver.resolveDependency( JobScheduler.class ) );
+        return new RecordStorageMigrator( fs, pageCache, config, logService, jobScheduler );
     }
 
     @Override
