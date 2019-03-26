@@ -145,11 +145,9 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public TransactionIdStore readOnlyTransactionIdStore( DependencyResolver dependencyResolver ) throws IOException
+    public TransactionIdStore readOnlyTransactionIdStore( PageCache pageCache, DatabaseLayout databaseLayout ) throws IOException
     {
-        return new ReadOnlyTransactionIdStore(
-                dependencyResolver.resolveDependency( PageCache.class ),
-                dependencyResolver.resolveDependency( DatabaseLayout.class ) );
+        return new ReadOnlyTransactionIdStore( pageCache, databaseLayout );
     }
 
     @Override

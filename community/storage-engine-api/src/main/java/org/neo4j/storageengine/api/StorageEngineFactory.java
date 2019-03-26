@@ -81,11 +81,10 @@ public interface StorageEngineFactory
 
     /**
      * Instantiates a read-only {@link TransactionIdStore} to be used outside of a {@link StorageEngine}.
-     * @param dependencyResolver resolver for all dependencies required to instantiate the {@link TransactionIdStore}.
      * @return the read-only {@link TransactionIdStore}.
      * @throws IOException on I/O error or if the store doesn't exist.
      */
-    TransactionIdStore readOnlyTransactionIdStore( DependencyResolver dependencyResolver ) throws IOException;
+    TransactionIdStore readOnlyTransactionIdStore( PageCache pageCache, DatabaseLayout databaseLayout ) throws IOException;
 
     /**
      * Instantiates a read-only {@link LogVersionRepository} to be used outside of a {@link StorageEngine}.

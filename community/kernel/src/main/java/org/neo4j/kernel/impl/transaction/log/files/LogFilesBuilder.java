@@ -331,9 +331,7 @@ public class LogFilesBuilder
     private TransactionIdStore readOnlyTransactionIdStore() throws IOException
     {
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( pageCache, databaseLayout );
-        return storageEngineFactory.readOnlyTransactionIdStore( dependencies );
+        return storageEngineFactory.readOnlyTransactionIdStore( pageCache, databaseLayout );
     }
 
     private LogVersionRepository readOnlyLogVersionRepository() throws IOException
