@@ -106,6 +106,7 @@ import static java.util.stream.Collectors.toList;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.helpers.collection.Iterables.stream;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
+import static org.neo4j.storageengine.api.StorageEngineFactory.selectStorageEngine;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
 import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
 import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
@@ -453,11 +454,6 @@ public final class Recovery
         public void addMonitorListener( Object monitorListener, String... tags )
         {
         }
-    }
-
-    private static StorageEngineFactory selectStorageEngine()
-    {
-        return StorageEngineFactory.selectStorageEngine( Services.loadAll( StorageEngineFactory.class ) );
     }
 
     private static class MissingTransactionLogsCheck extends LifecycleAdapter

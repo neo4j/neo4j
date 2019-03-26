@@ -186,7 +186,6 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     {
         DatabaseLayout databaseLayout = dependencyResolver.resolveDependency( DatabaseLayout.class );
         PageCache pageCache = dependencyResolver.resolveDependency( PageCache.class );
-        FileSystemAbstraction fs = dependencyResolver.resolveDependency( FileSystemAbstraction.class );
 
         File neoStoreFile = databaseLayout.metadataStore();
         return MetaDataStore.getStoreId( pageCache, neoStoreFile );

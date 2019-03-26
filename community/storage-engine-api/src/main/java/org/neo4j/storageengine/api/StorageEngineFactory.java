@@ -30,6 +30,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.service.Services;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
 /**
@@ -112,12 +113,11 @@ public interface StorageEngineFactory
 
     /**
      * Selects a {@link StorageEngineFactory} among the candidates. How it's done or which it selects isn't important a.t.m.
-     * @param candidates list of {@link StorageEngineFactory} to compare.
      * @return the selected {@link StorageEngineFactory}.
      * @throws IllegalStateException if there were no candidates.
      */
-    static StorageEngineFactory selectStorageEngine( Iterable<StorageEngineFactory> candidates )
+    static StorageEngineFactory selectStorageEngine()
     {
-        return Iterables.single( candidates );
+        return Iterables.single( Services.loadAll( StorageEngineFactory.class ) );
     }
 }

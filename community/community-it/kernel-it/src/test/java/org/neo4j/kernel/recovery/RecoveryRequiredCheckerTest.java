@@ -35,7 +35,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
@@ -64,7 +63,7 @@ class RecoveryRequiredCheckerTest
 
     private File storeDir;
     private DatabaseLayout databaseLayout;
-    private final StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Services.loadAll( StorageEngineFactory.class ) );
+    private final StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
 
     @BeforeEach
     void setup()

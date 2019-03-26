@@ -42,7 +42,6 @@ import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.internal.NativeIndexFileFilter;
-import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.lang.String.format;
@@ -291,7 +290,7 @@ public class MemoryRecommendationsCommand implements AdminCommand
 
     private long sumStoreFiles( DatabaseLayout databaseLayout )
     {
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Services.loadAll( StorageEngineFactory.class ) );
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
         FileSystemAbstraction fileSystem = outsideWorld.fileSystem();
         try
         {

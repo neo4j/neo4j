@@ -40,7 +40,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.diagnostics.providers.StoreFilesDiagnostics;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.logging.Logger;
-import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
@@ -72,7 +71,7 @@ public class KernelDiagnosticsIT
             createIndexInIsolatedDbInstance( dbDir, schemaIndex );
 
             // when
-            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Services.loadAll( StorageEngineFactory.class ) );
+            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
             StoreFilesDiagnostics files = new StoreFilesDiagnostics( storageEngineFactory, fs, DatabaseLayout.of( dbDir ) );
             SizeCapture capture = new SizeCapture();
             files.dump( capture );
