@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.schema;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
@@ -160,8 +159,8 @@ class LuceneDocumentStructureTest
         PointRangeQuery query = (PointRangeQuery) constantScoreQuery.getQuery();
 
         // then
-        assertEquals( 12.0, DoublePoint.decodeDimension( query.getLowerPoint(), 0 ), 0.001 );
-        assertEquals( 12.0, DoublePoint.decodeDimension( query.getUpperPoint(), 0 ), 0.001 );
+        assertEquals( 12.0, NumberField.decode( query.getLowerPoint() ), 0.001 );
+        assertEquals( 12.0, NumberField.decode( query.getUpperPoint() ), 0.001 );
     }
 
     @Test
@@ -197,8 +196,8 @@ class LuceneDocumentStructureTest
         // then
         assertEquals( "true", boolTermQuery.getTerm().text() );
         assertEquals( "Characters", stringTermQuery.getTerm().text() );
-        assertEquals( 12.0, DoublePoint.decodeDimension( numericRangeQuery.getLowerPoint(), 0 ), 0.001 );
-        assertEquals( 12.0, DoublePoint.decodeDimension( numericRangeQuery.getUpperPoint(), 0 ), 0.001 );
+        assertEquals( 12.0, NumberField.decode( numericRangeQuery.getLowerPoint() ), 0.001 );
+        assertEquals( 12.0, NumberField.decode( numericRangeQuery.getUpperPoint() ), 0.001 );
         assertEquals( "D1.0|2.0|3.0|", arrayTermQuery.getTerm().text() );
     }
 
@@ -210,8 +209,8 @@ class LuceneDocumentStructureTest
 
         // then
         assertEquals( "number", query.getField() );
-        assertEquals( 12.0, DoublePoint.decodeDimension( query.getLowerPoint(), 0 ), 0.001 );
-        double upperBound = DoublePoint.decodeDimension( query.getUpperPoint(), 0 );
+        assertEquals( 12.0, NumberField.decode( query.getLowerPoint() ), 0.001 );
+        double upperBound = NumberField.decode( query.getUpperPoint() );
         assertTrue( Double.isInfinite( upperBound ) && upperBound > 0 );
     }
 

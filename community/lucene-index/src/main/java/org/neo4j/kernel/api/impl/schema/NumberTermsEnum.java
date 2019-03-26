@@ -29,7 +29,7 @@ public class NumberTermsEnum extends FilteredTermsEnum
 {
     public NumberTermsEnum( TermsEnum termsEnum )
     {
-        super( termsEnum );
+        super( termsEnum, false );
     }
 
     @Override

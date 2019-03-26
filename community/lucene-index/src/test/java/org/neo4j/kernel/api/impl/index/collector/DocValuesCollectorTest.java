@@ -19,14 +19,18 @@
  */
 package org.neo4j.kernel.api.impl.index.collector;
 
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.ConstantScoreScorer;
+import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -319,7 +323,7 @@ final class DocValuesCollectorTest
                 return true;
             }
 
-            private int next = Integer.MAX_VALUE;
+            private int next = -1;
 
             @Override
             public int docID()
@@ -358,7 +362,21 @@ final class DocValuesCollectorTest
 
     private static Scorer constantScorer( float score )
     {
-        return new ConstantScoreScorer( null, score, ScoreMode.COMPLETE, (DocIdSetIterator) null );
+        Weight weight = new ConstantScoreWeight( null, score )
+        {
+            @Override
+            public Scorer scorer( LeafReaderContext context )
+            {
+                return null;
+            }
+
+            @Override
+            public boolean isCacheable( LeafReaderContext ctx )
+            {
+                return false;
+            }
+        };
+        return new ConstantScoreScorer( weight, score, ScoreMode.COMPLETE, (DocIdSetIterator) null );
     }
 
     private static final class AcceptedEntity

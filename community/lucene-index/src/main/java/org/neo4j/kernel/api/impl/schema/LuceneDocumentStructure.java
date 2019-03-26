@@ -26,7 +26,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.FilteredTermsEnum;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -43,11 +42,9 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 
 import java.io.IOException;
-import java.util.Iterator;
 
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Value;
@@ -119,7 +116,7 @@ public class LuceneDocumentStructure
     {
         double min = lower != null ? lower.doubleValue() : Double.NEGATIVE_INFINITY;
         double max = upper != null ? upper.doubleValue() : Double.POSITIVE_INFINITY;
-        return DoublePoint.newRangeQuery( ValueEncoding.Number.key( 0 ), min, max );
+        return NumberField.newRangeQuery( ValueEncoding.Number.key( 0 ), min, max );
     }
 
     public static Query newRangeSeekByStringQuery( String lower, boolean includeLower, String upper, boolean includeUpper )
@@ -188,8 +185,7 @@ public class LuceneDocumentStructure
      * @param fieldKey the corresponding {@link ValueEncoding#key(int) field key}
      * @return terms enum over all inserted terms
      * @throws IOException if it is not possible to obtain {@link TermsEnum}
-     * @see DoublePoint#newRangeQuery(String, double, double)
-     * @see NumericUtils#filterPrefixCodedLongs(TermsEnum)
+     * @see NumberField#newRangeQuery(String, double, double)
      */
     public static TermsEnum originalTerms( Terms terms, String fieldKey ) throws IOException
     {
@@ -244,12 +240,6 @@ public class LuceneDocumentStructure
         }
     }
 
-    public static Field encodeValueField( Value value )
-    {
-        ValueEncoding encoding = ValueEncoding.forValue( value );
-        return encoding.encodeField( encoding.key(), value );
-    }
-
     public static boolean useFieldForUniquenessVerification( String fieldName )
     {
         return !LuceneDocumentStructure.NODE_ID_KEY.equals( fieldName ) && ValueEncoding.fieldPropertyNumber( fieldName ) == 0;
@@ -297,16 +287,9 @@ public class LuceneDocumentStructure
 
         private void removeAllValueFields()
         {
-            Iterator<IndexableField> it = document.getFields().iterator();
-            while ( it.hasNext() )
-            {
-                IndexableField field = it.next();
-                String fieldName = field.name();
-                if ( !fieldName.equals( NODE_ID_KEY ) )
-                {
-                    it.remove();
-                }
-            }
+            document.clear();
+            document.add( idField );
+            document.add( idValueField );
         }
 
         private Field getFieldWithValue( int propertyNumber, Value value )

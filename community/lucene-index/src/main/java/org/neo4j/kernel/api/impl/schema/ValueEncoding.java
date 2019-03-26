@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.Term;
@@ -57,7 +56,7 @@ public enum ValueEncoding
                 @Override
                 Field encodeField( String name, Value value )
                 {
-                    return new DoublePoint( name, Values.coerceToDouble( value ) );
+                    return NumberField.of( name, Values.coerceToDouble( value ) );
                 }
 
                 @Override
@@ -70,7 +69,7 @@ public enum ValueEncoding
                 Query encodeQuery( Value value, int propertyNumber )
                 {
                     double doubleValue = Values.coerceToDouble( value );
-                    return new ConstantScoreQuery( DoublePoint.newExactQuery( key( propertyNumber ), doubleValue ) );
+                    return new ConstantScoreQuery( NumberField.newExactQuery( key( propertyNumber ), doubleValue ) );
                 }
             },
     Array

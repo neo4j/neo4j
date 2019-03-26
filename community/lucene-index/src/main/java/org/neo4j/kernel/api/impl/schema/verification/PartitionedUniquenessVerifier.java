@@ -112,7 +112,8 @@ public class PartitionedUniquenessVerifier implements UniquenessVerifier
         List<Terms> terms = new ArrayList<>();
         List<ReaderSlice> readerSlices = new ArrayList<>();
 
-        for ( LeafReader leafReader : allLeafReaders() )
+        List<LeafReader> leafReaders = allLeafReaders();
+        for ( LeafReader leafReader : leafReaders )
         {
             Terms leafTerms = leafReader.terms( fieldName );
             if ( leafTerms != null )

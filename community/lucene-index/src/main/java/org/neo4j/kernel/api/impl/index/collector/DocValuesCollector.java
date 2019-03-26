@@ -24,9 +24,11 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreDoc;
@@ -36,6 +38,7 @@ import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.TotalHits;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.DocIdSetBuilder;
 
@@ -46,6 +49,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -254,13 +258,38 @@ public class DocValuesCollector extends SimpleCollector
             LeafCollector leafCollector = collector.getLeafCollector( docs.context );
             Scorer scorer;
             DocIdSetIterator idIterator = docs.docIdSet;
+            Weight weight = new Weight( null )
+            {
+                @Override
+                public void extractTerms( Set<Term> terms )
+                {
+                }
+
+                @Override
+                public Explanation explain( LeafReaderContext context, int doc ) throws IOException
+                {
+                    return null;
+                }
+
+                @Override
+                public Scorer scorer( LeafReaderContext context ) throws IOException
+                {
+                    return null;
+                }
+
+                @Override
+                public boolean isCacheable( LeafReaderContext ctx )
+                {
+                    return false;
+                }
+            };
             if ( isKeepScores() )
             {
-                scorer = new ReplayingScorer( docs.scores );
+                scorer = new ReplayingScorer( weight, docs.scores );
             }
             else
             {
-                scorer = new ConstantScoreScorer( null, Float.NaN, scoreMode(), idIterator );
+                scorer = new ConstantScoreScorer( weight, Float.NaN, scoreMode(), idIterator );
             }
             leafCollector.setScorer( scorer );
             int doc;
@@ -280,21 +309,21 @@ public class DocValuesCollector extends SimpleCollector
         private final Iterator<DocValuesCollector.MatchingDocs> matchingDocs;
         private final String field;
         final int totalHits;
+        final Map<String,NumericDocValues> docValuesCache;
 
         DocIdSetIterator currentIdIterator;
-        float[] currentScores;
         NumericDocValues currentDocValues;
         DocValuesCollector.MatchingDocs currentDocs;
-        int scoreIndex;
+        float score;
         int index;
         long next;
-        float score;
 
         LongValuesSource( Iterable<DocValuesCollector.MatchingDocs> allMatchingDocs, int totalHits, String field )
         {
             this.totalHits = totalHits;
             this.field = field;
             matchingDocs = allMatchingDocs.iterator();
+            docValuesCache = new HashMap<>();
             score = Float.NaN;
         }
 
@@ -309,10 +338,9 @@ public class DocValuesCollector extends SimpleCollector
                 {
                     currentDocs = matchingDocs.next();
                     currentIdIterator = currentDocs.docIdSet;
-                    currentScores = currentDocs.scores;
-                    scoreIndex = 0;
                     if ( currentIdIterator != null )
                     {
+                        docValuesCache.clear();
                         currentDocValues = currentDocs.readDocValues( field );
                     }
                 }
@@ -330,22 +358,26 @@ public class DocValuesCollector extends SimpleCollector
             {
                 if ( ensureValidDisi() )
                 {
-                    int nextDoc = currentDocValues.nextDoc();
+                    int nextDoc = currentIdIterator.nextDoc();
                     if ( nextDoc != DocIdSetIterator.NO_MORE_DOCS )
                     {
-                        if ( currentScores != null )
+                        if ( currentDocs.scores != null )
                         {
-                            score = currentScores[scoreIndex];
-                            scoreIndex++;
+                            score = currentDocs.scores[index];
                         }
                         index++;
+                        int valueDoc = currentDocValues.advance( nextDoc );
+                        if ( valueDoc != nextDoc )
+                        {
+                            throw new RuntimeException( "Document id and document value iterators are out of sync. Id iterator gave me document " + nextDoc +
+                                    ", while the value iterator gave me document " + valueDoc + "." );
+                        }
                         next = currentDocValues.longValue();
                         return true;
                     }
                     else
                     {
                         currentIdIterator = null;
-                        currentScores = null;
                         return fetchNextEntityId();
                     }
                 }
@@ -476,9 +508,9 @@ public class DocValuesCollector extends SimpleCollector
         private final float[] scores;
         private int index;
 
-        ReplayingScorer( float[] scores )
+        ReplayingScorer( Weight weight, float[] scores )
         {
-            super( null );
+            super( weight );
             this.scores = scores;
         }
 
@@ -629,7 +661,7 @@ public class DocValuesCollector extends SimpleCollector
             {
                 try
                 {
-                    int valueDocId = docValues.nextDoc();
+                    int valueDocId = docValues.advance( docID );
                     if ( valueDocId != docID )
                     {
                         throw new RuntimeException( "Expected doc values and doc scores to iterate together, but score doc id is " + docID +
