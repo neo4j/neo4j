@@ -19,20 +19,24 @@
  */
 package org.neo4j.server;
 
-import com.sun.jersey.api.client.Client;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.net.URI;
-import javax.ws.rs.core.MediaType;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.List;
 
 import org.neo4j.server.helpers.ServerHelper;
-import org.neo4j.server.rest.JaxRsResponse;
-import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
+import static java.net.http.HttpClient.Redirect.NEVER;
+import static java.net.http.HttpResponse.BodyHandlers.discarding;
+import static javax.ws.rs.core.HttpHeaders.ACCEPT;
+import static javax.ws.rs.core.HttpHeaders.LOCATION;
+import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static org.junit.Assert.assertEquals;
 
 public class RedirectToBrowserTestIT extends ExclusiveServerTestBase
@@ -57,27 +61,32 @@ public class RedirectToBrowserTestIT extends ExclusiveServerTestBase
     @Test
     public void shouldRedirectToBrowser() throws Exception
     {
-        Client nonRedirectingClient = Client.create();
-        nonRedirectingClient.setFollowRedirects( false );
-        final JaxRsResponse response = new RestRequest( server.baseUri(), nonRedirectingClient ).accept( MediaType
-                .TEXT_HTML_TYPE ).get( server.baseUri().toString() );
+        var response = sendGetRequest( ACCEPT, TEXT_HTML );
 
-        assertEquals( 303, response.getStatus() );
-        assertEquals( new URI( server.baseUri() + "browser/" ), response.getLocation() );
-        response.close();
+        assertEquals( 303, response.statusCode() );
+        assertEquals( List.of( server.baseUri() + "browser/" ), response.headers().allValues( LOCATION ) );
     }
 
     @Test
     public void shouldRedirectToBrowserUsingXForwardedHeaders() throws Exception
     {
-        Client nonRedirectingClient = Client.create();
-        nonRedirectingClient.setFollowRedirects( false );
-        final JaxRsResponse response = new RestRequest( server.baseUri(), nonRedirectingClient ).accept( MediaType
-                .TEXT_HTML_TYPE ).header( "X-Forwarded-Host", "foo.bar:8734" ).header( "X-Forwarded-Proto",
-                "https" ).get( server.baseUri().toString() );
+        var response = sendGetRequest( ACCEPT, TEXT_HTML, "X-Forwarded-Host", "foo.bar:8734", "X-Forwarded-Proto", "https" );
 
-        assertEquals( 303, response.getStatus() );
-        assertEquals( new URI( "https://foo.bar:8734/browser/" ), response.getLocation() );
-        response.close();
+        assertEquals( 303, response.statusCode() );
+        assertEquals( List.of( "https://foo.bar:8734/browser/" ), response.headers().allValues( LOCATION ) );
+    }
+
+    private static HttpResponse<Void> sendGetRequest( String... headers ) throws Exception
+    {
+        var request = HttpRequest.newBuilder( server.baseUri() )
+                .headers( headers )
+                .GET()
+                .build();
+
+        var client = HttpClient.newBuilder()
+                .followRedirects( NEVER )
+                .build();
+
+        return client.send( request, discarding() );
     }
 }

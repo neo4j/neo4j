@@ -19,30 +19,26 @@
  */
 package org.neo4j.server;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientRequest;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.config.ClientConfig;
-import com.sun.jersey.api.client.config.DefaultClientConfig;
-import com.sun.jersey.client.urlconnection.HTTPSProperties;
 import org.junit.After;
 import org.junit.Test;
 
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
 import java.util.List;
 import java.util.Map;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.InsecureTrustManager;
 
-import static com.sun.jersey.client.urlconnection.HTTPSProperties.PROPERTY_HTTPS_PROPERTIES;
+import static java.net.http.HttpRequest.BodyPublishers.noBody;
+import static java.net.http.HttpResponse.BodyHandlers.discarding;
 import static java.util.Collections.emptyList;
+import static javax.ws.rs.core.HttpHeaders.ACCEPT;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.jetty.http.HttpHeader.SERVER;
 import static org.eclipse.jetty.http.HttpHeader.STRICT_TRANSPORT_SECURITY;
 import static org.junit.Assert.assertEquals;
@@ -113,7 +109,7 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
 
     private CommunityNeoServer buildServer( String hstsValue ) throws Exception
     {
-        CommunityServerBuilder builder = serverOnRandomPorts()
+        var builder = serverOnRandomPorts()
                 .withHttpsEnabled()
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() );
 
@@ -137,11 +133,11 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
 
     private static void testNoJettyVersionInResponseHeaders( URI baseUri ) throws Exception
     {
-        Map<String,List<String>> headers = runRequestAndGetHeaders( baseUri );
+        var headers = runRequestAndGetHeaders( baseUri );
 
         assertNull( headers.get( SERVER.asString() ) ); // no 'Server' header
 
-        for ( List<String> values : headers.values() )
+        for ( var values : headers.values() )
         {
             assertFalse( values.stream().anyMatch( value -> value.toLowerCase().contains( "jetty" ) ) ); // no 'jetty' in other header values
         }
@@ -154,7 +150,7 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
 
     private static String runRequestAndGetHeaderValue( URI baseUri, String header ) throws Exception
     {
-        List<String> values = runRequestAndGetHeaderValues( baseUri, header );
+        var values = runRequestAndGetHeaderValues( baseUri, header );
         if ( values.isEmpty() )
         {
             return null;
@@ -176,29 +172,24 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
 
     private static Map<String,List<String>> runRequestAndGetHeaders( URI baseUri ) throws Exception
     {
-        URI uri = baseUri.resolve( "db/data/transaction/commit" );
-        ClientRequest request = createClientRequest( uri );
+        var uri = baseUri.resolve( "db/data/transaction/commit" );
 
-        ClientResponse response = createClient().handle( request );
-        assertEquals( 200, response.getStatus() );
+        var request = HttpRequest.newBuilder( uri )
+                .header( ACCEPT, APPLICATION_JSON )
+                .POST( noBody() )
+                .build();
 
-        return response.getHeaders();
-    }
+        var trustAllSslContext = SSLContext.getInstance( "TLS" );
+        trustAllSslContext.init( null, new TrustManager[]{new InsecureTrustManager()}, null );
 
-    private static ClientRequest createClientRequest( URI uri )
-    {
-        return ClientRequest.create()
-                .header( "Accept", "application/json" )
-                .build( uri, "POST" );
-    }
+        var client = HttpClient.newBuilder()
+                .sslContext( trustAllSslContext )
+                .build();
 
-    private static Client createClient() throws Exception
-    {
-        HostnameVerifier hostnameVerifier = HttpsURLConnection.getDefaultHostnameVerifier();
-        ClientConfig config = new DefaultClientConfig();
-        SSLContext ctx = SSLContext.getInstance( "TLS" );
-        ctx.init( null, new TrustManager[]{new InsecureTrustManager()}, null );
-        config.getProperties().put( PROPERTY_HTTPS_PROPERTIES, new HTTPSProperties( hostnameVerifier, ctx ) );
-        return Client.create( config );
+        var response = client.send( request, discarding() );
+
+        assertEquals( 200, response.statusCode() );
+
+        return response.headers().map();
     }
 }

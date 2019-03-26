@@ -19,15 +19,20 @@
  */
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.Client;
 import org.junit.Test;
 
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Map;
 
 import org.neo4j.server.rest.domain.JsonHelper;
 
+import static java.net.http.HttpClient.Redirect.NEVER;
+import static java.net.http.HttpResponse.BodyHandlers.discarding;
+import static javax.ws.rs.core.HttpHeaders.ACCEPT;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.MediaType.TEXT_HTML_TYPE;
+import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -78,18 +83,16 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldRedirectOnHtmlRequest()
+    public void shouldRedirectOnHtmlRequest() throws Exception
     {
-        Client nonRedirectingClient = Client.create();
-        nonRedirectingClient.setFollowRedirects( false );
+        HttpRequest request = HttpRequest.newBuilder( server().baseUri() ).header( ACCEPT, TEXT_HTML ).GET().build();
+        HttpClient client = HttpClient.newBuilder().followRedirects( NEVER ).build();
+        HttpResponse<Void> response = client.send( request, discarding() );
 
-        JaxRsResponse clientResponse =
-                new RestRequest( null, nonRedirectingClient ).get( server().baseUri().toString(), TEXT_HTML_TYPE );
-
-        assertEquals( 303, clientResponse.getStatus() );
+        assertEquals( 303, response.statusCode() );
     }
 
-    private JaxRsResponse getDiscoveryDocument()
+    private static JaxRsResponse getDiscoveryDocument()
     {
         return new RestRequest( server().baseUri() ).get();
     }

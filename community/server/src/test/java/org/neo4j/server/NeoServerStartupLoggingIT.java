@@ -19,7 +19,6 @@
  */
 package org.neo4j.server;
 
-import com.sun.jersey.api.client.Client;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -27,13 +26,15 @@ import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
 
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.helpers.ServerHelper;
-import org.neo4j.server.rest.JaxRsResponse;
-import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
+import static java.net.http.HttpClient.Redirect.NEVER;
+import static java.net.http.HttpResponse.BodyHandlers.discarding;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
@@ -65,17 +66,18 @@ public class NeoServerStartupLoggingIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldLogStartup()
+    public void shouldLogStartup() throws Exception
     {
         // Check the logs
-        String logContent = out.toString();
+        var logContent = out.toString();
         assertThat( logContent.length(), is( greaterThan( 0 ) ) );
         assertThat( logContent, containsString( NEO4J_IS_STARTING_MESSAGE ) );
+
         // Check the server is alive
-        Client nonRedirectingClient = Client.create();
-        nonRedirectingClient.setFollowRedirects( false );
-        final JaxRsResponse response = new RestRequest( server.baseUri(), nonRedirectingClient ).get();
-        assertThat( response.getStatus(), is( greaterThan( 199 ) ) );
+        var request = HttpRequest.newBuilder( server.baseUri() ).GET().build();
+        var client = HttpClient.newBuilder().followRedirects( NEVER ).build();
+        var response = client.send( request, discarding() );
+        assertThat( response.statusCode(), is( greaterThan( 199 ) ) );
 
     }
 }
