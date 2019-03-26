@@ -28,7 +28,6 @@ import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -95,7 +94,7 @@ class NativeLabelScanStoreMigratorTest
         luceneLabelScanStore = testDirectory.databaseDir().toPath().resolve( Paths.get( "schema", "label", "lucene" ) ).toFile();
 
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
-        indexMigrator = new NativeLabelScanStoreMigrator( fileSystem, pageCache, Config.defaults(), storageEngineFactory );
+        indexMigrator = new NativeLabelScanStoreMigrator( fileSystem, pageCache, storageEngineFactory );
         fileSystem.mkdirs( luceneLabelScanStore );
     }
 

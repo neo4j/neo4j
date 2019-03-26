@@ -55,16 +55,14 @@ class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticipant
 {
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
-    private final Config config;
     private final StorageEngineFactory storageEngineFactory;
     private boolean nativeLabelScanStoreMigrated;
 
-    NativeLabelScanStoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config, StorageEngineFactory storageEngineFactory )
+    NativeLabelScanStoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, StorageEngineFactory storageEngineFactory )
     {
         super( "Native label scan index" );
         this.fileSystem = fileSystem;
         this.pageCache = pageCache;
-        this.config = config;
         this.storageEngineFactory = storageEngineFactory;
     }
 

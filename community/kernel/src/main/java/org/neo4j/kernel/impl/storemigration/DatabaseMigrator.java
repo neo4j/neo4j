@@ -89,7 +89,7 @@ public class DatabaseMigrator
         this.indexProviderMap.accept(
             provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache, storageEngineFactory ) ) );
         storeUpgrader.addParticipant( storageEngineFactory.migrationParticipant( dependencies ) );
-        storeUpgrader.addParticipant( new NativeLabelScanStoreMigrator( fs, pageCache, config, storageEngineFactory ) );
+        storeUpgrader.addParticipant( new NativeLabelScanStoreMigrator( fs, pageCache, storageEngineFactory ) );
         storeUpgrader.migrateIfNeeded( databaseLayout );
     }
 }
