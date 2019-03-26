@@ -63,7 +63,8 @@ public class DatabaseMigratorFactory
         this.jobScheduler = jobScheduler;
     }
 
-    public DatabaseMigrator createDatabaseMigrator( DatabaseLayout databaseLayout, DependencyResolver dependencyResolver )
+    public DatabaseMigrator createDatabaseMigrator( DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory,
+            DependencyResolver dependencyResolver )
     {
         final DatabaseConfig dbConfig = DatabaseConfig.from( config, new DatabaseId( databaseLayout.getDatabaseName() ) );
         final IndexProviderMap indexProviderMap = dependencyResolver.resolveDependency( IndexProviderMap.class );
@@ -71,7 +72,6 @@ public class DatabaseMigratorFactory
         final LogFileCreationMonitor logFileCreationMonitor = monitors.newMonitor( LogFileCreationMonitor.class );
         final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         final LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( dbConfig, databaseLayout );
-        final StorageEngineFactory storageEngineFactory = dependencyResolver.resolveDependency( StorageEngineFactory.class );
         final LogFiles logFiles;
         try
         {

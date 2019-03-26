@@ -172,7 +172,7 @@ public class DatabaseRule extends ExternalResource
     private static DatabaseMigratorFactory mockedDatabaseMigratorFactory()
     {
         DatabaseMigratorFactory factory = mock( DatabaseMigratorFactory.class );
-        when( factory.createDatabaseMigrator( any(), any() ) ).thenReturn( mock( DatabaseMigrator.class ) );
+        when( factory.createDatabaseMigrator( any(), any(), any() ) ).thenReturn( mock( DatabaseMigrator.class ) );
         return factory;
     }
 

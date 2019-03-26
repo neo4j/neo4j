@@ -470,7 +470,7 @@ public class Database extends LifecycleAdapter
 
     private void upgradeStore() throws IOException
     {
-        databaseMigratorFactory.createDatabaseMigrator( databaseLayout, databaseDependencies ).migrate();
+        databaseMigratorFactory.createDatabaseMigrator( databaseLayout, storageEngineFactory, databaseDependencies ).migrate();
     }
 
     /**
