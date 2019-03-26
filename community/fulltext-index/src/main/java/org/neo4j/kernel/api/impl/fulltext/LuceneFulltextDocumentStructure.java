@@ -140,16 +140,9 @@ public class LuceneFulltextDocumentStructure
 
         private void removeAllValueFields()
         {
-            Iterator<IndexableField> it = document.getFields().iterator();
-            while ( it.hasNext() )
-            {
-                IndexableField field = it.next();
-                String fieldName = field.name();
-                if ( !fieldName.equals( FIELD_ENTITY_ID ) )
-                {
-                    it.remove();
-                }
-            }
+            document.clear();
+            document.add( idField );
+            document.add( idValueField );
         }
     }
 }
