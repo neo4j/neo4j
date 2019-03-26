@@ -159,16 +159,10 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public TransactionMetaDataStore transactionMetaDataStore( DependencyResolver dependencyResolver )
+    public TransactionMetaDataStore transactionMetaDataStore( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache )
     {
-        DatabaseLayout databaseLayout = dependencyResolver.resolveDependency( DatabaseLayout.class );
-        FileSystemAbstraction fs = dependencyResolver.resolveDependency( FileSystemAbstraction.class );
-        PageCache pageCache = dependencyResolver.resolveDependency( PageCache.class );
-        Config config = dependencyResolver.resolveDependency( Config.class );
-        NullLogProvider logProvider = NullLogProvider.getInstance();
-
-        RecordFormats recordFormats = selectForStoreOrConfig( Config.defaults(), databaseLayout, fs, pageCache, logProvider );
-        return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs, recordFormats, logProvider )
+        RecordFormats recordFormats = selectForStoreOrConfig( Config.defaults(), databaseLayout, fs, pageCache, NullLogProvider.getInstance() );
+        return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs, recordFormats, NullLogProvider.getInstance() )
                 .openNeoStores( META_DATA ).getMetaDataStore();
     }
 

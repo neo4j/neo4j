@@ -104,11 +104,11 @@ public interface StorageEngineFactory
     /**
      * Instantiates a fully functional {@link TransactionMetaDataStore}, which is a union of {@link TransactionIdStore}
      * and {@link LogVersionRepository}.
-     * @param dependencyResolver resolver for all dependencies required to instantiate the {@link TransactionMetaDataStore}.
      * @return a fully functional {@link TransactionMetaDataStore}.
      * @throws IOException on I/O error or if the store doesn't exist.
      */
-    TransactionMetaDataStore transactionMetaDataStore( DependencyResolver dependencyResolver ) throws IOException;
+    TransactionMetaDataStore transactionMetaDataStore( FileSystemAbstraction fs, DatabaseLayout databaseLayout,
+            Config config, PageCache pageCache ) throws IOException;
 
     StoreId storeId( DependencyResolver dependencyResolver ) throws IOException;
 
