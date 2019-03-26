@@ -22,6 +22,7 @@ package org.neo4j.procedure.impl;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.time.LocalDate;
@@ -125,7 +126,7 @@ import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
 public final class ProcedureCompilation
 {
     public static final RawIterator<AnyValue[],ProcedureException> VOID_ITERATOR =
-            new RawIterator<AnyValue[],ProcedureException>()
+            new RawIterator<>()
             {
                 @Override
                 public boolean hasNext()
@@ -279,7 +280,7 @@ public final class ProcedureCompilation
             //set all static fields
             setAllStaticFields( signature, fieldSetters, methodToCall, clazz );
 
-            return (CallableUserFunction) clazz.newInstance();
+            return (CallableUserFunction) clazz.getConstructor(  ).newInstance();
         }
         catch ( Throwable e )
         {
@@ -378,7 +379,7 @@ public final class ProcedureCompilation
 
             //set all static fields
             setAllStaticFields( signature, fieldSetters, methodToCall, clazz );
-            return (CallableProcedure) clazz.newInstance();
+            return (CallableProcedure) clazz.getConstructor(  ).newInstance();
         }
         catch ( Throwable e )
         {
@@ -505,7 +506,7 @@ public final class ProcedureCompilation
             //set all static fields
             setAllStaticFields( signature, fieldSetters, create, clazz );
 
-            return (CallableUserAggregationFunction) clazz.newInstance();
+            return (CallableUserAggregationFunction) clazz.getConstructor(  ).newInstance();
         }
         catch ( Throwable e )
         {
@@ -1167,10 +1168,11 @@ public final class ProcedureCompilation
 
     private static void setAllStaticFields( Object signature, List<FieldSetter> fieldSetters,
             Method methodToCall, Class<?> clazz )
-            throws IllegalAccessException, NoSuchFieldException, InstantiationException
+            throws IllegalAccessException, NoSuchFieldException, InstantiationException, NoSuchMethodException,
+            InvocationTargetException
     {
         clazz.getDeclaredField( SIGNATURE_NAME ).set( null, signature );
-        clazz.getDeclaredField( USER_CLASS ).set( null, methodToCall.getDeclaringClass().newInstance() );
+        clazz.getDeclaredField( USER_CLASS ).set( null, methodToCall.getDeclaringClass().getConstructor(  ).newInstance() );
         for ( int i = 0; i < fieldSetters.size(); i++ )
         {
             clazz.getDeclaredField( "SETTER_" + i ).set(null, fieldSetters.get( i ));
