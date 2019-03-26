@@ -122,6 +122,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
                 dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider() );
     }
 
+    @Override
     public List<File> listStorageFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException
     {
         if ( !fileSystem.fileExists( databaseLayout.file( META_DATA.getDatabaseFile() ).findFirst().get() ) )
