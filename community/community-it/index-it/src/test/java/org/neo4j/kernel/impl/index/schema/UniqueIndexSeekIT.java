@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.hamcrest.core.CombinableMatcher;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -42,13 +43,18 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Collections.singletonList;
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR;
+import static org.neo4j.kernel.impl.index.schema.tracking.TrackingReadersIndexAccessor.numberOfClosedReaders;
+import static org.neo4j.kernel.impl.index.schema.tracking.TrackingReadersIndexAccessor.numberOfOpenReaders;
 
 public class UniqueIndexSeekIT
 {
@@ -72,18 +78,23 @@ public class UniqueIndexSeekIT
             generateRandomData( database, label, nameProperty );
 
             assertNotNull( indexExtensionFactory.getIndexProvider() );
-            assertThat( TrackingReadersIndexAccessor.numberOfClosedReaders(), greaterThan( 0L ) );
-            assertThat( TrackingReadersIndexAccessor.numberOfOpenReaders(), greaterThan( 0L ) );
-            assertEquals( TrackingReadersIndexAccessor.numberOfClosedReaders(), TrackingReadersIndexAccessor.numberOfOpenReaders() );
+            assertThat( numberOfClosedReaders(), greaterThan( 0L ) );
+            assertThat( numberOfOpenReaders(), greaterThan( 0L ) );
+            assertThat( numberOfClosedReaders(), closeTo( numberOfOpenReaders(), 1 ) );
 
             lockNodeUsingUniqueIndexSeek( database, label, nameProperty );
 
-            assertEquals( TrackingReadersIndexAccessor.numberOfClosedReaders(), TrackingReadersIndexAccessor.numberOfOpenReaders() );
+            assertThat( numberOfClosedReaders(), closeTo( numberOfOpenReaders(), 1 ) );
         }
         finally
         {
             database.shutdown();
         }
+    }
+
+    private static CombinableMatcher<Long> closeTo( long from, long delta )
+    {
+        return both( greaterThanOrEqualTo( from ) ).and( lessThanOrEqualTo( from + delta ) );
     }
 
     private GraphDatabaseAPI createDatabase( TrackingIndexExtensionFactory indexExtensionFactory )
