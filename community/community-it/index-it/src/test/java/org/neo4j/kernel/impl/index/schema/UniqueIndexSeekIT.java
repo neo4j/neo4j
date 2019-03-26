@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.hamcrest.core.CombinableMatcher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -38,7 +39,6 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.tracking.TrackingIndexExtensionFactory;
-import org.neo4j.kernel.impl.index.schema.tracking.TrackingReadersIndexAccessor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
@@ -48,13 +48,17 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR;
+import static org.neo4j.kernel.impl.index.schema.tracking.TrackingReadersIndexAccessor.numberOfClosedReaders;
+import static org.neo4j.kernel.impl.index.schema.tracking.TrackingReadersIndexAccessor.numberOfOpenReaders;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class UniqueIndexSeekIT
@@ -78,19 +82,24 @@ class UniqueIndexSeekIT
 
             generateRandomData( database, label, nameProperty );
 
-            assertNotNull( indexExtensionFactory.getIndexProvider( config.get( default_database ) ) );
-            assertThat( TrackingReadersIndexAccessor.numberOfClosedReaders(), greaterThan( 0L ) );
-            assertThat( TrackingReadersIndexAccessor.numberOfOpenReaders(), greaterThan( 0L ) );
-            assertEquals( TrackingReadersIndexAccessor.numberOfClosedReaders(), TrackingReadersIndexAccessor.numberOfOpenReaders() );
+            assertNotNull( indexExtensionFactory.getIndexProvider(config.get( default_database )) );
+            assertThat( numberOfClosedReaders(), greaterThan( 0L ) );
+            assertThat( numberOfOpenReaders(), greaterThan( 0L ) );
+            assertThat( numberOfClosedReaders(), closeTo( numberOfOpenReaders(), 1 ) );
 
             lockNodeUsingUniqueIndexSeek( database, label, nameProperty );
 
-            assertEquals( TrackingReadersIndexAccessor.numberOfClosedReaders(), TrackingReadersIndexAccessor.numberOfOpenReaders() );
+            assertThat( numberOfClosedReaders(), closeTo( numberOfOpenReaders(), 1 ) );
         }
         finally
         {
             database.shutdown();
         }
+    }
+
+    private static CombinableMatcher<Long> closeTo( long from, long delta )
+    {
+        return both( greaterThanOrEqualTo( from ) ).and( lessThanOrEqualTo( from + delta ) );
     }
 
     private GraphDatabaseAPI createDatabase( TrackingIndexExtensionFactory indexExtensionFactory )
