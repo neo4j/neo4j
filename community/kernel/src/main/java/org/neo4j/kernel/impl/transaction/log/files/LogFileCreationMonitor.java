@@ -24,17 +24,11 @@ import java.io.File;
 /**
  * Monitor for new transaction log file creation.
  */
+@FunctionalInterface
 public interface LogFileCreationMonitor
 {
-    LogFileCreationMonitor NO_MONITOR = new Adapter();
+    LogFileCreationMonitor NO_MONITOR = ( logFile, logVersion, lastTransactionId ) -> { };
 
     void created( File logFile, long logVersion, long lastTransactionId );
 
-    class Adapter implements LogFileCreationMonitor
-    {
-        @Override
-        public void created( File logFile, long logVersion, long lastTransactionId )
-        {
-        }
-    }
 }

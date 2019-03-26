@@ -259,7 +259,7 @@ public class LogFilesBuilder
         {
             requireNonNull( dependencies, LogVersionRepository.class.getSimpleName() + " is required. " +
                     "Please provide an instance or a dependencies where it can be found." );
-            return getSupplier( LogVersionRepository.class );
+            return dependencies.provideDependency( LogVersionRepository.class );
         }
     }
 
@@ -343,11 +343,6 @@ public class LogFilesBuilder
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( pageCache, databaseLayout );
         return storageEngineFactory.readOnlyLogVersionRepository( dependencies );
-    }
-
-    private <T> Supplier<T> getSupplier( Class<T> clazz )
-    {
-        return () -> resolveDependency( clazz );
     }
 
     private <T> T resolveDependency( Class<T> clazz )
