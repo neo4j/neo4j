@@ -88,7 +88,7 @@ public class FulltextIndexReader implements IndexReader
         {
             DocValuesCollector docValuesCollector = new DocValuesCollector( true );
             searcher.getIndexSearcher().search( query, docValuesCollector );
-            return docValuesCollector.getSortedValuesIterator( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID, Sort.RELEVANCE );
+            return docValuesCollector.getValuesSortedByRelevance( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID );
         }
         catch ( IOException e )
         {

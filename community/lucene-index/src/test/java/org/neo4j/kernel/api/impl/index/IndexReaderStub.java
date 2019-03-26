@@ -27,12 +27,15 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.LeafMetaData;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
@@ -44,23 +47,21 @@ import java.util.function.Function;
 public class IndexReaderStub extends LeafReader
 {
     private Fields fields;
-    private boolean allDeleted;
     private String[] elements = new String[0];
-    private Function<String,NumericDocValues> ndvs = s -> DocValues.emptyNumeric();
+    private Function<String,NumericDocValues> ndvs;
 
-    private IOException throwOnFields;
     private static FieldInfo DummyFieldInfo =
             new FieldInfo( "id", 0, false, true, false, IndexOptions.DOCS,
-                    DocValuesType.NONE, -1, Collections.emptyMap() );
-
-    public IndexReaderStub( Fields fields )
-    {
-        this.fields = fields;
-    }
+                    DocValuesType.NONE, -1, Collections.emptyMap(), 1, 1, 8, true );
 
     public IndexReaderStub( final NumericDocValues ndv )
     {
         this.ndvs = s -> ndv;
+    }
+
+    public IndexReaderStub( Fields fields )
+    {
+        this.fields = fields;
     }
 
     public void setElements( String[] elements )
@@ -69,27 +70,15 @@ public class IndexReaderStub extends LeafReader
     }
 
     @Override
-    public void addCoreClosedListener( CoreClosedListener listener )
+    public CacheHelper getCoreCacheHelper()
     {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void removeCoreClosedListener( CoreClosedListener listener )
+    public Terms terms( String field )
     {
-
-    }
-
-    @Override
-    public Fields fields() throws IOException
-    {
-        if ( throwOnFields != null )
-        {
-            IOException exception = this.throwOnFields;
-            throwOnFields = null;
-            throw exception;
-        }
-        return fields;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -123,12 +112,6 @@ public class IndexReaderStub extends LeafReader
     }
 
     @Override
-    public Bits getDocsWithField( String field )
-    {
-        throw new RuntimeException( "Not yet implemented." );
-    }
-
-    @Override
     public NumericDocValues getNormValues( String field )
     {
         return DocValues.emptyNumeric();
@@ -152,7 +135,7 @@ public class IndexReaderStub extends LeafReader
                 {
                     throw new IllegalArgumentException( "Doc id out of range" );
                 }
-                return !allDeleted;
+                return true;
             }
 
             @Override
@@ -164,8 +147,20 @@ public class IndexReaderStub extends LeafReader
     }
 
     @Override
+    public PointValues getPointValues( String field )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void checkIntegrity()
     {
+    }
+
+    @Override
+    public LeafMetaData getMetaData()
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -177,7 +172,7 @@ public class IndexReaderStub extends LeafReader
     @Override
     public int numDocs()
     {
-        return allDeleted ? 0 : elements.length;
+        return elements.length;
     }
 
     @Override
@@ -197,9 +192,15 @@ public class IndexReaderStub extends LeafReader
     {
     }
 
+    @Override
+    public CacheHelper getReaderCacheHelper()
+    {
+        throw new UnsupportedOperationException();
+    }
+
     private int maxValue()
     {
         return Arrays.stream( elements )
-                .mapToInt( value ->  NumberUtils.toInt( value, 0 )).max().getAsInt();
+                .mapToInt( value ->  NumberUtils.toInt( value, 0 )).max().orElse( 0 );
     }
 }

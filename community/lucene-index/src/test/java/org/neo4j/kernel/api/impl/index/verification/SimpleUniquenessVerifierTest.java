@@ -80,7 +80,7 @@ class SimpleUniquenessVerifierTest
         dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
         Directory dir = dirFactory.open( testDir.directory( "test" ) );
         writer = new IndexWriter( dir, IndexWriterConfigs.standard() );
-        searcherManager = new SearcherManager( writer, true, new SearcherFactory() );
+        searcherManager = new SearcherManager( writer, new SearcherFactory() );
     }
 
     @AfterEach

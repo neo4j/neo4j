@@ -59,12 +59,6 @@ public class ScoreEntityIterator implements ValuesIterator
     }
 
     @Override
-    public long getValue( String field )
-    {
-        throw new IllegalStateException( "Filtered iterators have no value fields." );
-    }
-
-    @Override
     public int remaining()
     {
         return iterator.remaining() + (hasNext ? 1 : 0);
@@ -194,12 +188,6 @@ public class ScoreEntityIterator implements ValuesIterator
         public long current()
         {
             return entityId;
-        }
-
-        @Override
-        public long getValue( String field )
-        {
-            return 0;
         }
     }
 }

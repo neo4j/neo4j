@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.schema.sampler;
 
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -90,17 +91,18 @@ public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
         return sampler.result( indexReader.numDocs() );
     }
 
-    private static Set<String> getFieldNamesToSample( LeafReaderContext readerContext ) throws IOException
+    private static Set<String> getFieldNamesToSample( LeafReaderContext readerContext )
     {
-        Fields fields = readerContext.reader().fields();
         Set<String> fieldNames = new HashSet<>();
-        for ( String field : fields )
+        LeafReader reader = readerContext.reader();
+        reader.getFieldInfos().forEach( info ->
         {
-            if ( !LuceneDocumentStructure.NODE_ID_KEY.equals( field ) )
+            String name = info.name;
+            if ( !LuceneDocumentStructure.NODE_ID_KEY.equals( name ) )
             {
-                fieldNames.add( field );
+                fieldNames.add( name );
             }
-        }
+        });
         return fieldNames;
     }
 }

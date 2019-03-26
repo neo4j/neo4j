@@ -131,7 +131,7 @@ public class PartitionedIndexWriter implements LuceneIndexWriter
 
     private boolean writablePartition( AbstractIndexPartition partition, int numDocs )
     {
-        return MAXIMUM_PARTITION_SIZE - partition.getIndexWriter().maxDoc() >= numDocs;
+        return MAXIMUM_PARTITION_SIZE - partition.getIndexWriter().getDocStats().maxDoc >= numDocs;
     }
 }
 

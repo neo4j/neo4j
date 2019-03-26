@@ -41,7 +41,7 @@ public class CompositeDuplicateCheckingCollector extends DuplicateCheckingCollec
     }
 
     @Override
-    protected void doCollect( int doc ) throws IOException, KernelException, IndexEntryConflictException
+    protected void doCollect( int doc ) throws IOException, KernelException
     {
         Document document = reader.document( doc );
         long nodeId = LuceneDocumentStructure.getNodeId( document );

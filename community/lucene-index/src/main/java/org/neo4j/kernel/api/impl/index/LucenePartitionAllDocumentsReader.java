@@ -21,7 +21,8 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FilteredDocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -29,6 +30,7 @@ import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -102,19 +104,29 @@ public class LucenePartitionAllDocumentsReader implements BoundedIterable<Docume
 
     private DocIdSetIterator iterateAllDocs()
     {
-        Bits liveDocs = MultiFields.getLiveDocs( reader );
         DocIdSetIterator allDocs = DocIdSetIterator.all( reader.maxDoc() );
-        if ( liveDocs == null )
+        if ( !reader.hasDeletions() )
         {
             return allDocs;
         }
 
         return new FilteredDocIdSetIterator( allDocs )
         {
+            List<LeafReaderContext> leaves = reader.leaves();
+            Bits currentLiveDocs;
+            int currentMaxDoc = -1;
+
             @Override
             protected boolean match( int doc )
             {
-                return liveDocs.get( doc );
+                if ( doc > currentMaxDoc && leaves.size() > 0 )
+                {
+                    LeafReaderContext leaf = leaves.remove( 0 );
+                    LeafReader reader = leaf.reader();
+                    currentLiveDocs = reader.getLiveDocs();
+                    currentMaxDoc = reader.maxDoc();
+                }
+                return currentLiveDocs.get( doc );
             }
         };
     }

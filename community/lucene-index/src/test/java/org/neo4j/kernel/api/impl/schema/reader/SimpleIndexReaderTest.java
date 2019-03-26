@@ -23,7 +23,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.junit.jupiter.api.BeforeEach;
@@ -127,7 +127,7 @@ class SimpleIndexReaderTest
 
         doQuery( simpleIndexReader, range( 1, 7, true, 8, true ) );
 
-        verify( indexSearcher ).search( any( NumericRangeQuery.class ), any( DocValuesCollector.class ) );
+        verify( indexSearcher ).search( any( Query.class ), any( DocValuesCollector.class ) );
     }
 
     @Test

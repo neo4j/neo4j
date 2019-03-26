@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.schema;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
@@ -35,7 +36,6 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -56,8 +56,7 @@ import static org.apache.lucene.document.Field.Store.YES;
 
 public class LuceneDocumentStructure
 {
-    private static final boolean USE_LUCENE_STANDARD_PREFIX_QUERY =
-            FeatureToggles.flag( LuceneDocumentStructure.class, "lucene.standard.prefix.query", false );
+    private static final boolean USE_LUCENE_STANDARD_PREFIX_QUERY = FeatureToggles.flag( LuceneDocumentStructure.class, "lucene.standard.prefix.query", false );
 
     public static final String NODE_ID_KEY = "id";
 
@@ -116,25 +115,23 @@ public class LuceneDocumentStructure
      * Range queries are always inclusive, in order to do exclusive range queries the result must be filtered after the
      * fact. The reason we can't do inclusive range queries is that longs are coerced to doubles in the index.
      */
-    public static NumericRangeQuery<Double> newInclusiveNumericRangeSeekQuery( Number lower, Number upper )
+    public static Query newInclusiveNumericRangeSeekQuery( Number lower, Number upper )
     {
-        Double min = lower != null ? lower.doubleValue() : null;
-        Double max = upper != null ? upper.doubleValue() : null;
-        return NumericRangeQuery.newDoubleRange( ValueEncoding.Number.key( 0 ), min, max, true, true );
+        double min = lower != null ? lower.doubleValue() : Double.NEGATIVE_INFINITY;
+        double max = upper != null ? upper.doubleValue() : Double.POSITIVE_INFINITY;
+        return DoublePoint.newRangeQuery( ValueEncoding.Number.key( 0 ), min, max );
     }
 
-    public static Query newRangeSeekByStringQuery( String lower, boolean includeLower,
-            String upper, boolean includeUpper )
+    public static Query newRangeSeekByStringQuery( String lower, boolean includeLower, String upper, boolean includeUpper )
     {
         boolean includeLowerBoundary = StringUtils.EMPTY.equals( lower ) || includeLower;
         boolean includeUpperBoundary = StringUtils.EMPTY.equals( upper ) || includeUpper;
-        TermRangeQuery termRangeQuery = TermRangeQuery.newStringRange( ValueEncoding.String.key( 0 ), lower, upper,
-                includeLowerBoundary, includeUpperBoundary );
+        TermRangeQuery termRangeQuery =
+                TermRangeQuery.newStringRange( ValueEncoding.String.key( 0 ), lower, upper, includeLowerBoundary, includeUpperBoundary );
 
         if ( (includeLowerBoundary != includeLower) || (includeUpperBoundary != includeUpper) )
         {
             BooleanQuery.Builder builder = new BooleanQuery.Builder();
-            builder.setDisableCoord(true);
             if ( includeLowerBoundary != includeLower )
             {
                 builder.add( new TermQuery( new Term( ValueEncoding.String.key( 0 ), lower ) ), BooleanClause.Occur.MUST_NOT );
@@ -160,8 +157,7 @@ public class LuceneDocumentStructure
     public static Query newRangeSeekByPrefixQuery( String prefix )
     {
         Term term = new Term( ValueEncoding.String.key( 0 ), prefix );
-        return USE_LUCENE_STANDARD_PREFIX_QUERY ? new PrefixQuery( term ) :
-                                     new PrefixMultiTermsQuery( term );
+        return USE_LUCENE_STANDARD_PREFIX_QUERY ? new PrefixQuery( term ) : new PrefixMultiTermsQuery( term );
     }
 
     public static Query newSuffixStringQuery( String suffix )
@@ -185,31 +181,27 @@ public class LuceneDocumentStructure
     /**
      * Filters the given {@link Terms terms} to include only terms that were created using fields from
      * {@link ValueEncoding#encodeField(String, Value)}. Internal lucene terms like those created for indexing numeric values
-     * (see javadoc for {@link NumericRangeQuery} class) are skipped. In other words this method returns
+     * (see javadoc for {@link DoublePoint#newRangeQuery(String, double, double)}) are skipped. In other words this method returns
      * {@link TermsEnum} over all terms for the given field that were created using {@link ValueEncoding}.
      *
      * @param terms the terms to be filtered
      * @param fieldKey the corresponding {@link ValueEncoding#key(int) field key}
      * @return terms enum over all inserted terms
      * @throws IOException if it is not possible to obtain {@link TermsEnum}
-     * @see NumericRangeQuery
-     * @see org.apache.lucene.analysis.NumericTokenStream
-     * @see NumericUtils#PRECISION_STEP_DEFAULT
+     * @see DoublePoint#newRangeQuery(String, double, double)
      * @see NumericUtils#filterPrefixCodedLongs(TermsEnum)
      */
     public static TermsEnum originalTerms( Terms terms, String fieldKey ) throws IOException
     {
         TermsEnum termsEnum = terms.iterator();
-        return ValueEncoding.forKey( fieldKey ) == ValueEncoding.Number
-               ? NumericUtils.filterPrefixCodedLongs( termsEnum )
-               : termsEnum;
+
+        return ValueEncoding.forKey( fieldKey ) == ValueEncoding.Number ? new NumberTermsEnum( termsEnum ) : termsEnum;
     }
 
     /**
      * Simple implementation of prefix query that mimics old lucene way of handling prefix queries.
-     * According to benchmarks this implementation is faster then
-     * {@link org.apache.lucene.search.PrefixQuery} because we do not construct automaton  which is
-     * extremely expensive.
+     * According to benchmarks this implementation is faster then {@link PrefixQuery} because we do
+     * not construct automaton  which is extremely expensive.
      */
     private static class PrefixMultiTermsQuery extends MultiTermQuery
     {
@@ -260,8 +252,7 @@ public class LuceneDocumentStructure
 
     public static boolean useFieldForUniquenessVerification( String fieldName )
     {
-        return !LuceneDocumentStructure.NODE_ID_KEY.equals( fieldName ) &&
-                ValueEncoding.fieldPropertyNumber( fieldName ) == 0;
+        return !LuceneDocumentStructure.NODE_ID_KEY.equals( fieldName ) && ValueEncoding.fieldPropertyNumber( fieldName ) == 0;
     }
 
     private static class DocWithId

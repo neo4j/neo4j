@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.schema.verification;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 
 import java.io.IOException;
@@ -84,9 +85,9 @@ public class DuplicateCheckingCollector extends SimpleCollector
     }
 
     @Override
-    public boolean needsScores()
+    public ScoreMode scoreMode()
     {
-        return false;
+        return ScoreMode.COMPLETE_NO_SCORES;
     }
 
     /**

@@ -65,7 +65,7 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <licensing.prepend.text>licensing/notice-agpl-prefix.txt</licensing.prepend.text>
-        <lucene.version>5.5.5</lucene.version>
+        <lucene.version>8.0.0</lucene.version>
         <bouncycastle.version>1.61</bouncycastle.version>
         <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
         <test.runner.jvm/>

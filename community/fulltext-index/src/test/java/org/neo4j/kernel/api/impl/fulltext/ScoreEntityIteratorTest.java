@@ -152,11 +152,5 @@ public class ScoreEntityIteratorTest
         {
             return entityIds.get( nextIndex - 1 );
         }
-
-        @Override
-        public long getValue( String field )
-        {
-            return 0;
-        }
     }
 }

@@ -20,7 +20,11 @@
 package org.neo4j.kernel.api.impl.schema.reader;
 
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.ReaderSlice;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
@@ -30,12 +34,14 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.NumericUtils;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.function.Function;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.helpers.TaskControl;
 import org.neo4j.internal.kernel.api.IndexOrder;
@@ -47,6 +53,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
+import org.neo4j.kernel.api.impl.schema.NumberTermsEnum;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.impl.schema.ValueEncoding;
 import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
@@ -206,9 +213,21 @@ public class SimpleIndexReader extends AbstractIndexReader
         {
             IndexQuery[] noQueries = new IndexQuery[0];
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
-            Fields fields = MultiFields.getFields( getIndexSearcher().getIndexReader() );
+            IndexReader reader = getIndexSearcher().getIndexReader();
+            List<LeafReaderContext> leaves = reader.leaves();
+            Fields[] subFields = new Fields[leaves.size()];
+            ReaderSlice[] readerSlices = new ReaderSlice[leaves.size()];
+            for ( int i = 0; i < leaves.size(); i++ )
+            {
+                LeafReaderContext context = leaves.get( i );
+                LeafReader leafReader = context.reader();
+                subFields[i] = fieldsOf( leafReader );
+                readerSlices[i] = new ReaderSlice( context.docBase, reader.maxDoc(), i );
+            }
+            Fields fields = new MultiFields( subFields, readerSlices );
             for ( ValueEncoding valueEncoding : ValueEncoding.values() )
             {
+
                 Terms terms = fields.terms( valueEncoding.key() );
                 if ( terms != null )
                 {
@@ -218,7 +237,7 @@ public class SimpleIndexReader extends AbstractIndexReader
                     TermsEnum termsIterator = terms.iterator();
                     if ( valueEncoding == ValueEncoding.Number )
                     {
-                        termsIterator = NumericUtils.filterPrefixCodedLongs( termsIterator );
+                        termsIterator = new NumberTermsEnum( termsIterator );
                     }
                     multiProgressor.initialize( descriptor, new LuceneDistinctValuesProgressor( termsIterator, client, valueMaterializer ), noQueries,
                             IndexOrder.NONE, needsValues, false );
@@ -232,6 +251,30 @@ public class SimpleIndexReader extends AbstractIndexReader
         }
     }
 
+    private Fields fieldsOf( LeafReader leafReader )
+    {
+        return new Fields()
+        {
+            @Override
+            public Iterator<String> iterator()
+            {
+                return StreamSupport.stream( leafReader.getFieldInfos().spliterator(), false ).map( info -> info.name ).iterator();
+            }
+
+            @Override
+            public Terms terms( String field ) throws IOException
+            {
+                return leafReader.terms( field );
+            }
+
+            @Override
+            public int size()
+            {
+                return leafReader.getFieldInfos().size();
+            }
+        };
+    }
+
     private void assertNotComposite( IndexQuery[] predicates )
     {
         assert predicates.length == 1 : "composite indexes not yet supported for this operation";
@@ -242,7 +285,7 @@ public class SimpleIndexReader extends AbstractIndexReader
     {
         Query nodeIdQuery = new TermQuery( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
         Query valueQuery = LuceneDocumentStructure.newSeekQuery( propertyValues );
-        BooleanQuery.Builder nodeIdAndValueQuery = new BooleanQuery.Builder().setDisableCoord( true );
+        BooleanQuery.Builder nodeIdAndValueQuery = new BooleanQuery.Builder();
         nodeIdAndValueQuery.add( nodeIdQuery, BooleanClause.Occur.MUST );
         nodeIdAndValueQuery.add( valueQuery, BooleanClause.Occur.MUST );
         try

@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.StopAnalyzer;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
@@ -36,7 +37,7 @@ public class Stop extends AnalyzerProvider
     @Override
     public Analyzer createAnalyzer()
     {
-        return new StopAnalyzer();
+        return new StopAnalyzer( EnglishAnalyzer.getDefaultStopSet() );
     }
 
     @Override

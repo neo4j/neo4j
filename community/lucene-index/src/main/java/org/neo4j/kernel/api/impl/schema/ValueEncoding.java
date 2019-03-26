@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 
@@ -58,21 +57,20 @@ public enum ValueEncoding
                 @Override
                 Field encodeField( String name, Value value )
                 {
-                    return new DoubleField( name, Values.coerceToDouble(value), NO );
+                    return new DoublePoint( name, Values.coerceToDouble( value ) );
                 }
 
                 @Override
                 void setFieldValue( Value value, Field field )
                 {
-                    field.setDoubleValue( Values.coerceToDouble(value) );
+                    field.setDoubleValue( Values.coerceToDouble( value ) );
                 }
 
                 @Override
                 Query encodeQuery( Value value, int propertyNumber )
                 {
-                    Double doubleValue = Values.coerceToDouble(value);
-                    return new ConstantScoreQuery( NumericRangeQuery
-                            .newDoubleRange( key( propertyNumber ), doubleValue, doubleValue, true, true ) );
+                    double doubleValue = Values.coerceToDouble( value );
+                    return new ConstantScoreQuery( DoublePoint.newExactQuery( key( propertyNumber ), doubleValue ) );
                 }
             },
     Array
@@ -104,8 +102,7 @@ public enum ValueEncoding
                 @Override
                 Query encodeQuery( Value value, int propertyNumber )
                 {
-                    return new ConstantScoreQuery(
-                            new TermQuery( new Term( key( propertyNumber ), ArrayEncoder.encode( value ) ) ) );
+                    return new ConstantScoreQuery( new TermQuery( new Term( key( propertyNumber ), ArrayEncoder.encode( value ) ) ) );
                 }
             },
     Bool
@@ -137,8 +134,7 @@ public enum ValueEncoding
                 @Override
                 Query encodeQuery( Value value, int propertyNumber )
                 {
-                    return new ConstantScoreQuery(
-                            new TermQuery( new Term( key( propertyNumber ), value.prettyPrint() ) ) );
+                    return new ConstantScoreQuery( new TermQuery( new Term( key( propertyNumber ), value.prettyPrint() ) ) );
                 }
             },
     Spatial
@@ -173,8 +169,7 @@ public enum ValueEncoding
                 Query encodeQuery( Value value, int propertyNumber )
                 {
                     PointValue pointVal = (PointValue) value;
-                    return new ConstantScoreQuery(
-                            new TermQuery( new Term( key( propertyNumber ), pointVal.toIndexableString() ) ) );
+                    return new ConstantScoreQuery( new TermQuery( new Term( key( propertyNumber ), pointVal.toIndexableString() ) ) );
                 }
             },
     Temporal
@@ -206,8 +201,7 @@ public enum ValueEncoding
                 @Override
                 Query encodeQuery( Value value, int propertyNumber )
                 {
-                    return new ConstantScoreQuery(
-                            new TermQuery( new Term( key( propertyNumber ), value.prettyPrint() ) ) );
+                    return new ConstantScoreQuery( new TermQuery( new Term( key( propertyNumber ), value.prettyPrint() ) ) );
                 }
             },
     String
@@ -240,14 +234,13 @@ public enum ValueEncoding
                 @Override
                 Query encodeQuery( Value value, int propertyNumber )
                 {
-                    return new ConstantScoreQuery(
-                            new TermQuery( new Term( key( propertyNumber ), value.asObject().toString() ) ) );
+                    return new ConstantScoreQuery( new TermQuery( new Term( key( propertyNumber ), value.asObject().toString() ) ) );
                 }
             };
 
     private static final ValueEncoding[] AllEncodings = values();
 
-    public  abstract String key();
+    public abstract String key();
 
     String key( int propertyNumber )
     {
@@ -280,7 +273,7 @@ public enum ValueEncoding
     {
         for ( ValueEncoding encoding : AllEncodings )
         {
-            if ( key.endsWith( encoding.key( ) ) )
+            if ( key.endsWith( encoding.key() ) )
             {
                 return encoding;
             }

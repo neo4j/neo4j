@@ -55,5 +55,4 @@ public class WritableIndexSnapshotFileIterator extends ReadOnlyIndexSnapshotFile
                                                 getIndexDirectory(), e );
         }
     }
-
 }

@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.apache.lucene.document.Document;
 
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
@@ -63,7 +64,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
 {
     private static final String KEY_STATUS = "status";
     private static final String ONLINE = "online";
-    private static final Map<String,String> ONLINE_COMMIT_USER_DATA = singletonMap( KEY_STATUS, ONLINE );
+    private static final Set<Map.Entry<String,String>> ONLINE_COMMIT_USER_DATA = singletonMap( KEY_STATUS, ONLINE ).entrySet();
     protected final PartitionedIndexStorage indexStorage;
     protected final IndexDescriptor descriptor;
     private final IndexPartitionFactory partitionFactory;
@@ -250,7 +251,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
     }
 
     /**
-     * Creates an iterable over all {@link org.apache.lucene.document.Document document}s in all partitions.
+     * Creates an iterable over all {@link Document document}s in all partitions.
      *
      * @return LuceneAllDocumentsReader over all documents
      */
@@ -455,7 +456,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
         ensureOpen();
         AbstractIndexPartition partition = getFirstPartition( getPartitions() );
         IndexWriter indexWriter = partition.getIndexWriter();
-        indexWriter.setCommitData( ONLINE_COMMIT_USER_DATA );
+        indexWriter.setLiveCommitData( ONLINE_COMMIT_USER_DATA );
         flush( false );
     }
 

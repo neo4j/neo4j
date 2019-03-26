@@ -114,9 +114,7 @@ public class PartitionedUniquenessVerifier implements UniquenessVerifier
 
         for ( LeafReader leafReader : allLeafReaders() )
         {
-            Fields fields = leafReader.fields();
-
-            Terms leafTerms = fields.terms( fieldName );
+            Terms leafTerms = leafReader.terms( fieldName );
             if ( leafTerms != null )
             {
                 ReaderSlice readerSlice = new ReaderSlice( 0, Math.toIntExact( leafTerms.size() ), 0 );
@@ -200,7 +198,7 @@ public class PartitionedUniquenessVerifier implements UniquenessVerifier
         Set<String> allFields = new HashSet<>();
         for ( LeafReader leafReader : allLeafReaders() )
         {
-            Iterables.addAll( allFields, leafReader.fields() );
+            leafReader.getFieldInfos().forEach( info -> allFields.add( info.name ) );
         }
         return allFields;
     }

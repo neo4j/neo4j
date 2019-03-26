@@ -21,11 +21,12 @@ package org.neo4j.kernel.api.impl.schema;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
@@ -150,18 +151,17 @@ class LuceneDocumentStructureTest
         assertEquals( "Characters", ((TermQuery) query.getQuery()).getTerm().text() );
     }
 
-    @SuppressWarnings( "unchecked" )
     @Test
     void shouldBuildQueryRepresentingNumberProperty()
     {
         // given
         BooleanQuery booleanQuery = (BooleanQuery) newSeekQuery( 12 );
         ConstantScoreQuery constantScoreQuery = (ConstantScoreQuery) booleanQuery.clauses().get( 0 ).getQuery();
-        NumericRangeQuery<Double> query = (NumericRangeQuery<Double>) constantScoreQuery.getQuery();
+        PointRangeQuery query = (PointRangeQuery) constantScoreQuery.getQuery();
 
         // then
-        assertEquals( 12.0, query.getMin(), 0.001 );
-        assertEquals( 12.0, query.getMax(),0.001 );
+        assertEquals( 12.0, DoublePoint.decodeDimension( query.getLowerPoint(), 0 ), 0.001 );
+        assertEquals( 12.0, DoublePoint.decodeDimension( query.getUpperPoint(), 0 ), 0.001 );
     }
 
     @Test
@@ -189,7 +189,7 @@ class LuceneDocumentStructureTest
         TermQuery stringTermQuery = (TermQuery) stringScoreQuery.getQuery();
 
         ConstantScoreQuery numberScoreQuery = (ConstantScoreQuery) booleanQuery.clauses().get( 2 ).getQuery();
-        NumericRangeQuery<Double> numericRangeQuery = (NumericRangeQuery<Double>) numberScoreQuery.getQuery();
+        PointRangeQuery numericRangeQuery = (PointRangeQuery) numberScoreQuery.getQuery();
 
         ConstantScoreQuery arrayScoreQuery = (ConstantScoreQuery) booleanQuery.clauses().get( 3 ).getQuery();
         TermQuery arrayTermQuery = (TermQuery) arrayScoreQuery.getQuery();
@@ -197,8 +197,8 @@ class LuceneDocumentStructureTest
         // then
         assertEquals( "true", boolTermQuery.getTerm().text() );
         assertEquals( "Characters", stringTermQuery.getTerm().text() );
-        assertEquals( 12.0, numericRangeQuery.getMin(), 0.001 );
-        assertEquals( 12.0, numericRangeQuery.getMax(), 0.001 );
+        assertEquals( 12.0, DoublePoint.decodeDimension( numericRangeQuery.getLowerPoint(), 0 ), 0.001 );
+        assertEquals( 12.0, DoublePoint.decodeDimension( numericRangeQuery.getUpperPoint(), 0 ), 0.001 );
         assertEquals( "D1.0|2.0|3.0|", arrayTermQuery.getTerm().text() );
     }
 
@@ -206,14 +206,13 @@ class LuceneDocumentStructureTest
     void shouldBuildRangeSeekByNumberQueryForStrings()
     {
         // given
-        NumericRangeQuery<Double> query = LuceneDocumentStructure.newInclusiveNumericRangeSeekQuery( 12.0d, null );
+        PointRangeQuery query = (PointRangeQuery) LuceneDocumentStructure.newInclusiveNumericRangeSeekQuery( 12.0d, null );
 
         // then
         assertEquals( "number", query.getField() );
-        assertEquals( 12.0, query.getMin(), 0.001 );
-        assertTrue( query.includesMin() );
-        assertNull( query.getMax() );
-        assertTrue( query.includesMax() );
+        assertEquals( 12.0, DoublePoint.decodeDimension( query.getLowerPoint(), 0 ), 0.001 );
+        double upperBound = DoublePoint.decodeDimension( query.getUpperPoint(), 0 );
+        assertTrue( Double.isInfinite( upperBound ) && upperBound > 0 );
     }
 
     @Test

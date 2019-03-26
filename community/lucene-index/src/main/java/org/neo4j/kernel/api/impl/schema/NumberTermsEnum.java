@@ -17,16 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index.collector;
+package org.neo4j.kernel.api.impl.schema;
 
-/**
- * Represents a point-in-time view on a set of numeric values
- * that are read from a {@code NumericDocValues} field.
- */
-public interface DocValuesAccess
+import org.apache.lucene.index.FilteredTermsEnum;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.BytesRef;
+
+import java.io.IOException;
+
+public class NumberTermsEnum extends FilteredTermsEnum
 {
-    /**
-     * @return the current value of the main field that is driving the values.
-     */
-    long current();
+    public NumberTermsEnum( TermsEnum termsEnum )
+    {
+        super( termsEnum );
+    }
+
+    @Override
+    protected AcceptStatus accept( BytesRef term ) throws IOException
+    {
+        // TODO we need to figure out how to filter numbers, or somehow ask Lucene to only give us numbers in the TermsEnum.
+        return AcceptStatus.YES;
+    }
 }

@@ -21,6 +21,7 @@ package org.apache.lucene.index;
 
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
 import org.junit.jupiter.api.AfterEach;
@@ -31,6 +32,7 @@ import org.mockito.Mockito;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -120,10 +122,15 @@ class PooledConcurrentMergeSchedulerTest
 
     private static SegmentCommitInfo getSegmentCommitInfo()
     {
-        SegmentInfo segmentInfo =
-                new SegmentInfo( mock( Directory.class ), Version.LATEST, "test", Integer.MAX_VALUE, true,
-                        mock( Codec.class ), MapUtil.stringMap(), RandomUtils.nextBytes( 16 ), MapUtil.stringMap() );
-        return new SegmentCommitInfo( segmentInfo, 1, 1L, 1L, 1L );
+        Directory directory = mock( Directory.class );
+        Codec codec = mock( Codec.class );
+        Map<String,String> diagnostics = MapUtil.stringMap();
+        byte[] id = RandomUtils.nextBytes( 16 );
+        Map<String,String> attributes = MapUtil.stringMap();
+        Version version = Version.LATEST;
+        SegmentInfo segmentInfo = new SegmentInfo(
+                directory, version, version, "test", Integer.MAX_VALUE, true, codec, diagnostics, id, attributes, Sort.RELEVANCE );
+        return new SegmentCommitInfo( segmentInfo, 1, 1, 1L, 1L, 1L );
     }
 
     private static class TestPooledConcurrentMergeScheduler extends PooledConcurrentMergeScheduler

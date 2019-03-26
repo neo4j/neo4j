@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexWriter;
@@ -225,7 +225,7 @@ class DatabaseIndexIntegrationTest
     {
         Document document = new Document();
         document.add( new TextField( "text", "textValue", Field.Store.YES ) );
-        document.add( new LongField( "long", 1, Field.Store.YES ) );
+        document.add( new LongPoint( "long", 1 ) );
         return document;
     }
 
@@ -331,6 +331,12 @@ class DatabaseIndexIntegrationTest
             }
 
             @Override
+            public IndexOutput createTempOutput( String prefix, String suffix, IOContext context ) throws IOException
+            {
+                return delegate.createTempOutput( prefix, suffix, context );
+            }
+
+            @Override
             public void sync( Collection<String> names ) throws IOException
             {
                 // where are waiting for a specific sync during index commit process inside lucene
@@ -352,9 +358,15 @@ class DatabaseIndexIntegrationTest
             }
 
             @Override
-            public void renameFile( String source, String dest ) throws IOException
+            public void syncMetaData() throws IOException
             {
-                delegate.renameFile( source, dest );
+                delegate.syncMetaData();
+            }
+
+            @Override
+            public void rename( String source, String dest ) throws IOException
+            {
+                delegate.rename( source, dest );
             }
 
             @Override
