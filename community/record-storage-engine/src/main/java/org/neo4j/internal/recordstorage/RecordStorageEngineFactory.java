@@ -71,14 +71,10 @@ import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForS
 public class RecordStorageEngineFactory implements StorageEngineFactory
 {
     @Override
-    public StoreVersionCheck versionCheck( DependencyResolver dependencyResolver )
+    public StoreVersionCheck versionCheck( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache,
+            LogService logService )
     {
-        return new RecordStoreVersionCheck(
-                dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
-                dependencyResolver.resolveDependency( PageCache.class ),
-                dependencyResolver.resolveDependency( DatabaseLayout.class ),
-                resolveLogProvider( dependencyResolver ),
-                dependencyResolver.resolveDependency( Config.class ) );
+        return new RecordStoreVersionCheck( fs, pageCache, databaseLayout, logService.getInternalLogProvider(), config );
     }
 
     @Override

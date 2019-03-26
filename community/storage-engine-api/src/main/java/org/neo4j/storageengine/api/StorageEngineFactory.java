@@ -26,10 +26,12 @@ import java.util.stream.Stream;
 
 import org.neo4j.annotations.service.Service;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.Config;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.logging.internal.LogService;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
@@ -43,10 +45,9 @@ public interface StorageEngineFactory
     /**
      * Returns a {@link StoreVersionCheck} which can provide both configured and existing store versions
      * and means of checking upgradability between them.
-     * @param dependencyResolver {@link DependencyResolver} for all dependency needs.
      * @return StoreVersionCheck to check store version as well as upgradability to other versions.
      */
-    StoreVersionCheck versionCheck( DependencyResolver dependencyResolver );
+    StoreVersionCheck versionCheck( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, LogService logService );
 
     StoreVersion versionInformation( String storeVersion );
 

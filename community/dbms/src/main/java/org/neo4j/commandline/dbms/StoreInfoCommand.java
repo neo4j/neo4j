@@ -22,7 +22,6 @@ package org.neo4j.commandline.dbms;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
-import org.neo4j.collection.Dependencies;
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
@@ -68,9 +67,8 @@ public class StoreInfoCommand implements AdminCommand
         {
             DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory.toFile() );
             StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
-            Dependencies dependencies = new Dependencies();
-            dependencies.satisfyDependencies( pageCache, databaseLayout, fileSystem, NullLogService.getInstance(), Config.defaults() );
-            StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( dependencies );
+            StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( fileSystem, databaseLayout, Config.defaults(), pageCache,
+                    NullLogService.getInstance() );
             String storeVersion = storeVersionCheck.storeVersion()
                     .orElseThrow( () -> new CommandFailed( String.format( "Could not find version metadata in store '%s'", databaseDirectory ) ) );
 

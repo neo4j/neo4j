@@ -80,7 +80,7 @@ public class DatabaseMigrator
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( fs, pageCache, databaseLayout, config, jobScheduler, logService );
-        StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( dependencies );
+        StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, config, pageCache, logService );
 
         StoreUpgrader storeUpgrader = new StoreUpgrader( storeVersionCheck,
                 new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigrator.class ) ), config, fs, logProvider,
