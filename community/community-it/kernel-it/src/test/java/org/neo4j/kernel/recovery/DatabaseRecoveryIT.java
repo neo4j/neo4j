@@ -385,8 +385,6 @@ class DatabaseRecoveryIT
         crashedFs.close();
     }
 
-    //TODO: Ignored in order to merge PR 1790 - must reenable + fix in future PR.
-    @Ignore
     @Test
     void shouldSeeTheSameRecordsAtCheckpointAsAfterReverseRecovery() throws Exception
     {

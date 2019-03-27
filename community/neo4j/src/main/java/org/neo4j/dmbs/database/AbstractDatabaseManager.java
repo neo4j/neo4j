@@ -19,8 +19,12 @@
  */
 package org.neo4j.dmbs.database;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.SortedMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.BiConsumer;
 
 import org.neo4j.configuration.Config;
@@ -40,6 +44,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 
 public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extends LifecycleAdapter implements DatabaseManager<DB>
 {
+
+    protected final ConcurrentSkipListMap<String,DB> databaseMap;
     private final GlobalModule globalModule;
     private final AbstractEditionModule edition;
     private final GraphDatabaseFacade graphDatabaseFacade;
@@ -48,26 +54,38 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
 
     public AbstractDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Logger log, GraphDatabaseFacade graphDatabaseFacade )
     {
+        this( globalModule, edition, log, graphDatabaseFacade, null );
+    }
+
+    public AbstractDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Logger log, GraphDatabaseFacade graphDatabaseFacade,
+            Comparator<String> databasesOrdering )
+    {
         this.log = log;
         this.globalModule = globalModule;
         this.edition = edition;
         this.graphDatabaseFacade = graphDatabaseFacade;
+        DatabasesComparator comparator = databasesOrdering != null ? new DatabasesComparator( databasesOrdering ) : new DatabasesComparator();
+        this.databaseMap = new ConcurrentSkipListMap<>( comparator );
     }
 
     @Override
     public void start() throws Exception
     {
-        forEachDatabase( this::startDatabase );
+        forEachDatabase( this::startDatabase, false );
     }
 
     @Override
     public void stop() throws Exception
     {
-        forEachDatabase( this::stopDatabase );
+        //We want to reverse databases in the opposite order to which they were started.
+        // Amongst other things this helps to ensure that the system database is stopped last.
+        forEachDatabase( this::stopDatabase, true );
     }
 
-    @Override
-    public abstract SortedMap<String,DB> registeredDatabases();
+    public final SortedMap<String,DB> registeredDatabases()
+    {
+        return Collections.unmodifiableSortedMap( databaseMap );
+    }
 
     protected DB createNewDatabaseContext( String databaseName )
     {
@@ -84,10 +102,16 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
 
     protected abstract DB databaseContextFactory( Database database, GraphDatabaseFacade facade );
 
-    protected void forEachDatabase( BiConsumer<String, DB> consumer ) throws Exception
+    protected final void forEachDatabase( BiConsumer<String, DB> consumer, boolean reversed ) throws Exception
     {
         Throwable error = null;
-        for ( Map.Entry<String,DB> databaseContextEntry : registeredDatabases().entrySet() )
+        var dbs = new ArrayList<>( registeredDatabases().entrySet() );
+        if ( reversed )
+        {
+            Collections.reverse( dbs );
+        }
+
+        for ( var databaseContextEntry : dbs )
         {
             try
             {

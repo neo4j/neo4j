@@ -90,8 +90,8 @@ class DefaultDatabaseManagerIT
         var databases = databaseManager.registeredDatabases();
         assertEquals( 2, databases.size()  );
         ArrayList<String> databaseNames = new ArrayList<>( databases.keySet() );
-        assertEquals( DEFAULT_DATABASE_NAME, databaseNames.get( 0 ) );
-        assertEquals( SYSTEM_DATABASE_NAME, databaseNames.get( 1 ) );
+        assertEquals( SYSTEM_DATABASE_NAME, databaseNames.get( 0 ) );
+        assertEquals( DEFAULT_DATABASE_NAME, databaseNames.get( 1 ) );
     }
 
     @Test

@@ -38,7 +38,6 @@ import static org.neo4j.util.Preconditions.checkState;
 
 public final class DefaultDatabaseManager extends AbstractDatabaseManager<StandaloneDatabaseContext>
 {
-    private final SortedMap<String,StandaloneDatabaseContext> databases = new ConcurrentSkipListMap<>();
 
     public DefaultDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Logger log, GraphDatabaseFacade graphDatabaseFacade )
     {
@@ -48,17 +47,17 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     @Override
     public Optional<StandaloneDatabaseContext> getDatabaseContext( String name )
     {
-        return Optional.ofNullable( databases.get( name ) );
+        return Optional.ofNullable( databaseMap.get( name ) );
     }
 
     @Override
     public synchronized StandaloneDatabaseContext createDatabase( String databaseName )
     {
         requireNonNull( databaseName );
-        checkState( databases.size() < 2,
+        checkState( databaseMap.size() < 2,
                 format( "System and default database are already created. Fail to create another database: %s", databaseName ) );
         StandaloneDatabaseContext databaseContext = createNewDatabaseContext( databaseName );
-        databases.put( databaseName, databaseContext );
+        databaseMap.put( databaseName, databaseContext );
         return databaseContext;
     }
 
@@ -66,12 +65,6 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     protected StandaloneDatabaseContext databaseContextFactory( Database database, GraphDatabaseFacade facade )
     {
         return new StandaloneDatabaseContext( database, facade );
-    }
-
-    @Override
-    public SortedMap<String,StandaloneDatabaseContext> registeredDatabases()
-    {
-        return Collections.unmodifiableSortedMap( databases );
     }
 
     @Override
