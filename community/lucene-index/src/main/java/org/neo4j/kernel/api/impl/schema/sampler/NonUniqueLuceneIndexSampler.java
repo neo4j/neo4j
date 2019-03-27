@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema.sampler;
 
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -35,10 +34,10 @@ import java.util.Set;
 import org.neo4j.helpers.TaskControl;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
-import org.neo4j.kernel.api.index.IndexSample;
 
 /**
  * Sampler for non-unique Lucene schema index.

@@ -40,9 +40,13 @@ import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
+
+import org.neo4j.helpers.collection.MapUtil;
 
 public class IndexReaderStub extends LeafReader
 {
@@ -50,7 +54,7 @@ public class IndexReaderStub extends LeafReader
     private String[] elements = new String[0];
     private Function<String,NumericDocValues> ndvs;
 
-    private static FieldInfo DummyFieldInfo =
+    private static final FieldInfo DUMMY_FIELD_INFO =
             new FieldInfo( "id", 0, false, true, false, IndexOptions.DOCS,
                     DocValuesType.NONE, -1, Collections.emptyMap(), 1, 1, 8, true );
 
@@ -78,7 +82,18 @@ public class IndexReaderStub extends LeafReader
     @Override
     public Terms terms( String field )
     {
-        throw new UnsupportedOperationException();
+        if ( fields != null )
+        {
+            try
+            {
+                return fields.terms( field );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
+        return null;
     }
 
     @Override
@@ -120,7 +135,13 @@ public class IndexReaderStub extends LeafReader
     @Override
     public FieldInfos getFieldInfos()
     {
-        throw new RuntimeException( "Not yet implemented." );
+        List<FieldInfo> infos = new ArrayList<>();
+        int id = 0;
+        for ( String field : fields )
+        {
+            infos.add( new FieldInfo( field, id++, true, false, false, IndexOptions.DOCS, DocValuesType.SORTED, 1, MapUtil.stringMap(), 1, 1, 8, false ) );
+        }
+        return new FieldInfos( infos.toArray( new FieldInfo[0] ) );
     }
 
     @Override
@@ -184,7 +205,7 @@ public class IndexReaderStub extends LeafReader
     @Override
     public void document( int docID, StoredFieldVisitor visitor ) throws IOException
     {
-        visitor.stringField( DummyFieldInfo, String.valueOf( docID ).getBytes( StandardCharsets.UTF_8 ) );
+        visitor.stringField( DUMMY_FIELD_INFO, String.valueOf( docID ).getBytes( StandardCharsets.UTF_8 ) );
     }
 
     @Override

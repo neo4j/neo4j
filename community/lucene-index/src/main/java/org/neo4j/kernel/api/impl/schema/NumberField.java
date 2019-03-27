@@ -88,4 +88,11 @@ public class NumberField extends Field
         BytesRef fieldsData = (BytesRef) super.fieldsData;
         return String.valueOf( decode( fieldsData.bytes ) );
     }
+
+    @Override
+    public Number numericValue()
+    {
+        BytesRef fieldsData = (BytesRef) super.fieldsData;
+        return decode( fieldsData.bytes );
+    }
 }
