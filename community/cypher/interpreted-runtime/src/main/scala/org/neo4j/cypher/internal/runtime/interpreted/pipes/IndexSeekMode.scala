@@ -20,13 +20,15 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.v4_0.util.InternalException
-import org.neo4j.cypher.internal.logical.plans.{QueryExpression, RangeQueryExpression}
+import org.neo4j.cypher.internal.logical.plans.{CompositeQueryExpression, QueryExpression, RangeQueryExpression}
 import org.neo4j.values.virtual.NodeValue
 
 case class IndexSeekModeFactory(unique: Boolean, readOnly: Boolean) {
   def fromQueryExpression[T](qexpr: QueryExpression[T]): IndexSeekMode = qexpr match {
     case _: RangeQueryExpression[_] if unique => UniqueIndexSeekByRange
     case _: RangeQueryExpression[_] => IndexSeekByRange
+    case qe: CompositeQueryExpression[_] if unique && !readOnly && qe.exactOnly => LockingUniqueIndexSeek
+    case _: CompositeQueryExpression[_] if unique => UniqueIndexSeek
     case _ if unique && !readOnly => LockingUniqueIndexSeek
     case _ if unique => UniqueIndexSeek
     case _ => IndexSeek

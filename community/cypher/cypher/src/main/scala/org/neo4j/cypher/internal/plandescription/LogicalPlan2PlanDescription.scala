@@ -452,9 +452,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
                               unique: Boolean,
                               readOnly: Boolean): (String, Argument) = {
 
-    def findName = if (unique && readOnly) "NodeUniqueIndexSeek"
-                          else if (unique) "NodeUniqueIndexSeek(Locking)"
-                          else "NodeIndexSeek"
+    def findName(exactOnly: Boolean =  true) =
+      if (unique && !readOnly && exactOnly) "NodeUniqueIndexSeek(Locking)"
+      else if (unique) "NodeUniqueIndexSeek"
+      else "NodeIndexSeek"
 
     val (name, indexDesc) = valueExpr match {
       case e: RangeQueryExpression[_] =>
@@ -494,8 +495,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
             throw new InternalException("A CompositeQueryExpression can't be nested in a CompositeQueryExpression")
           case _ => "equality"
         }
-        (s"$findName(${predicates.mkString(",")})", Index(label.name, propertyKeys.map(_.name)))
-      case _ => (findName, Index(label.name, propertyKeys.map(_.name)))
+        (s"${findName(e.exactOnly)}(${predicates.mkString(",")})", Index(label.name, propertyKeys.map(_.name)))
+      case _ => (findName(), Index(label.name, propertyKeys.map(_.name)))
     }
 
     (name, indexDesc)

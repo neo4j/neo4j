@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.RegularPlannerQuery
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.{ASC, BOTH, DESC}
-import org.neo4j.cypher.internal.v4_0.expressions.{AndedPropertyInequalities, LabelToken, SemanticDirection}
+import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.v4_0.util._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
@@ -445,12 +445,15 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
   // Composite index
 
   test("Order by index backed for composite index on range") {
-    val projectionBoth = Map("n.prop1" -> prop("n", "prop1"), "n.prop2" -> prop("n", "prop2"))
+    val projectionBoth = Map(
+      "n.prop1" -> prop("n", "prop1"),
+      "n.prop2" -> prop("n", "prop2")
+    )
     val projectionProp1 = Map("n.prop1" -> prop("n", "prop1"))
     val projectionProp2 = Map("n.prop2" -> prop("n", "prop2"))
 
-    val expr = ands(AndedPropertyInequalities(varFor("n"), prop("n", "prop2"),
-                      NonEmptyList(lessThanOrEqual(prop("n", "prop2"), literalInt(3)))))
+    val expr = ands(andedPropertyInequalities("n", "prop2",
+      lessThanOrEqual(prop("n", "prop2"), literalInt(3))))
 
     Seq(
       // Ascending index
@@ -491,10 +494,14 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         // Then
         val leafPlan = IndexSeek("n:Label(prop1 >= 42, prop2 <= 3)", indexOrder = indexOrder)
         plan._2 should equal {
-          if (shouldPartialSort) PartialSort(Projection(Selection(expr, leafPlan), projectionBoth), alreadySorted, sortItems)
-          else if (shouldFullSort && sortOnOnyOne) Projection(Sort(Projection(Selection(expr, leafPlan), projectionProp1), sortItems), projectionProp2)
-          else if (shouldFullSort && !sortOnOnyOne) Sort(Projection(Selection(expr, leafPlan), projectionBoth), sortItems)
-          else Projection(Selection(expr, leafPlan), projectionBoth)
+          if (shouldPartialSort)
+            PartialSort(Projection(Selection(expr, leafPlan), projectionBoth), alreadySorted, sortItems)
+          else if (shouldFullSort && sortOnOnyOne)
+            Projection(Sort(Projection(Selection(expr, leafPlan), projectionProp1), sortItems), projectionProp2)
+          else if (shouldFullSort && !sortOnOnyOne)
+            Sort(Projection(Selection(expr, leafPlan), projectionBoth), sortItems)
+          else
+            Projection(Selection(expr, leafPlan), projectionBoth)
         }
     }
   }
@@ -536,11 +543,8 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
           PartialSort(
             Projection(
               Selection(
-                ands(AndedPropertyInequalities(
-                  varFor("n"),
-                  prop("n", "prop2"),
-                  NonEmptyList(lessThanOrEqual(prop("n", "prop2"), literalInt(3)))
-                )),
+                ands(andedPropertyInequalities("n", "prop2",
+                  lessThanOrEqual(prop("n", "prop2"), literalInt(3)))),
                 IndexSeek("n:Label(prop1 >= 42, prop2)", indexOrder = indexOrder)
               ),
               Map(
@@ -554,6 +558,304 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
           )
         )
     }
+  }
+
+  test("Order by index backed for composite index on more properties") {
+    val expr = ands(
+      andedPropertyInequalities("n", "prop2",
+        lessThanOrEqual(prop("n", "prop2"), literalInt(3))),
+      andedPropertyInequalities("n", "prop3",
+        greaterThan(prop("n", "prop3"), literalString("a"))),
+      andedPropertyInequalities("n", "prop4",
+        lessThan(prop("n", "prop4"), literalString("f")))
+    )
+    val projectionsAll = Map(
+      "n.prop1" -> prop("n", "prop1"),
+      "n.prop2" -> prop("n", "prop2"),
+      "n.prop3" -> prop("n", "prop3"),
+      "n.prop4" -> prop("n", "prop4")
+    )
+
+    val ascAll = Seq(Ascending("n.prop1"), Ascending("n.prop2"), Ascending("n.prop3"), Ascending("n.prop4"))
+    val descAll = Seq(Descending("n.prop1"), Descending("n.prop2"), Descending("n.prop3"), Descending("n.prop4"))
+    val asc1_2 = Seq(Ascending("n.prop1"), Ascending("n.prop2"))
+    val desc1_2 = Seq(Descending("n.prop1"), Descending("n.prop2"))
+
+    Seq(
+      // Ascending index
+      ("n.prop1 ASC, n.prop2 ASC, n.prop3 ASC, n.prop4 ASC", ASC, IndexOrderAscending, false,
+        Seq.empty, false, Seq.empty),
+      ("n.prop1 ASC, n.prop2 ASC, n.prop3 ASC, n.prop4 DESC", ASC, IndexOrderAscending, false,
+        Seq(Descending("n.prop4")), true, Seq(Ascending("n.prop1"), Ascending("n.prop2"), Ascending("n.prop3"))),
+      ("n.prop1 ASC, n.prop2 ASC, n.prop3 DESC, n.prop4 ASC", ASC, IndexOrderAscending, false,
+        Seq(Descending("n.prop3"), Ascending("n.prop4")), true, asc1_2),
+      ("n.prop1 ASC, n.prop2 ASC, n.prop3 DESC, n.prop4 DESC", ASC, IndexOrderAscending, false,
+        Seq(Descending("n.prop3"), Descending("n.prop4")), true, asc1_2),
+      ("n.prop1 ASC, n.prop2 DESC, n.prop3 ASC, n.prop4 ASC", ASC, IndexOrderAscending, false,
+        Seq(Descending("n.prop2"), Ascending("n.prop3"), Ascending("n.prop4")), true, Seq(Ascending("n.prop1"))),
+      ("n.prop1 ASC, n.prop2 DESC, n.prop3 ASC, n.prop4 DESC", ASC, IndexOrderAscending, false,
+        Seq(Descending("n.prop2"), Ascending("n.prop3"), Descending("n.prop4")), true, Seq(Ascending("n.prop1"))),
+      ("n.prop1 ASC, n.prop2 DESC, n.prop3 DESC, n.prop4 ASC", ASC, IndexOrderAscending, false,
+        Seq(Descending("n.prop2"), Descending("n.prop3"), Ascending("n.prop4")), true, Seq(Ascending("n.prop1"))),
+      ("n.prop1 ASC, n.prop2 DESC, n.prop3 DESC, n.prop4 DESC", ASC, IndexOrderAscending, false,
+        Seq(Descending("n.prop2"), Descending("n.prop3"), Descending("n.prop4")), true, Seq(Ascending("n.prop1"))),
+      ("n.prop1 DESC, n.prop2 DESC, n.prop3 DESC, n.prop4 DESC", ASC, IndexOrderAscending, true,
+        descAll, false, Seq.empty),
+
+      // Descending index
+      ("n.prop1 DESC, n.prop2 DESC, n.prop3 DESC, n.prop4 DESC", DESC, IndexOrderDescending, false,
+        Seq.empty, false, Seq.empty),
+      ("n.prop1 DESC, n.prop2 DESC, n.prop3 DESC, n.prop4 ASC", DESC, IndexOrderDescending, false,
+        Seq(Ascending("n.prop4")), true, Seq(Descending("n.prop1"), Descending("n.prop2"), Descending("n.prop3"))),
+      ("n.prop1 DESC, n.prop2 DESC, n.prop3 ASC, n.prop4 DESC", DESC, IndexOrderDescending, false,
+        Seq(Ascending("n.prop3"), Descending("n.prop4")), true, desc1_2),
+      ("n.prop1 DESC, n.prop2 DESC, n.prop3 ASC, n.prop4 ASC", DESC, IndexOrderDescending, false,
+        Seq(Ascending("n.prop3"), Ascending("n.prop4")), true, desc1_2),
+      ("n.prop1 DESC, n.prop2 ASC, n.prop3 DESC, n.prop4 DESC", DESC, IndexOrderDescending, false,
+        Seq(Ascending("n.prop2"), Descending("n.prop3"), Descending("n.prop4")), true, Seq(Descending("n.prop1"))),
+      ("n.prop1 DESC, n.prop2 ASC, n.prop3 DESC, n.prop4 ASC", DESC, IndexOrderDescending, false,
+        Seq(Ascending("n.prop2"), Descending("n.prop3"), Ascending("n.prop4")), true, Seq(Descending("n.prop1"))),
+      ("n.prop1 DESC, n.prop2 ASC, n.prop3 ASC, n.prop4 DESC", DESC, IndexOrderDescending, false,
+        Seq(Ascending("n.prop2"), Ascending("n.prop3"), Descending("n.prop4")), true, Seq(Descending("n.prop1"))),
+      ("n.prop1 DESC, n.prop2 ASC, n.prop3 ASC, n.prop4 ASC", DESC, IndexOrderDescending, false,
+        Seq(Ascending("n.prop2"), Ascending("n.prop3"), Ascending("n.prop4")), true, Seq(Descending("n.prop1"))),
+      ("n.prop1 ASC, n.prop2 ASC, n.prop3 ASC, n.prop4 ASC", DESC, IndexOrderDescending, true,
+        ascAll, false, Seq.empty),
+
+      // Both index
+      ("n.prop1 ASC, n.prop2 ASC, n.prop3 ASC, n.prop4 ASC", BOTH, IndexOrderAscending, false,
+        Seq.empty, false, Seq.empty),
+      ("n.prop1 ASC, n.prop2 ASC, n.prop3 ASC, n.prop4 DESC", BOTH, IndexOrderAscending, false,
+        Seq(Descending("n.prop4")), true, Seq(Ascending("n.prop1"), Ascending("n.prop2"), Ascending("n.prop3"))),
+      ("n.prop1 ASC, n.prop2 ASC, n.prop3 DESC, n.prop4 ASC", BOTH, IndexOrderAscending, false,
+        Seq(Descending("n.prop3"), Ascending("n.prop4")), true, asc1_2),
+      ("n.prop1 ASC, n.prop2 ASC, n.prop3 DESC, n.prop4 DESC", BOTH, IndexOrderAscending, false,
+        Seq(Descending("n.prop3"), Descending("n.prop4")), true, asc1_2),
+      ("n.prop1 ASC, n.prop2 DESC, n.prop3 ASC, n.prop4 ASC", BOTH, IndexOrderAscending, false,
+        Seq(Descending("n.prop2"), Ascending("n.prop3"), Ascending("n.prop4")), true, Seq(Ascending("n.prop1"))),
+      ("n.prop1 ASC, n.prop2 DESC, n.prop3 ASC, n.prop4 DESC", BOTH, IndexOrderAscending, false,
+        Seq(Descending("n.prop2"), Ascending("n.prop3"), Descending("n.prop4")), true, Seq(Ascending("n.prop1"))),
+      ("n.prop1 ASC, n.prop2 DESC, n.prop3 DESC, n.prop4 ASC", BOTH, IndexOrderAscending, false,
+        Seq(Descending("n.prop2"), Descending("n.prop3"), Ascending("n.prop4")), true, Seq(Ascending("n.prop1"))),
+      ("n.prop1 ASC, n.prop2 DESC, n.prop3 DESC, n.prop4 DESC", BOTH, IndexOrderAscending, false,
+        Seq(Descending("n.prop2"), Descending("n.prop3"), Descending("n.prop4")), true, Seq(Ascending("n.prop1"))),
+      ("n.prop1 DESC, n.prop2 DESC, n.prop3 DESC, n.prop4 ASC", BOTH, IndexOrderDescending, false,
+        Seq(Ascending("n.prop4")), true, Seq(Descending("n.prop1"), Descending("n.prop2"), Descending("n.prop3"))),
+      ("n.prop1 DESC, n.prop2 DESC, n.prop3 ASC, n.prop4 DESC", BOTH, IndexOrderDescending, false,
+        Seq(Ascending("n.prop3"), Descending("n.prop4")), true, desc1_2),
+      ("n.prop1 DESC, n.prop2 DESC, n.prop3 ASC, n.prop4 ASC", BOTH, IndexOrderDescending, false,
+        Seq(Ascending("n.prop3"), Ascending("n.prop4")), true, desc1_2),
+      ("n.prop1 DESC, n.prop2 ASC, n.prop3 DESC, n.prop4 DESC", BOTH, IndexOrderDescending, false,
+        Seq(Ascending("n.prop2"), Descending("n.prop3"), Descending("n.prop4")), true, Seq(Descending("n.prop1"))),
+      ("n.prop1 DESC, n.prop2 ASC, n.prop3 DESC, n.prop4 ASC", BOTH, IndexOrderDescending, false,
+        Seq(Ascending("n.prop2"), Descending("n.prop3"), Ascending("n.prop4")), true, Seq(Descending("n.prop1"))),
+      ("n.prop1 DESC, n.prop2 ASC, n.prop3 ASC, n.prop4 DESC", BOTH, IndexOrderDescending, false,
+        Seq(Ascending("n.prop2"), Ascending("n.prop3"), Descending("n.prop4")), true, Seq(Descending("n.prop1"))),
+      ("n.prop1 DESC, n.prop2 ASC, n.prop3 ASC, n.prop4 ASC", BOTH, IndexOrderDescending, false,
+        Seq(Ascending("n.prop2"), Ascending("n.prop3"), Ascending("n.prop4")), true, Seq(Descending("n.prop1"))),
+      ("n.prop1 DESC, n.prop2 DESC, n.prop3 DESC, n.prop4 DESC", BOTH, IndexOrderDescending, false,
+        Seq.empty, false, Seq.empty)
+    ).foreach {
+      case (orderByString, orderCapability, indexOrder, fullSort, sortItems, partialSort, alreadySorted) =>
+        // When
+        val query =
+          s"""MATCH (n:Label)
+             |WHERE n.prop1 >= 42 AND n.prop2 <= 3 AND n.prop3 > 'a' AND n.prop4 < 'f'
+             |RETURN n.prop1, n.prop2, n.prop3, n.prop4
+             |ORDER BY $orderByString""".stripMargin
+        val plan = new given {
+          indexOn("Label", "prop1", "prop2", "prop3", "prop4").providesOrder(orderCapability)
+        } getLogicalPlanFor query
+
+        // Then
+        val leafPlan = IndexSeek("n:Label(prop1 >= 42, prop2 <= 3, prop3 > 'a', prop4 < 'f')", indexOrder = indexOrder)
+        plan._2 should equal {
+          if (fullSort)
+            Sort(Projection(Selection(expr, leafPlan), projectionsAll), sortItems)
+          else if (partialSort)
+            PartialSort(Projection(Selection(expr, leafPlan), projectionsAll), alreadySorted, sortItems)
+          else
+            Projection(Selection(expr, leafPlan), projectionsAll)
+        }
+    }
+  }
+
+  test("Order by index backed for composite index on more properties than is ordered on") {
+    val expr = ands(
+      andedPropertyInequalities("n", "prop2",
+        lessThanOrEqual(prop("n", "prop2"), literalInt(3))),
+      andedPropertyInequalities("n", "prop3",
+        greaterThan(prop("n", "prop3"), literalString("a"))),
+      andedPropertyInequalities("n", "prop4",
+        lessThan(prop("n", "prop4"), literalString("f")))
+    )
+    val projectionsAll = Map(
+      "n.prop1" -> prop("n", "prop1"),
+      "n.prop2" -> prop("n", "prop2"),
+      "n.prop3" -> prop("n", "prop3"),
+      "n.prop4" -> prop("n", "prop4")
+    )
+    val projections_1_2_4 = Map(
+      "n.prop1" -> prop("n", "prop1"),
+      "n.prop2" -> prop("n", "prop2"),
+      "n.prop4" -> prop("n", "prop4")
+    )
+    val projections_1_3_4 = Map(
+      "n.prop1" -> prop("n", "prop1"),
+      "n.prop3" -> prop("n", "prop3"),
+      "n.prop4" -> prop("n", "prop4")
+    )
+
+    Seq(
+      ("n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", BOTH, IndexOrderAscending, false,
+        projectionsAll, Map.empty[String, Expression], Seq.empty, Seq.empty),
+      ("n.prop1 ASC, n.prop2 ASC, n.prop4 ASC", BOTH, IndexOrderAscending, true,
+        projections_1_2_4, Map("n.prop3" -> prop("n", "prop3")),
+        Seq(Ascending("n.prop4")), Seq(Ascending("n.prop1"), Ascending("n.prop2"))),
+      ("n.prop1 ASC, n.prop3 ASC, n.prop4 ASC", BOTH, IndexOrderAscending, true,
+        projections_1_3_4, Map("n.prop2" -> prop("n", "prop2")),
+        Seq(Ascending("n.prop3"), Ascending("n.prop4")), Seq(Ascending("n.prop1"))),
+      ("n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", BOTH, IndexOrderDescending, false,
+        projectionsAll, Map.empty[String, Expression], Seq.empty, Seq.empty),
+      ("n.prop1 DESC, n.prop2 DESC, n.prop4 DESC", BOTH, IndexOrderDescending, true,
+        projections_1_2_4, Map("n.prop3" -> prop("n", "prop3")),
+        Seq(Descending("n.prop4")), Seq(Descending("n.prop1"), Descending("n.prop2"))),
+      ("n.prop1 DESC, n.prop3 DESC, n.prop4 DESC", BOTH, IndexOrderDescending, true,
+        projections_1_3_4, Map("n.prop2" -> prop("n", "prop2")),
+        Seq(Descending("n.prop3"), Descending("n.prop4")), Seq(Descending("n.prop1"))),
+    ).foreach {
+      case (orderByString, orderCapability, indexOrder, sort, projections, projectionsAfterSort, toSort, alreadySorted) =>
+        // When
+        val query =
+          s"""MATCH (n:Label)
+             |WHERE n.prop1 >= 42 AND n.prop2 <= 3 AND n.prop3 > 'a' AND n.prop4 < 'f'
+             |RETURN n.prop1, n.prop2, n.prop3, n.prop4
+             |ORDER BY $orderByString""".stripMargin
+        val plan = new given {
+          indexOn("Label", "prop1", "prop2", "prop3", "prop4").providesOrder(orderCapability)
+        } getLogicalPlanFor query
+
+        // Then
+        val leafPlan = IndexSeek("n:Label(prop1 >= 42, prop2 <= 3, prop3 > 'a', prop4 < 'f')", indexOrder = indexOrder)
+        plan._2 should equal {
+          if (sort)
+            Projection(PartialSort(Projection(Selection(expr, leafPlan), projections), alreadySorted, toSort), projectionsAfterSort)
+          else
+            Projection(Selection(expr, leafPlan), projections)
+        }
+    }
+  }
+
+  test("Order by index backed for composite index when not returning same as order on") {
+    val expr = ands(
+      andedPropertyInequalities("n", "prop2",
+        lessThanOrEqual(prop("n", "prop2"), literalInt(3))),
+      andedPropertyInequalities("n", "prop3",
+        greaterThan(prop("n", "prop3"), literalString("")))
+    )
+    val map_empty = Map.empty[String, Expression] // needed for correct type
+    val map_1 = Map("n.prop1" -> prop("n", "prop1"))
+    val map_2 = Map("n.prop2" -> prop("n", "prop2"))
+    val map_3 = Map("n.prop3" -> prop("n", "prop3"))
+    val map_1_2 = Map("n.prop1" -> prop("n", "prop1"), "n.prop2" -> prop("n", "prop2"))
+    val map_1_3 = Map("n.prop1" -> prop("n", "prop1"), "n.prop3" -> prop("n", "prop3"))
+    val map_2_3 = Map("n.prop2" -> prop("n", "prop2"), "n.prop3" -> prop("n", "prop3"))
+
+    val asc_1 = Seq(Ascending("n.prop1"))
+    val desc_1 = Seq(Descending("n.prop1"))
+    val asc_3 = Seq(Ascending("n.prop3"))
+    val desc_3 = Seq(Descending("n.prop3"))
+    val asc_1_2 = Seq(Ascending("n.prop1"), Ascending("n.prop2"))
+    val desc_1_2 = Seq(Descending("n.prop1"), Descending("n.prop2"))
+    val asc_2_3 = Seq(Ascending("n.prop2"), Ascending("n.prop3"))
+    val desc_2_asc_3 = Seq(Descending("n.prop2"), Ascending("n.prop3"))
+    val asc_1_2_3 = Seq(Ascending("n.prop1"), Ascending("n.prop2"), Ascending("n.prop3"))
+    val desc_1_2_3 = Seq(Descending("n.prop1"), Descending("n.prop2"), Descending("n.prop3"))
+
+    Seq(
+      // Ascending index
+      ("n.prop1", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_1, map_empty, Seq.empty, Seq.empty),
+      ("n.prop1", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", ASC, IndexOrderAscending, false, true, map_1, map_2_3, desc_3, asc_1_2),
+      ("n.prop1", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", ASC, IndexOrderAscending, false, true, map_1, map_2_3, desc_2_asc_3, asc_1),
+      ("n.prop1", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderAscending, true, false, map_1, map_2_3, desc_1_2_3, Seq.empty),
+      ("n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_2, map_empty, Seq.empty, Seq.empty),
+      ("n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderAscending, true, false, map_2, map_1_3, desc_1_2_3, Seq.empty),
+      ("n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_3, map_empty, Seq.empty, Seq.empty),
+      ("n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderAscending, true, false, map_3, map_1_2, desc_1_2_3, Seq.empty),
+
+      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_1_2, map_empty, Seq.empty, Seq.empty),
+      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", ASC, IndexOrderAscending, false, true, map_1_2, map_3, desc_3, asc_1_2),
+      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", ASC, IndexOrderAscending, false, true, map_1_2, map_3, desc_2_asc_3, asc_1),
+      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderAscending, true, false, map_1_2, map_3, desc_1_2_3, Seq.empty),
+      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_1_3, map_empty, Seq.empty, Seq.empty),
+      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", ASC, IndexOrderAscending, false, true, map_1_3, map_2, desc_3, asc_1_2),
+      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", ASC, IndexOrderAscending, false, true, map_1_3, map_2, desc_2_asc_3, asc_1),
+      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderAscending, true, false, map_1_3, map_2, desc_1_2_3, Seq.empty),
+
+
+      // Descending index
+      ("n.prop1", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, true, false, map_1, map_2_3, asc_1_2_3, Seq.empty),
+      ("n.prop1", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1, map_2_3, asc_3, desc_1_2),
+      ("n.prop1", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1, map_2_3, asc_2_3, desc_1),
+      ("n.prop1", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_1, map_empty, Seq.empty, Seq.empty),
+      ("n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, true, false, map_2, map_1_3, asc_1_2_3, Seq.empty),
+      ("n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_2, map_empty, Seq.empty, Seq.empty),
+      ("n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, true, false, map_3, map_1_2, asc_1_2_3, Seq.empty),
+      ("n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_3, map_empty, Seq.empty, Seq.empty),
+
+      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, true, false, map_1_2, map_3, asc_1_2_3, Seq.empty),
+      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1_2, map_3, asc_2_3, desc_1),
+      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1_2, map_3, asc_3, desc_1_2),
+      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_1_2, map_empty, Seq.empty, Seq.empty),
+      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, true, false, map_1_3, map_2, asc_1_2_3, Seq.empty),
+      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1_3, map_2, asc_2_3, desc_1),
+      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1_3, map_2, asc_3, desc_1_2),
+      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_1_3, map_empty, Seq.empty, Seq.empty),
+
+      // Both index
+      ("n.prop1", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", BOTH, IndexOrderAscending, false, true, map_1, map_2_3, desc_3, asc_1_2),
+      ("n.prop1", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderAscending, false, true, map_1, map_2_3, desc_2_asc_3, asc_1),
+      ("n.prop1", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1, map_2_3, asc_2_3, desc_1),
+      ("n.prop1", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1, map_2_3, asc_3, desc_1_2),
+
+      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", BOTH, IndexOrderAscending, false, true, map_1_2, map_3, desc_3, asc_1_2),
+      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderAscending, false, true, map_1_2, map_3, desc_2_asc_3, asc_1),
+      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1_2, map_3, asc_2_3, desc_1),
+      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1_2, map_3, asc_3, desc_1_2),
+      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", BOTH, IndexOrderAscending, false, true, map_1_3, map_2, desc_3, asc_1_2),
+      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderAscending, false, true, map_1_3, map_2, desc_2_asc_3, asc_1),
+      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1_3, map_2, asc_2_3, desc_1),
+      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1_3, map_2, asc_3, desc_1_2)
+    ).foreach {
+      case (returnString, orderByString, orderCapability, indexOrder, fullSort, partialSort, returnProjections, sortProjections, sortItems, alreadySorted) =>
+        // When
+        val query =
+          s"""
+            |MATCH (n:Label)
+            |WHERE n.prop1 >= 42 AND n.prop2 <= 3 AND n.prop3 > ''
+            |RETURN $returnString
+            |ORDER BY $orderByString
+          """.stripMargin
+        val plan = new given {
+          indexOn("Label", "prop1", "prop2", "prop3").providesOrder(orderCapability)
+        } getLogicalPlanFor query
+
+        // Then
+        val leafPlan = IndexSeek("n:Label(prop1 >= 42, prop2 <= 3, prop3 > '')", indexOrder = indexOrder)
+        plan._2 should equal {
+          if (fullSort)
+            Sort(Projection(Projection(Selection(expr, leafPlan), returnProjections), sortProjections), sortItems)
+          else if (partialSort)
+            PartialSort(Projection(Projection(Selection(expr, leafPlan), returnProjections), sortProjections), alreadySorted, sortItems)
+          else
+            Projection(Selection(expr, leafPlan), returnProjections)
+        }
+    }
+  }
+
+  private def andedPropertyInequalities(varName: String, propName: String, expression: InequalityExpression) = {
+    AndedPropertyInequalities(varFor(varName), prop(varName, propName),
+      NonEmptyList(expression))
   }
 
   // Min and Max
