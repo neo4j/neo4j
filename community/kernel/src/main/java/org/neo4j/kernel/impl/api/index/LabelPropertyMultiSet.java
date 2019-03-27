@@ -44,47 +44,50 @@ import static java.lang.Math.toIntExact;
  * instead of collecting all indexes matching any property key and doing a union of those. Example:
  *
  * <pre>
+ *     Legend: ids inside [] are labels, ids inside () are properties
  *     Descriptors
- *     A: label[0]properties[4, 7, 3]
- *     B: label[0]properties[7, 4]
- *     C: label[0]properties[3, 4]
- *     D: label[0]properties[3, 4, 7]
- *     E: label[1]properties[7]
- *     F: label[1]properties[5, 6]
+ *     A: [0](4, 7, 3)
+ *     B: [0](7, 4)
+ *     C: [0](3, 4)
+ *     D: [0](3, 4, 7)
+ *     E: [1](7)
+ *     F: [1](5, 6)
+ *     TODO add multi-entity descriptors
  *
  *     Will result in a data structure (for the optimized path):
- *     label[0]
- *        -> property[3]
- *           -> property[4]: C
- *              -> property[7]: A, D
- *        -> property[4]
- *           -> property[7]: B
- *     label[1]
- *        -> property[5]
- *           -> property[6]: F
- *        -> property[7]: E
+ *     [0]
+ *        -> (3)
+ *           -> (4): C
+ *              -> (7): A, D
+ *        -> (4)
+ *           -> (7): B
+ *     [1]
+ *        -> (5)
+ *           -> (6): F
+ *        -> (7): E
  * </pre>
  */
 public class LabelPropertyMultiSet<T extends SchemaDescriptorSupplier>
 {
-    private final MutableIntObjectMap<PropertyMultiSet> byLabel = IntObjectMaps.mutable.empty();
+    private final MutableIntObjectMap<LabelMultiSet> byFirstLabel = IntObjectMaps.mutable.empty();
+    private final MutableIntObjectMap<PropertyMultiSet> byAnyLabel = IntObjectMaps.mutable.empty();
 
     boolean isEmpty()
     {
-        return byLabel.isEmpty();
+        return byFirstLabel.isEmpty();
     }
 
     boolean has( long[] labels, int propertyKey )
     {
-        if ( byLabel.isEmpty() )
+        if ( byFirstLabel.isEmpty() )
         {
             return false;
         }
 
-        for ( long label : labels )
+        for ( int i = 0; i < labels.length; i++ )
         {
-            PropertyMultiSet byProperty = byLabel.get( toIntExact( label ) );
-            if ( byProperty != null && byProperty.has( propertyKey ) )
+            LabelMultiSet labelMultiSet = byFirstLabel.get( toIntExact( labels[i] ) );
+            if ( labelMultiSet != null && labelMultiSet.has( labels, i, propertyKey ) )
             {
                 return true;
             }
@@ -94,74 +97,176 @@ public class LabelPropertyMultiSet<T extends SchemaDescriptorSupplier>
 
     boolean has( int label )
     {
-        if ( byLabel.isEmpty() )
-        {
-            return false;
-        }
-
-        return byLabel.containsKey( label );
+        return !byAnyLabel.isEmpty() && byAnyLabel.containsKey( label );
     }
 
     public void add( T schemaDescriptor )
     {
-        if ( schemaDescriptor.schema().getEntityTokenIds().length > 1 )
-        {
-            throw new UnsupportedOperationException();
-        }
+        int[] entityTokenIds = schemaDescriptor.schema().getEntityTokenIds();
+        int firstEntityTokenId = entityTokenIds[0];
+        byFirstLabel.getIfAbsentPut( firstEntityTokenId, LabelMultiSet::new ).add( schemaDescriptor, entityTokenIds, 0 );
 
-        int label = schemaDescriptor.schema().keyId();
-        PropertyMultiSet byProperty = byLabel.get( label );
-        if ( byProperty == null )
+        for ( int entityTokenId : entityTokenIds )
         {
-            byProperty = new PropertyMultiSet();
-            byLabel.put( label, byProperty );
+            byAnyLabel.getIfAbsentPut( entityTokenId, PropertyMultiSet::new ).add( schemaDescriptor );
         }
-        byProperty.add( schemaDescriptor );
     }
 
     public void remove( T schemaDescriptor )
     {
-        int label = schemaDescriptor.schema().keyId();
-        PropertyMultiSet byProperty = byLabel.get( label );
-        if ( byProperty != null && byProperty.remove( schemaDescriptor ) )
+        int[] entityTokenIds = schemaDescriptor.schema().getEntityTokenIds();
+        int firstEntityTokenId = entityTokenIds[0];
+        LabelMultiSet labelMultiSet = byFirstLabel.get( firstEntityTokenId );
+        if ( labelMultiSet != null && labelMultiSet.remove( schemaDescriptor, entityTokenIds, 0 ) )
         {
-            byLabel.remove( label );
+            byFirstLabel.remove( firstEntityTokenId );
+        }
+
+        for ( int entityTokenId : entityTokenIds )
+        {
+            PropertyMultiSet propertyMultiSet = byAnyLabel.get( entityTokenId );
+            if ( propertyMultiSet != null && propertyMultiSet.remove( schemaDescriptor ) )
+            {
+                byAnyLabel.remove( entityTokenId );
+            }
         }
     }
 
     void matchingDescriptorsForCompleteListOfProperties( Collection<T> into, long[] labels, int[] sortedProperties )
     {
-        for ( long label : labels )
+        for ( int i = 0; i < labels.length; i++ )
         {
-            PropertyMultiSet byProperty = byLabel.get( (int) label );
-            if ( byProperty != null )
+            int label = (int) labels[i];
+            LabelMultiSet labelMultiSet = byFirstLabel.get( label );
+            if ( labelMultiSet != null )
             {
-                byProperty.collectForCompleteListOfProperties( into, sortedProperties );
+                labelMultiSet.collectForCompleteListOfProperties( into, labels, i, sortedProperties );
             }
         }
     }
 
     void matchingDescriptorsForPartialListOfProperties( Collection<T> into, long[] labels, int[] sortedProperties )
     {
-        for ( long label : labels )
+        for ( int i = 0; i < labels.length; i++ )
         {
-            PropertyMultiSet byProperty = byLabel.get( (int) label );
-            if ( byProperty != null )
+            int label = (int) labels[i];
+            LabelMultiSet labelMultiSet = byFirstLabel.get( label );
+            if ( labelMultiSet != null )
             {
-                byProperty.collectForPartialListOfProperties( into, sortedProperties );
+                labelMultiSet.collectForPartialListOfProperties( into, labels, i, sortedProperties );
             }
         }
     }
 
     void matchingDescriptors( Collection<T> into, long[] labels )
     {
-        for ( long label : labels )
+        for ( int i = 0; i < labels.length; i++ )
         {
-            PropertyMultiSet set = byLabel.get( (int) label );
+            int label = (int) labels[i];
+            LabelMultiSet set = byFirstLabel.get( label );
             if ( set != null )
             {
-                set.collectAll( into );
+                set.collectAll( into, labels, i );
             }
+        }
+    }
+
+    private class LabelMultiSet
+    {
+        private final PropertyMultiSet propertyMultiSet = new PropertyMultiSet();
+        private final MutableIntObjectMap<LabelMultiSet> next = IntObjectMaps.mutable.empty();
+
+        void add( T schemaDescriptor, int[] entityTokenIds, int cursor )
+        {
+            if ( cursor == entityTokenIds.length - 1 )
+            {
+                propertyMultiSet.add( schemaDescriptor );
+            }
+            else
+            {
+                int nextEntityTokenId = entityTokenIds[++cursor];
+                next.getIfAbsentPut( nextEntityTokenId, LabelMultiSet::new ).add( schemaDescriptor, entityTokenIds, cursor );
+            }
+        }
+
+        boolean remove( T schemaDescriptor, int[] entityTokenIds, int cursor )
+        {
+            if ( cursor == entityTokenIds.length - 1 )
+            {
+                propertyMultiSet.remove( schemaDescriptor );
+            }
+            else
+            {
+                int nextEntityTokenId = entityTokenIds[++cursor];
+                LabelMultiSet nextSet = next.get( nextEntityTokenId );
+                if ( nextSet != null && nextSet.remove( schemaDescriptor, entityTokenIds, cursor ) )
+                {
+                    next.remove( nextEntityTokenId );
+                }
+            }
+            return propertyMultiSet.isEmpty() && next.isEmpty();
+        }
+
+        void collectForCompleteListOfProperties( Collection<T> into, long[] labels, int labelsCursor, int[] sortedProperties )
+        {
+            propertyMultiSet.collectForCompleteListOfProperties( into, sortedProperties );
+            // TODO potentially optimize be checking if there even are any next at all before looping? Same thing could be done in PropertyMultiSet
+            for ( int i = labelsCursor + 1; i < labels.length; i++ )
+            {
+                int nextLabel = (int) labels[i];
+                LabelMultiSet nextLabelMultiSet = next.get( nextLabel );
+                if ( nextLabelMultiSet != null )
+                {
+                    nextLabelMultiSet.collectForCompleteListOfProperties( into, labels, i, sortedProperties );
+                }
+            }
+        }
+
+        void collectForPartialListOfProperties( Collection<T> into, long[] labels, int labelsCursor, int[] sortedProperties )
+        {
+            propertyMultiSet.collectForPartialListOfProperties( into, sortedProperties );
+            // TODO potentially optimize be checking if there even are any next at all before looping? Same thing could be done in PropertyMultiSet
+            for ( int i = labelsCursor + 1; i < labels.length; i++ )
+            {
+                int nextLabel = (int) labels[i];
+                LabelMultiSet nextLabelMultiSet = next.get( nextLabel );
+                if ( nextLabelMultiSet != null )
+                {
+                    nextLabelMultiSet.collectForPartialListOfProperties( into, labels, i, sortedProperties );
+                }
+            }
+        }
+
+        void collectAll( Collection<T> into, long[] labels, int labelsCursor )
+        {
+            propertyMultiSet.collectAll( into );
+            for ( int i = labelsCursor + 1; i < labels.length; i++ )
+            {
+                int nextLabel = (int) labels[i];
+                LabelMultiSet nextLabelMultiSet = next.get( nextLabel );
+                if ( nextLabelMultiSet != null )
+                {
+                    nextLabelMultiSet.collectAll( into, labels, i );
+                }
+            }
+        }
+
+        boolean has( long[] labels, int labelsCursor, int propertyKey )
+        {
+            if ( propertyMultiSet.has( propertyKey ) )
+            {
+                return true;
+            }
+            for ( int i = labelsCursor + 1; i < labels.length; i++ )
+            {
+                int nextLabel = (int) labels[i];
+                LabelMultiSet nextLabelMultiSet = next.get( nextLabel );
+                if ( nextLabelMultiSet != null && nextLabelMultiSet.has( labels, i, propertyKey ) )
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -177,24 +282,12 @@ public class LabelPropertyMultiSet<T extends SchemaDescriptorSupplier>
             descriptors.add( schemaDescriptor );
             int[] propertyKeyIds = sortedPropertyKeyIds( schemaDescriptor.schema() );
             int propertyKeyId = propertyKeyIds[0];
-            PropertySet firstPropertySet = next.get( propertyKeyId );
-            if ( firstPropertySet == null )
-            {
-                firstPropertySet = new PropertySet( propertyKeyId );
-                next.put( propertyKeyId, firstPropertySet );
-            }
-            firstPropertySet.add( schemaDescriptor, propertyKeyIds, 0 );
+            next.getIfAbsentPut( propertyKeyId, PropertySet::new ).add( schemaDescriptor, propertyKeyIds, 0 );
 
             // Add fall-back path for when property list is only partly known
             for ( int keyId : propertyKeyIds )
             {
-                Set<T> byProperty = byAnyProperty.get( keyId );
-                if ( byProperty == null )
-                {
-                    byProperty = new HashSet<>();
-                    byAnyProperty.put( keyId, byProperty );
-                }
-                byProperty.add( schemaDescriptor );
+                byAnyProperty.getIfAbsentPut( keyId, HashSet::new ).add( schemaDescriptor );
             }
         }
 
@@ -275,18 +368,17 @@ public class LabelPropertyMultiSet<T extends SchemaDescriptorSupplier>
         {
             return byAnyProperty.containsKey( propertyKey );
         }
+
+        boolean isEmpty()
+        {
+            return descriptors.isEmpty() && next.isEmpty();
+        }
     }
 
     private class PropertySet
     {
-        private final int propertyKey;
         private final Set<T> fullDescriptors = new HashSet<>();
         private final MutableIntObjectMap<PropertySet> next = IntObjectMaps.mutable.empty();
-
-        PropertySet( int propertyKey )
-        {
-            this.propertyKey = propertyKey;
-        }
 
         void add( T schemaDescriptor, int[] propertyKeyIds, int cursor )
         {
@@ -297,13 +389,7 @@ public class LabelPropertyMultiSet<T extends SchemaDescriptorSupplier>
             else
             {
                 int nextPropertyKeyId = propertyKeyIds[++cursor];
-                PropertySet propertySet = next.get( nextPropertyKeyId );
-                if ( propertySet == null )
-                {
-                    propertySet = new PropertySet( nextPropertyKeyId );
-                    next.put( nextPropertyKeyId, propertySet );
-                }
-                propertySet.add( schemaDescriptor, propertyKeyIds, cursor );
+                next.getIfAbsentPut( nextPropertyKeyId, PropertySet::new ).add( schemaDescriptor, propertyKeyIds, cursor );
             }
         }
 
@@ -333,7 +419,6 @@ public class LabelPropertyMultiSet<T extends SchemaDescriptorSupplier>
 
         void collectForCompleteListOfProperties( Collection<T> descriptors, int[] sortedProperties, int cursor )
         {
-            assert sortedProperties[cursor] == propertyKey;
             descriptors.addAll( fullDescriptors );
             for ( int i = cursor + 1; i < sortedProperties.length; i++ )
             {
