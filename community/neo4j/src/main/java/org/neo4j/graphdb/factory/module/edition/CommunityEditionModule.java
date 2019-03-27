@@ -30,7 +30,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.dmbs.database.DefaultDatabaseManager;
+import org.neo4j.dbms.database.DefaultDatabaseManager;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
