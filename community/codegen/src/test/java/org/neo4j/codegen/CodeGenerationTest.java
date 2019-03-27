@@ -1439,6 +1439,42 @@ public abstract class CodeGenerationTest
     }
 
     @Test
+    void shouldGenerateMethodUsingAndsAndOrs() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock conditional = simple.generateMethod( boolean.class, "conditional",
+                    param( boolean.class, "test1" ),
+                    param( boolean.class, "test2" ),
+                    param( boolean.class, "test3" ) ) )
+            {
+                conditional.returns( and(
+                        or( conditional.load( "test1" ),
+                            conditional.load( "test2" ) ),
+                        conditional.load( "test3" ) ) );
+            }
+
+            handle = simple.handle();
+        }
+
+        // when
+        MethodHandle conditional =
+                instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class, boolean.class );
+
+        // then
+        assertThat( conditional.invoke( true, true, true ), equalTo( true ) );
+        assertThat( conditional.invoke( true, false, true ), equalTo( true ) );
+        assertThat( conditional.invoke( false, true, true ), equalTo( true ) );
+        assertThat( conditional.invoke( false, false, true ), equalTo( false ) );
+        assertThat( conditional.invoke( true, true, false ), equalTo( false ) );
+        assertThat( conditional.invoke( true, false, false ), equalTo( false ) );
+        assertThat( conditional.invoke( false, true, false ), equalTo( false ) );
+        assertThat( conditional.invoke( false, false, false ), equalTo( false ) );
+    }
+
+    @Test
     void shouldHandleNot() throws Throwable
     {
         // given
@@ -1741,6 +1777,31 @@ public abstract class CodeGenerationTest
         assertThat( multiplyForType( int.class, 17, 18 ), equalTo( 306 ) );
         assertThat( multiplyForType( long.class, 17L, 18L ), equalTo( 306L ) );
         assertThat( multiplyForType( double.class, 17D, 18D ), equalTo( 306D ) );
+    }
+
+    @Test
+    void shouldHandleOuterMultiplyInnerAdd() throws Throwable
+    {
+        // given
+        createGenerator();
+        ClassHandle handle;
+        Class clazz = int.class;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock block = simple.generateMethod( clazz, "outerMultiplyInnerAdd",
+                    param( clazz, "a" ), param( clazz, "b" ), param( clazz, "c" )  ) )
+            {
+                block.returns( multiply( block.load( "a" ), add( block.load( "b" ), block.load( "c" ) ) ) );
+            }
+
+            handle = simple.handle();
+        }
+
+        // when
+        MethodHandle code = instanceMethod( handle.newInstance(), "outerMultiplyInnerAdd", clazz, clazz, clazz );
+
+        // then
+        assertEquals( 2 * (3 + 4), code.invoke( 2, 3, 4 ) );
     }
 
     @SuppressWarnings( "unchecked" )
