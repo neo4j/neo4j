@@ -87,15 +87,16 @@ public class EnterpriseBuiltInDbmsProcedures
     public void setTXMetaData( @Name( value = "data" ) Map<String,Object> data )
     {
         securityContext.assertCredentialsNotExpired();
-        int totalCharSize = data.entrySet().stream()
-                .mapToInt( e -> e.getKey().length() + e.getValue().toString().length() )
-                .sum();
+        int totalCharSize = data.entrySet()
+                        .stream()
+                        .mapToInt( e -> e.getKey().length() + ((e.getValue() != null) ? e.getValue().toString().length() : 0) )
+                        .sum();
 
         if ( totalCharSize >= HARD_CHAR_LIMIT )
         {
             throw new IllegalArgumentException(
-                    format( "Invalid transaction meta-data, expected the total number of chars for " +
-                            "keys and values to be less than %d, got %d", HARD_CHAR_LIMIT, totalCharSize ) );
+                    format( "Invalid transaction meta-data, expected the total number of chars for " + "keys and values to be less than %d, got %d",
+                            HARD_CHAR_LIMIT, totalCharSize ) );
         }
 
         try ( Statement statement = getCurrentTx().acquireStatement() )
