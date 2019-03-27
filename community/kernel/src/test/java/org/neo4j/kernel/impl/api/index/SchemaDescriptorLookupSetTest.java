@@ -236,15 +236,15 @@ public class SchemaDescriptorLookupSetTest
     private SchemaDescriptor randomSchemaDescriptor( int highEntityKeyId, int highPropertyKeyId, int maxNumberOfEntityKeys, int maxNumberOfPropertyKeys )
     {
         int numberOfEntityKeys = random.nextInt( 1, maxNumberOfEntityKeys );
-        int[] entityKeys = randomUniqueSortedIntArray( highEntityKeyId, numberOfEntityKeys );
+        int[] entityKeys = randomUniqueUnsortedIntArray( highEntityKeyId, numberOfEntityKeys );
         int numberOfPropertyKeys = random.nextInt( 1, maxNumberOfPropertyKeys );
-        int[] propertyKeys = randomUniqueSortedIntArray( highPropertyKeyId, numberOfPropertyKeys );
+        int[] propertyKeys = randomUniqueUnsortedIntArray( highPropertyKeyId, numberOfPropertyKeys );
         return entityKeys.length > 1
                ? SchemaDescriptorFactory.multiToken( entityKeys, EntityType.NODE, propertyKeys )
                : SchemaDescriptorFactory.forLabel( entityKeys[0], propertyKeys );
     }
 
-    private int[] randomUniqueSortedIntArray( int maxValue, int length )
+    private int[] randomUniqueUnsortedIntArray( int maxValue, int length )
     {
         int[] array = new int[length];
         MutableIntSet seen = IntSets.mutable.empty();
@@ -258,6 +258,12 @@ public class SchemaDescriptorLookupSetTest
             while ( !seen.add( candidate ) );
             array[i] = candidate;
         }
+        return array;
+    }
+
+    private int[] randomUniqueSortedIntArray( int maxValue, int length )
+    {
+        int[] array = randomUniqueUnsortedIntArray( maxValue, length );
         Arrays.sort( array );
         return array;
     }
