@@ -164,7 +164,22 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         int expectedNumberOfIndexes = providers.length * 2;
         try
         {
-            verifyInitialState( indexRecoveryTracker, expectedNumberOfIndexes, InternalIndexState.ONLINE );
+            IndexRecoveryTracker genericNativeRecoveries = new IndexRecoveryTracker();
+            filterOutGenericNativeIndexes( indexRecoveryTracker, genericNativeRecoveries );
+            int genericNativeIndexCount = genericNativeRecoveries.initialStateMap.size();
+            int indexesUsingLuceneCount = expectedNumberOfIndexes - genericNativeIndexCount;
+
+            // All indexes that use Lucene needs to be rebuilt:
+            verifyInitialState( indexRecoveryTracker, indexesUsingLuceneCount, InternalIndexState.POPULATING );
+            // All indexes that use the Generic Native Index Provider do not need rebuilding, and start up as ONLINE:
+            verifyInitialState( genericNativeRecoveries, genericNativeIndexCount, InternalIndexState.ONLINE );
+
+            // Wait for all populating indexes to finish, so we can verify their contents:
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
+                tx.success();
+            }
 
             // then
             for ( Provider provider : providers )
@@ -211,6 +226,21 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         }
     }
 
+    private void filterOutGenericNativeIndexes( IndexRecoveryTracker indexRecoveryTracker, IndexRecoveryTracker gbpTreeRecoveries )
+    {
+        indexRecoveryTracker.initialStateMap.entrySet().removeIf( entry ->
+        {
+            StoreIndexDescriptor indexDescriptor = entry.getKey();
+            InternalIndexState internalIndexState = entry.getValue();
+            if ( indexDescriptor.providerDescriptor().equals( GenericNativeIndexProvider.DESCRIPTOR ) )
+            {
+                gbpTreeRecoveries.initialState( indexDescriptor, internalIndexState );
+                return true;
+            }
+            return false;
+        } );
+    }
+
     private Provider[] providersUpToAndIncluding( Provider provider )
     {
         return Stream.of( Provider.values() ).filter( p -> p.ordinal() <= provider.ordinal() ).toArray( Provider[]::new );
@@ -236,7 +266,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         assertEquals( expectedNumberOfIndexes, indexRecoveryTracker.initialStateMap.size(), "exactly " + expectedNumberOfIndexes + " indexes " );
         for ( InternalIndexState actualInitialState : indexRecoveryTracker.initialStateMap.values() )
         {
-            assertEquals( expectedInitialState, actualInitialState, "initial state is online, don't do recovery" );
+            assertEquals( expectedInitialState, actualInitialState, "initial state is online, don't do recovery: " + indexRecoveryTracker.initialStateMap );
         }
     }
 
@@ -416,7 +446,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
 
     private class IndexRecoveryTracker extends IndexingService.MonitorAdapter
     {
-        Map<IndexDescriptor,InternalIndexState> initialStateMap = new HashMap<>();
+        Map<StoreIndexDescriptor,InternalIndexState> initialStateMap = new HashMap<>();
 
         @Override
         public void initialState( StoreIndexDescriptor descriptor, InternalIndexState state )

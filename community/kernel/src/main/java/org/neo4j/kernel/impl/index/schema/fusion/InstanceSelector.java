@@ -110,8 +110,7 @@ class InstanceSelector<T>
      * @return A new {@link EnumMap} containing the mapped values.
      * @throws E exception from converter.
      */
-    @SuppressWarnings( "unchecked" )
-    <R,E extends Exception> Iterable<R> transform( ThrowingFunction<T,R,E> converter ) throws E
+    <R,E extends Exception> List<R> transform( ThrowingFunction<T,R,E> converter ) throws E
     {
         List<R> result = new ArrayList<>();
         for ( IndexSlot slot : IndexSlot.values() )

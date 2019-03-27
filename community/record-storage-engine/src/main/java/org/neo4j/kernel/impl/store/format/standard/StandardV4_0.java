@@ -51,7 +51,7 @@ public class StandardV4_0 extends BaseRecordFormats
                 RecordStorageCapability.TEMPORAL_PROPERTIES,
                 RecordStorageCapability.FLEXIBLE_SCHEMA_STORE,
                 RecordStorageCapability.INTERNAL_TOKENS,
-                LuceneCapability.LUCENE_7 );
+                LuceneCapability.LUCENE_8 );
     }
 
     @Override

@@ -37,7 +37,7 @@ public enum LuceneCapability implements Capability
     /**
      * Lucene version 7.x
      */
-    LUCENE_7,
+    LUCENE_8,
 
     /**
      * Lucene version 5.x
