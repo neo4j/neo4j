@@ -31,9 +31,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.test.rule.RandomRule;
 
+import static java.util.Arrays.stream;
 import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -138,8 +140,9 @@ public class LabelPropertyMultiSetTest
         // given
         List<SchemaDescriptor> all = new ArrayList<>();
         LabelPropertyMultiSet<SchemaDescriptor> set = new LabelPropertyMultiSet<>();
-        int highLabelId = 10;
-        int highPropertyKeyId = 10;
+        int highEntityKeyId = 8;
+        int highPropertyKeyId = 8;
+        int maxNumberOfEntityKeys = 3;
         int maxNumberOfPropertyKeys = 3;
 
         // when/then
@@ -149,7 +152,7 @@ public class LabelPropertyMultiSetTest
             int countToAdd = random.nextInt( 1, 5 );
             for ( int a = 0; a < countToAdd; a++ )
             {
-                SchemaDescriptor descriptor = randomSchemaDescriptor( highLabelId, highPropertyKeyId, maxNumberOfPropertyKeys );
+                SchemaDescriptor descriptor = randomSchemaDescriptor( highEntityKeyId, highPropertyKeyId, maxNumberOfEntityKeys, maxNumberOfPropertyKeys );
                 if ( !includeIdempotentAddsAndRemoves && all.indexOf( descriptor ) != -1 )
                 {
                     // Oops, we randomly generated a descriptor that already exists
@@ -180,9 +183,9 @@ public class LabelPropertyMultiSetTest
             int countToLookup = 20;
             for ( int l = 0; l < countToLookup; l++ )
             {
-                long[] labelIds = toLongArray( randomUniqueIntArray( highLabelId, random.nextInt( 1, 3 ) ) );
-                int[] propertyKeyIds = randomUniqueIntArray( highPropertyKeyId, random.nextInt( 1, maxNumberOfPropertyKeys ) );
-                Arrays.sort( propertyKeyIds );
+                int[] labelIdsInts = randomUniqueSortedIntArray( highEntityKeyId, random.nextInt( 1, 3 ) );
+                long[] labelIds = toLongArray( labelIdsInts );
+                int[] propertyKeyIds = randomUniqueSortedIntArray( highPropertyKeyId, random.nextInt( 1, maxNumberOfPropertyKeys ) );
                 Set<SchemaDescriptor> actual = new HashSet<>();
 
                 // lookup by only labels
@@ -198,56 +201,28 @@ public class LabelPropertyMultiSetTest
                 // lookup by complete property list
                 actual.clear();
                 set.matchingDescriptorsForCompleteListOfProperties( actual, labelIds, propertyKeyIds );
-                assertEquals( expectedDescriptors( all, filterByLabelAndPropertyComplete( labelIds, propertyKeyIds ) ), actual );
+                assertEquals( expectedDescriptors( all, filterByLabelAndPropertyComplete( labelIdsInts, propertyKeyIds ) ), actual );
             }
         }
     }
 
-    private static Predicate<SchemaDescriptor> filterByLabelAndPropertyComplete( long[] labelIds, int[] propertyKeyIds )
+    private static Predicate<SchemaDescriptor> filterByLabelAndPropertyComplete( int[] labelIds, int[] propertyKeyIds )
     {
         return descriptor ->
-        {
-            // Descriptor label matches any of my labels
-            if ( !contains( labelIds, descriptor.keyId() ) )
-            {
-                return false;
-            }
-            // Descriptor property keys matches ALL of my property keys
-            for ( int propertyKeyId : descriptor.getPropertyIds() )
-            {
-                if ( !contains( propertyKeyIds, propertyKeyId ) )
-                {
-                    return false;
-                }
-            }
-            return true;
-        };
+                stream( descriptor.getEntityTokenIds() ).allMatch( indexEntityId -> contains( labelIds, indexEntityId ) ) &&
+                stream( descriptor.getPropertyIds() ).allMatch( indexPropertyId -> contains( propertyKeyIds, indexPropertyId ) );
     }
 
     private static Predicate<SchemaDescriptor> filterByLabelAndPropertyPartial( long[] labelIds, int[] propertyKeyIds )
     {
         return descriptor ->
-        {
-            // Descriptor label matches any of my labels
-            if ( !contains( labelIds, descriptor.keyId() ) )
-            {
-                return false;
-            }
-            // Descriptor property keys matches any of my property keys
-            for ( int propertyKeyId : propertyKeyIds )
-            {
-                if ( contains( descriptor.getPropertyIds(), propertyKeyId ) )
-                {
-                    return true;
-                }
-            }
-            return false;
-        };
+                stream( descriptor.getEntityTokenIds() ).allMatch( indexEntityId -> contains( labelIds, indexEntityId ) ) &&
+                stream( descriptor.getPropertyIds() ).anyMatch( indexPropertyId -> contains( propertyKeyIds, indexPropertyId ) );
     }
 
     private static Predicate<SchemaDescriptor> filterByLabel( long[] labelIds )
     {
-        return descriptor -> contains( labelIds, descriptor.keyId() );
+        return descriptor -> stream( descriptor.getEntityTokenIds() ).allMatch( indexEntityId -> contains( labelIds, indexEntityId ) );
     }
 
     private static Set<SchemaDescriptor> expectedDescriptors( List<SchemaDescriptor> all, Predicate<SchemaDescriptor> filter )
@@ -255,15 +230,18 @@ public class LabelPropertyMultiSetTest
         return asSet( Iterators.filter( filter, all.iterator() ) );
     }
 
-    private SchemaDescriptor randomSchemaDescriptor( int highLabelId, int highPropertyKeyId, int maxNumberOfPropertyKeys )
+    private SchemaDescriptor randomSchemaDescriptor( int highEntityKeyId, int highPropertyKeyId, int maxNumberOfEntityKeys, int maxNumberOfPropertyKeys )
     {
-        int labelId = random.nextInt( highLabelId );
+        int numberOfEntityKeys = random.nextInt( 1, maxNumberOfEntityKeys );
+        int[] entityKeys = randomUniqueSortedIntArray( highEntityKeyId, numberOfEntityKeys );
         int numberOfPropertyKeys = random.nextInt( 1, maxNumberOfPropertyKeys );
-        int[] propertyKeyIds = randomUniqueIntArray( highPropertyKeyId, numberOfPropertyKeys );
-        return SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
+        int[] propertyKeys = randomUniqueSortedIntArray( highPropertyKeyId, numberOfPropertyKeys );
+        return entityKeys.length > 1
+               ? SchemaDescriptorFactory.multiToken( entityKeys, EntityType.NODE, propertyKeys )
+               : SchemaDescriptorFactory.forLabel( entityKeys[0], propertyKeys );
     }
 
-    private int[] randomUniqueIntArray( int maxValue, int length )
+    private int[] randomUniqueSortedIntArray( int maxValue, int length )
     {
         int[] array = new int[length];
         MutableIntSet seen = IntSets.mutable.empty();
@@ -277,6 +255,7 @@ public class LabelPropertyMultiSetTest
             while ( !seen.add( candidate ) );
             array[i] = candidate;
         }
+        Arrays.sort( array );
         return array;
     }
 
