@@ -40,7 +40,7 @@ import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class LabelPropertyMultiSetTest
+public class SchemaDescriptorLookupSetTest
 {
     @Rule
     public final RandomRule random = new RandomRule();
@@ -49,13 +49,13 @@ public class LabelPropertyMultiSetTest
     public void shouldLookupSingleKeyDescriptors()
     {
         // given
-        LabelPropertyMultiSet<SchemaDescriptor> set = new LabelPropertyMultiSet<>();
+        SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
         LabelSchemaDescriptor expected = SchemaDescriptorFactory.forLabel( 1, 2 );
         set.add( expected );
 
         // when
         Set<SchemaDescriptor> descriptors = new HashSet<>();
-        set.matchingDescriptorsForPartialListOfProperties( descriptors, labels( 1 ), properties( 2 ) );
+        set.matchingDescriptorsForPartialListOfProperties( descriptors, entityTokens( 1 ), properties( 2 ) );
 
         // then
         assertEquals( asSet( expected ), descriptors );
@@ -65,7 +65,7 @@ public class LabelPropertyMultiSetTest
     public void shouldLookupSingleKeyAndSharedCompositeKeyDescriptors()
     {
         // given
-        LabelPropertyMultiSet<SchemaDescriptor> set = new LabelPropertyMultiSet<>();
+        SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
         LabelSchemaDescriptor expected1 = SchemaDescriptorFactory.forLabel( 1, 2 );
         LabelSchemaDescriptor expected2 = SchemaDescriptorFactory.forLabel( 1, 2, 3 );
         set.add( expected1 );
@@ -73,7 +73,7 @@ public class LabelPropertyMultiSetTest
 
         // when
         Set<SchemaDescriptor> descriptors = new HashSet<>();
-        set.matchingDescriptorsForPartialListOfProperties( descriptors, labels( 1 ), properties( 2 ) );
+        set.matchingDescriptorsForPartialListOfProperties( descriptors, entityTokens( 1 ), properties( 2 ) );
 
         // then
         assertEquals( asSet( expected1, expected2 ), descriptors );
@@ -83,7 +83,7 @@ public class LabelPropertyMultiSetTest
     public void shouldLookupCompositeKeyDescriptor()
     {
         // given
-        LabelPropertyMultiSet<SchemaDescriptor> set = new LabelPropertyMultiSet<>();
+        SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
         LabelSchemaDescriptor descriptor1 = SchemaDescriptorFactory.forLabel( 1, 2, 3 );
         LabelSchemaDescriptor descriptor2 = SchemaDescriptorFactory.forLabel( 1, 2, 4 );
         LabelSchemaDescriptor descriptor3 = SchemaDescriptorFactory.forLabel( 1, 2, 5, 6 );
@@ -93,17 +93,17 @@ public class LabelPropertyMultiSetTest
 
         // when
         Set<SchemaDescriptor> descriptors = new HashSet<>();
-        set.matchingDescriptorsForCompleteListOfProperties( descriptors, labels( 1 ), properties( 2, 5, 6 ) );
+        set.matchingDescriptorsForCompleteListOfProperties( descriptors, entityTokens( 1 ), properties( 2, 5, 6 ) );
 
         // then
         assertEquals( asSet( descriptor3 ), descriptors );
     }
 
     @Test
-    public void shouldLookupAllByLabel()
+    public void shouldLookupAllByEntityToken()
     {
         // given
-        LabelPropertyMultiSet<SchemaDescriptor> set = new LabelPropertyMultiSet<>();
+        SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
         LabelSchemaDescriptor descriptor1 = SchemaDescriptorFactory.forLabel( 1, 2, 3 );
         LabelSchemaDescriptor descriptor2 = SchemaDescriptorFactory.forLabel( 1, 2, 4 );
         LabelSchemaDescriptor descriptor3 = SchemaDescriptorFactory.forLabel( 1, 2, 5, 6 );
@@ -117,7 +117,7 @@ public class LabelPropertyMultiSetTest
 
         // when
         Set<SchemaDescriptor> descriptors = new HashSet<>();
-        set.matchingDescriptors( descriptors, labels( 1 ) );
+        set.matchingDescriptors( descriptors, entityTokens( 1 ) );
 
         // then
         assertEquals( asSet( descriptor1, descriptor2, descriptor3 ), descriptors );
@@ -139,7 +139,7 @@ public class LabelPropertyMultiSetTest
     {
         // given
         List<SchemaDescriptor> all = new ArrayList<>();
-        LabelPropertyMultiSet<SchemaDescriptor> set = new LabelPropertyMultiSet<>();
+        SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
         int highEntityKeyId = 8;
         int highPropertyKeyId = 8;
         int maxNumberOfEntityKeys = 3;
@@ -183,46 +183,46 @@ public class LabelPropertyMultiSetTest
             int countToLookup = 20;
             for ( int l = 0; l < countToLookup; l++ )
             {
-                int[] labelIdsInts = randomUniqueSortedIntArray( highEntityKeyId, random.nextInt( 1, 3 ) );
-                long[] labelIds = toLongArray( labelIdsInts );
+                int[] entityTokenIdsInts = randomUniqueSortedIntArray( highEntityKeyId, random.nextInt( 1, 3 ) );
+                long[] entityTokenIds = toLongArray( entityTokenIdsInts );
                 int[] propertyKeyIds = randomUniqueSortedIntArray( highPropertyKeyId, random.nextInt( 1, maxNumberOfPropertyKeys ) );
                 Set<SchemaDescriptor> actual = new HashSet<>();
 
-                // lookup by only labels
+                // lookup by only entity tokens
                 actual.clear();
-                set.matchingDescriptors( actual, labelIds );
-                assertEquals( expectedDescriptors( all, filterByLabel( labelIds ) ), actual );
+                set.matchingDescriptors( actual, entityTokenIds );
+                assertEquals( expectedDescriptors( all, filterByEntity( entityTokenIdsInts ) ), actual );
 
                 // lookup by partial property list
                 actual.clear();
-                set.matchingDescriptorsForPartialListOfProperties( actual, labelIds, propertyKeyIds );
-                assertEquals( expectedDescriptors( all, filterByLabelAndPropertyPartial( labelIds, propertyKeyIds ) ), actual );
+                set.matchingDescriptorsForPartialListOfProperties( actual, entityTokenIds, propertyKeyIds );
+                assertEquals( expectedDescriptors( all, filterByEntityAndPropertyPartial( entityTokenIdsInts, propertyKeyIds ) ), actual );
 
                 // lookup by complete property list
                 actual.clear();
-                set.matchingDescriptorsForCompleteListOfProperties( actual, labelIds, propertyKeyIds );
-                assertEquals( expectedDescriptors( all, filterByLabelAndPropertyComplete( labelIdsInts, propertyKeyIds ) ), actual );
+                set.matchingDescriptorsForCompleteListOfProperties( actual, entityTokenIds, propertyKeyIds );
+                assertEquals( expectedDescriptors( all, filterByEntityAndPropertyComplete( entityTokenIdsInts, propertyKeyIds ) ), actual );
             }
         }
     }
 
-    private static Predicate<SchemaDescriptor> filterByLabelAndPropertyComplete( int[] labelIds, int[] propertyKeyIds )
+    private static Predicate<SchemaDescriptor> filterByEntityAndPropertyComplete( int[] entityTokenIds, int[] propertyKeyIds )
     {
         return descriptor ->
-                stream( descriptor.getEntityTokenIds() ).allMatch( indexEntityId -> contains( labelIds, indexEntityId ) ) &&
+                stream( descriptor.getEntityTokenIds() ).allMatch( indexEntityId -> contains( entityTokenIds, indexEntityId ) ) &&
                 stream( descriptor.getPropertyIds() ).allMatch( indexPropertyId -> contains( propertyKeyIds, indexPropertyId ) );
     }
 
-    private static Predicate<SchemaDescriptor> filterByLabelAndPropertyPartial( long[] labelIds, int[] propertyKeyIds )
+    private static Predicate<SchemaDescriptor> filterByEntityAndPropertyPartial( int[] entityTokenIds, int[] propertyKeyIds )
     {
         return descriptor ->
-                stream( descriptor.getEntityTokenIds() ).allMatch( indexEntityId -> contains( labelIds, indexEntityId ) ) &&
+                stream( descriptor.getEntityTokenIds() ).allMatch( indexEntityId -> contains( entityTokenIds, indexEntityId ) ) &&
                 stream( descriptor.getPropertyIds() ).anyMatch( indexPropertyId -> contains( propertyKeyIds, indexPropertyId ) );
     }
 
-    private static Predicate<SchemaDescriptor> filterByLabel( long[] labelIds )
+    private static Predicate<SchemaDescriptor> filterByEntity( int[] entityTokenIds )
     {
-        return descriptor -> stream( descriptor.getEntityTokenIds() ).allMatch( indexEntityId -> contains( labelIds, indexEntityId ) );
+        return descriptor -> stream( descriptor.getEntityTokenIds() ).allMatch( indexEntityId -> contains( entityTokenIds, indexEntityId ) );
     }
 
     private static Set<SchemaDescriptor> expectedDescriptors( List<SchemaDescriptor> all, Predicate<SchemaDescriptor> filter )
@@ -274,7 +274,7 @@ public class LabelPropertyMultiSetTest
         return properties;
     }
 
-    private static long[] labels( long... labels )
+    private static long[] entityTokens( long... labels )
     {
         return labels;
     }
