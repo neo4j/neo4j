@@ -33,18 +33,18 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import static java.lang.Math.toIntExact;
 
 /**
- * Collects and provides efficient access to {@link SchemaDescriptor}, based on label ids and partial or full list of properties.
- * The descriptors are first grouped by label id and then for a specific label id they are further grouped by property id.
+ * Collects and provides efficient access to {@link SchemaDescriptor}, based on entity token ids and partial or full list of properties.
+ * The descriptors are first grouped by entity token id and then for a specific entity token id they are further grouped by property id.
  * The property grouping works on sorted property key id lists as to minimize deduplication when selecting for composite indexes.
  * <p>
  * The selection works efficiently when providing complete list of properties, but will have to resort to some amount of over-selection and union
- * when caller can only provide partial list of properties. The most efficient linking starts from label id and traverses through the property key ids
- * of the schema descriptor (single or multiple for composite index) in sorted order where each property key id (for this label) links to the next
+ * when caller can only provide partial list of properties. The most efficient linking starts from entity token ids and traverses through the property key ids
+ * of the schema descriptor (single or multiple for composite index) in sorted order where each property key id (for this entity token) links to the next
  * property key. From all leaves along the way the descriptors can be collected. This way only the actually matching indexes will be collected
  * instead of collecting all indexes matching any property key and doing a union of those. Example:
  *
  * <pre>
- *     Legend: ids inside [] are labels, ids inside () are properties
+ *     Legend: ids inside [] are entity tokens, ids inside () are properties
  *     Descriptors
  *     A: [0](4, 7, 3)
  *     B: [0](7, 4)
@@ -67,27 +67,27 @@ import static java.lang.Math.toIntExact;
  *        -> (7): E
  * </pre>
  */
-public class LabelPropertyMultiSet<T extends SchemaDescriptorSupplier>
+public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
 {
-    private final MutableIntObjectMap<LabelMultiSet> byFirstLabel = IntObjectMaps.mutable.empty();
-    private final MutableIntObjectMap<PropertyMultiSet> byAnyLabel = IntObjectMaps.mutable.empty();
+    private final MutableIntObjectMap<EntityMultiSet> byFirstEntityToken = IntObjectMaps.mutable.empty();
+    private final MutableIntObjectMap<PropertyMultiSet> byAnyEntityToken = IntObjectMaps.mutable.empty();
 
     boolean isEmpty()
     {
-        return byFirstLabel.isEmpty();
+        return byFirstEntityToken.isEmpty();
     }
 
-    boolean has( long[] labels, int propertyKey )
+    boolean has( long[] entityTokenIds, int propertyKey )
     {
-        if ( byFirstLabel.isEmpty() )
+        if ( byFirstEntityToken.isEmpty() )
         {
             return false;
         }
 
-        for ( int i = 0; i < labels.length; i++ )
+        for ( int i = 0; i < entityTokenIds.length; i++ )
         {
-            LabelMultiSet labelMultiSet = byFirstLabel.get( toIntExact( labels[i] ) );
-            if ( labelMultiSet != null && labelMultiSet.has( labels, i, propertyKey ) )
+            EntityMultiSet first = byFirstEntityToken.get( toIntExact( entityTokenIds[i] ) );
+            if ( first != null && first.has( entityTokenIds, i, propertyKey ) )
             {
                 return true;
             }
@@ -95,20 +95,20 @@ public class LabelPropertyMultiSet<T extends SchemaDescriptorSupplier>
         return false;
     }
 
-    boolean has( int label )
+    boolean has( int entityTokenId )
     {
-        return !byAnyLabel.isEmpty() && byAnyLabel.containsKey( label );
+        return !byAnyEntityToken.isEmpty() && byAnyEntityToken.containsKey( entityTokenId );
     }
 
     public void add( T schemaDescriptor )
     {
         int[] entityTokenIds = schemaDescriptor.schema().getEntityTokenIds();
         int firstEntityTokenId = entityTokenIds[0];
-        byFirstLabel.getIfAbsentPut( firstEntityTokenId, LabelMultiSet::new ).add( schemaDescriptor, entityTokenIds, 0 );
+        byFirstEntityToken.getIfAbsentPut( firstEntityTokenId, EntityMultiSet::new ).add( schemaDescriptor, entityTokenIds, 0 );
 
         for ( int entityTokenId : entityTokenIds )
         {
-            byAnyLabel.getIfAbsentPut( entityTokenId, PropertyMultiSet::new ).add( schemaDescriptor );
+            byAnyEntityToken.getIfAbsentPut( entityTokenId, PropertyMultiSet::new ).add( schemaDescriptor );
         }
     }
 
@@ -116,65 +116,65 @@ public class LabelPropertyMultiSet<T extends SchemaDescriptorSupplier>
     {
         int[] entityTokenIds = schemaDescriptor.schema().getEntityTokenIds();
         int firstEntityTokenId = entityTokenIds[0];
-        LabelMultiSet labelMultiSet = byFirstLabel.get( firstEntityTokenId );
-        if ( labelMultiSet != null && labelMultiSet.remove( schemaDescriptor, entityTokenIds, 0 ) )
+        EntityMultiSet first = byFirstEntityToken.get( firstEntityTokenId );
+        if ( first != null && first.remove( schemaDescriptor, entityTokenIds, 0 ) )
         {
-            byFirstLabel.remove( firstEntityTokenId );
+            byFirstEntityToken.remove( firstEntityTokenId );
         }
 
         for ( int entityTokenId : entityTokenIds )
         {
-            PropertyMultiSet propertyMultiSet = byAnyLabel.get( entityTokenId );
-            if ( propertyMultiSet != null && propertyMultiSet.remove( schemaDescriptor ) )
+            PropertyMultiSet any = byAnyEntityToken.get( entityTokenId );
+            if ( any != null && any.remove( schemaDescriptor ) )
             {
-                byAnyLabel.remove( entityTokenId );
+                byAnyEntityToken.remove( entityTokenId );
             }
         }
     }
 
-    void matchingDescriptorsForCompleteListOfProperties( Collection<T> into, long[] labels, int[] sortedProperties )
+    void matchingDescriptorsForCompleteListOfProperties( Collection<T> into, long[] entityTokenIds, int[] sortedProperties )
     {
-        for ( int i = 0; i < labels.length; i++ )
+        for ( int i = 0; i < entityTokenIds.length; i++ )
         {
-            int label = (int) labels[i];
-            LabelMultiSet labelMultiSet = byFirstLabel.get( label );
-            if ( labelMultiSet != null )
+            int entityTokenId = toIntExact( entityTokenIds[i] );
+            EntityMultiSet first = byFirstEntityToken.get( entityTokenId );
+            if ( first != null )
             {
-                labelMultiSet.collectForCompleteListOfProperties( into, labels, i, sortedProperties );
+                first.collectForCompleteListOfProperties( into, entityTokenIds, i, sortedProperties );
             }
         }
     }
 
-    void matchingDescriptorsForPartialListOfProperties( Collection<T> into, long[] labels, int[] sortedProperties )
+    void matchingDescriptorsForPartialListOfProperties( Collection<T> into, long[] entityTokenIds, int[] sortedProperties )
     {
-        for ( int i = 0; i < labels.length; i++ )
+        for ( int i = 0; i < entityTokenIds.length; i++ )
         {
-            int label = (int) labels[i];
-            LabelMultiSet labelMultiSet = byFirstLabel.get( label );
-            if ( labelMultiSet != null )
+            int entityTokenId = toIntExact( entityTokenIds[i] );
+            EntityMultiSet first = byFirstEntityToken.get( entityTokenId );
+            if ( first != null )
             {
-                labelMultiSet.collectForPartialListOfProperties( into, labels, i, sortedProperties );
+                first.collectForPartialListOfProperties( into, entityTokenIds, i, sortedProperties );
             }
         }
     }
 
-    void matchingDescriptors( Collection<T> into, long[] labels )
+    void matchingDescriptors( Collection<T> into, long[] entityTokenIds )
     {
-        for ( int i = 0; i < labels.length; i++ )
+        for ( int i = 0; i < entityTokenIds.length; i++ )
         {
-            int label = (int) labels[i];
-            LabelMultiSet set = byFirstLabel.get( label );
+            int entityTokenId = toIntExact( entityTokenIds[i] );
+            EntityMultiSet set = byFirstEntityToken.get( entityTokenId );
             if ( set != null )
             {
-                set.collectAll( into, labels, i );
+                set.collectAll( into, entityTokenIds, i );
             }
         }
     }
 
-    private class LabelMultiSet
+    private class EntityMultiSet
     {
         private final PropertyMultiSet propertyMultiSet = new PropertyMultiSet();
-        private final MutableIntObjectMap<LabelMultiSet> next = IntObjectMaps.mutable.empty();
+        private final MutableIntObjectMap<EntityMultiSet> next = IntObjectMaps.mutable.empty();
 
         void add( T schemaDescriptor, int[] entityTokenIds, int cursor )
         {
@@ -185,7 +185,7 @@ public class LabelPropertyMultiSet<T extends SchemaDescriptorSupplier>
             else
             {
                 int nextEntityTokenId = entityTokenIds[++cursor];
-                next.getIfAbsentPut( nextEntityTokenId, LabelMultiSet::new ).add( schemaDescriptor, entityTokenIds, cursor );
+                next.getIfAbsentPut( nextEntityTokenId, EntityMultiSet::new ).add( schemaDescriptor, entityTokenIds, cursor );
             }
         }
 
@@ -198,7 +198,7 @@ public class LabelPropertyMultiSet<T extends SchemaDescriptorSupplier>
             else
             {
                 int nextEntityTokenId = entityTokenIds[++cursor];
-                LabelMultiSet nextSet = next.get( nextEntityTokenId );
+                EntityMultiSet nextSet = next.get( nextEntityTokenId );
                 if ( nextSet != null && nextSet.remove( schemaDescriptor, entityTokenIds, cursor ) )
                 {
                     next.remove( nextEntityTokenId );
@@ -207,61 +207,61 @@ public class LabelPropertyMultiSet<T extends SchemaDescriptorSupplier>
             return propertyMultiSet.isEmpty() && next.isEmpty();
         }
 
-        void collectForCompleteListOfProperties( Collection<T> into, long[] labels, int labelsCursor, int[] sortedProperties )
+        void collectForCompleteListOfProperties( Collection<T> into, long[] entityTokenIds, int entityTokenCursor, int[] sortedProperties )
         {
             propertyMultiSet.collectForCompleteListOfProperties( into, sortedProperties );
             // TODO potentially optimize be checking if there even are any next at all before looping? Same thing could be done in PropertyMultiSet
-            for ( int i = labelsCursor + 1; i < labels.length; i++ )
+            for ( int i = entityTokenCursor + 1; i < entityTokenIds.length; i++ )
             {
-                int nextLabel = (int) labels[i];
-                LabelMultiSet nextLabelMultiSet = next.get( nextLabel );
-                if ( nextLabelMultiSet != null )
+                int nextEntityTokenId = toIntExact( entityTokenIds[i] );
+                EntityMultiSet nextSet = next.get( nextEntityTokenId );
+                if ( nextSet != null )
                 {
-                    nextLabelMultiSet.collectForCompleteListOfProperties( into, labels, i, sortedProperties );
+                    nextSet.collectForCompleteListOfProperties( into, entityTokenIds, i, sortedProperties );
                 }
             }
         }
 
-        void collectForPartialListOfProperties( Collection<T> into, long[] labels, int labelsCursor, int[] sortedProperties )
+        void collectForPartialListOfProperties( Collection<T> into, long[] entityTokenIds, int entityTokenCursor, int[] sortedProperties )
         {
             propertyMultiSet.collectForPartialListOfProperties( into, sortedProperties );
             // TODO potentially optimize be checking if there even are any next at all before looping? Same thing could be done in PropertyMultiSet
-            for ( int i = labelsCursor + 1; i < labels.length; i++ )
+            for ( int i = entityTokenCursor + 1; i < entityTokenIds.length; i++ )
             {
-                int nextLabel = (int) labels[i];
-                LabelMultiSet nextLabelMultiSet = next.get( nextLabel );
-                if ( nextLabelMultiSet != null )
+                int nextEntityTokenId = toIntExact( entityTokenIds[i] );
+                EntityMultiSet nextSet = next.get( nextEntityTokenId );
+                if ( nextSet != null )
                 {
-                    nextLabelMultiSet.collectForPartialListOfProperties( into, labels, i, sortedProperties );
+                    nextSet.collectForPartialListOfProperties( into, entityTokenIds, i, sortedProperties );
                 }
             }
         }
 
-        void collectAll( Collection<T> into, long[] labels, int labelsCursor )
+        void collectAll( Collection<T> into, long[] entityTokenIds, int entityTokenCursor )
         {
             propertyMultiSet.collectAll( into );
-            for ( int i = labelsCursor + 1; i < labels.length; i++ )
+            for ( int i = entityTokenCursor + 1; i < entityTokenIds.length; i++ )
             {
-                int nextLabel = (int) labels[i];
-                LabelMultiSet nextLabelMultiSet = next.get( nextLabel );
-                if ( nextLabelMultiSet != null )
+                int nextEntityTokenId = toIntExact( entityTokenIds[i] );
+                EntityMultiSet nextSet = next.get( nextEntityTokenId );
+                if ( nextSet != null )
                 {
-                    nextLabelMultiSet.collectAll( into, labels, i );
+                    nextSet.collectAll( into, entityTokenIds, i );
                 }
             }
         }
 
-        boolean has( long[] labels, int labelsCursor, int propertyKey )
+        boolean has( long[] entityTokenIds, int entityTokenCursor, int propertyKey )
         {
             if ( propertyMultiSet.has( propertyKey ) )
             {
                 return true;
             }
-            for ( int i = labelsCursor + 1; i < labels.length; i++ )
+            for ( int i = entityTokenCursor + 1; i < entityTokenIds.length; i++ )
             {
-                int nextLabel = (int) labels[i];
-                LabelMultiSet nextLabelMultiSet = next.get( nextLabel );
-                if ( nextLabelMultiSet != null && nextLabelMultiSet.has( labels, i, propertyKey ) )
+                int nextEntityTokenId = toIntExact( entityTokenIds[i] );
+                EntityMultiSet nextSet = next.get( nextEntityTokenId );
+                if ( nextSet != null && nextSet.has( entityTokenIds, i, propertyKey ) )
                 {
                     return true;
                 }

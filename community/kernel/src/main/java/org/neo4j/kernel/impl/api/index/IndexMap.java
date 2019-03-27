@@ -54,10 +54,10 @@ public final class IndexMap implements Cloneable
     private final MutableLongObjectMap<IndexBackedConstraintDescriptor> uniquenessConstraintsById;
     private final Map<SchemaDescriptor,IndexProxy> indexesByDescriptor;
     private final MutableObjectLongMap<SchemaDescriptor> indexIdsByDescriptor;
-    private final LabelPropertyMultiSet<SchemaDescriptor> descriptorsByLabelThenProperty;
-    private final LabelPropertyMultiSet<SchemaDescriptor> descriptorsByReltypeThenProperty;
-    private final LabelPropertyMultiSet<IndexBackedConstraintDescriptor> constraintsByLabelThenProperty;
-    private final LabelPropertyMultiSet<IndexBackedConstraintDescriptor> constraintsByRelTypeThenProperty;
+    private final SchemaDescriptorLookupSet<SchemaDescriptor> descriptorsByLabelThenProperty;
+    private final SchemaDescriptorLookupSet<SchemaDescriptor> descriptorsByReltypeThenProperty;
+    private final SchemaDescriptorLookupSet<IndexBackedConstraintDescriptor> constraintsByLabelThenProperty;
+    private final SchemaDescriptorLookupSet<IndexBackedConstraintDescriptor> constraintsByRelTypeThenProperty;
 
     public IndexMap()
     {
@@ -74,14 +74,14 @@ public final class IndexMap implements Cloneable
         this.indexesByDescriptor = indexesByDescriptor;
         this.indexIdsByDescriptor = indexIdsByDescriptor;
         this.uniquenessConstraintsById = uniquenessConstraintsById;
-        this.descriptorsByLabelThenProperty = new LabelPropertyMultiSet<>();
-        this.descriptorsByReltypeThenProperty = new LabelPropertyMultiSet<>();
+        this.descriptorsByLabelThenProperty = new SchemaDescriptorLookupSet<>();
+        this.descriptorsByReltypeThenProperty = new SchemaDescriptorLookupSet<>();
         for ( SchemaDescriptor schema : indexesByDescriptor.keySet() )
         {
             addDescriptorToLookups( schema );
         }
-        this.constraintsByLabelThenProperty = new LabelPropertyMultiSet<>();
-        this.constraintsByRelTypeThenProperty = new LabelPropertyMultiSet<>();
+        this.constraintsByLabelThenProperty = new SchemaDescriptorLookupSet<>();
+        this.constraintsByRelTypeThenProperty = new SchemaDescriptorLookupSet<>();
         for ( IndexBackedConstraintDescriptor constraint : uniquenessConstraintsById.values() )
         {
             addConstraintToLookups( constraint );
@@ -154,7 +154,7 @@ public final class IndexMap implements Cloneable
         }
     }
 
-    private LabelPropertyMultiSet<IndexBackedConstraintDescriptor> selectConstraintsByEntityType( EntityType entityType )
+    private SchemaDescriptorLookupSet<IndexBackedConstraintDescriptor> selectConstraintsByEntityType( EntityType entityType )
     {
         switch ( entityType )
         {
@@ -167,7 +167,7 @@ public final class IndexMap implements Cloneable
         }
     }
 
-    private LabelPropertyMultiSet<SchemaDescriptor> selectIndexesByEntityType( EntityType entityType )
+    private SchemaDescriptorLookupSet<SchemaDescriptor> selectIndexesByEntityType( EntityType entityType )
     {
         switch ( entityType )
         {
@@ -233,7 +233,7 @@ public final class IndexMap implements Cloneable
      * @param propertyListIsComplete whether or not the property list is complete. For CREATE/DELETE the list is complete, but may not be for UPDATEs.
      * @return set of SchemaDescriptors describing the potentially affected indexes
      */
-    private <T extends SchemaDescriptorSupplier> Set<T> getRelatedDescriptors( LabelPropertyMultiSet<T> set, long[] changedLabels, long[] unchangedLabels,
+    private <T extends SchemaDescriptorSupplier> Set<T> getRelatedDescriptors( SchemaDescriptorLookupSet<T> set, long[] changedLabels, long[] unchangedLabels,
             int[] sortedProperties, boolean propertyListIsComplete )
     {
         if ( set.isEmpty() )
