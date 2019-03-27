@@ -32,6 +32,7 @@ import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -173,7 +174,7 @@ public class CheckConsistencyCommand implements AdminCommand
         {
             DatabaseLayout databaseLayout = backupPath
                             .map( Path::toFile ).map( DatabaseLayout::of )
-                            .orElse( DatabaseLayout.of( config.get( databases_root_path ), database ) );
+                            .orElse( DatabaseLayout.of( config.get( databases_root_path ), LayoutConfig.of( config ), database ) );
             checkDbState( databaseLayout, config );
             ZoneId logTimeZone = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
             // Only output progress indicator if a console receives the output

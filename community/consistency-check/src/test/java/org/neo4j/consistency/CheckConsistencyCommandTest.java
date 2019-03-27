@@ -35,6 +35,7 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.Usage;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -71,8 +72,9 @@ class CheckConsistencyCommandTest
         File databasesFolder = getDatabasesFolder( homeDir );
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), consistencyCheckService );
+        Config config = Config.builder().withHome( homeDir ).build();
 
-        DatabaseLayout databaseLayout = DatabaseLayout.of( databasesFolder, "mydb" );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( databasesFolder, LayoutConfig.of( config ), "mydb" );
 
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
@@ -97,8 +99,9 @@ class CheckConsistencyCommandTest
         File databasesFolder = getDatabasesFolder( homeDir );
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), consistencyCheckService );
+        Config config = Config.builder().withHome( homeDir ).build();
 
-        DatabaseLayout databaseLayout = DatabaseLayout.of( databasesFolder, "mydb" );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( databasesFolder, LayoutConfig.of( config ), "mydb" );
 
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
@@ -123,7 +126,8 @@ class CheckConsistencyCommandTest
         File databasesFolder = getDatabasesFolder( homeDir );
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), consistencyCheckService );
-        DatabaseLayout databaseLayout = DatabaseLayout.of( databasesFolder, "mydb" );
+        Config config = Config.builder().withHome( homeDir ).build();
+        DatabaseLayout databaseLayout = DatabaseLayout.of( databasesFolder, LayoutConfig.of( config ), "mydb" );
 
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
