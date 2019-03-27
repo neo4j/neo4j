@@ -30,15 +30,15 @@ import java.util.Set;
 import static java.lang.Math.toIntExact;
 
 /**
- * Collects and provides efficient access to {@link SchemaDescriptor}, based on entity token ids and partial or full list of properties.
- * The descriptors are first grouped by entity token id and then for a specific entity token id they are further grouped by property id.
- * The property grouping works on sorted property key id lists as to minimize deduplication when selecting for composite indexes.
+ * Collects and provides efficient access to {@link SchemaDescriptor}, based on complete list of entity tokens and partial or complete list of property keys.
+ * The descriptors are first grouped by entity token and then further grouped by property key. The grouping works on sorted token lists
+ * to minimize deduplication when doing lookups, especially for composite and multi-entity descriptors.
  * <p>
- * The selection works efficiently when providing complete list of properties, but will have to resort to some amount of over-selection and union
- * when caller can only provide partial list of properties. The most efficient linking starts from entity token ids and traverses through the property key ids
- * of the schema descriptor (single or multiple for composite index) in sorted order where each property key id (for this entity token) links to the next
- * property key. From all leaves along the way the descriptors can be collected. This way only the actually matching indexes will be collected
- * instead of collecting all indexes matching any property key and doing a union of those. Example:
+ * The selection works best when providing a complete list of property keys and will have to resort to some amount of over-selection
+ * when caller can only provide partial list of property keys. Selection starts by traversing through the entity tokens, and for each
+ * found leaf continues traversing through the property keys. When adding descriptors the token lists are sorted and token lists passed
+ * into lookup methods also have to be sorted. This way the internal data structure can be represented as chains of tokens and traversal only
+ * needs to go through the token chains in one order (the sorted order). A visualization of the internal data structure of added descriptors:
  *
  * <pre>
  *     Legend: ids inside [] are entity tokens, ids inside () are properties
@@ -49,10 +49,14 @@ import static java.lang.Math.toIntExact;
  *     D: [0](3, 4, 7)
  *     E: [1](7)
  *     F: [1](5, 6)
- *     TODO add multi-entity descriptors
+ *     G: [0, 1](3, 4)
+ *     H: [1, 0](3)
  *
  *     Will result in a data structure (for the optimized path):
  *     [0]
+ *        -> [1]
+ *           -> (3): H
+ *              -> (4): G
  *        -> (3)
  *           -> (4): C
  *              -> (7): A, D
@@ -69,18 +73,30 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
     private final MutableIntObjectMap<EntityMultiSet> byFirstEntityToken = IntObjectMaps.mutable.empty();
     private final MutableIntObjectMap<PropertyMultiSet> byAnyEntityToken = IntObjectMaps.mutable.empty();
 
+    /**
+     * @return whether or not this set is empty, i.e. {@code true} if no descriptors have been added.
+     */
     boolean isEmpty()
     {
         return byFirstEntityToken.isEmpty();
     }
 
+    /**
+     * Cheap way of finding out whether or not there are any descriptors matching the set of entity token ids and the property key id.
+     *
+     * @param entityTokenIds complete list of entity token ids for the entity to check.
+     * @param propertyKey a property key id to check.
+     * @return {@code true} if there are one or more descriptors matching the given tokens.
+     */
     public boolean has( long[] entityTokenIds, int propertyKey )
     {
-        if ( byFirstEntityToken.isEmpty() )
+        // Abort right away if there are no descriptors at all
+        if ( isEmpty() )
         {
             return false;
         }
 
+        // Check if there are any descriptors that matches any of the first (or only) entity token
         for ( int i = 0; i < entityTokenIds.length; i++ )
         {
             EntityMultiSet first = byFirstEntityToken.get( toIntExact( entityTokenIds[i] ) );
@@ -92,14 +108,25 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
         return false;
     }
 
+    /**
+     * Cheap way of finding out whether or not there are any descriptors matching the given entity token id.
+     *
+     * @param entityTokenId entity token id to check.
+     * @return {@code true} if there are one or more descriptors matching the given entity token.
+     */
     public boolean has( int entityTokenId )
     {
-        return !byAnyEntityToken.isEmpty() && byAnyEntityToken.containsKey( entityTokenId );
+        return byAnyEntityToken.containsKey( entityTokenId );
     }
 
+    /**
+     * Adds the given descriptor to this set so that it can be looked up from any of the lookup methods.
+     *
+     * @param schemaDescriptor the descriptor to add.
+     */
     public void add( T schemaDescriptor )
     {
-        int[] entityTokenIds = schemaDescriptor.schema().getEntityTokenIds();
+        int[] entityTokenIds = sortedEntityTokenIds( schemaDescriptor.schema() );
         int firstEntityTokenId = entityTokenIds[0];
         byFirstEntityToken.getIfAbsentPut( firstEntityTokenId, EntityMultiSet::new ).add( schemaDescriptor, entityTokenIds, 0 );
 
@@ -109,9 +136,15 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
         }
     }
 
+    /**
+     * Removes the given descriptor from this set so that it can no longer be looked up from the lookup methods.
+     * This operation is idempotent.
+     *
+     * @param schemaDescriptor the descriptor to remove.
+     */
     public void remove( T schemaDescriptor )
     {
-        int[] entityTokenIds = schemaDescriptor.schema().getEntityTokenIds();
+        int[] entityTokenIds = sortedEntityTokenIds( schemaDescriptor.schema() );
         int firstEntityTokenId = entityTokenIds[0];
         EntityMultiSet first = byFirstEntityToken.get( firstEntityTokenId );
         if ( first != null && first.remove( schemaDescriptor, entityTokenIds, 0 ) )
@@ -129,6 +162,14 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
         }
     }
 
+    /**
+     * Collects descriptors matching the given complete list of entity tokens and property key tokens.
+     * I.e. all tokens of the matching descriptors can be found in the given lists of tokens.
+     *
+     * @param into {@link Collection} to add matching descriptors into.
+     * @param entityTokenIds complete and sorted array of entity token ids for the entity.
+     * @param sortedProperties complete and sorted array of property key token ids for the entity.
+     */
     public void matchingDescriptorsForCompleteListOfProperties( Collection<T> into, long[] entityTokenIds, int[] sortedProperties )
     {
         for ( int i = 0; i < entityTokenIds.length; i++ )
@@ -142,6 +183,17 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
         }
     }
 
+    /**
+     * Collects descriptors matching the given complete list of entity tokens, but only partial list of property key tokens.
+     * I.e. all entity tokens of the matching descriptors can be found in the given lists of tokens,
+     * but some matching descriptors may have other property key tokens in addition to those found in the given properties of the entity.
+     * This is for a scenario where the complete list of property key tokens isn't known when calling this method and may
+     * collect additional descriptors that in the end isn't relevant for the specific entity.
+     *
+     * @param into {@link Collection} to add matching descriptors into.
+     * @param entityTokenIds complete and sorted array of entity token ids for the entity.
+     * @param sortedProperties complete and sorted array of property key token ids for the entity.
+     */
     public void matchingDescriptorsForPartialListOfProperties( Collection<T> into, long[] entityTokenIds, int[] sortedProperties )
     {
         for ( int i = 0; i < entityTokenIds.length; i++ )
@@ -155,6 +207,12 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
         }
     }
 
+    /**
+     * Collects descriptors matching the given complete list of entity tokens.
+     *
+     * @param into {@link Collection} to add matching descriptors into.
+     * @param entityTokenIds complete and sorted array of entity token ids for the entity.
+     */
     public void matchingDescriptors( Collection<T> into, long[] entityTokenIds )
     {
         for ( int i = 0; i < entityTokenIds.length; i++ )
@@ -207,14 +265,17 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
         void collectForCompleteListOfProperties( Collection<T> into, long[] entityTokenIds, int entityTokenCursor, int[] sortedProperties )
         {
             propertyMultiSet.collectForCompleteListOfProperties( into, sortedProperties );
-            // TODO potentially optimize be checking if there even are any next at all before looping? Same thing could be done in PropertyMultiSet
-            for ( int i = entityTokenCursor + 1; i < entityTokenIds.length; i++ )
+
+            if ( !next.isEmpty() )
             {
-                int nextEntityTokenId = toIntExact( entityTokenIds[i] );
-                EntityMultiSet nextSet = next.get( nextEntityTokenId );
-                if ( nextSet != null )
+                for ( int i = entityTokenCursor + 1; i < entityTokenIds.length; i++ )
                 {
-                    nextSet.collectForCompleteListOfProperties( into, entityTokenIds, i, sortedProperties );
+                    int nextEntityTokenId = toIntExact( entityTokenIds[i] );
+                    EntityMultiSet nextSet = next.get( nextEntityTokenId );
+                    if ( nextSet != null )
+                    {
+                        nextSet.collectForCompleteListOfProperties( into, entityTokenIds, i, sortedProperties );
+                    }
                 }
             }
         }
@@ -222,14 +283,17 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
         void collectForPartialListOfProperties( Collection<T> into, long[] entityTokenIds, int entityTokenCursor, int[] sortedProperties )
         {
             propertyMultiSet.collectForPartialListOfProperties( into, sortedProperties );
-            // TODO potentially optimize be checking if there even are any next at all before looping? Same thing could be done in PropertyMultiSet
-            for ( int i = entityTokenCursor + 1; i < entityTokenIds.length; i++ )
+
+            if ( !next.isEmpty() )
             {
-                int nextEntityTokenId = toIntExact( entityTokenIds[i] );
-                EntityMultiSet nextSet = next.get( nextEntityTokenId );
-                if ( nextSet != null )
+                for ( int i = entityTokenCursor + 1; i < entityTokenIds.length; i++ )
                 {
-                    nextSet.collectForPartialListOfProperties( into, entityTokenIds, i, sortedProperties );
+                    int nextEntityTokenId = toIntExact( entityTokenIds[i] );
+                    EntityMultiSet nextSet = next.get( nextEntityTokenId );
+                    if ( nextSet != null )
+                    {
+                        nextSet.collectForPartialListOfProperties( into, entityTokenIds, i, sortedProperties );
+                    }
                 }
             }
         }
@@ -237,13 +301,17 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
         void collectAll( Collection<T> into, long[] entityTokenIds, int entityTokenCursor )
         {
             propertyMultiSet.collectAll( into );
-            for ( int i = entityTokenCursor + 1; i < entityTokenIds.length; i++ )
+
+            if ( !next.isEmpty() )
             {
-                int nextEntityTokenId = toIntExact( entityTokenIds[i] );
-                EntityMultiSet nextSet = next.get( nextEntityTokenId );
-                if ( nextSet != null )
+                for ( int i = entityTokenCursor + 1; i < entityTokenIds.length; i++ )
                 {
-                    nextSet.collectAll( into, entityTokenIds, i );
+                    int nextEntityTokenId = toIntExact( entityTokenIds[i] );
+                    EntityMultiSet nextSet = next.get( nextEntityTokenId );
+                    if ( nextSet != null )
+                    {
+                        nextSet.collectAll( into, entityTokenIds, i );
+                    }
                 }
             }
         }
@@ -254,19 +322,47 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
             {
                 return true;
             }
-            for ( int i = entityTokenCursor + 1; i < entityTokenIds.length; i++ )
+            if ( !next.isEmpty() )
             {
-                int nextEntityTokenId = toIntExact( entityTokenIds[i] );
-                EntityMultiSet nextSet = next.get( nextEntityTokenId );
-                if ( nextSet != null && nextSet.has( entityTokenIds, i, propertyKey ) )
+                for ( int i = entityTokenCursor + 1; i < entityTokenIds.length; i++ )
                 {
-                    return true;
+                    int nextEntityTokenId = toIntExact( entityTokenIds[i] );
+                    EntityMultiSet nextSet = next.get( nextEntityTokenId );
+                    if ( nextSet != null && nextSet.has( entityTokenIds, i, propertyKey ) )
+                    {
+                        return true;
+                    }
                 }
             }
             return false;
         }
     }
 
+    /**
+     * A starting point for traversal of property key tokens from an entity token leaf.
+     * Contains starting points of property key ids chains as well as lookup by any property in the chain.
+     * Roughly like this:
+     *
+     * <pre>
+     *     Descriptors:
+     *     A: [0](5, 7)
+     *     B: [0, 1](5, 4)
+     *     C: [0, 1](4)
+     *     D: [1, 0](6)
+     *
+     *     Data structure:
+     *     [0]
+     *        -> [1]
+     *           -> (4): C
+     *              -> (5): B
+     *           -> (6): D
+     *        -> (5)
+     *           -> (7): A
+     * </pre>
+     *
+     * In the above layout the [0] and [0] -> [1] are entity token "leaves" which each have a {@link PropertyMultiSet},
+     * constituting the flip in the traversal between entity token chain and property chain.
+     */
     private class PropertyMultiSet
     {
         private final Set<T> descriptors = new HashSet<>();
@@ -350,17 +446,6 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
             descriptors.addAll( this.descriptors );
         }
 
-        private int[] sortedPropertyKeyIds( SchemaDescriptor schemaDescriptor )
-        {
-            int[] propertyKeyIds = schemaDescriptor.getPropertyIds();
-            if ( propertyKeyIds.length > 1 )
-            {
-                propertyKeyIds = propertyKeyIds.clone();
-                Arrays.sort( propertyKeyIds );
-            }
-            return propertyKeyIds;
-        }
-
         boolean has( int propertyKey )
         {
             return byAnyProperty.containsKey( propertyKey );
@@ -372,6 +457,12 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
         }
     }
 
+    /**
+     * A single item in a property key chain. Sort of a subset, or a more specific version, of {@link PropertyMultiSet}.
+     * It has a set containing descriptors that have their property chain end with this property key token and next pointers
+     * to other property key tokens in known chains, but no way of looking up descriptors by any part of the chain,
+     * like {@link PropertyMultiSet} has.
+     */
     private class PropertySet
     {
         private final Set<T> fullDescriptors = new HashSet<>();
@@ -417,14 +508,38 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
         void collectForCompleteListOfProperties( Collection<T> descriptors, int[] sortedProperties, int cursor )
         {
             descriptors.addAll( fullDescriptors );
-            for ( int i = cursor + 1; i < sortedProperties.length; i++ )
+            if ( !next.isEmpty() )
             {
-                PropertySet nextSet = next.get( sortedProperties[i] );
-                if ( nextSet != null )
+                for ( int i = cursor + 1; i < sortedProperties.length; i++ )
                 {
-                    nextSet.collectForCompleteListOfProperties( descriptors, sortedProperties, i );
+                    PropertySet nextSet = next.get( sortedProperties[i] );
+                    if ( nextSet != null )
+                    {
+                        nextSet.collectForCompleteListOfProperties( descriptors, sortedProperties, i );
+                    }
                 }
             }
         }
+    }
+
+    private static int[] sortedPropertyKeyIds( SchemaDescriptor schemaDescriptor )
+    {
+        return sortedTokenIds( schemaDescriptor.getPropertyIds() );
+    }
+
+    private static int[] sortedEntityTokenIds( SchemaDescriptor schemaDescriptor )
+    {
+        return sortedTokenIds( schemaDescriptor.getEntityTokenIds() );
+    }
+
+    private static int[] sortedTokenIds( int[] tokenIds )
+    {
+        if ( tokenIds.length > 1 )
+        {
+            // Clone it because we don't know if the array was an internal array that the descriptor handed out
+            tokenIds = tokenIds.clone();
+            Arrays.sort( tokenIds );
+        }
+        return tokenIds;
     }
 }
