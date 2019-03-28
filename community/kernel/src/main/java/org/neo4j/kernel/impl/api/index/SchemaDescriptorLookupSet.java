@@ -47,27 +47,27 @@ import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySche
  *
  * <pre>
  *     Legend: ids inside [] are entity tokens, ids inside () are properties
- *     Descriptors
+ *     Single-entity token descriptors
  *     A: [0](4, 7, 3)
  *     B: [0](7, 4)
  *     C: [0](3, 4)
  *     D: [0](3, 4, 7)
  *     E: [1](7)
  *     F: [1](5, 6)
+ *     Multi-entity token descriptors (matches are made on any of the entity/property key tokens)
  *     G: [0, 1](3, 4)
  *     H: [1, 0](3)
  *
  *     Will result in a data structure (for the optimized path):
  *     [0]
- *        -> [1]
- *           -> (3): H
- *              -> (4): G
- *        -> (3)
+ *        -> (3): G, H
  *           -> (4): C
  *              -> (7): A, D
- *        -> (4)
+ *        -> (4): G
  *           -> (7): B
  *     [1]
+ *        -> (3): G, H
+ *        -> (4): G
  *        -> (5)
  *           -> (6): F
  *        -> (7): E
@@ -75,15 +75,14 @@ import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySche
  */
 public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
 {
-    private final MutableIntObjectMap<EntityMultiSet> byFirstEntityToken = IntObjectMaps.mutable.empty();
-    private final MutableIntObjectMap<PropertyMultiSet> byAnyEntityToken = IntObjectMaps.mutable.empty();
+    private final MutableIntObjectMap<PropertyMultiSet> byEntityToken = IntObjectMaps.mutable.empty();
 
     /**
      * @return whether or not this set is empty, i.e. {@code true} if no descriptors have been added.
      */
     boolean isEmpty()
     {
-        return byFirstEntityToken.isEmpty();
+        return byEntityToken.isEmpty();
     }
 
     /**
@@ -102,10 +101,10 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
         }
 
         // Check if there are any descriptors that matches any of the first (or only) entity token
-        for ( int i = 0; i < entityTokenIds.length; i++ )
+        for ( long entityTokenId : entityTokenIds )
         {
-            EntityMultiSet first = byFirstEntityToken.get( toIntExact( entityTokenIds[i] ) );
-            if ( first != null && first.has( entityTokenIds, i, propertyKey ) )
+            PropertyMultiSet set = byEntityToken.get( toIntExact( entityTokenId ) );
+            if ( set != null && set.has( propertyKey ) )
             {
                 return true;
             }
@@ -121,7 +120,7 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
      */
     boolean has( int entityTokenId )
     {
-        return byAnyEntityToken.containsKey( entityTokenId );
+        return byEntityToken.containsKey( entityTokenId );
     }
 
     /**
@@ -131,13 +130,9 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
      */
     public void add( T schemaDescriptor )
     {
-        int[] entityTokenIds = sortedEntityTokenIds( schemaDescriptor.schema() );
-        int firstEntityTokenId = entityTokenIds[0];
-        byFirstEntityToken.getIfAbsentPut( firstEntityTokenId, EntityMultiSet::new ).add( schemaDescriptor, entityTokenIds, 0 );
-
-        for ( int entityTokenId : entityTokenIds )
+        for ( int entityTokenId : schemaDescriptor.schema().getEntityTokenIds() )
         {
-            byAnyEntityToken.getIfAbsentPut( entityTokenId, PropertyMultiSet::new ).add( schemaDescriptor );
+            byEntityToken.getIfAbsentPut( entityTokenId, PropertyMultiSet::new ).add( schemaDescriptor );
         }
     }
 
@@ -149,20 +144,12 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
      */
     public void remove( T schemaDescriptor )
     {
-        int[] entityTokenIds = sortedEntityTokenIds( schemaDescriptor.schema() );
-        int firstEntityTokenId = entityTokenIds[0];
-        EntityMultiSet first = byFirstEntityToken.get( firstEntityTokenId );
-        if ( first != null && first.remove( schemaDescriptor, entityTokenIds, 0 ) )
+        for ( int entityTokenId : schemaDescriptor.schema().getEntityTokenIds() )
         {
-            byFirstEntityToken.remove( firstEntityTokenId );
-        }
-
-        for ( int entityTokenId : entityTokenIds )
-        {
-            PropertyMultiSet any = byAnyEntityToken.get( entityTokenId );
+            PropertyMultiSet any = byEntityToken.get( entityTokenId );
             if ( any != null && any.remove( schemaDescriptor ) )
             {
-                byAnyEntityToken.remove( entityTokenId );
+                byEntityToken.remove( entityTokenId );
             }
         }
     }
@@ -177,13 +164,12 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
      */
     void matchingDescriptorsForCompleteListOfProperties( Collection<T> into, long[] entityTokenIds, int[] sortedProperties )
     {
-        for ( int i = 0; i < entityTokenIds.length; i++ )
+        for ( long entityTokenId : entityTokenIds )
         {
-            int entityTokenId = toIntExact( entityTokenIds[i] );
-            EntityMultiSet first = byFirstEntityToken.get( entityTokenId );
+            PropertyMultiSet first = byEntityToken.get( toIntExact( entityTokenId ) );
             if ( first != null )
             {
-                first.collectForCompleteListOfProperties( into, entityTokenIds, i, sortedProperties );
+                first.collectForCompleteListOfProperties( into, sortedProperties );
             }
         }
     }
@@ -201,13 +187,12 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
      */
     void matchingDescriptorsForPartialListOfProperties( Collection<T> into, long[] entityTokenIds, int[] sortedProperties )
     {
-        for ( int i = 0; i < entityTokenIds.length; i++ )
+        for ( long entityTokenId : entityTokenIds )
         {
-            int entityTokenId = toIntExact( entityTokenIds[i] );
-            EntityMultiSet first = byFirstEntityToken.get( entityTokenId );
+            PropertyMultiSet first = byEntityToken.get( toIntExact( entityTokenId ) );
             if ( first != null )
             {
-                first.collectForPartialListOfProperties( into, entityTokenIds, i, sortedProperties );
+                first.collectForPartialListOfProperties( into, sortedProperties );
             }
         }
     }
@@ -220,153 +205,35 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
      */
     void matchingDescriptors( Collection<T> into, long[] entityTokenIds )
     {
-        for ( int i = 0; i < entityTokenIds.length; i++ )
+        for ( long entityTokenId : entityTokenIds )
         {
-            int entityTokenId = toIntExact( entityTokenIds[i] );
-            EntityMultiSet set = byFirstEntityToken.get( entityTokenId );
+            PropertyMultiSet set = byEntityToken.get( toIntExact( entityTokenId ) );
             if ( set != null )
             {
-                set.collectAll( into, entityTokenIds, i );
+                set.collectAll( into );
             }
-        }
-    }
-
-    private class EntityMultiSet
-    {
-        private final PropertyMultiSet propertyMultiSet = new PropertyMultiSet();
-        private final MutableIntObjectMap<EntityMultiSet> next = IntObjectMaps.mutable.empty();
-
-        void add( T schemaDescriptor, int[] entityTokenIds, int cursor )
-        {
-            if ( cursor == entityTokenIds.length - 1 )
-            {
-                propertyMultiSet.add( schemaDescriptor );
-            }
-            else
-            {
-                int nextEntityTokenId = entityTokenIds[++cursor];
-                next.getIfAbsentPut( nextEntityTokenId, EntityMultiSet::new ).add( schemaDescriptor, entityTokenIds, cursor );
-            }
-        }
-
-        boolean remove( T schemaDescriptor, int[] entityTokenIds, int cursor )
-        {
-            if ( cursor == entityTokenIds.length - 1 )
-            {
-                propertyMultiSet.remove( schemaDescriptor );
-            }
-            else
-            {
-                int nextEntityTokenId = entityTokenIds[++cursor];
-                EntityMultiSet nextSet = next.get( nextEntityTokenId );
-                if ( nextSet != null && nextSet.remove( schemaDescriptor, entityTokenIds, cursor ) )
-                {
-                    next.remove( nextEntityTokenId );
-                }
-            }
-            return propertyMultiSet.isEmpty() && next.isEmpty();
-        }
-
-        void collectForCompleteListOfProperties( Collection<T> into, long[] entityTokenIds, int entityTokenCursor, int[] sortedProperties )
-        {
-            propertyMultiSet.collectForCompleteListOfProperties( into, sortedProperties );
-
-            if ( !next.isEmpty() )
-            {
-                for ( int i = entityTokenCursor + 1; i < entityTokenIds.length; i++ )
-                {
-                    int nextEntityTokenId = toIntExact( entityTokenIds[i] );
-                    EntityMultiSet nextSet = next.get( nextEntityTokenId );
-                    if ( nextSet != null )
-                    {
-                        nextSet.collectForCompleteListOfProperties( into, entityTokenIds, i, sortedProperties );
-                    }
-                }
-            }
-        }
-
-        void collectForPartialListOfProperties( Collection<T> into, long[] entityTokenIds, int entityTokenCursor, int[] sortedProperties )
-        {
-            propertyMultiSet.collectForPartialListOfProperties( into, sortedProperties );
-
-            if ( !next.isEmpty() )
-            {
-                for ( int i = entityTokenCursor + 1; i < entityTokenIds.length; i++ )
-                {
-                    int nextEntityTokenId = toIntExact( entityTokenIds[i] );
-                    EntityMultiSet nextSet = next.get( nextEntityTokenId );
-                    if ( nextSet != null )
-                    {
-                        nextSet.collectForPartialListOfProperties( into, entityTokenIds, i, sortedProperties );
-                    }
-                }
-            }
-        }
-
-        void collectAll( Collection<T> into, long[] entityTokenIds, int entityTokenCursor )
-        {
-            propertyMultiSet.collectAll( into );
-
-            if ( !next.isEmpty() )
-            {
-                for ( int i = entityTokenCursor + 1; i < entityTokenIds.length; i++ )
-                {
-                    int nextEntityTokenId = toIntExact( entityTokenIds[i] );
-                    EntityMultiSet nextSet = next.get( nextEntityTokenId );
-                    if ( nextSet != null )
-                    {
-                        nextSet.collectAll( into, entityTokenIds, i );
-                    }
-                }
-            }
-        }
-
-        boolean has( long[] entityTokenIds, int entityTokenCursor, int propertyKey )
-        {
-            if ( propertyMultiSet.has( propertyKey ) )
-            {
-                return true;
-            }
-            if ( !next.isEmpty() )
-            {
-                for ( int i = entityTokenCursor + 1; i < entityTokenIds.length; i++ )
-                {
-                    int nextEntityTokenId = toIntExact( entityTokenIds[i] );
-                    EntityMultiSet nextSet = next.get( nextEntityTokenId );
-                    if ( nextSet != null && nextSet.has( entityTokenIds, i, propertyKey ) )
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
         }
     }
 
     /**
-     * A starting point for traversal of property key tokens from an entity token leaf.
-     * Contains starting points of property key ids chains as well as lookup by any property in the chain.
+     * A starting point for traversal of property key tokens. Contains starting points of property key id chains
+     * as well as lookup by any property in the chain.
      * Roughly like this:
      *
      * <pre>
      *     Descriptors:
-     *     A: [0](5, 7)
-     *     B: [0, 1](5, 4)
-     *     C: [0, 1](4)
-     *     D: [1, 0](6)
+     *     A: (5, 7)
+     *     B: (5, 4)
+     *     C: (4)
+     *     D: (6)
      *
      *     Data structure:
-     *     [0]
-     *        -> [1]
-     *           -> (4): C
-     *              -> (5): B
-     *           -> (6): D
-     *        -> (5)
-     *           -> (7): A
+     *     (4): C
+     *        -> (5): B
+     *     (5)
+     *        -> (7): A
+     *     (6): D
      * </pre>
-     *
-     * In the above layout the [0] and [0] -> [1] are entity token "leaves" which each have a {@link PropertyMultiSet},
-     * constituting the flip in the traversal between entity token chain and property chain.
      */
     private class PropertyMultiSet
     {
@@ -566,16 +433,7 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
 
     private static int[] sortedPropertyKeyIds( SchemaDescriptor schemaDescriptor )
     {
-        return sortedTokenIds( schemaDescriptor.getPropertyIds() );
-    }
-
-    private static int[] sortedEntityTokenIds( SchemaDescriptor schemaDescriptor )
-    {
-        return sortedTokenIds( schemaDescriptor.getEntityTokenIds() );
-    }
-
-    private static int[] sortedTokenIds( int[] tokenIds )
-    {
+        int[] tokenIds = schemaDescriptor.getPropertyIds();
         if ( tokenIds.length > 1 )
         {
             // Clone it because we don't know if the array was an internal array that the descriptor handed out
