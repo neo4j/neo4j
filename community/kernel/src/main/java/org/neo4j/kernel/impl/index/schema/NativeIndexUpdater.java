@@ -33,7 +33,7 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
 {
     private final KEY treeKey;
     private final VALUE treeValue;
-    private final ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger = new ConflictDetectingValueMerger<>( true );
+    private final ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetectingValueMerger = new ThrowingConflictDetector<>( true );
     private Writer<KEY,VALUE> writer;
 
     private boolean closed = true;
@@ -79,7 +79,7 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
     }
 
     static <KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> void processUpdate( KEY treeKey, VALUE treeValue,
-            IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
+            IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetectingValueMerger )
             throws IndexEntryConflictException
     {
         switch ( update.updateMode() )
@@ -109,7 +109,7 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
 
     private static <KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> void processChange( KEY treeKey, VALUE treeValue,
             IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer,
-            ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
+            ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetectingValueMerger )
             throws IndexEntryConflictException
     {
         // Remove old entry
@@ -124,7 +124,7 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
     }
 
     private static <KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> void processAdd( KEY treeKey, VALUE treeValue, IndexEntryUpdate<?> update,
-            Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
+            Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetectingValueMerger )
             throws IndexEntryConflictException
     {
         initializeKeyAndValueFromUpdate( treeKey, treeValue, update.getEntityId(), update.values() );

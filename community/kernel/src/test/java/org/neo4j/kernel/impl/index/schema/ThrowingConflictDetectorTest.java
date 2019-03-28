@@ -30,9 +30,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.ArrayUtil.array;
 
-public class ConflictDetectingValueMergerTest
+public class ThrowingConflictDetectorTest
 {
-    private final ConflictDetectingValueMerger<NumberIndexKey,NativeIndexValue> detector = new ConflictDetectingValueMerger<>( true );
+    private final ThrowingConflictDetector<NumberIndexKey,NativeIndexValue> detector = new ThrowingConflictDetector<>( true );
 
     @Test
     public void shouldReportConflictOnSameValueAndDifferentEntityIds()
