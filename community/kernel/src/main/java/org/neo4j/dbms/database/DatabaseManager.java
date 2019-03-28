@@ -106,17 +106,9 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
         {
             boolean leftIsSystem = isSystemDatabase( left );
             boolean rightIsSystem = isSystemDatabase( right );
-            if (  leftIsSystem && rightIsSystem )
+            if ( leftIsSystem || rightIsSystem )
             {
-                return 0;
-            }
-            else if ( leftIsSystem )
-            {
-                return -1;
-            }
-            else if ( rightIsSystem )
-            {
-                return 1;
+                return Boolean.compare( rightIsSystem, leftIsSystem );
             }
             else
             {

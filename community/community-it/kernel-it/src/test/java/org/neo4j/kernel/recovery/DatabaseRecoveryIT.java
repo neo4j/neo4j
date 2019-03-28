@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.recovery;
 
-import org.junit.Ignore;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 

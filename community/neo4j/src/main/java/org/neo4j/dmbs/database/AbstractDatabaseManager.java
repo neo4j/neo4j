@@ -57,7 +57,7 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
         this( globalModule, edition, log, graphDatabaseFacade, null );
     }
 
-    public AbstractDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Logger log, GraphDatabaseFacade graphDatabaseFacade,
+    protected AbstractDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Logger log, GraphDatabaseFacade graphDatabaseFacade,
             Comparator<String> databasesOrdering )
     {
         this.log = log;
