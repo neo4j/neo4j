@@ -74,6 +74,7 @@ class ExpressionStringifierIT extends CypherFunSuite with Parser with Expression
       "(:Label)--()" -> "(:Label)--()",
       "(:Label {prop:1})--()" -> "(:Label {prop: 1})--()",
       "()-[:Type {prop:1}]-()" -> "()-[:Type {prop: 1}]-()",
+      "EXISTS { MATCH (n)}" -> "EXISTS { MATCH (n) }",
       "EXISTS { MATCH (n) WHERE n.prop = 'f'}" -> "EXISTS { MATCH (n) WHERE n.prop = \"f\" }",
       "EXISTS { MATCH (n : Label)-[:HAS_REL]->(m) WHERE n.prop = 'f'}" -> "EXISTS { MATCH (n:Label)-[:HAS_REL]->(m) WHERE n.prop = \"f\" }"
     )
