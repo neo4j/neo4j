@@ -31,6 +31,8 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 
 import static java.lang.Math.toIntExact;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySchemaType.PARTIAL_ANY_TOKEN;
 
 /**
  * Collects and provides efficient access to {@link SchemaDescriptor}, based on complete list of entity tokens and partial or complete list of property keys.
@@ -377,8 +379,26 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
             // Add optimized path for when property list is fully known
             descriptors.add( schemaDescriptor );
             int[] propertyKeyIds = sortedPropertyKeyIds( schemaDescriptor.schema() );
-            int propertyKeyId = propertyKeyIds[0];
-            next.getIfAbsentPut( propertyKeyId, PropertySet::new ).add( schemaDescriptor, propertyKeyIds, 0 );
+            SchemaDescriptor.PropertySchemaType propertySchemaType = schemaDescriptor.schema().propertySchemaType();
+            if ( propertySchemaType == COMPLETE_ALL_TOKENS )
+            {
+                // Just add the first token id to the top level set
+                next.getIfAbsentPut( propertyKeyIds[0], PropertySet::new ).add( schemaDescriptor, propertyKeyIds, 0 );
+            }
+            else if ( propertySchemaType == PARTIAL_ANY_TOKEN )
+            {
+                // The internal data structure is built and optimized for when all property key tokens are required to match
+                // a particular descriptor. However to support the partial type, where any property key may match
+                // we will have to add such descriptors to all property key sets and pretend that each is the only one.
+                for ( int propertyKeyId : propertyKeyIds )
+                {
+                    next.getIfAbsentPut( propertyKeyId, PropertySet::new ).add( schemaDescriptor, new int[]{propertyKeyId}, 0 );
+                }
+            }
+            else
+            {
+                throw new UnsupportedOperationException( "Unknown property schema type " + propertySchemaType );
+            }
 
             // Add fall-back path for when property list is only partly known
             for ( int keyId : propertyKeyIds )
@@ -397,11 +417,30 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
             // Remove from the optimized path
             descriptors.remove( schemaDescriptor );
             int[] propertyKeyIds = sortedPropertyKeyIds( schemaDescriptor.schema() );
-            int propertyKeyId = propertyKeyIds[0];
-            PropertySet firstPropertySet = next.get( propertyKeyId );
-            if ( firstPropertySet != null && firstPropertySet.remove( schemaDescriptor, propertyKeyIds, 0 ) )
+            SchemaDescriptor.PropertySchemaType propertySchemaType = schemaDescriptor.schema().propertySchemaType();
+            if ( propertySchemaType == COMPLETE_ALL_TOKENS )
             {
-                next.remove( propertyKeyId );
+                int firstPropertyKeyId = propertyKeyIds[0];
+                PropertySet firstPropertySet = next.get( firstPropertyKeyId );
+                if ( firstPropertySet != null && firstPropertySet.remove( schemaDescriptor, propertyKeyIds, 0 ) )
+                {
+                    next.remove( firstPropertyKeyId );
+                }
+            }
+            else if ( propertySchemaType == PARTIAL_ANY_TOKEN )
+            {
+                for ( int propertyKeyId : propertyKeyIds )
+                {
+                    PropertySet propertySet = next.get( propertyKeyId );
+                    if ( propertySet != null && propertySet.remove( schemaDescriptor, new int[]{propertyKeyId}, 0 ) )
+                    {
+                        next.remove( propertyKeyId );
+                    }
+                }
+            }
+            else
+            {
+                throw new UnsupportedOperationException( "Unknown property schema type " + propertySchemaType );
             }
 
             // Remove from the fall-back path

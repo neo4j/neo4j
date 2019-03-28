@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 
 import org.neo4j.helpers.collection.Iterators;
@@ -42,6 +43,7 @@ import static java.util.Arrays.stream;
 import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
 
 public class SchemaDescriptorLookupSetTest
 {
@@ -212,8 +214,15 @@ public class SchemaDescriptorLookupSetTest
     private static Predicate<SchemaDescriptor> filterByEntityAndPropertyComplete( int[] entityTokenIds, int[] propertyKeyIds )
     {
         return descriptor ->
-                stream( descriptor.getEntityTokenIds() ).allMatch( indexEntityId -> contains( entityTokenIds, indexEntityId ) ) &&
-                stream( descriptor.getPropertyIds() ).allMatch( indexPropertyId -> contains( propertyKeyIds, indexPropertyId ) );
+        {
+            IntPredicate propertyKeyPredicate = indexPropertyId -> contains( propertyKeyIds, indexPropertyId );
+            boolean propertiesAccepted = descriptor.propertySchemaType() == COMPLETE_ALL_TOKENS
+                    // For typical indexes (COMPLETE_ALL_TOKENS) all must match
+                    ? stream( descriptor.getPropertyIds() ).allMatch( propertyKeyPredicate )
+                    // For multi-token (e.g. full-text) descriptors any property key match is to be considered a match
+                    : stream( descriptor.getPropertyIds() ).anyMatch( propertyKeyPredicate );
+            return stream( descriptor.getEntityTokenIds() ).allMatch( indexEntityId -> contains( entityTokenIds, indexEntityId ) ) && propertiesAccepted;
+        };
     }
 
     private static Predicate<SchemaDescriptor> filterByEntityAndPropertyPartial( int[] entityTokenIds, int[] propertyKeyIds )
