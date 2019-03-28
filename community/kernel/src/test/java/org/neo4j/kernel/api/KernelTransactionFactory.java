@@ -104,7 +104,7 @@ public class KernelTransactionFactory
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 
         transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit,
-                loginContext.authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 1L, EMBEDDED_CONNECTION );
+                loginContext.authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 1L, EMBEDDED_CONNECTION );
 
         return new Instances( transaction );
     }

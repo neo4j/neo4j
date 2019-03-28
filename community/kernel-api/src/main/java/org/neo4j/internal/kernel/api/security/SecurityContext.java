@@ -60,7 +60,7 @@ public class SecurityContext implements LoginContext
     }
 
     @Override
-    public SecurityContext authorize( PropertyKeyIdLookup propertyKeyIdLookup, String dbName )
+    public SecurityContext authorize( IdLookup idLookup, String dbName )
     {
         return this;
     }

@@ -40,6 +40,7 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.DefaultLabelSchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -235,8 +236,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     {
         try
         {
-            dbmsOperations().procedureCallDbms( -1, new AnyValue[0], dependencyResolver,
-                    AnonymousContext.none().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), EMPTY_RESOURCE_MANAGER, valueMapper );
+            dbmsOperations().procedureCallDbms( -1, new AnyValue[0], dependencyResolver, AnonymousContext.none().authorize(
+                    LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), EMPTY_RESOURCE_MANAGER, valueMapper );
             fail( "This should never get here" );
         }
         catch ( Exception e )

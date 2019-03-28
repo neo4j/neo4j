@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
@@ -49,7 +50,7 @@ public class SecurityContextDescriptionTest
         manager.init();
         manager.start();
         manager.newUser( "johan", password( "bar" ), false );
-        context = manager.login( authToken( "johan", "bar" ) ).authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+        context = manager.login( authToken( "johan", "bar" ) ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
     }
 
     @After

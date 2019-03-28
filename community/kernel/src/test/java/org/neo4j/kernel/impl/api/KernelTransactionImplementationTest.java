@@ -496,7 +496,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         transaction.close();
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
         transaction.initialize( 1, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
-                loginContext().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 1L, EMBEDDED_CONNECTION );
+                loginContext().authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 1L, EMBEDDED_CONNECTION );
 
         // THEN
         assertEquals( reuseCount + 1, transaction.getReuseCount() );
@@ -718,7 +718,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         Locks.Client locksClient = mock( Locks.Client.class );
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( locksClient );
         tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit,
-                loginContext().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 0L, EMBEDDED_CONNECTION );
+                loginContext().authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 0L, EMBEDDED_CONNECTION );
 
         assertTrue( tx.markForTermination( reuseCount, terminationReason ) );
 
@@ -739,7 +739,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         Locks.Client locksClient = mock( Locks.Client.class );
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( locksClient );
         tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit,
-                loginContext().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 0L, EMBEDDED_CONNECTION );
+                loginContext().authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 0L, EMBEDDED_CONNECTION );
 
         assertFalse( tx.markForTermination( nextReuseCount, terminationReason ) );
 
@@ -807,7 +807,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         {
             SimpleStatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
             tx.initialize( i + 10, i + 10, statementLocks, KernelTransaction.Type.implicit,
-                    loginContext().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 0L, EMBEDDED_CONNECTION );
+                    loginContext().authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 0L, EMBEDDED_CONNECTION );
             tx.close();
         }
     }

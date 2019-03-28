@@ -25,6 +25,7 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -54,7 +55,7 @@ public class AuthProceduresTest extends KernelIntegrationTest
         int procedureId = procs().procedureGet( procedureName( "dbms", "security", "changePassword" ) ).id();
         dbmsOperations().procedureCallDbms( procedureId,
                                             inputArray, dependencyResolver,
-                                            AnonymousContext.none().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ),
+                                            AnonymousContext.none().authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ),
                                             EMPTY_RESOURCE_MANAGER, valueMapper );
     }
 

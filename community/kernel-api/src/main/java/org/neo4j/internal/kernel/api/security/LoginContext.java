@@ -23,7 +23,7 @@ import org.neo4j.exceptions.KernelException;
 
 /**
  * The LoginContext hold the executing authenticated user (subject).
- * By calling {@link #authorize(PropertyKeyIdLookup, String)} the user is also authorized, and a full SecurityContext is returned,
+ * By calling {@link #authorize(IdLookup, String)} the user is also authorized, and a full SecurityContext is returned,
  * which can be used to assert user permissions during query execution.
  */
 public interface LoginContext
@@ -36,11 +36,11 @@ public interface LoginContext
     /**
      * Authorize the user and return a SecurityContext.
      *
-     * @param propertyKeyIdLookup token lookup, used to compile property level security verification
+     * @param idLookup token lookup, used to compile fine grained security verification
      * @param dbName the name of the database the user should be authorized against
      * @return the security context
      */
-    SecurityContext authorize( PropertyKeyIdLookup propertyKeyIdLookup, String dbName );
+    SecurityContext authorize( IdLookup idLookup, String dbName );
 
     LoginContext AUTH_DISABLED = new LoginContext()
     {
@@ -51,14 +51,31 @@ public interface LoginContext
         }
 
         @Override
-        public SecurityContext authorize( PropertyKeyIdLookup propertyKeyIdLookup, String dbName )
+        public SecurityContext authorize( IdLookup idLookup, String dbName )
         {
             return SecurityContext.AUTH_DISABLED;
         }
     };
 
-    interface PropertyKeyIdLookup
+    interface IdLookup
     {
         int getOrCreatePropertyKeyId( String name ) throws KernelException;
+
+        int getOrCreateLabelId( String name ) throws KernelException;
+
+        IdLookup EMPTY = new IdLookup()
+        {
+            @Override
+            public int getOrCreatePropertyKeyId( String name )
+            {
+                return -1;
+            }
+
+            @Override
+            public int getOrCreateLabelId( String name )
+            {
+                return -1;
+            }
+        };
     }
 }
