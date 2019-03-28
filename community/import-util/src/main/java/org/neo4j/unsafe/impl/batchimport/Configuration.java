@@ -294,6 +294,17 @@ public interface Configuration
         }
 
         double factor = percent / 100D;
-        return round( (totalPhysicalMemory - Runtime.getRuntime().maxMemory()) * factor );
+        long jvmMaxMemory = Runtime.getRuntime().maxMemory();
+        long halfPhysicalMemory = totalPhysicalMemory / 2;
+        if ( jvmMaxMemory > halfPhysicalMemory )
+        {
+            // The JVM max heap size (-Xmx) have been configured to use a significant portion of the machine memory.
+            // This isn't reasonable, at the very least not desirable for an import since the majority of memory lives off-heap.
+            // So if this is the case then assume only half the memory is assigned to the JVM, otherwise the importer
+            // performance could be massively crippled.
+            jvmMaxMemory = halfPhysicalMemory;
+        }
+        long availableMemory = totalPhysicalMemory - jvmMaxMemory;
+        return round( availableMemory * factor );
     }
 }
