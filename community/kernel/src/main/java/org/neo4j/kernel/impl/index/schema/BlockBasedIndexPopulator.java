@@ -638,7 +638,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     }
 
     private static class RecordingConflictDetector<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
-            extends ConflictDetectingValueMerger<KEY,VALUE,KEY> implements Closeable
+            extends ConflictDetectingValueMerger<KEY,VALUE,KEY>
     {
         private final IndexKeyStorage<KEY> allConflictingKeys;
 
@@ -670,12 +670,6 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         void relaxUniqueness( KEY key )
         {
             key.setCompareId( true );
-        }
-
-        @Override
-        public void close() throws IOException
-        {
-            allConflictingKeys.close();
         }
     }
 }
