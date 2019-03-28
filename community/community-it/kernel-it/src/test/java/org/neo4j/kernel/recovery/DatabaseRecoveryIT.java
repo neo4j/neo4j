@@ -61,6 +61,7 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -133,7 +134,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
-import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.count;
 
@@ -195,7 +195,7 @@ class DatabaseRecoveryIT
         var restoreDbLayout = copyStore();
         DatabaseManagementService recoveredService = getManagementService( restoreDbLayout.getStoreLayout().storeDirectory() );
         GraphDatabaseService recoveredDatabase = recoveredService.database( DEFAULT_DATABASE_NAME );
-        try ( Transaction transaction = recoveredDatabase.beginTx() )
+        try ( Transaction ignore = recoveredDatabase.beginTx() )
         {
             assertEquals( 10, count( recoveredDatabase.getAllNodes() ) );
         }
@@ -475,8 +475,7 @@ class DatabaseRecoveryIT
         }
         finally
         {
-            checkPointFs.close();
-            reversedFs.get().close();
+            IOUtils.closeAll( checkPointFs, reversedFs.get() );
         }
     }
 
@@ -565,7 +564,7 @@ class DatabaseRecoveryIT
                     {   // create
                         if ( operation < 0.5 )
                         {   // create node (w/ random label, prop)
-                            Node node = db.createNode( random.nextBoolean() ? array( randomLabel() ) : new Label[0] );
+                            Node node = db.createNode( random.nextBoolean() ? new Label[] { randomLabel() } : new Label[0] );
                             if ( random.nextBoolean() )
                             {
                                 node.setProperty( randomKey(), random.nextValueAsObject() );
@@ -720,7 +719,7 @@ class DatabaseRecoveryIT
                     }
                     else if ( operation < 0.3 )
                     {   // Create node
-                        Node node = db.createNode( random.nextBoolean() ? array( label ) : new Label[0] );
+                        Node node = db.createNode( random.nextBoolean() ? new Label[] { label } : new Label[0] );
                         for ( String key : keys )
                         {
                             if ( random.nextBoolean() )

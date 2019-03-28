@@ -108,7 +108,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
             allEntriesReader.add( part.newAllEntriesReader() );
         }
 
-        return new BoundedIterable<Long>()
+        return new BoundedIterable<>()
         {
             @Override
             public long maxCount()

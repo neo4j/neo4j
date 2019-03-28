@@ -99,7 +99,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     public BoundedIterable<Long> newAllEntriesReader()
     {
         Iterable<BoundedIterable<Long>> entries = instanceSelector.transform( IndexAccessor::newAllEntriesReader );
-        return new BoundedIterable<Long>()
+        return new BoundedIterable<>()
         {
             @Override
             public long maxCount()
@@ -117,7 +117,6 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
                 return sum;
             }
 
-            @SuppressWarnings( "unchecked" )
             @Override
             public void close() throws Exception
             {
