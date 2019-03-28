@@ -151,6 +151,8 @@ public class Operations implements Write, SchemaWrite
         this.nodeCursor = cursors.allocateNodeCursor();
         this.propertyCursor = cursors.allocatePropertyCursor();
         this.relationshipCursor = cursors.allocateRelationshipScanCursor();
+
+        // TODO create internal cursor with full access
     }
 
     @Override
@@ -265,6 +267,7 @@ public class Operations implements Write, SchemaWrite
             return false;
         }
 
+        // TODO to add label, must be allowed to read this node and allowed to create labels of type `nodeLabel`
         checkConstraintsAndAddLabelToNode( node, nodeLabel );
         return true;
     }

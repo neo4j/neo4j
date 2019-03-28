@@ -23,9 +23,12 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
+import java.util.Arrays;
+
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor.NodeLabelClient;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
@@ -71,7 +74,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
     @Override
     public boolean acceptNode( long reference, LabelSet labels )
     {
-        if ( isRemoved( reference ) )
+        if ( isRemoved( reference ) || !allowsLabels( labels ) )
         {
             return false;
         }
@@ -82,6 +85,13 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
 
             return true;
         }
+    }
+
+    private boolean allowsLabels( LabelSet labels )
+    {
+        AccessMode mode = read.ktx.securityContext().mode();
+        // TODO labels can be null... what to do?
+        return labels == null || mode.allowsReadLabels( Arrays.stream( labels.all() ).mapToInt( l -> (int) l ) );
     }
 
     @Override

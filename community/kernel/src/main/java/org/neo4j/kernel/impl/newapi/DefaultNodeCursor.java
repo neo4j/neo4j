@@ -25,11 +25,14 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
+import java.util.Arrays;
+
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.StorageNodeCursor;
@@ -101,10 +104,12 @@ class DefaultNodeCursor implements NodeCursor
     @Override
     public LabelSet labels()
     {
+        // TODO decide if this should be filtered or not, also fix alternative for when called from traversal checking if allowed to see node
         if ( currentAddedInTx != NO_ID )
         {
             //Node added in tx-state, no reason to go down to store and check
             TransactionState txState = read.txState();
+            // Select only allowed labels
             return Labels.from( txState.nodeStateLabelDiffSets( currentAddedInTx ).getAdded() );
         }
         else if ( hasChanges() )
@@ -131,6 +136,11 @@ class DefaultNodeCursor implements NodeCursor
     @Override
     public boolean hasLabel( int label )
     {
+        if ( !allowedLabels( read.ktx.securityContext().mode(), label ) )
+        {
+            return false;
+        }
+
         if ( hasChanges() )
         {
             TransactionState txState = read.txState();
@@ -149,6 +159,11 @@ class DefaultNodeCursor implements NodeCursor
         return storeCursor.hasLabel( label );
     }
 
+    private boolean allowedLabels( AccessMode accessMode, long... labels )
+    {
+        return accessMode.allowsReadLabels( Arrays.stream( labels ).mapToInt( l -> (int) l ) );
+    }
+
     @Override
     public void relationships( RelationshipGroupCursor cursor )
     {
@@ -164,7 +179,16 @@ class DefaultNodeCursor implements NodeCursor
     @Override
     public void properties( PropertyCursor cursor )
     {
-        ((DefaultPropertyCursor) cursor).initNode( nodeReference(), propertiesReference(), read, read );
+        // TODO: if adding exists permission, these must be filtered for read here
+        AccessMode accessMode = read.ktx.securityContext().mode();
+        if ( allowedLabels( accessMode, labels().all() ) )
+        {
+            ((DefaultPropertyCursor) cursor).initNode( nodeReference(), propertiesReference(), read, read );
+        }
+        else
+        {
+            cursor.close();
+        }
     }
 
     @Override
@@ -215,6 +239,7 @@ class DefaultNodeCursor implements NodeCursor
         {
             if ( addedNodes.hasNext() )
             {
+                // TODO probably don't need to check here since we've already been allowed to create/change them in the transaction
                 currentAddedInTx = addedNodes.next();
                 return true;
             }
@@ -226,7 +251,11 @@ class DefaultNodeCursor implements NodeCursor
 
         while ( storeCursor.next() )
         {
-            if ( !hasChanges || !read.txState().nodeIsDeletedInThisTx( storeCursor.entityReference() ) )
+            boolean skip = hasChanges && read.txState().nodeIsDeletedInThisTx( storeCursor.entityReference() );
+            // TODO could maybe optimize away the allowsReadAll check here and use a FullAccessNodeCursor instead
+            // TODO this should check for USE privilege instead of READ
+            AccessMode accessMode = read.ktx.securityContext().mode();
+            if ( !skip && (accessMode.allowsReadAllLabels() || allowedLabels( accessMode, storeCursor.labels() )) )
             {
                 return true;
             }

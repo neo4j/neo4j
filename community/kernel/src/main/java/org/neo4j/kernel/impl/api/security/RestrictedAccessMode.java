@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.security;
 
+import java.util.stream.IntStream;
+
 import org.neo4j.internal.kernel.api.security.AccessMode;
 
 /**
@@ -54,6 +56,18 @@ public class RestrictedAccessMode extends WrappedAccessMode
     public boolean allowsSchemaWrites()
     {
         return original.allowsSchemaWrites() && wrapping.allowsSchemaWrites();
+    }
+
+    @Override
+    public boolean allowsReadAllLabels()
+    {
+        return original.allowsReadAllLabels() && wrapping.allowsReadAllLabels();
+    }
+
+    @Override
+    public boolean allowsReadLabels( IntStream labels )
+    {
+        return original.allowsReadLabels( labels ) && wrapping.allowsReadLabels( labels );
     }
 
     @Override

@@ -23,7 +23,11 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
+import java.util.Arrays;
+
+import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
@@ -94,12 +98,29 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
 
         while ( storeCursor.next() )
         {
-            if ( !hasChanges || !read.txState().relationshipIsDeletedInThisTx( storeCursor.entityReference() ) )
+            boolean skip = hasChanges && read.txState().relationshipIsDeletedInThisTx( storeCursor.entityReference() );
+            if ( !skip && allowedToSeeEndNode() )
             {
                 return true;
             }
         }
         return false;
+    }
+
+    private boolean allowedToSeeEndNode()
+    {
+        AccessMode mode = read.ktx.securityContext().mode();
+        if ( mode.allowsReadAllLabels() )
+        {
+            return true;
+        }
+        // TODO should be able to do this in a cheaper way
+        NodeCursor originNodeCursor = read.cursors().allocateNodeCursor();
+        NodeCursor targetNodeCursor = read.cursors().allocateNodeCursor();
+        read.singleNode( storeCursor.sourceNodeReference(), originNodeCursor );
+        read.singleNode( storeCursor.targetNodeReference(), targetNodeCursor );
+        return originNodeCursor.next() && mode.allowsReadLabels( Arrays.stream( originNodeCursor.labels().all() ).mapToInt( l -> (int) l ) ) &&
+               targetNodeCursor.next() && mode.allowsReadLabels( Arrays.stream( targetNodeCursor.labels().all() ).mapToInt( l -> (int) l ) );
     }
 
     @Override

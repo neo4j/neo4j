@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.stream.IntStream;
+
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.index.label.LabelScan;
@@ -96,19 +98,22 @@ abstract class Read implements TxStateHolder,
     {
         ktx.assertOpen();
         DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
-        if ( hasForbiddenProperties( indexSession.reference ) )
-        {
-            cursor.close();
-            return;
-        }
+
         if ( indexSession.reference.schema().entityType() != EntityType.NODE )
         {
             throw new IndexNotApplicableKernelException( "Node index seek can only be performed on node indexes: " + index );
         }
 
+        if ( hasForbiddenProperties( indexSession.reference ) )
+        {
+            cursor.close();
+            return;
+        }
+
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         client.setRead( this );
-        IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( client, query, indexSession.reader );
+        IndexProgressor.EntityValueClient withSecurity = injectSecurity( client, ktx.securityContext().mode(), indexSession.reference.schema() );
+        IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( withSecurity, query, indexSession.reader );
         indexSession.reader.query( this, withFullPrecision, indexOrder, needsValues, query );
     }
 
@@ -117,6 +122,7 @@ abstract class Read implements TxStateHolder,
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException
     {
         ktx.assertOpen();
+        // TODO check label whitelist this is for reltypes
         if ( hasForbiddenProperties( index ) )
         {
             cursor.close();
@@ -143,6 +149,35 @@ abstract class Read implements TxStateHolder,
         cursorImpl.setRead( this );
         CursorPropertyAccessor accessor = new CursorPropertyAccessor( cursors.allocateNodeCursor(), cursors.allocatePropertyCursor(), this );
         reader.distinctValues( cursorImpl, accessor, needsValues );
+    }
+
+    private IndexProgressor.EntityValueClient injectSecurity( IndexProgressor.EntityValueClient cursor, AccessMode accessMode,
+            SchemaDescriptor schemaDescriptor )
+    {
+        if ( !accessMode.allowsReadAllLabels() )
+        {
+            boolean allowsAll = true;
+            boolean allowsSome = false;
+            for ( int label : schemaDescriptor.getEntityTokenIds() )
+            {
+                boolean allowed = accessMode.allowsReadLabels( IntStream.of( label ) );
+                allowsAll &= allowed;
+                allowsSome |= allowed;
+            }
+
+            if ( !allowsSome )
+            {
+                // nothing matching the whitelist
+                return new NodeLabelSecurityFilter( cursor, cursors.allocateNodeCursor(), this, AccessMode.Static.NONE );
+            }
+            else if ( !allowsAll )
+            {
+                // only some matching whitelist
+                return new NodeLabelSecurityFilter( cursor, cursors.allocateNodeCursor(), this, ktx.securityContext().mode() );
+            }
+        }
+        // everything in this index is whitelisted
+        return cursor;
     }
 
     private IndexProgressor.EntityValueClient injectFullValuePrecision( IndexProgressor.EntityValueClient cursor,
@@ -245,6 +280,12 @@ abstract class Read implements TxStateHolder,
     {
         ktx.assertOpen();
         DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
+
+        if ( indexSession.reference.schema().entityType() != EntityType.NODE )
+        {
+            throw new IndexNotApplicableKernelException( "Node index scan can only be performed on node indexes: " + index );
+        }
+
         if ( hasForbiddenProperties( indexSession.reference ) )
         {
             cursor.close();
@@ -256,7 +297,8 @@ abstract class Read implements TxStateHolder,
 
         DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
         cursorImpl.setRead( this );
-        indexSession.reader.query( this, cursorImpl, indexOrder, needsValues, IndexQuery.exists( firstProperty ) );
+        IndexProgressor.EntityValueClient withSecurity = injectSecurity( cursorImpl, ktx.securityContext().mode(), indexSession.reference.schema() );
+        indexSession.reader.query( this, withSecurity, indexOrder, needsValues, IndexQuery.exists( firstProperty ) );
     }
 
     private boolean hasForbiddenProperties( IndexReference index )
@@ -276,6 +318,11 @@ abstract class Read implements TxStateHolder,
     public final void nodeLabelScan( int label, NodeLabelIndexCursor cursor )
     {
         ktx.assertOpen();
+        if ( !ktx.securityContext().mode().allowsReadLabels( IntStream.of( label ) ) )
+        {
+            cursor.close();
+            return;
+        }
 
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
@@ -287,6 +334,12 @@ abstract class Read implements TxStateHolder,
     public final Scan<NodeLabelIndexCursor> nodeLabelScan( int label )
     {
         ktx.assertOpen();
+        if ( !ktx.securityContext().mode().allowsReadLabels( IntStream.of( label ) ) )
+        {
+            // TODO should return empty cursor...
+            return null;
+        }
+
         return new NodeLabelIndexCursorScan( this, label, labelScanReader().nodeLabelScan( label ) );
     }
 
@@ -349,6 +402,7 @@ abstract class Read implements TxStateHolder,
     @Override
     public void relationshipGroups( long nodeReference, long reference, RelationshipGroupCursor cursor )
     {
+        // TODO check label whitelist ?
         RelationshipReferenceEncoding encoding = RelationshipReferenceEncoding.parseEncoding( reference );
         switch ( encoding )
         {

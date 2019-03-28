@@ -168,6 +168,7 @@ public class AllStoreHolder extends Read
     @Override
     public long countsForNode( int labelId )
     {
+        // TODO expand * to all whitelisted labels?
         long count = countsForNodeWithoutTxState( labelId );
         if ( ktx.hasTxStateWithChanges() )
         {
@@ -192,6 +193,7 @@ public class AllStoreHolder extends Read
     @Override
     public long countsForNodeWithoutTxState( int labelId )
     {
+        // TODO expand * to all whitelisted labels? MATCH (n) RETURN count(n) calls this with labelId == -1
         return storageReader.countsForNode( labelId );
     }
 

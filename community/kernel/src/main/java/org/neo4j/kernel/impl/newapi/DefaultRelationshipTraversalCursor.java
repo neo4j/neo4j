@@ -22,8 +22,11 @@ package org.neo4j.kernel.impl.newapi;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
+import java.util.Arrays;
+
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.txstate.NodeState;
@@ -111,6 +114,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     @Override
     public long neighbourNodeReference()
     {
+        // TODO this
         if ( currentAddedInTx != NO_ID )
         {
             // Here we compare the source/target nodes from tx-state to the origin node and decide the neighbour node from it
@@ -147,6 +151,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
 
         if ( !filterInitialized )
         {
+            // TODO hmm?
             hasChanges = hasChanges(); // <- may setup filter state if needed, for getting the correct relationships from tx-state
             setupFilterStateIfNeeded();
             if ( filterInitialized && !(hasChanges && read.txState().relationshipIsDeletedInThisTx( relationshipReference() )) )
@@ -176,12 +181,24 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         while ( storeCursor.next() )
         {
             boolean skip = hasChanges && read.txState().relationshipIsDeletedInThisTx( storeCursor.entityReference() );
-            if ( !skip )
+            if ( !skip && allowedToSeeEndNode() )
             {
                 return true;
             }
         }
         return false;
+    }
+
+    private boolean allowedToSeeEndNode()
+    {
+        AccessMode mode = read.ktx.securityContext().mode();
+        if ( mode.allowsReadAllLabels() )
+        {
+            return true;
+        }
+        NodeCursor nodeCursor = read.cursors().allocateNodeCursor();
+        read.singleNode( storeCursor.neighbourNodeReference(), nodeCursor );
+        return nodeCursor.next() && mode.allowsReadLabels( Arrays.stream( nodeCursor.labels().all() ).mapToInt( l -> (int) l ) );
     }
 
     private void setupFilterStateIfNeeded()
