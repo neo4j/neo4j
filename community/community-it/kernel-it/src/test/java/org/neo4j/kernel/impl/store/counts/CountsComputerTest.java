@@ -34,6 +34,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -55,7 +56,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

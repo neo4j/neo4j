@@ -38,6 +38,24 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.batchimport.AdditionalInitialIds;
+import org.neo4j.internal.batchimport.BatchImporter;
+import org.neo4j.internal.batchimport.BatchImporterFactory;
+import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.internal.batchimport.EmptyLogFilesInitializer;
+import org.neo4j.internal.batchimport.InputIterable;
+import org.neo4j.internal.batchimport.InputIterator;
+import org.neo4j.internal.batchimport.input.BadCollector;
+import org.neo4j.internal.batchimport.input.Collector;
+import org.neo4j.internal.batchimport.input.Collectors;
+import org.neo4j.internal.batchimport.input.IdType;
+import org.neo4j.internal.batchimport.input.Input;
+import org.neo4j.internal.batchimport.input.Input.Estimates;
+import org.neo4j.internal.batchimport.input.InputChunk;
+import org.neo4j.internal.batchimport.input.InputEntityVisitor;
+import org.neo4j.internal.batchimport.input.ReadableGroups;
+import org.neo4j.internal.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
+import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.ReadOnlyIdGeneratorFactory;
@@ -91,26 +109,10 @@ import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
-import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
-import org.neo4j.unsafe.impl.batchimport.BatchImporter;
-import org.neo4j.unsafe.impl.batchimport.BatchImporterFactory;
-import org.neo4j.unsafe.impl.batchimport.Configuration;
-import org.neo4j.unsafe.impl.batchimport.EmptyLogFilesInitializer;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
-import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
-import org.neo4j.unsafe.impl.batchimport.input.Collector;
-import org.neo4j.unsafe.impl.batchimport.input.Collectors;
-import org.neo4j.unsafe.impl.batchimport.input.IdType;
-import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
-import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
-import org.neo4j.unsafe.impl.batchimport.input.ReadableGroups;
-import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
-import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
 import static java.util.Arrays.asList;
+import static org.neo4j.internal.batchimport.ImportLogic.NO_MONITOR;
+import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
@@ -123,8 +125,6 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP;
-import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
-import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
 /**
  * Migrates a {@link RecordStorageEngine} store from one version to another.
@@ -779,7 +779,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         private final ProgressReporter progressReporter;
 
         BatchImporterProgressMonitor( long highNodeId, long highRelationshipId,
-                org.neo4j.unsafe.impl.batchimport.Configuration configuration,
+                Configuration configuration,
                 ProgressReporter progressReporter )
         {
             super( highNodeId, highRelationshipId, configuration );

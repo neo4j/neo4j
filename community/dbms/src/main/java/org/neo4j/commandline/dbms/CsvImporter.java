@@ -35,16 +35,20 @@ import org.neo4j.commandline.dbms.config.WrappedCsvInputConfigurationForNeo4jAdm
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
+import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.internal.batchimport.input.BadCollector;
+import org.neo4j.internal.batchimport.input.Collector;
+import org.neo4j.internal.batchimport.input.IdType;
+import org.neo4j.internal.batchimport.input.csv.CsvInput;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.tooling.ImportTool;
-import org.neo4j.unsafe.impl.batchimport.Configuration;
-import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
-import org.neo4j.unsafe.impl.batchimport.input.Collector;
-import org.neo4j.unsafe.impl.batchimport.input.IdType;
-import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
 
 import static java.nio.charset.Charset.defaultCharset;
+import static org.neo4j.internal.batchimport.input.Collectors.badCollector;
+import static org.neo4j.internal.batchimport.input.Collectors.collect;
+import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
+import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.tooling.ImportTool.csvConfiguration;
 import static org.neo4j.tooling.ImportTool.extractInputFiles;
@@ -52,10 +56,6 @@ import static org.neo4j.tooling.ImportTool.importConfiguration;
 import static org.neo4j.tooling.ImportTool.nodeData;
 import static org.neo4j.tooling.ImportTool.relationshipData;
 import static org.neo4j.tooling.ImportTool.validateInputFiles;
-import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
-import static org.neo4j.unsafe.impl.batchimport.input.Collectors.collect;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 
 class CsvImporter implements Importer
 {

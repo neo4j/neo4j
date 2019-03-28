@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 
+import org.neo4j.batchinsert.internal.TransactionLogsInitializer;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.Settings;
 import org.neo4j.csv.reader.CharSeeker;
@@ -30,6 +31,17 @@ import org.neo4j.csv.reader.CharSeekers;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Readables;
 import org.neo4j.helpers.Args;
+import org.neo4j.internal.batchimport.BatchImporter;
+import org.neo4j.internal.batchimport.BatchImporterFactory;
+import org.neo4j.internal.batchimport.ParallelBatchImporter;
+import org.neo4j.internal.batchimport.input.Collector;
+import org.neo4j.internal.batchimport.input.DataGeneratorInput;
+import org.neo4j.internal.batchimport.input.Groups;
+import org.neo4j.internal.batchimport.input.IdType;
+import org.neo4j.internal.batchimport.input.Input;
+import org.neo4j.internal.batchimport.input.csv.Configuration;
+import org.neo4j.internal.batchimport.input.csv.DataFactories;
+import org.neo4j.internal.batchimport.input.csv.Header;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -39,24 +51,12 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.unsafe.batchinsert.internal.TransactionLogsInitializer;
-import org.neo4j.unsafe.impl.batchimport.BatchImporter;
-import org.neo4j.unsafe.impl.batchimport.BatchImporterFactory;
-import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
-import org.neo4j.unsafe.impl.batchimport.input.Collector;
-import org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput;
-import org.neo4j.unsafe.impl.batchimport.input.Groups;
-import org.neo4j.unsafe.impl.batchimport.input.IdType;
-import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
-import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories;
-import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 
 import static java.lang.System.currentTimeMillis;
+import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
+import static org.neo4j.internal.batchimport.ImportLogic.NO_MONITOR;
+import static org.neo4j.internal.batchimport.staging.ExecutionMonitors.defaultVisible;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
-import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
-import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
-import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.defaultVisible;
 
 /**
  * Uses all available shortcuts to as quickly as possible import as much data as possible. Usage of this
@@ -111,9 +111,9 @@ public class QuickImport
 
         LogProvider logging = NullLogProvider.getInstance();
         long pageCacheMemory = args.getNumber( "pagecache-memory",
-                org.neo4j.unsafe.impl.batchimport.Configuration.MAX_PAGE_CACHE_MEMORY ).longValue();
-        org.neo4j.unsafe.impl.batchimport.Configuration importConfig =
-                new org.neo4j.unsafe.impl.batchimport.Configuration()
+                org.neo4j.internal.batchimport.Configuration.MAX_PAGE_CACHE_MEMORY ).longValue();
+        org.neo4j.internal.batchimport.Configuration importConfig =
+                new org.neo4j.internal.batchimport.Configuration()
         {
             @Override
             public int maxNumberOfProcessors()

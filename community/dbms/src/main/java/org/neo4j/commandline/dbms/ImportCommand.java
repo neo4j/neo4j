@@ -42,9 +42,9 @@ import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.csv.reader.Configuration.DEFAULT;
+import static org.neo4j.internal.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
+import static org.neo4j.internal.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.tooling.ImportTool.parseFileArgumentList;
-import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 
 public class ImportCommand implements AdminCommand
 {

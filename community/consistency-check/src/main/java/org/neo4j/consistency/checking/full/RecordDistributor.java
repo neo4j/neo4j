@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.consistency.checking.full.QueueDistribution.QueueDistributor;
 import org.neo4j.helpers.progress.ProgressListener;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
+import org.neo4j.internal.batchimport.cache.idmapping.string.Workers;
 
 /**
  * Takes a stream of RECORDs and distributes them, via {@link BlockingQueue} onto multiple workers.

@@ -32,9 +32,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.unsafe.impl.batchimport.input.InputException;
 
 import static org.junit.Assert.fail;
 import static org.neo4j.tooling.ImportToolTest.assertExceptionContains;

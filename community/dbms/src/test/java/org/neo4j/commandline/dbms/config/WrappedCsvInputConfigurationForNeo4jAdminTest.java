@@ -23,10 +23,10 @@ import org.junit.jupiter.api.Test;
 
 import java.util.function.Function;
 
-import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
+import org.neo4j.internal.batchimport.input.csv.Configuration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
+import static org.neo4j.internal.batchimport.input.csv.Configuration.COMMAS;
 
 class WrappedCsvInputConfigurationForNeo4jAdminTest
 {

@@ -25,14 +25,14 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Collections;
 
+import org.neo4j.batchinsert.BatchInserter;
+import org.neo4j.batchinsert.BatchInserters;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdGeneratorImpl;
 import org.neo4j.internal.id.ReservedIdException;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.unsafe.batchinsert.BatchInserter;
-import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;

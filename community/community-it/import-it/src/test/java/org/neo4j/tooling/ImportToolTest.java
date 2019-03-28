@@ -56,6 +56,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.internal.batchimport.cache.idmapping.string.DuplicateInputIdException;
+import org.neo4j.internal.batchimport.input.InputException;
+import org.neo4j.internal.batchimport.input.csv.Configuration;
+import org.neo4j.internal.batchimport.input.csv.Type;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -65,10 +69,6 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
-import org.neo4j.unsafe.impl.batchimport.input.InputException;
-import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
-import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
@@ -93,9 +93,9 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.internal.batchimport.input.BadCollector.BAD_FILE_NAME;
 import static org.neo4j.io.fs.FileUtils.writeToFile;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
-import static org.neo4j.unsafe.impl.batchimport.input.BadCollector.BAD_FILE_NAME;
 
 public class ImportToolTest
 {

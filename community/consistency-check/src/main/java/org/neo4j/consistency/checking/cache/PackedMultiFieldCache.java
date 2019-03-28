@@ -20,11 +20,11 @@
 package org.neo4j.consistency.checking.cache;
 
 import org.neo4j.consistency.checking.ByteArrayBitsManipulator;
+import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
 
 import static org.neo4j.consistency.checking.cache.CacheSlots.ID_SLOT_SIZE;
-import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
+import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
 
 /**
  * Simply combining a {@link ByteArray} with {@link ByteArrayBitsManipulator}, so that each byte[] index can be split up into

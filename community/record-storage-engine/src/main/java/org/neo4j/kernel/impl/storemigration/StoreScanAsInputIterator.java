@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import org.neo4j.internal.batchimport.InputIterator;
+import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
-import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 
 import static java.lang.Long.min;
 

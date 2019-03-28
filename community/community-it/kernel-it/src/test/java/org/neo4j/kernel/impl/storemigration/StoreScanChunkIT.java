@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.storemigration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -32,7 +33,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 

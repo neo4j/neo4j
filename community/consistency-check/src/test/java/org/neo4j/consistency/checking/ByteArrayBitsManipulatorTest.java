@@ -22,11 +22,11 @@ package org.neo4j.consistency.checking;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.neo4j.internal.batchimport.cache.ByteArray;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
-import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.consistency.checking.ByteArrayBitsManipulator.MAX_BYTES;

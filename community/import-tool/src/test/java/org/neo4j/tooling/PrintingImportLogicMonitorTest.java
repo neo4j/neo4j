@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
-import org.neo4j.unsafe.impl.batchimport.ImportLogic;
+import org.neo4j.internal.batchimport.ImportLogic;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.ByteUnit.bytesToString;

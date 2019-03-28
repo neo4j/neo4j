@@ -21,7 +21,7 @@ package org.neo4j.consistency.checking;
 
 import java.util.Arrays;
 
-import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
+import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.util.Bits;
 
 /**

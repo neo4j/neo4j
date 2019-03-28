@@ -19,7 +19,7 @@
  */
 package org.neo4j.commandline.dbms.config;
 
-import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
+import org.neo4j.internal.batchimport.input.csv.Configuration;
 /**
  * Provides a wrapper around {@link Configuration} with overridden defaults for neo4j-admin import
  * Always trim strings

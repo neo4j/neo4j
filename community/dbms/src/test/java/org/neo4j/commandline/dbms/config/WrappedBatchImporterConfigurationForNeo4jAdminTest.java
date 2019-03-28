@@ -23,11 +23,11 @@ import org.junit.jupiter.api.Test;
 
 import java.util.function.Function;
 
-import org.neo4j.unsafe.impl.batchimport.Configuration;
+import org.neo4j.internal.batchimport.Configuration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
 class WrappedBatchImporterConfigurationForNeo4jAdminTest
 {

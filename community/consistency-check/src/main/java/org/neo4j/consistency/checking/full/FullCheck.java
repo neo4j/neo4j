@@ -50,8 +50,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
+import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
-import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
 
 public class FullCheck
 {

@@ -21,7 +21,7 @@ package org.neo4j.tooling;
 
 import java.io.PrintStream;
 
-import org.neo4j.unsafe.impl.batchimport.ImportLogic;
+import org.neo4j.internal.batchimport.ImportLogic;
 
 import static org.neo4j.io.ByteUnit.bytesToString;
 

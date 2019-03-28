@@ -25,8 +25,8 @@ import org.neo4j.consistency.checking.ByteArrayBitsManipulator;
 import org.neo4j.consistency.checking.full.IdAssigningThreadLocal;
 import org.neo4j.consistency.statistics.Counts;
 import org.neo4j.consistency.statistics.Counts.Type;
+import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
 
 /**
  * {@link CacheAccess} that uses {@link PackedMultiFieldCache} for cache.

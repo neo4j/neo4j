@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.batchimport.cache.idmapping.string.Workers;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -35,7 +36,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.greaterThan;

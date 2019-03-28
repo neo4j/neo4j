@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.internal.batchimport.cache.idmapping.string.Workers;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Commands;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -57,7 +58,6 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RecordStorageEngineRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
