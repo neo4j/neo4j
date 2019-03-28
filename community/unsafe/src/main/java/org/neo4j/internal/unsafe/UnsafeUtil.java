@@ -71,8 +71,7 @@ public final class UnsafeUtil
     private static final Unsafe unsafe;
     private static final MethodHandle invokeCleanerHandle;
     private static final MethodHandle sharedStringConstructor;
-    private static final String allowUnalignedMemoryAccessProperty =
-            "org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.allowUnalignedMemoryAccess";
+    private static final String allowUnalignedMemoryAccessProperty = "org.neo4j.internal.unsafe.UnsafeUtil.allowUnalignedMemoryAccess";
 
     private static final ConcurrentSkipListMap<Long, Allocation> allocations = new ConcurrentSkipListMap<>();
     private static final ThreadLocal<Allocation> lastUsedAllocation = new ThreadLocal<>();
