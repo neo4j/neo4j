@@ -175,12 +175,12 @@ class SpatialIndexPopulator extends SpatialIndexCache<WorkSyncedNativeIndexPopul
         }
 
         @Override
-        ConflictDetectingValueMerger<SpatialIndexKey,NativeIndexValue> getMainConflictDetector()
+        ConflictDetectingValueMerger<SpatialIndexKey,NativeIndexValue,Value[]> getMainConflictDetector()
         {
             // Because of lossy point representation in index we need to always compare on node id,
             // even for unique indexes. If we don't we risk throwing constraint violation exception
             // for points that are in fact unique.
-            return new ConflictDetectingValueMerger<>( true );
+            return new ThrowingConflictDetector<>( true );
         }
 
         @Override

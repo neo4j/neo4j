@@ -23,18 +23,16 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueTuple;
 
 /**
  * {@link ValueMerger} which will merely detect conflict, not change any value if conflict, i.e. if the
  * key already exists. After this merge has been used in a call to {@link Writer#merge(Object, Object, ValueMerger)}
- * {@link #checkConflict(Value[])} can be called to check whether or not that call conflicted with
- * an existing key. A call to {@link #checkConflict(Value[])} will also initialize the conflict flag.
+ * {@link #checkConflict(REPORT_TYPE)} can be called to check whether or not that call conflicted with
+ * an existing key. A call to {@link #checkConflict(REPORT_TYPE)} will also initialize the conflict flag.
  *
  * @param <VALUE> type of values being merged.
  */
-class ConflictDetectingValueMerger<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> implements ValueMerger<KEY,VALUE>
+abstract class ConflictDetectingValueMerger<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue, REPORT_TYPE> implements ValueMerger<KEY,VALUE>
 {
     private final boolean compareEntityIds;
 
@@ -76,17 +74,19 @@ class ConflictDetectingValueMerger<KEY extends NativeIndexKey<KEY>, VALUE extend
         return conflict;
     }
 
-    void reportConflict( Value[] values ) throws IndexEntryConflictException
+    void reportConflict( REPORT_TYPE toReport ) throws IndexEntryConflictException
     {
         conflict = false;
-        throw new IndexEntryConflictException( existingNodeId, addedNodeId, ValueTuple.of( values ) );
+        doReportConflict( existingNodeId, addedNodeId, toReport );
     }
 
-    void checkConflict( Value[] values ) throws IndexEntryConflictException
+    void checkConflict( REPORT_TYPE toReport ) throws IndexEntryConflictException
     {
         if ( wasConflicting() )
         {
-            reportConflict( values );
+            reportConflict( toReport );
         }
     }
+
+    abstract void doReportConflict( long existingNodeId, long addedNodeId, REPORT_TYPE toReport ) throws IndexEntryConflictException;
 }

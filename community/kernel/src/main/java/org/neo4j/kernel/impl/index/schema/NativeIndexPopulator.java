@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageIndexReference;
+import org.neo4j.values.storable.Value;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 
@@ -64,8 +65,8 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private final UniqueIndexSampler uniqueSampler;
     private final Consumer<PageCursor> additionalHeaderWriter;
 
-    private ConflictDetectingValueMerger<KEY,VALUE> mainConflictDetector;
-    private ConflictDetectingValueMerger<KEY,VALUE> updatesConflictDetector;
+    private ConflictDetectingValueMerger<KEY,VALUE,Value[]> mainConflictDetector;
+    private ConflictDetectingValueMerger<KEY,VALUE,Value[]> updatesConflictDetector;
 
     private byte[] failureBytes;
     private boolean dropped;
@@ -105,12 +106,12 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         mainConflictDetector = getMainConflictDetector();
         // for updates we have to have uniqueness on (value,entityId) to allow for intermediary violating updates.
         // there are added conflict checks after updates have been applied.
-        updatesConflictDetector = new ConflictDetectingValueMerger<>( true );
+        updatesConflictDetector = new ThrowingConflictDetector<>( true );
     }
 
-    ConflictDetectingValueMerger<KEY,VALUE> getMainConflictDetector()
+    ConflictDetectingValueMerger<KEY,VALUE,Value[]> getMainConflictDetector()
     {
-        return new ConflictDetectingValueMerger<>( !descriptor.isUnique() );
+        return new ThrowingConflictDetector<>( !descriptor.isUnique() );
     }
 
     @Override
@@ -246,7 +247,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         tree.checkpoint( IOLimiter.UNLIMITED, new NativeIndexHeaderWriter( BYTE_ONLINE, additionalHeaderWriter ) );
     }
 
-    private void processUpdates( Iterable<? extends IndexEntryUpdate<?>> indexEntryUpdates, ConflictDetectingValueMerger<KEY,VALUE> conflictDetector )
+    private void processUpdates( Iterable<? extends IndexEntryUpdate<?>> indexEntryUpdates, ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetector )
             throws IndexEntryConflictException
     {
         try ( Writer<KEY,VALUE> writer = tree.writer() )

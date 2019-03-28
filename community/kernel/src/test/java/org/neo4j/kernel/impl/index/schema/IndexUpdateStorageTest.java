@@ -64,8 +64,9 @@ class IndexUpdateStorageTest
     void shouldAddZeroEntries() throws IOException
     {
         // given
-        try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( layout, directory.getFileSystem(), directory.file( "file" ),
-                HEAP_BUFFER_FACTORY, 1000 ) )
+        try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
+                HEAP_BUFFER_FACTORY, 1000, layout
+        ) )
         {
             // when
             List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected = generateSomeUpdates( 0 );
@@ -80,8 +81,9 @@ class IndexUpdateStorageTest
     void shouldAddFewEntries() throws IOException
     {
         // given
-        try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( layout, directory.getFileSystem(), directory.file( "file" ),
-                HEAP_BUFFER_FACTORY, 1000 ) )
+        try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
+                HEAP_BUFFER_FACTORY, 1000, layout
+        ) )
         {
             // when
             List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected = generateSomeUpdates( 5 );
@@ -96,8 +98,9 @@ class IndexUpdateStorageTest
     void shouldAddManyEntries() throws IOException
     {
         // given
-        try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( layout, directory.getFileSystem(), directory.file( "file" ),
-                HEAP_BUFFER_FACTORY, 1000 ) )
+        try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
+                HEAP_BUFFER_FACTORY, 1000, layout
+        ) )
         {
             // when
             List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected = generateSomeUpdates( 1_000 );
