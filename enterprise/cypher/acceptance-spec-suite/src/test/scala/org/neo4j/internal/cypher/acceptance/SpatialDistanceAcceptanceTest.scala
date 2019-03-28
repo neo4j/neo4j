@@ -327,25 +327,29 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     Range(0, 50).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: $i, longitude: $i})"))
 
     // Have a slightly bigger circle, and expect points on both sides of the date line, except the "corners" of the square.
-    val query =
-      s"""WITH distance(point({latitude: 0, longitude: 180, crs: 'WGS-84'}), point({latitude: 0, longitude: 169, crs: 'WGS-84'})) as d
-         |MATCH (p:Place)
-         |WHERE distance(p.location, point({latitude: 0, longitude: 180, crs: 'WGS-84'})) <= d
-         |RETURN p.location as point
+    Seq("<=","<").foreach { inequality =>
+      withClue(s"When using distance $inequality d\n") {
+        val query =
+          s"""WITH distance(point({latitude: 0, longitude: 180, crs: 'WGS-84'}), point({latitude: 0, longitude: 169, crs: 'WGS-84'})) as d
+             |MATCH (p:Place)
+             |WHERE distance(p.location, point({latitude: 0, longitude: 180, crs: 'WGS-84'})) $inequality d
+             |RETURN p.location as point
         """.stripMargin
 
-    // Then
-    val expected = Set(
-      Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, -180, 0)),
-      Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 180, 0)),
-      Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, -170, 0)),
-      Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 170, 0)),
-      Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, -180, 10)),
-      Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 180, 10)),
-      Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, -180, -10)),
-      Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 180, -10))
-    )
-    expectResultsAndIndexUsage(query, expected, inclusiveRange = true)
+        // Then
+        val expected = Set(
+          Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, -180, 0)),
+          Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 180, 0)),
+          Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, -170, 0)),
+          Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 170, 0)),
+          Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, -180, 10)),
+          Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 180, 10)),
+          Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, -180, -10)),
+          Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 180, -10))
+        )
+        expectResultsAndIndexUsage(query, expected, inclusiveRange = inequality.contains("="))
+      }
+    }
   }
 
   test("indexed 3D points with distance query and points within bbox") {
@@ -740,7 +744,7 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     val plan = result.executionPlanDescription()
     plan should useOperatorWithText("Projection", "point")
     plan should useOperatorWithText("Filter", "distance")
-    plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location)", "distance", if (inclusiveRange) "<= " else "<")
+    plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location)", "distance", if (inclusiveRange) "<= " else "< ")
     result.toList.toSet should equal(expectedResults)
   }
 }
