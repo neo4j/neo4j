@@ -22,11 +22,10 @@ package org.neo4j.monitoring;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
-import org.neo4j.collection.Streams;
 import org.neo4j.logging.Log;
 import org.neo4j.util.VisibleForTesting;
 
@@ -102,7 +101,7 @@ public class CompositeDatabaseHealth implements Health
     @Override
     public Throwable cause()
     {
-        List<Throwable> exceptions = healths.stream().flatMap( h -> Streams.ofNullable( h.cause() ) ).collect( Collectors.toList() );
+        List<Throwable> exceptions = healths.stream().flatMap( h -> Optional.ofNullable( h.cause() ).stream() ).collect( Collectors.toList() );
         if ( exceptions.isEmpty() )
         {
             return null;
