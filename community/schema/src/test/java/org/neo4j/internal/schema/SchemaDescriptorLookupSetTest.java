@@ -218,20 +218,20 @@ public class SchemaDescriptorLookupSetTest
                     ? stream( descriptor.getPropertyIds() ).allMatch( propertyKeyPredicate )
                     // For multi-token (e.g. full-text) descriptors any property key match is to be considered a match
                     : stream( descriptor.getPropertyIds() ).anyMatch( propertyKeyPredicate );
-            return stream( descriptor.getEntityTokenIds() ).allMatch( indexEntityId -> contains( entityTokenIds, indexEntityId ) ) && propertiesAccepted;
+            return stream( descriptor.getEntityTokenIds() ).anyMatch( indexEntityId -> contains( entityTokenIds, indexEntityId ) ) && propertiesAccepted;
         };
     }
 
     private static Predicate<SchemaDescriptor> filterByEntityAndPropertyPartial( int[] entityTokenIds, int[] propertyKeyIds )
     {
         return descriptor ->
-                stream( descriptor.getEntityTokenIds() ).allMatch( indexEntityId -> contains( entityTokenIds, indexEntityId ) ) &&
+                stream( descriptor.getEntityTokenIds() ).anyMatch( indexEntityId -> contains( entityTokenIds, indexEntityId ) ) &&
                 stream( descriptor.getPropertyIds() ).anyMatch( indexPropertyId -> contains( propertyKeyIds, indexPropertyId ) );
     }
 
     private static Predicate<SchemaDescriptor> filterByEntity( int[] entityTokenIds )
     {
-        return descriptor -> stream( descriptor.getEntityTokenIds() ).allMatch( indexEntityId -> contains( entityTokenIds, indexEntityId ) );
+        return descriptor -> stream( descriptor.getEntityTokenIds() ).anyMatch( indexEntityId -> contains( entityTokenIds, indexEntityId ) );
     }
 
     private static Set<SchemaDescriptor> expectedDescriptors( List<SchemaDescriptor> all, Predicate<SchemaDescriptor> filter )
