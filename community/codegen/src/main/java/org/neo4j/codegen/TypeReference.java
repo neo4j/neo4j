@@ -26,9 +26,6 @@ import java.util.List;
 
 import org.neo4j.values.AnyValue;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableList;
-
 public class TypeReference
 {
     public static Bound extending( Class<?> type )
@@ -252,7 +249,7 @@ public class TypeReference
 
     public List<TypeReference> parameters()
     {
-        return unmodifiableList( asList( parameters ) );
+        return List.of( parameters );
     }
 
     public String fullName()
@@ -354,6 +351,11 @@ public class TypeReference
         return result;
     }
 
+    public String baseName()
+    {
+        return writeBaseType( new StringBuilder() ).toString();
+    }
+
     @Override
     public String toString()
     {
@@ -362,16 +364,7 @@ public class TypeReference
 
     StringBuilder writeTo( StringBuilder result )
     {
-        if ( !packageName.isEmpty() )
-        {
-            result.append( packageName ).append( '.' );
-        }
-        List<TypeReference> parents = declaringClasses();
-        for ( TypeReference parent : parents )
-        {
-            result.append( parent.name ).append( '.' );
-        }
-        result.append( name );
+        writeBaseType( result );
         if ( isArray )
         {
             result.append( "[]" );
@@ -387,6 +380,21 @@ public class TypeReference
             }
             result.append( '>' );
         }
+        return result;
+    }
+
+    StringBuilder writeBaseType( StringBuilder result )
+    {
+        if ( !packageName.isEmpty() )
+        {
+            result.append( packageName ).append( '.' );
+        }
+        List<TypeReference> parents = declaringClasses();
+        for ( TypeReference parent : parents )
+        {
+            result.append( parent.name ).append( '.' );
+        }
+        result.append( name );
         return result;
     }
 
