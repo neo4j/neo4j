@@ -421,7 +421,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         return equalTo( new AnyValue[]{stringValue( procName ), stringValue( procName + procSignature ), stringValue( description ), stringValue( mode )} );
     }
 
-    @SuppressWarnings( {"unchecked", "TypeParameterExplicitlyExtendsObject", "SameParameterValue"} )
+    @SuppressWarnings( {"unchecked", "SameParameterValue"} )
     private Matcher<AnyValue[]> proc( String procName, String procSignature, Matcher<String> description, String mode )
     {
         Matcher<AnyValue> desc = new TypeSafeMatcher<AnyValue>()
