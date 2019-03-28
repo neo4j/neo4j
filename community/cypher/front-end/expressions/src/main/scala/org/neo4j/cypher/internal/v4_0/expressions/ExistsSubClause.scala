@@ -23,10 +23,10 @@ case class ExistsSubClause(pattern: Pattern, optionalWhereExpression: Option[Exp
 
   self =>
 
+  // TODO: Implement support for multiple patterns
   val patternElement: PatternElement = pattern.patternParts.head.element
 
-  def withOuterScope(outerScope: Set[LogicalVariable]): ExistsSubClause =
-    copy()(position, outerScope)
+  def withOuterScope(outerScope: Set[LogicalVariable]): ExistsSubClause = copy()(position, outerScope)
 
   override val introducedVariables: Set[LogicalVariable] = patternElement.allVariables -- outerScope
 

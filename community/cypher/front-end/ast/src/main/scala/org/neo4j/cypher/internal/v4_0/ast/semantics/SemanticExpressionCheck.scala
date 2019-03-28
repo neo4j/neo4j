@@ -424,6 +424,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x:ExistsSubClause =>
         SemanticState.recordCurrentScope(x) chain
         withScopedState { // saves us from leaking to the outside
+          // TODO: Should enforce single-pattern only until we have actual support for multiple pattern parts.
           SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
             when(x.optionalWhereExpression.isDefined) {
               check(ctx, x.optionalWhereExpression.get)

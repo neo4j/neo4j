@@ -58,10 +58,8 @@ case object transitiveClosure extends StatementRewriter {
     //NOTE that this might introduce duplicate predicates, however at a later rewrite
     //when AND is turned into ANDS we remove all duplicates
     private val whereRewriter: Rewriter = bottomUp(Rewriter.lift {
-      case and@And(lhs, sub@ExistsSubClause(pattern, optionalWhereExpression)) =>
-        and // TODO is this enough?
-      case and@And(sub@ExistsSubClause(pattern, optionalWhereExpression), rhs) =>
-        and // TODO is this enough?
+      case and@(And(_, _: ExistsSubClause) | And(_: ExistsSubClause, _)) =>
+        and
       case and@And(lhs, rhs) =>
         val closures = collect(lhs) ++ collect(rhs)
         val inner = andRewriter(closures)
