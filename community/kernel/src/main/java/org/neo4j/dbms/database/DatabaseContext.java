@@ -38,8 +38,19 @@ public interface DatabaseContext
      */
     default Dependencies dependencies()
     {
-        return database().getDependencyResolver();
+        Database database = database();
+        if ( database != null )
+        {
+            return database.getDependencyResolver();
+        }
+        return Dependencies.EMPTY_DEPENDENCIES;
     }
 
     GraphDatabaseFacade databaseFacade();
+
+    void fail( Throwable t );
+
+    boolean isFailed();
+
+    Throwable failureCause();
 }

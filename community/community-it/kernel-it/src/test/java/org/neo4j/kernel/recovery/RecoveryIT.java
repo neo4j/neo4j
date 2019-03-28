@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -36,6 +38,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
@@ -60,9 +63,9 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
 import static org.neo4j.configuration.Settings.FALSE;
 import static org.neo4j.graphdb.RelationshipType.withName;
@@ -297,10 +300,19 @@ class RecoveryIT
 
         removeTransactionLogs();
 
-        RuntimeException exception = assertThrows( RuntimeException.class, this::startStopDatabase );
-
-        assertThat( getRootCause( exception ).getMessage(),
-                containsString( "Transaction logs are missing and recovery is not possible." ) );
+        GraphDatabaseService restartedDb = createDatabase();
+        try
+        {
+            DatabaseManager<?> databaseManager = ((GraphDatabaseAPI) restartedDb).getDependencyResolver().resolveDependency( DatabaseManager.class );
+            DatabaseContext databaseContext = databaseManager.getDatabaseContext( new DatabaseId( DEFAULT_DATABASE_NAME ) ).get();
+            assertTrue( databaseContext.isFailed() );
+            assertThat( getRootCause( databaseContext.failureCause() ).getMessage(),
+                    containsString( "Transaction logs are missing and recovery is not possible." ) );
+        }
+        finally
+        {
+            restartedDb.shutdown();
+        }
     }
 
     @Test

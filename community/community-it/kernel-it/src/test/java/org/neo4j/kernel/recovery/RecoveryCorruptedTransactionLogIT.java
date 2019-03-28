@@ -37,6 +37,8 @@ import java.util.function.Supplier;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
+import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -46,6 +48,7 @@ import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -88,7 +91,8 @@ import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class, RandomExtension.class} )
@@ -156,13 +160,18 @@ class RecoveryCorruptedTransactionLogIT
         removeLastCheckpointRecordFromLastLogFile();
         addRandomBytesToLastLogFile( this::randomPositiveBytes );
 
-        Throwable throwable = assertThrows( Throwable.class, () ->
+        GraphDatabaseAPI db = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( databaseDirectory );
+        try
         {
-            GraphDatabaseAPI db = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( databaseDirectory );
+            DatabaseManager<?> databaseManager = db.getDependencyResolver().resolveDependency( DatabaseManager.class );
+            DatabaseContext databaseContext = databaseManager.getDatabaseContext( new DatabaseId( DEFAULT_DATABASE_NAME ) ).get();
+            assertTrue( databaseContext.isFailed() );
+            assertThat( databaseContext.failureCause(), new RootCauseMatcher<>( UnsupportedLogVersionException.class ) );
+        }
+        finally
+        {
             db.shutdown();
-        } );
-
-        assertThat( throwable, new RootCauseMatcher<>( UnsupportedLogVersionException.class ) );
+        }
     }
 
     @Test
@@ -214,12 +223,18 @@ class RecoveryCorruptedTransactionLogIT
     {
         addCorruptedCommandsToLastLogFile();
 
-        Throwable throwable = assertThrows( Throwable.class, () ->
+        GraphDatabaseAPI db = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( databaseDirectory );
+        try
         {
-            GraphDatabaseAPI db = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( databaseDirectory );
+            DatabaseManager<?> databaseManager = db.getDependencyResolver().resolveDependency( DatabaseManager.class );
+            DatabaseContext databaseContext = databaseManager.getDatabaseContext( new DatabaseId( DEFAULT_DATABASE_NAME ) ).get();
+            assertTrue( databaseContext.isFailed() );
+            assertThat( databaseContext.failureCause(), new RootCauseMatcher<>( NegativeArraySizeException.class ) );
+        }
+        finally
+        {
             db.shutdown();
-        } );
-        assertThat( throwable, new RootCauseMatcher<>( NegativeArraySizeException.class ) );
+        }
     }
 
     @Test

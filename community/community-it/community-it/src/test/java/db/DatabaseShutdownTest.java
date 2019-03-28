@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.DatabaseEventHandlerAdapter;
 import org.neo4j.graphdb.facade.ExternalDependencies;
@@ -34,15 +36,17 @@ import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
@@ -54,7 +58,6 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class, } )
@@ -67,11 +70,14 @@ class DatabaseShutdownTest
     void shouldShutdownCorrectlyWhenCheckPointingOnShutdownFails()
     {
         TestGraphDatabaseFactoryWithFailingPageCacheFlush factory = new TestGraphDatabaseFactoryWithFailingPageCacheFlush();
-        assertThrows( LifecycleException.class, () -> {
-            GraphDatabaseService databaseService = factory.newEmbeddedDatabase( testDirectory.storeDir() );
-            factory.setFailFlush( true );
-            databaseService.shutdown();
-        } );
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+        GraphDatabaseService databaseService = factory.newEmbeddedDatabase( databaseLayout.databaseDirectory() );
+        DatabaseManager<?> databaseManager = ((GraphDatabaseAPI) databaseService).getDependencyResolver().resolveDependency( DatabaseManager.class );
+        var databaseContext = databaseManager.getDatabaseContext( new DatabaseId( databaseLayout.getDatabaseName() ) );
+        factory.setFailFlush( true );
+        databaseService.shutdown();
+        DatabaseContext context = databaseContext.get();
+        assertTrue( context.isFailed() );
         assertEquals( LifecycleStatus.SHUTDOWN, factory.getDatabaseStatus() );
     }
 
@@ -142,7 +148,7 @@ class DatabaseShutdownTest
             return globalLife.getStatus();
         }
 
-        public void setFailFlush( boolean failFlush )
+        void setFailFlush( boolean failFlush )
         {
             this.failFlush = failFlush;
         }

@@ -26,6 +26,7 @@ import static java.util.Objects.requireNonNull;
 
 public class DatabaseId implements Comparable<DatabaseId>
 {
+    public static final Comparator<DatabaseId> DATABASE_ID_COMPARATOR = Comparator.comparing( DatabaseId::name );
     private final String name;
 
     public DatabaseId( String name )
@@ -54,12 +55,9 @@ public class DatabaseId implements Comparable<DatabaseId>
         return Objects.equals( name, that.name );
     }
 
-    public static Comparator<DatabaseId> comparator = Comparator.comparing( DatabaseId::name );
-
     @Override
     public int hashCode()
     {
-
         return Objects.hash( name );
     }
 
@@ -72,6 +70,6 @@ public class DatabaseId implements Comparable<DatabaseId>
     @Override
     public int compareTo( DatabaseId o )
     {
-        return comparator.compare( this, o );
+        return DATABASE_ID_COMPARATOR.compare( this, o );
     }
 }

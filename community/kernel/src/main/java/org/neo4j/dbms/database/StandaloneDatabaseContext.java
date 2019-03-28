@@ -19,7 +19,6 @@
  */
 package org.neo4j.dbms.database;
 
-import org.neo4j.collection.Dependencies;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
@@ -29,6 +28,7 @@ public class StandaloneDatabaseContext implements DatabaseContext
 {
     private final Database database;
     private final GraphDatabaseFacade databaseFacade;
+    private volatile Throwable failureCause;
 
     public StandaloneDatabaseContext( Database database, GraphDatabaseFacade databaseFacade )
     {
@@ -45,14 +45,26 @@ public class StandaloneDatabaseContext implements DatabaseContext
     }
 
     @Override
-    public Dependencies dependencies()
-    {
-        return database.getDependencyResolver();
-    }
-
-    @Override
     public GraphDatabaseFacade databaseFacade()
     {
         return databaseFacade;
+    }
+
+    @Override
+    public void fail( Throwable failureCause )
+    {
+        this.failureCause = failureCause;
+    }
+
+    @Override
+    public boolean isFailed()
+    {
+        return failureCause != null;
+    }
+
+    @Override
+    public Throwable failureCause()
+    {
+        return failureCause;
     }
 }

@@ -49,7 +49,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isOneOf;
+import static org.hamcrest.collection.IsIn.oneOf;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -58,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public abstract class PageSwapperTest
 {
     @Inject
-    public TestDirectory testDir;
+    protected TestDirectory testDir;
     public static final long X = 0xcafebabedeadbeefL;
     public static final long Y = X ^ (X << 1);
     public static final int Z = 0xfefefefe;
@@ -686,7 +686,7 @@ public abstract class PageSwapperTest
         long pageB = createPage( 8 );
         putLong( pageA, 0, X );
         putLong( pageB, 0, Y );
-        assertThat( read( swapper, 1, new long[]{pageA, pageB}, 0, 2 ), isOneOf( 12L, 16L ) );
+        assertThat( read( swapper, 1, new long[]{pageA, pageB}, 0, 2 ), is( oneOf( 12L, 16L ) ) );
         assertThat( getLong( pageA, 0 ), is( 0xFFFF_FFFF_FFFF_FFFFL ) );
 
 //        assertThat( getLong( 0, pageB ), is( 0xFFFF_FFFF_0000_0000L ) );
@@ -723,7 +723,7 @@ public abstract class PageSwapperTest
         putInt( pageA, 0, -1 );
         putInt( pageB, 0, -1 );
         putInt( pageC, 0, -1 );
-        assertThat( read( swapper, 0, new long[]{pageA, pageB, pageC}, 0, 3 ), isOneOf( 12L, 16L ) );
+        assertThat( read( swapper, 0, new long[]{pageA, pageB, pageC}, 0, 3 ), is( oneOf( 12L, 16L ) ) );
         assertThat( getInt( pageA, 0 ), is( 1 ) );
         assertThat( getInt( pageA, 4 ), is( 2 ) );
         assertThat( getInt( pageB, 0 ), is( 3 ) );

@@ -23,15 +23,18 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.monitoring.Monitors;
@@ -43,7 +46,11 @@ import org.neo4j.test.matchers.NestedThrowableMatcher;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
+import static org.neo4j.configuration.Settings.FALSE;
+import static org.neo4j.configuration.Settings.TRUE;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
 
@@ -66,7 +73,7 @@ class LogVersionUpgradeCheckerIT
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fileSystem )
                 .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
-                .setConfig( GraphDatabaseSettings.allow_upgrade, "false" )
+                .setConfig( allow_upgrade, FALSE )
                 .newGraphDatabase();
         db.shutdown();
     }
@@ -76,15 +83,22 @@ class LogVersionUpgradeCheckerIT
     {
         createStoreWithLogEntryVersion( LogEntryVersion.V3_0_10 );
 
-        Exception exception = assertThrows( Exception.class, () ->
+        // Try to start with upgrading disabled
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem )
+                                    .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
+                                    .setConfig( allow_upgrade, FALSE )
+                                    .newGraphDatabase();
+        try
         {
-            // Try to start with upgrading disabled
-            final GraphDatabaseService db =
-                    new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabaseBuilder( testDirectory.databaseDir() ).setConfig(
-                            GraphDatabaseSettings.allow_upgrade, "false" ).newGraphDatabase();
+            DatabaseManager<?> databaseManager = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( DatabaseManager.class );
+            DatabaseContext databaseContext = databaseManager.getDatabaseContext( new DatabaseId( DEFAULT_DATABASE_NAME ) ).get();
+            assertTrue( databaseContext.isFailed() );
+            assertThat( databaseContext.failureCause() , new NestedThrowableMatcher( UpgradeNotAllowedException.class ) );
+        }
+        finally
+        {
             db.shutdown();
-        } );
-        assertThat( exception, new NestedThrowableMatcher( UpgradeNotAllowedException.class ) );
+        }
     }
 
     @Test
@@ -96,7 +110,7 @@ class LogVersionUpgradeCheckerIT
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fileSystem )
                 .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
-                .setConfig( GraphDatabaseSettings.allow_upgrade, "true" )
+                .setConfig( allow_upgrade, TRUE )
                 .newGraphDatabase();
         db.shutdown();
     }

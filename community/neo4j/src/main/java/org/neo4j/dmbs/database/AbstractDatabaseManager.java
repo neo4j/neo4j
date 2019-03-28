@@ -19,21 +19,20 @@
  */
 package org.neo4j.dmbs.database;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.SortedMap;
+import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.BiConsumer;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DatabasesComparator;
 import org.neo4j.graphdb.facade.spi.ClassicCoreSPI;
 import org.neo4j.graphdb.factory.module.DatabaseModule;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -42,36 +41,28 @@ import org.neo4j.logging.Logger;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 
-public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extends LifecycleAdapter implements DatabaseManager<DB>
+public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends LifecycleAdapter implements DatabaseManager<T>
 {
 
-    protected final ConcurrentSkipListMap<DatabaseId,DB> databaseMap;
+    protected final ConcurrentSkipListMap<DatabaseId,T> databaseMap;
     private final GlobalModule globalModule;
     private final AbstractEditionModule edition;
     private final GraphDatabaseFacade graphDatabaseFacade;
-
     protected final Logger log;
 
-    public AbstractDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Logger log, GraphDatabaseFacade graphDatabaseFacade )
-    {
-        this( globalModule, edition, log, graphDatabaseFacade, null );
-    }
-
-    protected AbstractDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Logger log, GraphDatabaseFacade graphDatabaseFacade,
-            Comparator<DatabaseId> databasesOrdering )
+    protected AbstractDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Logger log, GraphDatabaseFacade graphDatabaseFacade )
     {
         this.log = log;
         this.globalModule = globalModule;
         this.edition = edition;
         this.graphDatabaseFacade = graphDatabaseFacade;
-        DatabasesComparator comparator = databasesOrdering != null ? new DatabasesComparator( databasesOrdering ) : new DatabasesComparator();
-        this.databaseMap = new ConcurrentSkipListMap<>( comparator );
+        this.databaseMap = new ConcurrentSkipListMap<>( new DatabasesComparator() );
     }
 
     @Override
     public void start() throws Exception
     {
-        forEachDatabase( this::startDatabase, false );
+        forEachDatabase( databaseMap, this::startDatabase );
     }
 
     @Override
@@ -79,15 +70,15 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
     {
         //We want to reverse databases in the opposite order to which they were started.
         // Amongst other things this helps to ensure that the system database is stopped last.
-        forEachDatabase( this::stopDatabase, true );
+        forEachDatabase( databaseMap.descendingMap(), this::stopDatabase );
     }
 
-    public final SortedMap<DatabaseId,DB> registeredDatabases()
+    public final SortedMap<DatabaseId,T> registeredDatabases()
     {
         return Collections.unmodifiableSortedMap( databaseMap );
     }
 
-    protected DB createNewDatabaseContext( DatabaseId databaseId )
+    protected T createNewDatabaseContext( DatabaseId databaseId )
     {
         log.log( "Creating '%s' database.", databaseId.name() );
         Config globalConfig = globalModule.getGlobalConfig();
@@ -100,46 +91,34 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
         return databaseContextFactory( database, facade );
     }
 
-    protected abstract DB databaseContextFactory( Database database, GraphDatabaseFacade facade );
+    protected abstract T databaseContextFactory( Database database, GraphDatabaseFacade facade );
 
-    protected final void forEachDatabase( BiConsumer<DatabaseId, DB> consumer, boolean reversed ) throws Exception
+    protected final void forEachDatabase( ConcurrentNavigableMap<DatabaseId,T> dbMap, BiConsumer<DatabaseId,T> consumer )
     {
-        Throwable error = null;
-        var dbs = new ArrayList<>( registeredDatabases().entrySet() );
-        if ( reversed )
+        for ( var databaseContextEntry : dbMap.entrySet() )
         {
-            Collections.reverse( dbs );
-        }
-
-        for ( var databaseContextEntry : dbs )
-        {
+            T context = databaseContextEntry.getValue();
+            DatabaseId contextKey = databaseContextEntry.getKey();
             try
             {
-                consumer.accept( databaseContextEntry.getKey(), databaseContextEntry.getValue() );
+                consumer.accept( contextKey, context );
             }
             catch ( Throwable t )
             {
-                error = Exceptions.chain( error, t );
+                context.fail( t );
+                log.log( "Fail to perform operation with a database " + contextKey, t );
             }
-        }
-        if ( error instanceof Exception )
-        {
-            throw (Exception) error;
-        }
-        else if ( error != null )
-        {
-            throw new Exception( error );
         }
     }
 
-    protected void startDatabase( DatabaseId databaseId, DB context )
+    protected void startDatabase( DatabaseId databaseId, T context )
     {
         log.log( "Starting '%s' database.", databaseId.name() );
         Database database = context.database();
         database.start();
     }
 
-    protected void stopDatabase( DatabaseId databaseId, DB context )
+    protected void stopDatabase( DatabaseId databaseId, T context )
     {
         log.log( "Stop '%s' database.", databaseId.name() );
         Database database = context.database();

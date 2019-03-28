@@ -158,7 +158,7 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
-import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
+import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
@@ -429,38 +429,15 @@ public class Database extends LifecycleAdapter
             life.add( databaseAvailabilityGuard );
             life.add( databaseAvailability );
             life.setLast( checkpointerLifecycle );
-        }
-        catch ( Throwable e )
-        {
-            // Something unexpected happened during startup
-            msgLog.warn( "Exception occurred while setting up store modules. Attempting to close things down.", e );
-            try
-            {
-                // Close the storage engine, so that locks are released properly
-                if ( storageEngine != null )
-                {
-                    storageEngine.forceClose();
-                }
-            }
-            catch ( Exception closeException )
-            {
-                msgLog.error( "Couldn't close database after startup failure", closeException );
-            }
-            throwIfUnchecked( e );
-            throw new RuntimeException( e );
-        }
-        try
-        {
             life.start();
         }
         catch ( Throwable e )
         {
             // Something unexpected happened during startup
-            msgLog.warn( "Exception occurred while starting the datasource. Attempting to close things down.", e );
+            msgLog.warn( "Exception occurred while starting the database. Trying to stop already started components.", e );
             try
             {
-                life.shutdown();
-                storageEngine.forceClose();
+                executeAll( () -> safeLifeShutdown( life ), () -> safeStorageEngineClose( storageEngine ) );
             }
             catch ( Exception closeException )
             {
@@ -469,7 +446,7 @@ public class Database extends LifecycleAdapter
             throw new RuntimeException( e );
         }
         /*
-         * At this point recovery has completed and the datasource is ready for use. Whatever panic might have
+         * At this point recovery has completed and the database is ready for use. Whatever panic might have
          * happened before has been healed. So we can safely set the kernel health to ok.
          * This right now has any real effect only in the case of internal restarts (for example, after a store copy).
          * Standalone instances will have to be restarted by the user, as is proper for all database panics.
@@ -887,5 +864,21 @@ public class Database extends LifecycleAdapter
                 return asList( reader.indexesGetAll() ).iterator();
             }
         };
+    }
+
+    private static void safeStorageEngineClose( StorageEngine storageEngine )
+    {
+        if ( storageEngine != null )
+        {
+            storageEngine.forceClose();
+        }
+    }
+
+    private static void safeLifeShutdown( LifeSupport life )
+    {
+        if ( life != null )
+        {
+            life.shutdown();
+        }
     }
 }

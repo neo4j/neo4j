@@ -39,6 +39,8 @@ import static org.apache.commons.lang3.ClassUtils.getAllSuperclasses;
 @SuppressWarnings( "unchecked" )
 public class Dependencies extends DependencyResolver.Adapter implements DependencySatisfier
 {
+    public static final Dependencies EMPTY_DEPENDENCIES = new Dependencies();
+
     private final DependencyResolver parent;
     private final MutableSetMultimap<Class, Object> typeDependencies = Multimaps.mutable.set.empty();
 

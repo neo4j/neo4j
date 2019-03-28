@@ -27,8 +27,6 @@ import java.util.SortedMap;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-
 public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
 {
     /**
@@ -78,46 +76,4 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
      * @return a Map from database names to database objects.
      */
     SortedMap<DatabaseId,DB> registeredDatabases();
-
-    /**
-     * This is a custom comparator for databases, which always places the system database to be the first (lowest) in any sorted order.
-     * A custom ordering may be provided for the rest of the managed databases, in the form of a wrapped "delegate" comparator. However,
-     * regardless of what comparator is provided, system database will always sort lower than every other database.
-     *
-     * If no custom comparator is provided then the databases are sorted lexicographically by their name.
-     */
-    class DatabasesComparator implements Comparator<DatabaseId>
-    {
-        private final Comparator<DatabaseId> delegate;
-
-        public DatabasesComparator( Comparator<DatabaseId> delegate )
-        {
-            this.delegate = delegate;
-        }
-
-        public DatabasesComparator()
-        {
-            this.delegate = DatabaseId.comparator;
-        }
-
-        @Override
-        public int compare( DatabaseId left, DatabaseId right )
-        {
-            boolean leftIsSystem = isSystemDatabase( left );
-            boolean rightIsSystem = isSystemDatabase( right );
-            if ( leftIsSystem || rightIsSystem )
-            {
-                return Boolean.compare( rightIsSystem, leftIsSystem );
-            }
-            else
-            {
-                return delegate.compare( left, right );
-            }
-        }
-
-        private boolean isSystemDatabase( DatabaseId id )
-        {
-            return Objects.equals( id.name(), SYSTEM_DATABASE_NAME );
-        }
-    }
 }
