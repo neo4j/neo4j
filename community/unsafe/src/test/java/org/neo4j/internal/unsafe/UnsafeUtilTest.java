@@ -20,8 +20,6 @@
 package org.neo4j.internal.unsafe;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnJre;
-import org.junit.jupiter.api.condition.JRE;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -655,7 +653,6 @@ class UnsafeUtilTest
     }
 
     @Test
-    @DisabledOnJre( JRE.JAVA_8 )
     void closeNativeByteBufferWithUnsafe()
     {
         ByteBuffer directBuffer = ByteBuffer.allocateDirect( 1024 );

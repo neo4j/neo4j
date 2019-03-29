@@ -19,10 +19,7 @@
  */
 package org.neo4j.io.mem;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.util.Objects;
+import java.lang.ref.Cleaner;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.memory.MemoryAllocationTracker;
@@ -36,16 +33,15 @@ import static org.neo4j.util.FeatureToggles.getInteger;
  */
 public final class GrabAllocator implements MemoryAllocator
 {
-    private static final Object globalCleanerInstance = globalCleaner();
+    private static final Cleaner globalCleaner = globalCleaner();
 
     private final Grabs grabs;
-    @SuppressWarnings( {"unused", "FieldCanBeLocal"} )
-    private final Object cleaner;
-    private final MethodHandle cleanHandle;
+    private final Cleaner.Cleanable cleanable;
 
     /**
      * Create a new GrabAllocator that will allocate the given amount of memory, to pointers that are aligned to the
      * given alignment size.
+     *
      * @param expectedMaxMemory The maximum amount of memory that this memory manager is expected to allocate. The
      * actual amount of memory used can end up greater than this value, if some of it gets wasted on alignment padding.
      * @param memoryTracker memory usage tracker
@@ -53,16 +49,7 @@ public final class GrabAllocator implements MemoryAllocator
     GrabAllocator( long expectedMaxMemory, MemoryAllocationTracker memoryTracker )
     {
         this.grabs = new Grabs( expectedMaxMemory, memoryTracker );
-        try
-        {
-            CleanerHandles handles = findCleanerHandles();
-            this.cleaner = handles.creator.invoke( this, new GrabsDeallocator( grabs ) );
-            this.cleanHandle = handles.cleaner;
-        }
-        catch ( Throwable throwable )
-        {
-            throw new LinkageError( "Unable to instantiate cleaner", throwable );
-        }
+        this.cleanable = globalCleaner.register( this, new GrabsDeallocator( grabs ) );
     }
 
     @Override
@@ -86,14 +73,7 @@ public final class GrabAllocator implements MemoryAllocator
     @Override
     public void close()
     {
-        try
-        {
-            cleanHandle.invoke( cleaner );
-        }
-        catch ( Throwable throwable )
-        {
-            throw new LinkageError( "Unable to clean cleaner.", throwable );
-        }
+        cleanable.clean();
     }
 
     private static class Grab
@@ -267,83 +247,9 @@ public final class GrabAllocator implements MemoryAllocator
         }
     }
 
-    private static Object globalCleaner()
+    private static Cleaner globalCleaner()
     {
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
-        try
-        {
-            Class<?> newCleaner = Class.forName( "java.lang.ref.Cleaner" );
-            MethodHandle createInstance = lookup.findStatic( newCleaner, "create", MethodType.methodType( newCleaner ) );
-            return createInstance.invoke();
-        }
-        catch ( Throwable throwable )
-        {
-            return null;
-        }
-    }
-
-    private static CleanerHandles findCleanerHandles()
-    {
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
-        return globalCleanerInstance == null ? findHandlesForOldCleaner( lookup ) : findHandlesForNewCleaner( lookup );
-    }
-
-    private static CleanerHandles findHandlesForNewCleaner( MethodHandles.Lookup lookup )
-    {
-        try
-        {
-            Objects.requireNonNull( globalCleanerInstance );
-            Class<?> newCleaner = globalCleanerInstance.getClass();
-            Class<?> newCleanable = Class.forName( "java.lang.ref.Cleaner$Cleanable" );
-            MethodHandle registerHandle = findCreationMethod( "register", lookup, newCleaner );
-            registerHandle = registerHandle.bindTo( globalCleanerInstance );
-            return CleanerHandles.of( registerHandle, findCleanMethod( lookup, newCleanable ) );
-        }
-        catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException newCleanerException )
-        {
-            throw new LinkageError( "Unable to find cleaner methods.", newCleanerException );
-        }
-    }
-
-    private static CleanerHandles findHandlesForOldCleaner( MethodHandles.Lookup lookup )
-    {
-        try
-        {
-            Class<?> oldCleaner = Class.forName( "sun.misc.Cleaner" );
-            return CleanerHandles.of( findCreationMethod( "create", lookup, oldCleaner ), findCleanMethod( lookup, oldCleaner ) );
-        }
-        catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException oldCleanerException )
-        {
-            throw new LinkageError( "Unable to find cleaner methods.", oldCleanerException );
-        }
-    }
-
-    private static MethodHandle findCleanMethod( MethodHandles.Lookup lookup, Class<?> cleaner ) throws IllegalAccessException, NoSuchMethodException
-    {
-        return lookup.unreflect( cleaner.getDeclaredMethod( "clean" ) );
-    }
-
-    private static MethodHandle findCreationMethod( String methodName, MethodHandles.Lookup lookup, Class<?> cleaner )
-            throws IllegalAccessException, NoSuchMethodException
-    {
-        return lookup.unreflect( cleaner.getDeclaredMethod( methodName, Object.class, Runnable.class ) );
-    }
-
-    private static final class CleanerHandles
-    {
-        private final MethodHandle creator;
-        private final MethodHandle cleaner;
-
-        static CleanerHandles of( MethodHandle creator, MethodHandle cleaner )
-        {
-            return new CleanerHandles( creator, cleaner );
-        }
-
-        private CleanerHandles( MethodHandle creator, MethodHandle cleaner )
-        {
-            this.creator = creator;
-            this.cleaner = cleaner;
-        }
+        return Cleaner.create();
     }
 
     private static final class GrabsDeallocator implements Runnable

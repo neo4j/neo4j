@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import org.apache.commons.lang3.SystemUtils;
-
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -246,11 +243,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
      * Invokes cleaner if required of provided byte buffer.
      * In case if byte buffer is not direct - nothing will gonna be executed on close.
      * <br/>
-     * For direct byte buffers:
-     * <ul>
-     *   <li>For Java 8 direct byte buffer cleaner will be invoked.</li>
-     *   <li>For more recent java versions (9 and above ) unsafe helper method will be invoked to clean native buffer resources.</li>
-     *</ul>
+     * For direct byte buffers: unsafe helper method will be invoked to clean native buffer resources.
      */
     private static class CloseableByteBuffer implements Closeable
     {
@@ -270,29 +263,12 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
             }
             try
             {
-                if ( SystemUtils.IS_JAVA_1_8 )
-                {
-                    invokeOldBufferCleaner();
-                }
-                else
-                {
-                    UnsafeUtil.invokeCleaner( byteBuffer );
-                }
+                UnsafeUtil.invokeCleaner( byteBuffer );
             }
             catch ( Throwable t )
             {
                 throw new RuntimeException( t );
             }
-        }
-
-        private void invokeOldBufferCleaner() throws Throwable
-        {
-
-            Class<?> cleanerClass = Class.forName( "sun.misc.Cleaner" );
-            Method cleanerAccessor = byteBuffer.getClass().getMethod( "cleaner" );
-            cleanerAccessor.setAccessible( true );
-            Object cleanerObject = cleanerAccessor.invoke( byteBuffer );
-            cleanerClass.getDeclaredMethod( "clean" ).invoke( cleanerObject );
         }
     }
 }
