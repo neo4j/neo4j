@@ -20,16 +20,17 @@
 package org.neo4j.kernel.api.impl.schema.reader;
 
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
@@ -38,9 +39,12 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.index.schema.GatheringNodeValueClient;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.values.storable.Value;
 
 import static org.junit.Assert.assertEquals;
@@ -51,18 +55,20 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.documentRepresentingProperties;
 import static org.neo4j.values.storable.Values.stringValue;
 
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class, RandomExtension.class} )
 public class SimpleIndexReaderDistinctValuesTest
 {
-    @Rule
-    public final RandomRule random = new RandomRule();
-    @Rule
-    public final DefaultFileSystemRule fs = new DefaultFileSystemRule();
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory( fs );
+    @Inject
+    public RandomRule random;
+    @Inject
+    EphemeralFileSystemAbstraction fs;
+    @Inject
+    TestDirectory directory;
+
     private SchemaIndex index;
 
-    @Before
-    public void setup() throws IOException
+    @BeforeEach
+    void setup() throws IOException
     {
         index = LuceneSchemaIndexBuilder.create( IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( 1, 1 ) ), Config.defaults() )
                 .withFileSystem( fs )
@@ -72,14 +78,14 @@ public class SimpleIndexReaderDistinctValuesTest
         index.open();
     }
 
-    @After
-    public void tearDown() throws IOException
+    @AfterEach
+    void tearDown() throws IOException
     {
         index.close();
     }
 
     @Test
-    public void shouldGetDistinctStringValues() throws IOException
+    void shouldGetDistinctStringValues() throws IOException
     {
         // given
         LuceneIndexWriter writer = index.getIndexWriter();
@@ -111,7 +117,7 @@ public class SimpleIndexReaderDistinctValuesTest
     }
 
     @Test
-    public void shouldCountDistinctValues() throws IOException
+    void shouldCountDistinctValues() throws IOException
     {
         // given
         LuceneIndexWriter writer = index.getIndexWriter();
