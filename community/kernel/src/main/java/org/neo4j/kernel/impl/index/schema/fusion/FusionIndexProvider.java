@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import org.apache.commons.lang3.mutable.MutableObject;
-
 import java.io.IOException;
 import java.util.EnumMap;
 import java.util.List;
@@ -39,7 +37,6 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageIndexReference;
-import org.neo4j.storageengine.migration.CompositeStoreMigrationParticipant;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
@@ -169,7 +166,6 @@ public class FusionIndexProvider extends IndexProvider
     @Override
     public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
     {
-        List<StoreMigrationParticipant> participantList = providers.transform( p -> p.storeMigrationParticipant( fs, pageCache, storageEngineFactory ) );
-        return new CompositeStoreMigrationParticipant( "FusionIndexMigration", participantList );
+        return new SchemaIndexMigrator( fs, this, storageEngineFactory );
     }
 }
