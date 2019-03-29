@@ -225,16 +225,14 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
      * but the incremented log version changed hadn't made it to persistent storage.
      *
      * @param forVersion log version for the file/channel to create.
-     * @param options options used to open log file
      * @param lastTransactionIdSupplier supplier of last transaction id that was written into previous log file
      * @return {@link PhysicalLogVersionedStoreChannel} for newly created/opened log file.
      * @throws IOException if there's any I/O related error.
      */
-    PhysicalLogVersionedStoreChannel createLogChannelForVersion( long forVersion, Set<OpenOption> options,
-            LongSupplier lastTransactionIdSupplier ) throws IOException
+    PhysicalLogVersionedStoreChannel createLogChannelForVersion( long forVersion, LongSupplier lastTransactionIdSupplier ) throws IOException
     {
         File toOpen = getLogFileForVersion( forVersion );
-        StoreChannel storeChannel = fileSystem.open( toOpen, options );
+        StoreChannel storeChannel = fileSystem.write( toOpen );
         ByteBuffer headerBuffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
         LogHeader header = readLogHeader( headerBuffer, storeChannel, false, toOpen );
         if ( header == null )
