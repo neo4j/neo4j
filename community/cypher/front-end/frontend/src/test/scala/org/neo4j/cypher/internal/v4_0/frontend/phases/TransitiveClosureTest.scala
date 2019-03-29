@@ -99,4 +99,22 @@ class TransitiveClosureTest extends CypherFunSuite with AstRewritingTestSupport 
   test("MATCH (a) WHERE EXISTS {MATCH (a)-->(b) WHERE a.prop = b.prop OR b.prop = 42}") {
     assertNotRewritten("MATCH (a) WHERE EXISTS {MATCH (a)-->(b) WHERE a.prop = b.prop OR b.prop = 42} RETURN a")
   }
+
+  // Should not leak inner predicates to the outside
+
+  test("MATCH (a) WHERE EXISTS {MATCH (a)-->(b) WHERE a.prop = b.prop} AND a.prop = 42") {
+    assertNotRewritten( "MATCH (a) WHERE EXISTS {MATCH (a)-->(b) WHERE a.prop = b.prop} AND a.prop = 42 RETURN a")
+  }
+
+  test("MATCH (a) WHERE a.prop = 42 AND EXISTS {MATCH (a)-->(b) WHERE a.prop = b.prop}") {
+    assertNotRewritten( "MATCH (a) WHERE a.prop = 42 AND EXISTS {MATCH (a)-->(b) WHERE a.prop = b.prop} RETURN a")
+  }
+
+  test("MATCH (a)-->(b) WHERE EXISTS {MATCH (a) WHERE a.prop = 42} AND a.prop = b.prop") {
+    assertNotRewritten( "MATCH (a)-->(b) WHERE EXISTS {MATCH (a) WHERE a.prop = 42} AND a.prop = b.prop RETURN a")
+  }
+
+  test("MATCH (a)-->(b) WHERE a.prop = b.prop AND EXISTS {MATCH (a) WHERE a.prop = 42}") {
+    assertNotRewritten( "MATCH (a)-->(b) WHERE a.prop = b.prop AND EXISTS {MATCH (a) WHERE a.prop = 42} RETURN a")
+  }
 }
