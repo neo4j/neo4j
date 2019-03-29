@@ -66,6 +66,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
@@ -641,8 +642,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         StoreChannel channel = mock( StoreChannel.class );
         when( channel.tryLock() ).thenReturn( mock( FileLock.class ) );
-        when( fs.write( any( File.class ) ) ).thenReturn( channel );
-        when( fs.open( any( File.class ), any() ) ).thenReturn( channel );
+        when( fs.write( any( File.class ) ) ).thenReturn( channel ).thenReturn( channel );
 
         // when
         factory.open( fs, Configuration.EMPTY );
@@ -650,7 +650,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         try
         {
             // then
-            verify( fs ).open( eq( file ), any( Set.class ) );
+            verify( fs, times(2) ).write( eq( file ) );
         }
         finally
         {

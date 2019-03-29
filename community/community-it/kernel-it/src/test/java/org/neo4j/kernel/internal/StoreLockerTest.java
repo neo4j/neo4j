@@ -21,13 +21,10 @@ package org.neo4j.kernel.internal;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileLock;
-import java.nio.file.OpenOption;
-import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -51,6 +48,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class StoreLockerTest
@@ -63,7 +61,7 @@ class StoreLockerTest
     @Test
     void shouldUseAlreadyOpenedFileChannel() throws Exception
     {
-        StoreChannel channel = Mockito.mock( StoreChannel.class );
+        StoreChannel channel = mock( StoreChannel.class );
         CustomChannelFileSystemAbstraction fileSystemAbstraction = new CustomChannelFileSystemAbstraction( fileSystem, channel );
         int numberOfCallesToOpen = 0;
         try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.storeLayout() ) )
@@ -196,7 +194,7 @@ class StoreLockerTest
         FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystem )
         {
             @Override
-            public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
+            public StoreChannel write( File fileName ) throws IOException
             {
                 throw new IOException( "cannot open lock file" );
             }
@@ -235,9 +233,9 @@ class StoreLockerTest
             }
 
             @Override
-            public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
+            public StoreChannel write( File fileName ) throws IOException
             {
-                return new DelegatingStoreChannel( super.open( fileName, options ) )
+                return new DelegatingStoreChannel( super.write( fileName ) )
                 {
                     @Override
                     public FileLock tryLock()
@@ -285,7 +283,7 @@ class StoreLockerTest
         }
 
         @Override
-        public StoreChannel open( File fileName, Set<OpenOption> options )
+        public StoreChannel write( File fileName )
         {
             numberOfCallsToOpen++;
             return channel;

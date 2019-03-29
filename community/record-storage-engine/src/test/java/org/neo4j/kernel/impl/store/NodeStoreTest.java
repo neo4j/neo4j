@@ -22,19 +22,16 @@ package org.neo4j.kernel.impl.store;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.junit.After;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.LongSupplier;
 
@@ -54,15 +51,17 @@ import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -73,23 +72,23 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
-public class NodeStoreTest
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+class NodeStoreTest
 {
-    @ClassRule
-    public static final PageCacheRule pageCacheRule = new PageCacheRule();
 
-    private final EphemeralFileSystemRule efs = new EphemeralFileSystemRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory(efs);
-
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( efs ).around( testDirectory );
+    @RegisterExtension
+    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
 
     private NodeStore nodeStore;
     private NeoStores neoStores;
     private IdGeneratorFactory idGeneratorFactory;
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         if ( neoStores != null )
         {
@@ -98,7 +97,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldReadFirstFromSingleRecordDynamicLongArray()
+    void shouldReadFirstFromSingleRecordDynamicLongArray()
     {
         // GIVEN
         Long expectedId = 12L;
@@ -114,7 +113,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldReadFirstAsNullFromEmptyDynamicLongArray()
+    void shouldReadFirstAsNullFromEmptyDynamicLongArray()
     {
         // GIVEN
         Long expectedId = null;
@@ -130,7 +129,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldReadFirstFromTwoRecordDynamicLongArray()
+    void shouldReadFirstFromTwoRecordDynamicLongArray()
     {
         // GIVEN
         Long expectedId = 12L;
@@ -147,11 +146,10 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldCombineProperFiveByteLabelField() throws Exception
+    void shouldCombineProperFiveByteLabelField() throws Exception
     {
         // GIVEN
         // -- a store
-        EphemeralFileSystemAbstraction fs = efs.get();
         nodeStore = newNodeStore( fs );
 
         // -- a record with the msb carrying a negative value
@@ -173,7 +171,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldKeepRecordLightWhenSettingLabelFieldWithoutDynamicRecords()
+    void shouldKeepRecordLightWhenSettingLabelFieldWithoutDynamicRecords()
     {
         // GIVEN
         NodeRecord record = new NodeRecord( 0, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
@@ -186,7 +184,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldMarkRecordHeavyWhenSettingLabelFieldWithDynamicRecords()
+    void shouldMarkRecordHeavyWhenSettingLabelFieldWithDynamicRecords()
     {
         // GIVEN
         NodeRecord record = new NodeRecord( 0, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
@@ -200,10 +198,9 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldTellNodeInUse() throws Exception
+    void shouldTellNodeInUse() throws Exception
     {
         // Given
-        EphemeralFileSystemAbstraction fs = efs.get();
         NodeStore store = newNodeStore( fs );
 
         long exists = store.nextId();
@@ -220,10 +217,9 @@ public class NodeStoreTest
     }
 
     @Test
-    public void scanningRecordsShouldVisitEachInUseRecordOnce() throws IOException
+    void scanningRecordsShouldVisitEachInUseRecordOnce() throws IOException
     {
         // GIVEN we have a NodeStore with data that spans several pages...
-        EphemeralFileSystemAbstraction fs = efs.get();
         nodeStore = newNodeStore( fs );
 
         ThreadLocalRandom rng = ThreadLocalRandom.current();
@@ -263,16 +259,16 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldCloseStoreFileOnFailureToOpen()
+    void shouldCloseStoreFileOnFailureToOpen()
     {
         // GIVEN
         final MutableBoolean fired = new MutableBoolean();
-        FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( efs.get() )
+        FileSystemAbstraction customFs = new DelegatingFileSystemAbstraction( fs )
         {
             @Override
-            public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
+            public StoreChannel write( File fileName ) throws IOException
             {
-                return new DelegatingStoreChannel( super.open( fileName, options ) )
+                return new DelegatingStoreChannel( super.write( fileName ) )
                 {
                     @Override
                     public void readAll( ByteBuffer dst ) throws IOException
@@ -285,24 +281,21 @@ public class NodeStoreTest
         };
 
         // WHEN
-        try ( PageCache pageCache = pageCacheRule.getPageCache( fs ) )
+        Exception exception = assertThrows( Exception.class, () ->
         {
-            newNodeStore( fs );
-            fail( "Should fail" );
-        }   // Close the page cache here so that we can see failure to close (due to still mapped files)
-        catch ( Exception e )
-        {
-            // THEN
-            assertTrue( contains( e, IOException.class ) );
-            assertTrue( fired.booleanValue() );
-        }
+            try ( PageCache pageCache = pageCacheExtension.getPageCache( customFs ) )
+            {
+                newNodeStore( customFs );
+            }
+        } );
+        assertTrue( contains( exception, IOException.class ) );
+        assertTrue( fired.booleanValue() );
     }
 
     @Test
-    public void shouldFreeSecondaryUnitIdOfDeletedRecord() throws Exception
+    void shouldFreeSecondaryUnitIdOfDeletedRecord() throws Exception
     {
         // GIVEN
-        EphemeralFileSystemAbstraction fs = efs.get();
         nodeStore = newNodeStore( fs );
         NodeRecord record = new NodeRecord( 5L );
         record.setRequiresSecondaryUnit( true );
@@ -322,10 +315,9 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldFreeSecondaryUnitIdOfShrunkRecord() throws Exception
+    void shouldFreeSecondaryUnitIdOfShrunkRecord() throws Exception
     {
         // GIVEN
-        EphemeralFileSystemAbstraction fs = efs.get();
         nodeStore = newNodeStore( fs );
         NodeRecord record = new NodeRecord( 5L );
         record.setRequiresSecondaryUnit( true );
@@ -344,9 +336,9 @@ public class NodeStoreTest
         verify( idGenerator ).freeId( 10L );
     }
 
-    private NodeStore newNodeStore( FileSystemAbstraction fs ) throws IOException
+    private NodeStore newNodeStore( FileSystemAbstraction fs )
     {
-        return newNodeStore( fs, pageCacheRule.getPageCache( fs ) );
+        return newNodeStore( fs, pageCacheExtension.getPageCache( fs ) );
     }
 
     private NodeStore newNodeStore( FileSystemAbstraction fs, PageCache pageCache )

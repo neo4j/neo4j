@@ -24,8 +24,6 @@ import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.OpenOption;
-import java.util.Set;
 import java.util.function.LongSupplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -37,7 +35,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.lang.String.format;
-import static java.nio.file.StandardOpenOption.READ;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
@@ -184,7 +181,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
         StoreChannel rawChannel = null;
         try
         {
-            rawChannel = openLogFileChannel( fileToOpen, Set.of( READ ) );
+            rawChannel = fileSystem.read( fileToOpen );
             ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
             LogHeader header = readLogHeader( buffer, rawChannel, true, fileToOpen );
             if ( (header == null) || (header.logVersion != version) )
@@ -292,10 +289,5 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     public TransactionLogFileInformation getLogFileInformation()
     {
         return logFileInformation;
-    }
-
-    private StoreChannel openLogFileChannel( File file, Set<OpenOption> options ) throws IOException
-    {
-        return fileSystem.open( file, options );
     }
 }
