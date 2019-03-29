@@ -24,7 +24,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.nio.ByteBuffer;
-import java.util.Set;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -32,7 +31,6 @@ import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
 import static java.nio.ByteBuffer.allocate;
-import static java.nio.file.StandardOpenOption.READ;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -47,14 +45,14 @@ class TestEphemeralFileChannel
     @Test
     void smoke() throws Exception
     {
-        StoreChannel channel = fileSystem.create( new File( "yo" ) );
+        StoreChannel channel = fileSystem.write( new File( "yo" ) );
 
         // Clear it because we depend on it to be zeros where we haven't written
         ByteBuffer buffer = allocate( 23 );
         buffer.put( new byte[23] ); // zeros
         buffer.flip();
         channel.write( buffer );
-        channel = fileSystem.create( new File( "yo" ) );
+        channel = fileSystem.write( new File( "yo" ) );
         long longValue = 1234567890L;
 
         // [1].....[2]........[1234567890L]...
@@ -110,13 +108,13 @@ class TestEphemeralFileChannel
     {
         // GIVEN
         File file = new File( "myfile" );
-        StoreChannel channel = fileSystem.create( file );
+        StoreChannel channel = fileSystem.write( file );
         byte[] bytes = "test".getBytes();
         channel.write( ByteBuffer.wrap( bytes ) );
         channel.close();
 
         // WHEN
-        channel = fileSystem.open( new File( file.getAbsolutePath() ), Set.of( READ ) );
+        channel = fileSystem.read( new File( file.getAbsolutePath() ) );
         byte[] readBytes = new byte[bytes.length];
         channel.readAll( ByteBuffer.wrap( readBytes ) );
 
@@ -149,10 +147,10 @@ class TestEphemeralFileChannel
         fileSystem.mkdirs( dir1 );
         fileSystem.mkdirs( subdir1 );
 
-        fileSystem.create( file1 );
-        fileSystem.create( file2 );
-        fileSystem.create( file3 );
-        fileSystem.create( file4 );
+        fileSystem.write( file1 );
+        fileSystem.write( file2 );
+        fileSystem.write( file3 );
+        fileSystem.write( file4 );
 
         // THEN
         assertEquals( asSet( dir1, dir2 ), asSet( fileSystem.listFiles( root ) ) );

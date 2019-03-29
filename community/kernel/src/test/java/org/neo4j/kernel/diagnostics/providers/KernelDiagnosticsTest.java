@@ -108,7 +108,7 @@ class KernelDiagnosticsTest
     private File file( File parent, String name, int size ) throws IOException
     {
         File file = new File( parent, name );
-        try ( StoreChannel channel = fs.create( file ) )
+        try ( StoreChannel channel = fs.write( file ) )
         {
             ByteBuffer buffer = ByteBuffer.allocate( size );
             buffer.position( size ).flip();

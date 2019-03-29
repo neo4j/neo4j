@@ -155,7 +155,7 @@ public class SetInitialPasswordCommandIT
         // Given
         File authFile = getAuthFile( "auth" );
         fileSystem.mkdirs( authFile.getParentFile() );
-        fileSystem.create( authFile );
+        fileSystem.write( authFile );
 
         // When
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "will-be-ignored" );
@@ -178,8 +178,8 @@ public class SetInitialPasswordCommandIT
         File rolesFile = getAuthFile( "roles" );
 
         fileSystem.mkdirs( authFile.getParentFile() );
-        fileSystem.create( authFile );
-        fileSystem.create( rolesFile );
+        fileSystem.write( authFile );
+        fileSystem.write( rolesFile );
 
         // When
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "will-be-ignored" );

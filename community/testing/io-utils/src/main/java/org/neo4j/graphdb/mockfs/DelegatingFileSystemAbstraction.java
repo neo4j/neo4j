@@ -120,9 +120,15 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public StoreChannel create( File fileName ) throws IOException
+    public StoreChannel read( File fileName ) throws IOException
     {
-        return delegate.create( fileName );
+        return delegate.read( fileName );
+    }
+
+    @Override
+    public StoreChannel write( File fileName ) throws IOException
+    {
+        return delegate.write( fileName );
     }
 
     @Override

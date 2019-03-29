@@ -508,7 +508,7 @@ public class RandomPageCacheTestHarness implements Closeable
         {
             files[i] = new File( base, s.substring( i, i + 1 ) ).getCanonicalFile();
             fs.mkdirs( files[i].getParentFile() );
-            StoreChannel channel = fs.create( files[i] );
+            StoreChannel channel = fs.write( files[i] );
             channel.truncate( 0 );
             channel.close();
         }

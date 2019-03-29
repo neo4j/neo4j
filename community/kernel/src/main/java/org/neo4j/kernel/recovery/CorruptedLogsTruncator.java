@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.util.Set;
 import java.util.function.LongConsumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -37,7 +36,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 
 import static java.lang.String.format;
-import static java.nio.file.StandardOpenOption.READ;
 
 /**
  * Transaction log truncator used during recovery to truncate all the logs after some specified position, that
@@ -145,7 +143,7 @@ public class CorruptedLogsTruncator
         }
         ZipEntry zipEntry = new ZipEntry( logFile.getName() );
         destination.putNextEntry( zipEntry );
-        try ( StoreChannel transactionLogChannel = fs.open( logFile, Set.of( READ ) ) )
+        try ( StoreChannel transactionLogChannel = fs.read( logFile ) )
         {
             transactionLogChannel.position( logOffset );
             while ( transactionLogChannel.read( byteBuffer ) >= 0 )

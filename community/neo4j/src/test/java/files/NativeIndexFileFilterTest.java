@@ -131,6 +131,6 @@ public class NativeIndexFileFilterTest
     private void createFile( File file ) throws IOException
     {
         fs.mkdirs( file.getParentFile() );
-        fs.create( file ).close();
+        fs.write( file ).close();
     }
 }

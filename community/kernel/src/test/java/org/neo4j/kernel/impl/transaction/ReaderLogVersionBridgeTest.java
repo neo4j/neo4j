@@ -28,7 +28,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Set;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -44,10 +43,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.nio.file.StandardOpenOption.READ;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -83,7 +80,7 @@ class ReaderLogVersionBridgeTest
         when( channel.getVersion() ).thenReturn( version );
         when( channel.getLogFormatVersion() ).thenReturn( CURRENT_LOG_VERSION );
         when( fs.fileExists( any( File.class ) ) ).thenReturn( true );
-        when( fs.open( any( File.class ), eq( Set.of( READ ) ) ) ).thenReturn( newStoreChannel );
+        when( fs.read( any( File.class ) ) ).thenReturn( newStoreChannel );
         when( newStoreChannel.read( ArgumentMatchers.<ByteBuffer>any() ) ).then( invocationOnMock ->
         {
             ByteBuffer buffer = invocationOnMock.getArgument( 0 );
@@ -109,7 +106,7 @@ class ReaderLogVersionBridgeTest
         final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge( logFiles );
 
         when( channel.getVersion() ).thenReturn( version );
-        when( fs.open( any( File.class ), eq( Set.of( READ ) ) ) ).thenThrow( new FileNotFoundException() );
+        when( fs.read( any( File.class ) ) ).thenThrow( new FileNotFoundException() );
 
         // when
         final LogVersionedStoreChannel result = bridge.next( channel );
@@ -129,7 +126,7 @@ class ReaderLogVersionBridgeTest
 
         when( channel.getVersion() ).thenReturn( version );
         when( fs.fileExists( any( File.class ) ) ).thenReturn( true );
-        when( fs.open( any( File.class ), eq( Set.of( READ ) ) ) ).thenReturn( nextVersionWithIncompleteHeader );
+        when( fs.read( any( File.class ) ) ).thenReturn( nextVersionWithIncompleteHeader );
 
         // when
         final LogVersionedStoreChannel result = bridge.next( channel );

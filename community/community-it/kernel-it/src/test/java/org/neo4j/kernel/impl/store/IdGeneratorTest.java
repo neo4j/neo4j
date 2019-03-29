@@ -125,7 +125,7 @@ class IdGeneratorTest
             {
                 closeIdGenerator( idGenerator );
                 // verify that id generator is ok
-                StoreChannel fileChannel = fileSystem.create( idGeneratorFile() );
+                StoreChannel fileChannel = fileSystem.write( idGeneratorFile() );
                 ByteBuffer buffer = ByteBuffer.allocate( 9 );
                 fileChannel.readAll( buffer );
                 buffer.flip();

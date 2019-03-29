@@ -82,7 +82,7 @@ public class StoreLocker implements Closeable
         {
             if ( storeLockFileChannel == null )
             {
-                storeLockFileChannel = fileSystemAbstraction.create( storeLockFile );
+                storeLockFileChannel = fileSystemAbstraction.write( storeLockFile );
             }
             storeLockFileLock = storeLockFileChannel.tryLock();
             if ( storeLockFileLock == null )

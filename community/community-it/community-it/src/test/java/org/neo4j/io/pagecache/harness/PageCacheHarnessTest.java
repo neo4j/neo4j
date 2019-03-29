@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.io.fs.StoreChannel;
@@ -43,7 +42,6 @@ import org.neo4j.test.extension.ProfilerExtension;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.nio.file.StandardOpenOption.READ;
 import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
@@ -225,7 +223,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
                         }
                     }
                 }
-                try ( StoreChannel channel = fs1.open( file, Set.of( READ ) ) )
+                try ( StoreChannel channel = fs1.read( file ) )
                 {
                     recordFormat.assertRecordsWrittenCorrectly( file, channel );
                 }

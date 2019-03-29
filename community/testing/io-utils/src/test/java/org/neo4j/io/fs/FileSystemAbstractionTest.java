@@ -129,7 +129,7 @@ public abstract class FileSystemAbstractionTest
         fsa.mkdirs( path );
         assertTrue( fsa.fileExists( path ) );
         path = new File( path, "some_file" );
-        try ( StoreChannel channel = fsa.create( path ) )
+        try ( StoreChannel channel = fsa.write( path ) )
         {
             assertThat( channel, is( not( nullValue() ) ) );
 
@@ -148,7 +148,7 @@ public abstract class FileSystemAbstractionTest
         File fileAfterMove = new File( target, "file" );
         fsa.mkdirs( source );
         fsa.mkdirs( target );
-        fsa.create( file ).close();
+        fsa.write( file ).close();
         assertTrue( fsa.fileExists( file ) );
         assertFalse( fsa.fileExists( fileAfterMove ) );
         fsa.moveToDirectory( file, target );
@@ -165,7 +165,7 @@ public abstract class FileSystemAbstractionTest
         File fileAfterCopy = new File( target, "file" );
         fsa.mkdirs( source );
         fsa.mkdirs( target );
-        fsa.create( file ).close();
+        fsa.write( file ).close();
         assertTrue( fsa.fileExists( file ) );
         assertFalse( fsa.fileExists( fileAfterCopy ) );
         fsa.copyToDirectory( file, target );
@@ -182,7 +182,7 @@ public abstract class FileSystemAbstractionTest
         File targetFile = new File( target, "file" );
         fsa.mkdirs( source );
         fsa.mkdirs( target );
-        fsa.create( file ).close();
+        fsa.write( file ).close();
 
         writeIntegerIntoFile( targetFile );
 
@@ -199,8 +199,8 @@ public abstract class FileSystemAbstractionTest
         fsa.mkdirs( path );
         File source = new File( path, "source" );
         File target = new File( path, "target" );
-        fsa.create( source ).close();
-        fsa.create( target ).close();
+        fsa.write( source ).close();
+        fsa.write( target ).close();
 
         // then
         assertThrows( FileAlreadyExistsException.class, () -> fsa.copyFile( source, target, FileSystemAbstraction.EMPTY_COPY_OPTIONS ) );
@@ -211,13 +211,13 @@ public abstract class FileSystemAbstractionTest
     {
         fsa.mkdirs( path );
         File a = new File( path, "a" );
-        fsa.create( a ).close();
+        fsa.write( a ).close();
         File b = new File( path, "b" );
-        fsa.create( b ).close();
+        fsa.write( b ).close();
         File c = new File( path, "c" );
-        fsa.create( c ).close();
+        fsa.write( c ).close();
         File d = new File( path, "d" );
-        fsa.create( d ).close();
+        fsa.write( d ).close();
 
         fsa.deleteRecursively( path );
 
@@ -240,7 +240,7 @@ public abstract class FileSystemAbstractionTest
     {
         fsa.mkdirs( path );
         File file = new File( path, "file" );
-        fsa.create( file ).close();
+        fsa.write( file ).close();
         fsa.deleteRecursively( file );
         assertFalse( fsa.fileExists( file ) );
     }
@@ -252,11 +252,11 @@ public abstract class FileSystemAbstractionTest
         File a = new File( path, "a" );
         fsa.mkdirs( a );
         File aa = new File( a, "a" );
-        fsa.create( aa ).close();
+        fsa.write( aa ).close();
         File b = new File( path, "b" );
         fsa.mkdirs( b );
         File c = new File( path, "c" );
-        fsa.create( c ).close();
+        fsa.write( c ).close();
         fsa.deleteRecursively( path );
 
         assertFalse( fsa.fileExists( a ) );
@@ -276,9 +276,9 @@ public abstract class FileSystemAbstractionTest
         File b = new File( path, "b" );
         fsa.mkdirs( b );
         File bb = new File( b, "b" );
-        fsa.create( bb ).close();
+        fsa.write( bb ).close();
         File c = new File( path, "c" );
-        fsa.create( c ).close();
+        fsa.write( c ).close();
         fsa.deleteRecursively( a );
 
         assertFalse( fsa.fileExists( a ) );
@@ -306,7 +306,7 @@ public abstract class FileSystemAbstractionTest
 
         fsa.mkdirs( path );
         File file = new File( path, "file" );
-        try ( StoreChannel channel = fsa.create( file ) )
+        try ( StoreChannel channel = fsa.write( file ) )
         {
             assertThat( channel.write( buf ), is( 4 ) );
         }
@@ -320,7 +320,7 @@ public abstract class FileSystemAbstractionTest
         }
         Arrays.fill( bytes, (byte) 0 );
         buf.position( 1 );
-        try ( StoreChannel channel = fsa.create( file ) )
+        try ( StoreChannel channel = fsa.write( file ) )
         {
             assertThat( channel.read( buf ), is( 4 ) );
             buf.clear();
@@ -733,7 +733,7 @@ public abstract class FileSystemAbstractionTest
         generateFileWithRecords( b, recordCount + recordsPerFilePage );
 
         // Fill 'b' with random data
-        try ( StoreChannel channel = fsa.create( b ) )
+        try ( StoreChannel channel = fsa.write( b ) )
         {
             ThreadLocalRandom rng = ThreadLocalRandom.current();
             int fileSize = (int) channel.size();
@@ -774,7 +774,7 @@ public abstract class FileSystemAbstractionTest
 
     private void generateFileWithRecords( File file, int recordCount ) throws IOException
     {
-        try ( StoreChannel channel = fsa.create( file ) )
+        try ( StoreChannel channel = fsa.write( file ) )
         {
             ByteBuffer buf = ByteBuffer.allocate( recordSize );
             for ( int i = 0; i < recordCount; i++ )
@@ -792,7 +792,7 @@ public abstract class FileSystemAbstractionTest
 
     private void verifyRecordsInFile( File file, int recordCount ) throws IOException
     {
-        try ( StoreChannel channel = fsa.create( file ) )
+        try ( StoreChannel channel = fsa.write( file ) )
         {
             ByteBuffer buf = ByteBuffer.allocate( recordSize );
             ByteBuffer observation = ByteBuffer.allocate( recordSize );
@@ -838,7 +838,7 @@ public abstract class FileSystemAbstractionTest
     {
         File file = new File( path, fileName );
         fsa.mkdirs( path );
-        fsa.create( file ).close();
+        fsa.write( file ).close();
         return file;
     }
 
@@ -857,7 +857,7 @@ public abstract class FileSystemAbstractionTest
     private void ensureExists( File file ) throws IOException
     {
         fsa.mkdirs( file.getParentFile() );
-        fsa.create( file ).close();
+        fsa.write( file ).close();
     }
 
     private void ensureDirectoryExists( File directory ) throws IOException
@@ -867,7 +867,7 @@ public abstract class FileSystemAbstractionTest
 
     private void writeIntegerIntoFile( File targetFile ) throws IOException
     {
-        StoreChannel storeChannel = fsa.create( targetFile );
+        StoreChannel storeChannel = fsa.write( targetFile );
         ByteBuffer byteBuffer = ByteBuffer.allocate( Integer.SIZE ).putInt( 7 );
         byteBuffer.flip();
         storeChannel.writeAll( byteBuffer );

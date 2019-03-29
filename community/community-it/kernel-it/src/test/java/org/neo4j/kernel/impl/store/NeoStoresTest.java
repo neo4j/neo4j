@@ -559,7 +559,7 @@ public class NeoStoresTest
         }
 
         File file = databaseLayout.metadataStore();
-        try ( StoreChannel channel = fileSystem.create( file ) )
+        try ( StoreChannel channel = fileSystem.write( file ) )
         {
             channel.position( 0 );
             channel.write( ByteBuffer.wrap( UTF8.encode( "This is some data that is not a record." ) ) );

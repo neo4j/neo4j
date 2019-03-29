@@ -426,7 +426,7 @@ public class StoreUpgraderTest
         assertThat( preparedLogFiles, not( empty() ) );
         for ( String preparedLogFile : preparedLogFiles )
         {
-            fileSystem.create( new File( databaseTransactionLogsHome, preparedLogFile ) ).close();
+            fileSystem.write( new File( databaseTransactionLogsHome, preparedLogFile ) ).close();
         }
     }
 

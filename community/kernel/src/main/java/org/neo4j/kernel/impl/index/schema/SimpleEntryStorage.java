@@ -23,7 +23,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Set;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadAheadChannel;
@@ -31,7 +30,6 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
 
-import static java.nio.file.StandardOpenOption.READ;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.util.concurrent.Runnables.runAll;
 
@@ -90,7 +88,7 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
             return reader( new ByteArrayPageCursor( NO_ENTRIES ) );
         }
 
-        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( fs.open( file, Set.of( READ ) ), byteBufferFactory.newBuffer( blockSize ) );
+        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( fs.read( file ), byteBufferFactory.newBuffer( blockSize ) );
         PageCursor pageCursor = new ReadableChannelPageCursor( channel );
         return reader( pageCursor );
     }
@@ -166,7 +164,7 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
         {
             this.buffer = byteBufferFactory.newBuffer( blockSize );
             this.pageCursor = new ByteArrayPageCursor( buffer );
-            this.storeChannel = fs.create( file );
+            this.storeChannel = fs.write( file );
             this.allocated = true;
         }
     }

@@ -67,7 +67,7 @@ public class SabotageNativeIndex extends NativeIndexRestartAction
         else
         {
             // Completely scramble file, assuming small files
-            try ( StoreChannel channel = fs.create( fileOrDir ) )
+            try ( StoreChannel channel = fs.write( fileOrDir ) )
             {
                 if ( channel.size() > mebiBytes( 10 ) )
                 {

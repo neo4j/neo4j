@@ -110,7 +110,7 @@ class FreeIdKeeperTest
     void shouldOnlyOverflowWhenThresholdIsReached() throws Exception
     {
         // Given
-        StoreChannel channel = Mockito.spy( fs.create( new File( "id.file" ) ) );
+        StoreChannel channel = Mockito.spy( fs.write( new File( "id.file" ) ) );
 
         int batchSize = 10;
         FreeIdKeeper keeper = getFreeIdKeeperAggressive( channel, batchSize );
@@ -275,7 +275,7 @@ class FreeIdKeeperTest
         keeper.close();
         channel.close();
         // and then we open a new one over the same file
-        channel = fs.create( new File( "id.file" ) );
+        channel = fs.write( new File( "id.file" ) );
         keeper = getFreeIdKeeperAggressive( channel, batchSize );
 
         // then
@@ -308,7 +308,7 @@ class FreeIdKeeperTest
     void shouldNotReturnIdsPersistedDuringThisRunIfAggressiveIsFalse() throws Exception
     {
         // given
-        StoreChannel channel = Mockito.spy( fs.create( new File( "id.file" ) ) );
+        StoreChannel channel = Mockito.spy( fs.write( new File( "id.file" ) ) );
 
         int batchSize = 10;
         FreeIdKeeper keeper = getFreeIdKeeper( channel, batchSize );
@@ -344,7 +344,7 @@ class FreeIdKeeperTest
         keeper.close();
         channel.close();
         // and then we open a new one over the same file
-        channel = fs.create( new File( "id.file" ) );
+        channel = fs.write( new File( "id.file" ) );
         keeper = getFreeIdKeeper( channel, batchSize );
 
         // when
@@ -383,7 +383,7 @@ class FreeIdKeeperTest
         keeper.close();
         channel.close();
         // and then we open a new one over the same file
-        channel = fs.create( new File( "id.file" ) );
+        channel = fs.write( new File( "id.file" ) );
         keeper = getFreeIdKeeper( channel, batchSize );
 
         // when - then
@@ -609,6 +609,6 @@ class FreeIdKeeperTest
 
     private StoreChannel getStoreChannel() throws IOException
     {
-        return fs.create( new File( "id.file" ) );
+        return fs.write( new File( "id.file" ) );
     }
 }

@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
@@ -46,7 +45,6 @@ import org.neo4j.util.FeatureToggles;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-import static java.nio.file.StandardOpenOption.READ;
 import static java.util.Comparator.comparing;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static org.neo4j.io.ByteUnit.mebiBytes;
@@ -117,7 +115,7 @@ public class LabelScanWriteMonitor implements NativeLabelScanWriter.WriteMonitor
 
     private PhysicalFlushableChannel instantiateChannel() throws IOException
     {
-        return new PhysicalFlushableChannel( fs.create( file ) );
+        return new PhysicalFlushableChannel( fs.write( file ) );
     }
 
     @Override
@@ -422,7 +420,7 @@ public class LabelScanWriteMonitor implements NativeLabelScanWriter.WriteMonitor
 
     private static long dumpFile( FileSystemAbstraction fs, File file, Dumper dumper, TxFilter txFilter, long session ) throws IOException
     {
-        try ( ReadableChannel channel = new ReadAheadChannel<>( fs.open( file, Set.of( READ ) ) ) )
+        try ( ReadableChannel channel = new ReadAheadChannel<>( fs.read( file ) ) )
         {
             long range = -1;
             int labelId = -1;

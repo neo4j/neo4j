@@ -235,7 +235,7 @@ public class AbstractKeyValueStoreTest
             file.other().close();
         }
         // Corrupt the last files
-        try ( StoreChannel channel = resourceManager.fileSystem().create( files[9] ) )
+        try ( StoreChannel channel = resourceManager.fileSystem().write( files[9] ) )
         {   // ruin the header
             channel.position( 16 );
             ByteBuffer value = ByteBuffer.allocate( 16 );
@@ -243,7 +243,7 @@ public class AbstractKeyValueStoreTest
             value.flip();
             channel.writeAll( value );
         }
-        try ( StoreChannel channel = resourceManager.fileSystem().create( files[8] ) )
+        try ( StoreChannel channel = resourceManager.fileSystem().write( files[8] ) )
         {   // ruin the header
             channel.position( 32 );
             ByteBuffer value = ByteBuffer.allocate( 16 );
@@ -251,7 +251,7 @@ public class AbstractKeyValueStoreTest
             value.flip();
             channel.writeAll( value );
         }
-        try ( StoreChannel channel = resourceManager.fileSystem().create( files[7] ) )
+        try ( StoreChannel channel = resourceManager.fileSystem().write( files[7] ) )
         {   // ruin the header
             channel.position( 32 + 32 + 32 + 16 );
             ByteBuffer value = ByteBuffer.allocate( 16 );
@@ -311,7 +311,7 @@ public class AbstractKeyValueStoreTest
         File corrupted = nextNext.first();
         nextNext.other().close();
 
-        try ( StoreChannel channel = resourceManager.fileSystem().create( corrupted ) )
+        try ( StoreChannel channel = resourceManager.fileSystem().write( corrupted ) )
         {
             channel.truncate( 16 * 4 );
         }

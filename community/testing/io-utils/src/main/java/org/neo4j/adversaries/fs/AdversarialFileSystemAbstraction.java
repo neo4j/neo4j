@@ -94,10 +94,17 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public StoreChannel create( File fileName ) throws IOException
+    public StoreChannel write( File fileName ) throws IOException
     {
         adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
-        return AdversarialFileChannel.wrap( (StoreFileChannel) delegate.create( fileName ), adversary );
+        return AdversarialFileChannel.wrap( (StoreFileChannel) delegate.write( fileName ), adversary );
+    }
+
+    @Override
+    public StoreChannel read( File fileName ) throws IOException
+    {
+        adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
+        return AdversarialFileChannel.wrap( (StoreFileChannel) delegate.read( fileName ), adversary );
     }
 
     @Override

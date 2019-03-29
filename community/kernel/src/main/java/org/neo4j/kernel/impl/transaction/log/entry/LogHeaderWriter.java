@@ -55,7 +55,7 @@ public class LogHeaderWriter
     public static void writeLogHeader( FileSystemAbstraction fileSystem, File file, long logVersion,
                                        long previousLastCommittedTxId ) throws IOException
     {
-        try ( StoreChannel channel = fileSystem.create( file ) )
+        try ( StoreChannel channel = fileSystem.write( file ) )
         {
             writeLogHeader( channel, logVersion, previousLastCommittedTxId );
         }

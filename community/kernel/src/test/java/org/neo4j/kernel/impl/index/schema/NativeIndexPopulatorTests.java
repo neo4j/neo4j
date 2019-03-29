@@ -33,7 +33,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -48,7 +47,6 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static java.nio.file.StandardOpenOption.READ;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -106,7 +104,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         populator.create();
 
         // then
-        try ( StoreChannel r = fs.open( indexFiles.getStoreFile(), Set.of( READ ) ) )
+        try ( StoreChannel r = fs.read( indexFiles.getStoreFile() ) )
         {
             byte[] firstBytes = new byte[someBytes.length];
             r.readAll( ByteBuffer.wrap( firstBytes ) );
@@ -795,7 +793,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     {
         int size = 1000;
         fs.mkdirs( indexFiles.getStoreFile().getParentFile() );
-        try ( StoreChannel storeChannel = fs.create( indexFiles.getStoreFile() ) )
+        try ( StoreChannel storeChannel = fs.write( indexFiles.getStoreFile() ) )
         {
             byte[] someBytes = new byte[size];
             random.nextBytes( someBytes );

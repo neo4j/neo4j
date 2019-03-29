@@ -119,7 +119,7 @@ class LogHeaderReaderTest
     {
         // given
         final File file = testDirectory.file( "ReadLogHeader" );
-        fileSystem.create( file ).close();
+        fileSystem.write( file ).close();
         IncompleteLogHeaderException exception = assertThrows( IncompleteLogHeaderException.class, () -> readLogHeader( fileSystem, file ) );
         assertThat( exception.getMessage(), containsString( file.getName() ) );
     }

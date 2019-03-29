@@ -32,8 +32,6 @@ import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.Unzip;
 
-import static java.nio.file.StandardOpenOption.READ;
-import static java.util.Set.of;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.io.fs.IoPrimitiveUtils.readAndFlip;
@@ -48,7 +46,7 @@ public class MigrationTestUtils
             throws IOException
     {
         byte[] versionBytes = UTF8.encode( versionString );
-        try ( StoreChannel fileChannel = fileSystem.create( storeFile ) )
+        try ( StoreChannel fileChannel = fileSystem.write( storeFile ) )
         {
             fileChannel.position( fileSystem.getFileSize( storeFile ) - versionBytes.length );
             fileChannel.write( ByteBuffer.wrap( versionBytes ) );
@@ -100,8 +98,8 @@ public class MigrationTestUtils
             File otherFile = new File( other, originalFile.getName() );
             if ( !fileSystem.isDirectory( originalFile ) )
             {
-                try ( StoreChannel originalChannel = fileSystem.open( originalFile, of( READ ) );
-                      StoreChannel otherChannel = fileSystem.open( otherFile, of( READ ) ) )
+                try ( StoreChannel originalChannel = fileSystem.read( originalFile );
+                      StoreChannel otherChannel = fileSystem.read( otherFile ) )
                 {
                     ByteBuffer buffer = ByteBuffer.allocate( bufferBatchSize );
                     while ( true )

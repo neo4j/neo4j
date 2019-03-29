@@ -69,8 +69,8 @@ class ZipUtilsTest
     {
         File archiveFile = testDirectory.file( "directoryArchive.zip" );
         File directory = testDirectory.directory( "directory" );
-        fileSystem.create( new File( directory, "a" ) ).close();
-        fileSystem.create( new File( directory, "b" ) ).close();
+        fileSystem.write( new File( directory, "a" ) ).close();
+        fileSystem.write( new File( directory, "b" ) ).close();
         ZipUtils.zip( fileSystem, directory, archiveFile );
 
         assertTrue( fileSystem.fileExists( archiveFile ) );
@@ -86,10 +86,10 @@ class ZipUtilsTest
         File subdir2 = new File( directoryArchive, "subdir" );
         fileSystem.mkdir( subdir1 );
         fileSystem.mkdir( subdir2 );
-        fileSystem.create( new File( directoryArchive, "a" ) ).close();
-        fileSystem.create( new File( directoryArchive, "b" ) ).close();
-        fileSystem.create( new File( subdir1, "c" ) ).close();
-        fileSystem.create( new File( subdir2, "d" ) ).close();
+        fileSystem.write( new File( directoryArchive, "a" ) ).close();
+        fileSystem.write( new File( directoryArchive, "b" ) ).close();
+        fileSystem.write( new File( subdir1, "c" ) ).close();
+        fileSystem.write( new File( subdir2, "d" ) ).close();
 
         ZipUtils.zip( fileSystem, directoryArchive, archiveFile );
 
@@ -102,7 +102,7 @@ class ZipUtilsTest
     {
         File archiveFile = testDirectory.file( "fileArchive.zip" );
         File aFile = testDirectory.file( "a" );
-        fileSystem.create( aFile ).close();
+        fileSystem.write( aFile ).close();
         ZipUtils.zip( fileSystem, aFile, archiveFile );
 
         assertTrue( fileSystem.fileExists( archiveFile ) );
@@ -114,7 +114,7 @@ class ZipUtilsTest
     {
         File archiveFile = testDirectory.file( "file archive.zip" );
         File aFile = testDirectory.file( "a" );
-        fileSystem.create( aFile ).close();
+        fileSystem.write( aFile ).close();
         ZipUtils.zip( fileSystem, aFile, archiveFile );
     }
 

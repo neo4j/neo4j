@@ -139,7 +139,7 @@ class LogHeaderWriterTest
     {
         // given
         final File file = testDirectory.file( "WriteLogHeader" );
-        final StoreChannel channel = fileSystem.create( file );
+        final StoreChannel channel = fileSystem.write( file );
 
         // when
         writeLogHeader( channel, expectedLogVersion, expectedTxId );

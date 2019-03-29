@@ -96,9 +96,15 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public StoreChannel create( File fileName ) throws IOException
+    public StoreChannel write( File fileName ) throws IOException
     {
-        return chooseFileSystem( fileName ).create( fileName );
+        return chooseFileSystem( fileName ).write( fileName );
+    }
+
+    @Override
+    public StoreChannel read( File fileName ) throws IOException
+    {
+        return chooseFileSystem( fileName ).read( fileName );
     }
 
     @Override

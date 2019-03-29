@@ -25,7 +25,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Set;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -39,7 +38,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.nio.file.StandardOpenOption.READ;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
@@ -76,7 +74,7 @@ class ReadAheadLogChannelTest
             return true;
         } );
 
-        StoreChannel storeChannel = fileSystem.open( file, Set.of( READ ) );
+        StoreChannel storeChannel = fileSystem.read( file );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1 /* ignored */ );
         try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, NO_MORE_CHANNELS, 16 ) )
@@ -116,7 +114,7 @@ class ReadAheadLogChannelTest
             return true;
         } );
 
-        StoreChannel storeChannel = fileSystem.open( file( 0 ), Set.of( READ ) );
+        StoreChannel storeChannel = fileSystem.read( file( 0 ) );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1 /* ignored */ );
         try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, new LogVersionBridge()
@@ -130,7 +128,7 @@ class ReadAheadLogChannelTest
                 {
                     returned = true;
                     channel.close();
-                    return new PhysicalLogVersionedStoreChannel( fileSystem.open( file( 1 ), Set.of( READ ) ),
+                    return new PhysicalLogVersionedStoreChannel( fileSystem.read( file( 1 ) ),
                             -1 /* ignored */, (byte) -1 /* ignored */ );
                 }
                 return channel;
@@ -147,7 +145,7 @@ class ReadAheadLogChannelTest
 
     private void writeSomeData( File file, Visitor<ByteBuffer, IOException> visitor ) throws IOException
     {
-        try ( StoreChannel channel = fileSystem.create( file ) )
+        try ( StoreChannel channel = fileSystem.write( file ) )
         {
             ByteBuffer buffer = ByteBuffer.allocate( 1024 );
             visitor.visit( buffer );

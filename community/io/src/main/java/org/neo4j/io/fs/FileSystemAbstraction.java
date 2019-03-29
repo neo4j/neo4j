@@ -60,7 +60,9 @@ public interface FileSystemAbstraction extends Closeable
 
     Writer openAsWriter( File fileName, Charset charset, boolean append ) throws IOException;
 
-    StoreChannel create( File fileName ) throws IOException;
+    StoreChannel write( File fileName ) throws IOException;
+
+    StoreChannel read( File fileName ) throws IOException;
 
     boolean fileExists( File file );
 

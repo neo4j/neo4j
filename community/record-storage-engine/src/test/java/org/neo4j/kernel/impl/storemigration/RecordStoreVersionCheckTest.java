@@ -125,7 +125,7 @@ class RecordStoreVersionCheckTest
     {
         File shortFile = testDirectory.databaseLayout().metadataStore();
         fs.deleteFile( shortFile );
-        fs.create( shortFile ).close();
+        fs.write( shortFile ).close();
         return shortFile;
     }
 

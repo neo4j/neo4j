@@ -239,7 +239,7 @@ class PartitionedIndexStorageTest
     private void createRandomFile( File rootFolder ) throws IOException
     {
         File file = new File( rootFolder, RandomStringUtils.randomNumeric( 5 ) );
-        try ( StoreChannel channel = fs.create( file ) )
+        try ( StoreChannel channel = fs.write( file ) )
         {
             channel.writeAll( ByteBuffer.allocate( 100 ) );
         }

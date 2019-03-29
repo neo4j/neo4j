@@ -191,7 +191,7 @@ class StoreInfoCommandTest
     private File createNeoStoreFile() throws IOException
     {
         File neoStoreFile = databaseLayout.metadataStore();
-        fileSystem.create( neoStoreFile ).close();
+        fileSystem.write( neoStoreFile ).close();
         return neoStoreFile;
     }
 }

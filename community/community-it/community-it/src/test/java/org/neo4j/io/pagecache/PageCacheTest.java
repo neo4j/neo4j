@@ -77,7 +77,6 @@ import org.neo4j.util.concurrent.BinaryLatch;
 import static java.lang.Long.toHexString;
 import static java.lang.System.currentTimeMillis;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
-import static java.nio.file.StandardOpenOption.READ;
 import static java.time.Duration.ofMillis;
 import static org.apache.commons.lang3.ArrayUtils.addAll;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -2019,7 +2018,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
 
             ByteBuffer buf = ByteBuffer.allocate( 23 );
-            try ( StoreChannel channel = fs.open( file( "a" ), Set.of( READ ) ) )
+            try ( StoreChannel channel = fs.read( file( "a" ) ) )
             {
                 channel.readAll( buf );
             }
@@ -2399,7 +2398,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 assertThat( inputStream.read(), is( -1 ) );
             }
 
-            try ( StoreChannel channel = fs.open( file( "a" ), Set.of( READ ) ) )
+            try ( StoreChannel channel = fs.read( file( "a" ) ) )
             {
                 ByteBuffer bufB = ByteBuffer.allocate( recordSize );
                 for ( int i = 0; i < recordCount; i++ )
@@ -2591,7 +2590,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void lastPageIdOfFileWithOneByteIsZero() throws IOException
     {
-        StoreChannel channel = fs.create( file( "a" ) );
+        StoreChannel channel = fs.write( file( "a" ) );
         channel.write( ByteBuffer.wrap( new byte[]{1} ) );
         channel.close();
 
@@ -3754,7 +3753,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
             };
 
-            fs.create( file( "a" ) ).close();
+            fs.write( file( "a" ) ).close();
 
             getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
             PagedFile pagedFile = map( file( "a" ), filePageSize );
@@ -3887,7 +3886,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
             };
 
-            fs.create( file( "a" ) ).close();
+            fs.write( file( "a" ) ).close();
 
             getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
             PagedFile pagedFile = map( file( "a" ), filePageSize );
@@ -3947,7 +3946,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
         };
 
-        fs.create( file( "a" ) ).close();
+        fs.write( file( "a" ) ).close();
 
         getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
         PagedFile pagedFile = map( file( "a" ), filePageSize );
@@ -4299,7 +4298,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             for ( int fileId = 0; fileId < files.length; fileId++ )
             {
                 File file = files[fileId];
-                StoreChannel channel = fs.create( file );
+                StoreChannel channel = fs.write( file );
                 for ( int recordId = 0; recordId < fileId + 1; recordId++ )
                 {
                     Record record = recordFormat.createRecord( file, recordId );

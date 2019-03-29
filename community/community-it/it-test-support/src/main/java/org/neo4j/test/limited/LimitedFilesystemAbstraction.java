@@ -38,9 +38,6 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
 
-import static java.nio.file.StandardOpenOption.READ;
-import static java.util.Set.of;
-
 public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstraction
 {
     private volatile boolean outOfSpace;
@@ -59,13 +56,13 @@ public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstractio
     @Override
     public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
     {
-        return new ChannelOutputStream( create( fileName ), append );
+        return new ChannelOutputStream( write( fileName ), append );
     }
 
     @Override
     public InputStream openAsInputStream( File fileName ) throws IOException
     {
-        return new ChannelInputStream( open( fileName, of( READ ) ) );
+        return new ChannelInputStream( read( fileName ) );
     }
 
     @Override
@@ -81,10 +78,10 @@ public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstractio
     }
 
     @Override
-    public StoreChannel create( File fileName ) throws IOException
+    public StoreChannel write( File fileName ) throws IOException
     {
         ensureHasSpace();
-        return new LimitedFileChannel( super.create( fileName ), this );
+        return new LimitedFileChannel( super.write( fileName ), this );
     }
 
     @Override

@@ -138,7 +138,7 @@ public class StoreFactoryTest
     {
         StoreFactory storeFactory = storeFactory( Config.defaults() );
         FileSystemAbstraction fs = fsRule.get();
-        fs.create( testDirectory.databaseLayout().file( "neostore.nodestore.db.labels" ) );
+        fs.write( testDirectory.databaseLayout().file( "neostore.nodestore.db.labels" ) );
         storeFactory.openAllNeoStores( true ).close();
     }
 

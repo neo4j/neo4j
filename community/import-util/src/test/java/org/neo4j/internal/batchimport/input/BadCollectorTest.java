@@ -224,7 +224,7 @@ public class BadCollectorTest
     private File badDataFile( FileSystemAbstraction fileSystem, File badDataPath ) throws IOException
     {
         fileSystem.mkdir( badDataPath.getParentFile() );
-        fileSystem.create( badDataPath );
+        fileSystem.write( badDataPath );
         return badDataPath;
     }
 

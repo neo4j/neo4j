@@ -157,7 +157,7 @@ public class NativeLabelScanStoreTest
     {
         // given
         File labelScanStoreFile = NativeLabelScanStore.getLabelScanStoreFile( testDirectory.databaseLayout() );
-        fileSystem.create( labelScanStoreFile ).close();
+        fileSystem.write( labelScanStoreFile ).close();
         TrackingMonitor monitor = new TrackingMonitor();
         LifeSupport life = new LifeSupport();
 

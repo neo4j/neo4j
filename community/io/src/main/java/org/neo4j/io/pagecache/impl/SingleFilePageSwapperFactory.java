@@ -58,7 +58,7 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
         {
             if ( createIfNotExist )
             {
-                fs.create( file ).close();
+                fs.write( file ).close();
             }
             else
             {

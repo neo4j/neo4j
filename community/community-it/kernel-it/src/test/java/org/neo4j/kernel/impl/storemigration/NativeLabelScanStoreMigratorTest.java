@@ -58,8 +58,6 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.util.Set.of;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -272,7 +270,7 @@ class NativeLabelScanStoreMigratorTest
 
     private ByteBuffer readFileContent( File nativeLabelIndex, int length ) throws IOException
     {
-        try ( StoreChannel storeChannel = fileSystem.open( nativeLabelIndex, of( READ ) ) )
+        try ( StoreChannel storeChannel = fileSystem.read( nativeLabelIndex ) )
         {
             ByteBuffer readBuffer = ByteBuffer.allocate( length );
             //noinspection StatementWithEmptyBody
@@ -287,7 +285,7 @@ class NativeLabelScanStoreMigratorTest
 
     private void storeFileContent( File file, ByteBuffer sourceBuffer ) throws IOException
     {
-        try ( StoreChannel storeChannel = fileSystem.create( file ) )
+        try ( StoreChannel storeChannel = fileSystem.write( file ) )
         {
             storeChannel.writeAll( sourceBuffer );
         }

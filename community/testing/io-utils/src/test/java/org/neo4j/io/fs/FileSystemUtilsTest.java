@@ -63,7 +63,7 @@ class FileSystemUtilsTest
     void shouldCheckExistingNonEmptyDirectory() throws Exception
     {
         File existingEmptyDir = testDirectory.directory( "existingEmptyDir" );
-        fs.create( new File( existingEmptyDir, "someFile" ) ).close();
+        fs.write( new File( existingEmptyDir, "someFile" ) ).close();
 
         assertFalse( FileSystemUtils.isEmptyOrNonExistingDirectory( fs, existingEmptyDir ) );
     }

@@ -22,7 +22,6 @@ package org.neo4j.test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Set;
 import java.util.function.Predicate;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -36,7 +35,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 
-import static java.nio.file.StandardOpenOption.READ;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
@@ -104,7 +102,7 @@ public class LogTestUtils
             throws IOException
     {
         filter.file( file );
-        try ( StoreChannel in = fileSystem.open( file, Set.of( READ ) ) )
+        try ( StoreChannel in = fileSystem.read( file ) )
         {
             LogHeader logHeader = readLogHeader( ByteBuffer.allocate( LOG_HEADER_SIZE ), in, true, file );
             PhysicalLogVersionedStoreChannel inChannel =

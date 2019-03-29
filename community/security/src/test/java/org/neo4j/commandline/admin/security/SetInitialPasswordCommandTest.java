@@ -107,7 +107,7 @@ public class SetInitialPasswordCommandTest
     {
         // Given
         fileSystem.mkdirs( authInitFile.getParentFile() );
-        fileSystem.create( authInitFile );
+        fileSystem.write( authInitFile );
 
         // When
         String[] arguments = {"123"};

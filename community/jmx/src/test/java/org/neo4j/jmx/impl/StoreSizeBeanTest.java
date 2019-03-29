@@ -293,7 +293,7 @@ class StoreSizeBeanTest
 
     private void createFileOfSize( File file, int size ) throws IOException
     {
-        try ( StoreChannel storeChannel = fs.create( file ) )
+        try ( StoreChannel storeChannel = fs.write( file ) )
         {
             byte[] bytes = new byte[size];
             ByteBuffer buffer = ByteBuffer.wrap( bytes );

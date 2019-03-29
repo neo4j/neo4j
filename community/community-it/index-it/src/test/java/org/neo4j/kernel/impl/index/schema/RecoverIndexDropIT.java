@@ -124,7 +124,7 @@ class RecoverIndexDropIT
     {
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( transactionLogsDirectory, fs ).build();
         File logFile = logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() );
-        StoreChannel writeStoreChannel = fs.create( logFile );
+        StoreChannel writeStoreChannel = fs.write( logFile );
         writeStoreChannel.position( writeStoreChannel.size() );
         try ( PhysicalFlushableChannel writeChannel = new PhysicalFlushableChannel( writeStoreChannel ) )
         {

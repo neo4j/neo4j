@@ -22,14 +22,12 @@ package org.neo4j.kernel.impl.store.kvstore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Set;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 
-import static java.nio.file.StandardOpenOption.READ;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -228,7 +226,7 @@ public abstract class KeyValueStoreFileFormat
     private KeyValueStoreFile open( FileSystemAbstraction fs, File path, PageCache pages ) throws IOException
     {
         ByteBuffer buffer = ByteBuffer.wrap( new byte[maxSize * 4] );
-        try ( StoreChannel channel = fs.open( path, Set.of( READ ) ) )
+        try ( StoreChannel channel = fs.read( path ) )
         {
             while ( buffer.hasRemaining() )
             {

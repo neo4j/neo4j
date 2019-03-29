@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
-import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.recovery.CorruptedLogsTruncator;
@@ -51,6 +50,7 @@ import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.kernel.recovery.RecoveryService;
 import org.neo4j.kernel.recovery.RecoveryStartInformation;
 import org.neo4j.kernel.recovery.TransactionLogsRecovery;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -120,7 +120,7 @@ class PhysicalLogicalTransactionStoreTest
         }
 
         // create empty transaction log file and clear transaction cache to force re-read
-        fileSystem.create( logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() + 1 ) ).close();
+        fileSystem.write( logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() + 1 ) ).close();
         positionCache.clear();
 
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFiles, positionCache, logEntryReader(), monitors, true );

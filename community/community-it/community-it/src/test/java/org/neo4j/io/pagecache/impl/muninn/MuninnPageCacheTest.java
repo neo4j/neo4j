@@ -58,7 +58,6 @@ import org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer.Fault;
 
-import static java.nio.file.StandardOpenOption.READ;
 import static java.time.Duration.ofMillis;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -780,7 +779,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 
     private void writeInitialDataTo( File file ) throws IOException
     {
-        try ( StoreChannel channel = fs.create( file ) )
+        try ( StoreChannel channel = fs.write( file ) )
         {
             ByteBuffer buf = ByteBuffer.allocate( 16 );
             buf.putLong( x );
@@ -793,7 +792,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     private ByteBuffer readIntoBuffer( String fileName ) throws IOException
     {
         ByteBuffer buffer = ByteBuffer.allocate( 16 );
-        try ( StoreChannel channel = fs.open( file( fileName ), Set.of( READ ) ) )
+        try ( StoreChannel channel = fs.read( file( fileName ) ) )
         {
             channel.readAll( buffer );
         }

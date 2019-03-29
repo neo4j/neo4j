@@ -544,7 +544,7 @@ class MetaDataStoreTest
     private File createMetaDataFile() throws IOException
     {
         File file = testDirectory.databaseLayout().metadataStore();
-        fs.create( file ).close();
+        fs.write( file ).close();
         return file;
     }
 

@@ -104,7 +104,7 @@ public class ProfilerExtension extends StatefullFieldExtension<Profiler> impleme
             if ( context.getExecutionException().isPresent() )
             {
                 ExtensionContext.Store testDirStore = getStore( context, TestDirectoryExtension.TEST_DIRECTORY_NAMESPACE );
-                TestDirectory testDir = (TestDirectory) testDirStore.get( TestDirectoryExtension.TEST_DIRECTORY );
+                TestDirectory testDir = testDirStore.get( TestDirectoryExtension.TEST_DIRECTORY, TestDirectory.class );
                 File profileOutputFile = testDir.createFile( "profiler-output.txt" );
                 FileSystemAbstraction fs = testDir.getFileSystem();
 

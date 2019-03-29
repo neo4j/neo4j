@@ -344,7 +344,7 @@ public class TestDirectory extends ExternalResource
         {
             if ( !fileSystem.fileExists( file ) )
             {
-                fileSystem.create( file ).close();
+                fileSystem.write( file ).close();
             }
         }
         catch ( IOException e )

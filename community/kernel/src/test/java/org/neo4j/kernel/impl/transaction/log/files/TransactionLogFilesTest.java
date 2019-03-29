@@ -78,10 +78,10 @@ class TransactionLogFilesTest
         LogFiles files = createLogFiles();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
 
-        fileSystem.create( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "1" ) ) ).close();
-        fileSystem.create( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "some", "2" ) ) ).close();
-        fileSystem.create( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "3" ) ) ).close();
-        fileSystem.create( createTransactionLogFile( databaseLayout, filename ) ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "1" ) ) ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "some", "2" ) ) ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "3" ) ) ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, filename ) ).close();
 
         // when
         final List<File> seenFiles = new ArrayList<>();
@@ -108,10 +108,10 @@ class TransactionLogFilesTest
         LogFiles files = createLogFiles();
 
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        fileSystem.create( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "1" ) ) ).close();
-        fileSystem.create( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "some", "4" ) ) ).close();
-        fileSystem.create( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "3" ) ) ).close();
-        fileSystem.create( createTransactionLogFile( databaseLayout, filename ) ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "1" ) ) ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "some", "4" ) ) ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "3" ) ) ).close();
+        fileSystem.write( createTransactionLogFile( databaseLayout, filename ) ).close();
 
         // when
         final long highestLogVersion = files.getHighestLogVersion();
@@ -128,8 +128,8 @@ class TransactionLogFilesTest
         LogFiles files = createLogFiles();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
 
-        fileSystem.create( databaseLayout.file( getVersionedLogFileName( "some", "4" ) ) ).close();
-        fileSystem.create( databaseLayout.file( filename ) ).close();
+        fileSystem.write( databaseLayout.file( getVersionedLogFileName( "some", "4" ) ) ).close();
+        fileSystem.write( databaseLayout.file( filename ) ).close();
 
         // when
         final long highestLogVersion = files.getHighestLogVersion();

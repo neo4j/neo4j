@@ -29,7 +29,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.Random;
-import java.util.Set;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.PhysicalFlushableChannel;
@@ -39,7 +38,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.nio.file.StandardOpenOption.READ;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -56,7 +54,7 @@ class PhysicalFlushableChannelTest
     void shouldBeAbleToWriteSmallNumberOfBytes() throws IOException
     {
         final File firstFile = new File( directory.directory(), "file1" );
-        StoreChannel storeChannel = fileSystem.create( firstFile );
+        StoreChannel storeChannel = fileSystem.write( firstFile );
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
         int length = 26_145;
         byte[] bytes;
@@ -79,7 +77,7 @@ class PhysicalFlushableChannelTest
     void shouldBeAbleToWriteValuesGreaterThanHalfTheBufferSize() throws IOException
     {
         final File firstFile = new File( directory.directory(), "file1" );
-        StoreChannel storeChannel = fileSystem.create( firstFile );
+        StoreChannel storeChannel = fileSystem.write( firstFile );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
         int length = 262_145;
@@ -103,7 +101,7 @@ class PhysicalFlushableChannelTest
     void shouldBeAbleToWriteValuesGreaterThanTheBufferSize() throws IOException
     {
         final File firstFile = new File( directory.directory(), "file1" );
-        StoreChannel storeChannel = fileSystem.create( firstFile );
+        StoreChannel storeChannel = fileSystem.write( firstFile );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
         int length = 1_000_000;
@@ -141,7 +139,7 @@ class PhysicalFlushableChannelTest
         // GIVEN
         final File firstFile = new File( directory.directory(), "file1" );
         final File secondFile = new File( directory.directory(), "file2" );
-        StoreChannel storeChannel = fileSystem.create( firstFile );
+        StoreChannel storeChannel = fileSystem.write( firstFile );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
         PhysicalFlushableLogChannel channel = new PhysicalFlushableLogChannel( versionedStoreChannel );
@@ -163,7 +161,7 @@ class PhysicalFlushableChannelTest
         channel.close();
 
         // "Rotate" and continue
-        storeChannel = fileSystem.create( secondFile );
+        storeChannel = fileSystem.write( secondFile );
         channel.setChannel( new PhysicalLogVersionedStoreChannel( storeChannel, 2, (byte) -1 /* ignored */ ) );
         channel.putFloat( floatValue );
         channel.putDouble( doubleValue );
@@ -190,7 +188,7 @@ class PhysicalFlushableChannelTest
     {
         // GIVEN
         final File file = new File( directory.directory(), "file" );
-        StoreChannel storeChannel = fileSystem.create( file );
+        StoreChannel storeChannel = fileSystem.write( file );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
         PositionAwarePhysicalFlushableChannel channel =
@@ -213,7 +211,7 @@ class PhysicalFlushableChannelTest
     {
         // GIVEN
         final File file = new File( directory.directory(), "file" );
-        StoreChannel storeChannel = fileSystem.create( file );
+        StoreChannel storeChannel = fileSystem.write( file );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
         PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel );
@@ -233,7 +231,7 @@ class PhysicalFlushableChannelTest
     {
         // GIVEN
         final File file = new File( directory.directory(), "file" );
-        StoreChannel storeChannel = fileSystem.create( file );
+        StoreChannel storeChannel = fileSystem.write( file );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
         PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel );
@@ -249,7 +247,7 @@ class PhysicalFlushableChannelTest
 
     private ByteBuffer readFile( File file ) throws IOException
     {
-        try ( StoreChannel channel = fileSystem.open( file, Set.of( READ ) ) )
+        try ( StoreChannel channel = fileSystem.read( file ) )
         {
             ByteBuffer buffer = ByteBuffer.allocate( (int) channel.size() );
             channel.readAll( buffer );

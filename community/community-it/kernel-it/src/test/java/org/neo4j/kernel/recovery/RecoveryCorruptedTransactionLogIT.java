@@ -466,7 +466,7 @@ class RecoveryCorruptedTransactionLogIT
         }
         if ( checkpointPosition != null )
         {
-            try ( StoreChannel storeChannel = fileSystem.create( logFiles.getHighestLogFile() ) )
+            try ( StoreChannel storeChannel = fileSystem.write( logFiles.getHighestLogFile() ) )
             {
                 storeChannel.truncate( checkpointPosition.getByteOffset() );
             }

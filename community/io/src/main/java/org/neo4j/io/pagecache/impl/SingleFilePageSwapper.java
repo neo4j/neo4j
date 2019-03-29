@@ -193,7 +193,7 @@ public class SingleFilePageSwapper implements PageSwapper
         this.channels = new StoreChannel[channelStripeCount];
         for ( int i = 0; i < channelStripeCount; i++ )
         {
-            channels[i] = fs.create( file );
+            channels[i] = fs.write( file );
         }
         this.filePageSize = filePageSize;
         this.onEviction = onEviction;
@@ -699,7 +699,7 @@ public class SingleFilePageSwapper implements PageSwapper
 
         try
         {
-            channels[stripe] = fs.create( file );
+            channels[stripe] = fs.write( file );
             if ( stripe == TOKEN_CHANNEL_STRIPE )
             {
                 // The closing of a FileChannel also releases all associated file locks.

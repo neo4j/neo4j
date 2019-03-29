@@ -23,12 +23,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-import java.util.Set;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 
-import static java.nio.file.StandardOpenOption.READ;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
 public class LogHeaderReader
@@ -44,7 +42,7 @@ public class LogHeaderReader
 
     public static LogHeader readLogHeader( FileSystemAbstraction fileSystem, File file, boolean strict ) throws IOException
     {
-        try ( StoreChannel channel = fileSystem.open( file, Set.of( READ ) ) )
+        try ( StoreChannel channel = fileSystem.read( file ) )
         {
             return readLogHeader( ByteBuffer.allocate( LOG_HEADER_SIZE ), channel, strict, file );
         }

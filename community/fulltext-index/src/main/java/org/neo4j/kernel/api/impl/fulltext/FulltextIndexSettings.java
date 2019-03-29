@@ -120,7 +120,7 @@ class FulltextIndexSettings
         settings.setProperty( "_name", descriptor.name() );
         settings.setProperty( "_schema_entityType", descriptor.schema().entityType().name() );
         settings.setProperty( "_schema_entityTokenIds", Arrays.toString( descriptor.schema().getEntityTokenIds() ) );
-        try ( StoreChannel channel = fs.create( indexConfigFile );
+        try ( StoreChannel channel = fs.write( indexConfigFile );
                 Writer writer = fs.openAsWriter( indexConfigFile, StandardCharsets.UTF_8, false ) )
         {
             settings.store( writer, "Auto-generated file. Do not modify!" );

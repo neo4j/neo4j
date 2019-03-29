@@ -114,9 +114,15 @@ public abstract class FileSystemRule<FS extends FileSystemAbstraction> extends E
     }
 
     @Override
-    public StoreChannel create( File fileName ) throws IOException
+    public StoreChannel write( File fileName ) throws IOException
     {
-        return fs.create( fileName );
+        return fs.write( fileName );
+    }
+
+    @Override
+    public StoreChannel read( File fileName ) throws IOException
+    {
+        return fs.read( fileName );
     }
 
     @Override

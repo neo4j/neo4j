@@ -79,7 +79,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
         this.bufferFactory = bufferFactory;
         this.byteBuffer = bufferFactory.newBuffer( blockSize );
         this.comparator = ( e0, e1 ) -> layout.compare( e0.key(), e1.key() );
-        this.storeChannel = fs.create( blockFile );
+        this.storeChannel = fs.write( blockFile );
         resetBufferedEntries();
     }
 
@@ -158,7 +158,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
                 // Perform one complete merge iteration, merging all blocks from source into target.
                 // After this step, target will contain fewer blocks than source, but may need another merge iteration.
                 try ( BlockReader<KEY,VALUE> reader = reader( sourceFile );
-                      StoreChannel targetChannel = fs.create( targetFile ) )
+                      StoreChannel targetChannel = fs.write( targetFile ) )
                 {
                     long blocksMergedSoFar = 0;
                     long blocksInMergedFile = 0;

@@ -25,7 +25,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -88,7 +87,7 @@ class TransactionLogFileTest
 
         // simulate new file without header presence
         logVersionRepository.incrementAndGetVersion();
-        fileSystem.create( logFiles.getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ) ).close();
+        fileSystem.write( logFiles.getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ) ).close();
         transactionIdStore.transactionCommitted( 5L, 5L, 5L );
 
         PhysicalLogicalTransactionStore.LogVersionLocator versionLocator = new PhysicalLogicalTransactionStore.LogVersionLocator( 4L );
@@ -252,7 +251,7 @@ class TransactionLogFileTest
         StoreChannel channel = mock( StoreChannel.class );
         when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( LogHeader.LOG_HEADER_SIZE / 2 );
         when( fs.fileExists( logFile ) ).thenReturn( true );
-        when( fs.open( eq( logFile ), any( Set.class ) ) ).thenReturn( channel );
+        when( fs.read( eq( logFile ) ) ).thenReturn( channel );
 
         // WHEN
         assertThrows( IncompleteLogHeaderException.class, () -> logFiles.openForVersion( logVersion ) );
@@ -274,7 +273,7 @@ class TransactionLogFileTest
         StoreChannel channel = mock( StoreChannel.class );
         when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( LogHeader.LOG_HEADER_SIZE / 2 );
         when( fs.fileExists( logFile ) ).thenReturn( true );
-        when( fs.open( eq( logFile ), any( Set.class ) ) ).thenReturn( channel );
+        when( fs.read( eq( logFile ) ) ).thenReturn( channel );
         doThrow( IOException.class ).when( channel ).close();
 
         // WHEN

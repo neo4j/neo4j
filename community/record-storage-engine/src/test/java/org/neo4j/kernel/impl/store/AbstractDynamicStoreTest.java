@@ -68,7 +68,7 @@ public class AbstractDynamicStoreTest
     {
         fs = fsr.get();
         pageCache = pageCacheRule.getPageCache( fsr.get() );
-        try ( StoreChannel channel = fs.create( storeFile ) )
+        try ( StoreChannel channel = fs.write( storeFile ) )
         {
             ByteBuffer buffer = ByteBuffer.allocate( 4 );
             buffer.putInt( BLOCK_SIZE );
