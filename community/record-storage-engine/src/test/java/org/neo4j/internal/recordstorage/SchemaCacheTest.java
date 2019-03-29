@@ -441,6 +441,60 @@ public class SchemaCacheTest
 
     }
 
+    @Test
+    public void shouldGetRelatedNodeConstraints()
+    {
+        // given
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics() );
+        ConstraintRule constraint1 = ConstraintRule.constraintRule( 1L, ConstraintDescriptorFactory.uniqueForLabel( 1, 5, 6 ), null );
+        ConstraintRule constraint2 = ConstraintRule.constraintRule( 2L, ConstraintDescriptorFactory.uniqueForLabel( 1, 5 ), null );
+        ConstraintRule constraint3 = ConstraintRule.constraintRule( 3L, ConstraintDescriptorFactory.uniqueForLabel( 2, 5 ), null );
+        cache.addSchemaRule( constraint1 );
+        cache.addSchemaRule( constraint2 );
+        cache.addSchemaRule( constraint3 );
+
+        // when/then
+        assertEquals(
+                asSet( constraint2.getConstraintDescriptor() ),
+                cache.getUniquenessConstraintsRelatedTo( entityTokens( 1 ), entityTokens(), properties( 5 ), true, NODE ) );
+        assertEquals(
+                asSet( constraint1.getConstraintDescriptor(), constraint2.getConstraintDescriptor() ),
+                cache.getUniquenessConstraintsRelatedTo( entityTokens( 1 ), entityTokens(), properties( 5 ), false, NODE ) );
+        assertEquals(
+                asSet( constraint1.getConstraintDescriptor(), constraint2.getConstraintDescriptor() ),
+                cache.getUniquenessConstraintsRelatedTo( entityTokens( 1 ), entityTokens(), properties( 5, 6 ), true, NODE ) );
+        assertEquals(
+                asSet( constraint1.getConstraintDescriptor(), constraint2.getConstraintDescriptor() ),
+                cache.getUniquenessConstraintsRelatedTo( entityTokens(), entityTokens( 1 ), properties( 5 ), false, NODE ) );
+        assertEquals(
+                asSet( constraint1.getConstraintDescriptor(), constraint2.getConstraintDescriptor(), constraint3.getConstraintDescriptor() ),
+                cache.getUniquenessConstraintsRelatedTo( entityTokens( 1, 2 ), entityTokens(), properties(), false, NODE ) );
+    }
+
+    @Test
+    public void shouldRemoveNodeConstraints()
+    {
+        // given
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics() );
+        ConstraintRule constraint1 = ConstraintRule.constraintRule( 1L, ConstraintDescriptorFactory.uniqueForLabel( 1, 5, 6 ), null );
+        ConstraintRule constraint2 = ConstraintRule.constraintRule( 2L, ConstraintDescriptorFactory.uniqueForLabel( 1, 5 ), null );
+        ConstraintRule constraint3 = ConstraintRule.constraintRule( 3L, ConstraintDescriptorFactory.uniqueForLabel( 2, 5 ), null );
+        cache.addSchemaRule( constraint1 );
+        cache.addSchemaRule( constraint2 );
+        cache.addSchemaRule( constraint3 );
+        assertEquals(
+                asSet( constraint2.getConstraintDescriptor() ),
+                cache.getUniquenessConstraintsRelatedTo( entityTokens( 1 ), entityTokens(), properties( 5 ), true, NODE ) );
+
+        // and when
+        cache.removeSchemaRule( constraint1.getId() );
+        cache.removeSchemaRule( constraint2.getId() );
+        cache.removeSchemaRule( constraint3.getId() );
+
+        // then
+        assertTrue( cache.getUniquenessConstraintsRelatedTo( entityTokens( 1 ), entityTokens(), properties( 5 ), true, NODE ).isEmpty() );
+    }
+
     // HELPERS
 
     private static long[] entityTokens( long... entityTokenIds )
