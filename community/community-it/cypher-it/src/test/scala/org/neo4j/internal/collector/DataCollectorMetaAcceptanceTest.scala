@@ -49,12 +49,40 @@ class DataCollectorMetaAcceptanceTest extends ExecutionEngineFunSuite {
 
     // then
     res.toList.head should beMapContaining(
-        "section" -> "META",
-        "data" -> beMapContaining(
-          "graphToken" -> "myGraphToken",
-          "system" -> beSystemData
-        )
+      "section" -> "META",
+      "data" -> beMapContaining(
+        "graphToken" -> "myGraphToken",
+        "system" -> beSystemData
       )
+    )
+  }
+
+  test("should get internal data on retrieve('META')") {
+    // when
+    val res = execute("CALL db.stats.retrieve('META')")
+
+    // then
+    res.toList.head should beMapContaining(
+      "section" -> "META",
+      "data" -> beMapContaining(
+        "graphToken" -> null,
+        "internal" -> beInternalData
+      )
+    )
+  }
+
+  test("should get internal data on retrieveAllAnonymized") {
+    // when
+    val res = execute("CALL db.stats.retrieveAllAnonymized('myGraphToken')")
+
+    // then
+    res.toList.head should beMapContaining(
+      "section" -> "META",
+      "data" -> beMapContaining(
+        "graphToken" -> "myGraphToken",
+        "internal" -> beInternalData
+      )
+    )
   }
 
   private val beSystemData =
@@ -80,5 +108,10 @@ class DataCollectorMetaAcceptanceTest extends ExecutionEngineFunSuite {
       "userCountry" -> Locale.getDefault.getCountry,
       "userTimezone" -> TimeZone.getDefault.getID,
       "fileEncoding" -> System.getProperty( "file.encoding" )
+    )
+
+  private val beInternalData =
+    beMapContaining(
+      "numSilentQueryCollectionMisses" -> 0L
     )
 }

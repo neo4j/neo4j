@@ -199,7 +199,7 @@ object DataCollectorMatchers {
               errors += s"Expected value '$expectedValue' at position $i, but list was too small"
           }
           if (values.size > expected.size)
-            errors += s"Expected list of size ${expected.size}, but got additional elements ${values.slice(expected.size, values.size)}"
+            errors += s"Expected list of ${expected.size} elements, but got additional elements ${values.slice(expected.size, values.size)}"
 
         case x =>
           errors += s"Expected list but got '$x'"

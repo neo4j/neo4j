@@ -81,6 +81,11 @@ class CollectorStateMachineTest
 
     static class TestStateMachine extends CollectorStateMachine<String>
     {
+        TestStateMachine()
+        {
+            super( false );
+        }
+
         enum State
         {
             IDLE,
@@ -90,7 +95,7 @@ class CollectorStateMachineTest
         volatile State state = State.IDLE;
 
         @Override
-        Result doCollect( Map<String,Object> config, long collectionId )
+        protected Result doCollect( Map<String,Object> config, long collectionId )
         {
             assertSame( state, State.IDLE );
             state = State.COLLECTING;
@@ -98,7 +103,7 @@ class CollectorStateMachineTest
         }
 
         @Override
-        Result doStop()
+        protected Result doStop()
         {
             assertSame( state, State.COLLECTING );
             state = State.IDLE;
@@ -106,14 +111,14 @@ class CollectorStateMachineTest
         }
 
         @Override
-        Result doClear()
+        protected Result doClear()
         {
             assertSame( state, State.IDLE );
             return null;
         }
 
         @Override
-        String doGetData()
+        protected String doGetData()
         {
             assertSame( state, State.IDLE );
             return "Data";

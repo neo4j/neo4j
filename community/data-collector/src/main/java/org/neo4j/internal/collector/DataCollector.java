@@ -19,7 +19,10 @@
  */
 package org.neo4j.internal.collector;
 
+import java.util.Collections;
+
 import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.values.ValueMapper;
@@ -40,6 +43,14 @@ public class DataCollector implements AutoCloseable
         this.jobScheduler = jobScheduler;
         this.valueMapper = valueMapper;
         this.queryCollector = new QueryCollector( jobScheduler );
+        try
+        {
+            this.queryCollector.collect( Collections.emptyMap() );
+        }
+        catch ( InvalidArgumentsException e )
+        {
+            throw new IllegalStateException( "An empty config cannot be invalid", e );
+        }
         monitors.addMonitorListener( queryCollector );
     }
 

@@ -19,9 +19,10 @@
  */
 package org.neo4j.internal.collector;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -45,45 +46,65 @@ import org.neo4j.scheduler.JobScheduler;
 class QueryCollector extends CollectorStateMachine<Iterator<QuerySnapshot>> implements QueryExecutionMonitor
 {
     private volatile boolean isCollecting;
-    private final ConcurrentLinkedQueue<QuerySnapshot> queries;
+    private final RingRecentBuffer<QuerySnapshot> queries;
     private final JobScheduler jobScheduler;
+    /**
+     * We retain at max 2^13 = 8192 queries in memory at any given time. This number
+     * was chosen as a trade-off between getting a useful amount of queries, and not
+     * wasting too much heap. Even with a buffer full of unique queries, the estimated
+     * footprint lies in tens of MBs. If the buffer is full of cached queries, the
+     * retained size was measured to 265 kB.
+     */
+    private static final int QUERY_BUFFER_SIZE_IN_BITS = 13;
 
     QueryCollector( JobScheduler jobScheduler )
     {
+        super( true );
         this.jobScheduler = jobScheduler;
         isCollecting = false;
-        queries = new ConcurrentLinkedQueue<>();
+
+        queries = new RingRecentBuffer<>( QUERY_BUFFER_SIZE_IN_BITS );
+    }
+
+    long numSilentQueryDrops()
+    {
+        return queries.numSilentQueryDrops();
     }
 
     // CollectorStateMachine
 
     @Override
-    Result doCollect( Map<String,Object> config, long collectionId ) throws InvalidArgumentsException
+    protected Result doCollect( Map<String,Object> config, long collectionId ) throws InvalidArgumentsException
     {
         int collectSeconds = QueryCollectorConfig.of( config ).collectSeconds;
-        jobScheduler.schedule( Group.DATA_COLLECTOR, () -> QueryCollector.this.stop( collectionId ), collectSeconds, TimeUnit.SECONDS );
+        if ( collectSeconds > 0 )
+        {
+            jobScheduler.schedule( Group.DATA_COLLECTOR, () -> QueryCollector.this.stop( collectionId ), collectSeconds, TimeUnit.SECONDS );
+        }
         isCollecting = true;
         return success( "Collection started." );
     }
 
     @Override
-    Result doStop()
+    protected Result doStop()
     {
         isCollecting = false;
         return success( "Collection stopped." );
     }
 
     @Override
-    Result doClear()
+    protected Result doClear()
     {
         queries.clear();
         return success( "Data cleared." );
     }
 
     @Override
-    Iterator<QuerySnapshot> doGetData()
+    protected Iterator<QuerySnapshot> doGetData()
     {
-        return queries.iterator();
+        List<QuerySnapshot> querySnapshots = new ArrayList<>();
+        queries.foreach( querySnapshots::add );
+        return querySnapshots.iterator();
     }
 
     // QueryExecutionMonitor
@@ -98,7 +119,7 @@ class QueryCollector extends CollectorStateMachine<Iterator<QuerySnapshot>> impl
     {
         if ( isCollecting )
         {
-            queries.add( query.snapshot() );
+            queries.produce( query.snapshot() );
         }
     }
 }
