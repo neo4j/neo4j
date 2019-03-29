@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -31,23 +30,25 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class EntityCommandGrouperTest
+@ExtendWith( RandomExtension.class )
+class EntityCommandGrouperTest
 {
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
 
     private long nextPropertyId;
 
     @Test
-    public void shouldHandleEmptyList()
+    void shouldHandleEmptyList()
     {
         // given
         EntityCommandGrouper<NodeCommand> grouper = new EntityCommandGrouper<>( NodeCommand.class, 8 );
@@ -61,7 +62,7 @@ public class EntityCommandGrouperTest
     }
 
     @Test
-    public void shouldSeeSingleGroupOfPropertiesWithNode()
+    void shouldSeeSingleGroupOfPropertiesWithNode()
     {
         // given
         EntityCommandGrouper<NodeCommand> grouper = new EntityCommandGrouper<>( NodeCommand.class, 8 );
@@ -79,7 +80,7 @@ public class EntityCommandGrouperTest
     }
 
     @Test
-    public void shouldSeeSingleGroupOfPropertiesWithoutNode()
+    void shouldSeeSingleGroupOfPropertiesWithoutNode()
     {
         // given
         EntityCommandGrouper<NodeCommand> grouper = new EntityCommandGrouper<>( NodeCommand.class, 8 );
@@ -95,7 +96,7 @@ public class EntityCommandGrouperTest
     }
 
     @Test
-    public void shouldSeeMultipleGroupsSomeOfThemWithNode()
+    void shouldSeeMultipleGroupsSomeOfThemWithNode()
     {
         // given
         EntityCommandGrouper<NodeCommand> grouper = new EntityCommandGrouper<>( NodeCommand.class, 64 );
@@ -125,7 +126,7 @@ public class EntityCommandGrouperTest
     }
 
     @Test
-    public void shouldWorkOnADifferentSetOfCommandsAfterClear()
+    void shouldWorkOnADifferentSetOfCommandsAfterClear()
     {
         // given
         EntityCommandGrouper<NodeCommand> grouper = new EntityCommandGrouper<>( NodeCommand.class, 16 );
@@ -210,7 +211,7 @@ public class EntityCommandGrouperTest
                 }
                 fromGrouper.add( property );
             }
-            assertThat( properties, Matchers.equalTo( fromGrouper ) );
+            assertEquals( fromGrouper, properties );
         }
 
         boolean isEmpty()
