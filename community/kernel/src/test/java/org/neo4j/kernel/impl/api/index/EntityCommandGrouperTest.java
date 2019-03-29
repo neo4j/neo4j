@@ -19,17 +19,22 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.command.Command.BaseCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -47,11 +52,12 @@ class EntityCommandGrouperTest
 
     private long nextPropertyId;
 
-    @Test
-    void shouldHandleEmptyList()
+    @ParameterizedTest
+    @EnumSource( Factory.class )
+    void shouldHandleEmptyList( Factory factory )
     {
         // given
-        EntityCommandGrouper<NodeCommand> grouper = new EntityCommandGrouper<>( NodeCommand.class, 8 );
+        EntityCommandGrouper grouper = new EntityCommandGrouper<>( factory.command( 0 ).getClass(), 8 );
 
         // when
         EntityCommandGrouper.Cursor cursor = grouper.sortAndAccessGroups();
@@ -61,96 +67,99 @@ class EntityCommandGrouperTest
         assertFalse( hasNext );
     }
 
-    @Test
-    void shouldSeeSingleGroupOfPropertiesWithNode()
+    @ParameterizedTest
+    @EnumSource( Factory.class )
+    void shouldSeeSingleGroupOfPropertiesWithEntity( Factory factory )
     {
         // given
-        EntityCommandGrouper<NodeCommand> grouper = new EntityCommandGrouper<>( NodeCommand.class, 8 );
-        long nodeId = 1;
-        Command.PropertyCommand property1 = property( nodeId );
-        Command.PropertyCommand property2 = property( nodeId );
-        NodeCommand node = node( nodeId );
+        EntityCommandGrouper grouper = new EntityCommandGrouper<>( factory.command( 0 ).getClass(), 8 );
+        long entityId = 1;
+        BaseCommand<? extends PrimitiveRecord> entity = factory.command( entityId );
+        Command.PropertyCommand property1 = property( entity.getAfter() );
+        Command.PropertyCommand property2 = property( entity.getAfter() );
         grouper.add( property1 );
         grouper.add( property2 );
-        grouper.add( node ); // <-- deliberately out-of-place
+        grouper.add( entity ); // <-- deliberately out-of-place
         EntityCommandGrouper.Cursor cursor = grouper.sortAndAccessGroups();
 
         // when/then
-        assertGroups( cursor, group( nodeId, node, property1, property2 ) );
+        assertGroups( cursor, group( entityId, entity, property1, property2 ) );
     }
 
-    @Test
-    void shouldSeeSingleGroupOfPropertiesWithoutNode()
+    @ParameterizedTest
+    @EnumSource( Factory.class )
+    void shouldSeeSingleGroupOfPropertiesWithoutEntity( Factory factory )
     {
         // given
-        EntityCommandGrouper<NodeCommand> grouper = new EntityCommandGrouper<>( NodeCommand.class, 8 );
-        long nodeId = 1;
-        Command.PropertyCommand property1 = property( nodeId );
-        Command.PropertyCommand property2 = property( nodeId );
+        EntityCommandGrouper grouper = new EntityCommandGrouper<>( factory.command( 0 ).getClass(), 8 );
+        long entityId = 1;
+        BaseCommand<? extends PrimitiveRecord> entity = factory.command( entityId );
+        Command.PropertyCommand property1 = property( entity.getAfter() );
+        Command.PropertyCommand property2 = property( entity.getAfter() );
+        // intentionally DO NOT add the entity command
         grouper.add( property1 );
         grouper.add( property2 );
         EntityCommandGrouper.Cursor cursor = grouper.sortAndAccessGroups();
 
         // when/then
-        assertGroups( cursor, group( nodeId, null, property1, property2 ) );
+        assertGroups( cursor, group( entityId, null, property1, property2 ) );
     }
 
-    @Test
-    void shouldSeeMultipleGroupsSomeOfThemWithNode()
+    @ParameterizedTest
+    @EnumSource( Factory.class )
+    void shouldSeeMultipleGroupsSomeOfThemWithEntity( Factory factory )
     {
         // given
-        EntityCommandGrouper<NodeCommand> grouper = new EntityCommandGrouper<>( NodeCommand.class, 64 );
+        EntityCommandGrouper grouper = new EntityCommandGrouper<>( factory.command( 0 ).getClass(), 64 );
         Group[] groups = new Group[random.nextInt( 10, 30 )];
-        for ( int nodeId = 0; nodeId < groups.length; nodeId++ )
+        for ( int entityId = 0; entityId < groups.length; entityId++ )
         {
-            NodeCommand nodeCommand = random.nextBoolean() ? node( nodeId ) : null;
-            groups[nodeId] = new Group( nodeId, nodeCommand );
-            if ( nodeCommand != null )
+            BaseCommand entityCommand = random.nextBoolean() ? factory.command( entityId ) : null;
+            groups[entityId] = new Group( entityId, entityCommand );
+            if ( entityCommand != null )
             {
-                grouper.add( nodeCommand ); // <-- storage transaction logs are sorted such that node commands comes before property commands
+                grouper.add( entityCommand ); // <-- storage transaction logs are sorted such that entity commands comes before property commands
             }
         }
         int totalNumberOfProperties = random.nextInt( 10, 100 );
         for ( int i = 0; i < totalNumberOfProperties; i++ )
         {
-            int nodeId = random.nextInt( groups.length );
-            Command.PropertyCommand property = property( nodeId );
-            groups[nodeId].addProperty( property );
+            int entityId = random.nextInt( groups.length );
+            Command.PropertyCommand property = property( factory.command( entityId ).getAfter() );
+            groups[entityId].addProperty( property );
             grouper.add( property );
         }
-        // ^^^ OK so we've generated property commands for random nodes in random order, let's sort them
+        // ^^^ OK so we've generated property commands for random entities in random order, let's sort them
         EntityCommandGrouper.Cursor cursor = grouper.sortAndAccessGroups();
 
         // then
         assertGroups( cursor, groups );
     }
 
-    @Test
-    void shouldWorkOnADifferentSetOfCommandsAfterClear()
+    @ParameterizedTest
+    @EnumSource( Factory.class )
+    void shouldWorkOnADifferentSetOfCommandsAfterClear( Factory factory )
     {
         // given
-        EntityCommandGrouper<NodeCommand> grouper = new EntityCommandGrouper<>( NodeCommand.class, 16 );
-        grouper.add( node( 0 ) );
-        grouper.add( node( 1 ) );
-        grouper.add( property( 0 ) );
-        grouper.add( property( 1 ) );
+        EntityCommandGrouper grouper = new EntityCommandGrouper<>( factory.command( 0 ).getClass(), 16 );
+        BaseCommand<? extends PrimitiveRecord> entity0 = factory.command( 0 );
+        BaseCommand<? extends PrimitiveRecord> entity1 = factory.command( 1 );
+        grouper.add( entity0 );
+        grouper.add( entity1 );
+        grouper.add( property( entity0.getAfter() ) );
+        grouper.add( property( entity1.getAfter() ) );
         grouper.clear();
 
         // when
-        Command.NodeCommand node2 = node( 2 );
-        Command.PropertyCommand node2Property = property( 2 );
-        Command.NodeCommand node3 = node( 3 );
-        grouper.add( node2 );
-        grouper.add( node2Property );
-        grouper.add( node3 );
+        BaseCommand<? extends PrimitiveRecord> entity2 = factory.command( 2 );
+        Command.PropertyCommand entityProperty = property( entity2.getAfter() );
+        BaseCommand<? extends PrimitiveRecord> entity3 = factory.command( 3 );
+        grouper.add( entity2 );
+        grouper.add( entityProperty );
+        grouper.add( entity3 );
 
         // then
-        assertGroups( grouper.sortAndAccessGroups(), group( node2.getKey(), node2, node2Property ), group( node3.getKey(), node3 ) );
-    }
-
-    private NodeCommand node( long nodeId )
-    {
-        return new NodeCommand( new NodeRecord( nodeId ), new NodeRecord( nodeId ) );
+        assertGroups( grouper.sortAndAccessGroups(), group( entity2.getKey(), entity2, entityProperty ), group( entity3.getKey(), entity3 ) );
     }
 
     private void assertGroups( EntityCommandGrouper.Cursor cursor, Group... groups )
@@ -167,28 +176,27 @@ class EntityCommandGrouperTest
         assertFalse( cursor.nextEntity() );
     }
 
-    private Group group( long nodeId, NodeCommand nodeCommand, Command.PropertyCommand... properties )
+    private Group group( long entityId, BaseCommand<? extends PrimitiveRecord> entityCommand, Command.PropertyCommand... properties )
     {
-        return new Group( nodeId, nodeCommand, properties );
+        return new Group( entityId, entityCommand, properties );
     }
 
-    private Command.PropertyCommand property( long nodeId )
+    private Command.PropertyCommand property( PrimitiveRecord owner )
     {
         long propertyId = nextPropertyId++;
-        NodeRecord nodeRecord = new NodeRecord( nodeId );
-        return new Command.PropertyCommand( new PropertyRecord( propertyId, nodeRecord ), new PropertyRecord( propertyId, nodeRecord ) );
+        return new Command.PropertyCommand( new PropertyRecord( propertyId, owner ), new PropertyRecord( propertyId, owner ) );
     }
 
     private static class Group
     {
-        private final long nodeId;
-        private final NodeCommand nodeCommand;
+        private final long entityId;
+        private final Command entityCommand;
         private final Set<Command.PropertyCommand> properties = new HashSet<>();
 
-        Group( long nodeId, NodeCommand nodeCommand, Command.PropertyCommand... properties )
+        Group( long entityId, Command entityCommand, Command.PropertyCommand... properties )
         {
-            this.nodeId = nodeId;
-            this.nodeCommand = nodeCommand;
+            this.entityId = entityId;
+            this.entityCommand = entityCommand;
             this.properties.addAll( Arrays.asList( properties ) );
         }
 
@@ -199,8 +207,8 @@ class EntityCommandGrouperTest
 
         void assertGroup( EntityCommandGrouper.Cursor cursor )
         {
-            assertEquals( nodeId, cursor.currentEntityId() );
-            assertSame( nodeCommand, cursor.currentEntityCommand() );
+            assertEquals( entityId, cursor.currentEntityId() );
+            assertSame( entityCommand, cursor.currentEntityCommand() );
             Set<Command.PropertyCommand> fromGrouper = new HashSet<>();
             while ( true )
             {
@@ -216,7 +224,29 @@ class EntityCommandGrouperTest
 
         boolean isEmpty()
         {
-            return nodeCommand == null && properties.isEmpty();
+            return entityCommand == null && properties.isEmpty();
         }
+    }
+
+    private enum Factory
+    {
+        NODE
+                {
+                    @Override
+                    NodeCommand command( long value )
+                    {
+                        return new NodeCommand( new NodeRecord( value ), new NodeRecord( value ) );
+                    }
+                },
+        RELATIONSHIP
+                {
+                    @Override
+                    RelationshipCommand command( long value )
+                    {
+                        return new RelationshipCommand( new RelationshipRecord( value ), new RelationshipRecord( value ) );
+                    }
+                };
+
+        abstract BaseCommand<? extends PrimitiveRecord> command( long id );
     }
 }
