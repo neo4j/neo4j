@@ -45,7 +45,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FlushableChannel;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -467,7 +466,7 @@ class RecoveryCorruptedTransactionLogIT
         }
         if ( checkpointPosition != null )
         {
-            try ( StoreChannel storeChannel = fileSystem.open( logFiles.getHighestLogFile(), OpenMode.READ_WRITE ) )
+            try ( StoreChannel storeChannel = fileSystem.create( logFiles.getHighestLogFile() ) )
             {
                 storeChannel.truncate( checkpointPosition.getByteOffset() );
             }

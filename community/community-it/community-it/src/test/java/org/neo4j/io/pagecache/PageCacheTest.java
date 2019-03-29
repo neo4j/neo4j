@@ -41,6 +41,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -57,7 +58,6 @@ import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
@@ -77,6 +77,7 @@ import org.neo4j.util.concurrent.BinaryLatch;
 import static java.lang.Long.toHexString;
 import static java.lang.System.currentTimeMillis;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
+import static java.nio.file.StandardOpenOption.READ;
 import static java.time.Duration.ofMillis;
 import static org.apache.commons.lang3.ArrayUtils.addAll;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -653,9 +654,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         return new DelegatingFileSystemAbstraction( fs )
         {
             @Override
-            public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
+            public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
             {
-                return new DelegatingStoreChannel( super.open( fileName, openMode ) )
+                return new DelegatingStoreChannel( super.open( fileName, options ) )
                 {
                     @Override
                     public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -888,9 +889,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
             {
                 @Override
-                public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
+                public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
                 {
-                    return new DelegatingStoreChannel( super.open( fileName, openMode ) )
+                    return new DelegatingStoreChannel( super.open( fileName, options ) )
                     {
                         private int writeCount;
 
@@ -1502,7 +1503,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    void listExistingMappingsMustThrowOnClosedPageCache() throws Exception
+    void listExistingMappingsMustThrowOnClosedPageCache()
     {
         configureStandardPageCache();
         T pc = pageCache;
@@ -2018,7 +2019,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
 
             ByteBuffer buf = ByteBuffer.allocate( 23 );
-            try ( StoreChannel channel = fs.open( file( "a" ), OpenMode.READ ) )
+            try ( StoreChannel channel = fs.open( file( "a" ), Set.of( READ ) ) )
             {
                 channel.readAll( buf );
             }
@@ -2266,9 +2267,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
             {
                 @Override
-                public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
+                public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
                 {
-                    StoreChannel channel = super.open( fileName, openMode );
+                    StoreChannel channel = super.open( fileName, options );
                     return new DelegatingStoreChannel( channel )
                     {
                         @Override
@@ -2398,7 +2399,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 assertThat( inputStream.read(), is( -1 ) );
             }
 
-            try ( StoreChannel channel = fs.open( file( "a" ), OpenMode.READ ) )
+            try ( StoreChannel channel = fs.open( file( "a" ), Set.of( READ ) ) )
             {
                 ByteBuffer bufB = ByteBuffer.allocate( recordSize );
                 for ( int i = 0; i < recordCount; i++ )
@@ -2993,7 +2994,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         } );
     }
 
-    private void closeThisPagedFile( PagedFile pagedFile ) throws IOException
+    private void closeThisPagedFile( PagedFile pagedFile )
     {
         pagedFile.close();
     }
@@ -3727,9 +3728,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 private List<StoreChannel> channels = new CopyOnWriteArrayList<>();
 
                 @Override
-                public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
+                public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
                 {
-                    StoreChannel channel = new DelegatingStoreChannel( super.open( fileName, openMode ) )
+                    StoreChannel channel = new DelegatingStoreChannel( super.open( fileName, options ) )
                     {
                         @Override
                         public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -3793,9 +3794,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     private final List<StoreChannel> channels = new CopyOnWriteArrayList<>();
 
                     @Override
-                    public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
+                    public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
                     {
-                        StoreChannel channel = new DelegatingStoreChannel( super.open( fileName, openMode ) )
+                        StoreChannel channel = new DelegatingStoreChannel( super.open( fileName, options ) )
                         {
                             @Override
                             public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -3869,9 +3870,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
             {
                 @Override
-                public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
+                public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
                 {
-                    return new DelegatingStoreChannel( super.open( fileName, openMode ) )
+                    return new DelegatingStoreChannel( super.open( fileName, options ) )
                     {
                         @Override
                         public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -3928,9 +3929,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
         {
             @Override
-            public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
+            public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
             {
-                return new DelegatingStoreChannel( super.open( fileName, openMode ) )
+                return new DelegatingStoreChannel( super.open( fileName, options ) )
                 {
                     @Override
                     public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -4298,7 +4299,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             for ( int fileId = 0; fileId < files.length; fileId++ )
             {
                 File file = files[fileId];
-                StoreChannel channel = fs.open( file, OpenMode.READ_WRITE );
+                StoreChannel channel = fs.create( file );
                 for ( int recordId = 0; recordId < fileId + 1; recordId++ )
                 {
                     Record record = recordFormat.createRecord( file, recordId );

@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.id;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.ArgumentMatchers;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
 import java.io.File;
@@ -32,25 +32,36 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.io.fs.OpenMode;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.id.IdContainer.NO_RESULT;
 
-public class FreeIdKeeperTest
+@ExtendWith( EphemeralFileSystemExtension.class )
+class FreeIdKeeperTest
 {
-    @Rule
-    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+
+    @BeforeEach
+    void setUp()
+    {
+        fs.clear();
+    }
 
     @Test
-    public void newlyConstructedInstanceShouldReportProperDefaultValues() throws Exception
+    void newlyConstructedInstanceShouldReportProperDefaultValues() throws Exception
     {
         // Given
         FreeIdKeeper keeper = getFreeIdKeeperAggressive();
@@ -61,7 +72,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void freeingAnIdShouldReturnThatIdAndUpdateTheCountWhenAggressiveModeIsSet() throws Exception
+    void freeingAnIdShouldReturnThatIdAndUpdateTheCountWhenAggressiveModeIsSet() throws Exception
     {
         // Given
         FreeIdKeeper keeper = getFreeIdKeeperAggressive();
@@ -81,7 +92,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldReturnMinusOneWhenRunningOutOfIds() throws Exception
+    void shouldReturnMinusOneWhenRunningOutOfIds() throws Exception
     {
         // Given
         FreeIdKeeper keeper = getFreeIdKeeperAggressive();
@@ -96,10 +107,10 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldOnlyOverflowWhenThresholdIsReached() throws Exception
+    void shouldOnlyOverflowWhenThresholdIsReached() throws Exception
     {
         // Given
-        StoreChannel channel = Mockito.spy( fs.get().open( new File( "id.file" ), OpenMode.READ_WRITE ) );
+        StoreChannel channel = Mockito.spy( fs.create( new File( "id.file" ) ) );
 
         int batchSize = 10;
         FreeIdKeeper keeper = getFreeIdKeeperAggressive( channel, batchSize );
@@ -113,17 +124,17 @@ public class FreeIdKeeperTest
         }
 
         // then
-        Mockito.verifyZeroInteractions( channel );
+        verifyZeroInteractions( channel );
 
         // when we free one more
         keeper.freeId( 10 );
 
         // then
-        Mockito.verify( channel ).writeAll( ArgumentMatchers.any( ByteBuffer.class ) );
+        verify( channel ).writeAll( any( ByteBuffer.class ) );
     }
 
     @Test
-    public void shouldReadBackPersistedIdsWhenAggressiveModeIsSet() throws Exception
+    void shouldReadBackPersistedIdsWhenAggressiveModeIsSet() throws Exception
     {
         // given
         StoreChannel channel = getStoreChannel();
@@ -147,7 +158,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldReadBackManyPersistedIdBatchesWhenAggressiveModeIsSet() throws Exception
+    void shouldReadBackManyPersistedIdBatchesWhenAggressiveModeIsSet() throws Exception
     {
         // given
         StoreChannel channel = getStoreChannel();
@@ -174,7 +185,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldFirstReturnNonPersistedIdsAndThenPersistedOnesWhenAggressiveMode() throws Exception
+    void shouldFirstReturnNonPersistedIdsAndThenPersistedOnesWhenAggressiveMode() throws Exception
     {
         // this is testing the stack property, but from the viewpoint of avoiding unnecessary disk reads
         // given
@@ -210,7 +221,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void persistedIdsShouldStillBeCounted() throws Exception
+    void persistedIdsShouldStillBeCounted() throws Exception
     {
         // given
         StoreChannel channel = getStoreChannel();
@@ -237,7 +248,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldStoreAndRestoreIds() throws Exception
+    void shouldStoreAndRestoreIds() throws Exception
     {
         // given
         StoreChannel channel = getStoreChannel();
@@ -264,7 +275,7 @@ public class FreeIdKeeperTest
         keeper.close();
         channel.close();
         // and then we open a new one over the same file
-        channel = fs.get().open( new File( "id.file" ), OpenMode.READ_WRITE );
+        channel = fs.create( new File( "id.file" ) );
         keeper = getFreeIdKeeperAggressive( channel, batchSize );
 
         // then
@@ -280,7 +291,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldNotReturnNewlyReleasedIdsIfAggressiveIsFalse() throws Exception
+    void shouldNotReturnNewlyReleasedIdsIfAggressiveIsFalse() throws Exception
     {
         // given
         FreeIdKeeper keeper = getFreeIdKeeper();
@@ -294,10 +305,10 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldNotReturnIdsPersistedDuringThisRunIfAggressiveIsFalse() throws Exception
+    void shouldNotReturnIdsPersistedDuringThisRunIfAggressiveIsFalse() throws Exception
     {
         // given
-        StoreChannel channel = Mockito.spy( fs.get().open( new File( "id.file" ), OpenMode.READ_WRITE ) );
+        StoreChannel channel = Mockito.spy( fs.create( new File( "id.file" ) ) );
 
         int batchSize = 10;
         FreeIdKeeper keeper = getFreeIdKeeper( channel, batchSize );
@@ -311,13 +322,13 @@ public class FreeIdKeeperTest
 
         // then
         // stuff must have been written to disk
-        Mockito.verify( channel ).write( ArgumentMatchers.any( ByteBuffer.class ) );
+        verify( channel ).write( any( ByteBuffer.class ) );
         // and no ids can be returned
         assertEquals( NO_RESULT, keeper.getId() );
     }
 
     @Test
-    public void shouldReturnIdsRestoredAndIgnoreNewlyReleasedIfAggressiveModeIsFalse() throws Exception
+    void shouldReturnIdsRestoredAndIgnoreNewlyReleasedIfAggressiveModeIsFalse() throws Exception
     {
         // given
         StoreChannel channel = getStoreChannel();
@@ -333,7 +344,7 @@ public class FreeIdKeeperTest
         keeper.close();
         channel.close();
         // and then we open a new one over the same file
-        channel = fs.get().open( new File( "id.file" ), OpenMode.READ_WRITE );
+        channel = fs.create( new File( "id.file" ) );
         keeper = getFreeIdKeeper( channel, batchSize );
 
         // when
@@ -356,7 +367,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldReturnNoResultIfIdsAreRestoredAndExhaustedAndThereAreFreeIdsFromThisRunWithAggressiveFalse() throws Exception
+    void shouldReturnNoResultIfIdsAreRestoredAndExhaustedAndThereAreFreeIdsFromThisRunWithAggressiveFalse() throws Exception
     {
         // given
         StoreChannel channel = getStoreChannel();
@@ -372,7 +383,7 @@ public class FreeIdKeeperTest
         keeper.close();
         channel.close();
         // and then we open a new one over the same file
-        channel = fs.get().open( new File( "id.file" ), OpenMode.READ_WRITE );
+        channel = fs.create( new File( "id.file" ) );
         keeper = getFreeIdKeeper( channel, batchSize );
 
         // when - then
@@ -395,7 +406,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldNotReturnReusedIdsAfterRestart() throws Exception
+    void shouldNotReturnReusedIdsAfterRestart() throws Exception
     {
         // given
         StoreChannel channel = getStoreChannel();
@@ -441,7 +452,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldTruncateFileInAggressiveMode() throws Exception
+    void shouldTruncateFileInAggressiveMode() throws Exception
     {
         // given
         StoreChannel channel = getStoreChannel();
@@ -466,7 +477,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldCompactFileOnCloseInRegularMode() throws Exception
+    void shouldCompactFileOnCloseInRegularMode() throws Exception
     {
         // given
         StoreChannel channel = getStoreChannel();
@@ -506,16 +517,16 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void allocateEmptyBatchWhenNoIdsAreAvailable() throws IOException
+    void allocateEmptyBatchWhenNoIdsAreAvailable() throws IOException
     {
         FreeIdKeeper freeIdKeeper = getFreeIdKeeperAggressive();
         long[] ids = freeIdKeeper.getIds( 1024 );
-        assertSame( PrimitiveLongCollections.EMPTY_LONG_ARRAY, ids );
+        assertSame( EMPTY_LONG_ARRAY, ids );
         assertEquals( 0, freeIdKeeper.getCount() );
     }
 
     @Test
-    public void allocateBatchWhenHaveMoreIdsInMemory() throws IOException
+    void allocateBatchWhenHaveMoreIdsInMemory() throws IOException
     {
         FreeIdKeeper freeIdKeeper = getFreeIdKeeperAggressive();
         for ( long id = 1L; id < 7L; id++ )
@@ -523,12 +534,12 @@ public class FreeIdKeeperTest
             freeIdKeeper.freeId( id );
         }
         long[] ids = freeIdKeeper.getIds( 5 );
-        assertArrayEquals( new long[]{1L, 2L, 3L, 4L, 5L}, ids);
+        assertArrayEquals( new long[]{1L, 2L, 3L, 4L, 5L}, ids );
         assertEquals( 1, freeIdKeeper.getCount() );
     }
 
     @Test
-    public void allocateBatchWhenHaveLessIdsInMemory() throws IOException
+    void allocateBatchWhenHaveLessIdsInMemory() throws IOException
     {
         FreeIdKeeper freeIdKeeper = getFreeIdKeeperAggressive();
         for ( long id = 1L; id < 4L; id++ )
@@ -541,7 +552,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void allocateBatchWhenHaveLessIdsInMemoryButHaveOnDiskMore() throws IOException
+    void allocateBatchWhenHaveLessIdsInMemoryButHaveOnDiskMore() throws IOException
     {
         FreeIdKeeper freeIdKeeper = getFreeIdKeeperAggressive( 4 );
         for ( long id = 1L; id < 11L; id++ )
@@ -554,7 +565,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void allocateBatchWhenHaveLessIdsInMemoryAndOnDisk() throws IOException
+    void allocateBatchWhenHaveLessIdsInMemoryAndOnDisk() throws IOException
     {
         FreeIdKeeper freeIdKeeper = getFreeIdKeeperAggressive( 4 );
         for ( long id = 1L; id < 10L; id++ )
@@ -598,6 +609,6 @@ public class FreeIdKeeperTest
 
     private StoreChannel getStoreChannel() throws IOException
     {
-        return fs.get().open( new File( "id.file" ), OpenMode.READ_WRITE );
+        return fs.create( new File( "id.file" ) );
     }
 }

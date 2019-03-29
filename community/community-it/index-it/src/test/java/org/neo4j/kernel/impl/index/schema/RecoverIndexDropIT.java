@@ -29,7 +29,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.PhysicalFlushableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.api.index.IndexMap;
@@ -125,7 +124,7 @@ class RecoverIndexDropIT
     {
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( transactionLogsDirectory, fs ).build();
         File logFile = logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() );
-        StoreChannel writeStoreChannel = fs.open( logFile, OpenMode.READ_WRITE );
+        StoreChannel writeStoreChannel = fs.create( logFile );
         writeStoreChannel.position( writeStoreChannel.size() );
         try ( PhysicalFlushableChannel writeChannel = new PhysicalFlushableChannel( writeStoreChannel ) )
         {

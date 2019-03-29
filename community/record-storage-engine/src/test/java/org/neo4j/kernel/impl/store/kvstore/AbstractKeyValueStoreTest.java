@@ -36,7 +36,6 @@ import org.neo4j.function.IOFunction;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -72,7 +71,7 @@ public class AbstractKeyValueStoreTest
     public final RuleChain ruleChain = RuleChain.outerRule( expectedException )
             .around( resourceManager ).around( threading ).around( timeout );
 
-    private static final HeaderField<Long> TX_ID = new HeaderField<Long>()
+    private static final HeaderField<Long> TX_ID = new HeaderField<>()
     {
         @Override
         public Long read( ReadableBuffer header )
@@ -236,7 +235,7 @@ public class AbstractKeyValueStoreTest
             file.other().close();
         }
         // Corrupt the last files
-        try ( StoreChannel channel = resourceManager.fileSystem().open( files[9], OpenMode.READ_WRITE ) )
+        try ( StoreChannel channel = resourceManager.fileSystem().create( files[9] ) )
         {   // ruin the header
             channel.position( 16 );
             ByteBuffer value = ByteBuffer.allocate( 16 );
@@ -244,7 +243,7 @@ public class AbstractKeyValueStoreTest
             value.flip();
             channel.writeAll( value );
         }
-        try ( StoreChannel channel = resourceManager.fileSystem().open( files[8], OpenMode.READ_WRITE ) )
+        try ( StoreChannel channel = resourceManager.fileSystem().create( files[8] ) )
         {   // ruin the header
             channel.position( 32 );
             ByteBuffer value = ByteBuffer.allocate( 16 );
@@ -252,7 +251,7 @@ public class AbstractKeyValueStoreTest
             value.flip();
             channel.writeAll( value );
         }
-        try ( StoreChannel channel = resourceManager.fileSystem().open( files[7], OpenMode.READ_WRITE ) )
+        try ( StoreChannel channel = resourceManager.fileSystem().create( files[7] ) )
         {   // ruin the header
             channel.position( 32 + 32 + 32 + 16 );
             ByteBuffer value = ByteBuffer.allocate( 16 );
@@ -312,7 +311,7 @@ public class AbstractKeyValueStoreTest
         File corrupted = nextNext.first();
         nextNext.other().close();
 
-        try ( StoreChannel channel = resourceManager.fileSystem().open( corrupted, OpenMode.READ_WRITE ) )
+        try ( StoreChannel channel = resourceManager.fileSystem().create( corrupted ) )
         {
             channel.truncate( 16 * 4 );
         }
@@ -558,7 +557,7 @@ public class AbstractKeyValueStoreTest
 
     private AbstractKeyValueStore.Reader<String> stringReader( String value )
     {
-        return new AbstractKeyValueStore.Reader<String>()
+        return new AbstractKeyValueStore.Reader<>()
         {
             @Override
             protected String parseValue( ReadableBuffer buffer )
@@ -687,7 +686,7 @@ public class AbstractKeyValueStoreTest
 
         public String get( String key ) throws IOException
         {
-            return lookup( key, new Reader<String>()
+            return lookup( key, new Reader<>()
             {
                 @Override
                 protected String parseValue( ReadableBuffer value )

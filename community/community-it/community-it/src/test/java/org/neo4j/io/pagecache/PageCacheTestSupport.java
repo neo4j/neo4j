@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
@@ -37,7 +38,6 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -47,6 +47,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
+import static java.nio.file.StandardOpenOption.READ;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
@@ -280,7 +281,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
             int recordCount,
             int recordSize ) throws IOException
     {
-        try ( StoreChannel channel = fs.open( file, OpenMode.READ_WRITE ) )
+        try ( StoreChannel channel = fs.create( file ) )
         {
             generateFileWithRecords( channel, recordCount, recordSize );
         }
@@ -317,7 +318,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
 
     protected void verifyRecordsInFile( File file, int recordCount ) throws IOException
     {
-        try ( StoreChannel channel = fs.open( file, OpenMode.READ ) )
+        try ( StoreChannel channel = fs.open( file, Set.of( READ ) ) )
         {
             verifyRecordsInFile( channel, recordCount );
         }

@@ -28,6 +28,8 @@ import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
 
+import static java.nio.file.StandardOpenOption.READ;
+import static java.util.Set.of;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -48,10 +50,10 @@ class SelectiveFileSystemAbstractionTest
         try ( SelectiveFileSystemAbstraction systemAbstraction = new SelectiveFileSystemAbstraction( specialFile,
                 special, normal ) )
         {
-            systemAbstraction.open( specialFile, OpenMode.READ );
+            systemAbstraction.open( specialFile, of( READ ) );
 
             // then
-            verify( special ).open( specialFile, OpenMode.READ );
+            verify( special ).open( specialFile, of( READ ) );
             verifyNoMoreInteractions( special );
             verifyNoMoreInteractions( normal );
         }
@@ -71,11 +73,11 @@ class SelectiveFileSystemAbstractionTest
         try ( SelectiveFileSystemAbstraction fs = new SelectiveFileSystemAbstraction( specialFile, special, normal ) )
         {
             fs.create( otherFile );
-            fs.open( otherFile, OpenMode.READ );
+            fs.open( otherFile, of( READ ) );
 
             // then
             verify( normal ).create( otherFile );
-            verify( normal ).open( otherFile, OpenMode.READ );
+            verify( normal ).open( otherFile, of( READ ) );
             verifyNoMoreInteractions( special );
             verifyNoMoreInteractions( normal );
         }

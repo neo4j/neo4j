@@ -19,36 +19,41 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Set;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.OpenMode;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static java.nio.file.StandardOpenOption.READ;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 
-public class ReadAheadLogChannelTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class ReadAheadLogChannelTest
 {
-    @Rule
-    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private TestDirectory directory;
 
     @Test
-    public void shouldReadFromSingleChannel() throws Exception
+    void shouldReadFromSingleChannel() throws Exception
     {
         // GIVEN
         File file = file( 0 );
@@ -71,7 +76,7 @@ public class ReadAheadLogChannelTest
             return true;
         } );
 
-        StoreChannel storeChannel = fileSystemRule.get().open( file, OpenMode.READ );
+        StoreChannel storeChannel = fileSystem.open( file, Set.of( READ ) );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1 /* ignored */ );
         try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, NO_MORE_CHANNELS, 16 ) )
@@ -91,7 +96,7 @@ public class ReadAheadLogChannelTest
     }
 
     @Test
-    public void shouldReadFromMultipleChannels() throws Exception
+    void shouldReadFromMultipleChannels() throws Exception
     {
         // GIVEN
         writeSomeData( file( 0 ), element ->
@@ -111,7 +116,7 @@ public class ReadAheadLogChannelTest
             return true;
         } );
 
-        StoreChannel storeChannel = fileSystemRule.get().open( file( 0 ), OpenMode.READ );
+        StoreChannel storeChannel = fileSystem.open( file( 0 ), Set.of( READ ) );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1 /* ignored */ );
         try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, new LogVersionBridge()
@@ -125,7 +130,7 @@ public class ReadAheadLogChannelTest
                 {
                     returned = true;
                     channel.close();
-                    return new PhysicalLogVersionedStoreChannel( fileSystemRule.get().open( file( 1 ), OpenMode.READ ),
+                    return new PhysicalLogVersionedStoreChannel( fileSystem.open( file( 1 ), Set.of( READ ) ),
                             -1 /* ignored */, (byte) -1 /* ignored */ );
                 }
                 return channel;
@@ -142,7 +147,7 @@ public class ReadAheadLogChannelTest
 
     private void writeSomeData( File file, Visitor<ByteBuffer, IOException> visitor ) throws IOException
     {
-        try ( StoreChannel channel = fileSystemRule.get().open( file, OpenMode.READ_WRITE ) )
+        try ( StoreChannel channel = fileSystem.create( file ) )
         {
             ByteBuffer buffer = ByteBuffer.allocate( 1024 );
             visitor.visit( buffer );

@@ -57,14 +57,13 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.DSYNC;
 import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.SYNC;
 import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
@@ -653,32 +652,9 @@ public class FileUtils
         }
     }
 
-    public static OpenOption[] convertOpenMode( OpenMode mode )
+    public static FileChannel open( Path path, Set<OpenOption> options ) throws IOException
     {
-        OpenOption[] options;
-        switch ( mode )
-        {
-        case READ:
-            options = new OpenOption[]{READ};
-            break;
-        case READ_WRITE:
-            options = new OpenOption[]{CREATE, READ, WRITE};
-            break;
-        case SYNC:
-            options = new OpenOption[]{CREATE, READ, WRITE, SYNC};
-            break;
-        case DSYNC:
-            options = new OpenOption[]{CREATE, READ, WRITE, DSYNC};
-            break;
-        default:
-            throw new IllegalArgumentException( "Unsupported mode: " + mode );
-        }
-        return options;
-    }
-
-    public static FileChannel open( Path path, OpenMode openMode ) throws IOException
-    {
-        return FileChannel.open( path, convertOpenMode( openMode ) );
+        return FileChannel.open( path, options );
     }
 
     public static InputStream openAsInputStream( Path path ) throws IOException

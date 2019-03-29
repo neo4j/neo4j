@@ -34,7 +34,6 @@ import java.nio.channels.OverlappingFileLockException;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.io.fs.StoreFileChannelUnwrapper;
@@ -194,7 +193,7 @@ public class SingleFilePageSwapper implements PageSwapper
         this.channels = new StoreChannel[channelStripeCount];
         for ( int i = 0; i < channelStripeCount; i++ )
         {
-            channels[i] = fs.open( file, OpenMode.READ_WRITE );
+            channels[i] = fs.create( file );
         }
         this.filePageSize = filePageSize;
         this.onEviction = onEviction;
@@ -700,7 +699,7 @@ public class SingleFilePageSwapper implements PageSwapper
 
         try
         {
-            channels[stripe] = fs.open( file, OpenMode.READ_WRITE );
+            channels[stripe] = fs.create( file );
             if ( stripe == TOKEN_CHANNEL_STRIPE )
             {
                 // The closing of a FileChannel also releases all associated file locks.

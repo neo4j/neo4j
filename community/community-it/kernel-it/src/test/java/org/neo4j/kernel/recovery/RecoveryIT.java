@@ -33,7 +33,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -556,7 +555,7 @@ class RecoveryIT
         }
         if ( checkpointPosition != null )
         {
-            try ( StoreChannel storeChannel = fileSystem.open( logFiles.getHighestLogFile(), OpenMode.READ_WRITE ) )
+            try ( StoreChannel storeChannel = fileSystem.create( logFiles.getHighestLogFile() ) )
             {
                 storeChannel.truncate( checkpointPosition.getByteOffset() );
             }

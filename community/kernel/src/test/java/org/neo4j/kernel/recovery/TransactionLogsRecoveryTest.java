@@ -35,7 +35,6 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -449,7 +448,7 @@ class RecoveryTest
     private void writeSomeData( File file, Visitor<Pair<LogEntryWriter,Consumer<LogPositionMarker>>,IOException> visitor ) throws IOException
     {
 
-        try ( LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel( fileSystem.open( file, OpenMode.READ_WRITE ), logVersion,
+        try ( LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel( fileSystem.create( file ), logVersion,
                 CURRENT_LOG_VERSION );
                 PositionAwarePhysicalFlushableChannel writableLogChannel = new PositionAwarePhysicalFlushableChannel( versionedStoreChannel,
                         ByteBuffer.allocate( 1024 ) ) )

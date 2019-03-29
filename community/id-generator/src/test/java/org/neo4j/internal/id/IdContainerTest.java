@@ -26,10 +26,11 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
+import java.util.Set;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -199,9 +200,9 @@ public class IdContainerTest
     private static class SingleByteFileSystemAbstraction extends DefaultFileSystemAbstraction
     {
         @Override
-        public StoreFileChannel open( File fileName, OpenMode mode ) throws IOException
+        public StoreFileChannel open( File fileName, Set<OpenOption> options ) throws IOException
         {
-            return new SingleByteBufferChannel( super.open( fileName, mode ) );
+            return new SingleByteBufferChannel( super.open( fileName, options ) );
         }
     }
 

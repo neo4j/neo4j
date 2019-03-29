@@ -42,7 +42,6 @@ import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
@@ -509,7 +508,7 @@ public class RandomPageCacheTestHarness implements Closeable
         {
             files[i] = new File( base, s.substring( i, i + 1 ) ).getCanonicalFile();
             fs.mkdirs( files[i].getParentFile() );
-            StoreChannel channel = fs.open( files[i], OpenMode.READ_WRITE );
+            StoreChannel channel = fs.create( files[i] );
             channel.truncate( 0 );
             channel.close();
         }

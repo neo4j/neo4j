@@ -25,7 +25,6 @@ import java.nio.ByteBuffer;
 import java.util.Random;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 
@@ -68,7 +67,7 @@ public class SabotageNativeIndex extends NativeIndexRestartAction
         else
         {
             // Completely scramble file, assuming small files
-            try ( StoreChannel channel = fs.open( fileOrDir, OpenMode.READ_WRITE ) )
+            try ( StoreChannel channel = fs.create( fileOrDir ) )
             {
                 if ( channel.size() > mebiBytes( 10 ) )
                 {

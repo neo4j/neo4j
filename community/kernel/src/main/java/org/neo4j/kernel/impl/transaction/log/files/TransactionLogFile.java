@@ -26,12 +26,12 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
@@ -46,6 +46,9 @@ import org.neo4j.storageengine.api.LogVersionRepository;
 
 import static java.lang.Math.min;
 import static java.lang.Runtime.getRuntime;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
  * {@link LogFile} backed by one or more files in a {@link FileSystemAbstraction}.
@@ -76,7 +79,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         logVersionRepository = context.getLogVersionRepository();
         // Make sure at least a bare bones log file is available before recovery
         long lastLogVersionUsed = this.logVersionRepository.getCurrentLogVersion();
-        channel = logFiles.createLogChannelForVersion( lastLogVersionUsed, OpenMode.READ_WRITE, context::getLastCommittedTransactionId );
+        channel = logFiles.createLogChannelForVersion( lastLogVersionUsed, Set.of( READ, WRITE, CREATE ), context::getLastCommittedTransactionId );
         channel.close();
     }
 
@@ -86,7 +89,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         // Recovery has taken place before this, so the log file has been truncated to last known good tx
         // Just read header and move to the end
         long lastLogVersionUsed = logVersionRepository.getCurrentLogVersion();
-        channel = logFiles.createLogChannelForVersion( lastLogVersionUsed, OpenMode.READ_WRITE, context::getLastCommittedTransactionId );
+        channel = logFiles.createLogChannelForVersion( lastLogVersionUsed, Set.of( READ, WRITE, CREATE ), context::getLastCommittedTransactionId );
         // Move to the end
         channel.position( channel.size() );
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect( calculateLogBufferSize() );
@@ -193,7 +196,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
          * into transaction log that was just rotated.
          */
         PhysicalLogVersionedStoreChannel newLog = logFiles.createLogChannelForVersion( newLogVersion,
-                OpenMode.READ_WRITE, context::committingTransactionId );
+                Set.of( READ, WRITE, CREATE ), context::committingTransactionId );
         currentLog.close();
         return newLog;
     }

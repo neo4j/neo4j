@@ -29,39 +29,43 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
+import java.nio.file.OpenOption;
+import java.util.Set;
 
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
+
+import static java.nio.file.StandardOpenOption.READ;
+import static java.util.Set.of;
 
 public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstraction
 {
     private volatile boolean outOfSpace;
 
-    public LimitedFilesystemAbstraction( FileSystemAbstraction delegate )
+    LimitedFilesystemAbstraction( FileSystemAbstraction delegate )
     {
         super( delegate );
     }
 
     @Override
-    public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
+    public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
     {
-        return new LimitedFileChannel( super.open( fileName, openMode ), this );
+        return new LimitedFileChannel( super.open( fileName, options ), this );
     }
 
     @Override
     public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
     {
-        return new ChannelOutputStream( open( fileName, OpenMode.READ_WRITE ), append );
+        return new ChannelOutputStream( create( fileName ), append );
     }
 
     @Override
     public InputStream openAsInputStream( File fileName ) throws IOException
     {
-        return new ChannelInputStream( open( fileName, OpenMode.READ ) );
+        return new ChannelInputStream( open( fileName, of( READ ) ) );
     }
 
     @Override
@@ -97,12 +101,12 @@ public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstractio
         super.renameFile( from, to, copyOptions );
     }
 
-    public void runOutOfDiskSpace( boolean outOfSpace )
+    void runOutOfDiskSpace( boolean outOfSpace )
     {
         this.outOfSpace = outOfSpace;
     }
 
-    public void ensureHasSpace() throws IOException
+    void ensureHasSpace() throws IOException
     {
         if ( outOfSpace )
         {

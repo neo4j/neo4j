@@ -39,7 +39,6 @@ import org.neo4j.internal.index.label.LabelScanReader;
 import org.neo4j.internal.index.label.LabelScanWriter;
 import org.neo4j.internal.index.label.NativeLabelScanStore;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -57,9 +56,10 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.token.TokenCreator;
 
 import static java.lang.String.format;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.util.Set.of;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -272,7 +272,7 @@ class NativeLabelScanStoreMigratorTest
 
     private ByteBuffer readFileContent( File nativeLabelIndex, int length ) throws IOException
     {
-        try ( StoreChannel storeChannel = fileSystem.open( nativeLabelIndex, OpenMode.READ ) )
+        try ( StoreChannel storeChannel = fileSystem.open( nativeLabelIndex, of( READ ) ) )
         {
             ByteBuffer readBuffer = ByteBuffer.allocate( length );
             //noinspection StatementWithEmptyBody

@@ -26,16 +26,17 @@ import org.junit.jupiter.params.provider.EnumSource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Set;
 import java.util.function.IntFunction;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.ReadAheadChannel;
 import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
+import static java.nio.file.StandardOpenOption.READ;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.fs.ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
@@ -52,7 +53,7 @@ class ReadAheadChannelTest
     {
         // Given
         File bytesReadTestFile = new File( "bytesReadTest.txt" );
-        StoreChannel storeChannel = fileSystem.open( bytesReadTestFile, OpenMode.READ_WRITE );
+        StoreChannel storeChannel = fileSystem.create( bytesReadTestFile );
         ByteBuffer buffer = ByteBuffer.allocate( 1 );
         buffer.put( (byte) 1 );
         buffer.flip();
@@ -60,7 +61,7 @@ class ReadAheadChannelTest
         storeChannel.force( false );
         storeChannel.close();
 
-        storeChannel = fileSystem.open( bytesReadTestFile, OpenMode.READ );
+        storeChannel = fileSystem.open( bytesReadTestFile, Set.of( READ ) );
 
         ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( storeChannel, bufferFactory.apply( DEFAULT_READ_AHEAD_SIZE ) );
         assertEquals( (byte) 1, channel.get() );
@@ -75,7 +76,7 @@ class ReadAheadChannelTest
     {
         // Given
         File shortReadTestFile = new File( "shortReadTest.txt" );
-        StoreChannel storeChannel = fileSystem.open( shortReadTestFile, OpenMode.READ_WRITE );
+        StoreChannel storeChannel = fileSystem.create( shortReadTestFile );
         ByteBuffer buffer = ByteBuffer.allocate( 1 );
         buffer.put( (byte) 1 );
         buffer.flip();
@@ -83,7 +84,7 @@ class ReadAheadChannelTest
         storeChannel.force( false );
         storeChannel.close();
 
-        storeChannel = fileSystem.open( shortReadTestFile, OpenMode.READ );
+        storeChannel = fileSystem.open( shortReadTestFile, Set.of( READ ) );
         ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( storeChannel, bufferFactory.apply( DEFAULT_READ_AHEAD_SIZE ) );
 
         assertThrows( ReadPastEndException.class, channel::getShort );
@@ -96,7 +97,7 @@ class ReadAheadChannelTest
     void shouldHandleRunningOutOfBytesWhenRequestSpansMultipleFiles( IntFunction<ByteBuffer> bufferFactory ) throws Exception
     {
         // Given
-        StoreChannel storeChannel1 = fileSystem.open( new File( "foo.1" ), OpenMode.READ_WRITE );
+        StoreChannel storeChannel1 = fileSystem.create( new File( "foo.1" ) );
         ByteBuffer buffer = ByteBuffer.allocate( 2 );
         buffer.put( (byte) 0 );
         buffer.put( (byte) 0 );
@@ -107,7 +108,7 @@ class ReadAheadChannelTest
 
         buffer.flip();
 
-        StoreChannel storeChannel2 = fileSystem.open( new File( "foo.2" ), OpenMode.READ );
+        StoreChannel storeChannel2 = fileSystem.open( new File( "foo.2" ), Set.of( READ ) );
         buffer.put( (byte) 0 );
         buffer.put( (byte) 1 );
         buffer.flip();
@@ -115,10 +116,10 @@ class ReadAheadChannelTest
         storeChannel2.force( false );
         storeChannel2.close();
 
-        storeChannel1 = fileSystem.open( new File( "foo.1" ), OpenMode.READ );
-        final StoreChannel storeChannel2Copy = fileSystem.open( new File( "foo.2" ), OpenMode.READ );
+        storeChannel1 = fileSystem.open( new File( "foo.1" ), Set.of( READ ) );
+        final StoreChannel storeChannel2Copy = fileSystem.open( new File( "foo.2" ), Set.of( READ ) );
 
-        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<StoreChannel>( storeChannel1, bufferFactory.apply( DEFAULT_READ_AHEAD_SIZE ) )
+        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( storeChannel1, bufferFactory.apply( DEFAULT_READ_AHEAD_SIZE ) )
         {
             @Override
             protected StoreChannel next( StoreChannel channel )
@@ -143,7 +144,7 @@ class ReadAheadChannelTest
         int fileSize = readAheadSize * 8;
 
         createFile( fileSystem, file, fileSize );
-        ReadAheadChannel<StoreChannel> bufferedReader = new ReadAheadChannel<>( fileSystem.open( file, OpenMode.READ ), bufferFactory.apply( readAheadSize ) );
+        ReadAheadChannel<StoreChannel> bufferedReader = new ReadAheadChannel<>( fileSystem.open( file, Set.of( READ ) ), bufferFactory.apply( readAheadSize ) );
 
         // when
         for ( int i = 0; i < fileSize / Long.BYTES; i++ )
@@ -159,7 +160,7 @@ class ReadAheadChannelTest
 
     private void createFile( EphemeralFileSystemAbstraction fsa, File name, int bufferSize ) throws IOException
     {
-        StoreChannel storeChannel = fsa.open( name, OpenMode.READ_WRITE );
+        StoreChannel storeChannel = fsa.create( name );
         ByteBuffer buffer = ByteBuffer.allocate( bufferSize );
         for ( int i = 0; i < bufferSize; i++ )
         {

@@ -19,79 +19,73 @@
  */
 package org.neo4j.kernel.internal;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileLock;
+import java.nio.file.OpenOption;
+import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class StoreLockerTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class StoreLockerTest
 {
-    @Rule
-    public final TestDirectory target = TestDirectory.testDirectory();
-    @Rule
-    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    @Inject
+    private TestDirectory target;
+    @Inject
+    private FileSystemAbstraction fileSystem;
 
     @Test
-    public void shouldUseAlreadyOpenedFileChannel() throws Exception
+    void shouldUseAlreadyOpenedFileChannel() throws Exception
     {
         StoreChannel channel = Mockito.mock( StoreChannel.class );
-        CustomChannelFileSystemAbstraction fileSystemAbstraction =
-                new CustomChannelFileSystemAbstraction( fileSystemRule.get(), channel );
+        CustomChannelFileSystemAbstraction fileSystemAbstraction = new CustomChannelFileSystemAbstraction( fileSystem, channel );
         int numberOfCallesToOpen = 0;
         try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.storeLayout() ) )
         {
-            try
-            {
-                storeLocker.checkLock();
-                fail();
-            }
-            catch ( StoreLockException e )
-            {
-                numberOfCallesToOpen = fileSystemAbstraction.getNumberOfCallsToOpen();
-
-                // Try to grab lock a second time
-                storeLocker.checkLock();
-            }
+            assertThrows( StoreLockException.class, storeLocker::checkLock );
+            numberOfCallesToOpen = fileSystemAbstraction.getNumberOfCallsToOpen();
+            // Try to grab lock a second time
+            storeLocker.checkLock();
         }
         catch ( StoreLockException e )
         {
             // expected
         }
 
-        assertEquals( "Expect that number of open channels will remain the same for ",
-                numberOfCallesToOpen, fileSystemAbstraction
-                .getNumberOfCallsToOpen() );
+        assertEquals( numberOfCallesToOpen, fileSystemAbstraction
+                .getNumberOfCallsToOpen(), "Expect that number of open channels will remain the same for " );
     }
 
     @Test
-    public void shouldAllowMultipleCallsToCheckLock() throws Exception
+    void shouldAllowMultipleCallsToCheckLock() throws Exception
     {
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemRule.get(), target.storeLayout() ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystem, target.storeLayout() ) )
         {
             storeLocker.checkLock();
             storeLocker.checkLock();
@@ -99,41 +93,36 @@ public class StoreLockerTest
     }
 
     @Test
-    public void keepLockWhenOtherTryToTakeLock() throws Exception
+    void keepLockWhenOtherTryToTakeLock() throws Exception
     {
         StoreLayout storeLayout = target.storeLayout();
-        DefaultFileSystemAbstraction fileSystemAbstraction = fileSystemRule.get();
-        StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, storeLayout );
+        StoreLocker storeLocker = new StoreLocker( fileSystem, storeLayout );
         storeLocker.checkLock();
 
-        try ( StoreLocker storeLocker1 = new StoreLocker( fileSystemAbstraction, storeLayout ) )
+        assertThrows( StoreLockException.class, () ->
         {
-            storeLocker1.checkLock();
-            fail();
-        }
-        catch ( StoreLockException e )
-        {
-            // Expected
-        }
+            try ( StoreLocker storeLocker1 = new StoreLocker( fileSystem, storeLayout ) )
+            {
+                storeLocker1.checkLock();
+            }
+        });
 
         // Initial locker should still have a valid lock
-        try ( StoreLocker storeLocker1 = new StoreLocker( fileSystemAbstraction, storeLayout ) )
+        assertThrows( StoreLockException.class, () ->
         {
-            storeLocker1.checkLock();
-            fail();
-        }
-        catch ( StoreLockException e )
-        {
-            // Expected
-        }
+            try ( StoreLocker storeLocker1 = new StoreLocker( fileSystem, storeLayout ) )
+            {
+                storeLocker1.checkLock();
+            }
+        } );
 
         storeLocker.close();
     }
 
     @Test
-    public void shouldObtainLockWhenStoreFileNotLocked() throws Exception
+    void shouldObtainLockWhenStoreFileNotLocked()
     {
-        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystemRule.get() )
+        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystem )
         {
             @Override
             public boolean fileExists( File file )
@@ -142,22 +131,19 @@ public class StoreLockerTest
             }
         };
 
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.storeLayout() ) )
+        assertDoesNotThrow( () ->
         {
-            storeLocker.checkLock();
-
-            // Ok
-        }
-        catch ( StoreLockException e )
-        {
-            fail();
-        }
+            try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.storeLayout() ) )
+            {
+                storeLocker.checkLock();
+            }
+        } );
     }
 
     @Test
-    public void shouldCreateStoreDirAndObtainLockWhenStoreDirDoesNotExist() throws Exception
+    void shouldCreateStoreDirAndObtainLockWhenStoreDirDoesNotExist() throws Exception
     {
-        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystemRule.get() )
+        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystem )
         {
             @Override
             public boolean fileExists( File file )
@@ -174,9 +160,9 @@ public class StoreLockerTest
     }
 
     @Test
-    public void shouldNotObtainLockWhenStoreDirCannotBeCreated() throws Exception
+    void shouldNotObtainLockWhenStoreDirCannotBeCreated()
     {
-        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystemRule.get() )
+        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystem )
         {
             @Override
             public void mkdirs( File fileName ) throws IOException
@@ -192,27 +178,25 @@ public class StoreLockerTest
         };
 
         StoreLayout storeLayout = target.storeLayout();
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, storeLayout ) )
+        StoreLockException storeLockException = assertThrows( StoreLockException.class, () ->
         {
-            storeLocker.checkLock();
-            fail();
-        }
-        catch ( StoreLockException e )
-        {
-            String msg = format( "Unable to create path for store dir: %s. " +
-                    "Please ensure no other process is using this database, and that " +
-                    "the directory is writable (required even for read-only access)", storeLayout.storeDirectory().toString() );
-            assertThat( e.getMessage(), is( msg ) );
-        }
+            try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, storeLayout ) )
+            {
+                storeLocker.checkLock();
+            }
+        } );
+        String msg = format( "Unable to create path for store dir: %s. " + "Please ensure no other process is using this database, and that " +
+                "the directory is writable (required even for read-only access)", storeLayout.storeDirectory().toString() );
+        assertThat( storeLockException.getMessage(), is( msg ) );
     }
 
     @Test
-    public void shouldNotObtainLockWhenUnableToOpenLockFile() throws Exception
+    void shouldNotObtainLockWhenUnableToOpenLockFile()
     {
-        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystemRule.get() )
+        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystem )
         {
             @Override
-            public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
+            public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
             {
                 throw new IOException( "cannot open lock file" );
             }
@@ -225,26 +209,24 @@ public class StoreLockerTest
         };
 
         StoreLayout storeLayout = target.storeLayout();
-
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, storeLayout ) )
+        StoreLockException storeLockException = assertThrows( StoreLockException.class, () ->
         {
-            storeLocker.checkLock();
-            fail();
-        }
-        catch ( StoreLockException e )
-        {
-            String msg = format( "Unable to obtain lock on store lock file: %s. " +
-                            "Please ensure no other process is using this database, and that the " +
-                            "directory is writable (required even for read-only access)",
-                    storeLayout.storeLockFile() );
-            assertThat( e.getMessage(), is( msg ) );
-        }
+            try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, storeLayout ) )
+            {
+                storeLocker.checkLock();
+            }
+        } );
+        String msg = format( "Unable to obtain lock on store lock file: %s. " +
+                        "Please ensure no other process is using this database, and that the " +
+                        "directory is writable (required even for read-only access)",
+                storeLayout.storeLockFile() );
+        assertThat( storeLockException.getMessage(), is( msg ) );
     }
 
     @Test
-    public void shouldNotObtainLockWhenStoreAlreadyInUse() throws Exception
+    void shouldNotObtainLockWhenStoreAlreadyInUse()
     {
-        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystemRule.get() )
+        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystem )
         {
             @Override
             public boolean fileExists( File file )
@@ -253,9 +235,9 @@ public class StoreLockerTest
             }
 
             @Override
-            public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
+            public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
             {
-                return new DelegatingStoreChannel( super.open( fileName, openMode ) )
+                return new DelegatingStoreChannel( super.open( fileName, options ) )
                 {
                     @Override
                     public FileLock tryLock()
@@ -266,20 +248,18 @@ public class StoreLockerTest
             }
         };
 
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.storeLayout() ) )
+        StoreLockException storeLockException = assertThrows( StoreLockException.class, () ->
         {
-            storeLocker.checkLock();
-            fail();
-        }
-        catch ( StoreLockException e )
-        {
-            assertThat( e.getMessage(),
-                    containsString( "Store and its lock file has been locked by another process" ) );
-        }
+            try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.storeLayout() ) )
+            {
+                storeLocker.checkLock();
+            }
+        } );
+        assertThat( storeLockException.getMessage(), containsString( "Store and its lock file has been locked by another process" ) );
     }
 
     @Test
-    public void mustPreventMultipleInstancesFromStartingOnSameStore()
+    void mustPreventMultipleInstancesFromStartingOnSameStore()
     {
         File storeDir = target.storeDir();
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
@@ -289,19 +269,8 @@ public class StoreLockerTest
             tx.success();
         }
 
-        try
-        {
-            new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
-            fail( "Should not be able to start up another db in the same dir" );
-        }
-        catch ( Exception e )
-        {
-            // Good
-        }
-        finally
-        {
-            db.shutdown();
-        }
+        assertThrows( Exception.class, () -> new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir ) );
+        db.shutdown();
     }
 
     private class CustomChannelFileSystemAbstraction extends DelegatingFileSystemAbstraction
@@ -309,20 +278,20 @@ public class StoreLockerTest
         private final StoreChannel channel;
         private int numberOfCallsToOpen;
 
-        CustomChannelFileSystemAbstraction( DefaultFileSystemAbstraction delegate, StoreChannel channel )
+        CustomChannelFileSystemAbstraction( FileSystemAbstraction delegate, StoreChannel channel )
         {
             super( delegate );
             this.channel = channel;
         }
 
         @Override
-        public StoreChannel open( File fileName, OpenMode openMode )
+        public StoreChannel open( File fileName, Set<OpenOption> options )
         {
             numberOfCallsToOpen++;
             return channel;
         }
 
-        public int getNumberOfCallsToOpen()
+        int getNumberOfCallsToOpen()
         {
             return numberOfCallsToOpen;
         }

@@ -28,7 +28,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
@@ -140,7 +139,7 @@ class LogHeaderWriterTest
     {
         // given
         final File file = testDirectory.file( "WriteLogHeader" );
-        final StoreChannel channel = fileSystem.open( file, OpenMode.READ_WRITE );
+        final StoreChannel channel = fileSystem.create( file );
 
         // when
         writeLogHeader( channel, expectedLogVersion, expectedTxId );

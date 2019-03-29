@@ -54,7 +54,6 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.TransactionRecordState.PropertyReceiver;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -560,7 +559,7 @@ public class NeoStoresTest
         }
 
         File file = databaseLayout.metadataStore();
-        try ( StoreChannel channel = fileSystem.open( file, OpenMode.READ_WRITE ) )
+        try ( StoreChannel channel = fileSystem.create( file ) )
         {
             channel.position( 0 );
             channel.write( ByteBuffer.wrap( UTF8.encode( "This is some data that is not a record." ) ) );

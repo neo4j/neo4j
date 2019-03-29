@@ -23,12 +23,14 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Set;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OffsetChannel;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.storageengine.api.UnderlyingStorageException;
+
+import static java.nio.file.StandardOpenOption.READ;
 
 /**
  * This class handles the persisting of a highest id in use. A sticky byte is present in the header to indicate
@@ -89,7 +91,7 @@ public class IdContainer
                 result = false;
             }
 
-            fileChannel = fs.open( file, OpenMode.READ_WRITE );
+            fileChannel = fs.create( file );
             initialHighId = readAndValidateHeader();
             markAsSticky();
 
@@ -150,7 +152,7 @@ public class IdContainer
 
     static long readHighId( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
-        try ( StoreChannel channel = fileSystem.open( file, OpenMode.READ ) )
+        try ( StoreChannel channel = fileSystem.open( file, Set.of( READ ) ) )
         {
             return readAndValidate( channel, file );
         }
@@ -158,7 +160,7 @@ public class IdContainer
 
     static long readDefragCount( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
-        try ( StoreChannel channel = fileSystem.open( file, OpenMode.READ ) )
+        try ( StoreChannel channel = fileSystem.open( file, Set.of( READ ) ) )
         {
             return FreeIdKeeper.countFreeIds( new OffsetChannel( channel, HEADER_SIZE ) );
         }

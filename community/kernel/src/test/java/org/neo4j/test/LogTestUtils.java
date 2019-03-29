@@ -22,10 +22,10 @@ package org.neo4j.test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 
+import static java.nio.file.StandardOpenOption.READ;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
@@ -99,11 +100,11 @@ public class LogTestUtils
         return files;
     }
 
-    static void filterTransactionLogFile( FileSystemAbstraction fileSystem, File file, final LogHook<LogEntry> filter )
+    private static void filterTransactionLogFile( FileSystemAbstraction fileSystem, File file, final LogHook<LogEntry> filter )
             throws IOException
     {
         filter.file( file );
-        try ( StoreChannel in = fileSystem.open( file, OpenMode.READ ) )
+        try ( StoreChannel in = fileSystem.open( file, Set.of( READ ) ) )
         {
             LogHeader logHeader = readLogHeader( ByteBuffer.allocate( LOG_HEADER_SIZE ), in, true, file );
             PhysicalLogVersionedStoreChannel inChannel =

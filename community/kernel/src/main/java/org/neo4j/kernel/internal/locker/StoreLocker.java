@@ -26,7 +26,6 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.kernel.StoreLockException;
@@ -37,7 +36,7 @@ import org.neo4j.kernel.StoreLockException;
  */
 public class StoreLocker implements Closeable
 {
-    final FileSystemAbstraction fileSystemAbstraction;
+    private final FileSystemAbstraction fileSystemAbstraction;
     final File storeLockFile;
 
     FileLock storeLockFileLock;
@@ -83,7 +82,7 @@ public class StoreLocker implements Closeable
         {
             if ( storeLockFileChannel == null )
             {
-                storeLockFileChannel = fileSystemAbstraction.open( storeLockFile, OpenMode.READ_WRITE );
+                storeLockFileChannel = fileSystemAbstraction.create( storeLockFile );
             }
             storeLockFileLock = storeLockFileChannel.tryLock();
             if ( storeLockFileLock == null )

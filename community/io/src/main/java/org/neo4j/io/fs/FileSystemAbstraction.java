@@ -30,7 +30,9 @@ import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.OpenOption;
 import java.nio.file.StandardCopyOption;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.io.fs.watcher.FileWatcher;
@@ -48,7 +50,7 @@ public interface FileSystemAbstraction extends Closeable
      */
     FileWatcher fileWatcher() throws IOException;
 
-    StoreChannel open( File fileName, OpenMode openMode ) throws IOException;
+    StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException;
 
     OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException;
 

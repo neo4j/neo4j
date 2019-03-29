@@ -24,10 +24,11 @@ import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
+import java.util.Set;
 import java.util.function.LongSupplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -36,6 +37,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.lang.String.format;
+import static java.nio.file.StandardOpenOption.READ;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
@@ -182,7 +184,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
         StoreChannel rawChannel = null;
         try
         {
-            rawChannel = openLogFileChannel( fileToOpen, OpenMode.READ );
+            rawChannel = openLogFileChannel( fileToOpen, Set.of( READ ) );
             ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
             LogHeader header = readLogHeader( buffer, rawChannel, true, fileToOpen );
             if ( (header == null) || (header.logVersion != version) )
@@ -223,16 +225,16 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
      * but the incremented log version changed hadn't made it to persistent storage.
      *
      * @param forVersion log version for the file/channel to create.
-     * @param mode mode in which open log file
+     * @param options options used to open log file
      * @param lastTransactionIdSupplier supplier of last transaction id that was written into previous log file
      * @return {@link PhysicalLogVersionedStoreChannel} for newly created/opened log file.
      * @throws IOException if there's any I/O related error.
      */
-    PhysicalLogVersionedStoreChannel createLogChannelForVersion( long forVersion, OpenMode mode,
+    PhysicalLogVersionedStoreChannel createLogChannelForVersion( long forVersion, Set<OpenOption> options,
             LongSupplier lastTransactionIdSupplier ) throws IOException
     {
         File toOpen = getLogFileForVersion( forVersion );
-        StoreChannel storeChannel = fileSystem.open( toOpen, mode );
+        StoreChannel storeChannel = fileSystem.open( toOpen, options );
         ByteBuffer headerBuffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
         LogHeader header = readLogHeader( headerBuffer, storeChannel, false, toOpen );
         if ( header == null )
@@ -294,8 +296,8 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
         return logFileInformation;
     }
 
-    private StoreChannel openLogFileChannel( File file, OpenMode mode ) throws IOException
+    private StoreChannel openLogFileChannel( File file, Set<OpenOption> options ) throws IOException
     {
-        return fileSystem.open( file, mode );
+        return fileSystem.open( file, options );
     }
 }

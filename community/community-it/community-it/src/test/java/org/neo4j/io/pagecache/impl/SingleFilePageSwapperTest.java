@@ -35,6 +35,8 @@ import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
+import java.nio.file.OpenOption;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -48,7 +50,6 @@ import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -254,7 +255,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
         try
         {
-            StoreChannel channel = fileSystem.open( file, OpenMode.READ_WRITE );
+            StoreChannel channel = fileSystem.create( file );
             assertThrows( OverlappingFileLockException.class, channel::tryLock );
         }
         finally
@@ -343,7 +344,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
         createSwapper( factory, file, 4, NO_CALLBACK, false, false ).close();
 
-        try ( StoreFileChannel channel = fileSystem.open( file, OpenMode.READ_WRITE );
+        try ( StoreFileChannel channel = fileSystem.create( file );
               FileLock fileLock = channel.tryLock() )
         {
             assertThat( fileLock, is( not( nullValue() ) ) );
@@ -364,7 +365,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
         try
         {
-            StoreChannel channel = fileSystem.open( file, OpenMode.READ_WRITE );
+            StoreChannel channel = fileSystem.create( file );
 
             Thread.currentThread().interrupt();
             pageSwapper.force();
@@ -387,10 +388,10 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         factory.open( new DelegatingFileSystemAbstraction( fileSystem )
         {
             @Override
-            public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
+            public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
             {
                 openFilesCounter.getAndIncrement();
-                return new DelegatingStoreChannel( super.open( fileName, openMode ) )
+                return new DelegatingStoreChannel( super.open( fileName, options ) )
                 {
                     @Override
                     public void close() throws IOException
@@ -649,7 +650,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         try
         {
             // then
-            verify( fs ).open( eq( file ), any( OpenMode.class ) );
+            verify( fs ).open( eq( file ), any( Set.class ) );
         }
         finally
         {

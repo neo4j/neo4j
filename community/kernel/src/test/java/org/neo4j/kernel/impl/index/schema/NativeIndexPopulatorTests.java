@@ -33,11 +33,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -48,6 +48,7 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static java.nio.file.StandardOpenOption.READ;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -105,7 +106,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         populator.create();
 
         // then
-        try ( StoreChannel r = fs.open( indexFiles.getStoreFile(), OpenMode.READ ) )
+        try ( StoreChannel r = fs.open( indexFiles.getStoreFile(), Set.of( READ ) ) )
         {
             byte[] firstBytes = new byte[someBytes.length];
             r.readAll( ByteBuffer.wrap( firstBytes ) );

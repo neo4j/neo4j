@@ -31,6 +31,8 @@ import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.OpenOption;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.adversaries.Adversary;
@@ -38,7 +40,6 @@ import org.neo4j.adversaries.watcher.AdversarialFileWatcher;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.io.fs.StreamFilesRecursive;
@@ -72,10 +73,10 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
+    public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
     {
         adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
-        return AdversarialFileChannel.wrap( (StoreFileChannel) delegate.open( fileName, openMode ), adversary );
+        return AdversarialFileChannel.wrap( (StoreFileChannel) delegate.open( fileName, options ), adversary );
     }
 
     @Override

@@ -31,8 +31,10 @@ import org.junit.rules.RuleChain;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.LongSupplier;
 
@@ -46,7 +48,6 @@ import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
@@ -269,9 +270,9 @@ public class NodeStoreTest
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( efs.get() )
         {
             @Override
-            public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
+            public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
             {
-                return new DelegatingStoreChannel( super.open( fileName, openMode ) )
+                return new DelegatingStoreChannel( super.open( fileName, options ) )
                 {
                     @Override
                     public void readAll( ByteBuffer dst ) throws IOException

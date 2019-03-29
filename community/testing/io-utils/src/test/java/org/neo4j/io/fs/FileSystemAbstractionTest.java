@@ -306,7 +306,7 @@ public abstract class FileSystemAbstractionTest
 
         fsa.mkdirs( path );
         File file = new File( path, "file" );
-        try ( StoreChannel channel = fsa.open( file, OpenMode.READ_WRITE ) )
+        try ( StoreChannel channel = fsa.create( file ) )
         {
             assertThat( channel.write( buf ), is( 4 ) );
         }
@@ -320,7 +320,7 @@ public abstract class FileSystemAbstractionTest
         }
         Arrays.fill( bytes, (byte) 0 );
         buf.position( 1 );
-        try ( StoreChannel channel = fsa.open( file, OpenMode.READ_WRITE ) )
+        try ( StoreChannel channel = fsa.create( file ) )
         {
             assertThat( channel.read( buf ), is( 4 ) );
             buf.clear();
@@ -733,7 +733,7 @@ public abstract class FileSystemAbstractionTest
         generateFileWithRecords( b, recordCount + recordsPerFilePage );
 
         // Fill 'b' with random data
-        try ( StoreChannel channel = fsa.open( b, OpenMode.READ_WRITE ) )
+        try ( StoreChannel channel = fsa.create( b ) )
         {
             ThreadLocalRandom rng = ThreadLocalRandom.current();
             int fileSize = (int) channel.size();
@@ -774,7 +774,7 @@ public abstract class FileSystemAbstractionTest
 
     private void generateFileWithRecords( File file, int recordCount ) throws IOException
     {
-        try ( StoreChannel channel = fsa.open( file, OpenMode.READ_WRITE ) )
+        try ( StoreChannel channel = fsa.create( file ) )
         {
             ByteBuffer buf = ByteBuffer.allocate( recordSize );
             for ( int i = 0; i < recordCount; i++ )
@@ -792,7 +792,7 @@ public abstract class FileSystemAbstractionTest
 
     private void verifyRecordsInFile( File file, int recordCount ) throws IOException
     {
-        try ( StoreChannel channel = fsa.open( file, OpenMode.READ ) )
+        try ( StoreChannel channel = fsa.create( file ) )
         {
             ByteBuffer buf = ByteBuffer.allocate( recordSize );
             ByteBuffer observation = ByteBuffer.allocate( recordSize );

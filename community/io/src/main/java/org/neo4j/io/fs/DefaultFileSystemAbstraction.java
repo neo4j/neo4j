@@ -28,7 +28,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.RandomAccessFile;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
@@ -36,7 +35,10 @@ import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.WatchService;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.io.fs.watcher.DefaultFileSystemWatcher;
@@ -59,10 +61,9 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public StoreFileChannel open( File fileName, OpenMode openMode ) throws IOException
+    public StoreFileChannel open( File fileName, Set<OpenOption> options ) throws IOException
     {
-        // Returning only the channel is ok, because the channel, when close()d will close its parent File.
-        FileChannel channel = new RandomAccessFile( fileName, openMode.mode() ).getChannel();
+        FileChannel channel = FileChannel.open( fileName.toPath(), options );
         return getStoreFileChannel( channel );
     }
 
@@ -93,7 +94,7 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public StoreFileChannel create( File fileName ) throws IOException
     {
-        return open( fileName, OpenMode.READ_WRITE );
+        return open( fileName, Set.of( StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE ) );
     }
 
     @Override

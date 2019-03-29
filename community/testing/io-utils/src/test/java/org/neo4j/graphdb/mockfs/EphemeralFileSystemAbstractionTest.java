@@ -36,10 +36,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.neo4j.io.ByteUnit;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 
 import static java.nio.ByteBuffer.allocate;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.util.Set.of;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -65,7 +66,7 @@ class EphemeralFileSystemAbstractionTest
     void allowStoreThatExceedDefaultSize() throws IOException
     {
         File aFile = new File( "test" );
-        StoreChannel channel = fs.open( aFile, OpenMode.READ_WRITE );
+        StoreChannel channel = fs.create( aFile );
 
         ByteBuffer buffer = allocate( Long.BYTES );
         int mebiBytes = (int) ByteUnit.mebiBytes( 1 );
@@ -110,7 +111,7 @@ class EphemeralFileSystemAbstractionTest
 
             File aFile = new File( "yo" );
 
-            StoreChannel channel = fs.open( aFile, OpenMode.READ_WRITE );
+            StoreChannel channel = fs.create( aFile );
             writeLong( channel, 1111 );
 
             // when
@@ -119,7 +120,7 @@ class EphemeralFileSystemAbstractionTest
             fs.crash();
 
             // then
-            StoreChannel readChannel = fs.open( aFile, OpenMode.READ );
+            StoreChannel readChannel = fs.open( aFile, of( READ ) );
             assertEquals( numberOfBytesForced, readChannel.size() );
 
             assertEquals( 1111, readLong( readChannel ).getLong() );
@@ -142,7 +143,7 @@ class EphemeralFileSystemAbstractionTest
                     {
                         try
                         {
-                            StoreChannel channel = fs.open( aFile, OpenMode.READ_WRITE );
+                            StoreChannel channel = fs.create( aFile );
                             channel.position( 0 );
                             writeLong( channel, 1 );
                         }
@@ -165,7 +166,7 @@ class EphemeralFileSystemAbstractionTest
                 {
                     future.get();
                 }
-                verifyFileIsEitherEmptyOrContainsLongIntegerValueOne( fs.open( aFile, OpenMode.READ_WRITE ) );
+                verifyFileIsEitherEmptyOrContainsLongIntegerValueOne( fs.create( aFile ) );
             }
         }
         finally
@@ -194,7 +195,7 @@ class EphemeralFileSystemAbstractionTest
                         {
                             try
                             {
-                                StoreChannel channel = fs.open( aFile, OpenMode.READ_WRITE );
+                                StoreChannel channel = fs.create( aFile );
                                 channel.position( channel.size() );
                                 writeLong( channel, 1 );
                             }
@@ -207,7 +208,7 @@ class EphemeralFileSystemAbstractionTest
 
                         workers.add( () ->
                         {
-                            StoreChannel channel = fs.open( aFile, OpenMode.READ_WRITE );
+                            StoreChannel channel = fs.create( aFile );
                             channel.force( true );
                             return null;
                         } );
@@ -220,7 +221,7 @@ class EphemeralFileSystemAbstractionTest
                     }
 
                     fs.crash();
-                    verifyFileIsFullOfLongIntegerOnes( fs.open( aFile, OpenMode.READ_WRITE ) );
+                    verifyFileIsFullOfLongIntegerOnes( fs.create( aFile ) );
                 }
             }
         }

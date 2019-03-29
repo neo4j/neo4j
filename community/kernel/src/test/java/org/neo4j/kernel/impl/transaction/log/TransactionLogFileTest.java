@@ -25,10 +25,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.ReadableClosableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -252,7 +252,7 @@ class TransactionLogFileTest
         StoreChannel channel = mock( StoreChannel.class );
         when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( LogHeader.LOG_HEADER_SIZE / 2 );
         when( fs.fileExists( logFile ) ).thenReturn( true );
-        when( fs.open( eq( logFile ), any( OpenMode.class ) ) ).thenReturn( channel );
+        when( fs.open( eq( logFile ), any( Set.class ) ) ).thenReturn( channel );
 
         // WHEN
         assertThrows( IncompleteLogHeaderException.class, () -> logFiles.openForVersion( logVersion ) );
@@ -274,7 +274,7 @@ class TransactionLogFileTest
         StoreChannel channel = mock( StoreChannel.class );
         when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( LogHeader.LOG_HEADER_SIZE / 2 );
         when( fs.fileExists( logFile ) ).thenReturn( true );
-        when( fs.open( eq( logFile ), any( OpenMode.class ) ) ).thenReturn( channel );
+        when( fs.open( eq( logFile ), any( Set.class ) ) ).thenReturn( channel );
         doThrow( IOException.class ).when( channel ).close();
 
         // WHEN

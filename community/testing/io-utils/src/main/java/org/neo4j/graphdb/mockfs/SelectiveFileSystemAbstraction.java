@@ -28,12 +28,13 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
+import java.nio.file.OpenOption;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StreamFilesRecursive;
 import org.neo4j.io.fs.watcher.FileWatcher;
@@ -65,9 +66,9 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
+    public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
     {
-        return chooseFileSystem( fileName ).open( fileName, openMode );
+        return chooseFileSystem( fileName ).open( fileName, options );
     }
 
     @Override

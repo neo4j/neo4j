@@ -42,7 +42,6 @@ import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorImpl;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
@@ -126,7 +125,7 @@ class IdGeneratorTest
             {
                 closeIdGenerator( idGenerator );
                 // verify that id generator is ok
-                StoreChannel fileChannel = fileSystem.open( idGeneratorFile(), OpenMode.READ_WRITE );
+                StoreChannel fileChannel = fileSystem.create( idGeneratorFile() );
                 ByteBuffer buffer = ByteBuffer.allocate( 9 );
                 fileChannel.readAll( buffer );
                 buffer.flip();
