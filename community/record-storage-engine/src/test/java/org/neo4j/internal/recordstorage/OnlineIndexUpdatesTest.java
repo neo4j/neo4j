@@ -322,13 +322,20 @@ class OnlineIndexUpdatesTest
     {
         NodeRecord nodeRecord = new NodeRecord( nodeId );
         nodeRecord = nodeRecord.initialize( inUse, NO_NEXT_PROPERTY.longValue(), false, NO_NEXT_RELATIONSHIP.longValue(), NO_LABELS_FIELD.longValue() );
-        InlineNodeLabels labelFieldWriter = new InlineNodeLabels( nodeRecord );
-        labelFieldWriter.put( new long[]{ENTITY_TOKEN}, null, null );
+        if ( inUse )
+        {
+            InlineNodeLabels labelFieldWriter = new InlineNodeLabels( nodeRecord );
+            labelFieldWriter.put( new long[]{ENTITY_TOKEN}, null, null );
+        }
         return nodeRecord;
     }
 
     private RelationshipRecord getRelationship( long relId, boolean inUse, int type )
     {
+        if ( !inUse )
+        {
+            type = -1;
+        }
         return new RelationshipRecord( relId ).initialize( inUse, NO_NEXT_PROPERTY.longValue(), 0, 0, type, NO_NEXT_RELATIONSHIP.longValue(),
                 NO_NEXT_RELATIONSHIP.longValue(), NO_NEXT_RELATIONSHIP.longValue(), NO_NEXT_RELATIONSHIP.longValue(), true, false );
     }
