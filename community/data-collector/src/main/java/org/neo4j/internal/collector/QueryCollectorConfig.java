@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
  */
 class QueryCollectorConfig
 {
-    private static final IntOption DURATION_SECONDS = new IntOption( "durationSeconds", 3600 );
+    private static final IntOption DURATION_SECONDS = new IntOption( "durationSeconds", -1 );
 
     static QueryCollectorConfig of( Map<String, Object> userMap ) throws InvalidArgumentsException
     {

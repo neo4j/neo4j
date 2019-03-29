@@ -19,9 +19,7 @@
  */
 package org.neo4j.internal.collector;
 
-import java.time.ZonedDateTime;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -47,7 +45,7 @@ public class DataCollectorProcedures
 
     @Admin
     @Description( "Retrieve statistical data about the current database. Valid sections are '" +
-                  Sections.GRAPH_COUNTS + "', '" + Sections.TOKENS + "', '" + Sections.QUERIES + "'" )
+                  Sections.GRAPH_COUNTS + "', '" + Sections.TOKENS + "', '" + Sections.QUERIES + "', '" + Sections.META + "'" )
     @Procedure( name = "db.stats.retrieve", mode = Mode.READ )
     public Stream<RetrieveResult> retrieve( @Name( value = "section" ) String section,
                                             @Name( value = "config", defaultValue = "{}" ) Map<String, Object> config )
@@ -63,10 +61,10 @@ public class DataCollectorProcedures
             return TokensSection.retrieve( dataCollector.getKernel() );
 
         case Sections.META:
-            return MetaSection.retrieve( null, dataCollector.getKernel() );
+            return MetaSection.retrieve( null, dataCollector.getKernel(), dataCollector.getQueryCollector().numSilentQueryDrops() );
 
         case Sections.QUERIES:
-            return QueriesSection.retrieve( dataCollector.getQueryCollector().doGetData(),
+            return QueriesSection.retrieve( dataCollector.getQueryCollector().getData(),
                                             new PlainText( dataCollector.getValueMapper() ),
                                             RetrieveConfig.of( config ).maxInvocations );
 
@@ -87,9 +85,9 @@ public class DataCollectorProcedures
             throw new InvalidArgumentsException( "Graph token must be a non-empty string" );
         }
 
-        return Stream.of( MetaSection.retrieve( graphToken, dataCollector.getKernel() ),
+        return Stream.of( MetaSection.retrieve( graphToken, dataCollector.getKernel(), dataCollector.getQueryCollector().numSilentQueryDrops() ),
                           GraphCountsSection.retrieve( dataCollector.getKernel(), Anonymizer.IDS ),
-                          QueriesSection.retrieve( dataCollector.getQueryCollector().doGetData(),
+                          QueriesSection.retrieve( dataCollector.getQueryCollector().getData(),
                                                    new IdAnonymizer( transaction.tokenRead() ),
                                                    RetrieveConfig.of( config ).maxInvocations )
             ).flatMap( x -> x );

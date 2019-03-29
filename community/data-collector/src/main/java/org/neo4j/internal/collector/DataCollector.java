@@ -19,11 +19,14 @@
  */
 package org.neo4j.internal.collector;
 
+import java.util.Collections;
+
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.values.ValueMapper;
 
@@ -36,6 +39,14 @@ public class DataCollector extends LifecycleAdapter
     {
         this.database = database;
         this.queryCollector = new QueryCollector( jobScheduler );
+        try
+        {
+            this.queryCollector.collect( Collections.emptyMap() );
+        }
+        catch ( InvalidArgumentsException e )
+        {
+            throw new IllegalStateException( "An empty config cannot be invalid", e );
+        }
         monitors.addMonitorListener( queryCollector );
     }
 
