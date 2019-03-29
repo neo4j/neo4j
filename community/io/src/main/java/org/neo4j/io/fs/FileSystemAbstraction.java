@@ -32,6 +32,7 @@ import java.nio.file.CopyOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -60,8 +61,23 @@ public interface FileSystemAbstraction extends Closeable
 
     Writer openAsWriter( File fileName, Charset charset, boolean append ) throws IOException;
 
+    /**
+     * Open channel for user provided file in a write mode.
+     * Write mode means that channel will be opened with following set of options: {@link StandardOpenOption#READ}, {@link StandardOpenOption#WRITE}
+     * and {@link StandardOpenOption#CREATE}
+     * @param fileName file name to open write channel for.
+     * @return write channel for requested file
+     * @throws IOException
+     */
     StoreChannel write( File fileName ) throws IOException;
 
+    /**
+     * Open channel for user provided file in a read mode.
+     * Read mode means that channel will be opened with {@link StandardOpenOption#READ} only.
+     * @param fileName file name to open readchannel for.
+     * @return read channel for requested file
+     * @throws IOException
+     */
     StoreChannel read( File fileName ) throws IOException;
 
     boolean fileExists( File file );
