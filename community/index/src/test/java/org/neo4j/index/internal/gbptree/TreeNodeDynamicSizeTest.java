@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
 {
     private SimpleByteArrayLayout layout = new SimpleByteArrayLayout();
+    private OffloadStore<RawBytes,RawBytes> offloadStore = new OffloadStore<>( layout );
 
     @Override
     protected TestLayout<RawBytes,RawBytes> getLayout()
@@ -38,7 +39,7 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
     @Override
     protected TreeNodeDynamicSize<RawBytes,RawBytes> getNode( int pageSize, Layout<RawBytes,RawBytes> layout )
     {
-        return new TreeNodeDynamicSize<>( pageSize, layout );
+        return new TreeNodeDynamicSize<>( pageSize, layout, offloadStore );
     }
 
     @Override
@@ -67,6 +68,13 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
         verifyOverhead( node, oneByteKeyMax + 1, 1, 3 );
         verifyOverhead( node, oneByteKeyMax + 1, oneByteValueMax, 3 );
         verifyOverhead( node, oneByteKeyMax + 1, oneByteValueMax +  1, 4 );
+    }
+
+    @Test
+    void mustReadKeyFromOffload()
+    {
+        cursor.zapPage();
+        node.keyAt(  )
     }
 
     private void verifyOverhead( TreeNodeDynamicSize<RawBytes,RawBytes> node, int keySize, int valueSize, int expectedOverhead )

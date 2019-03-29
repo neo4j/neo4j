@@ -68,6 +68,10 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.putUnsignedShort;
  *
  * Two byte key, two byte value
  * [0,1,1,k,k,k,k,k][0,k,k,k,k,k,k,k][1,v,v,v,v,v,v,v][v,v,v,v,v,v,v,v]
+ *
+ * Offload entry
+ * [0,1,0,_,_,_,_,_][1,_,_,_,_,_,_,_][offloadId 8B]
+ *
  * </pre>
  * This key/value size format is used, both for leaves and internal nodes even though internal nodes can never have values.
  *
@@ -91,7 +95,9 @@ public class DynamicSizeUtil
     static final int SIZE_TOTAL_OVERHEAD = SIZE_OFFSET + SIZE_KEY_SIZE + SIZE_VALUE_SIZE;
 
     private static final int FLAG_FIRST_BYTE_TOMBSTONE = 0x80;
+    private static final int FLAG_SECOND_BYTE_OFFLOAD = 0x80;
     private static final long FLAG_READ_TOMBSTONE = 0x80000000_00000000L;
+    private static final long FLAG_READ_OFFLOAD = 0x40000000_00000000L;
     // mask for one-byte key size to map to the k's in [_,_,_,k,k,k,k,k]
     static final int MASK_ONE_BYTE_KEY_SIZE = 0x1F;
     // max two-byte key size to map to the k's in [_,_,_,k,k,k,k,k][_,k,k,k,k,k,k,k]
@@ -116,13 +122,22 @@ public class DynamicSizeUtil
         return getUnsignedShort( cursor );
     }
 
-    static void putKeySize( PageCursor cursor, int keySize )
+    static boolean putKeySize( PageCursor cursor, int keySize, boolean offload )
     {
-        putKeyValueSize( cursor, keySize, 0 );
+        return putKeyValueSize( cursor, keySize, 0, offload );
     }
 
-    public static void putKeyValueSize( PageCursor cursor, int keySize, int valueSize )
+    public static boolean putKeyValueSize( PageCursor cursor, int keySize, int valueSize, boolean offload )
     {
+        if ( offload )
+        {
+            byte firstByte = FLAG_ADDITIONAL_KEY_SIZE;
+            byte secondByte = (byte) (FLAG_SECOND_BYTE_OFFLOAD);
+            cursor.putByte( firstByte );
+            cursor.putByte( secondByte );
+            return false;
+        }
+
         boolean hasAdditionalKeySize = keySize > MASK_ONE_BYTE_KEY_SIZE;
         boolean hasValueSize = valueSize > 0;
 
@@ -177,6 +192,7 @@ public class DynamicSizeUtil
                 }
             }
         }
+        return true;
     }
 
     public static long readKeyValueSize( PageCursor cursor )
@@ -189,7 +205,13 @@ public class DynamicSizeUtil
         long keySize;
         if ( hasAdditionalKeySize )
         {
-            int keySizeMsb = cursor.getByte() & 0xFF;
+            byte secondByte = cursor.getByte();
+            boolean hasOffload = hasOffload( secondByte );
+            if ( hasOffload )
+            {
+                return (hasTombstone ? FLAG_READ_TOMBSTONE : 0) | FLAG_READ_OFFLOAD;
+            }
+            int keySizeMsb = secondByte & 0xFF;
             keySize = (keySizeMsb << SHIFT_LSB_KEY_SIZE) | keySizeLsb;
         }
         else
@@ -228,17 +250,26 @@ public class DynamicSizeUtil
 
     public static int extractKeySize( long keyValueSize )
     {
-        return (int) ((keyValueSize & ~FLAG_READ_TOMBSTONE) >>> Integer.SIZE);
+        return (int) ((keyValueSize & ~(FLAG_READ_TOMBSTONE & FLAG_READ_OFFLOAD)) >>> Integer.SIZE);
     }
 
-    public static int getOverhead( int keySize, int valueSize )
+    public static int getOverhead( int keySize, int valueSize, boolean offload )
     {
+        if ( offload )
+        {
+            return 2 + Long.BYTES;
+        }
         return 1 + (keySize > MASK_ONE_BYTE_KEY_SIZE ? 1 : 0) + (valueSize > 0 ? 1 : 0) + (valueSize > MASK_ONE_BYTE_VALUE_SIZE ? 1 : 0);
     }
 
     static boolean extractTombstone( long keyValueSize )
     {
         return (keyValueSize & FLAG_READ_TOMBSTONE) != 0;
+    }
+
+    static boolean extractOffload( long keyValueSize )
+    {
+        return (keyValueSize & FLAG_READ_OFFLOAD) != 0;
     }
 
     /**
@@ -267,5 +298,20 @@ public class DynamicSizeUtil
     {
         assert (firstByte & FLAG_FIRST_BYTE_TOMBSTONE) == 0 : "First key size byte " + firstByte + " is too large to fit tombstone.";
         return (byte) (firstByte | FLAG_FIRST_BYTE_TOMBSTONE);
+    }
+
+    private static boolean hasOffload( long secondByte )
+    {
+        return (secondByte & FLAG_SECOND_BYTE_OFFLOAD) != 0;
+    }
+
+    static long readOffloadId( PageCursor cursor )
+    {
+        return cursor.getLong();
+    }
+
+    static void putOffloadId( PageCursor cursor, long offloadId )
+    {
+        cursor.putLong( offloadId );
     }
 }
