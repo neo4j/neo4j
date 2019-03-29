@@ -424,8 +424,11 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x:ExistsSubClause =>
         SemanticState.recordCurrentScope(x) chain
         withScopedState { // saves us from leaking to the outside
-          // TODO: Should enforce single-pattern only until we have actual support for multiple pattern parts.
           SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
+          // TODO: remove once multiple patterns is supported
+            when(x.pattern.patternParts.size > 1) {
+              SemanticError("Multiple patterns are not supported for MATCH inside an EXISTS subclause.", x.pattern.patternParts(1).position)
+            } ifOkChain
             when(x.optionalWhereExpression.isDefined) {
               check(ctx, x.optionalWhereExpression.get)
             }

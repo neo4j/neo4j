@@ -37,6 +37,16 @@ class ExistsTest extends SemanticFunSuite {
     result.errors shouldBe empty
   }
 
+  // TODO: remove once multiple patterns match is supported
+  test("multiple patterns in inner match reports error") {
+    val multiPattern: Pattern = Pattern(Seq(EveryPath(x), EveryPath(n)))(pos)
+    val expression = ExistsSubClause(multiPattern, Some(property))(pos, Set.empty)
+
+    val result = SemanticExpressionCheck.simple(expression)(SemanticState.clean)
+
+    result.errors shouldBe Seq(SemanticError("Multiple patterns are not supported for MATCH inside an EXISTS subclause.", pos))
+  }
+
   test("inner where using missing identifier reports error") {
     val expression = ExistsSubClause(pattern, Some(failingProperty))(pos, Set.empty)
 
