@@ -96,7 +96,7 @@ class TransactionStateLuceneIndexWriter implements LuceneIndexWriter, Closeable
 
     SearcherReference getNearRealTimeSearcher() throws IOException
     {
-        DirectoryReader directoryReader = DirectoryReader.open( writer, true, false );
+        DirectoryReader directoryReader = DirectoryReader.open( writer );
         IndexSearcher searcher = new IndexSearcher( directoryReader );
         return new DirectSearcherReference( searcher, directoryReader );
     }

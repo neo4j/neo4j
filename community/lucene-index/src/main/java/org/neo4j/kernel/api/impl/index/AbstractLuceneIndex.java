@@ -64,7 +64,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
 {
     private static final String KEY_STATUS = "status";
     private static final String ONLINE = "online";
-    private static final Set<Map.Entry<String,String>> ONLINE_COMMIT_USER_DATA = singletonMap( KEY_STATUS, ONLINE ).entrySet();
+    private static final Set<Map.Entry<String,String>> ONLINE_COMMIT_USER_DATA = Set.of( Map.entry( KEY_STATUS, ONLINE ) );
     protected final PartitionedIndexStorage indexStorage;
     protected final IndexDescriptor descriptor;
     private final IndexPartitionFactory partitionFactory;

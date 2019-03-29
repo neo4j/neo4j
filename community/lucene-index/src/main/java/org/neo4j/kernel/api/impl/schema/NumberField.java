@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.schema;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.search.Query;
@@ -40,13 +39,11 @@ public class NumberField extends Field
     public static Field of( String name, double value )
     {
         return new NumberField( name, value );
-//        return new DoublePoint( name, value );
     }
 
     private static IndexableFieldType getType()
     {
         FieldType type = new FieldType();
-//        type.setDocValuesType( DocValuesType.NUMERIC ); ???
         type.setDimensions( 1, Double.BYTES );
         type.setIndexOptions( IndexOptions.DOCS ); // The entire point of this class, is to set IndexOptions.DOCS (DoublePoint uses IndexOptions.NONE).
         type.freeze();
