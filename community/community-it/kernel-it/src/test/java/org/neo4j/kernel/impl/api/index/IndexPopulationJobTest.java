@@ -397,7 +397,7 @@ class IndexPopulationJobTest
         // THEN
         verify( populator ).close( false );
         verify( index, never() ).flip( any(), any() );
-        verify( jobHandle ).cancel( false );
+        verify( jobHandle ).cancel();
     }
 
     @Test
