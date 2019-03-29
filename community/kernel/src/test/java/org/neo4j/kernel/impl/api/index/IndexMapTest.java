@@ -28,6 +28,8 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.CapableIndexDescriptor;
 
@@ -35,7 +37,9 @@ import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterableOf;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.storageengine.api.EntityType.NODE;
 import static org.neo4j.storageengine.api.EntityType.RELATIONSHIP;
 import static org.neo4j.storageengine.api.schema.IndexDescriptorFactory.forSchema;
@@ -160,6 +164,58 @@ public class IndexMapTest
                 containsInAnyOrder( schema5_8, schema5_6_7 ) );
         assertThat( getRelatedIndexes( entityTokens( 5 ), noEntityToken, properties(), false, RELATIONSHIP ),
                 containsInAnyOrder( rel35_8 ) );
+    }
+
+    @Test
+    public void shouldGetRelatedNodeConstraints()
+    {
+        // given
+        ConstraintRule constraint1 = ConstraintRule.constraintRule( 1L, ConstraintDescriptorFactory.uniqueForLabel( 1, 5, 6 ), null );
+        ConstraintRule constraint2 = ConstraintRule.constraintRule( 2L, ConstraintDescriptorFactory.uniqueForLabel( 1, 5 ), null );
+        ConstraintRule constraint3 = ConstraintRule.constraintRule( 3L, ConstraintDescriptorFactory.uniqueForLabel( 2, 5 ), null );
+        indexMap.putUniquenessConstraint( constraint1 );
+        indexMap.putUniquenessConstraint( constraint2 );
+        indexMap.putUniquenessConstraint( constraint3 );
+
+        // when/then
+        assertEquals(
+                asSet( constraint2.getConstraintDescriptor() ),
+                indexMap.getRelatedConstraints( entityTokens( 1 ), entityTokens(), properties( 5 ), true, NODE ) );
+        assertEquals(
+                asSet( constraint1.getConstraintDescriptor(), constraint2.getConstraintDescriptor() ),
+                indexMap.getRelatedConstraints( entityTokens( 1 ), entityTokens(), properties( 5 ), false, NODE ) );
+        assertEquals(
+                asSet( constraint1.getConstraintDescriptor(), constraint2.getConstraintDescriptor() ),
+                indexMap.getRelatedConstraints( entityTokens( 1 ), entityTokens(), properties( 5, 6 ), true, NODE ) );
+        assertEquals(
+                asSet( constraint1.getConstraintDescriptor(), constraint2.getConstraintDescriptor() ),
+                indexMap.getRelatedConstraints( entityTokens(), entityTokens( 1 ), properties( 5 ), false, NODE ) );
+        assertEquals(
+                asSet( constraint1.getConstraintDescriptor(), constraint2.getConstraintDescriptor(), constraint3.getConstraintDescriptor() ),
+                indexMap.getRelatedConstraints( entityTokens( 1, 2 ), entityTokens(), properties(), false, NODE ) );
+    }
+
+    @Test
+    public void shouldRemoveNodeConstraints()
+    {
+        // given
+        ConstraintRule constraint1 = ConstraintRule.constraintRule( 1L, ConstraintDescriptorFactory.uniqueForLabel( 1, 5, 6 ), null );
+        ConstraintRule constraint2 = ConstraintRule.constraintRule( 2L, ConstraintDescriptorFactory.uniqueForLabel( 1, 5 ), null );
+        ConstraintRule constraint3 = ConstraintRule.constraintRule( 3L, ConstraintDescriptorFactory.uniqueForLabel( 2, 5 ), null );
+        indexMap.putUniquenessConstraint( constraint1 );
+        indexMap.putUniquenessConstraint( constraint2 );
+        indexMap.putUniquenessConstraint( constraint3 );
+        assertEquals(
+                asSet( constraint2.getConstraintDescriptor() ),
+                indexMap.getRelatedConstraints( entityTokens( 1 ), entityTokens(), properties( 5 ), true, NODE ) );
+
+        // and when
+        indexMap.removeUniquenessConstraint( constraint1.getId() );
+        indexMap.removeUniquenessConstraint( constraint2.getId() );
+        indexMap.removeUniquenessConstraint( constraint3.getId() );
+
+        // then
+        assertTrue( indexMap.getRelatedConstraints( entityTokens( 1 ), entityTokens(), properties( 5 ), true, NODE ).isEmpty() );
     }
 
     // HELPERS
