@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -337,9 +336,7 @@ public class LogFilesBuilder
     private LogVersionRepository readOnlyLogVersionRepository() throws IOException
     {
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( pageCache, databaseLayout );
-        return storageEngineFactory.readOnlyLogVersionRepository( dependencies );
+        return storageEngineFactory.readOnlyLogVersionRepository( databaseLayout, pageCache );
     }
 
     private <T> T resolveDependency( Class<T> clazz )

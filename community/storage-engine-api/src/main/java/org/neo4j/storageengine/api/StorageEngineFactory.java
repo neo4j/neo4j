@@ -91,7 +91,7 @@ public interface StorageEngineFactory
      * @return the read-only {@link LogVersionRepository}.
      * @throws IOException on I/O error or if the store doesn't exist.
      */
-    LogVersionRepository readOnlyLogVersionRepository( DependencyResolver dependencyResolver ) throws IOException;
+    LogVersionRepository readOnlyLogVersionRepository( DatabaseLayout databaseLayout, PageCache pageCache ) throws IOException;
 
     /**
      * Instantiates a {@link ReadableStorageEngine} over a storage location without instantiating the full {@link StorageEngine}, just the readable parts.

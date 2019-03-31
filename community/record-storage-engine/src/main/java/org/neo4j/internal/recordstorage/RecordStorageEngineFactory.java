@@ -151,11 +151,9 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public LogVersionRepository readOnlyLogVersionRepository( DependencyResolver dependencyResolver ) throws IOException
+    public LogVersionRepository readOnlyLogVersionRepository( DatabaseLayout databaseLayout, PageCache pageCache ) throws IOException
     {
-        return new ReadOnlyLogVersionRepository(
-                dependencyResolver.resolveDependency( PageCache.class ),
-                dependencyResolver.resolveDependency( DatabaseLayout.class ) );
+        return new ReadOnlyLogVersionRepository( pageCache, databaseLayout );
     }
 
     @Override
