@@ -25,11 +25,11 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.helpers.collection.NestingIterator;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
-import org.neo4j.storageengine.api.UnderlyingStorageException;
 import org.neo4j.util.concurrent.Work;
 
 /**

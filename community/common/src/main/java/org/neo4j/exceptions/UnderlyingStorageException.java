@@ -17,21 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api;
+package org.neo4j.exceptions;
 
-public abstract class StoreFailureException extends RuntimeException
+public class UnderlyingStorageException extends StoreFailureException
 {
-    protected StoreFailureException( String msg )
+    public UnderlyingStorageException( String msg )
     {
         super( msg );
     }
 
-    protected StoreFailureException( Throwable cause )
+    public UnderlyingStorageException( Throwable cause )
     {
         super( cause );
     }
 
-    protected StoreFailureException( String msg, Throwable cause )
+    public UnderlyingStorageException( String msg, Throwable cause )
     {
         super( msg, cause );
     }

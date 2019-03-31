@@ -28,6 +28,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Exceptions;
@@ -47,7 +48,6 @@ import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
-import org.neo4j.storageengine.api.UnderlyingStorageException;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
 import static org.neo4j.helpers.collection.Iterators.iterator;

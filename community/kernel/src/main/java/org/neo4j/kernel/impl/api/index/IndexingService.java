@@ -49,6 +49,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
@@ -81,7 +82,6 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageIndexReference;
-import org.neo4j.storageengine.api.UnderlyingStorageException;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;

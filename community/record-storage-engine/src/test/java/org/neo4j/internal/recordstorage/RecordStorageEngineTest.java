@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -55,7 +56,6 @@ import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
-import org.neo4j.storageengine.api.UnderlyingStorageException;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RecordStorageEngineRule;
 import org.neo4j.test.rule.TestDirectory;

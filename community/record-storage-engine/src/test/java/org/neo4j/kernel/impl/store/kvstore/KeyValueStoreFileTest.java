@@ -28,8 +28,8 @@ import org.junit.rules.Timeout;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.storageengine.api.UnderlyingStorageException;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

@@ -26,6 +26,7 @@ import java.util.Optional;
 import org.neo4j.configuration.Config;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsVisitor;
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -47,7 +48,6 @@ import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
-import org.neo4j.storageengine.api.UnderlyingStorageException;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 

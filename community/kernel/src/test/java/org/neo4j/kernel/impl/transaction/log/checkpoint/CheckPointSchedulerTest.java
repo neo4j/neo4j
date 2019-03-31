@@ -33,12 +33,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.scheduler.Group;
-import org.neo4j.storageengine.api.UnderlyingStorageException;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.test.OtherThreadExecutor;

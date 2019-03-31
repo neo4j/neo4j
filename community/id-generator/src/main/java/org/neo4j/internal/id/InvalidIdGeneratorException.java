@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.id;
 
-import org.neo4j.storageengine.api.StoreFailureException;
+import org.neo4j.exceptions.StoreFailureException;
 
 public class InvalidIdGeneratorException extends StoreFailureException
 {

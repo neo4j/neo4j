@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.neo4j.storageengine.api.StoreFailureException;
+import org.neo4j.exceptions.StoreFailureException;
 
 public class NotCurrentStoreVersionException extends StoreFailureException
 {

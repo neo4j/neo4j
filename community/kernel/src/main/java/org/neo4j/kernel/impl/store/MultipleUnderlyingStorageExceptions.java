@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.store;
 import java.util.Collections;
 import java.util.Set;
 
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.storageengine.api.UnderlyingStorageException;
 
 import static java.lang.String.format;
 

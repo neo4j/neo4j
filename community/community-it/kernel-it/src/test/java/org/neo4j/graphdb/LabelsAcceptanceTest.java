@@ -35,6 +35,7 @@ import javax.annotation.Nonnull;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
@@ -56,7 +57,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.UnderlyingStorageException;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;

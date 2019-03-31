@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -32,7 +33,6 @@ import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Logger;
-import org.neo4j.storageengine.api.UnderlyingStorageException;
 import org.neo4j.util.FeatureToggles;
 
 import static org.neo4j.kernel.impl.store.kvstore.LockWrapper.readLock;

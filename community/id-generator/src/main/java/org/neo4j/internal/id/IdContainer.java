@@ -24,10 +24,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OffsetChannel;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.storageengine.api.UnderlyingStorageException;
 
 /**
  * This class handles the persisting of a highest id in use. A sticky byte is present in the header to indicate

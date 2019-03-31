@@ -21,12 +21,12 @@ package org.neo4j.kernel.recovery;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.recovery.LogTailScanner.LogTailInformation;
 import org.neo4j.kernel.recovery.RecoveryStartInformationProvider.Monitor;
-import org.neo4j.storageengine.api.UnderlyingStorageException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

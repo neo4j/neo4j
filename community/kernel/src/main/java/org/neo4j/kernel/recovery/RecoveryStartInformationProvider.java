@@ -21,10 +21,10 @@ package org.neo4j.kernel.recovery;
 
 import java.io.IOException;
 
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
-import org.neo4j.storageengine.api.UnderlyingStorageException;
 
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.MISSING_LOGS;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.NO_RECOVERY_REQUIRED;

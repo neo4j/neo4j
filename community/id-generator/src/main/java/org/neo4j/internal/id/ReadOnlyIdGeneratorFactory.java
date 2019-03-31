@@ -24,9 +24,9 @@ import java.io.IOException;
 import java.util.EnumMap;
 import java.util.function.LongSupplier;
 
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.storageengine.api.UnderlyingStorageException;
 
 /**
  * {@link IdGeneratorFactory} managing read-only {@link IdGenerator} instances which basically only can access

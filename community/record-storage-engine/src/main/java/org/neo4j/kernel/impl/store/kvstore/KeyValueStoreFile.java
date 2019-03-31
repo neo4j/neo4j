@@ -23,9 +23,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.storageengine.api.UnderlyingStorageException;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.kernel.impl.store.kvstore.AbstractKeyValueStore.MAX_LOOKUP_RETRY_COUNT;

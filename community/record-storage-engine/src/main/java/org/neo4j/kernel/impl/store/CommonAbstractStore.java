@@ -34,6 +34,7 @@ import java.util.function.LongPredicate;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.id.IdGenerator;
@@ -53,7 +54,6 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
-import org.neo4j.storageengine.api.UnderlyingStorageException;
 
 import static java.lang.Math.max;
 import static java.lang.String.format;

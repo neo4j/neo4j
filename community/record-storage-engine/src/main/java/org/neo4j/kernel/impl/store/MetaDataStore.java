@@ -26,6 +26,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdSequence;
@@ -44,7 +45,6 @@ import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionMetaDataStore;
-import org.neo4j.storageengine.api.UnderlyingStorageException;
 import org.neo4j.util.Bits;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;

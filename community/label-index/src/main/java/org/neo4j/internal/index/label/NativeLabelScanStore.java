@@ -29,6 +29,7 @@ import java.util.function.Consumer;
 import java.util.function.IntFunction;
 
 import org.neo4j.cursor.RawCursor;
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -45,7 +46,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
-import org.neo4j.storageengine.api.UnderlyingStorageException;
 
 /**
  * {@link LabelScanStore} which is implemented using {@link GBPTree} atop a {@link PageCache}.

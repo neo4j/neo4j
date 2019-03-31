@@ -34,6 +34,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
@@ -44,7 +45,6 @@ import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.UnderlyingStorageException;
 import org.neo4j.test.rule.PageCacheConfig;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;

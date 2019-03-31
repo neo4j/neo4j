@@ -23,8 +23,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.function.LongSupplier;
 
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.storageengine.api.UnderlyingStorageException;
 
 /**
  * This class generates unique ids for a resource type. For example, nodes in a

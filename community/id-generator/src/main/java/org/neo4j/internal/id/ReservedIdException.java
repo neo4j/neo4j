@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.id;
 
-import org.neo4j.storageengine.api.UnderlyingStorageException;
+import org.neo4j.exceptions.UnderlyingStorageException;
 
 public class ReservedIdException extends UnderlyingStorageException
 {
