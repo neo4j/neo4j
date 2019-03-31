@@ -112,14 +112,10 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public ReadableStorageEngine instantiateReadable( DependencyResolver dependencyResolver )
+    public ReadableStorageEngine instantiateReadable( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache,
+            LogProvider logProvider )
     {
-        return new ReadableRecordStorageEngine(
-                dependencyResolver.resolveDependency( DatabaseLayout.class ),
-                dependencyResolver.resolveDependency( Config.class ),
-                dependencyResolver.resolveDependency( PageCache.class ),
-                dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
-                dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider() );
+        return new ReadableRecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider );
     }
 
     @Override

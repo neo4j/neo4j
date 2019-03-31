@@ -25,7 +25,6 @@ import java.nio.file.NoSuchFileException;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import org.neo4j.collection.Dependencies;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.function.Predicates;
@@ -35,7 +34,6 @@ import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
@@ -67,19 +65,17 @@ class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progressReporter,
+    public void migrate( DatabaseLayout databaseLayout, DatabaseLayout migrationLayout, ProgressReporter progressReporter,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
-        if ( isNativeLabelScanStoreMigrationRequired( directoryLayout ) )
+        if ( isNativeLabelScanStoreMigrationRequired( databaseLayout ) )
         {
             try ( Lifespan lifespan = new Lifespan() )
             {
-                Dependencies dependencies = new Dependencies();
                 // Use Config.defaults() because we don't want to pass in the config which specifies the store format,
                 // now that we're referencing the older store.
-                dependencies.satisfyDependencies( directoryLayout, Config.defaults(), pageCache, fileSystem, NullLogService.getInstance(),
-                        EmptyVersionContextSupplier.EMPTY );
-                ReadableStorageEngine storageEngine = lifespan.add( storageEngineFactory.instantiateReadable( dependencies ) );
+                ReadableStorageEngine storageEngine = lifespan.add( storageEngineFactory.instantiateReadable( fileSystem, databaseLayout,
+                        Config.defaults(), pageCache, NullLogService.getInstance().getInternalLogProvider() ) );
                 try ( StorageReader reader = storageEngine.newReader() )
                 {
                     deleteNativeIndexFile( migrationLayout );

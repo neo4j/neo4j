@@ -31,6 +31,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
@@ -95,10 +96,10 @@ public interface StorageEngineFactory
 
     /**
      * Instantiates a {@link ReadableStorageEngine} over a storage location without instantiating the full {@link StorageEngine}, just the readable parts.
-     * @param dependencyResolver {@link DependencyResolver} for all dependency needs.
      * @return StorageReader for reading the storage at this location. Must be closed after usage.
      */
-    ReadableStorageEngine instantiateReadable( DependencyResolver dependencyResolver );
+    ReadableStorageEngine instantiateReadable( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config,
+            PageCache pageCache, LogProvider logProvider );
 
     /**
      * Instantiates a fully functional {@link TransactionMetaDataStore}, which is a union of {@link TransactionIdStore}
