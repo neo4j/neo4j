@@ -167,11 +167,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public StoreId storeId( DependencyResolver dependencyResolver ) throws IOException
+    public StoreId storeId( DatabaseLayout databaseLayout, PageCache pageCache ) throws IOException
     {
-        DatabaseLayout databaseLayout = dependencyResolver.resolveDependency( DatabaseLayout.class );
-        PageCache pageCache = dependencyResolver.resolveDependency( PageCache.class );
-
         File neoStoreFile = databaseLayout.metadataStore();
         return MetaDataStore.getStoreId( pageCache, neoStoreFile );
     }

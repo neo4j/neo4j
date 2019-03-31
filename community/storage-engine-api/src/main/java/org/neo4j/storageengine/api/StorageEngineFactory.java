@@ -88,7 +88,6 @@ public interface StorageEngineFactory
 
     /**
      * Instantiates a read-only {@link LogVersionRepository} to be used outside of a {@link StorageEngine}.
-     * @param dependencyResolver resolver for all dependencies required to instantiate the {@link LogVersionRepository}.
      * @return the read-only {@link LogVersionRepository}.
      * @throws IOException on I/O error or if the store doesn't exist.
      */
@@ -110,7 +109,7 @@ public interface StorageEngineFactory
     TransactionMetaDataStore transactionMetaDataStore( FileSystemAbstraction fs, DatabaseLayout databaseLayout,
             Config config, PageCache pageCache ) throws IOException;
 
-    StoreId storeId( DependencyResolver dependencyResolver ) throws IOException;
+    StoreId storeId( DatabaseLayout databaseLayout, PageCache pageCache ) throws IOException;
 
     /**
      * Selects a {@link StorageEngineFactory} among the candidates. How it's done or which it selects isn't important a.t.m.
