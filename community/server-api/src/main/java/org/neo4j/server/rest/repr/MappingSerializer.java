@@ -87,4 +87,9 @@ public class MappingSerializer extends Serializer
             writer.writeInteger( RepresentationType.valueOf( value.getClass() ), key, value.longValue() );
         }
     }
+
+    public MappingWriter getWriter()
+    {
+        return writer;
+    }
 }

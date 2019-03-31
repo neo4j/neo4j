@@ -24,7 +24,7 @@ import java.net.URI;
 import org.neo4j.configuration.Config;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.management.AdvertisableService;
-import org.neo4j.server.rest.transactional.TransactionRegistry;
+import org.neo4j.server.http.cypher.TransactionRegistry;
 
 public interface NeoServer
 {

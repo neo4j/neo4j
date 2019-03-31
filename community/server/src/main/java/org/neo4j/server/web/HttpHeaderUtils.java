@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -73,6 +74,25 @@ public class HttpHeaderUtils
     public static long getTransactionTimeout( HttpServletRequest request, Log errorLog )
     {
         String headerValue = request.getHeader( MAX_EXECUTION_TIME_HEADER );
+        return getTransactionTimeout( headerValue, errorLog );
+    }
+
+    /**
+     * Retrieve custom transaction timeout in milliseconds from numeric {@link #MAX_EXECUTION_TIME_HEADER} request
+     * header.
+     * If header is not set returns -1.
+     * @param headers http headers
+     * @param errorLog errors log for header parsing errors
+     * @return custom timeout if header set, -1 otherwise or when value is not a valid number.
+     */
+    public static long getTransactionTimeout( HttpHeaders headers, Log errorLog )
+    {
+        String headerValue = headers.getHeaderString( MAX_EXECUTION_TIME_HEADER );
+        return getTransactionTimeout( headerValue, errorLog );
+    }
+
+    private static long getTransactionTimeout( String headerValue, Log errorLog )
+    {
         if ( headerValue != null )
         {
             try

@@ -25,7 +25,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.server.rest.transactional.TransactionStateChecker;
+import org.neo4j.server.http.cypher.TransactionStateChecker;
 
 import static org.neo4j.helpers.collection.MapUtil.map;
 
@@ -173,7 +173,7 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
     }
 
     @Override
-    void extraData( MappingSerializer serializer )
+    public void extraData( MappingSerializer serializer )
     {
         if ( !isDeleted() )
         {

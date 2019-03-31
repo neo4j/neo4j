@@ -41,7 +41,7 @@ import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ExceptionRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
-import org.neo4j.server.rest.transactional.error.Neo4jError;
+import org.neo4j.server.rest.Neo4jError;
 import org.neo4j.string.UTF8;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;

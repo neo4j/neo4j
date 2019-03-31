@@ -28,7 +28,7 @@ import java.util.List;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.server.rest.transactional.error.Neo4jError;
+import org.neo4j.server.rest.Neo4jError;
 
 public class ExceptionRepresentation extends MappingRepresentation
 {

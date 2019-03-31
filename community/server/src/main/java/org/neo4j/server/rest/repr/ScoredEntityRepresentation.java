@@ -59,7 +59,7 @@ public abstract class ScoredEntityRepresentation<E extends ObjectRepresentation 
     }
 
     @Override
-    void extraData( MappingSerializer serializer )
+    public void extraData( MappingSerializer serializer )
     {
         delegate.extraData( serializer );
     }

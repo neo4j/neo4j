@@ -44,7 +44,7 @@ public class MapWrappingWriter extends MappingWriter
     }
 
     @Override
-    protected final boolean isInteractive()
+    public final boolean isInteractive()
     {
         return interactive;
     }
@@ -72,7 +72,7 @@ public class MapWrappingWriter extends MappingWriter
     }
 
     @Override
-    protected void done()
+    public void done()
     {
     }
 }

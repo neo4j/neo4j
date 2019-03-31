@@ -43,7 +43,7 @@ public abstract class ObjectRepresentation extends MappingRepresentation
 
     private final Map<String, PropertyGetter> serialization = serialization( getClass() );
 
-    ObjectRepresentation( RepresentationType type )
+    public ObjectRepresentation( RepresentationType type )
     {
         super( type );
     }
@@ -147,7 +147,7 @@ public abstract class ObjectRepresentation extends MappingRepresentation
         extraData( serializer );
     }
 
-    void extraData( MappingSerializer serializer )
+    protected void extraData( MappingSerializer serializer )
     {
     }
 }

@@ -29,8 +29,8 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.database.GraphFactory;
 import org.neo4j.server.database.LifecycleManagingDatabase;
 import org.neo4j.server.rest.management.AdvertisableService;
-import org.neo4j.server.rest.transactional.DisabledTransactionRegistry;
-import org.neo4j.server.rest.transactional.TransactionRegistry;
+import org.neo4j.server.http.cypher.DisabledTransactionRegistry;
+import org.neo4j.server.http.cypher.TransactionRegistry;
 
 import static org.neo4j.server.AbstractNeoServer.NEO4J_IS_STARTING_MESSAGE;
 import static org.neo4j.server.exception.ServerStartupErrors.translateToServerStartupError;

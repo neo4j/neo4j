@@ -51,7 +51,7 @@ public final class PropertiesRepresentation extends MappingRepresentation
         serialize( serializer.writer );
     }
 
-    void serialize( MappingWriter writer )
+    public void serialize( MappingWriter writer )
     {
         PropertyTypeDispatcher.consumeProperties( new Consumer( writer ), entity );
     }

@@ -54,7 +54,7 @@ public class TransactionTimeoutIT extends ExclusiveServerTestBase
                 .withProperty( ServerSettings.transaction_idle_timeout.name(), "1" ).build();
         server.start();
 
-        String tx = HTTP.POST( txURI(), asList( map( "statement", "CREATE (n)" ) ) ).location();
+        String tx = HTTP.POST( txURI(), map("statements", asList( map( "statement", "CREATE (n)" ) ) ) ).location();
 
         // When
         Thread.sleep( 1000 * 5 );

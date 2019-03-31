@@ -20,14 +20,16 @@
 package org.neo4j.server.modules;
 
 import java.net.URI;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.http.cypher.CypherResource;
+import org.neo4j.server.http.cypher.format.input.json.JsonMessageBodyReader;
+import org.neo4j.server.http.cypher.format.output.json.JsonMessageBodyWriter;
 import org.neo4j.server.rest.web.CorsFilter;
-import org.neo4j.server.rest.web.TransactionalService;
 import org.neo4j.server.web.WebServer;
 
 import static org.neo4j.server.configuration.ServerSettings.http_access_control_allow_origin;
@@ -59,7 +61,10 @@ public class RESTApiModule implements ServerModule
 
     private List<Class<?>> getClassNames()
     {
-        return Collections.singletonList( TransactionalService.class );
+        return Arrays.asList(
+                CypherResource.class,
+                JsonMessageBodyReader.class,
+                JsonMessageBodyWriter.class );
     }
 
     @Override

@@ -21,7 +21,7 @@ package org.neo4j.server.rest.repr;
 
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.server.rest.transactional.TransactionStateChecker;
+import org.neo4j.server.http.cypher.TransactionStateChecker;
 
 import static org.neo4j.helpers.collection.MapUtil.map;
 
@@ -119,7 +119,7 @@ public final class RelationshipRepresentation extends ObjectRepresentation imple
     }
 
     @Override
-    void extraData( MappingSerializer serializer )
+    public void extraData( MappingSerializer serializer )
     {
         if ( !isDeleted() )
         {
