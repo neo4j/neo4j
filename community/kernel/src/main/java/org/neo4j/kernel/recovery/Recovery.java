@@ -76,9 +76,9 @@ import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
-import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -87,8 +87,9 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.monitoring.DatabaseEventHandlers;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
+import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
@@ -316,8 +317,6 @@ public final class Recovery
         Boolean failOnCorruptedLogFiles = config.get( GraphDatabaseSettings.fail_on_corrupted_log_files );
         LogTailScanner logTailScanner = providedLogScanner.orElseGet( () -> new LogTailScanner( logFiles, logEntryReader, monitors, failOnCorruptedLogFiles ) );
 
-        checkForMissingLogFiles( config, logTailScanner, recoveryLog );
-
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         PhysicalLogicalTransactionStore transactionStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, logEntryReader, monitors,
                 failOnCorruptedLogFiles );
@@ -344,18 +343,25 @@ public final class Recovery
         recoveryLife.add( extensions );
         recoveryLife.add( indexProviderMap );
         recoveryLife.add( storageEngine );
+        recoveryLife.add( new MissingTransactionLogsCheck( config, logTailScanner, recoveryLog ) );
         recoveryLife.add( labelScanStore );
         recoveryLife.add( logFiles );
         recoveryLife.add( transactionLogsRecovery );
         recoveryLife.add( transactionAppender );
         recoveryLife.add( checkPointer );
-        recoveryLife.start();
-
-        if ( databaseHealth.isHealthy() )
+        try
         {
-            checkPointer.forceCheckPoint( new SimpleTriggerInfo( "Recovery completed." ) );
+            recoveryLife.start();
+
+            if ( databaseHealth.isHealthy() )
+            {
+                checkPointer.forceCheckPoint( new SimpleTriggerInfo( "Recovery completed." ) );
+            }
         }
-        recoveryLife.shutdown();
+        finally
+        {
+            recoveryLife.shutdown();
+        }
     }
 
     private static void checkForMissingLogFiles( Config config, LogTailScanner logTailScanner, Log recoveryLog )
@@ -452,5 +458,25 @@ public final class Recovery
     private static StorageEngineFactory selectStorageEngine()
     {
         return StorageEngineFactory.selectStorageEngine( Services.loadAll( StorageEngineFactory.class ) );
+    }
+
+    private static class MissingTransactionLogsCheck extends LifecycleAdapter
+    {
+        private final Config config;
+        private final LogTailScanner logTailScanner;
+        private final Log recoveryLog;
+
+        MissingTransactionLogsCheck( Config config, LogTailScanner logTailScanner, Log recoveryLog )
+        {
+            this.config = config;
+            this.logTailScanner = logTailScanner;
+            this.recoveryLog = recoveryLog;
+        }
+
+        @Override
+        public void init()
+        {
+            checkForMissingLogFiles( config, logTailScanner, recoveryLog );
+        }
     }
 }
