@@ -396,7 +396,23 @@ public abstract class SpaceFillingCurve
             }
             else
             {
-                normalizedCoord[dim] = (long) ((value - range.getMin( dim )) * scalingFactor[dim]);
+                /*
+                 * We are converting a world coordinate in range [min,max) to a long-int coordinate in range [0,width).
+                 * The fact that the origins are not aligned means we can get numerical rounding errors of points near the world origin, but far from
+                 * the normalized origin, due to very high precision in doubles near 0.0, and much lower precision of doubles of values far from 0.0.
+                 * The symptom of this is points very close to tile edges end up in the adjacent tiles instead.
+                 * We fix this by first converting to normalized coordinates, and then using the new tile as a new origin,
+                 * and re-converting based on that origin.
+                 * This should lead to a number of 0, which means we're in the origin tile (no numerical rounding errors),
+                 * but when an error occurs, we could have a tile offset of +1 or -1, and we move to the adjacent tile instead.
+                 */
+                normalizedCoord[dim] = (long) ((value - range.getMin(dim)) * scalingFactor[dim]);
+                // Calculating with an origin at the min can lead to numerical rouding errors, which can be corrected by recalculating using a closer origin
+                double tileCenter = ((double) normalizedCoord[dim]) / scalingFactor[dim] + range.getMin(dim) + getTileWidth(dim, maxLevel) / 2.0;
+                // The 1E-16 is to create the behavior of the [min,max) bounds without an expensive if...else if...else check
+                long normalizedOffset = (long) ((value - tileCenter) * scalingFactor[dim] - 0.5 + 1E-16);
+                // normalizedOffset is almost always 0, but can be +1 or -1 if there were rounding errors we need to correct for
+                normalizedCoord[dim] += normalizedOffset;
             }
         }
         return normalizedCoord;
