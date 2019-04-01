@@ -22,16 +22,20 @@ package org.neo4j.codegen;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.codegen.ByteCodeUtils.assertMethodExists;
 import static org.neo4j.codegen.ByteCodeUtils.desc;
 import static org.neo4j.codegen.ByteCodeUtils.exceptions;
 import static org.neo4j.codegen.ByteCodeUtils.signature;
 import static org.neo4j.codegen.ByteCodeUtils.typeName;
 import static org.neo4j.codegen.MethodDeclaration.method;
+import static org.neo4j.codegen.MethodReference.methodReference;
 import static org.neo4j.codegen.Parameter.param;
 import static org.neo4j.codegen.TypeReference.extending;
 import static org.neo4j.codegen.TypeReference.typeParameter;
@@ -207,6 +211,62 @@ class ByteCodeUtilsTest
         assertThat( byteCodeName, equalTo( "org/neo4j/codegen/ByteCodeUtilsTest$Inner$InnerInner" ));
     }
 
+    @Test
+    void assertMethodExistsShouldHandlePrimitiveAndReferenceTypes()
+    {
+        List<Class<?>> types =
+                Arrays.asList( byte.class, char.class, short.class, int.class, long.class, float.class, double.class,
+                        boolean.class, String.class );
+
+        TypeReference owner = typeReference( Tester.class );
+        for ( Class<?> type : types )
+        {
+            assertMethodExists( methodReference( owner, typeReference( type ),
+                    type.getSimpleName().toLowerCase() + "Method", typeReference( type ) ) );
+        }
+    }
+
+    @Test
+    void assertMethodExistsShouldFailOnBadMethodName()
+    {
+        assertThrows( AssertionError.class, () ->
+                assertMethodExists(methodReference( typeReference( Tester.class ),
+                        typeReference( byte.class ), "bteMethod", typeReference( byte.class ) )) );
+    }
+
+    @Test
+    void assertMethodExistsShouldFailOnBadReturnType()
+    {
+        assertThrows( AssertionError.class, () ->
+                assertMethodExists(methodReference( typeReference( Tester.class ),
+                        typeReference( float.class ), "byteMethod", typeReference( byte.class ) )) );
+    }
+
+    @Test
+    void assertMethodExistsShouldFailOnBadParameterType()
+    {
+        assertThrows( AssertionError.class, () ->
+                assertMethodExists(methodReference( typeReference( Tester.class ),
+                        typeReference( byte.class ), "byteMethod", typeReference( float.class ) )) );
+    }
+
+    @Test
+    void assertMethodExistsShouldFailOnMissingParameter()
+    {
+        assertThrows( AssertionError.class, () ->
+                assertMethodExists(methodReference( typeReference( Tester.class ),
+                        typeReference( byte.class ), "byteMethod" )) );
+    }
+
+    @Test
+    void assertMethodExistsShouldFailOnTooManyParameters()
+    {
+        assertThrows( AssertionError.class, () ->
+                assertMethodExists( methodReference( typeReference( Tester.class ),
+                        typeReference( byte.class ), "byteMethod", typeReference( byte.class ),
+                        typeReference( byte.class ) ) ) );
+    }
+
     class Inner
     {
         class InnerInner
@@ -224,5 +284,53 @@ class ByteCodeUtilsTest
 
         // THEN
         assertThat( byteCodeName, equalTo( expected ) );
+    }
+
+    static class Tester
+    {
+        byte byteMethod( byte b )
+        {
+            return b;
+        }
+
+        char charMethod( char c )
+        {
+            return c;
+        }
+
+        short shortMethod( short s )
+        {
+            return s;
+        }
+
+        int intMethod( int i )
+        {
+            return i;
+        }
+
+        long longMethod( long l )
+        {
+            return l;
+        }
+
+        float floatMethod( float f )
+        {
+            return f;
+        }
+
+        double doubleMethod( double d )
+        {
+            return d;
+        }
+
+        boolean booleanMethod( boolean b )
+        {
+            return b;
+        }
+
+        String stringMethod( String s )
+        {
+            return s;
+        }
     }
 }

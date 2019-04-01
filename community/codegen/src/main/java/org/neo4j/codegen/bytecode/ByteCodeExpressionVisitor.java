@@ -22,7 +22,6 @@ package org.neo4j.codegen.bytecode;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 import org.neo4j.codegen.Expression;
@@ -32,9 +31,7 @@ import org.neo4j.codegen.LocalVariable;
 import org.neo4j.codegen.MethodReference;
 import org.neo4j.codegen.TypeReference;
 
-import static java.lang.String.format;
-import static java.lang.String.join;
-import static java.util.Arrays.stream;
+import static org.neo4j.codegen.ByteCodeUtils.assertMethodExists;
 import static org.neo4j.codegen.ByteCodeUtils.byteCodeName;
 import static org.neo4j.codegen.ByteCodeUtils.desc;
 import static org.neo4j.codegen.ByteCodeUtils.typeName;
@@ -139,7 +136,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     {
         if ( DEBUG )
         {
-            assertExists( method );
+            assertMethodExists( method );
         }
         target.accept( this );
         for ( Expression argument : arguments )
@@ -172,7 +169,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     {
         if ( DEBUG )
         {
-            assertExists( method );
+            assertMethodExists( method );
         }
         for ( Expression argument : arguments )
         {
@@ -931,85 +928,6 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
 
     //Use reflection to figure out if a method really exists, otherwise ASM will fail with very weird errors that
     //are hard to debug.
-    private void assertExists( MethodReference methodReference )
-    {
-        Class<?> clazz;
-        try
-        {
-            clazz = asClass( methodReference.owner() );
-        }
-        catch ( AssertionError e )
-        {
-            //if the class doesn't exist here it is probably because
-            // it is a generated class that hasn't been loaded yet
-            return;
-        }
-        try
-        {
-            TypeReference[] parameters = methodReference.parameters();
-            clazz.getMethod( methodReference.name(), stream( parameters )
-                    .map( this::asClass ).toArray( Class<?>[]::new ) );
-        }
-        catch ( NoSuchMethodException e )
-        {
-            String[] allMethods = stream( clazz.getMethods() ).map( Method::toString ).toArray( String[]::new );
-            String methodName = methodReference.returns().fullName() + " " + methodReference.name() + "(" +
-                                join( ", ", stream( methodReference.parameters() ).map( TypeReference::fullName )
-                                        .toArray( String[]::new ) ) + ")";
-            throw new AssertionError( format( "%s does not exists.%n Class %s has the following methods:%n%s",
-                    clazz.getCanonicalName(),
-                    methodName,
-                    join( format( "%n    " ), allMethods ) ) );
-        }
-    }
 
-     private Class<?> asClass( TypeReference typeReference )
-    {
-        try
-        {
-            String className = typeReference.baseName();
-            switch ( className )
-            {
-            case "byte":
-                return typeReference.isArray() ? byte[].class : byte.class;
-            case "char":
-                return typeReference.isArray() ? char[].class : char.class;
-            case "short":
-                return typeReference.isArray() ? short[].class : short.class;
-            case "int":
-                return typeReference.isArray() ? int[].class : int.class;
-            case "long":
-                return typeReference.isArray() ? long[].class : long.class;
-            case "float":
-                return typeReference.isArray() ? float[].class : float.class;
-            case "double":
-                return typeReference.isArray() ? double[].class : double.class;
-            case "boolean":
-                return typeReference.isArray() ? boolean[].class : boolean.class;
-            default:
-                return Class.forName( className( typeReference ) );
-            }
-        }
-        catch ( ClassNotFoundException e )
-        {
-            throw new AssertionError( format( "%s does not exists", typeReference ) );
-        }
-    }
-
-    private static String className( TypeReference reference )
-    {
-        StringBuilder builder = new StringBuilder();
-        if ( !reference.packageName().isEmpty() )
-        {
-            builder.append( reference.packageName() ).append( '.' );
-        }
-
-        for ( TypeReference parent : reference.declaringClasses() )
-        {
-            builder.append( parent.name() ).append( '$' );
-        }
-        builder.append( reference.name() );
-        return builder.toString();
-    }
 
 }

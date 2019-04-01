@@ -19,7 +19,13 @@
  */
 package org.neo4j.codegen;
 
+import java.lang.reflect.Method;
 import java.util.List;
+
+import static java.lang.String.format;
+import static java.lang.String.join;
+import static java.util.Arrays.stream;
+import static org.neo4j.codegen.TypeReference.typeReference;
 
 public final class ByteCodeUtils
 {
@@ -30,10 +36,15 @@ public final class ByteCodeUtils
 
     public static String byteCodeName( TypeReference reference )
     {
+       return className( reference ).replaceAll( "\\.", "/" );
+    }
+
+    public static String className( TypeReference reference )
+    {
         StringBuilder builder = new StringBuilder();
         if ( !reference.packageName().isEmpty() )
         {
-            builder.append( reference.packageName().replaceAll( "\\.", "/" ) ).append( '/' );
+            builder.append( reference.packageName() ).append( '.' );
         }
 
         for ( TypeReference parent : reference.declaringClasses() )
@@ -224,4 +235,76 @@ public final class ByteCodeUtils
         }
         return builder;
     }
+
+    public static void assertMethodExists( MethodReference methodReference )
+    {
+        Class<?> clazz;
+        try
+        {
+            clazz = asClass( methodReference.owner() );
+        }
+        catch ( AssertionError e )
+        {
+            //if the class doesn't exist here it is probably because
+            // it is a generated class that hasn't been loaded yet
+            return;
+        }
+        try
+        {
+            TypeReference[] parameters = methodReference.parameters();
+            Method method = clazz.getDeclaredMethod( methodReference.name(), stream( parameters )
+                    .map( ByteCodeUtils::asClass ).toArray( Class<?>[]::new ) );
+            if ( !typeReference( method.getReturnType() ).equals( methodReference.returns() ) )
+            {
+                throw new AssertionError( format( "Invalid return type, expected %s but was %s",
+                        methodReference.returns(),
+                        typeReference( method.getReturnType() ) ) );
+            }
+        }
+        catch ( NoSuchMethodException e )
+        {
+            String[] allMethods = stream( clazz.getMethods() ).map( Method::toString ).toArray( String[]::new );
+            String methodName = methodReference.returns().fullName() + " " + methodReference.name() + "(" +
+                                join( ", ", stream( methodReference.parameters() ).map( TypeReference::fullName )
+                                        .toArray( String[]::new ) ) + ")";
+            throw new AssertionError( format( "%s does not exists.%n Class %s has the following methods:%n%s",
+                    methodName,
+                    clazz.getCanonicalName(),
+                    join( format( "%n    " ), allMethods ) ) );
+        }
+    }
+
+    private static Class<?> asClass( TypeReference typeReference )
+    {
+        try
+        {
+            String className = typeReference.baseName();
+            switch ( className )
+            {
+            case "byte":
+                return typeReference.isArray() ? byte[].class : byte.class;
+            case "char":
+                return typeReference.isArray() ? char[].class : char.class;
+            case "short":
+                return typeReference.isArray() ? short[].class : short.class;
+            case "int":
+                return typeReference.isArray() ? int[].class : int.class;
+            case "long":
+                return typeReference.isArray() ? long[].class : long.class;
+            case "float":
+                return typeReference.isArray() ? float[].class : float.class;
+            case "double":
+                return typeReference.isArray() ? double[].class : double.class;
+            case "boolean":
+                return typeReference.isArray() ? boolean[].class : boolean.class;
+            default:
+                return Class.forName( className( typeReference ) );
+            }
+        }
+        catch ( ClassNotFoundException e )
+        {
+            throw new AssertionError( format( "%s does not exists", typeReference ) );
+        }
+    }
+
 }
