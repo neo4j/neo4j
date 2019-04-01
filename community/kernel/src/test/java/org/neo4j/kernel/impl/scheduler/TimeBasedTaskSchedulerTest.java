@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.scheduler.CancelListener;
 import org.neo4j.scheduler.Group;
@@ -35,11 +36,12 @@ import org.neo4j.scheduler.JobHandle;
 import org.neo4j.time.FakeClock;
 import org.neo4j.util.concurrent.BinaryLatch;
 
+import static java.time.Duration.ofMinutes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -171,20 +173,27 @@ class TimeBasedTaskSchedulerTest
     @Test
     void mustNotStartRecurringTasksWherePriorExecutionHasNotYetFinished()
     {
-        Runnable runnable = () ->
+        assertTimeoutPreemptively( ofMinutes( 1 ), () ->
         {
-            counter.incrementAndGet();
-            semaphore.acquireUninterruptibly();
-        };
-        scheduler.submit( Group.STORAGE_MAINTENANCE, runnable, 100, 100 );
-        for ( int i = 0; i < 4; i++ )
-        {
-            scheduler.tick();
-            clock.forward( 100, TimeUnit.NANOSECONDS );
-        }
-        semaphore.release( Integer.MAX_VALUE );
-        pools.getThreadPool( Group.STORAGE_MAINTENANCE ).shutDown();
-        assertThat( counter.get(), is( 1 ) );
+            Runnable runnable = () ->
+            {
+                counter.incrementAndGet();
+                semaphore.acquireUninterruptibly();
+            };
+            scheduler.submit( Group.STORAGE_MAINTENANCE, runnable, 100, 100 );
+            for ( int i = 0; i < 4; i++ )
+            {
+                scheduler.tick();
+                clock.forward( 100, TimeUnit.NANOSECONDS );
+            }
+            while ( !semaphore.hasQueuedThreads() )
+            {
+                LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
+            }
+            semaphore.release( Integer.MAX_VALUE );
+            pools.getThreadPool( Group.STORAGE_MAINTENANCE ).shutDown();
+            assertThat( counter.get(), is( 1 ) );
+        } );
     }
 
     @Test
@@ -217,7 +226,7 @@ class TimeBasedTaskSchedulerTest
         scheduler.tick();
         pools.getThreadPool( Group.STORAGE_MAINTENANCE ).shutDown();
         assertThat( counter.get(), is( 0 ) );
-        assertFalse( cancelListener.isCanceled() );
+        assertTrue( cancelListener.isCanceled() );
         assertThrows( CancellationException.class, handle::waitTermination );
     }
 
