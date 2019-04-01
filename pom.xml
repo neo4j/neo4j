@@ -76,6 +76,7 @@
             -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true
             -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=true
             -Dorg.org.neo4j.kernel.impl.newapi.DefaultCursors.trackCursors=true
+            -Dorg.org.neo4j.codegen.bytecode.ByteCodeExpressionVisitor.checkByteCode=true
             -Djunit.jupiter.extensions.autodetection.enabled=true
             -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${test.runner.jvm.settings.additional}
         </test.runner.jvm.settings>

@@ -35,6 +35,7 @@ import static org.neo4j.codegen.ByteCodeUtils.assertMethodExists;
 import static org.neo4j.codegen.ByteCodeUtils.byteCodeName;
 import static org.neo4j.codegen.ByteCodeUtils.desc;
 import static org.neo4j.codegen.ByteCodeUtils.typeName;
+import static org.neo4j.util.FeatureToggles.flag;
 import static org.objectweb.asm.Opcodes.AALOAD;
 import static org.objectweb.asm.Opcodes.AASTORE;
 import static org.objectweb.asm.Opcodes.ACONST_NULL;
@@ -123,7 +124,8 @@ import static org.objectweb.asm.Opcodes.T_SHORT;
 
 class ByteCodeExpressionVisitor implements ExpressionVisitor
 {
-    private static final boolean DEBUG = false;
+    private static final boolean
+            DEBUG_BYTE_CODE = flag( ByteCodeExpressionVisitor.class, "checkByteCode", false );
     private final MethodVisitor methodVisitor;
 
     ByteCodeExpressionVisitor( MethodVisitor methodVisitor )
@@ -134,7 +136,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     @Override
     public void invoke( Expression target, MethodReference method, Expression[] arguments )
     {
-        if ( DEBUG )
+        if ( DEBUG_BYTE_CODE )
         {
             assertMethodExists( method );
         }
@@ -167,7 +169,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     @Override
     public void invoke( MethodReference method, Expression[] arguments )
     {
-        if ( DEBUG )
+        if ( DEBUG_BYTE_CODE )
         {
             assertMethodExists( method );
         }
