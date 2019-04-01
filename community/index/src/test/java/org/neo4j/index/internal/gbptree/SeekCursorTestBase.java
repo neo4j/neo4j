@@ -1063,24 +1063,24 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         } );
     }
 
-    private long fullLeaf( List<Long> expectedSeeds )
+    private long fullLeaf( List<Long> expectedSeeds ) throws IOException
     {
         return fullLeaf( 0, expectedSeeds );
     }
 
-    private long fullLeaf( long firstSeed )
+    private long fullLeaf( long firstSeed ) throws IOException
     {
         return fullLeaf( firstSeed, new ArrayList<>() );
     }
 
-    private long fullLeaf( long firstSeed, List<Long> expectedSeeds )
+    private long fullLeaf( long firstSeed, List<Long> expectedSeeds ) throws IOException
     {
         int keyCount = 0;
         KEY key = key( firstSeed + keyCount );
         VALUE value = value( firstSeed + keyCount );
         while ( node.leafOverflow( cursor, keyCount, key, value ) == TreeNode.Overflow.NO )
         {
-            node.insertKeyValueAt( cursor, key, value, keyCount, keyCount );
+            node.insertKeyValueAt( cursor, key, value, keyCount, keyCount, stableGeneration, unstableGeneration );
             expectedSeeds.add( firstSeed + keyCount );
             keyCount++;
             key = key( firstSeed + keyCount );
@@ -1093,7 +1093,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
     /**
      * @return next seed to be inserted
      */
-    private long fullLeaf()
+    private long fullLeaf() throws IOException
     {
         return fullLeaf( 0 );
     }
@@ -2207,7 +2207,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         unstableGeneration++;
     }
 
-    private void newRootFromSplit( StructurePropagation<KEY> split )
+    private void newRootFromSplit( StructurePropagation<KEY> split ) throws IOException
     {
         assertTrue( split.hasRightKeyInsert );
         long rootId = id.acquireNewId( stableGeneration, unstableGeneration );
@@ -2252,7 +2252,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         handleAfterChange();
     }
 
-    private void handleAfterChange()
+    private void handleAfterChange() throws IOException
     {
         if ( structurePropagation.hasRightKeyInsert )
         {
@@ -2348,7 +2348,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
                 format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ) );
     }
 
-    private void insertKeysAndValues( int keyCount )
+    private void insertKeysAndValues( int keyCount ) throws IOException
     {
         for ( int i = 0; i < keyCount; i++ )
         {
@@ -2356,14 +2356,14 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         }
     }
 
-    private void append( long k )
+    private void append( long k ) throws IOException
     {
         int keyCount = TreeNode.keyCount( cursor );
-        node.insertKeyValueAt( cursor, key( k ), value( k ), keyCount, keyCount );
+        node.insertKeyValueAt( cursor, key( k ), value( k ), keyCount, keyCount, stableGeneration, unstableGeneration );
         TreeNode.setKeyCount( cursor, keyCount + 1 );
     }
 
-    private void insertIn( int pos, long k )
+    private void insertIn( int pos, long k ) throws IOException
     {
         int keyCount = TreeNode.keyCount( cursor );
         KEY key = key( k );
@@ -2373,7 +2373,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         {
             throw new IllegalStateException( "Can not insert another key in current node" );
         }
-        node.insertKeyValueAt( cursor, key, value, pos, keyCount );
+        node.insertKeyValueAt( cursor, key, value, pos, keyCount, stableGeneration, unstableGeneration );
         TreeNode.setKeyCount( cursor, keyCount + 1 );
     }
 

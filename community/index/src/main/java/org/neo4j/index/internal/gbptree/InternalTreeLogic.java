@@ -576,7 +576,7 @@ class InternalTreeLogic<KEY,VALUE>
         }
 
         // No overflow, insert key and value
-        bTreeNode.insertKeyValueAt( cursor, key, value, pos, keyCount );
+        bTreeNode.insertKeyValueAt( cursor, key, value, pos, keyCount, stableGeneration, unstableGeneration );
         TreeNode.setKeyCount( cursor, keyCount + 1 );
         return false;
     }
@@ -670,7 +670,8 @@ class InternalTreeLogic<KEY,VALUE>
             TreeNode.setLeftSibling( rightCursor, current, stableGeneration, unstableGeneration );
 
             // Do split
-            bTreeNode.doSplitLeaf( cursor, keyCount, rightCursor, pos, newKey, newValue, structurePropagation.rightKey, ratioToKeepInLeftOnSplit );
+            bTreeNode.doSplitLeaf( cursor, keyCount, rightCursor, pos, newKey, newValue, structurePropagation.rightKey, ratioToKeepInLeftOnSplit,
+                    stableGeneration, unstableGeneration );
         }
 
         // Update old right with new left sibling (newRight)

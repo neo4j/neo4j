@@ -93,6 +93,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
     private static final int LEAST_NUMBER_OF_ENTRIES_PER_PAGE = 2;
     private static final int MINIMUM_ENTRY_SIZE_CAP = Long.SIZE;
+    private final int needOffloadCap;
     private final int keyValueSizeCap;
     private final MutableIntStack deadKeysOffset = new IntArrayStack();
     private final MutableIntStack aliveKeysOffset = new IntArrayStack();
@@ -108,26 +109,31 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     TreeNodeDynamicSize( int pageSize, Layout<KEY,VALUE> layout, OffloadStore<KEY,VALUE> offloadStore )
     {
         super( pageSize, layout );
+        this.offloadStore = offloadStore;
         totalSpace = pageSize - HEADER_LENGTH_DYNAMIC;
         halfSpace = totalSpace / 2;
-        keyValueSizeCap = keyValueSizeCapFromPageSize( pageSize );
+        needOffloadCap = needOffloadCap( pageSize );
+        keyValueSizeCap = offloadStore.maxEntrySize();
 
-        if ( keyValueSizeCap < MINIMUM_ENTRY_SIZE_CAP )
+        if ( needOffloadCap < MINIMUM_ENTRY_SIZE_CAP )
         {
             throw new MetadataMismatchException(
                     "We need to fit at least %d key-value entries per page in leaves. To do that a key-value entry can be at most %dB " +
                             "with current page size of %dB. We require this cap to be at least %dB.",
-                    LEAST_NUMBER_OF_ENTRIES_PER_PAGE, keyValueSizeCap, pageSize, Long.SIZE );
+                    LEAST_NUMBER_OF_ENTRIES_PER_PAGE, needOffloadCap, pageSize, Long.SIZE );
         }
 
         tmpKeyLeft = layout.newKey();
         tmpKeyRight = layout.newKey();
-
-        this.offloadStore = offloadStore;
     }
 
     @VisibleForTesting
     public static int keyValueSizeCapFromPageSize( int pageSize )
+    {
+        return OffloadStoreImpl.maxEntrySizeFromPageSize( pageSize );
+    }
+
+    private static int needOffloadCap( int pageSize )
     {
         return (pageSize - HEADER_LENGTH_DYNAMIC) / LEAST_NUMBER_OF_ENTRIES_PER_PAGE - SIZE_TOTAL_OVERHEAD;
     }
@@ -209,7 +215,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
     @Override
     void insertKeyAndRightChildAt( PageCursor cursor, KEY key, long child, int pos, int keyCount, long stableGeneration,
-            long unstableGeneration )
+            long unstableGeneration ) throws IOException
     {
         // Where to write key?
         int currentKeyOffset = getAllocOffset( cursor );
@@ -230,7 +236,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
             cursor.setOffset( newKeyOffset );
             putKeySize( cursor, keySize, false );
-            long offloadId = offloadStore.writeKey( key );
+            long offloadId = offloadStore.writeKey( key, stableGeneration, unstableGeneration );
             DynamicSizeUtil.putOffloadId( cursor, offloadId );
         }
 
@@ -245,14 +251,14 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void insertKeyValueAt( PageCursor cursor, KEY key, VALUE value, int pos, int keyCount )
+    void insertKeyValueAt( PageCursor cursor, KEY key, VALUE value, int pos, int keyCount, long stableGeneration, long unstableGeneration ) throws IOException
     {
         // Where to write key?
         int currentKeyValueOffset = getAllocOffset( cursor );
         int keySize = layout.keySize( key );
         int valueSize = layout.valueSize( value );
         int newKeyValueOffset;
-        if ( !offload(keySize) )
+        if ( !offload( keySize ) )
         {
             newKeyValueOffset = currentKeyValueOffset - keySize - valueSize - getOverhead( keySize, valueSize, false );
 
@@ -269,7 +275,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             // Write
             cursor.setOffset( newKeyValueOffset );
             putKeyValueSize( cursor, keySize, valueSize, true );
-            long offloadId = offloadStore.writeKeyValue( key, value );
+            long offloadId = offloadStore.writeKeyValue( key, value, stableGeneration, unstableGeneration );
             DynamicSizeUtil.putOffloadId( cursor, offloadId );
         }
 
@@ -469,6 +475,12 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     public int keyValueSizeCap()
     {
         return keyValueSizeCap;
+    }
+
+    @Override
+    public int needOffloadCap()
+    {
+        return needOffloadCap;
     }
 
     @Override
@@ -754,7 +766,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
     @Override
     void doSplitLeaf( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos, KEY newKey,
-            VALUE newValue, KEY newSplitter, double ratioToKeepInLeftOnSplit )
+            VALUE newValue, KEY newSplitter, double ratioToKeepInLeftOnSplit, long stableGeneration, long unstableGeneration ) throws IOException
     {
         // Find split position
         int keyCountAfterInsert = leftKeyCount + 1;
@@ -795,7 +807,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             // split            ^
             moveKeysAndValues( leftCursor, splitPos - 1, rightCursor, 0, rightKeyCount );
             defragmentLeaf( leftCursor );
-            insertKeyValueAt( leftCursor, newKey, newValue, insertPos, splitPos - 1 );
+            insertKeyValueAt( leftCursor, newKey, newValue, insertPos, splitPos - 1, stableGeneration, unstableGeneration );
         }
         else
         {
@@ -810,7 +822,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             int keysToMove = leftKeyCount - splitPos;
             moveKeysAndValues( leftCursor, splitPos, rightCursor, 0, keysToMove );
             defragmentLeaf( leftCursor );
-            insertKeyValueAt( rightCursor, newKey, newValue, newInsertPos, keysToMove );
+            insertKeyValueAt( rightCursor, newKey, newValue, newInsertPos, keysToMove, stableGeneration, unstableGeneration );
         }
         TreeNode.setKeyCount( leftCursor, splitPos );
         TreeNode.setKeyCount( rightCursor, rightKeyCount );
@@ -818,7 +830,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
     @Override
     void doSplitInternal( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos, KEY newKey,
-            long newRightChild, long stableGeneration, long unstableGeneration, KEY newSplitter, double ratioToKeepInLeftOnSplit )
+            long newRightChild, long stableGeneration, long unstableGeneration, KEY newSplitter, double ratioToKeepInLeftOnSplit ) throws IOException
     {
         int keyCountAfterInsert = leftKeyCount + 1;
         int splitPos = splitPosInternal( leftCursor, insertPos, newKey, keyCountAfterInsert, ratioToKeepInLeftOnSplit );
@@ -1554,7 +1566,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             {
                 aliveKeySize += getOverhead( keySize, valueSize, offload ) + keySize + valueSize;
             }
-            nextKeyOffset = cursor.getOffset() + keySize + valueSize;
+            nextKeyOffset = cursor.getOffset() + (offload ? DynamicSizeUtil.SIZE_OFFLOAD_ID : keySize + valueSize);
         }
         return offsetArraySize + aliveKeySize;
     }
@@ -1601,6 +1613,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
     private boolean offload( int entrySize )
     {
-        return entrySize > keyValueSizeCap;
+        return entrySize > needOffloadCap;
     }
 }

@@ -44,7 +44,7 @@ public class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<
     @Override
     protected TreeNode<RawBytes,RawBytes> getTreeNode( int pageSize, Layout<RawBytes,RawBytes> layout )
     {
-        return new TreeNodeDynamicSize<>( pageSize, layout );
+        return new TreeNodeDynamicSize<>( pageSize, layout, new OffloadStore.NullOffloadStore<>() );
     }
 
     @Override

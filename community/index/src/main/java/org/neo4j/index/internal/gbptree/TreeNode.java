@@ -241,9 +241,10 @@ abstract class TreeNode<KEY,VALUE>
     abstract void keyValueAt( PageCursor cursor, KEY intoKey, VALUE intoValue, int pos );
 
     abstract void insertKeyAndRightChildAt( PageCursor cursor, KEY key, long child, int pos, int keyCount,
-            long stableGeneration, long unstableGeneration );
+            long stableGeneration, long unstableGeneration ) throws IOException;
 
-    abstract void insertKeyValueAt( PageCursor cursor, KEY key, VALUE value, int pos, int keyCount );
+    abstract void insertKeyValueAt( PageCursor cursor, KEY key, VALUE value, int pos, int keyCount, long stableGeneration, long unstableGeneration )
+            throws IOException;
 
     abstract void removeKeyValueAt( PageCursor cursor, int pos, int keyCount );
 
@@ -287,6 +288,8 @@ abstract class TreeNode<KEY,VALUE>
     // HELPERS
 
     abstract int keyValueSizeCap();
+
+    abstract int needOffloadCap();
 
     /**
      * This method can throw and should not be used on read path.
@@ -359,7 +362,7 @@ abstract class TreeNode<KEY,VALUE>
      * Key count is updated.
      */
     abstract void doSplitLeaf( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos, KEY newKey, VALUE newValue, KEY newSplitter,
-            double ratioToKeepInLeftOnSplit );
+            double ratioToKeepInLeftOnSplit, long stableGeneration, long unstableGeneration ) throws IOException;
 
     /**
      * Performs the entry moving part of split in internal.
@@ -369,7 +372,8 @@ abstract class TreeNode<KEY,VALUE>
      * Key count is updated.
      */
     abstract void doSplitInternal( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos,
-            KEY newKey, long newRightChild, long stableGeneration, long unstableGeneration, KEY newSplitter, double ratioToKeepInLeftOnSplit );
+            KEY newKey, long newRightChild, long stableGeneration, long unstableGeneration, KEY newSplitter, double ratioToKeepInLeftOnSplit )
+            throws IOException;
 
     /**
      * Move all rightmost keys and values in left leaf from given position to right leaf.

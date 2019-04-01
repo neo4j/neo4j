@@ -1,119 +1,80 @@
+/*
+ * Copyright (c) 2002-2019 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
-import java.util.function.Supplier;
 
-import org.neo4j.io.pagecache.PageCursor;
-
-class OffloadStore<KEY,VALUE>
+public interface OffloadStore<KEY, VALUE>
 {
-    private final Layout<KEY,VALUE> layout;
-    private final Supplier<PageCursor> pcFactory;
+    int maxEntrySize();
 
-    OffloadStore( Layout<KEY,VALUE> layout )
-    {
-        this.layout = layout;
-        this.pcFactory = () -> null;
-    }
+    void readKey( long offloadId, KEY into ) throws IOException;
 
-    void readKey( long offloadId, KEY into ) throws IOException
+    void readKeyValue( long offloadId, KEY key, VALUE value ) throws IOException;
+
+    void readValue( long offloadId, VALUE into ) throws IOException;
+
+    long writeKey( KEY key, long stableGeneration, long unstableGeneration ) throws IOException;
+
+    long writeKeyValue( KEY key, VALUE value, long stableGeneration, long unstableGeneration ) throws IOException;
+
+    void free( long offloadId );
+
+    class NullOffloadStore<KEY,VALUE> implements OffloadStore<KEY,VALUE>
     {
-        try ( PageCursor cursor = pcFactory.get() )
+        @Override
+        public int maxEntrySize()
         {
-            do
-            {
-                placeCursorAtOffloadId( cursor, offloadId );
-
-                int keySize = cursor.getInt();
-                int valueSize = cursor.getInt();
-                layout.readKey( cursor, into, keySize );
-            }
-            while ( cursor.shouldRetry() );
+            return 0;
         }
-    }
 
-    void readKeyValue( long offloadId, KEY key, VALUE value ) throws IOException
-    {
-        try ( PageCursor cursor = pcFactory.get() )
+        @Override
+        public void readKey( long offloadId, KEY into )
         {
-            do
-            {
-                placeCursorAtOffloadId( cursor, offloadId );
-
-                int keySize = cursor.getInt();
-                int valueSize = cursor.getInt();
-                layout.readKey( cursor, key, keySize );
-                layout.readValue( cursor, value, valueSize );
-            }
-            while ( cursor.shouldRetry() );
         }
-    }
 
-    void readValue( long offloadId, VALUE into ) throws IOException
-    {
-        try ( PageCursor cursor = pcFactory.get() )
+        @Override
+        public void readKeyValue( long offloadId, KEY key, VALUE value )
         {
-            do
-            {
-                placeCursorAtOffloadId( cursor, offloadId );
-
-                int keySize = cursor.getInt();
-                int valueSize = cursor.getInt();
-                cursor.setOffset( cursor.getOffset() + keySize );
-                layout.readValue( cursor, into, valueSize );
-            }
-            while ( cursor.shouldRetry() );
         }
-    }
 
-    long writeKey( KEY key )
-    {
-        try ( PageCursor cursor = pcFactory.get() )
+        @Override
+        public void readValue( long offloadId, VALUE into )
         {
-            int keySize = layout.keySize( key );
-            long newId = acquireNewId( keySize );
-            placeCursorAtOffloadId( cursor, newId );
-
-            putKeyValueSize( cursor, keySize, 0 );
-            layout.writeKey( cursor, key );
-            return newId;
         }
-    }
 
-    long writeKeyValue( KEY key, VALUE value )
-    {
-        try ( PageCursor cursor = pcFactory.get() )
+        @Override
+        public long writeKey( KEY key, long stableGeneration, long unstableGeneration )
         {
-            int keySize = layout.keySize( key );
-            int valueSize = layout.valueSize( value );
-            long newId = acquireNewId( keySize + valueSize );
-            placeCursorAtOffloadId( cursor, newId );
-
-            putKeyValueSize( cursor, keySize, valueSize );
-            layout.writeKey( cursor, key );
-            layout.writeValue( cursor, value );
-            return newId;
+            return 0;
         }
-    }
 
-    void free( long offloadId )
-    {
-        throw new UnsupportedOperationException( "Implement me" );
-    }
+        @Override
+        public long writeKeyValue( KEY key, VALUE value, long stableGeneration, long unstableGeneration )
+        {
+            return 0;
+        }
 
-    private void putKeyValueSize( PageCursor cursor, int keySize, int valueSize )
-    {
-        cursor.putInt( keySize );
-        cursor.putInt( valueSize );
-    }
-
-    private long acquireNewId( int keySize )
-    {
-        throw new UnsupportedOperationException( "Implement me" );
-    }
-
-    private void placeCursorAtOffloadId( PageCursor cursor, long offloadId )
-    {
-        throw new UnsupportedOperationException( "Implement me" );
+        @Override
+        public void free( long offloadId )
+        {
+        }
     }
 }

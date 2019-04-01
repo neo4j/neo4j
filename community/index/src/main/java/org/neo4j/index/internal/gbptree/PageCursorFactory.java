@@ -19,17 +19,12 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-class SeekCursorDynamicSizeTest extends SeekCursorTestBase<RawBytes,RawBytes>
-{
-    @Override
-    TestLayout<RawBytes,RawBytes> getLayout()
-    {
-        return new SimpleByteArrayLayout();
-    }
+import java.io.IOException;
 
-    @Override
-    TreeNode<RawBytes,RawBytes> getTreeNode( int pageSize, TestLayout<RawBytes,RawBytes> layout )
-    {
-        return new TreeNodeDynamicSize<>( pageSize, layout, new OffloadStore.NullOffloadStore<>() );
-    }
+import org.neo4j.io.pagecache.PageCursor;
+
+@FunctionalInterface
+interface PageCursorFactory
+{
+    PageCursor create( long pageId, int pf_flags ) throws IOException;
 }

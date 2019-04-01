@@ -492,8 +492,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 meta.verify( layout );
                 format = TreeNodeSelector.selectByFormat( meta.getFormatIdentifier(), meta.getFormatVersion() );
             }
-            this.bTreeNode = format.create( pageSize, layout );
             this.freeList = new FreeListIdProvider( pagedFile, pageSize, rootId, FreeListIdProvider.NO_MONITOR );
+            OffloadStoreImpl<KEY,VALUE> offloadStore = buildOffload( layout, freeList, pagedFile, pageSize );
+            this.bTreeNode = format.create( pageSize, layout, offloadStore );
             this.writer = new SingleWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout, monitor ) );
 
             // Create or load state
@@ -1464,5 +1465,17 @@ public class GBPTree<KEY,VALUE> implements Closeable
     public int keyValueSizeCap()
     {
         return bTreeNode.keyValueSizeCap();
+    }
+
+    int needOffloadCap()
+    {
+        return bTreeNode.needOffloadCap();
+    }
+
+    private static <KEY, VALUE> OffloadStoreImpl<KEY,VALUE> buildOffload( Layout<KEY,VALUE> layout, IdProvider idProvider, PagedFile pagedFile, int pageSize )
+    {
+        PageCursorFactory pcFactory = pagedFile::io;
+        OffloadIdValidator idValidator = id -> id >= IdSpace.MIN_TREE_NODE_ID && id <= pagedFile.getLastPageId();
+        return new OffloadStoreImpl<>( layout, idProvider, pcFactory, idValidator, pageSize );
     }
 }

@@ -21,14 +21,18 @@ package org.neo4j.index.internal.gbptree;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
 {
+    private static final long STABLE_GENERATION = 3;
+    private static final long UNSTABLE_GENERATION = 4;
+
     private SimpleByteArrayLayout layout = new SimpleByteArrayLayout();
-    private OffloadStore<RawBytes,RawBytes> offloadStore = new OffloadStore<>( layout );
 
     @Override
     protected TestLayout<RawBytes,RawBytes> getLayout()
@@ -39,7 +43,7 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
     @Override
     protected TreeNodeDynamicSize<RawBytes,RawBytes> getNode( int pageSize, Layout<RawBytes,RawBytes> layout )
     {
-        return new TreeNodeDynamicSize<>( pageSize, layout, offloadStore );
+        return new TreeNodeDynamicSize<>( pageSize, layout, new OffloadStore.NullOffloadStore<>() );
     }
 
     @Override
@@ -53,7 +57,7 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
     }
 
     @Test
-    void mustCompactKeyValueSizeHeader()
+    void mustCompactKeyValueSizeHeader() throws IOException
     {
         int oneByteKeyMax = DynamicSizeUtil.MASK_ONE_BYTE_KEY_SIZE;
         int oneByteValueMax = DynamicSizeUtil.MASK_ONE_BYTE_VALUE_SIZE;
@@ -70,14 +74,7 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
         verifyOverhead( node, oneByteKeyMax + 1, oneByteValueMax +  1, 4 );
     }
 
-    @Test
-    void mustReadKeyFromOffload()
-    {
-        cursor.zapPage();
-        node.keyAt(  )
-    }
-
-    private void verifyOverhead( TreeNodeDynamicSize<RawBytes,RawBytes> node, int keySize, int valueSize, int expectedOverhead )
+    private void verifyOverhead( TreeNodeDynamicSize<RawBytes,RawBytes> node, int keySize, int valueSize, int expectedOverhead ) throws IOException
     {
         cursor.zapPage();
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
@@ -88,7 +85,7 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
         value.bytes = new byte[valueSize];
 
         int allocOffsetBefore = node.getAllocOffset( cursor );
-        node.insertKeyValueAt( cursor, key, value, 0, 0 );
+        node.insertKeyValueAt( cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
         int allocOffsetAfter = node.getAllocOffset( cursor );
         assertEquals( allocOffsetBefore - keySize - valueSize - expectedOverhead, allocOffsetAfter );
     }

@@ -93,7 +93,7 @@ class DynamicSizeUtilTest
         int keySize = 0xFFF;
 
         // when
-        assertThrows( IllegalArgumentException.class, () -> putKeyValueSize( cursor, keySize + 1, 0 ) );
+        assertThrows( IllegalArgumentException.class, () -> putKeyValueSize( cursor, keySize + 1, 0, false ) );
 
         // whereas when size is one less than that
         shouldPutAndGetKeyValueSize( keySize, 0, 2 );
@@ -106,7 +106,7 @@ class DynamicSizeUtilTest
         int valueSize = 0x7FFF;
 
         // when
-        assertThrows( IllegalArgumentException.class, () -> putKeyValueSize( cursor, 1, valueSize + 1 ) );
+        assertThrows( IllegalArgumentException.class, () -> putKeyValueSize( cursor, 1, valueSize + 1, false ) );
 
         // whereas when size is one less than that
         shouldPutAndGetKeyValueSize( 1, valueSize, 3 );
@@ -121,7 +121,7 @@ class DynamicSizeUtilTest
     private int putAndGetKey( int keySize )
     {
         int offsetBefore = cursor.getOffset();
-        DynamicSizeUtil.putKeySize( cursor, keySize );
+        DynamicSizeUtil.putKeySize( cursor, keySize, false );
         int offsetAfter = cursor.getOffset();
         cursor.setOffset( offsetBefore );
         long readKeySize = readKeyValueSize( cursor );
@@ -138,7 +138,7 @@ class DynamicSizeUtilTest
     private int putAndGetKeyValue( int keySize, int valueSize )
     {
         int offsetBefore = cursor.getOffset();
-        putKeyValueSize( cursor, keySize, valueSize );
+        putKeyValueSize( cursor, keySize, valueSize, false );
         int offsetAfter = cursor.getOffset();
         cursor.setOffset( offsetBefore );
         long readKeyValueSize = readKeyValueSize( cursor );

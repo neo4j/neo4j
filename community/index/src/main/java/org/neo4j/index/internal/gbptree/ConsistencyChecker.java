@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Comparator;
 import java.util.List;
+import java.util.StringJoiner;
 
 import org.neo4j.index.internal.gbptree.GenerationSafePointerPair.GenerationTarget;
 import org.neo4j.io.pagecache.CursorException;
@@ -148,7 +149,7 @@ class ConsistencyChecker<KEY>
         long expectedNumberOfPages = highId - IdSpace.MIN_TREE_NODE_ID;
         if ( seenIds.cardinality() != expectedNumberOfPages )
         {
-            StringBuilder builder = new StringBuilder( "[" );
+            StringJoiner builder = new StringJoiner( ",", "[", "]" );
             int index = (int) IdSpace.MIN_TREE_NODE_ID;
             int count = 0;
             while ( index >= 0 && index < highId )
@@ -156,15 +157,10 @@ class ConsistencyChecker<KEY>
                 index = seenIds.nextClearBit( index );
                 if ( index != -1 )
                 {
-                    if ( count++ > 0 )
-                    {
-                        builder.append( "," );
-                    }
-                    builder.append( index );
+                    builder.add( Integer.toString( index ) );
                     index++;
                 }
             }
-            builder.append( "]" );
             throw new RuntimeException( "There are " + count + " unused pages in the store:" + builder );
         }
     }

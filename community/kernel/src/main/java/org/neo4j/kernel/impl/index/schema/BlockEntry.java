@@ -65,13 +65,13 @@ class BlockEntry<KEY,VALUE>
     {
         int keySize = layout.keySize( key );
         int valueSize = layout.valueSize( value );
-        return keySize + valueSize + getOverhead( keySize, valueSize );
+        return keySize + valueSize + getOverhead( keySize, valueSize, false );
     }
 
     static <VALUE, KEY> int keySize( Layout<KEY,VALUE> layout, KEY key )
     {
         int keySize = layout.keySize( key );
-        return keySize + getOverhead( keySize, 0 );
+        return keySize + getOverhead( keySize, 0, false );
     }
 
     static <KEY, VALUE> BlockEntry<KEY,VALUE> read( PageCursor pageCursor, Layout<KEY,VALUE> layout )
@@ -104,7 +104,7 @@ class BlockEntry<KEY,VALUE>
     {
         int keySize = layout.keySize( key );
         int valueSize = layout.valueSize( value );
-        putKeyValueSize( pageCursor, keySize, valueSize );
+        putKeyValueSize( pageCursor, keySize, valueSize, false );
         layout.writeKey( pageCursor, key );
         layout.writeValue( pageCursor, value );
     }
@@ -112,7 +112,7 @@ class BlockEntry<KEY,VALUE>
     static <KEY, VALUE> void write( PageCursor pageCursor, Layout<KEY,VALUE> layout, KEY key )
     {
         int keySize = layout.keySize( key );
-        putKeyValueSize( pageCursor, keySize, 0 );
+        putKeyValueSize( pageCursor, keySize, 0, false );
         layout.writeKey( pageCursor, key );
     }
 }
