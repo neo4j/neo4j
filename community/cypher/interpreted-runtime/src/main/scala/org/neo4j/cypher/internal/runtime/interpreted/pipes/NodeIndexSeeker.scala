@@ -125,11 +125,14 @@ trait NodeIndexSeeker {
             (valueRange.distance, valueRange.point) match {
               case (distance: NumberValue, point: PointValue) =>
                 val bboxes = point.getCoordinateReferenceSystem.getCalculator.boundingBox(point, distance.doubleValue()).asScala
+                // The geographic calculator pads the range to avoid numerical errors, which means we rely more on post-filtering
+                // This also means we can fix the date-line '<' case by simply being inclusive in the index seek, and again rely on post-filtering
+                val inclusive = if (bboxes.length > 1) true else range.inclusive
                 bboxes.map( bbox => List(IndexQuery.range(propertyIds.head,
                   bbox.first(),
-                  range.inclusive,
+                  inclusive,
                   bbox.other(),
-                  range.inclusive
+                  inclusive
                 )))
               case _ => Nil
             }
