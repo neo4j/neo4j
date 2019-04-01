@@ -93,6 +93,16 @@
             <artifactId>neo4j-schema</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-id-generator</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-monitoring</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
 </project>

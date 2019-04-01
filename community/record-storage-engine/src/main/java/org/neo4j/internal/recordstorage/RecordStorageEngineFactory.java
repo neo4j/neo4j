@@ -25,9 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -91,24 +89,12 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public StorageEngine instantiate( DependencyResolver dependencyResolver )
+    public StorageEngine instantiate( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, TokenHolders tokenHolders,
+            SchemaState schemaState, ConstraintRuleAccessor constraintSemantics, LockService lockService, IdGeneratorFactory idGeneratorFactory,
+            IdController idController, DatabaseHealth databaseHealth, VersionContextSupplier versionContextSupplier, LogProvider logProvider )
     {
-        RecordStorageEngine storageEngine = new RecordStorageEngine(
-                dependencyResolver.resolveDependency( DatabaseLayout.class ),
-                dependencyResolver.resolveDependency( Config.class ),
-                dependencyResolver.resolveDependency( PageCache.class ),
-                dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
-                resolveLogProvider( dependencyResolver ),
-                dependencyResolver.resolveDependency( TokenHolders.class ),
-                dependencyResolver.resolveDependency( SchemaState.class ),
-                dependencyResolver.resolveDependency( ConstraintRuleAccessor.class ),
-                dependencyResolver.resolveDependency( LockService.class ),
-                dependencyResolver.resolveDependency( DatabaseHealth.class ),
-                dependencyResolver.resolveDependency( IdGeneratorFactory.class ),
-                dependencyResolver.resolveDependency( IdController.class ),
-                dependencyResolver.resolveDependency( VersionContextSupplier.class ) );
-
-        return storageEngine;
+        return new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider,
+                tokenHolders, schemaState, constraintSemantics, lockService, databaseHealth, idGeneratorFactory, idController, versionContextSupplier );
     }
 
     @Override
@@ -165,17 +151,5 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     {
         File neoStoreFile = databaseLayout.metadataStore();
         return MetaDataStore.getStoreId( pageCache, neoStoreFile );
-    }
-
-    private LogProvider resolveLogProvider( DependencyResolver dependencyResolver )
-    {
-        try
-        {
-            return dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider();
-        }
-        catch ( UnsatisfiedDependencyException e )
-        {
-            return dependencyResolver.resolveDependency( LogProvider.class );
-        }
     }
 }

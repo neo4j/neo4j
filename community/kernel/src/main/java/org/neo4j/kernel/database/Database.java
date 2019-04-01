@@ -312,11 +312,6 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
             databaseDependencies.satisfyDependency( lockService );
             databaseDependencies.satisfyDependency( new DefaultValueMapper( facade ) );
-            databaseDependencies.satisfyDependency( versionContextSupplier );
-            databaseDependencies.satisfyDependency( databaseLayout );
-            databaseDependencies.satisfyDependency( fs );
-            databaseDependencies.satisfyDependency( logService );
-            databaseDependencies.satisfyDependency( constraintSemantics );
 
             DefaultLogRotationMonitor logRotationMonitor = new DefaultLogRotationMonitor();
             DefaultCheckPointMonitor checkPointMonitor = new DefaultCheckPointMonitor();
@@ -360,12 +355,13 @@ public class Database extends LifecycleAdapter
 
             // Build all modules and their services
             DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( logProvider );
-            databaseDependencies.satisfyDependency( databaseSchemaState );
 
             Supplier<IdController.ConditionSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
             idController.initialize( transactionsSnapshotSupplier );
 
-            storageEngine = storageEngineFactory.instantiate( databaseDependencies );
+            storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, config, databasePageCache, tokenHolders, databaseSchemaState,
+                    constraintSemantics, lockService, idGeneratorFactory, idController, databaseHealth, versionContextSupplier, logProvider );
+
             life.add( storageEngine );
             life.add( storageEngine.schemaAndTokensLifecycle() );
             life.add( logFiles );

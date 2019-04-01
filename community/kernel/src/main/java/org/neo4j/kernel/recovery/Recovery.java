@@ -79,7 +79,6 @@ import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.lock.LockService;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
@@ -89,7 +88,6 @@ import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.monitoring.DatabaseEventHandlers;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
-import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
@@ -106,6 +104,7 @@ import static java.util.stream.Collectors.toList;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.helpers.collection.Iterables.stream;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
+import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.storageengine.api.StorageEngineFactory.selectStorageEngine;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
 import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
@@ -274,7 +273,7 @@ public final class Recovery
         JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
 
         DatabasePanicEventGenerator panicEventGenerator = new DatabasePanicEventGenerator( new DatabaseEventHandlers( recoveryLog ) );
-        Health databaseHealth = new DatabaseHealth( panicEventGenerator, recoveryLog );
+        DatabaseHealth databaseHealth = new DatabaseHealth( panicEventGenerator, recoveryLog );
 
         TokenHolders tokenHolders = new TokenHolders( new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_LABEL ),
@@ -286,33 +285,34 @@ public final class Recovery
                 recoveryCleanupCollector, DatabaseInfo.TOOL, monitors, tokenHolders, recoveryCleanupCollector, extensionFactories );
         DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( extensions, config );
 
-        Dependencies storageEngineDependencies = new Dependencies();
-        storageEngineDependencies.satisfyDependencies( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, getConstraintSemantics(),
-                LockService.NO_LOCK_SERVICE, databaseHealth, new DefaultIdGeneratorFactory( fs ), new DefaultIdController(),
-                EmptyVersionContextSupplier.EMPTY, logService );
-
-        StorageEngine storageEngine = storageEngineFactory.instantiate( storageEngineDependencies );
+        StorageEngine storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, config, pageCache, tokenHolders, schemaState,
+                getConstraintSemantics(), NO_LOCK_SERVICE, new DefaultIdGeneratorFactory( fs ), new DefaultIdController(), databaseHealth,
+                EmptyVersionContextSupplier.EMPTY, logService.getInternalLogProvider() );
 
         // Label index
-        NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, storageEngine::newReader );
+        NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, storageEngine::newReader );
         LabelScanStore labelScanStore = Database.buildLabelIndex( recoveryCleanupCollector, storageEngine, neoStoreIndexStoreView, monitors,
                 logProvider, pageCache, databaseLayout, fs, false );
 
         // Schema indexes
         DynamicIndexStoreView indexStoreView =
-                new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, LockService.NO_LOCK_SERVICE, storageEngine::newReader, logProvider );
+                new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, NO_LOCK_SERVICE, storageEngine::newReader, logProvider );
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout, recoveryCleanupCollector );
         IndexingService indexingService = Database.buildIndexingService( storageEngine, schemaState, indexStoreView, indexStatisticsStore,
                 config, scheduler, indexProviderMap, tokenNameLookup, logProvider, logProvider, monitors.newMonitor( IndexingService.Monitor.class ) );
 
         TransactionIdStore transactionIdStore = storageEngine.transactionIdStore();
         LogVersionRepository logVersionRepository = storageEngine.logVersionRepository();
-        storageEngineDependencies.satisfyDependencies( transactionIdStore, logVersionRepository );
+
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, getConstraintSemantics(),
+                NO_LOCK_SERVICE, databaseHealth, new DefaultIdGeneratorFactory( fs ), new DefaultIdController(),
+                EmptyVersionContextSupplier.EMPTY, logService, transactionIdStore, logVersionRepository );
 
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withLogEntryReader( logEntryReader )
                 .withConfig( config )
-                .withDependencies( storageEngineDependencies )
+                .withDependencies( dependencies )
                 .build();
 
         Boolean failOnCorruptedLogFiles = config.get( GraphDatabaseSettings.fail_on_corrupted_log_files );

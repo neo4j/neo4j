@@ -25,17 +25,23 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.annotations.service.Service;
-import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.id.IdController;
+import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.lock.LockService;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
+import org.neo4j.token.TokenHolders;
 
 /**
  * A factory suitable for something like service-loading to load {@link StorageEngine} instances.
@@ -63,11 +69,11 @@ public interface StorageEngineFactory
     /**
      * Instantiates a {@link StorageEngine} where all dependencies can be retrieved from the supplied {@code dependencyResolver}.
      *
-     * @param dependencyResolver {@link DependencyResolver} used to get all required dependencies to instantiate the {@link StorageEngine}.
-     * back to the instantiator. This is a hack with the goal to be removed completely when graph storage abstraction in kernel is properly in place.
      * @return the instantiated {@link StorageEngine}.
      */
-    StorageEngine instantiate( DependencyResolver dependencyResolver );
+    StorageEngine instantiate( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, TokenHolders tokenHolders,
+            SchemaState schemaState, ConstraintRuleAccessor constraintSemantics, LockService lockService, IdGeneratorFactory idGeneratorFactory,
+            IdController idController, DatabaseHealth databaseHealth, VersionContextSupplier versionContextSupplier, LogProvider logProvider );
 
     /**
      * Lists files of a specific storage location.
