@@ -115,7 +115,7 @@ public class EntityCommandGrouper<ENTITY extends Command>
      * <ol>
      *     <li>Call {@link #nextEntity()} to go to the next group, if any</li>
      *     <li>A group may or may not have the entity command, as accessed by {@link #currentEntityCommand()},
-     *         either way the node id is accessible using {@link #currentEntityId()}</li>
+     *         either way the entity id is accessible using {@link #currentEntityId()}</li>
      *     <li>Call {@link #nextProperty()} until it returns null, now all the {@link PropertyCommand} in this group have been accessed</li>
      * </ol>
      */

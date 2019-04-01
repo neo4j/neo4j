@@ -21,8 +21,11 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,9 +37,11 @@ import java.util.function.Predicate;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.util.Arrays.stream;
@@ -45,75 +50,80 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
 
-public class SchemaDescriptorLookupSetTest
+@ExtendWith( RandomExtension.class )
+class SchemaDescriptorLookupSetTest
 {
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
 
-    @Test
-    public void shouldLookupSingleKeyDescriptors()
+    @ParameterizedTest
+    @EnumSource( DescriptorFactory.class )
+    void shouldLookupSingleKeyDescriptors( DescriptorFactory factory )
     {
         // given
         SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
-        LabelSchemaDescriptor expected = SchemaDescriptorFactory.forLabel( 1, 2 );
+        SchemaDescriptor expected = factory.descriptor( 1, 2 );
         set.add( expected );
 
         // when
         Set<SchemaDescriptor> descriptors = new HashSet<>();
-        set.matchingDescriptorsForPartialListOfProperties( descriptors, entityTokens( 1 ), properties( 2 ) );
+        set.matchingDescriptorsForPartialListOfProperties( descriptors, longs( 1 ), ints( 2 ) );
 
         // then
         assertEquals( asSet( expected ), descriptors );
     }
 
-    @Test
-    public void shouldLookupSingleKeyAndSharedCompositeKeyDescriptors()
+    @ParameterizedTest
+    @EnumSource( DescriptorFactory.class )
+    void shouldLookupSingleKeyAndSharedCompositeKeyDescriptors( DescriptorFactory factory )
     {
         // given
         SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
-        LabelSchemaDescriptor expected1 = SchemaDescriptorFactory.forLabel( 1, 2 );
-        LabelSchemaDescriptor expected2 = SchemaDescriptorFactory.forLabel( 1, 2, 3 );
+        SchemaDescriptor expected1 = factory.descriptor( 1, 2 );
+        SchemaDescriptor expected2 = factory.descriptor( 1, 2, 3 );
         set.add( expected1 );
         set.add( expected2 );
 
         // when
         Set<SchemaDescriptor> descriptors = new HashSet<>();
-        set.matchingDescriptorsForPartialListOfProperties( descriptors, entityTokens( 1 ), properties( 2 ) );
+        set.matchingDescriptorsForPartialListOfProperties( descriptors, longs( 1 ), ints( 2 ) );
 
         // then
         assertEquals( asSet( expected1, expected2 ), descriptors );
     }
 
-    @Test
-    public void shouldLookupCompositeKeyDescriptor()
+    @ParameterizedTest
+    @EnumSource( DescriptorFactory.class )
+    void shouldLookupCompositeKeyDescriptor( DescriptorFactory factory )
     {
         // given
         SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
-        LabelSchemaDescriptor descriptor1 = SchemaDescriptorFactory.forLabel( 1, 2, 3 );
-        LabelSchemaDescriptor descriptor2 = SchemaDescriptorFactory.forLabel( 1, 2, 4 );
-        LabelSchemaDescriptor descriptor3 = SchemaDescriptorFactory.forLabel( 1, 2, 5, 6 );
+        SchemaDescriptor descriptor1 = factory.descriptor( 1, 2, 3 );
+        SchemaDescriptor descriptor2 = factory.descriptor( 1, 2, 4 );
+        SchemaDescriptor descriptor3 = factory.descriptor( 1, 2, 5, 6 );
         set.add( descriptor1 );
         set.add( descriptor2 );
         set.add( descriptor3 );
 
         // when
         Set<SchemaDescriptor> descriptors = new HashSet<>();
-        set.matchingDescriptorsForCompleteListOfProperties( descriptors, entityTokens( 1 ), properties( 2, 5, 6 ) );
+        set.matchingDescriptorsForCompleteListOfProperties( descriptors, longs( 1 ), ints( 2, 5, 6 ) );
 
         // then
         assertEquals( asSet( descriptor3 ), descriptors );
     }
 
-    @Test
-    public void shouldLookupAllByEntityToken()
+    @ParameterizedTest
+    @EnumSource( DescriptorFactory.class )
+    void shouldLookupAllByEntityToken( DescriptorFactory factory )
     {
         // given
         SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
-        LabelSchemaDescriptor descriptor1 = SchemaDescriptorFactory.forLabel( 1, 2, 3 );
-        LabelSchemaDescriptor descriptor2 = SchemaDescriptorFactory.forLabel( 1, 2, 4 );
-        LabelSchemaDescriptor descriptor3 = SchemaDescriptorFactory.forLabel( 1, 2, 5, 6 );
-        LabelSchemaDescriptor descriptor4 = SchemaDescriptorFactory.forLabel( 2, 2, 3 );
-        LabelSchemaDescriptor descriptor5 = SchemaDescriptorFactory.forLabel( 3, 2, 5, 6 );
+        SchemaDescriptor descriptor1 = factory.descriptor( 1, 2, 3 );
+        SchemaDescriptor descriptor2 = factory.descriptor( 1, 2, 4 );
+        SchemaDescriptor descriptor3 = factory.descriptor( 1, 2, 5, 6 );
+        SchemaDescriptor descriptor4 = factory.descriptor( 2, 2, 3 );
+        SchemaDescriptor descriptor5 = factory.descriptor( 3, 2, 5, 6 );
         set.add( descriptor1 );
         set.add( descriptor2 );
         set.add( descriptor3 );
@@ -122,20 +132,63 @@ public class SchemaDescriptorLookupSetTest
 
         // when
         Set<SchemaDescriptor> descriptors = new HashSet<>();
-        set.matchingDescriptors( descriptors, entityTokens( 1 ) );
+        set.matchingDescriptors( descriptors, longs( 1 ) );
 
         // then
         assertEquals( asSet( descriptor1, descriptor2, descriptor3 ), descriptors );
     }
 
+    @ParameterizedTest
+    @MethodSource( "nodeAndRelationshipEntityTypes" )
+    void shouldMatchOnAnyEntityAndPropertyTokenForPartialPropertySchemaType( EntityType entityType )
+    {
+        // given
+        SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
+        MultiTokenSchemaDescriptor descriptor1 = SchemaDescriptorFactory.multiToken( ints( 0, 1, 2 ), entityType, 3, 4, 5 );
+        MultiTokenSchemaDescriptor descriptor2 = SchemaDescriptorFactory.multiToken( ints( 0, 1 ), entityType, 3, 4 );
+        MultiTokenSchemaDescriptor descriptor3 = SchemaDescriptorFactory.multiToken( ints( 0, 2 ), entityType, 4, 5 );
+        set.add( descriptor1 );
+        set.add( descriptor2 );
+        set.add( descriptor3 );
+
+        // given that this test revolves around entity tokens 0,1,2 and property tokens 3,4,5 these 3 descriptors below matches either
+        // only those tokens for entity or property or neither. I.e. these should never be included in matching results
+        set.add( SchemaDescriptorFactory.multiToken( ints( 3, 4 ), entityType, 4, 5 ) );
+        set.add( SchemaDescriptorFactory.multiToken( ints( 0, 1 ), entityType, 6, 7 ) );
+        set.add( SchemaDescriptorFactory.multiToken( ints( 3, 4 ), entityType, 6, 7 ) );
+
+        // when matching these descriptors (in this case partial/complete list doesn't quite matter because the descriptors
+        // themselves are partially matched anyway.
+        Set<SchemaDescriptor> descriptors1 = new HashSet<>();
+        Set<SchemaDescriptor> descriptors1Partial = new HashSet<>();
+        Set<SchemaDescriptor> descriptors2 = new HashSet<>();
+        Set<SchemaDescriptor> descriptors2Partial = new HashSet<>();
+        Set<SchemaDescriptor> descriptors3 = new HashSet<>();
+        Set<SchemaDescriptor> descriptors3Partial = new HashSet<>();
+        set.matchingDescriptorsForCompleteListOfProperties( descriptors1, longs( 0, 1 ), ints( 4, 5 ) );
+        set.matchingDescriptorsForPartialListOfProperties( descriptors1Partial, longs( 0, 1 ), ints( 4, 5 ) );
+        set.matchingDescriptorsForCompleteListOfProperties( descriptors2, longs( 0 ), ints( 3 ) );
+        set.matchingDescriptorsForPartialListOfProperties( descriptors2Partial, longs( 0 ), ints( 3 ) );
+        set.matchingDescriptorsForCompleteListOfProperties( descriptors3, longs( 1 ), ints( 5 ) );
+        set.matchingDescriptorsForPartialListOfProperties( descriptors3Partial, longs( 1 ), ints( 5 ) );
+
+        // then
+        assertEquals( asSet( descriptor1, descriptor2, descriptor3 ), descriptors1 );
+        assertEquals( asSet( descriptor1, descriptor2, descriptor3 ), descriptors1Partial );
+        assertEquals( asSet( descriptor1, descriptor2 ), descriptors2 );
+        assertEquals( asSet( descriptor1, descriptor2 ), descriptors2Partial );
+        assertEquals( asSet( descriptor1 ), descriptors3 );
+        assertEquals( asSet( descriptor1 ), descriptors3Partial );
+    }
+
     @Test
-    public void shouldAddRemoveAndLookupRandomDescriptorsNoIdempotentOperations()
+    void shouldAddRemoveAndLookupRandomDescriptorsNoIdempotentOperations()
     {
         shouldAddRemoveAndLookupRandomDescriptors( false );
     }
 
     @Test
-    public void shouldAddRemoveAndLookupRandomDescriptorsWithIdempotentOperations()
+    void shouldAddRemoveAndLookupRandomDescriptorsWithIdempotentOperations()
     {
         shouldAddRemoveAndLookupRandomDescriptors( true );
     }
@@ -287,13 +340,41 @@ public class SchemaDescriptorLookupSetTest
         return result;
     }
 
-    private static int[] properties( int... properties )
+    private static int[] ints( int... properties )
     {
         return properties;
     }
 
-    private static long[] entityTokens( long... labels )
+    private static long[] longs( long... labels )
     {
         return labels;
+    }
+
+    private static EntityType[] nodeAndRelationshipEntityTypes()
+    {
+        return new EntityType[]{EntityType.NODE, EntityType.RELATIONSHIP};
+    }
+
+    enum DescriptorFactory
+    {
+        NODE
+                {
+                    @Override
+                    SchemaDescriptor descriptor( int labelId, int... propertyKeyIds )
+                    {
+                        return SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
+                    }
+                },
+        RELATIONSHIP
+                {
+                    @Override
+                    SchemaDescriptor descriptor( int relTypeId, int... propertyKeyIds )
+                    {
+                        return SchemaDescriptorFactory.forRelType( relTypeId, propertyKeyIds );
+                    }
+                },
+        ;
+
+        abstract SchemaDescriptor descriptor( int entityTokenId, int... propertyKeyIds );
     }
 }
