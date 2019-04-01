@@ -93,6 +93,7 @@ public class DynamicSizeUtil
     static final int SIZE_KEY_SIZE = 2;
     static final int SIZE_VALUE_SIZE = 2;
     static final int SIZE_TOTAL_OVERHEAD = SIZE_OFFSET + SIZE_KEY_SIZE + SIZE_VALUE_SIZE;
+    static final int SIZE_OFFLOAD_ID = Long.BYTES;
 
     private static final int FLAG_FIRST_BYTE_TOMBSTONE = 0x80;
     private static final int FLAG_SECOND_BYTE_OFFLOAD = 0x80;
@@ -132,7 +133,7 @@ public class DynamicSizeUtil
         if ( offload )
         {
             byte firstByte = FLAG_ADDITIONAL_KEY_SIZE;
-            byte secondByte = (byte) (FLAG_SECOND_BYTE_OFFLOAD);
+            byte secondByte = (byte) FLAG_SECOND_BYTE_OFFLOAD;
             cursor.putByte( firstByte );
             cursor.putByte( secondByte );
             return false;
@@ -250,14 +251,14 @@ public class DynamicSizeUtil
 
     public static int extractKeySize( long keyValueSize )
     {
-        return (int) ((keyValueSize & ~(FLAG_READ_TOMBSTONE & FLAG_READ_OFFLOAD)) >>> Integer.SIZE);
+        return (int) ((keyValueSize & ~(FLAG_READ_TOMBSTONE | FLAG_READ_OFFLOAD)) >>> Integer.SIZE);
     }
 
     public static int getOverhead( int keySize, int valueSize, boolean offload )
     {
         if ( offload )
         {
-            return 2 + Long.BYTES;
+            return 2 + SIZE_OFFLOAD_ID;
         }
         return 1 + (keySize > MASK_ONE_BYTE_KEY_SIZE ? 1 : 0) + (valueSize > 0 ? 1 : 0) + (valueSize > MASK_ONE_BYTE_VALUE_SIZE ? 1 : 0);
     }
