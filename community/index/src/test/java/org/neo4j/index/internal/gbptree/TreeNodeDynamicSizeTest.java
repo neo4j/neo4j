@@ -41,9 +41,10 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
     }
 
     @Override
-    protected TreeNodeDynamicSize<RawBytes,RawBytes> getNode( int pageSize, Layout<RawBytes,RawBytes> layout )
+    protected TreeNodeDynamicSize<RawBytes,RawBytes> getNode( int pageSize, Layout<RawBytes,RawBytes> layout,
+            OffloadStore<RawBytes,RawBytes> offloadStore )
     {
-        return new TreeNodeDynamicSize<>( pageSize, layout, new OffloadStore.NullOffloadStore<>() );
+        return new TreeNodeDynamicSize<>( pageSize, layout, offloadStore );
     }
 
     @Override
@@ -62,7 +63,7 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
         int oneByteKeyMax = DynamicSizeUtil.MASK_ONE_BYTE_KEY_SIZE;
         int oneByteValueMax = DynamicSizeUtil.MASK_ONE_BYTE_VALUE_SIZE;
 
-        TreeNodeDynamicSize<RawBytes,RawBytes> node = getNode( PAGE_SIZE, layout );
+        TreeNodeDynamicSize<RawBytes,RawBytes> node = getNode( PAGE_SIZE, layout, createOffloadStore() );
 
         verifyOverhead( node, oneByteKeyMax, 0, 1 );
         verifyOverhead( node, oneByteKeyMax, 1, 2 );

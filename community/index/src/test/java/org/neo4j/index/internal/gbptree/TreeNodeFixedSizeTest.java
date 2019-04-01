@@ -36,7 +36,8 @@ public class TreeNodeFixedSizeTest extends TreeNodeTestBase<MutableLong,MutableL
     }
 
     @Override
-    protected TreeNode<MutableLong,MutableLong> getNode( int pageSize, Layout<MutableLong,MutableLong> layout )
+    protected TreeNode<MutableLong,MutableLong> getNode( int pageSize, Layout<MutableLong,MutableLong> layout,
+            OffloadStore<MutableLong,MutableLong> offloadStore )
     {
         return new TreeNodeFixedSize<>( pageSize, layout );
     }

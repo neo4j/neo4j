@@ -96,7 +96,10 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         id = new SimpleIdProvider( cursor::duplicate );
 
         layout = getLayout();
-        node = getTreeNode( PAGE_SIZE, layout );
+        PageCursorFactory pcFactory = ( id, flags ) -> cursor.duplicate( id );
+        OffloadIdValidator idValidator = OffloadIdValidator.ALWAYS_TRUE;
+        OffloadStoreImpl<KEY,VALUE> offloadStore = new OffloadStoreImpl<>( layout, id, pcFactory, idValidator, PAGE_SIZE );
+        node = getTreeNode( PAGE_SIZE, layout, offloadStore );
         treeLogic = new InternalTreeLogic<>( id, node, layout, NO_MONITOR );
         structurePropagation = new StructurePropagation<>( layout.newKey(), layout.newKey(), layout.newKey() );
 
@@ -110,7 +113,8 @@ abstract class SeekCursorTestBase<KEY, VALUE>
 
     abstract TestLayout<KEY,VALUE> getLayout();
 
-    abstract TreeNode<KEY,VALUE> getTreeNode( int pageSize, TestLayout<KEY,VALUE> layout );
+    abstract TreeNode<KEY,VALUE> getTreeNode( int pageSize, TestLayout<KEY,VALUE> layout,
+            OffloadStore<KEY,VALUE> offloadStore );
 
     private static void goTo( PageCursor cursor, long pageId ) throws IOException
     {

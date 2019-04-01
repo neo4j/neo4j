@@ -28,8 +28,9 @@ class SeekCursorDynamicSizeTest extends SeekCursorTestBase<RawBytes,RawBytes>
     }
 
     @Override
-    TreeNode<RawBytes,RawBytes> getTreeNode( int pageSize, TestLayout<RawBytes,RawBytes> layout )
+    TreeNode<RawBytes,RawBytes> getTreeNode( int pageSize, TestLayout<RawBytes,RawBytes> layout,
+            OffloadStore<RawBytes,RawBytes> offloadStore )
     {
-        return new TreeNodeDynamicSize<>( pageSize, layout, new OffloadStore.NullOffloadStore<>() );
+        return new TreeNodeDynamicSize<>( pageSize, layout, offloadStore );
     }
 }

@@ -54,27 +54,37 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     private static final int HIGH_GENERATION = 4;
 
     static final int PAGE_SIZE = 512;
-    PageCursor cursor;
+    PageAwareByteArrayCursor cursor;
 
     private TestLayout<KEY,VALUE> layout;
-    private TreeNode<KEY,VALUE> node;
+    TreeNode<KEY,VALUE> node;
     private final GenerationKeeper generationTarget = new GenerationKeeper();
 
     @Inject
     private RandomRule random;
 
     @BeforeEach
-    void prepareCursor() throws IOException
+    void prepareCursor()
     {
         cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
         cursor.next();
         layout = getLayout();
-        node = getNode( PAGE_SIZE, layout );
+        OffloadStoreImpl<KEY,VALUE> offloadStore = createOffloadStore();
+        node = getNode( PAGE_SIZE, layout, offloadStore );
+    }
+
+    OffloadStoreImpl<KEY,VALUE> createOffloadStore()
+    {
+        SimpleIdProvider idProvider = new SimpleIdProvider( cursor::duplicate );
+        PageCursorFactory pcFactory = ( id, flags ) -> cursor.duplicate( id );
+        OffloadIdValidator idValidator = OffloadIdValidator.ALWAYS_TRUE;
+        return new OffloadStoreImpl<>( layout, idProvider, pcFactory, idValidator, PAGE_SIZE );
     }
 
     protected abstract TestLayout<KEY,VALUE> getLayout();
 
-    protected abstract TreeNode<KEY,VALUE> getNode( int pageSize, Layout<KEY,VALUE> layout );
+    protected abstract TreeNode<KEY,VALUE> getNode( int pageSize, Layout<KEY,VALUE> layout,
+            OffloadStore<KEY,VALUE> offloadStore );
 
     abstract void assertAdditionalHeader( PageCursor cursor, TreeNode<KEY,VALUE> node, int pageSize );
 
@@ -169,7 +179,8 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         TreeNode.setKeyCount( cursor, 1 );
 
         // THEN
-        assertKeyEquals( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) );
+        KEY actualKey = node.keyAt( cursor, readKey, 0, LEAF );
+        assertKeyEquals( firstKey, actualKey );
         assertValueEquals( firstValue, node.valueAt( cursor, readValue, 0 ) );
 
         // WHEN

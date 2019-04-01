@@ -38,7 +38,8 @@ public class InternalTreeLogicFixedSizeTest extends InternalTreeLogicTestBase<Mu
     }
 
     @Override
-    protected TreeNode<MutableLong,MutableLong> getTreeNode( int pageSize, Layout<MutableLong,MutableLong> layout )
+    protected TreeNode<MutableLong,MutableLong> getTreeNode( int pageSize, Layout<MutableLong,MutableLong> layout,
+            OffloadStore<MutableLong,MutableLong> offloadStore )
     {
         return new TreeNodeFixedSize<>( pageSize, layout );
     }

@@ -116,7 +116,10 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         readCursor.next( newId );
 
         layout = getLayout();
-        node = getTreeNode( pageSize, layout );
+        PageCursorFactory pcFactory = ( id, flags ) -> cursor.duplicate( id );
+        OffloadIdValidator idValidator = OffloadIdValidator.ALWAYS_TRUE;
+        OffloadStoreImpl<KEY,VALUE> offloadStore = new OffloadStoreImpl<>( layout, id, pcFactory, idValidator, pageSize );
+        node = getTreeNode( pageSize, layout, offloadStore );
         adder = getAdder();
         treeLogic = new InternalTreeLogic<>( id, node, layout, NO_MONITOR );
         dontCare = layout.newValue();
@@ -125,7 +128,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
 
     protected abstract ValueMerger<KEY,VALUE> getAdder();
 
-    protected abstract TreeNode<KEY,VALUE> getTreeNode( int pageSize, Layout<KEY,VALUE> layout );
+    protected abstract TreeNode<KEY,VALUE> getTreeNode( int pageSize, Layout<KEY,VALUE> layout, OffloadStore<KEY,VALUE> offloadStore );
 
     protected abstract TestLayout<KEY,VALUE> getLayout();
 

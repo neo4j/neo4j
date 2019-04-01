@@ -44,7 +44,7 @@ class OffloadStoreTest
         cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
         idProvider = new SimpleIdProvider( cursor::duplicate );
         pcFactory = ( id, flags ) -> cursor.duplicate( id );
-        idValidator = id -> true;
+        idValidator = OffloadIdValidator.ALWAYS_TRUE;
     }
 
     @Test

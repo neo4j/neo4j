@@ -32,7 +32,8 @@ class SeekCursorFixedSizeTest extends SeekCursorTestBase<MutableLong,MutableLong
     }
 
     @Override
-    TreeNode<MutableLong,MutableLong> getTreeNode( int pageSize, TestLayout<MutableLong,MutableLong> layout )
+    TreeNode<MutableLong,MutableLong> getTreeNode( int pageSize, TestLayout<MutableLong,MutableLong> layout,
+            OffloadStore<MutableLong,MutableLong> offloadStore )
     {
         return new TreeNodeFixedSize<>( pageSize, layout );
     }

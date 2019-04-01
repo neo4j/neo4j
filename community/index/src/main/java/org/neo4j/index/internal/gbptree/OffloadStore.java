@@ -36,45 +36,4 @@ public interface OffloadStore<KEY, VALUE>
     long writeKeyValue( KEY key, VALUE value, long stableGeneration, long unstableGeneration ) throws IOException;
 
     void free( long offloadId );
-
-    class NullOffloadStore<KEY,VALUE> implements OffloadStore<KEY,VALUE>
-    {
-        @Override
-        public int maxEntrySize()
-        {
-            return 0;
-        }
-
-        @Override
-        public void readKey( long offloadId, KEY into )
-        {
-        }
-
-        @Override
-        public void readKeyValue( long offloadId, KEY key, VALUE value )
-        {
-        }
-
-        @Override
-        public void readValue( long offloadId, VALUE into )
-        {
-        }
-
-        @Override
-        public long writeKey( KEY key, long stableGeneration, long unstableGeneration )
-        {
-            return 0;
-        }
-
-        @Override
-        public long writeKeyValue( KEY key, VALUE value, long stableGeneration, long unstableGeneration )
-        {
-            return 0;
-        }
-
-        @Override
-        public void free( long offloadId )
-        {
-        }
-    }
 }
