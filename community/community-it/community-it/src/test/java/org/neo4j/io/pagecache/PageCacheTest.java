@@ -96,7 +96,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -653,9 +652,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         return new DelegatingFileSystemAbstraction( fs )
         {
             @Override
-            public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
+            public StoreChannel write( File fileName ) throws IOException
             {
-                return new DelegatingStoreChannel( super.open( fileName, options ) )
+                return new DelegatingStoreChannel( super.write( fileName ) )
                 {
                     @Override
                     public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -3718,7 +3717,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void pageFaultForWriteMustThrowIfOutOfStorageSpace()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             final AtomicInteger writeCounter = new AtomicInteger();
             AtomicBoolean restrictWrites = new AtomicBoolean( true );
@@ -3727,9 +3726,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 private List<StoreChannel> channels = new CopyOnWriteArrayList<>();
 
                 @Override
-                public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
+                public StoreChannel write( File fileName ) throws IOException
                 {
-                    StoreChannel channel = new DelegatingStoreChannel( super.open( fileName, options ) )
+                    StoreChannel channel = new DelegatingStoreChannel( super.write( fileName ) )
                     {
                         @Override
                         public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -3784,7 +3783,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         try
         {
-            assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+            assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
             {
                 final AtomicInteger writeCounter = new AtomicInteger();
                 AtomicBoolean restrictWrites = new AtomicBoolean( true );
@@ -3793,9 +3792,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     private final List<StoreChannel> channels = new CopyOnWriteArrayList<>();
 
                     @Override
-                    public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
+                    public StoreChannel write( File fileName ) throws IOException
                     {
-                        StoreChannel channel = new DelegatingStoreChannel( super.open( fileName, options ) )
+                        StoreChannel channel = new DelegatingStoreChannel( super.write( fileName ) )
                         {
                             @Override
                             public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -3863,15 +3862,15 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mustRecoverViaFileCloseFromFullDriveWhenMoreStorageBecomesAvailable()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             final AtomicBoolean hasSpace = new AtomicBoolean();
             FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
             {
                 @Override
-                public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
+                public StoreChannel write( File fileName ) throws IOException
                 {
-                    return new DelegatingStoreChannel( super.open( fileName, options ) )
+                    return new DelegatingStoreChannel( super.write( fileName ) )
                     {
                         @Override
                         public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -3928,9 +3927,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
         {
             @Override
-            public StoreChannel open( File fileName, Set<OpenOption> options ) throws IOException
+            public StoreChannel write( File fileName ) throws IOException
             {
-                return new DelegatingStoreChannel( super.open( fileName, options ) )
+                return new DelegatingStoreChannel( super.write( fileName ) )
                 {
                     @Override
                     public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -3981,7 +3980,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void dataFromDifferentFilesMustNotBleedIntoEachOther()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             // The idea with this test is, that the pages for fileA are larger than
             // the pages for fileB, so we can put A-data beyond the end of the B
@@ -4047,7 +4046,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void freshlyCreatedPagesMustContainAllZeros()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             ThreadLocalRandom rng = ThreadLocalRandom.current();
 
@@ -4088,7 +4087,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void optimisticReadLockMustFaultOnRetryIfPageHasBeenEvicted()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             final byte a = 'a';
             final byte b = 'b';
@@ -4179,7 +4178,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void pagesMustReturnToFreelistIfSwapInThrows()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -4264,7 +4263,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @RepeatedTest( 50 )
     void mustEvictPagesFromUnmappedFiles()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             // GIVEN mapping then unmapping
             configureStandardPageCache();
@@ -4410,7 +4409,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mustSyncDeviceWhenFlushAndForcingPageCache()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             AtomicInteger syncDeviceCounter = new AtomicInteger();
             AtomicInteger expectedCountInForce = new AtomicInteger();
@@ -4451,7 +4450,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mustCreateNonExistingFileWithCreateOption()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             try ( PagedFile pf = map( file( "does not exist" ), filePageSize, StandardOpenOption.CREATE );
@@ -4465,7 +4464,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mustIgnoreCreateOptionIfFileAlreadyExists()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             try ( PagedFile pf = map( file( "a" ), filePageSize, StandardOpenOption.CREATE );
@@ -4479,7 +4478,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mustIgnoreCertainOpenOptions()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             try ( PagedFile pf = map( file( "a" ), filePageSize, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.APPEND,
@@ -4494,7 +4493,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mustThrowOnUnsupportedOpenOptions()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             verifyMappingWithOpenOptionThrows( StandardOpenOption.CREATE_NEW );
@@ -4660,7 +4659,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void fileMappedWithDeleteOnCloseMustNotLeakDirtyPages()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             File file = file( "a" );
@@ -5347,7 +5346,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void readCursorsCanOpenLinkedCursor()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize );
@@ -5366,7 +5365,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void writeCursorsCanOpenLinkedCursor()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             File file = file( "a" );
@@ -5386,7 +5385,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void closingParentCursorMustCloseLinkedCursor()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             try ( PagedFile pf = map( file( "a" ), filePageSize ) )
@@ -5412,7 +5411,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void writeCursorWithNoGrowCanOpenLinkedCursorWithNoGrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize );
@@ -5432,7 +5431,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void openingLinkedCursorMustCloseExistingLinkedCursor()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             File file = file( "a" );
@@ -5472,7 +5471,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void shouldRetryOnParentCursorMustReturnTrueIfLinkedCursorNeedsRetry()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize );
@@ -5497,7 +5496,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void checkAndClearBoundsFlagMustCheckAndClearLinkedCursor()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             try ( PagedFile pf = map( file( "a" ), filePageSize );
