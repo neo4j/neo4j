@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.procedure.Mode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
@@ -68,32 +69,32 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
     @Override
     public final RawIterator<AnyValue[],ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
-        var databaseName = extractDatabaseName( input );
+        var databaseId = extractDatabaseId( input );
         var routingContext = extractRoutingContext( input );
-        var result = invoke( databaseName, routingContext );
+        var result = invoke( databaseId, routingContext );
         return RawIterator.<AnyValue[],ProcedureException>of( RoutingResultFormat.build( result ) );
     }
 
     protected abstract String description();
 
-    protected abstract RoutingResult invoke( String databaseName, MapValue routingContext ) throws ProcedureException;
+    protected abstract RoutingResult invoke( DatabaseId databaseId, MapValue routingContext ) throws ProcedureException;
 
-    protected static ProcedureException databaseNotFoundException( String databaseName )
+    protected static ProcedureException databaseNotFoundException( DatabaseId databaseId )
     {
         return new ProcedureException( DatabaseNotFound,
-                "Unable to get a routing table for database '" + databaseName + "' because this database does not exist" );
+                "Unable to get a routing table for database '" + databaseId.name() + "' because this database does not exist" );
     }
 
-    private String extractDatabaseName( AnyValue[] input )
+    private DatabaseId extractDatabaseId( AnyValue[] input )
     {
         var arg = input[1];
         if ( arg == Values.NO_VALUE )
         {
-            return config.get( default_database );
+            return new DatabaseId( config.get( default_database ) );
         }
         else if ( arg instanceof TextValue )
         {
-            return ((TextValue) arg).stringValue();
+            return new DatabaseId( ((TextValue) arg).stringValue() );
         }
         else
         {

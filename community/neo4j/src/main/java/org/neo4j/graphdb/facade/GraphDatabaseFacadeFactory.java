@@ -26,6 +26,7 @@ import java.util.function.Function;
 import org.neo4j.bolt.BoltServer;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.Edition;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -214,17 +215,18 @@ public class GraphDatabaseFacadeFactory
      * order to enforce that the databaseManager must be constructed first.
      */
     @SuppressWarnings( "unused" )
-    private static GlobalProcedures setupProcedures( GlobalModule platform, AbstractEditionModule editionModule,
+    private static GlobalProcedures setupProcedures( GlobalModule globalModule, AbstractEditionModule editionModule,
             DatabaseManager<?> databaseManager )
     {
-        Config globalConfig = platform.getGlobalConfig();
+        Config globalConfig = globalModule.getGlobalConfig();
         File proceduresDirectory = globalConfig.get( GraphDatabaseSettings.plugin_dir );
-        LogService logService = platform.getLogService();
+        LogService logService = globalModule.getLogService();
         Log internalLog = logService.getInternalLog( GlobalProcedures.class );
         Log proceduresLog = logService.getUserLog( GlobalProcedures.class );
 
         ProcedureConfig procedureConfig = new ProcedureConfig( globalConfig );
-        SpecialBuiltInProcedures builtInProcedures = new SpecialBuiltInProcedures( Version.getNeo4jVersion(), platform.getDatabaseInfo().edition.toString() );
+        Edition neo4jEdition = globalModule.getDatabaseInfo().edition;
+        SpecialBuiltInProcedures builtInProcedures = new SpecialBuiltInProcedures( Version.getNeo4jVersion(), neo4jEdition.toString() );
         GlobalProceduresRegistry globalProcedures = new GlobalProceduresRegistry( builtInProcedures, proceduresDirectory, internalLog, procedureConfig );
 
         globalProcedures.registerType( Node.class, NTNode );
@@ -259,15 +261,15 @@ public class GraphDatabaseFacadeFactory
         // Edition procedures
         try
         {
-            editionModule.registerProcedures( globalProcedures, procedureConfig );
+            editionModule.registerProcedures( globalProcedures, procedureConfig, globalModule, databaseManager );
         }
         catch ( KernelException e )
         {
             internalLog.error( "Failed to register built-in edition procedures at start up: " + e.getMessage() );
         }
 
-        platform.getGlobalLife().add( globalProcedures );
-        platform.getGlobalDependencies().satisfyDependency( globalProcedures );
+        globalModule.getGlobalLife().add( globalProcedures );
+        globalModule.getGlobalDependencies().satisfyDependency( globalProcedures );
         return globalProcedures;
     }
 

@@ -21,7 +21,6 @@ package org.neo4j.procedure.builtin.routing;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -30,6 +29,7 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Collections.emptyList;
@@ -38,14 +38,14 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
 {
     private static final String DESCRIPTION = "Returns endpoints of this instance.";
 
-    private final Supplier<DatabaseManager> databaseManagerSupplier;
+    private final DatabaseManager<?> databaseManager;
     private final ConnectorPortRegister portRegister;
 
-    public SingleInstanceGetRoutingTableProcedure( List<String> namespace, Supplier<DatabaseManager> databaseManagerSupplier,
+    public SingleInstanceGetRoutingTableProcedure( List<String> namespace, DatabaseManager<?> databaseManager,
             ConnectorPortRegister portRegister, Config config )
     {
         super( namespace, config );
-        this.databaseManagerSupplier = databaseManagerSupplier;
+        this.databaseManager = databaseManager;
         this.portRegister = portRegister;
     }
 
@@ -56,11 +56,11 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
     }
 
     @Override
-    protected RoutingResult invoke( String databaseName, MapValue routingContext ) throws ProcedureException
+    protected RoutingResult invoke( DatabaseId databaseId, MapValue routingContext ) throws ProcedureException
     {
-        if ( !databaseExists( databaseName ) )
+        if ( !databaseExists( databaseId ) )
         {
-            throw databaseNotFoundException( databaseName );
+            throw databaseNotFoundException( databaseId );
         }
 
         return config.enabledBoltConnectors()
@@ -110,8 +110,8 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
         return advertisedAddress;
     }
 
-    private boolean databaseExists( String databaseName )
+    private boolean databaseExists( DatabaseId databaseId )
     {
-        return databaseManagerSupplier.get().getDatabaseContext( databaseName ).isPresent();
+        return databaseManager.getDatabaseContext( databaseId ).isPresent();
     }
 }

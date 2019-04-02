@@ -20,7 +20,6 @@
 package org.neo4j.procedure.builtin.routing;
 
 import java.util.List;
-import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
@@ -29,19 +28,19 @@ import org.neo4j.kernel.api.procedure.CallableProcedure;
 
 public class SingleInstanceRoutingProcedureInstaller extends BaseRoutingProcedureInstaller
 {
-    protected final Supplier<DatabaseManager> databaseManagerSupplier;
+    protected final DatabaseManager<?> databaseManager;
     protected final ConnectorPortRegister portRegister;
     protected final Config config;
 
-    public SingleInstanceRoutingProcedureInstaller( Supplier<DatabaseManager> databaseManagerSupplier, ConnectorPortRegister portRegister, Config config )
+    public SingleInstanceRoutingProcedureInstaller( DatabaseManager<?> databaseManager, ConnectorPortRegister portRegister, Config config )
     {
-        this.databaseManagerSupplier = databaseManagerSupplier;
+        this.databaseManager = databaseManager;
         this.portRegister = portRegister;
         this.config = config;
     }
 
     protected CallableProcedure createProcedure( List<String> namespace )
     {
-        return new SingleInstanceGetRoutingTableProcedure( namespace, databaseManagerSupplier, portRegister, config );
+        return new SingleInstanceGetRoutingTableProcedure( namespace, databaseManager, portRegister, config );
     }
 }

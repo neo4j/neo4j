@@ -132,8 +132,6 @@ public class CommunityEditionModule extends StandaloneEditionModule
         ioLimiter = IOLimiter.UNLIMITED;
 
         connectionTracker = globalDependencies.satisfyDependency( createConnectionTracker() );
-
-        routingProcedureInstaller = createRoutingProcedureInstaller( globalModule );
     }
 
     protected Function<DatabaseId,TokenHolders> createTokenHolderProvider( GlobalModule platform )
@@ -229,6 +227,14 @@ public class CommunityEditionModule extends StandaloneEditionModule
     }
 
     @Override
+    protected BaseRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule, DatabaseManager<?> databaseManager )
+    {
+        ConnectorPortRegister portRegister = globalModule.getConnectorPortRegister();
+        Config config = globalModule.getGlobalConfig();
+        return new SingleInstanceRoutingProcedureInstaller( databaseManager, portRegister, config );
+    }
+
+    @Override
     public void createSecurityModule( GlobalModule globalModule )
     {
         LifeSupport globalLife = globalModule.getGlobalLife();
@@ -245,13 +251,5 @@ public class CommunityEditionModule extends StandaloneEditionModule
             globalLife.add( noAuthSecurityProvider );
             this.securityProvider = noAuthSecurityProvider;
         }
-    }
-
-    private static BaseRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule )
-    {
-        Supplier<DatabaseManager> databaseManagerSupplier = globalModule.getGlobalDependencies().provideDependency( DatabaseManager.class );
-        ConnectorPortRegister portRegister = globalModule.getConnectorPortRegister();
-        Config config = globalModule.getGlobalConfig();
-        return new SingleInstanceRoutingProcedureInstaller( databaseManagerSupplier, portRegister, config );
     }
 }

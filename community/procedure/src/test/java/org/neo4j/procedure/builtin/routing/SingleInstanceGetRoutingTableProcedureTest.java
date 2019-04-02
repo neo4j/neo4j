@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Collections.emptyList;
@@ -62,6 +63,9 @@ import static org.neo4j.procedure.builtin.routing.BaseRoutingProcedureInstaller.
 
 public class SingleInstanceGetRoutingTableProcedureTest
 {
+    private static final DatabaseId ID = new DatabaseId( DEFAULT_DATABASE_NAME );
+    private static final DatabaseId UNKNOWN_ID = new DatabaseId( "unknown_database_name" );
+
     @Test
     void shouldHaveCorrectSignature()
     {
@@ -97,7 +101,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
 
         BaseGetRoutingTableProcedure proc = newProcedure( portRegister, config );
 
-        RoutingResult result = proc.invoke( DEFAULT_DATABASE_NAME, MapValue.EMPTY );
+        RoutingResult result = proc.invoke( ID, MapValue.EMPTY );
 
         assertEquals( Duration.ofSeconds( 123 ).toMillis(), result.ttlMillis() );
         assertEquals( emptyList(), result.readEndpoints() );
@@ -113,7 +117,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
 
         BaseGetRoutingTableProcedure proc = newProcedure( portRegister, config );
 
-        RoutingResult result = proc.invoke( DEFAULT_DATABASE_NAME, MapValue.EMPTY );
+        RoutingResult result = proc.invoke( ID, MapValue.EMPTY );
 
         assertEquals( Duration.ofMinutes( 42 ).toMillis(), result.ttlMillis() );
 
@@ -126,19 +130,18 @@ public class SingleInstanceGetRoutingTableProcedureTest
     @Test
     void shouldThrowWhenDatabaseDoesNotExist()
     {
-        String unknownDatabaseName = "unknown_database_name";
         ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
         Config config = Config.defaults();
         BaseGetRoutingTableProcedure procedure = newProcedure( portRegister, config );
 
-        ProcedureException error = assertThrows( ProcedureException.class, () -> procedure.invoke( unknownDatabaseName, MapValue.EMPTY ) );
+        ProcedureException error = assertThrows( ProcedureException.class, () -> procedure.invoke( UNKNOWN_ID, MapValue.EMPTY ) );
 
-        assertThat( error.getMessage(), both( containsString( unknownDatabaseName ) ).and( containsString( "does not exist" ) ) );
+        assertThat( error.getMessage(), both( containsString( UNKNOWN_ID.name() ) ).and( containsString( "does not exist" ) ) );
     }
 
-    protected BaseGetRoutingTableProcedure newProcedure( DatabaseManager databaseManager, ConnectorPortRegister portRegister, Config config )
+    protected BaseGetRoutingTableProcedure newProcedure( DatabaseManager<?> databaseManager, ConnectorPortRegister portRegister, Config config )
     {
-        return new SingleInstanceGetRoutingTableProcedure( DEFAULT_NAMESPACE, () -> databaseManager, portRegister, config );
+        return new SingleInstanceGetRoutingTableProcedure( DEFAULT_NAMESPACE, databaseManager, portRegister, config );
     }
 
     protected List<AdvertisedSocketAddress> expectedWriters( AdvertisedSocketAddress selfAddress )
@@ -146,14 +149,15 @@ public class SingleInstanceGetRoutingTableProcedureTest
         return singletonList( selfAddress );
     }
 
+    @SuppressWarnings( "unchecked" )
     private BaseGetRoutingTableProcedure newProcedure( ConnectorPortRegister portRegister, Config config )
     {
-        DatabaseManager databaseManager = mock( DatabaseManager.class );
+        DatabaseManager<DatabaseContext> databaseManager = mock( DatabaseManager.class );
         DatabaseContext databaseContext = mock( DatabaseContext.class );
         Database database = mock( Database.class );
-        when( databaseContext.getDatabase() ).thenReturn( database );
+        when( databaseContext.database() ).thenReturn( database );
         when( database.getConfig() ).thenReturn( config );
-        when( databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( databaseContext ) );
+        when( databaseManager.getDatabaseContext( ID ) ).thenReturn( Optional.of( databaseContext ) );
         return newProcedure( databaseManager, portRegister, config );
     }
 

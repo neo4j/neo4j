@@ -80,7 +80,6 @@ public abstract class AbstractEditionModule
     protected Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     protected SecurityProvider securityProvider;
     protected GlobalProcedures globalProcedures;
-    protected BaseRoutingProcedureInstaller routingProcedureInstaller;
 
     public abstract EditionDatabaseComponents createDatabaseComponents( DatabaseId databaseId );
 
@@ -92,7 +91,8 @@ public abstract class AbstractEditionModule
         return new DatabaseLayoutWatcher( watcher, databaseLayout, listenerFactory );
     }
 
-    public void registerProcedures( GlobalProcedures globalProcedures, ProcedureConfig procedureConfig ) throws KernelException
+    public void registerProcedures( GlobalProcedures globalProcedures, ProcedureConfig procedureConfig, GlobalModule globalModule,
+            DatabaseManager<?> databaseManager ) throws KernelException
     {
         globalProcedures.registerProcedure( BuiltInProcedures.class );
         globalProcedures.registerProcedure( TokenProcedures.class );
@@ -103,6 +103,7 @@ public abstract class AbstractEditionModule
         registerTemporalFunctions( globalProcedures, procedureConfig );
 
         registerEditionSpecificProcedures( globalProcedures );
+        BaseRoutingProcedureInstaller routingProcedureInstaller = createRoutingProcedureInstaller( globalModule, databaseManager );
         routingProcedureInstaller.install( globalProcedures );
         this.globalProcedures = globalProcedures;
     }
@@ -113,6 +114,8 @@ public abstract class AbstractEditionModule
     }
 
     protected abstract void registerEditionSpecificProcedures( GlobalProcedures globalProcedures ) throws KernelException;
+
+    protected abstract BaseRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule, DatabaseManager<?> databaseManager );
 
     public abstract DatabaseManager<?> createDatabaseManager( GraphDatabaseFacade graphDatabaseFacade,
             GlobalModule globalModule, Logger msgLog );
