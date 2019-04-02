@@ -28,23 +28,22 @@ import org.neo4j.kernel.impl.security.User;
  * This is used by SystemGraphRealm to cache a user record in the authentication caches
  * and update the authentication result based on the outcome of its CredentialsMatcher
  */
-// TODO this should be able to go back to package-private once authentication is handled in community
-public class SystemGraphShiroAuthenticationInfo extends ShiroAuthenticationInfo
+class SystemGraphShiroAuthenticationInfo extends ShiroAuthenticationInfo
 {
     private final User userRecord;
 
-    public SystemGraphShiroAuthenticationInfo( User userRecord, String realmName )
+    SystemGraphShiroAuthenticationInfo( User userRecord, String realmName )
     {
         super( userRecord.name(), realmName, AuthenticationResult.FAILURE );
         this.userRecord = userRecord;
     }
 
-    public User getUserRecord()
+    User getUserRecord()
     {
         return userRecord;
     }
 
-    public void setAuthenticationResult( AuthenticationResult authenticationResult )
+    void setAuthenticationResult( AuthenticationResult authenticationResult )
     {
         this.authenticationResult = authenticationResult;
     }

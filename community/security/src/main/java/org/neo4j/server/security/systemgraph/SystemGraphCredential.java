@@ -98,8 +98,7 @@ public class SystemGraphCredential implements Credential
         return serialize( this );
     }
 
-    // TODO: try to make package-private again once authentication is in community
-    public static String serialize( SystemGraphCredential credential )
+    static String serialize( SystemGraphCredential credential )
     {
         String algortihm = credential.hashedCredentials.getAlgorithmName();
         String iterations = Integer.toString( credential.hashedCredentials.getIterations() );
@@ -108,8 +107,7 @@ public class SystemGraphCredential implements Credential
         return String.join( credentialSeparator, algortihm, encodedPassword, encodedSalt, iterations );
     }
 
-    // TODO: try to make package-private again once authentication is in community
-    public static SystemGraphCredential deserialize( String part, SecureHasher secureHasher ) throws FormatException
+    static SystemGraphCredential deserialize( String part, SecureHasher secureHasher ) throws FormatException
     {
         String[] split = part.split( credentialSeparator, -1 );
         if ( split.length < 3 || split.length > 4 )
