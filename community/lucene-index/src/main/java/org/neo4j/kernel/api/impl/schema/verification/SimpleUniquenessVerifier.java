@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.schema.verification;
 
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -74,7 +73,7 @@ public class SimpleUniquenessVerifier implements UniquenessVerifier
                     String field = fieldInfo.name;
                     if ( LuceneDocumentStructure.useFieldForUniquenessVerification( field ) )
                     {
-                        TermsEnum terms = LuceneDocumentStructure.originalTerms( leafReader.terms( field ), field );
+                        TermsEnum terms = leafReader.terms( field ).iterator();
                         BytesRef termsRef;
                         while ( (termsRef = terms.next()) != null )
                         {

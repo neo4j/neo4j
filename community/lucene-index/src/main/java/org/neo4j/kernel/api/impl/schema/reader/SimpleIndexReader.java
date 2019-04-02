@@ -53,7 +53,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
-import org.neo4j.kernel.api.impl.schema.NumberTermsEnum;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.impl.schema.ValueEncoding;
 import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
@@ -235,10 +234,6 @@ public class SimpleIndexReader extends AbstractIndexReader
                                                                  ? term -> Values.stringValue( term.utf8ToString() )
                                                                  : term -> null;
                     TermsEnum termsIterator = terms.iterator();
-                    if ( valueEncoding == ValueEncoding.Number )
-                    {
-                        termsIterator = new NumberTermsEnum( termsIterator );
-                    }
                     multiProgressor.initialize( descriptor, new LuceneDistinctValuesProgressor( termsIterator, client, valueMaterializer ), noQueries,
                             IndexOrder.NONE, needsValues, false );
                 }

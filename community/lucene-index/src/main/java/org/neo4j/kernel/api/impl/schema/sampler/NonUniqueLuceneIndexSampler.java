@@ -71,7 +71,7 @@ public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
                     Terms terms = readerContext.reader().terms( fieldName );
                     if ( terms != null )
                     {
-                        TermsEnum termsEnum = LuceneDocumentStructure.originalTerms( terms, fieldName );
+                        TermsEnum termsEnum = terms.iterator();
                         BytesRef termsRef;
                         while ( (termsRef = termsEnum.next()) != null )
                         {

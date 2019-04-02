@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.schema;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
@@ -173,25 +172,6 @@ public class LuceneDocumentStructure
     public static long getNodeId( Document from )
     {
         return Long.parseLong( from.get( NODE_ID_KEY ) );
-    }
-
-    /**
-     * Filters the given {@link Terms terms} to include only terms that were created using fields from
-     * {@link ValueEncoding#encodeField(String, Value)}. Internal lucene terms like those created for indexing numeric values
-     * (see javadoc for {@link DoublePoint#newRangeQuery(String, double, double)}) are skipped. In other words this method returns
-     * {@link TermsEnum} over all terms for the given field that were created using {@link ValueEncoding}.
-     *
-     * @param terms the terms to be filtered
-     * @param fieldKey the corresponding {@link ValueEncoding#key(int) field key}
-     * @return terms enum over all inserted terms
-     * @throws IOException if it is not possible to obtain {@link TermsEnum}
-     * @see NumberField#newRangeQuery(String, double, double)
-     */
-    public static TermsEnum originalTerms( Terms terms, String fieldKey ) throws IOException
-    {
-        TermsEnum termsEnum = terms.iterator();
-
-        return ValueEncoding.forKey( fieldKey ) == ValueEncoding.Number ? new NumberTermsEnum( termsEnum ) : termsEnum;
     }
 
     /**
