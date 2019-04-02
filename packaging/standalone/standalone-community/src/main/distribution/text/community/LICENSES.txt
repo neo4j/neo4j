@@ -22,12 +22,23 @@ Apache Software License, Version 2.0
   @firebase/storage-types
   @firebase/util
   @firebase/webchannel-wrapper
+  Apache Commons BeanUtils
+  Apache Commons Collections
   Apache Commons Compress
   Apache Commons Configuration
   Apache Commons IO
   Apache Commons Lang
   Apache Commons Logging
   Apache Commons Text
+  Apache Shiro :: Cache
+  Apache Shiro :: Configuration :: Core
+  Apache Shiro :: Configuration :: OGDL
+  Apache Shiro :: Core
+  Apache Shiro :: Cryptography :: Ciphers
+  Apache Shiro :: Cryptography :: Core
+  Apache Shiro :: Cryptography :: Hashing
+  Apache Shiro :: Event
+  Apache Shiro :: Lang
   ascli
   aws-sign2
   Bean Validation API
@@ -2903,6 +2914,7 @@ MIT License
   safer-buffer
   save-as
   setimmediate
+  SLF4J API Module
   sshpk
   string-width
   string_decoder

@@ -4,12 +4,23 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
+  Apache Commons BeanUtils
+  Apache Commons Collections
   Apache Commons Compress
   Apache Commons Configuration
   Apache Commons IO
   Apache Commons Lang
   Apache Commons Logging
   Apache Commons Text
+  Apache Shiro :: Cache
+  Apache Shiro :: Configuration :: Core
+  Apache Shiro :: Configuration :: OGDL
+  Apache Shiro :: Core
+  Apache Shiro :: Cryptography :: Ciphers
+  Apache Shiro :: Cryptography :: Core
+  Apache Shiro :: Cryptography :: Hashing
+  Apache Shiro :: Event
+  Apache Shiro :: Lang
   Bean Validation API
   Caffeine cache
   Commons Lang
@@ -2646,6 +2657,7 @@ MIT License
   jersey-core-client
   jersey-inject-hk2
   jersey-media-jaxb
+  SLF4J API Module
 ------------------------------------------------------------------------------
 
 The MIT License

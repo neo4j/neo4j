@@ -26,10 +26,22 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons BeanUtils
+  Apache Commons Collections
   Apache Commons Compress
   Apache Commons IO
   Apache Commons Lang
   Apache Commons Text
+  Apache Shiro :: Cache
+  Apache Shiro :: Configuration :: Core
+  Apache Shiro :: Configuration :: OGDL
+  Apache Shiro :: Core
+  Apache Shiro :: Cryptography :: Ciphers
+  Apache Shiro :: Cryptography :: Core
+  Apache Shiro :: Cryptography :: Hashing
+  Apache Shiro :: Event
+  Apache Shiro :: Lang
+  Caffeine cache
   jPowerShell
   jProcesses
   Lucene codecs
@@ -37,7 +49,19 @@ Apache Software License, Version 2.0
   Lucene Core
   Lucene QueryParsers
   Netty/All-in-One
+  parboiled-core
+  parboiled-scala
   WMI4Java
+
+BSD - Scala License
+  Scala Library
+
+BSD License
+  asm
+  asm-analysis
+  asm-tree
+  asm-util
+  Scala Compiler
 
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
@@ -50,6 +74,9 @@ Eclipse Distribution License - v 1.0
 Eclipse Public License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
+
+MIT License
+  SLF4J API Module
 
 Dependencies with multiple licenses
 -----------------------------------
