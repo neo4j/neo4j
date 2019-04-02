@@ -19,29 +19,21 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.security.SecureRandom;
+import java.util.Objects;
 import java.util.Random;
 
-public final class StoreId implements Externalizable
+public final class StoreId
 {
     public static final StoreId DEFAULT = new StoreId( -1, -1, -1, -1, -1 );
 
     private static final Random r = new SecureRandom();
 
-    private long creationTime;
-    private long randomId;
-    private long storeVersion;
-    private long upgradeTime;
-    private long upgradeId;
-
-    public StoreId()
-    {
-        //For the readExternal method.
-    }
+    private final long creationTime;
+    private final long randomId;
+    private final long storeVersion;
+    private final long upgradeTime;
+    private final long upgradeId;
 
     public StoreId( long storeVersion )
     {
@@ -62,13 +54,6 @@ public final class StoreId implements Externalizable
         this.storeVersion = storeVersion;
         this.upgradeTime = upgradeTime;
         this.upgradeId = upgradeId;
-    }
-
-    public static StoreId from( ObjectInput in ) throws IOException
-    {
-        StoreId storeId = new StoreId();
-        storeId.readExternal( in );
-        return storeId;
     }
 
     public long getCreationTime()
@@ -97,31 +82,6 @@ public final class StoreId implements Externalizable
     }
 
     @Override
-    public void writeExternal( ObjectOutput out ) throws IOException
-    {
-        out.writeLong( creationTime );
-        out.writeLong( randomId );
-        out.writeLong( storeVersion );
-        out.writeLong( upgradeTime );
-        out.writeLong( upgradeId );
-    }
-
-    @Override
-    public void readExternal( ObjectInput in ) throws IOException
-    {
-        creationTime = in.readLong();
-        randomId = in.readLong();
-        storeVersion = in.readLong();
-        upgradeTime = in.readLong();
-        upgradeId = in.readLong();
-    }
-
-    public boolean equalsByUpgradeId( StoreId other )
-    {
-        return internalEqual( upgradeTime, other.upgradeTime ) && internalEqual( upgradeId, other.upgradeId );
-    }
-
-    @Override
     public boolean equals( Object o )
     {
         if ( this == o )
@@ -132,14 +92,18 @@ public final class StoreId implements Externalizable
         {
             return false;
         }
-        StoreId other = (StoreId) o;
-        return internalEqual( creationTime, other.creationTime ) && internalEqual( randomId, other.randomId );
+        StoreId storeId = (StoreId) o;
+        return creationTime == storeId.creationTime &&
+               randomId == storeId.randomId &&
+               storeVersion == storeId.storeVersion &&
+               upgradeTime == storeId.upgradeTime &&
+               upgradeId == storeId.upgradeId;
     }
 
     @Override
     public int hashCode()
     {
-        return 31 * (int) (creationTime ^ (creationTime >>> 32)) + (int) (randomId ^ (randomId >>> 32));
+        return Objects.hash( creationTime, randomId, storeVersion, upgradeTime, upgradeId );
     }
 
     @Override
@@ -152,10 +116,5 @@ public final class StoreId implements Externalizable
                 ", upgradeTime=" + upgradeTime +
                 ", upgradeId=" + upgradeId +
                 '}';
-    }
-
-    private static boolean internalEqual( long first, long second )
-    {
-        return first == second || first == -1 || second == -1;
     }
 }
