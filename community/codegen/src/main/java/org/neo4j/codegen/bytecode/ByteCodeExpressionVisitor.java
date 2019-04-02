@@ -927,9 +927,4 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
             );
         }
     }
-
-    //Use reflection to figure out if a method really exists, otherwise ASM will fail with very weird errors that
-    //are hard to debug.
-
-
 }
