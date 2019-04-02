@@ -94,6 +94,7 @@ class RowsMatcherTest extends CypherFunSuite with TestName
   }
 
   test("GroupBy") {
+    assertFailNoRows(new GroupBy(None, None, "a"))
     assertOkSingleRow(new GroupBy(None, None, "a"))
 
     val rows = Array(
@@ -160,6 +161,7 @@ class RowsMatcherTest extends CypherFunSuite with TestName
   }
 
   test("Ascending") {
+    assertFailNoRows(new Ascending("a"))
     assertOkSingleRow(new Ascending("a"))
 
     val rows = Array(
@@ -175,6 +177,7 @@ class RowsMatcherTest extends CypherFunSuite with TestName
   }
 
   test("Descending") {
+    assertFailNoRows(new Descending("a"))
     assertOkSingleRow(new Descending("a"))
 
     val rows = Array(
@@ -236,9 +239,12 @@ class RowsMatcherTest extends CypherFunSuite with TestName
     new Descending("a").desc("b").desc("c").matches(Array("a", "b", "c"), rows.reverse) should be(true)
   }
 
+  private def assertFailNoRows(columnAMatcher: RowOrderMatcher): Unit = {
+    columnAMatcher.matches(Array[String](), NO_ROWS) should be(false)
+    columnAMatcher.matches(Array("a"), NO_ROWS) should be(false)
+  }
+
   private def assertOkSingleRow(columnAMatcher: RowOrderMatcher): Unit = {
-    columnAMatcher.matches(Array[String](), NO_ROWS) should be(true)
-    columnAMatcher.matches(Array("a"), NO_ROWS) should be(true)
     columnAMatcher.matches(Array("a"), Array(row(1))) should be(true)
     columnAMatcher.matches(Array("a", "b", "c"), Array(row(1, 0, 4))) should be(true)
     columnAMatcher.matches(Array("x", "a", "c"), Array(row(1, 0, 4))) should be(true)

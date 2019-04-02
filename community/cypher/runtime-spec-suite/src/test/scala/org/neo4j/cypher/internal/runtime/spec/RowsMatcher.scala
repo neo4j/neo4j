@@ -133,6 +133,10 @@ trait RowOrderMatcher extends RowsMatcher {
 
   override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean = {
     foreach(_.reset())
+    if (rows.isEmpty) {
+      return false
+    }
+
     for (row <- rows) {
       if (!onRow(columns, row)) {
         return false
