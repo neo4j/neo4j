@@ -1420,7 +1420,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @Override
     public String toString()
     {
-        return "TreeNodeDynamicSize[pageSize:" + pageSize + ", keyValueSizeCap:" + keyValueSizeCap() + "]";
+        return "TreeNodeDynamicSize[pageSize:" + pageSize + ", keyValueSizeCap:" + keyValueSizeCap() + ", needOffloadCap:" + needOffloadCap + "]";
     }
 
     private String asString( PageCursor cursor, boolean includeValue, boolean includeAllocSpace,
@@ -1459,6 +1459,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             singleKey.add( Integer.toString( cursor.getOffset() ) );
             long keyValueSize = readKeyValueSize( cursor );
             int keySize = extractKeySize( keyValueSize );
+            boolean offload = extractOffload( keyValueSize );
             int valueSize = 0;
             if ( type == LEAF )
             {
@@ -1466,26 +1467,42 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             }
             if ( DynamicSizeUtil.extractTombstone( keyValueSize ) )
             {
-                singleKey.add( "X" );
+                singleKey.add( "T" );
             }
             else
             {
                 singleKey.add( "_" );
             }
-            layout.readKey( cursor, readKey, keySize );
-            if ( type == LEAF )
+            if ( offload )
             {
-                layout.readValue( cursor, readValue, valueSize );
+                singleKey.add( "O" );
             }
-            singleKey.add( Integer.toString( keySize ) );
-            if ( type == LEAF && includeValue )
+            else
             {
-                singleKey.add( Integer.toString( valueSize ) );
+                singleKey.add( "_" );
             }
-            singleKey.add( readKey.toString() );
-            if ( type == LEAF && includeValue )
+            if ( !offload )
             {
-                singleKey.add( readValue.toString() );
+                layout.readKey( cursor, readKey, keySize );
+                if ( type == LEAF )
+                {
+                    layout.readValue( cursor, readValue, valueSize );
+                }
+                singleKey.add( Integer.toString( keySize ) );
+                if ( type == LEAF && includeValue )
+                {
+                    singleKey.add( Integer.toString( valueSize ) );
+                }
+                singleKey.add( readKey.toString() );
+                if ( type == LEAF && includeValue )
+                {
+                    singleKey.add( readValue.toString() );
+                }
+            }
+            else
+            {
+                long offloadId = readOffloadId( cursor );
+                singleKey.add( Long.toString( offloadId ) );
             }
             keys.add( singleKey.toString() );
         }
