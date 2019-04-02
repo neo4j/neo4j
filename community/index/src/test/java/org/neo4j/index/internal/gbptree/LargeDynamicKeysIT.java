@@ -39,9 +39,9 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
@@ -50,12 +50,79 @@ import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 @ExtendWith( RandomExtension.class )
 class LargeDynamicKeysIT
 {
+    private static final Layout<RawBytes,RawBytes> layout = new SimpleByteArrayLayout( false );
+
     @Inject
     private RandomRule random;
     @Inject
     private PageCache pageCache;
     @Inject
     private TestDirectory testDirectory;
+
+    @Test
+    void putSingleKeyLargeThanOffloadCap() throws IOException
+    {
+        try ( GBPTree<RawBytes,RawBytes> tree = createIndex() )
+        {
+            int keySize = tree.needOffloadCap();
+            RawBytes key = key( keySize + 1 );
+            RawBytes value = value( 0 );
+            try ( Writer<RawBytes,RawBytes> writer = tree.writer() )
+            {
+                writer.put( key, value );
+            }
+            assertFindExact( tree, key, value );
+        }
+    }
+
+    @Test
+    void putSingleKeyOnKeyValueSizeCap() throws IOException
+    {
+        try ( GBPTree<RawBytes,RawBytes> tree = createIndex() )
+        {
+            int keySize = tree.keyValueSizeCap();
+            RawBytes key = key( keySize );
+            RawBytes value = value( 0 );
+            try ( Writer<RawBytes,RawBytes> writer = tree.writer() )
+            {
+                writer.put( key, value );
+            }
+            assertFindExact( tree, key, value );
+        }
+    }
+
+    @Test
+    void mustThrowWhenPutSingleKeyLargerThanKeyValueSizeCap() throws IOException
+    {
+        try ( GBPTree<RawBytes,RawBytes> tree = createIndex() )
+        {
+            int keySize = tree.keyValueSizeCap() + 1;
+            RawBytes key = key( keySize );
+            RawBytes value = value( 0 );
+            try ( Writer<RawBytes,RawBytes> writer = tree.writer() )
+            {
+                assertThrows( IllegalArgumentException.class, () -> writer.put( key, value ) );
+            }
+        }
+    }
+
+    @Test
+    void putRandomlyDistributedKeys() throws IOException
+    {
+        try ( GBPTree<RawBytes,RawBytes> tree = createIndex() )
+        {
+            int keyValueSizeOverflow = tree.keyValueSizeCap() + 1;
+
+            RawBytes value = value( 0 );
+            List<Pair<RawBytes,RawBytes>> entries = new ArrayList<>();
+            for ( int i = 0; i < 10_000; i++ )
+            {
+                int keySize = inValidRange( 4, keyValueSizeOverflow, random.nextInt( keyValueSizeOverflow ) );
+                entries.add( Pair.of( key( keySize, asBytes( i ) ), value ) );
+            }
+            insertAndValidate( tree, entries );
+        }
+    }
 
     @Test
     void mustStayCorrectWhenInsertingValuesOfIncreasingLength() throws IOException
@@ -71,40 +138,21 @@ class LargeDynamicKeysIT
 
     private void mustStayCorrectWhenInsertingValuesOfIncreasingLength( boolean shuffle ) throws IOException
     {
-        Layout<RawBytes,RawBytes> layout = layout();
-        try ( GBPTree<RawBytes,RawBytes> index = createIndex( layout ) )
+        try ( GBPTree<RawBytes,RawBytes> index = createIndex() )
         {
             RawBytes emptyValue = layout.newValue();
             emptyValue.bytes = new byte[0];
-            List<Integer> allKeySizes = new ArrayList<>();
+            List<Pair<RawBytes,RawBytes>> entries = new ArrayList<>();
             for ( int keySize = 1; keySize < index.keyValueSizeCap(); keySize++ )
             {
-                allKeySizes.add( keySize );
+                entries.add( Pair.of( key( keySize ), emptyValue ) );
             }
             if ( shuffle )
             {
-                Collections.shuffle( allKeySizes, random.random() );
-            }
-            try ( Writer<RawBytes,RawBytes> writer = index.writer() )
-            {
-                for ( Integer keySize : allKeySizes )
-                {
-                    RawBytes key = layout.newKey();
-                    key.bytes = new byte[keySize];
-                    writer.put( key, emptyValue );
-                }
-            }
-//            index.consistencyCheck(); // todo: Activate me when consistency checker can take offload store into account for space usage.
-            for ( Integer keySize : allKeySizes )
-            {
-                RawBytes key = layout.newKey();
-                key.bytes = new byte[keySize];
-                RawCursor<Hit<RawBytes,RawBytes>,IOException> seek = index.seek( key, key );
-                assertTrue( seek.next() );
-                assertEquals( 0, layout.compare( key, seek.get().key() ) );
-                assertFalse( seek.next() );
+                Collections.shuffle( entries, random.random() );
             }
 
+            insertAndValidate( index, entries );
         }
     }
 
@@ -144,7 +192,7 @@ class LargeDynamicKeysIT
     private void shouldWriteAndReadEntriesOfRandomSizes( int minKeySize, int maxKeySize, int minValueSize, int maxValueSize ) throws IOException
     {
         // given
-        try ( GBPTree<RawBytes,RawBytes> tree = createIndex( layout() ) )
+        try ( GBPTree<RawBytes,RawBytes> tree = createIndex() )
         {
             // when
             Set<String> generatedStrings = new HashSet<>();
@@ -168,38 +216,81 @@ class LargeDynamicKeysIT
                 entries.add( Pair.of( key, value ) );
             }
 
-            int i = 0;
-            try ( Writer<RawBytes,RawBytes> writer = tree.writer() )
-            {
-                for ( Pair<RawBytes,RawBytes> entry : entries )
-                {
-                    // write
-                    writer.put( entry.first(), entry.other() );
-                }
-            }
-
-            // then
-            for ( Pair<RawBytes,RawBytes> entry : entries )
-            {
-                try ( RawCursor<Hit<RawBytes,RawBytes>,IOException> seek = tree.seek( entry.first(), entry.first() ) )
-                {
-                    assertTrue( seek.next() );
-                    assertArrayEquals( entry.first().bytes, seek.get().key().bytes );
-                    assertArrayEquals( entry.other().bytes, seek.get().value().bytes );
-                    assertFalse( seek.next() );
-                }
-            }
+            insertAndValidate( tree, entries );
         }
     }
 
-    private SimpleByteArrayLayout layout()
+    private void insertAndValidate( GBPTree<RawBytes,RawBytes> tree, List<Pair<RawBytes,RawBytes>> entries ) throws IOException
     {
-        return new SimpleByteArrayLayout( false );
+        try ( Writer<RawBytes,RawBytes> writer = tree.writer() )
+        {
+            for ( Pair<RawBytes,RawBytes> entry : entries )
+            {
+                writer.put( entry.first(), entry.other() );
+            }
+        }
+
+        for ( Pair<RawBytes,RawBytes> entry : entries )
+        {
+            assertFindExact( tree, entry.first(), entry.other() );
+        }
     }
 
-    private GBPTree<RawBytes,RawBytes> createIndex( Layout<RawBytes,RawBytes> layout ) throws IOException
+    private void assertFindExact( GBPTree<RawBytes,RawBytes> tree, RawBytes key ) throws IOException
+    {
+        RawBytes value = layout.newValue();
+        value.bytes = new byte[0];
+        assertFindExact( tree, key, value );
+    }
+
+    private void assertFindExact( GBPTree<RawBytes,RawBytes> tree, RawBytes key, RawBytes value ) throws IOException
+    {
+        try ( RawCursor<Hit<RawBytes,RawBytes>,IOException> seek = tree.seek( key, key ) )
+        {
+            assertTrue( seek.next() );
+            Hit<RawBytes,RawBytes> hit = seek.get();
+            assertEquals( 0, layout.compare( key, hit.key() ) );
+            assertEquals( 0, layout.compare( value, hit.value() ) );
+            assertFalse( seek.next() );
+        }
+    }
+
+    private GBPTree<RawBytes,RawBytes> createIndex() throws IOException
     {
         // some random padding
         return new GBPTreeBuilder<>( pageCache, testDirectory.file( "index" ), layout ).build();
+    }
+
+    private byte[] asBytes( int value )
+    {
+        byte[] intBytes = new byte[Integer.BYTES];
+        for ( int i = 0, j = intBytes.length - 1; i < intBytes.length; i++, j-- )
+        {
+            intBytes[j] = (byte) (value >>> i * Byte.SIZE);
+        }
+        return intBytes;
+    }
+
+    private RawBytes key( int keySize, byte... firstBytes )
+    {
+        RawBytes key = layout.newKey();
+        key.bytes = new byte[keySize];
+        for ( int i = 0; i < firstBytes.length && i < keySize; i++ )
+        {
+            key.bytes[i] = firstBytes[i];
+        }
+        return key;
+    }
+
+    private RawBytes value( int valueSize )
+    {
+        RawBytes value = layout.newValue();
+        value.bytes = new byte[valueSize];
+        return value;
+    }
+
+    private int inValidRange( int min, int max, int value )
+    {
+        return Math.min( max, Math.max( min, value ) );
     }
 }
