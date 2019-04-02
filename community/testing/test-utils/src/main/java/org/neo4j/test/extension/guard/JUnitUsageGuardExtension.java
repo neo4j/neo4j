@@ -62,7 +62,7 @@ public class JUnitUsageGuardExtension implements BeforeAllCallback
         return newJunitClasses.size() == testClasses.size();
     }
 
-    private Set<String> collectUsedTestClasses( Class clazz ) throws IOException
+    private Set<String> collectUsedTestClasses( Class<?> clazz ) throws IOException
     {
         ClassReader classReader = new ClassReader( clazz.getName() );
         DependenciesCollector dependenciesCollector = new DependenciesCollector();
