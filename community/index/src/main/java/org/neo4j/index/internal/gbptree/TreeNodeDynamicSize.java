@@ -235,7 +235,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             newKeyOffset = currentKeyOffset - getOverhead( keySize, 0, true );
 
             cursor.setOffset( newKeyOffset );
-            putKeySize( cursor, keySize, false );
+            putKeySize( cursor, keySize, true );
             long offloadId = offloadStore.writeKey( key, stableGeneration, unstableGeneration );
             DynamicSizeUtil.putOffloadId( cursor, offloadId );
         }
