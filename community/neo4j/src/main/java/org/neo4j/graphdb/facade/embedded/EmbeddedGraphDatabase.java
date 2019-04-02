@@ -26,7 +26,11 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
+import org.neo4j.kernel.availability.AvailabilityGuard;
+import org.neo4j.kernel.availability.AvailabilityGuardInstaller;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -54,12 +58,18 @@ import static org.neo4j.helpers.collection.Iterables.asList;
 public class EmbeddedGraphDatabase extends GraphDatabaseFacade
 {
     /**
+     * No-op availability guard installer by default
+     */
+    private final AvailabilityGuardInstaller availabilityGuardInstaller;
+
+    /**
      * Internal constructor used by {@link org.neo4j.graphdb.factory.GraphDatabaseFactory}
      */
     public EmbeddedGraphDatabase( File storeDir,
                                   Map<String, String> params,
                                   GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
+        this.availabilityGuardInstaller = availabilityGuard -> {};
         create( storeDir, params, dependencies );
     }
 
@@ -70,6 +80,13 @@ public class EmbeddedGraphDatabase extends GraphDatabaseFacade
             Config config,
             GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
+        this( storeDir, config, dependencies, availabilityGuard -> {} );
+    }
+
+    protected EmbeddedGraphDatabase( File storeDir, Config config, GraphDatabaseFacadeFactory.Dependencies dependencies,
+            AvailabilityGuardInstaller availabilityGuardInstaller )
+    {
+        this.availabilityGuardInstaller = availabilityGuardInstaller;
         create( storeDir, config, dependencies );
     }
 
@@ -78,7 +95,7 @@ public class EmbeddedGraphDatabase extends GraphDatabaseFacade
     {
         GraphDatabaseDependencies newDependencies = newDependencies( dependencies )
                 .settingsClasses( asList( append( GraphDatabaseSettings.class, dependencies.settingsClasses() ) ) );
-        new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
+        new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, this::editionModuleFactory )
                 .initFacade( storeDir, params, newDependencies, this );
     }
 
@@ -86,7 +103,15 @@ public class EmbeddedGraphDatabase extends GraphDatabaseFacade
     {
         GraphDatabaseDependencies newDependencies = newDependencies( dependencies )
                 .settingsClasses( asList( append( GraphDatabaseSettings.class, dependencies.settingsClasses() ) ) );
-        new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
+        new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, this::editionModuleFactory )
                 .initFacade( storeDir, config, newDependencies, this );
+    }
+
+    protected AbstractEditionModule editionModuleFactory( PlatformModule platform )
+    {
+        CommunityEditionModule edition = new CommunityEditionModule( platform );
+        AvailabilityGuard guard = edition.getGlobalAvailabilityGuard( platform.clock, platform.logging, platform.config );
+        availabilityGuardInstaller.install( guard );
+        return edition;
     }
 }

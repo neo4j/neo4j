@@ -65,10 +65,6 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
 
     protected static final File PATH = new File( "target/test-data/impermanent-db" );
 
-    /* No-op availabilityGuardInstaller by default
-     */
-    private AvailabilityGuardInstaller availabilityGuardInstaller = availabilityGuard -> {};
-
     /**
      * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
      */
@@ -151,22 +147,14 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
 
     public ImpermanentGraphDatabase( File storeDir, Config config, Dependencies dependencies, AvailabilityGuardInstaller guardInstaller )
     {
-        super( storeDir, config, dependencies );
+        super( storeDir, config, dependencies, guardInstaller );
         trackUnclosedUse( storeDir );
-        this.availabilityGuardInstaller = guardInstaller;
     }
 
     @Override
     protected void create( File storeDir, Map<String, String> params, Dependencies dependencies )
     {
-        Function<PlatformModule,AbstractEditionModule> factory = platform ->
-        {
-            CommunityEditionModule edition = new CommunityEditionModule( platform );
-            AvailabilityGuard guard = edition.getGlobalAvailabilityGuard( platform.clock, platform.logging, platform.config );
-            availabilityGuardInstaller.install( guard );
-            return edition;
-        };
-        new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, factory )
+        new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, this::editionModuleFactory )
         {
             @Override
             protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )

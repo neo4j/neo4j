@@ -44,8 +44,6 @@ public class SimpleGraphFactory implements GraphFactory
     public GraphDatabaseFacade newGraphDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies,
             AvailabilityGuardInstaller guardInstaller )
     {
-        AvailabilityGuard guard = db.getDependencyResolver().resolveDependency( AvailabilityGuard.class );
-        guardInstaller.install( guard );
         return db;
     }
 }
