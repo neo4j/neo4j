@@ -565,7 +565,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             existingPropertyKeyIds = loadSortedPropertyKeyList();
         }
 
-        if ( !existingValue.equals( value ) )
+        if ( hasRelatedSchema && !existingValue.equals( value ) )
         {
             // The value changed and there may be relevant constraints to check so let's check those now.
             Collection<IndexBackedConstraintDescriptor> uniquenessConstraints = indexingService.getRelatedUniquenessConstraints( labels, propertyKey, NODE );

@@ -21,6 +21,7 @@ package org.neo4j.collection;
 
 import java.util.Arrays;
 
+import static java.lang.String.format;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
 /**
@@ -273,22 +274,38 @@ public class PrimitiveArrays
         return (int)(pair & 0xFFFF_FFFFL);
     }
 
-    private static boolean isSortedSet( int[] set )
+    /**
+     * @param set the int[] to be check whether or not it's a sorted set.
+     * @return whether or not the given int[] is a sorted set.
+     */
+    public static boolean isSortedSet( int[] set )
     {
         for ( int i = 0; i < set.length - 1; i++ )
         {
-            assert set[i] < set[i + 1] : "Array is not a sorted set: has " + set[i] + " before " + set[i + 1];
+            assertSortedSetItem( i, set[i], set[i + 1] );
         }
         return true;
     }
 
-    private static boolean isSortedSet( long[] set )
+    /**
+     * @param set the long[] to be checked whether or not it's a sorted set.
+     * @return whether or not the given long[] is a sorted set.
+     */
+    public static boolean isSortedSet( long[] set )
     {
         for ( int i = 0; i < set.length - 1; i++ )
         {
-            assert set[i] < set[i + 1] : "Array is not a sorted set: has " + set[i] + " before " + set[i + 1];
+            assertSortedSetItem( i, set[i], set[i + 1] );
         }
         return true;
+    }
+
+    private static void assertSortedSetItem( int i, long item, long next )
+    {
+        if ( item >= next )
+        {
+            throw new IllegalArgumentException( format( "Array is not a sorted set: has %d before %d at i:%d", item, next, i ) );
+        }
     }
 
     private PrimitiveArrays()

@@ -26,6 +26,8 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 
+import static org.neo4j.collection.PrimitiveArrays.isSortedSet;
+
 /**
  * This class holds functionality to match LabelSchemaDescriptors to nodes
  */
@@ -60,6 +62,7 @@ public class NodeSchemaMatcher
             ThrowingConsumer<SUPPLIER,EXCEPTION> callback
     ) throws EXCEPTION
     {
+        assert isSortedSet( existingPropertyIds );
         while ( schemaSuppliers.hasNext() )
         {
             SUPPLIER schemaSupplier = schemaSuppliers.next();
@@ -97,6 +100,8 @@ public class NodeSchemaMatcher
             ThrowingConsumer<SUPPLIER,EXCEPTION> callback
     ) throws EXCEPTION
     {
+        assert isSortedSet( existingPropertyIds );
+        assert isSortedSet( labels );
         while ( schemaSuppliers.hasNext() )
         {
             SUPPLIER schemaSupplier = schemaSuppliers.next();

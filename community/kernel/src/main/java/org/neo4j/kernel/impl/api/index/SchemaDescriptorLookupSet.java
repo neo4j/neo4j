@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 
 import static java.lang.Math.toIntExact;
+import static org.neo4j.collection.PrimitiveArrays.isSortedSet;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySchemaType.PARTIAL_ANY_TOKEN;
 
@@ -164,6 +165,8 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
      */
     void matchingDescriptorsForCompleteListOfProperties( Collection<T> into, long[] entityTokenIds, int[] sortedProperties )
     {
+        assert isSortedSet( entityTokenIds );
+        assert isSortedSet( sortedProperties );
         for ( long entityTokenId : entityTokenIds )
         {
             PropertyMultiSet first = byEntityToken.get( toIntExact( entityTokenId ) );
@@ -187,6 +190,8 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
      */
     void matchingDescriptorsForPartialListOfProperties( Collection<T> into, long[] entityTokenIds, int[] sortedProperties )
     {
+        assert isSortedSet( entityTokenIds );
+        assert isSortedSet( sortedProperties );
         for ( long entityTokenId : entityTokenIds )
         {
             PropertyMultiSet first = byEntityToken.get( toIntExact( entityTokenId ) );
@@ -205,6 +210,7 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
      */
     void matchingDescriptors( Collection<T> into, long[] entityTokenIds )
     {
+        assert isSortedSet( entityTokenIds );
         for ( long entityTokenId : entityTokenIds )
         {
             PropertyMultiSet set = byEntityToken.get( toIntExact( entityTokenId ) );
