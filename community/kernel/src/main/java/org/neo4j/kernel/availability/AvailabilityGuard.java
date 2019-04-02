@@ -43,6 +43,11 @@ public interface AvailabilityGuard
     void fulfill( AvailabilityRequirement requirement );
 
     /**
+     * Shutdown the guard. After this method is invoked, the availability guard will always be considered unavailable.
+     */
+    void shutdown();
+
+    /**
      * Check if the database is available for transactions to use.
      *
      * @return true if there are no requirements waiting to be fulfilled and the guard has not been shutdown

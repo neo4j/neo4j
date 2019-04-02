@@ -17,17 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.database;
+package org.neo4j.kernel.availability;
 
-import org.neo4j.kernel.availability.AvailabilityGuardInstaller;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-
-import static org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
-
-public interface GraphFactory
+@FunctionalInterface
+public interface AvailabilityGuardInstaller
 {
-    GraphDatabaseFacade newGraphDatabase( Config config, Dependencies dependencies );
-
-    GraphDatabaseFacade newGraphDatabase( Config config, Dependencies dependencies, AvailabilityGuardInstaller guardInstaller );
+    void install( AvailabilityGuard availabilityGuard );
 }

@@ -24,6 +24,7 @@ import java.io.File;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.Log;
@@ -41,6 +42,7 @@ public class LifecycleManagingDatabase implements Database
     private final GraphFactory dbFactory;
     private final GraphDatabaseFacadeFactory.Dependencies dependencies;
     private final Log log;
+    private AvailabilityGuard availabilityGuard;
 
     private boolean isRunning;
     private GraphDatabaseFacade graph;
@@ -66,6 +68,16 @@ public class LifecycleManagingDatabase implements Database
         return graph;
     }
 
+    public AvailabilityGuard getAvailabilityGuard()
+    {
+        return availabilityGuard;
+    }
+
+    private void setAvailabilityGuard( AvailabilityGuard availabilityGuard )
+    {
+        this.availabilityGuard = availabilityGuard;
+    }
+
     @Override
     public void init()
     {
@@ -75,7 +87,7 @@ public class LifecycleManagingDatabase implements Database
     public void start()
     {
         log.info( "Starting..." );
-        this.graph = dbFactory.newGraphDatabase( config, dependencies );
+        this.graph = dbFactory.newGraphDatabase( config, dependencies, this::setAvailabilityGuard );
         // in order to speed up testing, they should not run the preload, but in production it pays to do it.
         if ( !isInTestMode() )
         {
