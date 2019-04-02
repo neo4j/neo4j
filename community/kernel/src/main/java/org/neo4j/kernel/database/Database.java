@@ -797,15 +797,6 @@ public class Database extends LifecycleAdapter
         return databaseId;
     }
 
-    /*
-     * TODO temporary, remove when spreading DBID to other modules
-     */
-    @Deprecated
-    public String getDatabaseName()
-    {
-        return databaseId.name();
-    }
-
     public TokenHolders getTokenHolders()
     {
         return tokenHolders;

@@ -75,7 +75,7 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     }
 
     @Override
-    public void startDatabase( DatabaseId databaseName )
+    public void startDatabase( DatabaseId databaseId )
     {
         throw new DatabaseManagementException( "Default database manager does not support starting databases." );
     }

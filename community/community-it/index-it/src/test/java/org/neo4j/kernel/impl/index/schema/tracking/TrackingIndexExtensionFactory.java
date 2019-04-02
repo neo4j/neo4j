@@ -46,8 +46,8 @@ public class TrackingIndexExtensionFactory extends ExtensionFactory<TrackingInde
     @Override
     public synchronized IndexProvider newInstance( ExtensionContext context, Dependencies dependencies )
     {
-        DatabaseId databaseName = dependencies.database().getDatabaseId();
-        return indexProvider.computeIfAbsent( databaseName.name(), s ->
+        DatabaseId databaseId = dependencies.database().getDatabaseId();
+        return indexProvider.computeIfAbsent( databaseId.name(), s ->
         {
             IndexProvider indexProvider = new NativeLuceneFusionIndexProviderFactory20().newInstance( context, dependencies );
             return new TrackingReadersIndexProvider( indexProvider );
