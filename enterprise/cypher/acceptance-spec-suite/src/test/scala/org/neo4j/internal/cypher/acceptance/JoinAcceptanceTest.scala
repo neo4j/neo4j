@@ -160,4 +160,18 @@ test("larger optional match join should not crash") {
         |RETURN b, d""".stripMargin
     graph.execute(query) // should not crash
   }
+
+  test("should not crash on any() on rhs of NodeHashJoin") {
+    graph.execute("CREATE (a: A {prop: 1})-[:X]->(b {prop: 2})-[:X]->(c {prop: 1, list: [1,3,4]})")
+
+    val query =
+      """MATCH (a: A)-[:X]->(b)-[:X]->(c)
+        |USING JOIN ON b
+        |WHERE any(x IN c.list WHERE x % 2 = 1)
+        |RETURN b.prop""".stripMargin
+
+    val result = innerExecuteDeprecated(query)
+    result.executionPlanDescription() should useOperators("NodeHashJoin")
+    result.toList should be(List(Map("b.prop" -> 2)))
+  }
 }
