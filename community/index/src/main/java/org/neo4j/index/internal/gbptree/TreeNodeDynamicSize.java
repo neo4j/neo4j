@@ -258,7 +258,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         int keySize = layout.keySize( key );
         int valueSize = layout.valueSize( value );
         int newKeyValueOffset;
-        if ( !offload( keySize ) )
+        if ( !offload( keySize + valueSize ) )
         {
             newKeyValueOffset = currentKeyValueOffset - keySize - valueSize - getOverhead( keySize, valueSize, false );
 
