@@ -19,14 +19,13 @@
  */
 package org.neo4j.test.extension.guard;
 
-import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.JUnitException;
 import org.objectweb.asm.ClassReader;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Optional;
 import java.util.Set;
 
 import static java.lang.String.format;
@@ -35,17 +34,12 @@ import static org.objectweb.asm.ClassReader.SKIP_CODE;
 import static org.objectweb.asm.ClassReader.SKIP_DEBUG;
 import static org.objectweb.asm.ClassReader.SKIP_FRAMES;
 
-public class JUnitUsageGuardExtension implements BeforeTestExecutionCallback
+public class JUnitUsageGuardExtension implements BeforeAllCallback
 {
     @Override
-    public void beforeTestExecution( ExtensionContext context ) throws Exception
+    public void beforeAll( ExtensionContext context ) throws Exception
     {
-        Optional<Object> testInstance = context.getTestInstance();
-        if ( testInstance.isEmpty() )
-        {
-            return;
-        }
-        Class<?> testClazz = testInstance.get().getClass();
+        Class<?> testClazz = context.getRequiredTestClass();
         Set<String> testClasses = collectUsedTestClasses( testClazz );
 
         // we do not want to check platform classes so far

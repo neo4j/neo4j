@@ -70,7 +70,7 @@ class JUnitUsageGuardExtensionTest
     void validTestUsage()
     {
         Events testEvents = executeTest( ValidUsage.class );
-        assertEquals( 1, testEvents.succeeded().count() );
+        assertEquals( 0, testEvents.failed().count() );
     }
 
     private void verifyFailureMessage( Events testEvents, String expectedMessage )
@@ -83,6 +83,6 @@ class JUnitUsageGuardExtensionTest
     {
         return EngineTestKit.engine( ENGINE_ID )
                 .selectors( selectClass( clazz ) ).execute()
-                .tests();
+                .all();
     }
 }
