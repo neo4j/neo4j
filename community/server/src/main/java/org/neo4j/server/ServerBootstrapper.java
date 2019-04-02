@@ -41,8 +41,6 @@ import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.scheduler.BufferingExecutor;
-import org.neo4j.kernel.info.JvmChecker;
-import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -114,8 +112,6 @@ public abstract class ServerBootstrapper implements Bootstrapper
                     .findFirst()
                     .map( connector -> config.get( connector.listen_address ).toString() )
                     .orElse( serverAddress );
-
-            checkCompatibility();
 
             server = createNeoServer( config, dependencies );
             server.start();
@@ -310,10 +306,5 @@ public abstract class ServerBootstrapper implements Bootstrapper
         {
             throw new RuntimeException( e );
         }
-    }
-
-    private void checkCompatibility()
-    {
-        new JvmChecker( log, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
     }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.info;
 
+import java.lang.Runtime.Version;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryUsage;
 import java.lang.management.RuntimeMXBean;
@@ -31,9 +32,9 @@ public class JvmMetadataRepository
         return System.getProperty( "java.vm.name" );
     }
 
-    public String getJavaVersion()
+    public Version getJavaVersion()
     {
-        return System.getProperty( "java.version" );
+        return Runtime.version();
     }
 
     public List<String> getJvmInputArguments()

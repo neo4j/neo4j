@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.info;
 
+import java.lang.Runtime.Version;
 import java.lang.management.MemoryUsage;
 import java.util.List;
 
@@ -53,9 +54,9 @@ public class CannedJvmMetadataRepository extends JvmMetadataRepository
     }
 
     @Override
-    public String getJavaVersion()
+    public Version getJavaVersion()
     {
-        return javaVersion;
+        return Runtime.Version.parse( javaVersion );
     }
 
     @Override

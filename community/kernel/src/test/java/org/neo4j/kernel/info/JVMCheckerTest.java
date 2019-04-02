@@ -30,86 +30,30 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.neo4j.kernel.info.JvmChecker.INCOMPATIBLE_JVM_VERSION_WARNING;
-import static org.neo4j.kernel.info.JvmChecker.INCOMPATIBLE_JVM_WARNING;
 import static org.neo4j.kernel.info.JvmChecker.memorySettingWarning;
 
 class JVMCheckerTest
 {
     @Test
-    void shouldIssueWarningWhenUsingHotspotServerVmVersion7()
+    void shouldIssueWarningWhenUsingHotspotServerVmVersion12()
     {
         BufferingLog bufferingLogger = new BufferingLog();
 
         new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
-                "1.7.0-b147" ) ).checkJvmCompatibilityAndIssueWarning();
+                "12" ) ).checkJvmCompatibilityAndIssueWarning();
 
         assertThat( bufferingLogger.toString(), containsString( INCOMPATIBLE_JVM_VERSION_WARNING ) );
     }
 
     @Test
-    void shouldNotIssueWarningWhenUsingHotspotServerVmVersion8()
+    void shouldNotIssueWarningWhenUsingHotspotServerVmVersion11()
     {
         BufferingLog bufferingLogger = new BufferingLog();
 
         new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
-                "1.8.0_45" ) ).checkJvmCompatibilityAndIssueWarning();
+                "11" ) ).checkJvmCompatibilityAndIssueWarning();
 
         assertThat( bufferingLogger.toString(), not( containsString( INCOMPATIBLE_JVM_VERSION_WARNING ) ) );
-    }
-
-    @Test
-    void shouldNotIssueWarningWhenUsingIbmJ9Vm()
-    {
-        BufferingLog bufferingLogger = new BufferingLog();
-
-        new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "IBM J9 VM", "1.8" ) )
-                .checkJvmCompatibilityAndIssueWarning();
-
-        assertThat( bufferingLogger.toString(), not( containsString( INCOMPATIBLE_JVM_VERSION_WARNING ) ) );
-    }
-
-    @Test
-    void shouldIssueWarningWhenUsingHotspotServerVmVersion7InThe32BitVersion()
-    {
-        BufferingLog bufferingLogger = new BufferingLog();
-
-        new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) Server VM",
-                "1.7.0_25-b15" ) ).checkJvmCompatibilityAndIssueWarning();
-
-        assertThat( bufferingLogger.toString(), containsString( INCOMPATIBLE_JVM_VERSION_WARNING ) );
-    }
-
-    @Test
-    void shouldIssueWarningWhenUsingOpenJDKServerVmVersion7()
-    {
-        BufferingLog bufferingLogger = new BufferingLog();
-
-        new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "OpenJDK 64-Bit Server VM",
-                "1.7.0-b147" ) ).checkJvmCompatibilityAndIssueWarning();
-
-        assertThat( bufferingLogger.toString(), containsString( INCOMPATIBLE_JVM_VERSION_WARNING ) );
-    }
-
-    @Test
-    void shouldIssueWarningWhenUsingOpenJDKClientVmVersion7()
-    {
-        BufferingLog bufferingLogger = new BufferingLog();
-
-        new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "OpenJDK Client VM",
-                "1.7.0-b147" ) ).checkJvmCompatibilityAndIssueWarning();
-
-        assertThat( bufferingLogger.toString(), containsString( INCOMPATIBLE_JVM_VERSION_WARNING ) );
-    }
-
-    @Test
-    void shouldIssueWarningWhenUsingUnsupportedJvm()
-    {
-        BufferingLog bufferingLogger = new BufferingLog();
-
-        new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "MyOwnJDK 64-Bit Awesome VM",
-                "1.7" ) ).checkJvmCompatibilityAndIssueWarning();
-
-        assertThat( bufferingLogger.toString(), containsString( INCOMPATIBLE_JVM_WARNING ) );
     }
 
     @Test
@@ -118,7 +62,7 @@ class JVMCheckerTest
         BufferingLog bufferingLogger = new BufferingLog();
 
         new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
-                "1.6.42_87" ) ).checkJvmCompatibilityAndIssueWarning();
+                "22.33.44.55" ) ).checkJvmCompatibilityAndIssueWarning();
 
         assertThat( bufferingLogger.toString(), containsString( INCOMPATIBLE_JVM_VERSION_WARNING ) );
     }
@@ -129,7 +73,7 @@ class JVMCheckerTest
         BufferingLog bufferingLogger = new BufferingLog();
 
         new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
-                "1.8.0_45", singletonList( "-XMx" ), 12, 23 ) ).checkJvmCompatibilityAndIssueWarning();
+                "11.0.2+9", singletonList( "-XMx" ), 12, 23 ) ).checkJvmCompatibilityAndIssueWarning();
 
         assertThat( bufferingLogger.toString(), containsString( memorySettingWarning( ExternalSettings.initialHeapSize, 12 ) ) );
     }
@@ -140,7 +84,7 @@ class JVMCheckerTest
         BufferingLog bufferingLogger = new BufferingLog();
 
         new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
-                "1.8.0_45", singletonList( "-XMs" ), 12, 23 ) ).checkJvmCompatibilityAndIssueWarning();
+                "11", singletonList( "-XMs" ), 12, 23 ) ).checkJvmCompatibilityAndIssueWarning();
 
         assertThat( bufferingLogger.toString(), containsString( memorySettingWarning( ExternalSettings.maxHeapSize, 23 ) ) );
     }
@@ -151,7 +95,7 @@ class JVMCheckerTest
         BufferingLog bufferingLogger = new BufferingLog();
 
         new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
-                "1.8.0_45" ) ).checkJvmCompatibilityAndIssueWarning();
+                "11.0.1" ) ).checkJvmCompatibilityAndIssueWarning();
 
         assertThat( bufferingLogger.toString(), containsString( memorySettingWarning( ExternalSettings.initialHeapSize, 1 ) ) );
         assertThat( bufferingLogger.toString(), containsString( memorySettingWarning( ExternalSettings.maxHeapSize, 2 ) ) );
@@ -162,7 +106,7 @@ class JVMCheckerTest
     {
         BufferingLog bufferingLogger = new BufferingLog();
 
-        new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM", "1.8.0_45",
+        new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM", "11.0.2",
                 asList( "-xMx", "-xmS" ), 1, 2 ) ).checkJvmCompatibilityAndIssueWarning();
 
         assertThat( bufferingLogger.toString(), not( containsString( memorySettingWarning( ExternalSettings.initialHeapSize, 1 ) ) ) );

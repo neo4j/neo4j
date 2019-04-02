@@ -23,19 +23,21 @@ import java.lang.management.MemoryUsage;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import org.neo4j.configuration.ExternalSettings;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.Log;
 
+import static java.util.regex.Pattern.compile;
+import static org.neo4j.configuration.ExternalSettings.initialHeapSize;
+import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
+
 public class JvmChecker
 {
+    private static final int SUPPORTED_FEATURE_VERSION = 11;
     static final String INCOMPATIBLE_JVM_WARNING = "You are using an unsupported Java runtime. Please" +
-            " use Oracle(R) Java(TM) Runtime Environment 8, OpenJDK(TM) 8 or IBM J9.";
+            " use Oracle(R) Java(TM) Runtime Environment 11, OpenJDK(TM) 11.";
     static final String INCOMPATIBLE_JVM_VERSION_WARNING = "You are using an unsupported version of " +
-            "the Java runtime. Please use Oracle(R) Java(TM) Runtime Environment 8, OpenJDK(TM) 8 or IBM J9.";
-    private static final Pattern SUPPORTED_JAVA_NAME_PATTERN =
-            Pattern.compile( "(Java HotSpot\\(TM\\)|OpenJDK|IBM) (64-Bit Server|Server|Client|J9) VM" );
-    private static final Pattern SUPPORTED_JAVA_VERSION_PATTERN = Pattern.compile( "^1\\.[8].*" );
+            "the Java runtime. Please use Oracle(R) Java(TM) Runtime Environment 11 or OpenJDK(TM) 11.";
+    private static final Pattern SUPPORTED_JAVA_NAME_PATTERN = compile( "(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server) VM" );
 
     private final Log log;
     private final JvmMetadataRepository jvmMetadataRepository;
@@ -49,25 +51,25 @@ public class JvmChecker
     public void checkJvmCompatibilityAndIssueWarning()
     {
         String javaVmName = jvmMetadataRepository.getJavaVmName();
-        String javaVersion = jvmMetadataRepository.getJavaVersion();
+        Runtime.Version javaVersion = jvmMetadataRepository.getJavaVersion();
 
         if ( !SUPPORTED_JAVA_NAME_PATTERN.matcher( javaVmName ).matches() )
         {
             log.warn( INCOMPATIBLE_JVM_WARNING );
         }
-        else if ( !SUPPORTED_JAVA_VERSION_PATTERN.matcher( javaVersion ).matches() )
+        else if ( javaVersion.feature() != SUPPORTED_FEATURE_VERSION )
         {
             log.warn( INCOMPATIBLE_JVM_VERSION_WARNING );
         }
         List<String> jvmArguments = jvmMetadataRepository.getJvmInputArguments();
         MemoryUsage heapMemoryUsage = jvmMetadataRepository.getHeapMemoryUsage();
-        if ( !containsOption( jvmArguments, "-Xmx" ) )
+        if ( missingOption( jvmArguments, "-Xmx" ) )
         {
-            log.warn( memorySettingWarning( ExternalSettings.maxHeapSize, heapMemoryUsage.getMax() ) );
+            log.warn( memorySettingWarning( maxHeapSize, heapMemoryUsage.getMax() ) );
         }
-        if ( !containsOption( jvmArguments, "-Xms" ) )
+        if ( missingOption( jvmArguments, "-Xms" ) )
         {
-            log.warn( memorySettingWarning( ExternalSettings.initialHeapSize, heapMemoryUsage.getInit() ) );
+            log.warn( memorySettingWarning( initialHeapSize, heapMemoryUsage.getInit() ) );
         }
     }
 
@@ -79,9 +81,9 @@ public class JvmChecker
                 "Run `neo4j-admin memrec` for memory configuration suggestions.";
     }
 
-    private static boolean containsOption( List<String> jvmArguments, String option )
+    private static boolean missingOption( List<String> jvmArguments, String option )
     {
         String normalizedOption = option.toUpperCase();
-        return jvmArguments.stream().anyMatch( o -> o.toUpperCase().startsWith( normalizedOption ) );
+        return jvmArguments.stream().noneMatch( o -> o.toUpperCase().startsWith( normalizedOption ) );
     }
 }
