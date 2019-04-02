@@ -42,7 +42,7 @@ public class LifecycleManagingDatabase implements Database
     private final GraphFactory dbFactory;
     private final GraphDatabaseFacadeFactory.Dependencies dependencies;
     private final Log log;
-    private AvailabilityGuard availabilityGuard;
+    private volatile AvailabilityGuard availabilityGuard;
 
     private boolean isRunning;
     private GraphDatabaseFacade graph;
@@ -73,7 +73,7 @@ public class LifecycleManagingDatabase implements Database
         return availabilityGuard;
     }
 
-    private void setAvailabilityGuard( AvailabilityGuard availabilityGuard )
+    private synchronized void setAvailabilityGuard( AvailabilityGuard availabilityGuard )
     {
         this.availabilityGuard = availabilityGuard;
     }
