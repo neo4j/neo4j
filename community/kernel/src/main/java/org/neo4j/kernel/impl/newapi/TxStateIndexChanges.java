@@ -29,6 +29,7 @@ import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -40,6 +41,7 @@ import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
@@ -55,7 +57,6 @@ class TxStateIndexChanges
             new AddedWithValuesAndRemoved( Collections.emptyList(), LongSets.immutable.empty() );
     private static final AddedAndRemoved EMPTY_ADDED_AND_REMOVED =
             new AddedAndRemoved( LongLists.immutable.empty(), LongSets.immutable.empty() );
-    private static final ValueTuple MAX_STRING_TUPLE = ValueTuple.of( Values.MAX_STRING );
 
     // SCAN
 
@@ -78,6 +79,7 @@ class TxStateIndexChanges
                                                             IndexQuery query,
                                                             IndexOrder indexOrder )
     {
+        // TODO fix this when composite can handle suffix and contains
         if ( descriptor.schema().getPropertyIds().length != 1 )
         {
             throw new IllegalStateException( "Suffix and contains queries are only supported for single property queries" );
@@ -90,6 +92,7 @@ class TxStateIndexChanges
                                                                                 IndexQuery query,
                                                                                 IndexOrder indexOrder )
     {
+        // TODO fix this when composite can handle suffix and contains
         if ( descriptor.schema().getPropertyIds().length != 1 )
         {
             throw new IllegalStateException( "Suffix and contains queries are only supported for single property queries" );
@@ -111,6 +114,63 @@ class TxStateIndexChanges
                    new AddedAndRemoved( LongLists.mutable.ofAll( indexUpdatesForSeek.getAdded() ), indexUpdatesForSeek.getRemoved() );
         }
         return EMPTY_ADDED_AND_REMOVED;
+    }
+
+    static AddedWithValuesAndRemoved indexUpdatesWithValuesForSeek( ReadableTransactionState txState, IndexDescriptor descriptor, IndexQuery[] predicates,
+            IndexOrder indexOrder )
+    {
+        // Case: composite index starting with equality, but not containing only equality
+        // equality+ exists+ || equality+ range exists* || equality+ prefix exists*
+        // equality+ contains exists* || equality+ suffix exists* (not yet supported for composite)
+        NavigableMap<ValueTuple,? extends LongDiffSets> sortedUpdates = txState.getSortedIndexUpdates( descriptor.schema() );
+        if ( sortedUpdates == null )
+        {
+            return EMPTY_ADDED_AND_REMOVED_WITH_VALUES;
+        }
+
+        ArrayList<IndexQuery.ExactPredicate> exactPreds = new ArrayList<>( predicates.length - 1 );
+        int i = 0;
+        while ( predicates[i].getClass() == IndexQuery.ExactPredicate.class )
+        {
+            exactPreds.add( (IndexQuery.ExactPredicate) predicates[i] );
+            i++;
+        }
+        IndexQuery nextPred = predicates[i];
+
+        ArrayList<Map.Entry<ValueTuple,? extends LongDiffSets>> entriesFulfillingExact = new ArrayList<>( predicates.length - 1 );
+        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : sortedUpdates.entrySet() )
+        {
+            ValueTuple values = entry.getKey();
+            boolean fulfilled = true;
+            for (int j = 0; j < i && j < values.size(); j++)
+            {
+                if ( Values.COMPARATOR.compare( values.valueAt( j ), exactPreds.get( j ).value() ) != 0 )
+                {
+                    fulfilled = false;
+                }
+            }
+            if ( fulfilled )
+            {
+                entriesFulfillingExact.add( entry );
+            }
+        }
+
+        MutableList<NodeWithPropertyValues> added = Lists.mutable.empty();
+        MutableLongSet removed = LongSets.mutable.empty();
+        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : entriesFulfillingExact )
+        {
+            ValueTuple values = entry.getKey();
+            Value[] valuesArray = values.getValues();
+            LongDiffSets diffForSpecificValue = entry.getValue();
+
+            if ( fulfillPredicate( values.valueAt( i ), nextPred ) )
+            {
+                diffForSpecificValue.getAdded().each( nodeId -> added.add( new NodeWithPropertyValues( nodeId, valuesArray ) ) );
+                removed.addAll( diffForSpecificValue.getRemoved() );
+            }
+        }
+
+        return new AddedWithValuesAndRemoved( indexOrder == IndexOrder.DESCENDING ? added.asReversed() : added, removed );
     }
 
     // RANGE SEEK
@@ -164,15 +224,18 @@ class TxStateIndexChanges
         MutableLongList added = LongLists.mutable.empty();
         MutableLongSet removed = LongSets.mutable.empty();
 
-        Map<ValueTuple,? extends LongDiffSets> inRange = sortedUpdates.subMap( selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
-        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : inRange.entrySet() )
+        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : sortedUpdates.entrySet() )
         {
             ValueTuple values = entry.getKey();
+            Value firstKey = values.valueAt( 0 );
             LongDiffSets diffForSpecificValue = entry.getValue();
 
+            // Needs to manually filter since we can have composite index
+            // and we only wants to compare the first value of the key not all of them
+            boolean allowed = allowedEntry( firstKey, selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
+
             // The TreeMap cannot perfectly order multi-dimensional types (spatial) and need additional filtering out false positives
-            // TODO: If the composite index starts to be able to handle spatial types the line below needs enhancement
-            if ( predicate.isRegularOrder() || predicate.acceptsValue( values.getOnlyValue() ) )
+            if ( allowed && (predicate.isRegularOrder() || predicate.acceptsValue( firstKey )) )
             {
                 added.addAll( diffForSpecificValue.getAdded() );
                 removed.addAll( diffForSpecificValue.getRemoved() );
@@ -230,16 +293,19 @@ class TxStateIndexChanges
         MutableList<NodeWithPropertyValues> added = Lists.mutable.empty();
         MutableLongSet removed = LongSets.mutable.empty();
 
-        Map<ValueTuple,? extends LongDiffSets> inRange = sortedUpdates.subMap( selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
-        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : inRange.entrySet() )
+        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : sortedUpdates.entrySet() )
         {
             ValueTuple values = entry.getKey();
+            Value firstKey = values.valueAt( 0 );
             Value[] valuesArray = values.getValues();
             LongDiffSets diffForSpecificValue = entry.getValue();
 
+            // Needs to manually filter since we can have composite index
+            // and we only wants to compare the first value of the key not all of them
+            boolean allowed = allowedEntry( firstKey, selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
+
             // The TreeMap cannot perfectly order multi-dimensional types (spatial) and need additional filtering out false positives
-            // TODO: If the composite index starts to be able to handle spatial types the line below needs enhancement
-            if ( predicate.isRegularOrder() || predicate.acceptsValue( values.getOnlyValue() ) )
+            if ( allowed && (predicate.isRegularOrder() || predicate.acceptsValue( firstKey )) )
             {
                 diffForSpecificValue.getAdded().each( nodeId -> added.add( new NodeWithPropertyValues( nodeId, valuesArray ) ) );
                 removed.addAll( diffForSpecificValue.getRemoved() );
@@ -259,23 +325,18 @@ class TxStateIndexChanges
         {
             return EMPTY_ADDED_AND_REMOVED;
         }
-        ValueTuple floor = ValueTuple.of( prefix );
 
         MutableLongList added = LongLists.mutable.empty();
         MutableLongSet removed = LongSets.mutable.empty();
 
-        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : sortedUpdates.subMap( floor, MAX_STRING_TUPLE ).entrySet() )
+        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : sortedUpdates.entrySet() )
         {
-            ValueTuple key = entry.getKey();
-            if ( ((TextValue) key.getOnlyValue()).startsWith( prefix ) )
+            Value key = entry.getKey().valueAt( 0 );
+            if ( key.valueGroup() == ValueGroup.TEXT && ((TextValue) key).startsWith( prefix ) )
             {
                 LongDiffSets diffSets = entry.getValue();
                 added.addAll( diffSets.getAdded() );
                 removed.addAll( diffSets.getRemoved() );
-            }
-            else
-            {
-                break;
             }
         }
         return new AddedAndRemoved( indexOrder == IndexOrder.DESCENDING ? added.asReversed() : added, removed );
@@ -291,24 +352,20 @@ class TxStateIndexChanges
         {
             return EMPTY_ADDED_AND_REMOVED_WITH_VALUES;
         }
-        ValueTuple floor = ValueTuple.of( prefix );
 
         MutableList<NodeWithPropertyValues> added = Lists.mutable.empty();
         MutableLongSet removed = LongSets.mutable.empty();
 
-        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : sortedUpdates.tailMap( floor ).entrySet() )
+        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : sortedUpdates.entrySet() )
         {
             ValueTuple key = entry.getKey();
-            if ( ((TextValue) key.getOnlyValue()).startsWith( prefix ) )
+            Value firstKey = key.valueAt( 0 );
+            if ( firstKey.valueGroup() == ValueGroup.TEXT && ((TextValue) firstKey).startsWith( prefix ) )
             {
                 LongDiffSets diffSets = entry.getValue();
                 Value[] values = key.getValues();
                 diffSets.getAdded().each( nodeId -> added.add( new NodeWithPropertyValues( nodeId, values ) ) );
                 removed.addAll( diffSets.getRemoved() );
-            }
-            else
-            {
-                break;
             }
         }
         return new AddedWithValuesAndRemoved( indexOrder == IndexOrder.DESCENDING ? added.asReversed() : added, removed );
@@ -334,7 +391,7 @@ class TxStateIndexChanges
         for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : updates.entrySet() )
         {
             ValueTuple key = entry.getKey();
-            if ( filter == null || filter.acceptsValue( key.getOnlyValue() ) )
+            if ( filter == null || filter.acceptsValue( key.valueAt( 0 ) ) )
             {
                 LongDiffSets diffSet = entry.getValue();
                 added.addAll( diffSet.getAdded() );
@@ -362,7 +419,7 @@ class TxStateIndexChanges
         for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : updates.entrySet() )
         {
             ValueTuple key = entry.getKey();
-            if ( filter == null || filter.acceptsValue( key.getOnlyValue() ) )
+            if ( filter == null || filter.acceptsValue( key.valueAt( 0 ) ) )
             {
                 Value[] values = key.getValues();
                 LongDiffSets diffSet = entry.getValue();
@@ -380,6 +437,74 @@ class TxStateIndexChanges
         return indexOrder == IndexOrder.NONE ?
                txState.getIndexUpdates( descriptor.schema() ) :
                txState.getSortedIndexUpdates( descriptor.schema() );
+    }
+
+    private static boolean allowedEntry( Value entry, ValueTuple lower, boolean includeLower, ValueTuple upper, boolean includeUpper )
+    {
+        int compareLower = Values.COMPARATOR.compare( lower.valueAt( 0 ), entry );
+        int compareUpper = Values.COMPARATOR.compare( upper.valueAt( 0 ), entry );
+        return ((includeLower && compareLower <= 0) || compareLower < 0) && ((includeUpper && compareUpper >= 0) || compareUpper > 0);
+    }
+
+    private static boolean fulfillPredicate( Value value, IndexQuery predicate )
+    {
+        // don't check for exact since those should already be filtered out
+        switch ( predicate.type() )
+        {
+        case exists:
+            return true;
+
+        case range:
+            IndexQuery.RangePredicate predRange = (IndexQuery.RangePredicate) predicate;
+            Value lower = predRange.fromValue();
+            Value upper = predRange.toValue();
+            if ( lower == null || upper == null )
+            {
+                throw new IllegalStateException( "Use Values.NO_VALUE to encode the lack of a bound" );
+            }
+
+            ValueTuple selectedLower;
+            boolean selectedIncludeLower;
+
+            ValueTuple selectedUpper;
+            boolean selectedIncludeUpper;
+
+            if ( lower == NO_VALUE )
+            {
+                selectedLower = ValueTuple.of( Values.minValue( predRange.valueGroup(), upper ) );
+                selectedIncludeLower = true;
+            }
+            else
+            {
+                selectedLower = ValueTuple.of( lower );
+                selectedIncludeLower = predRange.fromInclusive();
+            }
+
+            if ( upper == NO_VALUE )
+            {
+                selectedUpper = ValueTuple.of( Values.maxValue( predRange.valueGroup(), lower ) );
+                selectedIncludeUpper = false;
+            }
+            else
+            {
+                selectedUpper = ValueTuple.of( upper );
+                selectedIncludeUpper = predRange.toInclusive();
+            }
+            boolean allowed = allowedEntry( value, selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
+            return allowed && (predRange.isRegularOrder() || predRange.acceptsValue( value ));
+
+        case stringPrefix:
+            TextValue prefix = ((IndexQuery.StringPrefixPredicate) predicate).prefix();
+            return ((TextValue) value).startsWith( prefix );
+
+        case stringSuffix:
+        case stringContains:
+            // TODO fix when composite can handle suffix and contains
+            throw new IllegalStateException( "Suffix and contains queries are only supported for single property queries" );
+
+        default:
+            return false;
+        }
     }
 
     public static class AddedAndRemoved
