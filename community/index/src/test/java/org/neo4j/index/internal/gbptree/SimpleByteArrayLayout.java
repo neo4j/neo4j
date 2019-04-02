@@ -128,16 +128,18 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
         {
             // They had the same seed. Need to look at entire array
             int maxLength = Math.min( left.bytes.length, right.bytes.length );
-            int targetLength = 0;
-            for ( ; targetLength < maxLength; targetLength++ )
+            int lastEqualIndex = 0;
+            for ( ; lastEqualIndex < maxLength; lastEqualIndex++ )
             {
-                if ( left.bytes[targetLength] != right.bytes[targetLength] )
+                if ( left.bytes[lastEqualIndex] != right.bytes[lastEqualIndex] )
                 {
-                    // Convert to length from array index
-                    targetLength++;
                     break;
                 }
             }
+            // Convert from last equal index to first that differ
+            int targetLength = lastEqualIndex + 1;
+            // Convert to index to length
+            targetLength++;
             copyKey( right, into, targetLength );
         }
     }

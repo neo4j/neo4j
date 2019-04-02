@@ -28,6 +28,19 @@ class RawBytes
     @Override
     public String toString()
     {
+        boolean allZero = true;
+        for ( byte b : bytes )
+        {
+            if ( b != 0 )
+            {
+                allZero = false;
+                break;
+            }
+        }
+        if ( allZero )
+        {
+            return "[0...>" + bytes.length + "]";
+        }
         return Arrays.toString( bytes );
     }
 }
