@@ -36,6 +36,7 @@ Apache Software License, Version 2.0
   org.opentest4j:opentest4j
 
 BSD License
+  asm
   Hamcrest
 
 Eclipse Distribution License - v 1.0

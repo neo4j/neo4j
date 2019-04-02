@@ -48,7 +48,7 @@ public class TestInstanceValidationExtension implements BeforeTestExecutionCallb
             for ( Field annotatedField : annotatedFields )
             {
                 Optional<Object> fieldValue = tryToReadFieldValue( annotatedField, instance ).toOptional();
-                if ( !fieldValue.isPresent() )
+                if ( fieldValue.isEmpty() )
                 {
                     throw new ExtensionConfigurationException( format( "Field %s that is marked for injection in class %s is null. " +
                                     "Please check that you have configured all desired extensions or double check fields that should be injected.",
