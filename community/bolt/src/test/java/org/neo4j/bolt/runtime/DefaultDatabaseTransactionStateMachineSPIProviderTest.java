@@ -38,6 +38,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_ID;
 
 class DefaultDatabaseTransactionStateMachineSPIProviderTest
 {
@@ -47,7 +48,7 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
         DatabaseManager<?> databaseManager = databaseManagerWithDatabase( new DatabaseId( "neo4j" ) );
         TransactionStateMachineSPIProvider spiProvider = newSpiProvider( databaseManager );
 
-        TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI( "", mock( StatementProcessorReleaseManager.class ) );
+        TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI( ABSENT_DB_ID, mock( StatementProcessorReleaseManager.class ) );
         assertThat( spi, instanceOf( TransactionStateMachineSPI.class ) );
     }
 
@@ -58,7 +59,7 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
         TransactionStateMachineSPIProvider spiProvider = newSpiProvider( databaseManager );
 
         BoltProtocolBreachFatality error = assertThrows( BoltProtocolBreachFatality.class, () ->
-                spiProvider.getTransactionStateMachineSPI( "database", mock( StatementProcessorReleaseManager.class ) ) );
+                spiProvider.getTransactionStateMachineSPI( new DatabaseId( "database" ), mock( StatementProcessorReleaseManager.class ) ) );
         assertThat( error.getMessage(), containsString( "Database selection by name not supported by Bolt protocol version lower than BoltV4." ) );
     }
 
@@ -73,7 +74,7 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
 
     private TransactionStateMachineSPIProvider newSpiProvider( DatabaseManager databaseManager )
     {
-        return new DefaultDatabaseTransactionStatementSPIProvider( databaseManager, "neo4j", mock( BoltChannel.class ),
+        return new DefaultDatabaseTransactionStatementSPIProvider( databaseManager, new DatabaseId( "neo4j" ), mock( BoltChannel.class ),
                 Duration.ZERO, mock( Clock.class ) )
         {
             @Override

@@ -20,14 +20,15 @@
 package org.neo4j.bolt.v4.messaging;
 
 import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.parseDatabaseName;
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.parseDatabaseId;
 
 public class RunMessage extends org.neo4j.bolt.v3.messaging.request.RunMessage
 {
-    private String databaseName;
+    private DatabaseId databaseId;
 
     public RunMessage( String statement ) throws BoltIOException
     {
@@ -42,11 +43,11 @@ public class RunMessage extends org.neo4j.bolt.v3.messaging.request.RunMessage
     public RunMessage( String statement, MapValue params, MapValue meta ) throws BoltIOException
     {
         super( statement, params, meta );
-        databaseName = parseDatabaseName( meta );
+        databaseId = parseDatabaseId( meta );
     }
 
-    public String databaseName()
+    public DatabaseId databaseId()
     {
-        return databaseName;
+        return databaseId;
     }
 }

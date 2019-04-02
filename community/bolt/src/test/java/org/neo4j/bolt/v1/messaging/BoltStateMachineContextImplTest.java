@@ -33,6 +33,7 @@ import org.neo4j.bolt.runtime.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.MutableConnectionState;
 import org.neo4j.bolt.runtime.StatementProcessor;
 import org.neo4j.bolt.runtime.StatementProcessorProvider;
+import org.neo4j.kernel.database.DatabaseId;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -45,6 +46,8 @@ import static org.neo4j.bolt.runtime.StatementProcessor.EMPTY;
 
 class BoltStateMachineContextImplTest
 {
+    private static DatabaseId DB_ID = new DatabaseId( "Molly" );
+
     @Test
     void shouldHandleFailure() throws BoltConnectionFatality
     {
@@ -74,7 +77,7 @@ class BoltStateMachineContextImplTest
         // Given
         StatementProcessor txStateMachine = mock( StatementProcessor.class );
         // Then we can set tx state machine on a context.
-        boltStateMachineContextWithStatementProcessor( txStateMachine, "Molly" );
+        boltStateMachineContextWithStatementProcessor( txStateMachine, DB_ID );
     }
 
     @Test
@@ -82,10 +85,11 @@ class BoltStateMachineContextImplTest
     {
         // Given a context that has a active tx state machine set.
         StatementProcessor txStateMachine = mock( StatementProcessor.class );
-        BoltStateMachineContextImpl context = boltStateMachineContextWithStatementProcessor( txStateMachine, "Molly" );
+        BoltStateMachineContextImpl context = boltStateMachineContextWithStatementProcessor( txStateMachine, DB_ID );
 
         // When & Then
-        BoltProtocolBreachFatality error = assertThrows( BoltProtocolBreachFatality.class, () -> context.setCurrentStatementProcessorForDatabase( "Bossi" ) );
+        BoltProtocolBreachFatality error = assertThrows( BoltProtocolBreachFatality.class,
+                    () -> context.setCurrentStatementProcessorForDatabase( new DatabaseId( "Bossi" ) ) );
         assertThat( error.getMessage(), containsString( "Changing database without closing the previous is forbidden." ) );
         assertThat( context.connectionState().getStatementProcessor(), equalTo( txStateMachine ) );
     }
@@ -95,11 +99,11 @@ class BoltStateMachineContextImplTest
     {
         // Given a context that has a active tx state machine set.
         StatementProcessor txStateMachine = mock( StatementProcessor.class );
-        BoltStateMachineContextImpl context = boltStateMachineContextWithStatementProcessor( txStateMachine, "Molly" );
+        BoltStateMachineContextImpl context = boltStateMachineContextWithStatementProcessor( txStateMachine, DB_ID );
         StatementProcessor molly = context.connectionState().getStatementProcessor();
 
         // When & Then
-        StatementProcessor processor = context.setCurrentStatementProcessorForDatabase( "Molly" );
+        StatementProcessor processor = context.setCurrentStatementProcessorForDatabase( DB_ID );
         assertThat( processor, equalTo( molly ) );
     }
 
@@ -108,7 +112,7 @@ class BoltStateMachineContextImplTest
     {
         // Given a context that has a active tx state machine set.
         StatementProcessor txStateMachine = mock( StatementProcessor.class );
-        BoltStateMachineContextImpl context = boltStateMachineContextWithStatementProcessor( txStateMachine, "Molly" );
+        BoltStateMachineContextImpl context = boltStateMachineContextWithStatementProcessor( txStateMachine, DB_ID );
 
         // When
         context.releaseStatementProcessor();
@@ -117,18 +121,18 @@ class BoltStateMachineContextImplTest
         assertThat( context.connectionState().getStatementProcessor(), equalTo( EMPTY ) );
     }
 
-    private static BoltStateMachineContextImpl boltStateMachineContextWithStatementProcessor( StatementProcessor txStateMachine, String databaseName )
+    private static BoltStateMachineContextImpl boltStateMachineContextWithStatementProcessor( StatementProcessor txStateMachine, DatabaseId databaseId )
             throws BoltProtocolBreachFatality, BoltIOException
     {
         StatementProcessorProvider provider = mock( StatementProcessorProvider.class );
-        when( provider.getStatementProcessor( databaseName ) ).thenReturn( txStateMachine );
-        when( txStateMachine.databaseName() ).thenReturn( databaseName );
+        when( provider.getStatementProcessor( databaseId ) ).thenReturn( txStateMachine );
+        when( txStateMachine.databaseId() ).thenReturn( databaseId );
 
         BoltStateMachineContextImpl context = newContext( mock( BoltStateMachine.class ), mock( BoltStateMachineSPI.class ) );
         context.setStatementProcessorProvider( provider );
         assertThat( context.connectionState().getStatementProcessor(), equalTo( EMPTY ) );
 
-        StatementProcessor processor = context.setCurrentStatementProcessorForDatabase( databaseName );
+        StatementProcessor processor = context.setCurrentStatementProcessorForDatabase( databaseId );
 
         assertThat( processor, equalTo( txStateMachine ) );
         assertThat( context.connectionState().getStatementProcessor(), equalTo( txStateMachine ) );

@@ -28,6 +28,7 @@ import org.neo4j.bolt.runtime.StatementProcessor;
 import org.neo4j.bolt.v3.messaging.request.TransactionInitiatingMessage;
 import org.neo4j.bolt.v4.messaging.BeginMessage;
 import org.neo4j.bolt.v4.messaging.RunMessage;
+import org.neo4j.kernel.database.DatabaseId;
 
 /**
  * The READY state indicates that the connection is ready to accept a
@@ -52,20 +53,20 @@ public class ReadyState extends org.neo4j.bolt.v3.runtime.ReadyState
     protected StatementProcessor getStatementProcessor( TransactionInitiatingMessage message, StateMachineContext context )
             throws BoltProtocolBreachFatality, BoltIOException
     {
-        String databaseName = null;
+        DatabaseId databaseId;
         if ( message instanceof RunMessage )
         {
-            databaseName = ((RunMessage) message).databaseName();
+            databaseId = ((RunMessage) message).databaseId();
         }
         else if ( message instanceof BeginMessage )
         {
-            databaseName = ((BeginMessage) message).databaseName();
+            databaseId = ((BeginMessage) message).databaseId();
         }
         else
         {
             throw new IllegalStateException( "Expected either a BoltV4 RUN message or BEGIN message, but got: " + message.getClass() );
         }
 
-        return context.setCurrentStatementProcessorForDatabase( databaseName );
+        return context.setCurrentStatementProcessorForDatabase( databaseId );
     }
 }

@@ -27,14 +27,15 @@ import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v3.runtime.TransactionStateMachineV3SPI;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.kernel.database.DatabaseId;
 
 public class TransactionStateMachineSPIProviderV3 extends DefaultDatabaseTransactionStatementSPIProvider
 {
 
-    TransactionStateMachineSPIProviderV3( DatabaseManager<?> databaseManager, String defaultDatabaseName, BoltChannel boltChannel,
+    TransactionStateMachineSPIProviderV3( DatabaseManager<?> databaseManager, DatabaseId defaultDatabaseId, BoltChannel boltChannel,
             Duration awaitDuration, Clock clock )
     {
-        super( databaseManager, defaultDatabaseName, boltChannel, awaitDuration, clock );
+        super( databaseManager, defaultDatabaseId, boltChannel, awaitDuration, clock );
     }
 
     @Override

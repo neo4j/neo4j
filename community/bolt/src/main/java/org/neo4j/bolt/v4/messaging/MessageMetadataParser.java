@@ -21,6 +21,7 @@ package org.neo4j.bolt.v4.messaging;
 
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.Values;
@@ -29,21 +30,22 @@ import org.neo4j.values.virtual.MapValue;
 public final class MessageMetadataParser
 {
     private static final String DB_NAME = "db";
-    public static final String ABSENT_DB_NAME = "";
+    public static final DatabaseId ABSENT_DB_ID = new DatabaseId( "" );
 
     /**
      * Empty or null value indicates the default database is selected
      */
-    static String parseDatabaseName( MapValue meta ) throws BoltIOException
+    static DatabaseId parseDatabaseId( MapValue meta ) throws BoltIOException
     {
         AnyValue anyValue = meta.get( DB_NAME );
         if ( anyValue == Values.NO_VALUE )
         {
-            return ABSENT_DB_NAME;
+            return ABSENT_DB_ID;
         }
         else if ( anyValue instanceof StringValue )
         {
-            return ((StringValue) anyValue).stringValue();
+            var databaseName = ((StringValue) anyValue).stringValue();
+            return new DatabaseId( databaseName );
         }
         else
         {

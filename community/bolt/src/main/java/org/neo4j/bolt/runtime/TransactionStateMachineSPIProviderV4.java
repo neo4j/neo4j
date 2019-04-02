@@ -33,35 +33,35 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseId;
 
 import static java.lang.String.format;
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_ID;
 
 public class TransactionStateMachineSPIProviderV4 implements TransactionStateMachineSPIProvider
 {
     private final Duration txAwaitDuration;
     private final Clock clock;
     private final BoltChannel boltChannel;
-    private final String defaultDatabaseName;
+    private final DatabaseId defaultDatabaseId;
     private final DatabaseManager<?> databaseManager;
 
-    public TransactionStateMachineSPIProviderV4( DatabaseManager<?> databaseManager, String defaultDatabaseName, BoltChannel boltChannel,
+    public TransactionStateMachineSPIProviderV4( DatabaseManager<?> databaseManager, DatabaseId defaultDatabaseId, BoltChannel boltChannel,
             Duration txAwaitDuration, Clock clock )
     {
         this.databaseManager = databaseManager;
-        this.defaultDatabaseName = defaultDatabaseName;
+        this.defaultDatabaseId = defaultDatabaseId;
         this.boltChannel = boltChannel;
         this.txAwaitDuration = txAwaitDuration;
         this.clock = clock;
     }
 
     @Override
-    public TransactionStateMachineSPI getTransactionStateMachineSPI( String providedDatabaseName, StatementProcessorReleaseManager resourceReleaseManger )
+    public TransactionStateMachineSPI getTransactionStateMachineSPI( DatabaseId providedDatabaseId, StatementProcessorReleaseManager resourceReleaseManger )
             throws BoltIOException
     {
-        String databaseName = Objects.equals( providedDatabaseName, ABSENT_DB_NAME ) ? defaultDatabaseName : providedDatabaseName;
+        var databaseId = Objects.equals( providedDatabaseId, ABSENT_DB_ID ) ? defaultDatabaseId : providedDatabaseId;
 
-        DatabaseContext databaseContext = databaseManager.getDatabaseContext( new DatabaseId( databaseName ) )
+        DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseId )
                 .orElseThrow( () -> new BoltIOException( Status.Database.DatabaseNotFound,
-                    format( "The database requested does not exist. Requested database name: '%s'.", databaseName ) ) );
+                    format( "The database requested does not exist. Requested database name: '%s'.", databaseId.name() ) ) );
 
         return new TransactionStateMachineV4SPI( databaseContext, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
     }

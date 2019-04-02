@@ -20,29 +20,30 @@
 package org.neo4j.bolt.v4.messaging;
 
 import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.parseDatabaseName;
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_ID;
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.parseDatabaseId;
 
 public class BeginMessage extends org.neo4j.bolt.v3.messaging.request.BeginMessage
 {
-    private final String databaseName;
+    private final DatabaseId databaseId;
 
     public BeginMessage() throws BoltIOException
     {
         super();
-        this.databaseName = ABSENT_DB_NAME;
+        this.databaseId = ABSENT_DB_ID;
     }
 
     public BeginMessage( MapValue meta ) throws BoltIOException
     {
         super( meta );
-        this.databaseName = parseDatabaseName( meta );
+        this.databaseId = parseDatabaseId( meta );
     }
 
-    public String databaseName()
+    public DatabaseId databaseId()
     {
-        return this.databaseName;
+        return this.databaseId;
     }
 }

@@ -22,13 +22,14 @@ package org.neo4j.bolt.v4.messaging;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.kernel.database.DatabaseId;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.parseDatabaseName;
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_ID;
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.parseDatabaseId;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.values.virtual.VirtualValues.emptyMap;
@@ -38,22 +39,22 @@ class MessageMetadataParserTest
     @Test
     void noDatabaseNameShouldDefaultToEmptyString() throws Exception
     {
-        assertThat( ABSENT_DB_NAME, equalTo( "" ) );
-        assertThat( parseDatabaseName( emptyMap() ), equalTo( ABSENT_DB_NAME ) );
+        assertThat( ABSENT_DB_ID, equalTo( new DatabaseId( "" ) ) );
+        assertThat( parseDatabaseId( emptyMap() ), equalTo( ABSENT_DB_ID ) );
     }
 
     @Test
     void shouldParseDatabaseName() throws Exception
     {
         String databaseName = "cat_pictures";
-        assertThat( parseDatabaseName( asMapValue( map( "db", databaseName ) ) ), equalTo( databaseName ) );
+        assertThat( parseDatabaseId( asMapValue( map( "db", databaseName ) ) ), equalTo( new DatabaseId( databaseName ) ) );
     }
 
     @Test
     void shouldThrowForIncorrectDatabaseName()
     {
         BoltIOException e = assertThrows( BoltIOException.class,
-                () -> parseDatabaseName( asMapValue( map( "db", 10L ) ) ) );
+                () -> parseDatabaseId( asMapValue( map( "db", 10L ) ) ) );
 
         assertTrue( e.causesFailureMessage() );
     }

@@ -35,6 +35,7 @@ import org.neo4j.bolt.runtime.TransactionStateMachineSPIProvider;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v1.runtime.TransactionStateMachine;
+import org.neo4j.kernel.database.DatabaseId;
 
 import static java.lang.String.format;
 import static org.neo4j.bolt.runtime.StatementProcessor.EMPTY;
@@ -112,13 +113,14 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
      * This transaction state machine will be kept in {@link MutableConnectionState} until the transaction is closed.
      * When closing, the transaction state machine will perform a callback to {@link #releaseStatementProcessor()} to release itself from {@link
      * MutableConnectionState}.
+     * @param databaseId
      */
     @Override
-    public StatementProcessor setCurrentStatementProcessorForDatabase( String databaseName ) throws BoltProtocolBreachFatality, BoltIOException
+    public StatementProcessor setCurrentStatementProcessorForDatabase( DatabaseId databaseId ) throws BoltProtocolBreachFatality, BoltIOException
     {
-        if ( isCurrentStatementProcessorNotSet( databaseName ) )
+        if ( isCurrentStatementProcessorNotSet( databaseId ) )
         {
-            StatementProcessor statementProcessor = statementProcessorProvider.getStatementProcessor( databaseName );
+            StatementProcessor statementProcessor = statementProcessorProvider.getStatementProcessor( databaseId );
             connectionState().setStatementProcessor( statementProcessor );
             return statementProcessor;
         }
@@ -138,19 +140,19 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
         connectionState.clearStatementProcessor();
     }
 
-    private boolean isCurrentStatementProcessorNotSet( String databaseName ) throws BoltProtocolBreachFatality
+    private boolean isCurrentStatementProcessorNotSet( DatabaseId databaseId ) throws BoltProtocolBreachFatality
     {
         StatementProcessor currentProcessor = connectionState().getStatementProcessor();
         if ( currentProcessor != EMPTY )
         {
-            if ( currentProcessor.databaseName().equals( databaseName ) )
+            if ( currentProcessor.databaseId().equals( databaseId ) )
             {
                 return false; // already set
             }
             else
             {
                 throw new BoltProtocolBreachFatality( format( "Changing database without closing the previous is forbidden. " +
-                        "Current database name: '%s', new database name: '%s'.", currentProcessor.databaseName(), databaseName ) );
+                        "Current database name: '%s', new database name: '%s'.", currentProcessor.databaseId().name(), databaseId.name() ) );
             }
         }
         return true;
