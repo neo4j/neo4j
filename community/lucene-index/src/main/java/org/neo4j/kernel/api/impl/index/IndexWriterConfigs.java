@@ -21,9 +21,6 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
-import org.apache.lucene.codecs.lucene80.Lucene80Codec;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
@@ -44,16 +41,10 @@ public final class IndexWriterConfigs
     private static final int MERGE_POLICY_MERGE_FACTOR = FeatureToggles.getInteger( IndexWriterConfigs.class, "merge.factor", 2 );
     private static final double MERGE_POLICY_NO_CFS_RATIO = FeatureToggles.getDouble( IndexWriterConfigs.class, "nocfs.ratio", 1.0 );
     private static final double MERGE_POLICY_MIN_MERGE_MB = FeatureToggles.getDouble( IndexWriterConfigs.class, "min.merge", 0.1 );
-    private static final boolean CODEC_BLOCK_TREE_ORDS_POSTING_FORMAT = FeatureToggles.flag( IndexWriterConfigs.class, "block.tree.ords.posting.format", true );
 
     private static final double STANDARD_RAM_BUFFER_SIZE_MB =
             FeatureToggles.getDouble( IndexWriterConfigs.class, "standard.ram.buffer.size", IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB );
     private static final double POPULATION_RAM_BUFFER_SIZE_MB = FeatureToggles.getDouble( IndexWriterConfigs.class, "population.ram.buffer.size", 50 );
-
-    /**
-     * Default postings format for schema and label scan store indexes.
-     */
-    private static final BlockTreeOrdsPostingsFormat blockTreeOrdsPostingsFormat = new BlockTreeOrdsPostingsFormat();
 
     private IndexWriterConfigs()
     {
@@ -73,15 +64,6 @@ public final class IndexWriterConfigs
         writerConfig.setIndexDeletionPolicy( new SnapshotDeletionPolicy( new KeepOnlyLastCommitDeletionPolicy() ) );
         writerConfig.setUseCompoundFile( true );
         writerConfig.setRAMBufferSizeMB( STANDARD_RAM_BUFFER_SIZE_MB );
-        writerConfig.setCodec( new Lucene80Codec()
-        {
-            @Override
-            public PostingsFormat getPostingsFormatForField( String field )
-            {
-                PostingsFormat postingFormat = super.getPostingsFormatForField( field );
-                return CODEC_BLOCK_TREE_ORDS_POSTING_FORMAT ? blockTreeOrdsPostingsFormat : postingFormat;
-            }
-        } );
 
         LogByteSizeMergePolicy mergePolicy = new LogByteSizeMergePolicy();
         mergePolicy.setNoCFSRatio( MERGE_POLICY_NO_CFS_RATIO );
