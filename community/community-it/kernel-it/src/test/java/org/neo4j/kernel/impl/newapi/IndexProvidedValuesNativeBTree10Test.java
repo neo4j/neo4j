@@ -42,7 +42,7 @@ import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 
 @ExtendWith( RandomExtension.class )
@@ -52,7 +52,7 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
     private static int N_NODES = 10000;
 
     @Inject
-    RandomRule randomRule;
+    private RandomRule randomRule;
 
     private List<Value> singlePropValues = new ArrayList<>();
     private List<ValueTuple> doublePropValues = new ArrayList<>();

@@ -60,9 +60,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assume.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -305,7 +305,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         InputStream stderr = process.getErrorStream();
         try
         {
-            assumeThat( stdout.readLine(), is( LockThisFileProgram.LOCKED_OUTPUT ) );
+            assumeTrue( LockThisFileProgram.LOCKED_OUTPUT.equals( stdout.readLine() ) );
         }
         catch ( Throwable e )
         {

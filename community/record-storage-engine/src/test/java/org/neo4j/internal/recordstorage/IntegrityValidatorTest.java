@@ -30,7 +30,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 
-import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -53,15 +52,7 @@ class IntegrityValidatorTest
         ConstraintRule record = ConstraintRule.constraintRule( 1L, constraint, 2L );
 
         // When
-        try
-        {
-            validator.validateSchemaRule( record );
-            fail("Should have thrown integrity error.");
-        }
-        catch ( Exception e )
-        {
-            // good
-        }
+        assertThrows( Exception.class, () -> validator.validateSchemaRule( record ) );
     }
 
     @Test
@@ -87,15 +78,7 @@ class IntegrityValidatorTest
         record.setInUse( false );
 
         // When
-        try
-        {
-            validator.validateNodeRecord( record );
-            fail( "Should have thrown integrity error." );
-        }
-        catch ( Exception e )
-        {
-            // good
-        }
+        assertThrows( Exception.class, () -> validator.validateNodeRecord( record ) );
     }
 
     @Test
@@ -109,14 +92,6 @@ class IntegrityValidatorTest
         IntegrityValidator validator = new IntegrityValidator( store );
 
         // When
-        try
-        {
-            validator.validateTransactionStartKnowledge( 1 );
-            fail( "Should have thrown integrity error." );
-        }
-        catch ( Exception e )
-        {
-            // good
-        }
+        assertThrows( Exception.class, () -> validator.validateTransactionStartKnowledge( 1 ) );
     }
 }

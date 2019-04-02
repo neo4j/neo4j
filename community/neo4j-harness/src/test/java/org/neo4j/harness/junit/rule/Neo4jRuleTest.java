@@ -29,7 +29,6 @@ import org.neo4j.harness.internal.InProcessNeo4j;
 import org.neo4j.harness.internal.Neo4jBuilder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.runner.Description.createTestDescription;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -59,7 +58,7 @@ class Neo4jRuleTest
             {
                 uriRef.set( rule.httpsURI() );
             }
-        }, createTestDescription( Neo4jRuleTest.class, "test" ) );
+        }, null );
 
         statement.evaluate();
         return uriRef.get();

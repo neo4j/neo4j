@@ -45,11 +45,11 @@ import org.neo4j.values.virtual.MapValue;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -434,7 +434,7 @@ class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldNotOpenExplicitTransactionForPeriodicCommitQuery() throws Exception
+    void shouldNotOpenExplicitTransactionForPeriodicCommitQuery() throws Exception
     {
         KernelTransaction transaction = newTransaction();
         TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -456,7 +456,7 @@ class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldNotMarkForTerminationWhenNoTransaction() throws Exception
+    void shouldNotMarkForTerminationWhenNoTransaction() throws Exception
     {
         KernelTransaction transaction = newTransaction();
         TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
