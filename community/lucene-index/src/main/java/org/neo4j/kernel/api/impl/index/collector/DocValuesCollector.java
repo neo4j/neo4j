@@ -117,7 +117,7 @@ public class DocValuesCollector extends SimpleCollector
     /**
      * @return the total number of hits across all segments.
      */
-    public int getTotalHits()
+    int getTotalHits()
     {
         return totalHits;
     }
@@ -266,13 +266,13 @@ public class DocValuesCollector extends SimpleCollector
                 }
 
                 @Override
-                public Explanation explain( LeafReaderContext context, int doc ) throws IOException
+                public Explanation explain( LeafReaderContext context, int doc )
                 {
                     return null;
                 }
 
                 @Override
-                public Scorer scorer( LeafReaderContext context ) throws IOException
+                public Scorer scorer( LeafReaderContext context )
                 {
                     return null;
                 }
@@ -309,7 +309,6 @@ public class DocValuesCollector extends SimpleCollector
         private final Iterator<DocValuesCollector.MatchingDocs> matchingDocs;
         private final String field;
         final int totalHits;
-        final Map<String,NumericDocValues> docValuesCache;
 
         DocIdSetIterator currentIdIterator;
         NumericDocValues currentDocValues;
@@ -323,7 +322,6 @@ public class DocValuesCollector extends SimpleCollector
             this.totalHits = totalHits;
             this.field = field;
             matchingDocs = allMatchingDocs.iterator();
-            docValuesCache = new HashMap<>();
             score = Float.NaN;
         }
 
@@ -340,7 +338,6 @@ public class DocValuesCollector extends SimpleCollector
                     currentIdIterator = currentDocs.docIdSet;
                     if ( currentIdIterator != null )
                     {
-                        docValuesCache.clear();
                         currentDocValues = currentDocs.readDocValues( field );
                     }
                 }
@@ -531,7 +528,7 @@ public class DocValuesCollector extends SimpleCollector
         }
 
         @Override
-        public float getMaxScore( int upTo ) throws IOException
+        public float getMaxScore( int upTo )
         {
             throw new UnsupportedOperationException();
         }
