@@ -36,9 +36,9 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.bolt.v1.packstream.PackType.BYTES;
 import static org.neo4j.bolt.v1.packstream.PackType.LIST;
 import static org.neo4j.bolt.v1.packstream.PackType.MAP;
@@ -137,7 +137,7 @@ class PackStreamTest
         }
 
         @Override
-        public int read( ByteBuffer dst ) throws IOException
+        public int read( ByteBuffer dst )
         {
             dst.put( bytes );
             int read = bytes.length;
@@ -152,7 +152,7 @@ class PackStreamTest
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
         }
     }
@@ -869,7 +869,7 @@ class PackStreamTest
     }
 
     @Test
-    void shouldThrowErrorWhenUnPackHeaderSizeGreaterThanIntMaxValue() throws Throwable
+    void shouldThrowErrorWhenUnPackHeaderSizeGreaterThanIntMaxValue()
     {
         assertThrows( PackStream.Overflow.class, () -> unpackHeaderSizeGreaterThanIntMaxValue( MAP ) );
         assertThrows( PackStream.Overflow.class, () -> unpackHeaderSizeGreaterThanIntMaxValue( LIST ) );
@@ -955,7 +955,7 @@ class PackStreamTest
             assertThat( output.length, equalTo( bufferSize ) );
 
             client.reset( output );
-            int value = 0;
+            int value;
             switch ( type )
             {
             case MAP:

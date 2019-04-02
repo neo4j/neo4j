@@ -42,8 +42,9 @@ public class JUnitUsageGuardExtension implements BeforeAllCallback
         Class<?> testClazz = context.getRequiredTestClass();
         Set<String> testClasses = collectUsedTestClasses( testClazz );
 
-        // we do not want to check platform classes so far
+        // we do not want to check platform or model classes so far
         testClasses.removeIf( s -> s.startsWith( "org.junit.platform" ) );
+        testClasses.removeIf( s -> s.startsWith( "org.junit.runners.model" ) );
 
         Set<String> newJunitClasses = testClasses.stream().filter( s -> s.startsWith( "org.junit.jupiter" ) ).collect( toSet() );
         if ( newJunitClasses.isEmpty() || noOldJunitUsages( testClasses, newJunitClasses ) )
