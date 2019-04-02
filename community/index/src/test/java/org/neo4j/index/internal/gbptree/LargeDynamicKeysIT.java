@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -39,6 +40,7 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
@@ -58,18 +60,51 @@ class LargeDynamicKeysIT
     @Test
     void mustStayCorrectWhenInsertingValuesOfIncreasingLength() throws IOException
     {
+        mustStayCorrectWhenInsertingValuesOfIncreasingLength( false );
+    }
+
+    @Test
+    void mustStayCorrectWhenInsertingValuesOfIncreasingLengthInRandomOrder() throws IOException
+    {
+        mustStayCorrectWhenInsertingValuesOfIncreasingLength( true );
+    }
+
+    private void mustStayCorrectWhenInsertingValuesOfIncreasingLength( boolean shuffle ) throws IOException
+    {
         Layout<RawBytes,RawBytes> layout = layout();
-        try ( GBPTree<RawBytes,RawBytes> index = createIndex( layout );
-              Writer<RawBytes,RawBytes> writer = index.writer() )
+        try ( GBPTree<RawBytes,RawBytes> index = createIndex( layout ) )
         {
             RawBytes emptyValue = layout.newValue();
             emptyValue.bytes = new byte[0];
+            List<Integer> allKeySizes = new ArrayList<>();
             for ( int keySize = 1; keySize < index.keyValueSizeCap(); keySize++ )
+            {
+                allKeySizes.add( keySize );
+            }
+            if ( shuffle )
+            {
+                Collections.shuffle( allKeySizes, random.random() );
+            }
+            try ( Writer<RawBytes,RawBytes> writer = index.writer() )
+            {
+                for ( Integer keySize : allKeySizes )
+                {
+                    RawBytes key = layout.newKey();
+                    key.bytes = new byte[keySize];
+                    writer.put( key, emptyValue );
+                }
+            }
+            index.consistencyCheck();
+            for ( Integer keySize : allKeySizes )
             {
                 RawBytes key = layout.newKey();
                 key.bytes = new byte[keySize];
-                writer.put( key, emptyValue );
+                RawCursor<Hit<RawBytes,RawBytes>,IOException> seek = index.seek( key, key );
+                assertTrue( seek.next() );
+                assertEquals( 0, layout.compare( key, seek.get().key() ) );
+                assertFalse( seek.next() );
             }
+
         }
     }
 
@@ -114,28 +149,32 @@ class LargeDynamicKeysIT
             // when
             Set<String> generatedStrings = new HashSet<>();
             List<Pair<RawBytes,RawBytes>> entries = new ArrayList<>();
+            for ( int i = 0; i < 1_000; i++ )
+            {
+                // value, based on i
+                RawBytes value = new RawBytes();
+                value.bytes = new byte[random.nextInt( minValueSize, maxValueSize )];
+                random.nextBytes( value.bytes );
+
+                // key, randomly generated
+                String string;
+                do
+                {
+                    string = random.nextAlphaNumericString( minKeySize, maxKeySize );
+                }
+                while ( !generatedStrings.add( string ) );
+                RawBytes key = new RawBytes();
+                key.bytes = UTF8.encode( string );
+                entries.add( Pair.of( key, value ) );
+            }
+
+            int i = 0;
             try ( Writer<RawBytes,RawBytes> writer = tree.writer() )
             {
-                for ( int i = 0; i < 1_000; i++ )
+                for ( Pair<RawBytes,RawBytes> entry : entries )
                 {
-                    // value, based on i
-                    RawBytes value = new RawBytes();
-                    value.bytes = new byte[random.nextInt( minValueSize, maxValueSize )];
-                    random.nextBytes( value.bytes );
-
-                    // key, randomly generated
-                    String string;
-                    do
-                    {
-                        string = random.nextAlphaNumericString( minKeySize, maxKeySize );
-                    }
-                    while ( !generatedStrings.add( string ) );
-                    RawBytes key = new RawBytes();
-                    key.bytes = UTF8.encode( string );
-                    entries.add( Pair.of( key, value ) );
-
                     // write
-                    writer.put( key, value );
+                    writer.put( entry.first(), entry.other() );
                 }
             }
 
