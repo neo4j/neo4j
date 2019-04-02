@@ -134,21 +134,21 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void removeKeyValueAt( PageCursor cursor, int pos, int keyCount )
+    void removeKeyValueAt( PageCursor cursor, int pos, int keyCount, long stableGeneration, long unstableGeneration )
     {
         removeKeyAt( cursor, pos, keyCount );
         removeValueAt( cursor, pos, keyCount );
     }
 
     @Override
-    void removeKeyAndLeftChildAt( PageCursor cursor, int keyPos, int keyCount )
+    void removeKeyAndLeftChildAt( PageCursor cursor, int keyPos, int keyCount, long stableGeneration, long unstableGeneration )
     {
         removeKeyAt( cursor, keyPos, keyCount );
         removeChildAt( cursor, keyPos, keyCount );
     }
 
     @Override
-    void removeKeyAndRightChildAt( PageCursor cursor, int keyPos, int keyCount )
+    void removeKeyAndRightChildAt( PageCursor cursor, int keyPos, int keyCount, long stableGeneration, long unstableGeneration )
     {
         removeKeyAt( cursor, keyPos, keyCount );
         removeChildAt( cursor, keyPos + 1, keyCount );

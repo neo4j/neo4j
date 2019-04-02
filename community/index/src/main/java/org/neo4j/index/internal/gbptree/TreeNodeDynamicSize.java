@@ -289,7 +289,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void removeKeyValueAt( PageCursor cursor, int pos, int keyCount )
+    void removeKeyValueAt( PageCursor cursor, int pos, int keyCount, long stableGeneration, long unstableGeneration ) throws IOException
     {
         placeCursorAtActualKey( cursor, pos, LEAF );
         int keyOffset = cursor.getOffset();
@@ -302,7 +302,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         if ( offload )
         {
             long offloadId = readOffloadId( cursor );
-            offloadStore.free( offloadId );
+            offloadStore.free( offloadId, stableGeneration, unstableGeneration );
         }
 
         // Kill actual key
@@ -319,7 +319,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void removeKeyAndRightChildAt( PageCursor cursor, int keyPos, int keyCount )
+    void removeKeyAndRightChildAt( PageCursor cursor, int keyPos, int keyCount, long stableGeneration, long unstableGeneration ) throws IOException
     {
         placeCursorAtActualKey( cursor, keyPos, INTERNAL );
         int keyOffset = cursor.getOffset();
@@ -331,7 +331,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         if ( offload )
         {
             long offloadId = readOffloadId( cursor );
-            offloadStore.free( offloadId );
+            offloadStore.free( offloadId, stableGeneration, unstableGeneration );
         }
 
         // Kill actual key
@@ -350,7 +350,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void removeKeyAndLeftChildAt( PageCursor cursor, int keyPos, int keyCount )
+    void removeKeyAndLeftChildAt( PageCursor cursor, int keyPos, int keyCount, long stableGeneration, long unstableGeneration ) throws IOException
     {
         placeCursorAtActualKey( cursor, keyPos, INTERNAL );
         int keyOffset = cursor.getOffset();
@@ -362,7 +362,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         if ( offload )
         {
             long offloadId = readOffloadId( cursor );
-            offloadStore.free( offloadId );
+            offloadStore.free( offloadId, stableGeneration, unstableGeneration );
         }
 
         // Kill actual key
@@ -856,7 +856,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
             moveKeysAndChildren( leftCursor, splitPos, rightCursor, 0, rightKeyCount, true );
             // Rightmost key in left is the one we send up to parent, remove it from here.
-            removeKeyAndRightChildAt( leftCursor, splitPos - 1, splitPos );
+            removeKeyAndRightChildAt( leftCursor, splitPos - 1, splitPos, stableGeneration, unstableGeneration );
             defragmentInternal( leftCursor );
             insertKeyAndRightChildAt( leftCursor, newKey, newRightChild, insertPos, splitPos - 1, stableGeneration, unstableGeneration );
         }
@@ -895,7 +895,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
                 int copyCount = leftKeyCount - copyFrom;
                 moveKeysAndChildren( leftCursor, copyFrom, rightCursor, 0, copyCount, true );
                 // Rightmost key in left is the one we send up to parent, remove it from here.
-                removeKeyAndRightChildAt( leftCursor, splitPos, splitPos + 1 );
+                removeKeyAndRightChildAt( leftCursor, splitPos, splitPos + 1, stableGeneration, unstableGeneration );
                 defragmentInternal( leftCursor );
                 insertKeyAndRightChildAt( rightCursor, newKey, newRightChild, insertPos - copyFrom, copyCount,
                         stableGeneration, unstableGeneration );

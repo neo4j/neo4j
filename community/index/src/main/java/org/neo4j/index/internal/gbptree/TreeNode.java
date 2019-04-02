@@ -246,11 +246,11 @@ abstract class TreeNode<KEY,VALUE>
     abstract void insertKeyValueAt( PageCursor cursor, KEY key, VALUE value, int pos, int keyCount, long stableGeneration, long unstableGeneration )
             throws IOException;
 
-    abstract void removeKeyValueAt( PageCursor cursor, int pos, int keyCount );
+    abstract void removeKeyValueAt( PageCursor cursor, int pos, int keyCount, long stableGeneration, long unstableGeneration ) throws IOException;
 
-    abstract void removeKeyAndRightChildAt( PageCursor cursor, int keyPos, int keyCount );
+    abstract void removeKeyAndRightChildAt( PageCursor cursor, int keyPos, int keyCount, long stableGeneration, long unstableGeneration ) throws IOException;
 
-    abstract void removeKeyAndLeftChildAt( PageCursor cursor, int keyPos, int keyCount );
+    abstract void removeKeyAndLeftChildAt( PageCursor cursor, int keyPos, int keyCount, long stableGeneration, long unstableGeneration ) throws IOException;
 
     /**
      * Overwrite key at position with given key.

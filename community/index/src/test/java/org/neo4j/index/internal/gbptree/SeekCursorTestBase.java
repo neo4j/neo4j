@@ -2381,10 +2381,10 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         TreeNode.setKeyCount( cursor, keyCount + 1 );
     }
 
-    private void removeAtPos( int pos )
+    private void removeAtPos( int pos ) throws IOException
     {
         int keyCount = TreeNode.keyCount( cursor );
-        node.removeKeyValueAt( cursor, pos, keyCount );
+        node.removeKeyValueAt( cursor, pos, keyCount, stableGeneration, unstableGeneration );
         TreeNode.setKeyCount( cursor, keyCount - 1 );
     }
 

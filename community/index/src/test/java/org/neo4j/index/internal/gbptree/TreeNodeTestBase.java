@@ -210,7 +210,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         assertValueEquals( secondValue, node.valueAt( cursor, readValue, 2 ) );
 
         // WHEN
-        node.removeKeyValueAt( cursor, 1, 3 );
+        node.removeKeyValueAt( cursor, 1, 3, STABLE_GENERATION, UNSTABLE_GENERATION );
         TreeNode.setKeyCount( cursor, 2 );
 
         // THEN
@@ -274,14 +274,14 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         assertKeysAndChildren( stable, unstable, zeroChild, firstKey, firstChild, removedKey, removedChild, secondKey, secondChild );
 
         // WHEN
-        node.removeKeyAndRightChildAt( cursor, 1, 3 );
+        node.removeKeyAndRightChildAt( cursor, 1, 3, STABLE_GENERATION, UNSTABLE_GENERATION );
         TreeNode.setKeyCount( cursor, 2 );
 
         // THEN
         assertKeysAndChildren( stable, unstable, zeroChild, firstKey, firstChild, secondKey, secondChild );
 
         // WHEN
-        node.removeKeyAndLeftChildAt( cursor, 0, 2 );
+        node.removeKeyAndLeftChildAt( cursor, 0, 2, STABLE_GENERATION, UNSTABLE_GENERATION );
         TreeNode.setKeyCount( cursor, 1 );
 
         // THEN
@@ -383,7 +383,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         node.insertKeyValueAt( cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // AND
-        node.removeKeyValueAt( cursor, 1, 2 );
+        node.removeKeyValueAt( cursor, 1, 2, STABLE_GENERATION, UNSTABLE_GENERATION );
         TreeNode.setKeyCount( cursor, 1 );
 
         // WHEN
@@ -406,7 +406,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         node.insertKeyValueAt( cursor, key, value, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // AND
-        node.removeKeyValueAt( cursor, 0, 2 );
+        node.removeKeyValueAt( cursor, 0, 2, STABLE_GENERATION, UNSTABLE_GENERATION );
         TreeNode.setKeyCount( cursor, 1 );
 
         // WHEN
@@ -432,7 +432,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         node.insertKeyValueAt( cursor, key, value, 2, 2, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // AND
-        node.removeKeyValueAt( cursor, 1, 3 );
+        node.removeKeyValueAt( cursor, 1, 3, STABLE_GENERATION, UNSTABLE_GENERATION );
         TreeNode.setKeyCount( cursor, 2 );
 
         // WHEN
@@ -465,8 +465,8 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         node.insertKeyValueAt( cursor, key, value, 4, 4, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // AND
-        node.removeKeyValueAt( cursor, 1, 5 );
-        node.removeKeyValueAt( cursor, 2, 4 );
+        node.removeKeyValueAt( cursor, 1, 5, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.removeKeyValueAt( cursor, 2, 4, STABLE_GENERATION, UNSTABLE_GENERATION );
         TreeNode.setKeyCount( cursor, 3 );
 
         // WHEN
@@ -500,9 +500,9 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         node.insertKeyValueAt( cursor, key, value, 4, 4, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // AND
-        node.removeKeyValueAt( cursor, 0, 5 );
-        node.removeKeyValueAt( cursor, 1, 4 );
-        node.removeKeyValueAt( cursor, 2, 3 );
+        node.removeKeyValueAt( cursor, 0, 5, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.removeKeyValueAt( cursor, 1, 4, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.removeKeyValueAt( cursor, 2, 3, STABLE_GENERATION, UNSTABLE_GENERATION );
         TreeNode.setKeyCount( cursor, 2 );
 
         // WHEN
@@ -563,7 +563,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
                     int position = random.nextInt( expectedKeyCount );
                     node.keyAt( cursor, readKey, position, LEAF );
                     node.valueAt( cursor, readValue, position );
-                    node.removeKeyValueAt( cursor, position, expectedKeyCount );
+                    node.removeKeyValueAt( cursor, position, expectedKeyCount, STABLE_GENERATION, UNSTABLE_GENERATION );
                     KEY expectedKey = expectedKeys.remove( position );
                     VALUE expectedValue = expectedValues.remove( position );
                     assertEquals( 0, layout.compare( expectedKey, readKey ),

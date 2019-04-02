@@ -76,6 +76,23 @@ class LargeDynamicKeysIT
     }
 
     @Test
+    void removeSingleKeyLargeThanOffloadCap() throws IOException
+    {
+        try ( GBPTree<RawBytes,RawBytes> tree = createIndex() )
+        {
+            int keySize = tree.needOffloadCap();
+            RawBytes key = key( keySize + 1 );
+            RawBytes value = value( 0 );
+            try ( Writer<RawBytes,RawBytes> writer = tree.writer() )
+            {
+                writer.put( key, value );
+                writer.remove( key );
+            }
+            assertDontFind( tree, key );
+        }
+    }
+
+    @Test
     void putSingleKeyOnKeyValueSizeCap() throws IOException
     {
         try ( GBPTree<RawBytes,RawBytes> tree = createIndex() )
@@ -107,7 +124,7 @@ class LargeDynamicKeysIT
     }
 
     @Test
-    void putRandomlyDistributedKeys() throws IOException
+    void putAndRemoveRandomlyDistributedKeys() throws IOException
     {
         try ( GBPTree<RawBytes,RawBytes> tree = createIndex() )
         {
@@ -120,7 +137,9 @@ class LargeDynamicKeysIT
                 int keySize = inValidRange( 4, keyValueSizeOverflow, random.nextInt( keyValueSizeOverflow ) );
                 entries.add( Pair.of( key( keySize, asBytes( i ) ), value ) );
             }
+            Collections.shuffle( entries, random.random() );
             insertAndValidate( tree, entries );
+            removeAndValidate( tree, entries );
         }
     }
 
@@ -236,11 +255,29 @@ class LargeDynamicKeysIT
         }
     }
 
-    private void assertFindExact( GBPTree<RawBytes,RawBytes> tree, RawBytes key ) throws IOException
+    private void removeAndValidate( GBPTree<RawBytes,RawBytes> tree, List<Pair<RawBytes,RawBytes>> entries ) throws IOException
     {
-        RawBytes value = layout.newValue();
-        value.bytes = new byte[0];
-        assertFindExact( tree, key, value );
+        try ( Writer<RawBytes,RawBytes> writer = tree.writer() )
+        {
+            for ( Pair<RawBytes,RawBytes> entry : entries )
+            {
+                RawBytes removed = writer.remove( entry.first() );
+                assertEquals( 0, layout.compare( removed, entry.other() ) );
+            }
+        }
+
+        for ( Pair<RawBytes,RawBytes> entry : entries )
+        {
+            assertDontFind( tree, entry.first() );
+        }
+    }
+
+    private void assertDontFind( GBPTree<RawBytes,RawBytes> tree, RawBytes key ) throws IOException
+    {
+        try ( RawCursor<Hit<RawBytes,RawBytes>,IOException> seek = tree.seek( key, key ) )
+        {
+            assertFalse( seek.next() );
+        }
     }
 
     private void assertFindExact( GBPTree<RawBytes,RawBytes> tree, RawBytes key, RawBytes value ) throws IOException

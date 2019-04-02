@@ -166,9 +166,9 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
     }
 
     @Override
-    public void free( long offloadId )
+    public void free( long offloadId, long stableGeneration, long unstableGeneration ) throws IOException
     {
-        throw new UnsupportedOperationException( "Implement me" );
+        idProvider.releaseId( stableGeneration, unstableGeneration, offloadId );
     }
 
     @VisibleForTesting

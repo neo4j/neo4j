@@ -547,7 +547,7 @@ class InternalTreeLogic<KEY,VALUE>
             {
                 // Value could not be overwritten in a simple way because they differ in size.
                 // Delete old value
-                bTreeNode.removeKeyValueAt( cursor, pos, keyCount );
+                bTreeNode.removeKeyValueAt( cursor, pos, keyCount, stableGeneration, unstableGeneration );
                 TreeNode.setKeyCount( cursor, keyCount - 1 );
                 boolean didSplit =
                         doInsertInLeaf( cursor, structurePropagation, key, mergedValue, pos, keyCount - 1, stableGeneration, unstableGeneration );
@@ -850,7 +850,7 @@ class InternalTreeLogic<KEY,VALUE>
         {
             // Remove key and right child
             long rightChild = bTreeNode.childAt( cursor, pos + 1, stableGeneration, unstableGeneration );
-            bTreeNode.removeKeyAndRightChildAt( cursor, pos, keyCount );
+            bTreeNode.removeKeyAndRightChildAt( cursor, pos, keyCount, stableGeneration, unstableGeneration );
             TreeNode.setKeyCount( cursor, keyCount - 1 );
 
             doInsertInInternal( cursor, structurePropagation, keyCount - 1, newKey, rightChild, stableGeneration, unstableGeneration );
@@ -921,7 +921,7 @@ class InternalTreeLogic<KEY,VALUE>
             createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
                     stableGeneration, unstableGeneration);
             int keyCount = TreeNode.keyCount( cursor );
-            simplyRemoveFromInternal( cursor, keyCount, subtreePosition, true );
+            simplyRemoveFromInternal( cursor, keyCount, subtreePosition, true, stableGeneration, unstableGeneration );
         }
     }
 
@@ -969,7 +969,7 @@ class InternalTreeLogic<KEY,VALUE>
             // Create new version of node, save rightmost key in structurePropagation, remove rightmost key and child
             createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD, stableGeneration, unstableGeneration );
             bTreeNode.keyAt( cursor, structurePropagation.bubbleKey, keyCount - 1, INTERNAL );
-            simplyRemoveFromInternal( cursor, keyCount, keyCount - 1, false );
+            simplyRemoveFromInternal( cursor, keyCount, keyCount - 1, false, stableGeneration, unstableGeneration );
 
             return true;
         }
@@ -979,16 +979,17 @@ class InternalTreeLogic<KEY,VALUE>
         }
     }
 
-    private int simplyRemoveFromInternal( PageCursor cursor, int keyCount, int keyPos, boolean leftChild )
+    private int simplyRemoveFromInternal( PageCursor cursor, int keyCount, int keyPos, boolean leftChild, long stableGeneration, long unstableGeneration )
+            throws IOException
     {
         // Remove key and child
         if ( leftChild )
         {
-            bTreeNode.removeKeyAndLeftChildAt(  cursor, keyPos, keyCount );
+            bTreeNode.removeKeyAndLeftChildAt(  cursor, keyPos, keyCount, stableGeneration, unstableGeneration );
         }
         else
         {
-            bTreeNode.removeKeyAndRightChildAt( cursor, keyPos, keyCount );
+            bTreeNode.removeKeyAndRightChildAt( cursor, keyPos, keyCount, stableGeneration, unstableGeneration );
         }
 
         // Decrease key count
@@ -1058,7 +1059,7 @@ class InternalTreeLogic<KEY,VALUE>
 
         createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
                 stableGeneration, unstableGeneration );
-        keyCount = simplyRemoveFromLeaf( cursor, into, keyCount, pos );
+        keyCount = simplyRemoveFromLeaf( cursor, into, keyCount, pos, stableGeneration, unstableGeneration );
 
         if ( bTreeNode.leafUnderflow( cursor, keyCount ) )
         {
@@ -1211,14 +1212,16 @@ class InternalTreeLogic<KEY,VALUE>
      * @param into VALUE in which to store removed value
      * @param keyCount Key count of node before remove
      * @param pos Position to remove from
+     * @param stableGeneration
+     * @param unstableGeneration
      * @return keyCount after remove
      */
-    private int simplyRemoveFromLeaf( PageCursor cursor, VALUE into, int keyCount, int pos )
+    private int simplyRemoveFromLeaf( PageCursor cursor, VALUE into, int keyCount, int pos, long stableGeneration, long unstableGeneration ) throws IOException
     {
         // Save value to remove
         bTreeNode.valueAt( cursor, into, pos );
         // Remove key/value
-        bTreeNode.removeKeyValueAt( cursor, pos, keyCount );
+        bTreeNode.removeKeyValueAt( cursor, pos, keyCount, stableGeneration, unstableGeneration );
 
         // Decrease key count
         int newKeyCount = keyCount - 1;

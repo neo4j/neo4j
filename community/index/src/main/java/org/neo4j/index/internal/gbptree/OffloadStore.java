@@ -35,5 +35,5 @@ public interface OffloadStore<KEY, VALUE>
 
     long writeKeyValue( KEY key, VALUE value, long stableGeneration, long unstableGeneration ) throws IOException;
 
-    void free( long offloadId );
+    void free( long offloadId, long stableGeneration, long unstableGeneration ) throws IOException;
 }
