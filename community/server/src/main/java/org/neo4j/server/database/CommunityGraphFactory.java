@@ -20,16 +20,11 @@
 package org.neo4j.server.database;
 
 import java.io.File;
-import java.util.function.Function;
 
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.module.PlatformModule;
-import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.kernel.availability.AvailabilityGuard;
-import org.neo4j.kernel.availability.AvailabilityGuardInstaller;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
@@ -40,23 +35,9 @@ public class CommunityGraphFactory implements GraphFactory
     @Override
     public GraphDatabaseFacade newGraphDatabase( Config config, Dependencies dependencies )
     {
-        return newGraphDatabase( config, dependencies, availabilityGuard -> {} );
-    }
-
-    @Override
-    public GraphDatabaseFacade newGraphDatabase( Config config, Dependencies dependencies, AvailabilityGuardInstaller guardInstaller )
-    {
         File storeDir = config.get( GraphDatabaseSettings.databases_root_path );
 
-        Function<PlatformModule,AbstractEditionModule> factory = platform ->
-        {
-            CommunityEditionModule edition = new CommunityEditionModule( platform );
-            AvailabilityGuard guard = edition.getGlobalAvailabilityGuard( platform.clock, platform.logging, platform.config );
-            guardInstaller.install( guard );
-            return edition;
-        };
-
-        GraphDatabaseFacadeFactory facadeFactory = new GraphDatabaseFacadeFactory( COMMUNITY, factory );
+        GraphDatabaseFacadeFactory facadeFactory = new GraphDatabaseFacadeFactory( COMMUNITY, CommunityEditionModule::new );
         return facadeFactory.newFacade( storeDir, config, dependencies );
     }
 }

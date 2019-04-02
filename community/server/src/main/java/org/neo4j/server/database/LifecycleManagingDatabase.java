@@ -52,7 +52,7 @@ public class LifecycleManagingDatabase implements Database
     {
         this.config = config;
         this.dbFactory = dbFactory;
-        this.dependencies = dependencies;
+        this.dependencies = new AvailabiltyGuardCapturingDependencies( this::setAvailabilityGuard, dependencies );
         this.log = dependencies.userLogProvider().getLog( getClass() );
     }
 
@@ -87,7 +87,7 @@ public class LifecycleManagingDatabase implements Database
     public void start()
     {
         log.info( "Starting..." );
-        this.graph = dbFactory.newGraphDatabase( config, dependencies, this::setAvailabilityGuard );
+        this.graph = dbFactory.newGraphDatabase( config, dependencies );
         // in order to speed up testing, they should not run the preload, but in production it pays to do it.
         if ( !isInTestMode() )
         {

@@ -19,15 +19,13 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.kernel.availability.AvailabilityGuardInstaller;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 import static org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
 
+@FunctionalInterface
 public interface GraphFactory
 {
     GraphDatabaseFacade newGraphDatabase( Config config, Dependencies dependencies );
-
-    GraphDatabaseFacade newGraphDatabase( Config config, Dependencies dependencies, AvailabilityGuardInstaller guardInstaller );
 }

@@ -23,20 +23,16 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.graphdb.facade.embedded.EmbeddedGraphDatabase;
 import org.neo4j.graphdb.factory.module.PlatformModule;
-import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.availability.AvailabilityGuard;
-import org.neo4j.kernel.availability.AvailabilityGuardInstaller;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -145,16 +141,10 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         trackUnclosedUse( storeDir );
     }
 
-    public ImpermanentGraphDatabase( File storeDir, Config config, Dependencies dependencies, AvailabilityGuardInstaller guardInstaller )
-    {
-        super( storeDir, config, dependencies, guardInstaller );
-        trackUnclosedUse( storeDir );
-    }
-
     @Override
     protected void create( File storeDir, Map<String, String> params, Dependencies dependencies )
     {
-        new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, this::editionModuleFactory )
+        new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
         {
             @Override
             protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )

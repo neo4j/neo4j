@@ -24,7 +24,6 @@ import java.io.File;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.availability.AvailabilityGuardInstaller;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -37,16 +36,9 @@ public class InMemoryGraphFactory implements GraphFactory
     @Override
     public GraphDatabaseFacade newGraphDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        return newGraphDatabase( config, dependencies, availabilityGuard -> {} );
-    }
-
-    @Override
-    public GraphDatabaseFacade newGraphDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies,
-            AvailabilityGuardInstaller guardInstaller )
-    {
         File storeDir = config.get( GraphDatabaseSettings.database_path );
         config.augment( stringMap( GraphDatabaseSettings.ephemeral.name(), "true",
                 new BoltConnector( "bolt" ).listen_address.name(), "localhost:0" ) );
-        return new ImpermanentGraphDatabase( storeDir, config, GraphDatabaseDependencies.newDependencies( dependencies ), guardInstaller );
+        return new ImpermanentGraphDatabase( storeDir, config, GraphDatabaseDependencies.newDependencies( dependencies ) );
     }
 }
