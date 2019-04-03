@@ -36,6 +36,7 @@ public class CommunityGraphFactory implements GraphFactory
     public GraphDatabaseFacade newGraphDatabase( Config config, Dependencies dependencies )
     {
         File storeDir = config.get( GraphDatabaseSettings.databases_root_path );
+
         GraphDatabaseFacadeFactory facadeFactory = new GraphDatabaseFacadeFactory( COMMUNITY, CommunityEditionModule::new );
         return facadeFactory.newFacade( storeDir, config, dependencies );
     }

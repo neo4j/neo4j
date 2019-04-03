@@ -42,6 +42,7 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
+import org.neo4j.kernel.availability.AvailabilityGuardInstaller;
 import org.neo4j.kernel.availability.StartupWaiter;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
@@ -110,6 +111,16 @@ public class GraphDatabaseFacadeFactory
          * Collection of command executors to start running once the db is started
          */
         Iterable<Pair<DeferredExecutor,Group>> deferredExecutors();
+
+        /**
+         * Simple callback for providing a global availability guard to top level components
+         * once it is created by {@link GraphDatabaseFacadeFactory#initFacade(File, Config, Dependencies, GraphDatabaseFacade)}.
+         * By default this callback is a no-op
+         */
+        default AvailabilityGuardInstaller availabilityGuardInstaller()
+        {
+            return availabilityGuard -> {};
+        }
     }
 
     protected final DatabaseInfo databaseInfo;
@@ -166,6 +177,8 @@ public class GraphDatabaseFacadeFactory
     {
         PlatformModule platform = createPlatform( storeDir, config, dependencies );
         AbstractEditionModule edition = editionFactory.apply( platform );
+        dependencies.availabilityGuardInstaller()
+                .install( edition.getGlobalAvailabilityGuard( platform.clock, platform.logging, platform.config ) );
 
         platform.life.add( new VmPauseMonitorComponent( config, platform.logging.getInternalLog( VmPauseMonitorComponent.class ), platform.jobScheduler ) );
 

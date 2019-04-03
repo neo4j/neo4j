@@ -415,33 +415,38 @@
                       <oldType>org.neo4j.graphdb.factory.module.edition.context.DatabaseEditionContext</oldType>
                       <justification>Adjusting revapi config to actual code state</justification>
                   </item>
-                <item>
-                  <code>java.method.added</code>
-                  <new>method java.lang.String org.neo4j.graphdb.index.fulltext.AnalyzerProvider::description()</new>
-                  <justification>This is necessary for listAvailableAnalyzers to show a description,
-                    and is extremely unlikely to conflict adversely with any code in the wild.</justification>
-                </item>
-                <item>
-                  <code>java.method.added</code>
-                  <new>method boolean org.neo4j.graphdb.config.BaseSetting&lt;T&gt;::secret()</new>
-                  <justification>This is necessary for obsfucate the system password in the debug log. Only additive change.</justification>
-                </item>
-                <item>
-                  <code>java.method.added</code>
-                  <new>method void org.neo4j.graphdb.config.BaseSetting&lt;T&gt;::setSecret(boolean)</new>
-                  <justification>This is necessary for obsfucate the system password in the debug log. Only additive change.</justification>
-                </item>
-                <item>
-                  <code>java.method.defaultMethodAddedToInterface</code>
-                  <new>method boolean org.neo4j.graphdb.config.SettingGroup&lt;T&gt;::secret()</new>
-                  <justification>This is necessary for obsfucate the system password in the debug log. Only additive change.</justification>
-                </item>
-                <item>
-                  <code>java.annotation.attributeValueChanged</code>
-                  <old>field org.neo4j.graphdb.factory.GraphDatabaseSettings.load_csv_file_url_root</old>
-                  <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.load_csv_file_url_root</new>
-                  <justification>The description annotation contained text that was not strictly correct, and this is therefor an important documentation correction.</justification>
-                </item>
+                  <item>
+                    <code>java.method.added</code>
+                    <new>method java.lang.String org.neo4j.graphdb.index.fulltext.AnalyzerProvider::description()</new>
+                    <justification>This is necessary for listAvailableAnalyzers to show a description,
+                      and is extremely unlikely to conflict adversely with any code in the wild.</justification>
+                  </item>
+                  <item>
+                    <code>java.method.added</code>
+                    <new>method boolean org.neo4j.graphdb.config.BaseSetting&lt;T&gt;::secret()</new>
+                    <justification>This is necessary for obsfucate the system password in the debug log. Only additive change.</justification>
+                  </item>
+                  <item>
+                    <code>java.method.added</code>
+                    <new>method void org.neo4j.graphdb.config.BaseSetting&lt;T&gt;::setSecret(boolean)</new>
+                    <justification>This is necessary for obsfucate the system password in the debug log. Only additive change.</justification>
+                  </item>
+                  <item>
+                    <code>java.method.defaultMethodAddedToInterface</code>
+                    <new>method boolean org.neo4j.graphdb.config.SettingGroup&lt;T&gt;::secret()</new>
+                    <justification>This is necessary for obsfucate the system password in the debug log. Only additive change.</justification>
+                  </item>
+                  <item>
+                    <code>java.annotation.attributeValueChanged</code>
+                    <old>field org.neo4j.graphdb.factory.GraphDatabaseSettings.load_csv_file_url_root</old>
+                    <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.load_csv_file_url_root</new>
+                    <justification>The description annotation contained text that was not strictly correct, and this is therefor an important documentation correction.</justification>
+                  </item>
+                  <item>
+                    <code>java.method.defaultMethodAddedToInterface</code>
+                    <classQualifiedName>org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies</classQualifiedName>
+                    <justification>This is a default api method with no implications for binary or source compatibility.</justification>
+                  </item>
               </revapi.ignore>
               <revapi.semver.ignore>
                 <enabled>true</enabled>
