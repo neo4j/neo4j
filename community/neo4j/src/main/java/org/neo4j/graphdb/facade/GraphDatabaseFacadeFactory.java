@@ -29,7 +29,9 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Edition;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.UnableToStartDatabaseException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -69,6 +71,7 @@ import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipValue;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTGeometry;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
@@ -167,6 +170,7 @@ public class GraphDatabaseFacadeFactory
         {
             edition.createDatabases( databaseManager, config );
             globalLife.start();
+            verifySystemDatabaseStart( databaseManager );
             DatabaseId defaultDatabase = new DatabaseId( config.get( GraphDatabaseSettings.default_database ) );
             databaseFacade = databaseManager.getDatabaseContext( defaultDatabase ).orElseThrow( () -> new IllegalStateException(
                     String.format( "Database %s not found. Please check the logs for startup errors.", defaultDatabase ) ) ).databaseFacade();
@@ -199,6 +203,15 @@ public class GraphDatabaseFacadeFactory
         }
 
         return databaseFacade;
+    }
+
+    private static void verifySystemDatabaseStart( DatabaseManager<?> databaseManager )
+    {
+        DatabaseContext systemContext = databaseManager.getDatabaseContext( new DatabaseId( SYSTEM_DATABASE_NAME ) ).get();
+        if ( systemContext.isFailed() )
+        {
+            throw new UnableToStartDatabaseException( SYSTEM_DATABASE_NAME + " failed to start.", systemContext.failureCause() );
+        }
     }
 
     /**

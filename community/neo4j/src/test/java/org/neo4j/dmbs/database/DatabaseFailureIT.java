@@ -24,18 +24,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.ArrayList;
+import java.io.IOException;
 
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.dbms.database.UnableToStartDatabaseException;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.matchers.NestedThrowableMatcher;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.apache.commons.io.FileUtils.deleteDirectory;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -43,18 +45,18 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
 @ExtendWith( TestDirectoryExtension.class )
-class DefaultDatabaseManagerIT
+class DatabaseFailureIT
 {
     private static final DatabaseId DEFAULT_DATABASE_ID = new DatabaseId( DEFAULT_DATABASE_NAME );
     private static final DatabaseId SYSTEM_DATABASE_ID = new DatabaseId( SYSTEM_DATABASE_NAME );
     @Inject
     private TestDirectory testDirectory;
-    private GraphDatabaseService database;
+    private GraphDatabaseAPI database;
 
     @BeforeEach
     void setUp()
     {
-        database = new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
+        database = startDatabase();
     }
 
     @AfterEach
@@ -64,45 +66,34 @@ class DefaultDatabaseManagerIT
     }
 
     @Test
-    void createDatabase()
+    void startWhenDefaultDatabaseFailedToStart() throws IOException
     {
-        DatabaseManager<?> databaseManager = getDatabaseManager();
-        assertThrows( IllegalStateException.class, () -> databaseManager.createDatabase( DEFAULT_DATABASE_ID ) );
+        database.shutdown();
+        deleteDirectory( testDirectory.databaseLayout().getTransactionLogsDirectory() );
+
+        database = startDatabase();
+        var databaseManager = getDatabaseManager();
+        assertTrue( databaseManager.getDatabaseContext( DEFAULT_DATABASE_ID ).get().isFailed() );
+        assertFalse( databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ).get().isFailed() );
     }
 
     @Test
-    void lookupExistingDatabase()
+    void failToStartWhenSystemDatabaseFailedToStart() throws IOException
     {
-        DatabaseManager<?> databaseManager = getDatabaseManager();
-        var defaultDatabaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_ID );
-        var systemDatabaseContext = databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID );
+        database.shutdown();
+        deleteDirectory( testDirectory.databaseLayout( SYSTEM_DATABASE_NAME ).getTransactionLogsDirectory() );
 
-        assertTrue( defaultDatabaseContext.isPresent() );
-        assertTrue( systemDatabaseContext.isPresent() );
-    }
-
-    @Test
-    void listDatabases()
-    {
-        DatabaseManager<?> databaseManager = getDatabaseManager();
-        var databases = databaseManager.registeredDatabases();
-        assertEquals( 2, databases.size()  );
-        ArrayList<DatabaseId> databaseNames = new ArrayList<>( databases.keySet() );
-        assertEquals( SYSTEM_DATABASE_ID, databaseNames.get( 0 ) );
-        assertEquals( DEFAULT_DATABASE_ID, databaseNames.get( 1 ) );
-    }
-
-    @Test
-    void shutdownDatabaseOnStop() throws Throwable
-    {
-        DatabaseManager<?> databaseManager = getDatabaseManager();
-        databaseManager.stop();
-        assertFalse( database.isAvailable( 0 ) );
+        Exception startException = assertThrows( Exception.class, this::startDatabase );
+        assertThat( startException, new NestedThrowableMatcher( UnableToStartDatabaseException.class ) );
     }
 
     private DatabaseManager<?> getDatabaseManager()
     {
-        return ((GraphDatabaseAPI)database).getDependencyResolver().resolveDependency( DatabaseManager.class );
+        return database.getDependencyResolver().resolveDependency( DatabaseManager.class );
     }
 
+    private GraphDatabaseAPI startDatabase()
+    {
+        return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
+    }
 }
