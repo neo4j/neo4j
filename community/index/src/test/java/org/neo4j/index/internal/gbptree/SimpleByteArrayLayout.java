@@ -119,7 +119,7 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
     {
         long leftSeed = keySeed( left );
         long rightSeed = keySeed( right );
-        if ( leftSeed != rightSeed )
+        if ( useFirstLongAsSeed && leftSeed != rightSeed )
         {
             // Minimal splitter is first 8B (seed)
             copyKey( right, into, Long.BYTES );
@@ -133,13 +133,14 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
             {
                 if ( left.bytes[lastEqualIndex] != right.bytes[lastEqualIndex] )
                 {
+                    lastEqualIndex--;
                     break;
                 }
             }
             // Convert from last equal index to first that differ
-            int targetLength = lastEqualIndex + 1;
+            int firstIndexToDiffer = lastEqualIndex + 1;
             // Convert to index to length
-            targetLength++;
+            int targetLength = firstIndexToDiffer + 1;
             copyKey( right, into, targetLength );
         }
     }

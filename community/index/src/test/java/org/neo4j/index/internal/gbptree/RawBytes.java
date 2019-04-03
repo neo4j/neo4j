@@ -19,7 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import java.util.Arrays;
+import java.util.StringJoiner;
 
 class RawBytes
 {
@@ -28,19 +28,47 @@ class RawBytes
     @Override
     public String toString()
     {
-        boolean allZero = true;
-        for ( byte b : bytes )
+        StringJoiner joiner = new StringJoiner( ", ", "[", "]" );
+        int index = 0;
+        int nbrOfAccumulatedZeroes = 0;
+        while ( index < bytes.length )
         {
-            if ( b != 0 )
+            if ( bytes[index] != (byte) 0 )
             {
-                allZero = false;
-                break;
+                if ( nbrOfAccumulatedZeroes > 0 )
+                {
+                    joiner.add( replaceZeroes( nbrOfAccumulatedZeroes ) );
+                    nbrOfAccumulatedZeroes = 0;
+                }
+                joiner.add( Byte.toString( bytes[index] ) );
             }
+            else
+            {
+                nbrOfAccumulatedZeroes++;
+            }
+            index++;
         }
-        if ( allZero )
+        if ( nbrOfAccumulatedZeroes > 0 )
         {
-            return "[0...>" + bytes.length + "]";
+            joiner.add( replaceZeroes( nbrOfAccumulatedZeroes ) );
         }
-        return Arrays.toString( bytes );
+        return joiner.toString();
+    }
+
+    private String replaceZeroes( int nbrOfZeroes )
+    {
+        if ( nbrOfZeroes > 3 )
+        {
+            return "0...>" + nbrOfZeroes;
+        }
+        else
+        {
+            StringJoiner joiner = new StringJoiner( ", " );
+            for ( int i = 0; i < nbrOfZeroes; i++ )
+            {
+                joiner.add( "0" );
+            }
+            return joiner.toString();
+        }
     }
 }
