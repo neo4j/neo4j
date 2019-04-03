@@ -247,6 +247,11 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             // don't merge and sort the external updates
 
             // Build the tree from the scan updates
+            if ( cancellation.cancelled() )
+            {
+                // Do one additional check before starting to write to the tree
+                return;
+            }
             phaseTracker.enterPhase( PhaseTracker.Phase.BUILD );
             File duplicatesFile = new File( storeFile.getParentFile(), storeFile.getName() + ".dup" );
             try ( IndexKeyStorage<KEY> indexKeyStorage = new IndexKeyStorage<>( fileSystem, duplicatesFile, bufferFactory, blockSize, layout ) )
