@@ -26,9 +26,9 @@ import org.junit.rules.TemporaryFolder;
 
 import javax.management.ObjectName;
 
+import org.neo4j.configuration.ExternalSettings;
 import org.neo4j.jmx.impl.ConfigurationBean;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
@@ -68,14 +68,14 @@ public class ServerConfigIT extends ExclusiveServerTestBase
         // Given
         String configValue = tempDir.newFile().getAbsolutePath();
         server = CommunityServerBuilder.serverOnRandomPorts().withProperty(
-        ServerSettings.run_directory.name(), configValue ).build();
+        ExternalSettings.run_directory.name(), configValue ).build();
 
         // When
         server.start();
 
         // Then
         ObjectName name = getObjectName( server.getDatabase().getGraph(), ConfigurationBean.CONFIGURATION_MBEAN_NAME );
-        String attr = getAttribute( name, ServerSettings.run_directory.name() );
+        String attr = getAttribute( name, ExternalSettings.run_directory.name() );
         assertThat( attr, equalTo( configValue ) );
     }
 

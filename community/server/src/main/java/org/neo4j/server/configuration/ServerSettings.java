@@ -50,7 +50,6 @@ import static org.neo4j.configuration.Settings.STRING_LIST;
 import static org.neo4j.configuration.Settings.TRUE;
 import static org.neo4j.configuration.Settings.buildSetting;
 import static org.neo4j.configuration.Settings.derivedSetting;
-import static org.neo4j.configuration.Settings.pathSetting;
 import static org.neo4j.configuration.Settings.range;
 import static org.neo4j.configuration.Settings.setting;
 import static org.neo4j.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
@@ -152,34 +151,6 @@ public class ServerSettings implements LoadableConfig
     @Description( "Size of each HTTP log that is kept." )
     public static final Setting<Long> http_logging_rotation_size = buildSetting( "dbms.logs.http.rotation.size", BYTES,
             "20m" ).constraint( range(0L, Long.MAX_VALUE ) ).build();
-
-    @SuppressWarnings( "unused" ) // used only in the startup scripts
-    @Description( "Enable GC Logging" )
-    public static final Setting<Boolean> gc_logging_enabled = setting( "dbms.logs.gc.enabled", BOOLEAN, FALSE);
-
-    @SuppressWarnings( "unused" ) // used only in the startup scripts
-    @Description( "GC Logging Options" )
-    public static final Setting<String> gc_logging_options = setting( "dbms.logs.gc.options", STRING, "Not used value.");
-
-    @SuppressWarnings( "unused" ) // used only in the startup scripts
-    @Description( "Number of GC logs to keep." )
-    public static final Setting<Integer> gc_logging_rotation_keep_number =
-            setting( "dbms.logs.gc.rotation.keep_number", INTEGER, "0" );
-
-    @SuppressWarnings( "unused" ) // used only in the startup scripts
-    @Description( "Size of each GC log that is kept." )
-    public static final Setting<Long> gc_logging_rotation_size = buildSetting( "dbms.logs.gc.rotation.size", BYTES,
-            "0" ).constraint( range(0L, Long.MAX_VALUE ) ).build();
-
-    @SuppressWarnings( "unused" ) // used only in the startup scripts
-    @Description( "Path of the run directory. This directory holds Neo4j's runtime state, such as a pidfile when it " +
-            "is running in the background. The pidfile is created when starting neo4j and removed when stopping it." +
-            " It may be placed on an in-memory filesystem such as tmpfs." )
-    public static final Setting<File> run_directory = pathSetting( "dbms.directories.run", "run" );
-
-    @SuppressWarnings( "unused" ) // used only in the startup scripts
-    @Description( "Path of the lib directory" )
-    public static final Setting<File> lib_directory = pathSetting( "dbms.directories.lib", "lib" );
 
     @Description( "Timeout for idle transactions in the REST endpoint." )
     public static final Setting<Duration> transaction_idle_timeout = setting( "dbms.rest.transaction.idle_timeout",
