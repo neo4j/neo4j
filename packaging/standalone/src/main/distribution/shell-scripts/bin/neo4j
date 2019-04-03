@@ -360,20 +360,6 @@ setup_java_opts() {
   [[ -n "${JAVA_MEMORY_OPTS:-}" ]] && JAVA_OPTS+=("${JAVA_MEMORY_OPTS[@]}")
 
   if [[ "${dbms_logs_gc_enabled:-}" = "true" ]]; then
-    if [[ "${JAVA_VERSION}" = "1.8"* ]]; then
-      # JAVA 8 GC logging setup
-      JAVA_OPTS+=("-Xloggc:${NEO4J_LOGS}/gc.log" \
-                  "-XX:+UseGCLogFileRotation" \
-                  "-XX:NumberOfGCLogFiles=${dbms_logs_gc_rotation_keep_number:-5}" \
-                  "-XX:GCLogFileSize=${dbms_logs_gc_rotation_size:-20m}")
-      if [[ -n "${dbms_logs_gc_options:-}" ]]; then
-        JAVA_OPTS+=(${dbms_logs_gc_options}) # unquoted to split on spaces
-      else
-        JAVA_OPTS+=("-XX:+PrintGCDetails" "-XX:+PrintGCDateStamps" "-XX:+PrintGCApplicationStoppedTime" \
-                    "-XX:+PrintPromotionFailure" "-XX:+PrintTenuringDistribution")
-      fi
-    else
-      # JAVA 9 and newer GC logging setup
       local gc_options
       if [[ -n "${dbms_logs_gc_options:-}" ]]; then
         gc_options="${dbms_logs_gc_options}"
@@ -382,7 +368,6 @@ setup_java_opts() {
       fi
       gc_options+=":file=${NEO4J_LOGS}/gc.log::filecount=${dbms_logs_gc_rotation_keep_number:-5},filesize=${dbms_logs_gc_rotation_size:-20m}"
       JAVA_OPTS+=(${gc_options})
-    fi
   fi
 
   if [[ -n "${dbms_jvm_additional:-}" ]]; then
