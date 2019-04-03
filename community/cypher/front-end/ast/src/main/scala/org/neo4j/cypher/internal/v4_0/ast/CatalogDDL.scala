@@ -17,19 +17,64 @@
 package org.neo4j.cypher.internal.v4_0.ast
 
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckResult._
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticAnalysisTooling, SemanticCheck, SemanticCheckResult, SemanticState}
+import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticAnalysisTooling, SemanticCheck, SemanticCheckResult, SemanticFeature, SemanticState}
 import org.neo4j.cypher.internal.v4_0.expressions.{Parameter, Variable}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 
 sealed trait CatalogDDL extends Statement with SemanticAnalysisTooling {
-  override def semanticCheck: SemanticCheck =
-    requireMultigraphSupport(s"The `$name` clause", position)
 
   def name: String
 
-  override def returnColumns = List.empty
+  override def returnColumns: List[String] = List.empty
+}
+
+sealed trait MultiDatabaseDDL extends CatalogDDL {
+  override def semanticCheck: SemanticCheck =
+    requireFeatureSupport(s"The `$name` clause", SemanticFeature.MultipleDatabases, position)
+}
+
+sealed trait MultiGraphDDL extends CatalogDDL {
+  //TODO Refine to split between multigraph and views
+  override def semanticCheck: SemanticCheck =
+    requireFeatureSupport(s"The `$name` clause", SemanticFeature.MultipleGraphs, position)
+}
+
+final case class ShowDatabases()(val position: InputPosition) extends MultiDatabaseDDL {
+
+  override def name = "CATALOG SHOW DATABASES"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
+final case class ShowDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+
+  override def name = "CATALOG SHOW DATABASE"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
+final case class CreateDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+
+  override def name = "CATALOG CREATE DATABASE"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
+final case class DropDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+
+  override def name = "CATALOG DROP DATABASE"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
 }
 
 object CreateGraph {
@@ -38,7 +83,7 @@ object CreateGraph {
 }
 
 final case class CreateGraph(graphName: CatalogName, query: QueryPart)
-  (val position: InputPosition) extends CatalogDDL {
+  (val position: InputPosition) extends MultiGraphDDL {
 
   override def name = "CATALOG CREATE GRAPH"
 
@@ -48,7 +93,7 @@ final case class CreateGraph(graphName: CatalogName, query: QueryPart)
       query.semanticCheck
 }
 
-final case class DropGraph(graphName: CatalogName)(val position: InputPosition) extends CatalogDDL {
+final case class DropGraph(graphName: CatalogName)(val position: InputPosition) extends MultiGraphDDL {
 
   override def name = "CATALOG DROP GRAPH"
 
@@ -63,7 +108,7 @@ object CreateView {
 }
 
 final case class CreateView(graphName: CatalogName, params: Seq[Parameter], query: QueryPart, innerQString: String)
-  (val position: InputPosition) extends CatalogDDL {
+  (val position: InputPosition) extends MultiGraphDDL {
 
   override def name = "CATALOG CREATE VIEW/QUERY"
 
@@ -84,7 +129,7 @@ final case class CreateView(graphName: CatalogName, params: Seq[Parameter], quer
 
 }
 
-final case class DropView(graphName: CatalogName)(val position: InputPosition) extends CatalogDDL {
+final case class DropView(graphName: CatalogName)(val position: InputPosition) extends MultiGraphDDL {
 
   override def name = "CATALOG DROP VIEW/QUERY"
 

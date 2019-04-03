@@ -14,18 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.v4_0.ast.semantics
+package org.neo4j.cypher.internal.v4_0.parser.matchers
 
-sealed trait SemanticFeature
-
-sealed trait FeatureToString {
-  override def toString: String = this.getClass.getSimpleName.toLowerCase.replace("multiple","multiple ").replace("$","")
-}
-
-object SemanticFeature {
-  case object MultipleDatabases extends SemanticFeature with FeatureToString
-  case object MultipleGraphs extends SemanticFeature with FeatureToString
-  case object WithInitialQuerySignature extends SemanticFeature
-  case object Cypher10Support extends SemanticFeature
-  case object Cypher9Comparability extends SemanticFeature
+class DatabaseNamePartMatcher extends ScalaCharMatcher("a database name") {
+  protected def matchChar(c: Char): Boolean = Character.isLetterOrDigit(c) || c == '_' || c == '.'
 }

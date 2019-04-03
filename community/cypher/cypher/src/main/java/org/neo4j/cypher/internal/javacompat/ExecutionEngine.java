@@ -27,6 +27,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.internal.CacheTracer;
 import org.neo4j.cypher.internal.CompilerFactory;
+import org.neo4j.cypher.internal.CompilerLibrary;
 import org.neo4j.cypher.internal.CypherConfiguration;
 import org.neo4j.cypher.internal.StringCacheMonitor;
 import org.neo4j.cypher.internal.tracing.CompilationTracer;
@@ -52,14 +53,26 @@ import org.neo4j.values.virtual.MapValue;
  */
 public class ExecutionEngine implements QueryExecutionEngine
 {
-    private org.neo4j.cypher.internal.ExecutionEngine inner;
+    protected org.neo4j.cypher.internal.ExecutionEngine cypherExecutionEngine;
 
     /**
-     * Creates an execution engine around the give graph database
-     * @param queryService The database to wrap
-     * @param logProvider A {@link LogProvider} for cypher-statements
+     * Creates an execution engine around the given graph database
      */
     public ExecutionEngine( GraphDatabaseQueryService queryService, LogProvider logProvider, CompilerFactory compilerFactory )
+    {
+        cypherExecutionEngine = makeExecutionEngine(queryService, logProvider, new CompilerLibrary(compilerFactory, this::getCypherExecutionEngine ));
+    }
+
+    protected ExecutionEngine()
+    {
+    }
+
+    public org.neo4j.cypher.internal.ExecutionEngine getCypherExecutionEngine() {
+        return cypherExecutionEngine;
+    }
+
+    protected org.neo4j.cypher.internal.ExecutionEngine makeExecutionEngine( GraphDatabaseQueryService queryService, LogProvider logProvider,
+            CompilerLibrary compilerLibrary )
     {
         DependencyResolver resolver = queryService.getDependencyResolver();
         Monitors monitors = resolver.resolveDependency( Monitors.class );
@@ -68,14 +81,14 @@ public class ExecutionEngine implements QueryExecutionEngine
         CypherConfiguration cypherConfiguration = CypherConfiguration.fromConfig( config );
         CompilationTracer tracer =
                 new TimingCompilationTracer( monitors.newMonitor( TimingCompilationTracer.EventListener.class ) );
-        inner = new org.neo4j.cypher.internal.ExecutionEngine( queryService,
-                                                               monitors,
-                                                               tracer,
-                                                               cacheTracer,
-                                                               cypherConfiguration,
-                                                               compilerFactory,
-                                                               logProvider,
-                                                               Clock.systemUTC() );
+        return new org.neo4j.cypher.internal.ExecutionEngine( queryService,
+                monitors,
+                tracer,
+                cacheTracer,
+                cypherConfiguration,
+                compilerLibrary,
+                logProvider,
+                Clock.systemUTC() );
     }
 
     @Override
@@ -84,7 +97,7 @@ public class ExecutionEngine implements QueryExecutionEngine
     {
         try
         {
-            return inner.execute( query, parameters, context, false, prePopulate );
+            return cypherExecutionEngine.execute( query, parameters, context, false, prePopulate );
         }
         catch ( CypherException e )
         {
@@ -98,7 +111,7 @@ public class ExecutionEngine implements QueryExecutionEngine
     {
         try
         {
-            return inner.execute( query, parameters, context, false, prePopulate, subscriber );
+            return cypherExecutionEngine.execute( query, parameters, context, false, prePopulate, subscriber );
         }
         catch ( CypherException e )
         {
@@ -112,7 +125,7 @@ public class ExecutionEngine implements QueryExecutionEngine
     {
         try
         {
-            return inner.execute( query, parameters, context, true, prePopulate );
+            return cypherExecutionEngine.execute( query, parameters, context, true, prePopulate );
         }
         catch ( CypherException e )
         {
@@ -123,18 +136,18 @@ public class ExecutionEngine implements QueryExecutionEngine
     @Override
     public boolean isPeriodicCommit( String query )
     {
-        return inner.isPeriodicCommit( query );
+        return cypherExecutionEngine.isPeriodicCommit( query );
     }
 
     @Override
     public long clearQueryCaches()
     {
-        return inner.clearQueryCaches();
+        return cypherExecutionEngine.clearQueryCaches();
     }
 
     @Override
     public List<FunctionInformation> getProvidedLanguageFunctions()
     {
-        return inner.getCypherFunctions();
+        return cypherExecutionEngine.getCypherFunctions();
     }
 }

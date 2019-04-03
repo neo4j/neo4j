@@ -67,6 +67,18 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case DropRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property) =>
       s"DROP CONSTRAINT ON ()-[$variable:$relType]-() ASSERT exists(${property.asCanonicalStringVal})"
 
+    case x: ShowDatabases =>
+      s"${x.name}"
+
+    case x @ ShowDatabase(dbName) =>
+      s"${x.name} $dbName"
+
+    case x @ CreateDatabase(dbName) =>
+      s"${x.name} $dbName"
+
+    case x @ DropDatabase(dbName) =>
+      s"${x.name} $dbName"
+
     case x @ CreateGraph(catalogName, query) =>
       val graphName = catalogName.parts.mkString(".")
       s"${x.name} $graphName {$NL${queryPart(query)}$NL}"

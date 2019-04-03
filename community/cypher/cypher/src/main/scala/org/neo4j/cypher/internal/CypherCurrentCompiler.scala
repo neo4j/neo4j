@@ -25,16 +25,15 @@ import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslatingQueryContext
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.plandescription.{InternalPlanDescription, PlanDescriptionBuilder}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
-import org.neo4j.cypher.internal.result.{ClosingExecutionResult, ExplainExecutionResult, StandardInternalExecutionResult}
-import org.neo4j.cypher.internal.result._
+import org.neo4j.cypher.internal.result.{ClosingExecutionResult, ExplainExecutionResult, StandardInternalExecutionResult, _}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.runtime.{ExecutableQuery => _, _}
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, TaskCloser}
 import org.neo4j.cypher.{CypherException, CypherExecutionMode, CypherVersion}
 import org.neo4j.graphdb.{Notification, Result}
@@ -131,15 +130,20 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     }.asJava)
 
   private def getQueryType(planState: LogicalPlanState): InternalQueryType = {
-    val procedureOrSchema = ProcedureCallOrSchemaCommandRuntime.queryType(planState.logicalPlan)
-    if (procedureOrSchema.isDefined) // check this first, because if this is true solveds will be empty
-      procedureOrSchema.get
-    else if (planState.planningAttributes.solveds(planState.logicalPlan.id).readOnly)
-      READ_ONLY
-    else if (columnNames(planState.logicalPlan).isEmpty)
-      WRITE
-    else
-      READ_WRITE
+    // check system and procedure runtimes first, because if this is true solveds will be empty
+    if (MultiDatabaseManagementCommandRuntime.isApplicable(planState))
+      DBMS
+    else {
+      val procedureOrSchema = ProcedureCallOrSchemaCommandRuntime.queryType(planState.logicalPlan)
+      if (procedureOrSchema.isDefined)
+        procedureOrSchema.get
+      else if (planState.planningAttributes.solveds(planState.logicalPlan.id).readOnly)
+        READ_ONLY
+      else if (columnNames(planState.logicalPlan).isEmpty)
+        WRITE
+      else
+        READ_WRITE
+    }
   }
 
   private def columnNames(logicalPlan: LogicalPlan): Array[String] =

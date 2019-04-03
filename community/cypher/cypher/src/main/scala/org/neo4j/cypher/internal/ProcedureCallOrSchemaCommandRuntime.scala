@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.procs.{ProcedureCallExecutionPlan, SchemaWriteExecutionPlan}
@@ -133,6 +134,8 @@ object ProcedureCallOrSchemaCommandRuntime extends CypherRuntime[RuntimeContext]
               ctx.dropIndexRule(labelId, propertyKeyIds)
             })
   }
+
+  def isApplicable(logicalPlanState: LogicalPlanState) = logicalToExecutable.isDefinedAt(logicalPlanState.maybeLogicalPlan.get)
 
   implicit private def labelToId(ctx: QueryContext)(label: LabelName): LabelId =
     LabelId(ctx.getOrCreateLabelId(label.name))

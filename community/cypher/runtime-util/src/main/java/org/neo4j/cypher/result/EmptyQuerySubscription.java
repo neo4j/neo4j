@@ -23,13 +23,13 @@ import org.neo4j.cypher.internal.runtime.QueryStatistics;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.query.QuerySubscription;
 
-public abstract class EmtpyQuerySubscription implements QuerySubscription
+public abstract class EmptyQuerySubscription implements QuerySubscription
 {
     private final QuerySubscriber subscriber;
 
     public abstract QueryStatistics queryStatistics();
 
-    public EmtpyQuerySubscription( QuerySubscriber subscriber )
+    public EmptyQuerySubscription( QuerySubscriber subscriber )
     {
         this.subscriber = subscriber;
     }

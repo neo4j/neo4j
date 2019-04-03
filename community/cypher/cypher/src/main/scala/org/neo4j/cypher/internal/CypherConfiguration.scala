@@ -116,7 +116,7 @@ case class CypherConfiguration(version: CypherVersion,
       else FileSchedulerTracing(schedulerTracingFile)
     else NoSchedulerTracing
 
-  def toCypherPlannerConfiguration(config: Config): CypherPlannerConfiguration =
+  def toCypherPlannerConfiguration(config: Config, planSystemCommands: Boolean): CypherPlannerConfiguration =
     CypherPlannerConfiguration(
       queryCacheSize = queryCacheSize,
       statsDivergenceCalculator = CypherConfiguration.statsDivergenceFromConfig(config),
@@ -128,6 +128,7 @@ case class CypherConfiguration(version: CypherVersion,
       legacyCsvQuoteEscaping = legacyCsvQuoteEscaping,
       csvBufferSize = csvBufferSize,
       nonIndexedLabelWarningThreshold = config.get(GraphDatabaseSettings.query_non_indexed_label_warning_threshold).longValue(),
-      planWithMinimumCardinalityEstimates = planWithMinimumCardinalityEstimates
+      planWithMinimumCardinalityEstimates = planWithMinimumCardinalityEstimates,
+      planSystemCommands = planSystemCommands
     )
 }

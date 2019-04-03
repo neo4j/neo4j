@@ -30,7 +30,7 @@ import scala.collection.JavaConversions._
   *
   * @param factory factory to create compilers
   */
-class CompilerLibrary(factory: CompilerFactory) {
+class CompilerLibrary(factory: CompilerFactory, executionEngineProvider: () => ExecutionEngine) {
 
   private val compilers = new ConcurrentHashMap[CompilerKey, Compiler]
 
@@ -39,7 +39,7 @@ class CompilerLibrary(factory: CompilerFactory) {
                      cypherRuntime: CypherRuntimeOption,
                      cypherUpdateStrategy: CypherUpdateStrategy): Compiler = {
     val key = CompilerKey(cypherPlanner, cypherRuntime, cypherUpdateStrategy)
-    compilers.computeIfAbsent(key, ignore => factory.createCompiler(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy))
+    compilers.computeIfAbsent(key, ignore => factory.createCompiler(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy, executionEngineProvider))
   }
 
   def clearCaches(): Long = {

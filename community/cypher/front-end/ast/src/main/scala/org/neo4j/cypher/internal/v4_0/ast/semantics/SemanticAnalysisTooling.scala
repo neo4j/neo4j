@@ -187,12 +187,12 @@ trait SemanticAnalysisTooling {
   def implicitVariable(v:LogicalVariable, possibleType: CypherType): SemanticState => Either[SemanticError, SemanticState] =
     (_: SemanticState).implicitVariable(v, possibleType)
 
-  def requireMultigraphSupport(msg: String, position: InputPosition): SemanticCheck =
+  def requireFeatureSupport(msg: String, feature: SemanticFeature, position: InputPosition): SemanticCheck =
     s => {
-      if(!s.features(SemanticFeature.MultipleGraphs))
+      if(!s.features(feature))
         SemanticCheckResult(s,
           List(FeatureError(s"$msg is not available in this implementation of Cypher " +
-                              "due to lack of support for multiple graphs.", position)))
+                              s"due to lack of support for $feature.", position)))
       else
         SemanticCheckResult.success(s)
   }

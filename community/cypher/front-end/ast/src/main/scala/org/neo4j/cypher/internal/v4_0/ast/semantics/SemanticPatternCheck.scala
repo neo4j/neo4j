@@ -250,7 +250,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   def checkBaseVariable(ctx: SemanticContext, maybeBaseVar: Option[LogicalVariable], expectedType: CypherType): SemanticCheck =
     maybeBaseVar.fold(SemanticCheckResult.success) { variable =>
-      requireMultigraphSupport(s"COPY OF", variable.position) chain (
+      requireFeatureSupport(s"COPY OF", SemanticFeature.MultipleGraphs, variable.position) chain (
         ctx match {
           case Construct => SemanticCheckResult.success
           case _ => error("COPY OF is only allowed in NEW CLAUSES", variable.position)

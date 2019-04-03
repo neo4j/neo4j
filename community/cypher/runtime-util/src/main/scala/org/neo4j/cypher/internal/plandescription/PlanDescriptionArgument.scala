@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.internal.ir.ProvidedOrder
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.{QualifiedName, SeekableArgs}
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 import org.neo4j.cypher.internal.v4_0.{expressions => ast}
 
@@ -110,6 +110,11 @@ object Arguments {
   case class RuntimeImpl(value: String) extends Argument {
 
     override def name = "runtime-impl"
+  }
+
+  case class Database(value: String) extends Argument {
+
+    override def name = "database"
   }
 
   case class ExpandExpression(from: String, relName: String, relTypes: Seq[String], to: String,

@@ -23,18 +23,16 @@ import java.util.concurrent.TimeUnit
 
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
-import org.neo4j.configuration.Config
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.javacompat.{GraphDatabaseCypherService, MonitoringCacheTracer}
+import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.RuntimeScalaValueConverter
-import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.impl.query.QueryExecutionEngine
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.{LogProvider, NullLogProvider}
-import org.neo4j.monitoring.Monitors
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{MapValue, VirtualValues}
@@ -90,20 +88,7 @@ object ExecutionEngineHelper {
 
   def createEngine(graphDatabaseCypherService: GraphDatabaseQueryService, logProvider: LogProvider = NullLogProvider.getInstance()): ExecutionEngine = {
     val resolver = graphDatabaseCypherService.getDependencyResolver
-    val kernelMonitors: Monitors = resolver.resolveDependency(classOf[Monitors])
-    val cacheTracer = new MonitoringCacheTracer( kernelMonitors.newMonitor( classOf[StringCacheMonitor] ) )
-    val compilerFactory = resolver.resolveDependency( classOf[CompilerFactory] )
-    val config = resolver.resolveDependency(classOf[Config])
-
-    val tracer = new TimingCompilationTracer(kernelMonitors.newMonitor(classOf[TimingCompilationTracer.EventListener]))
-
-    new ExecutionEngine(graphDatabaseCypherService,
-                        kernelMonitors,
-                        tracer,
-                        cacheTracer,
-                        CypherConfiguration.fromConfig(config),
-                        compilerFactory,
-                        logProvider)
+    resolver.resolveDependency(classOf[QueryExecutionEngine]).asInstanceOf[org.neo4j.cypher.internal.javacompat.ExecutionEngine].getCypherExecutionEngine
   }
 
   def asMapValue(map: Map[String, Any]): MapValue = {

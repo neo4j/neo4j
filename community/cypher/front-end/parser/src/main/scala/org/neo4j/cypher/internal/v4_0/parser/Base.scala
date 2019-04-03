@@ -109,6 +109,16 @@ trait Base extends Parser {
     ) memoMismatches) ~~> (_.reduce(_ + '`' + _))
   }
 
+  def DatabaseNameString: Rule1[String] = UnquotedDatabaseNameString | QuotedDatabaseNameString
+
+  def UnquotedDatabaseNameString: Rule1[String] = rule("a database name") {
+    group(DatabaseNameStart ~ zeroOrMore(DatabaseNamePart)) ~> (_.toLowerCase) ~ !DatabaseNamePart
+  }
+
+  def QuotedDatabaseNameString: Rule1[String] = rule("a database name") {
+    group(ch('"') ~ DatabaseNameStart ~ zeroOrMore(DatabaseNamePart) ~ ch('"')) ~> (_.replace("\"","").toLowerCase) ~ !DatabaseNamePart
+  }
+
   def Namespace: Rule1[ASTNamespace] = rule("namespace of a procedure") {
     zeroOrMore(SymbolicNameString ~ ".") ~~>> (ASTNamespace(_))
   }

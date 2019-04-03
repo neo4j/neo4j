@@ -61,7 +61,8 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
         Monitors monitors = resolver.resolveDependency( Monitors.class );
         Config config = resolver.resolveDependency( Config.class );
         CypherConfiguration cypherConfig = CypherConfiguration.fromConfig( config );
-        CypherPlannerConfiguration plannerConfig = cypherConfig.toCypherPlannerConfiguration( config );
+        CypherPlannerConfiguration plannerConfig = cypherConfig.toCypherPlannerConfiguration( config,
+                graphAPI.databaseLayout().getDatabaseName().startsWith( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) );
         CypherRuntimeConfiguration runtimeConfig = cypherConfig.toCypherRuntimeConfiguration();
         LogProvider logProvider = logService.getInternalLogProvider();
         CommunityCompilerFactory compilerFactory =

@@ -19,8 +19,8 @@ package org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckResult.{error, success}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{Scope, SemanticAnalysisTooling, SemanticCheckResult, SemanticCheckable, SemanticExpressionCheck, SemanticPatternCheck, SemanticState, _}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression.SemanticContext
-import org.neo4j.cypher.internal.v4_0.expressions.{functions, _}
 import org.neo4j.cypher.internal.v4_0.expressions.functions.{Distance, Exists}
+import org.neo4j.cypher.internal.v4_0.expressions.{functions, _}
 import org.neo4j.cypher.internal.v4_0.util.Foldable._
 import org.neo4j.cypher.internal.v4_0.util._
 import org.neo4j.cypher.internal.v4_0.util.helpers.StringHelper.RichString
@@ -72,7 +72,7 @@ case class LoadCSV(
 sealed trait MultipleGraphClause extends Clause with SemanticAnalysisTooling {
 
   override def semanticCheck: SemanticCheck =
-    requireMultigraphSupport(s"The `$name` clause", position)
+    requireFeatureSupport(s"The `$name` clause", SemanticFeature.MultipleGraphs, position)
 }
 
 trait FromGraph extends MultipleGraphClause {

@@ -153,6 +153,21 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case _: DropRelationshipPropertyExistenceConstraint =>
         PlanDescriptionImpl(id, "DropRelationshipPropertyExistenceConstraint", NoChildren, Seq.empty, variables)
 
+      case ShowDatabase(name) =>
+        val dbName = Database(name)
+        PlanDescriptionImpl(id, "ShowDatabase", NoChildren, Seq(dbName), variables)
+
+      case ShowDatabases() =>
+        PlanDescriptionImpl(id, "ShowDatabases", NoChildren, Seq.empty, variables)
+
+      case CreateDatabase(name) =>
+        val dbName = Database(name)
+        PlanDescriptionImpl(id, "CreateDatabase", NoChildren, Seq(dbName), variables)
+
+      case DropDatabase(name) =>
+        val dbName = Database(name)
+        PlanDescriptionImpl(id, "DropDatabase", NoChildren, Seq(dbName), variables)
+
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 

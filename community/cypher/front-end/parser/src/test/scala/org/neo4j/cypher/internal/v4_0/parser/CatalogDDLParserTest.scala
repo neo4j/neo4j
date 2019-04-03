@@ -31,6 +31,42 @@ class CatalogDDLParserTest
   private val returnGraph: ast.ReturnGraph = ast.ReturnGraph(None)(pos)
   private val returnQuery = ast.SingleQuery(Seq(returnGraph))(pos)
 
+  test("SHOW DATABASE foo.bar") {
+    yields(ast.ShowDatabase("foo.bar"))
+  }
+
+  test("SHOW DATABASES") {
+    yields(ast.ShowDatabases())
+  }
+
+  test("CREATE DATABASE foo.bar") {
+    yields(ast.CreateDatabase("foo.bar"))
+  }
+
+  test("CREATE DATABASE \"foo.bar\"") {
+    yields(ast.CreateDatabase("foo.bar"))
+  }
+
+  test("CATALOG CREATE DATABASE foo.bar") {
+    yields(ast.CreateDatabase("foo.bar"))
+  }
+
+  test("CATALOG CREATE DATABASE foo_bar42") {
+    yields(ast.CreateDatabase("foo_bar42"))
+  }
+
+  test("CATALOG CREATE DATABASE _foo_bar42") {
+    failsToParse
+  }
+
+  test("CATALOG CREATE DATABASE 42foo_bar") {
+    failsToParse
+  }
+
+  test("CATALOG DROP DATABASE foo.bar") {
+    yields(ast.DropDatabase("foo.bar"))
+  }
+
   test("CATALOG CREATE GRAPH foo.bar { RETURN GRAPH }") {
     val query = ast.SingleQuery(Seq(returnGraph))(pos)
     val graphName = ast.CatalogName("foo", List("bar"))

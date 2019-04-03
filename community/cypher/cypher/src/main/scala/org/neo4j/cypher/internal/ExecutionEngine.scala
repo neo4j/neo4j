@@ -52,7 +52,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                       val tracer: CompilationTracer,
                       val cacheTracer: CacheTracer[Pair[String, ParameterTypeMap]],
                       val config: CypherConfiguration,
-                      val compatibilityFactory: CompilerFactory,
+                      val compilerLibrary: CompilerLibrary,
                       val logProvider: LogProvider,
                       val clock: Clock = Clock.systemUTC() ) {
 
@@ -82,8 +82,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private val queryCache: QueryCache[String,Pair[String, ParameterTypeMap], ExecutableQuery] =
     new QueryCache[String, Pair[String, ParameterTypeMap], ExecutableQuery](config.queryCacheSize, planStalenessCaller, cacheTracer)
 
-  private val masterCompiler: MasterCompiler =
-    new MasterCompiler(queryService, kernelMonitors, config, logProvider, new CompilerLibrary(compatibilityFactory))
+  private val masterCompiler: MasterCompiler = new MasterCompiler(queryService, kernelMonitors, config, logProvider, compilerLibrary)
 
   private val schemaHelper = new SchemaHelper(queryCache)
 
@@ -162,7 +161,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                         transactionalContext: TransactionalContext,
                         params: MapValue): (QueryCompilation, JitCompilation) = {
 
-  val compiledExpressionCompiler = () => masterCompiler.compile(preParsedQuery.copy(recompilationLimitReached = true),
+    val compiledExpressionCompiler = () => masterCompiler.compile(preParsedQuery.copy(recompilationLimitReached = true),
                                                                   tracer, transactionalContext, params)
     val interpretedExpressionCompiler = () => masterCompiler.compile(preParsedQuery, tracer, transactionalContext, params)
     //check if we need to jit compiling of queries

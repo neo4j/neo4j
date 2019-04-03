@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.PlanRew
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.replacePropertyLookupsWithVariables
 import org.neo4j.cypher.internal.compiler.planner.{CheckForUnresolvedTokens, ResolveTokens}
 import org.neo4j.cypher.internal.ir.UnionQuery
-import org.neo4j.cypher.internal.planner.spi.{IDPPlannerName, PlannerNameFor}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.{IDPPlannerName, PlannerNameFor}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{CompilationPhases => _, _}
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.InnerVariableNamer
@@ -46,7 +46,9 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
   def normalizeQuery(state: BaseState, context: Context): BaseState = prepareForCaching.transform(state, context)
 
   def planPreparedQuery(state: BaseState, context: Context): LogicalPlanState = {
-    val pipeLine = if (context.debugOptions.contains("tostring"))
+    val pipeLine = if(config.planSystemCommands)
+      systemPipeLine
+    else if (context.debugOptions.contains("tostring"))
       planPipeLine andThen DebugPrinter
     else
       planPipeLine
@@ -111,6 +113,12 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
     If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
       standardPipeline
     )
+
+  val systemPipeLine: Transformer[Context, BaseState, LogicalPlanState] =
+    MultiDatabaseManagementCommandPlanBuilder andThen
+      If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
+        UnsupportedSystemCommand
+      )
 }
 
 case class CypherPlannerConfiguration(queryCacheSize: Int,
@@ -123,4 +131,5 @@ case class CypherPlannerConfiguration(queryCacheSize: Int,
                                       legacyCsvQuoteEscaping: Boolean,
                                       csvBufferSize: Int,
                                       nonIndexedLabelWarningThreshold: Long,
-                                      planWithMinimumCardinalityEstimates: Boolean)
+                                      planWithMinimumCardinalityEstimates: Boolean,
+                                      planSystemCommands: Boolean)

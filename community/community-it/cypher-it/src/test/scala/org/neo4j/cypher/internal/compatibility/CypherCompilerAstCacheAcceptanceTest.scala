@@ -55,7 +55,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       legacyCsvQuoteEscaping = false,
       csvBufferSize = CSVResources.DEFAULT_BUFFER_SIZE,
       nonIndexedLabelWarningThreshold = 10000L,
-      planWithMinimumCardinalityEstimates = true
+      planWithMinimumCardinalityEstimates = true,
+      planSystemCommands = false
     )
   }
 
@@ -335,7 +336,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val cypherConfig = CypherConfiguration.fromConfig(config)
     val compilerFactory =
       new CommunityCompilerFactory(graph, monitors, nullLogProvider,
-        cypherConfig.toCypherPlannerConfiguration(config), cypherConfig.toCypherRuntimeConfiguration)
-    new CompilerLibrary(compilerFactory)
+        cypherConfig.toCypherPlannerConfiguration(config, planSystemCommands = false), cypherConfig.toCypherRuntimeConfiguration)
+    new CompilerLibrary(compilerFactory, () => null)
   }
 }

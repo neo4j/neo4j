@@ -16,11 +16,13 @@
  */
 package org.neo4j.cypher.internal.v4_0
 
-import org.neo4j.cypher.internal.v4_0.parser.matchers.{IdentifierPartMatcher, IdentifierStartMatcher, WhitespaceCharMatcher}
+import org.neo4j.cypher.internal.v4_0.parser.matchers._
 import org.parboiled.scala.Rule0
 
 package object parser {
   lazy val IdentifierStart: Rule0 = new IdentifierStartMatcher()
   lazy val IdentifierPart: Rule0 = new IdentifierPartMatcher()
+  lazy val DatabaseNameStart: Rule0 = new DatabaseNameStartMatcher()
+  lazy val DatabaseNamePart: Rule0 = new DatabaseNamePartMatcher()
   lazy val WSChar: Rule0 = new WhitespaceCharMatcher()
 }

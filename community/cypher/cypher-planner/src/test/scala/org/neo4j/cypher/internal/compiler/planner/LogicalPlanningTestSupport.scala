@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, StatsDive
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
-import org.neo4j.cypher.internal.planner.spi.{CostBasedPlannerName, GraphStatistics, InstrumentedGraphStatistics, PlanContext, PlanningAttributes}
+import org.neo4j.cypher.internal.planner.spi._
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticFeature, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.expressions._
@@ -239,7 +239,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     legacyCsvQuoteEscaping = false,
     csvBufferSize = Configuration.DEFAULT_BUFFER_SIZE_4MB,
     nonIndexedLabelWarningThreshold = 10000,
-    planWithMinimumCardinalityEstimates = true
+    planWithMinimumCardinalityEstimates = true,
+    planSystemCommands = false
   )
 
   def buildPlannerQuery(query: String, lookup: Option[QualifiedName => ProcedureSignature] = None) = {
