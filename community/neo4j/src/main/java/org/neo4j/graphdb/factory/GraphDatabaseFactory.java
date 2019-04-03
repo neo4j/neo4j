@@ -123,9 +123,17 @@ public class GraphDatabaseFactory
                                                 ExternalDependencies dependencies )
     {
         File absoluteStoreDir = storeDir.getAbsoluteFile();
-        File databasesRoot = absoluteStoreDir.getParentFile();
+        File databasesRoot;
+        if ( config.isConfigured( GraphDatabaseSettings.databases_root_path ) )
+        {
+            databasesRoot = config.get( GraphDatabaseSettings.databases_root_path );
+        }
+        else
+        {
+            databasesRoot = absoluteStoreDir.getParentFile();
+            config.augment( GraphDatabaseSettings.default_database, absoluteStoreDir.getName() );
+        }
         config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
-        config.augment( GraphDatabaseSettings.default_database, absoluteStoreDir.getName() );
         config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
         return getGraphDatabaseFacadeFactory().newFacade( databasesRoot, config, dependencies );
     }

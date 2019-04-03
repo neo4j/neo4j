@@ -22,11 +22,16 @@ package org.neo4j.graphdb.factory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.File;
+
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -34,12 +39,19 @@ import org.neo4j.test.rule.TestDirectory;
 import static co.unruly.matchers.OptionalMatchers.empty;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.io.fs.FileSystemUtils.isEmptyOrNonExistingDirectory;
 
-@ExtendWith( TestDirectoryExtension.class )
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class GraphDatabaseFactoryIT
 {
+    @Inject
+    private FileSystemAbstraction fs;
     @Inject
     private TestDirectory testDirectory;
 
@@ -58,6 +70,47 @@ class GraphDatabaseFactoryIT
         finally
         {
             database.shutdown();
+        }
+    }
+
+    @Test
+    void configuredDatabasesRootPath()
+    {
+        File factoryDir = testDirectory.databaseDir();
+        File databasesDir = testDirectory.directory( "my_databases" );
+
+        GraphDatabaseService db = new GraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( factoryDir )
+                .setConfig( databases_root_path, databasesDir.toString() )
+                .newGraphDatabase();
+        try
+        {
+            assertTrue( isEmptyOrNonExistingDirectory( fs, new File( factoryDir.getParent(), DEFAULT_DATABASE_NAME ) ) );
+            assertTrue( isEmptyOrNonExistingDirectory( fs, new File( factoryDir.getParent(), SYSTEM_DATABASE_NAME ) ) );
+
+            assertFalse( isEmptyOrNonExistingDirectory( fs, new File( databasesDir, DEFAULT_DATABASE_NAME ) ) );
+            assertFalse( isEmptyOrNonExistingDirectory( fs, new File( databasesDir, SYSTEM_DATABASE_NAME ) ) );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    @Test
+    void notConfiguredDatabasesRootPath()
+    {
+        File factoryDir = testDirectory.databaseDir();
+
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( factoryDir );
+        try
+        {
+            assertFalse( isEmptyOrNonExistingDirectory( fs, new File( factoryDir.getParent(), DEFAULT_DATABASE_NAME ) ) );
+            assertFalse( isEmptyOrNonExistingDirectory( fs, new File( factoryDir.getParent(), SYSTEM_DATABASE_NAME ) ) );
+        }
+        finally
+        {
+            db.shutdown();
         }
     }
 }
