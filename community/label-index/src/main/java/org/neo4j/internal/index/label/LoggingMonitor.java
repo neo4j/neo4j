@@ -77,10 +77,11 @@ public class LoggingMonitor extends Monitor.Adaptor
     }
 
     @Override
-    public void recoveryCleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
+    public void recoveryCleanupFinished( long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
     {
         StringJoiner joiner = new StringJoiner( ", ", "Label index cleanup job finished: ", "" );
         joiner.add( "Number of pages visited: " + numberOfPagesVisited );
+        joiner.add( "Number of tree nodes: " + numberOfTreeNodes );
         joiner.add( "Number of cleaned crashed pointers: " + numberOfCleanedCrashPointers );
         joiner.add( "Time spent: " + duration( durationMillis ) );
         log.info( joiner.toString() );

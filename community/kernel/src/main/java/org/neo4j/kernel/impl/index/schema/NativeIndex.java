@@ -121,9 +121,10 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         }
 
         @Override
-        public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
+        public void cleanupFinished( long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
         {
-            monitor.recoveryCleanupFinished( indexFiles.getStoreFile(), descriptor, numberOfPagesVisited, numberOfCleanedCrashPointers, durationMillis );
+            monitor.recoveryCleanupFinished( indexFiles.getStoreFile(), descriptor,
+                    numberOfPagesVisited, numberOfTreeNodes, numberOfCleanedCrashPointers, durationMillis );
         }
 
         @Override

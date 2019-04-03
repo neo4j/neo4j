@@ -335,7 +335,7 @@ class RecoveryCleanupIT
         }
 
         @Override
-        public void recoveryCleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
+        public void recoveryCleanupFinished( long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
         {
             barrier.reached();
         }

@@ -74,7 +74,7 @@ public interface LabelScanStore extends Lifecycle
             }
 
             @Override
-            public void recoveryCleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
+            public void recoveryCleanupFinished( long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
             {   // empty
             }
 
@@ -103,7 +103,7 @@ public interface LabelScanStore extends Lifecycle
 
         void recoveryCleanupStarted();
 
-        void recoveryCleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis );
+        void recoveryCleanupFinished( long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis );
 
         void recoveryCleanupClosed();
 

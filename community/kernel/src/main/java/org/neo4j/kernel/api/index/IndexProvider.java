@@ -118,7 +118,7 @@ public abstract class IndexProvider extends LifecycleAdapter
 
             @Override
             public void recoveryCleanupFinished( File indexFile, StorageIndexReference index,
-                    long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
+                    long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
             {   // no-op
             }
 
@@ -140,7 +140,7 @@ public abstract class IndexProvider extends LifecycleAdapter
         void recoveryCleanupStarted( File indexFile, StorageIndexReference index );
 
         void recoveryCleanupFinished( File indexFile, StorageIndexReference index,
-                long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis );
+                long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis );
 
         void recoveryCleanupClosed( File indexFile, StorageIndexReference index );
 

@@ -105,7 +105,7 @@ class CrashGenerationCleanerTest
     }
 
     @AfterEach
-    void teardownPagedFile() throws IOException
+    void teardownPagedFile()
     {
         pagedFile.close();
     }
@@ -123,6 +123,7 @@ class CrashGenerationCleanerTest
 
         // THEN
         assertPagesVisited( monitor, pages.length );
+        assertTreeNodes( monitor, pages.length );
         assertCleanedCrashPointers( monitor, 0 );
     }
 
@@ -141,7 +142,8 @@ class CrashGenerationCleanerTest
         crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean( executor );
 
         // THEN
-        assertPagesVisited( monitor, 2 );
+        assertPagesVisited( monitor, pages.length );
+        assertTreeNodes( monitor, pages.length );
         assertCleanedCrashPointers( monitor, 0 );
     }
 
@@ -175,6 +177,7 @@ class CrashGenerationCleanerTest
 
         // THEN
         assertPagesVisited( monitor, pages.length );
+        assertTreeNodes( monitor, pages.length );
         assertCleanedCrashPointers( monitor, 9 );
     }
 
@@ -203,7 +206,28 @@ class CrashGenerationCleanerTest
 
         // THEN
         assertPagesVisited( monitor, pages.length );
+        assertTreeNodes( monitor, pages.length );
         assertCleanedCrashPointers( monitor, 9 );
+    }
+
+    @Test
+    void shouldNotCleanOffloadOrFreelistPages() throws IOException
+    {
+        // GIVEN
+        Page[] pages = with(
+                offload(),
+                freelist()
+        );
+        initializeFile( pagedFile, pages );
+
+        // WHEN
+        SimpleCleanupMonitor monitor = new SimpleCleanupMonitor();
+        crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean( executor );
+
+        // THEN
+        assertPagesVisited( monitor, 2 );
+        assertTreeNodes( monitor, 0 );
+        assertCleanedCrashPointers( monitor, 0 );
     }
 
     @Test
@@ -228,6 +252,7 @@ class CrashGenerationCleanerTest
 
         // THEN
         assertPagesVisited( monitor, numberOfPages );
+        assertTreeNodes( monitor, numberOfPages );
         assertCleanedCrashPointers( monitor, totalNumberOfCorruptions.getValue() );
     }
 
@@ -263,6 +288,13 @@ class CrashGenerationCleanerTest
         assertEquals( expectedNumberOfPagesVisited, monitor.numberOfPagesVisited,
                 "Expected number of visited pages to be " + expectedNumberOfPagesVisited +
                         " but was " + monitor.numberOfPagesVisited );
+    }
+
+    private static void assertTreeNodes( SimpleCleanupMonitor monitor, int expectedNumberOfTreeNodes )
+    {
+        assertEquals( expectedNumberOfTreeNodes, monitor.numberOfTreeNodes,
+                "Expected number of TreeNodes to be " + expectedNumberOfTreeNodes +
+                        " but was " + monitor.numberOfTreeNodes );
     }
 
     /* Random page */
@@ -317,6 +349,16 @@ class CrashGenerationCleanerTest
         return new Page( PageType.INTERNAL, pageCorruptions );
     }
 
+    private Page offload()
+    {
+        return new Page( PageType.OFFLOAD );
+    }
+
+    private Page freelist()
+    {
+        return new Page( PageType.FREELIST );
+    }
+
     private class Page
     {
         private final PageType type;
@@ -364,6 +406,24 @@ class CrashGenerationCleanerTest
                             corruptibleTreeNode.setChildAt( cursor, child, keyCount, stableGeneration, unstableGeneration );
                         }
                         setKeyCount( cursor, keyCount );
+                    }
+                },
+        OFFLOAD
+                {
+                    @Override
+                    void write( PageCursor cursor, CorruptibleTreeNode corruptibleTreeNode, Layout<MutableLong,MutableLong> layout,
+                            int stableGeneration, int unstableGeneration )
+                    {
+                        OffloadStoreImpl.writeHeader( cursor );
+                    }
+                },
+        FREELIST
+                {
+                    @Override
+                    void write( PageCursor cursor, CorruptibleTreeNode corruptibleTreeNode, Layout<MutableLong,MutableLong> layout,
+                            int stableGeneration, int unstableGeneration )
+                    {
+                        FreelistNode.initialize( cursor );
                     }
                 };
 

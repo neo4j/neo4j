@@ -155,7 +155,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             }
 
             @Override
-            public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
+            public void cleanupFinished( long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
             {   // no-op
             }
 
@@ -208,12 +208,12 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
         /**
          * Called after recovery has completed and cleaning has been done.
-         *
          * @param numberOfPagesVisited number of pages visited by the cleaner.
+         * @param numberOfTreeNodes number of tree nodes visited by the cleaner.
          * @param numberOfCleanedCrashPointers number of cleaned crashed pointers.
          * @param durationMillis time spent cleaning.
          */
-        void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis );
+        void cleanupFinished( long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis );
 
         /**
          * Called when cleanup job is closed and lock is released

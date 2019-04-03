@@ -23,14 +23,15 @@ class SimpleCleanupMonitor extends GBPTree.Monitor.Adaptor
 {
     boolean cleanupFinished;
     long numberOfPagesVisited;
+    long numberOfTreeNodes;
     long numberOfCleanedCrashPointers;
 
     @Override
-    public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
-            long durationMillis )
+    public void cleanupFinished( long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
     {
         cleanupFinished = true;
         this.numberOfPagesVisited = numberOfPagesVisited;
+        this.numberOfTreeNodes = numberOfTreeNodes;
         this.numberOfCleanedCrashPointers = numberOfCleanedCrashPointers;
     }
 }

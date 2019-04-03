@@ -1241,10 +1241,10 @@ class GBPTreeTest
         CleanJobControlledMonitor cleanupMonitor = new CleanJobControlledMonitor()
         {
             @Override
-            public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
+            public void cleanupFinished( long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers,
                     long durationMillis )
             {
-                super.cleanupFinished( numberOfPagesVisited, numberOfCleanedCrashPointers, durationMillis );
+                super.cleanupFinished( numberOfPagesVisited, numberOfTreeNodes, numberOfCleanedCrashPointers, durationMillis );
                 throw cleanupException;
             }
         };
@@ -1995,7 +1995,7 @@ class GBPTreeTest
         private final Barrier.Control barrier = new Barrier.Control();
 
         @Override
-        public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
+        public void cleanupFinished( long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
         {
             barrier.reached();
         }
@@ -2084,7 +2084,7 @@ class GBPTreeTest
         private boolean cleanupCalled;
 
         @Override
-        public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
+        public void cleanupFinished( long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
         {
             cleanupCalled = true;
         }
