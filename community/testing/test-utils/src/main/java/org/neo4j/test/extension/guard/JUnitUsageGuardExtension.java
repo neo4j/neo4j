@@ -26,6 +26,8 @@ import org.objectweb.asm.ClassReader;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import static java.lang.String.format;
@@ -55,15 +57,22 @@ public class JUnitUsageGuardExtension implements BeforeAllCallback
         testClasses.removeAll( newJunitClasses );
         throw new JUnitException( format( "Detect usage of classes from multiple junit versions in the single test class: %s.%n" +
                 "Detected JUnit 5 classes: %s.%n" +
-                "Detected Junit 4 classes: %s.", testClazz.getName(), new ArrayList<>( newJunitClasses ), new ArrayList<>( testClasses ) ) );
+                "Detected Junit 4 classes: %s.", testClazz.getName(), sortedClasses( newJunitClasses ), sortedClasses( testClasses ) ) );
     }
 
-    private boolean noOldJunitUsages( Set<String> testClasses, Set<String> newJunitClasses )
+    private static List<String> sortedClasses( Set<String> newJunitClasses )
+    {
+        ArrayList<String> strings = new ArrayList<>( newJunitClasses );
+        Collections.sort( strings );
+        return strings;
+    }
+
+    private static boolean noOldJunitUsages( Set<String> testClasses, Set<String> newJunitClasses )
     {
         return newJunitClasses.size() == testClasses.size();
     }
 
-    private Set<String> collectUsedTestClasses( Class<?> clazz ) throws IOException
+    private static Set<String> collectUsedTestClasses( Class<?> clazz ) throws IOException
     {
         ClassReader classReader = new ClassReader( clazz.getName() );
         DependenciesCollector dependenciesCollector = new DependenciesCollector();
