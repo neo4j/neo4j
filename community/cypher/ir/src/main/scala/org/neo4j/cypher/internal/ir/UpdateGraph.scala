@@ -64,21 +64,10 @@ trait UpdateGraph {
    */
   def identifiersToDelete: Set[String] = (deleteExpressions flatMap {
     // DELETE n
-    case DeleteExpression(identifier: Variable, _) => Seq(identifier.name)
     // DELETE (n)-[r]-()
-    case DeleteExpression(PathExpression(e), _) => e.dependencies.map(_.asInstanceOf[Variable].name)
     // DELETE expr
-    case DeleteExpression(expr, _) => Seq(findVariableInNestedStructure(expr))
+    case DeleteExpression(expr, _) => expr.dependencies.map(_.name)
   }).toSet
-
-  @tailrec
-  private def findVariableInNestedStructure(e: Expression): String = e match {
-    case v: Variable => v.name
-    // DELETE coll[i]
-    case ContainerIndex(expr, _) => findVariableInNestedStructure(expr)
-    // DELETE map.key
-    case Property(expr, _) => findVariableInNestedStructure(expr)
-  }
 
   /*
    * Finds all node properties being created with CREATE (:L)
