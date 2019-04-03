@@ -209,75 +209,6 @@ InModuleScope Neo4j-Management {
     }
 
     Context "Server Invoke - Enable Default GC Logs" {
-      $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
-         -NeoConfSettings 'dbms.logs.gc.enabled=true'
-
-      $result = Get-Java -ForServer -Neo4jServer $serverObject
-      $resultArgs = ($result.args -join ' ')
-
-      It "should set GCLogfile" {
-        $resultArgs | Should Match ([regex]::Escape(' -Xloggc:'))
-      }
-
-      It "should set GCLogfile under logs" {
-        $resultArgs | Should Match ([regex]::Escape(" -Xloggc:`"$($serverObject.LogDir)"))
-      }
-
-      It "should set GCLogFileSize" {
-        $resultArgs | Should Match ([regex]::Escape(' -XX:GCLogFileSize='))
-      }
-
-      It "should set NumberOfGCLogFiles" {
-        $resultArgs | Should Match ([regex]::Escape(' -XX:NumberOfGCLogFiles='))
-      }
-
-      It "should set PrintGCDetails" {
-        $resultArgs | Should Match ([regex]::Escape(' -XX:+PrintGCDetails'))
-      }
-
-      It "should set PrintGCDateStamps" {
-        $resultArgs | Should Match ([regex]::Escape(' -XX:+PrintGCDateStamps'))
-      }
-
-      It "should set PrintGCApplicationStoppedTime" {
-        $resultArgs | Should Match ([regex]::Escape(' -XX:+PrintGCApplicationStoppedTime'))
-      }
-
-      It "should set PrintPromotionFailure" {
-        $resultArgs | Should Match ([regex]::Escape(' -XX:+PrintPromotionFailure'))
-      }
-
-      It "should set PrintTenuringDistribution" {
-        $resultArgs | Should Match ([regex]::Escape(' -XX:+PrintTenuringDistribution'))
-      }
-    }
-
-    Context "Server Invoke - Enable Specific GC Logs" {
-      $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
-         -NeoConfSettings 'dbms.logs.gc.enabled=true','dbms.logs.gc.options=key1=value1 key2=value2'
-
-      $result = Get-Java -ForServer -Neo4jServer $serverObject
-      $resultArgs = ($result.args -join ' ')
-
-      It "should set GCLogfile" {
-        $resultArgs | Should Match ([regex]::Escape(' -Xloggc:'))
-      }
-
-      It "should set GCLogFileSize" {
-        $resultArgs | Should Match ([regex]::Escape(' -XX:GCLogFileSize='))
-      }
-
-      It "should set NumberOfGCLogFiles" {
-        $resultArgs | Should Match ([regex]::Escape(' -XX:NumberOfGCLogFiles='))
-      }
-
-      It "should set specific options" {
-        $resultArgs | Should Match ([regex]::Escape(' key1=value1'))
-        $resultArgs | Should Match ([regex]::Escape(' key2=value2'))
-      }
-    }
-
-    Context "Server Invoke - Enable Post Java 8 Default GC Logs" {
       Mock Get-JavaVersion { @{ 'isValid' = $true; 'isJava8' = $false } }
       
       $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
@@ -303,7 +234,7 @@ InModuleScope Neo4j-Management {
       }
     }
 
-    Context "Server Invoke - Enable Post Java 8 Specific GC Logs" {
+    Context "Server Invoke - Enable Specific GC Logs" {
       Mock Get-JavaVersion { @{ 'isValid' = $true; 'isJava8' = $false } }
 
       $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
@@ -398,7 +329,8 @@ InModuleScope Neo4j-Management {
         $argList -contains "--home-dir=`"TestDrive:\Neo4j Home`"" | Should Be True
       }
       It "should have literal quotes around gclog path" {
-        $argList -contains "-Xloggc:`"$($serverObject.LogDir)/gc.log`"" | Should Be True
+        $argList -contains
+        "-Xlog:gc*,safepoint,age*=trace:file=\""TestDrive:\Neo4j Home\logs/gc.log\""::filecount=5,filesize=20m"| Should Be True
       }
     }
   }

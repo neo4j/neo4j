@@ -159,9 +159,9 @@ InModuleScope Neo4j-Management {
         $jvmArgs | Should Match ([regex]::Escape('-Dfile.encoding=UTF-8'))
       }
 
-      # dbms.logs.gc.enabled=true is specified in the mock so -Xloggc:... should be present in the Prunsrv command
+      # dbms.logs.gc.enabled=true is specified in the mock so -Xlog:gc:... should be present in the Prunsrv command
       It "should set GCLogfile in Prunsrv if specified in neo4j.conf" {
-        $jvmArgs | Should Match ([regex]::Escape('-Xloggc:'))
+        $jvmArgs | Should Match ([regex]::Escape('-Xlog:gc'))
       }
     }
 
