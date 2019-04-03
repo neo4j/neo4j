@@ -57,6 +57,8 @@ import static java.lang.String.format;
  */
 public class BasicSystemGraphRealm extends AuthorizingRealm implements RealmLifecycle, UserManager, CredentialsMatcher
 {
+    private boolean initOnStart;
+    private final BasicSystemGraphInitializer systemGraphInitializer;
     private final PasswordPolicy passwordPolicy;
     private final AuthenticationStrategy authenticationStrategy;
     private final boolean authenticationEnabled;
@@ -69,14 +71,22 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements RealmLife
      */
     public static final String IS_SUSPENDED = "is_suspended";
 
-    public BasicSystemGraphRealm( BasicSystemGraphOperations basicSystemGraphOperations, SecureHasher secureHasher,
-            PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy, boolean authenticationEnabled )
+    public BasicSystemGraphRealm(
+            BasicSystemGraphOperations basicSystemGraphOperations,
+            BasicSystemGraphInitializer systemGraphInitializer,
+            Boolean initOnStart,
+            SecureHasher secureHasher,
+            PasswordPolicy passwordPolicy,
+            AuthenticationStrategy authenticationStrategy,
+            boolean authenticationEnabled )
     {
         super();
         // TODO: should be SecuritySettings.NATIVE_REALM_NAME
         setName( "native" );
 
         this.basicSystemGraphOperations = basicSystemGraphOperations;
+        this.systemGraphInitializer = systemGraphInitializer;
+        this.initOnStart = initOnStart;
         this.secureHasher = secureHasher;
         this.passwordPolicy = passwordPolicy;
         this.authenticationStrategy = authenticationStrategy;
@@ -94,6 +104,10 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements RealmLife
     @Override
     public void start() throws Exception
     {
+        if ( initOnStart )
+        {
+            systemGraphInitializer.initializeSystemGraph();
+        }
     }
 
     @Override
