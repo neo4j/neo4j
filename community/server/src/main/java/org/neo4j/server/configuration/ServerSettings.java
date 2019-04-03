@@ -159,19 +159,17 @@ public class ServerSettings implements LoadableConfig
 
     @SuppressWarnings( "unused" ) // used only in the startup scripts
     @Description( "GC Logging Options" )
-    public static final Setting<String> gc_logging_options = setting( "dbms.logs.gc.options", STRING, "" +
-            "-XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime " +
-            "-XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution" );
+    public static final Setting<String> gc_logging_options = setting( "dbms.logs.gc.options", STRING, "Not used value.");
 
     @SuppressWarnings( "unused" ) // used only in the startup scripts
     @Description( "Number of GC logs to keep." )
     public static final Setting<Integer> gc_logging_rotation_keep_number =
-            setting( "dbms.logs.gc.rotation.keep_number", INTEGER, "5" );
+            setting( "dbms.logs.gc.rotation.keep_number", INTEGER, "0" );
 
     @SuppressWarnings( "unused" ) // used only in the startup scripts
     @Description( "Size of each GC log that is kept." )
     public static final Setting<Long> gc_logging_rotation_size = buildSetting( "dbms.logs.gc.rotation.size", BYTES,
-            "20m" ).constraint( range(0L, Long.MAX_VALUE ) ).build();
+            "0" ).constraint( range(0L, Long.MAX_VALUE ) ).build();
 
     @SuppressWarnings( "unused" ) // used only in the startup scripts
     @Description( "Path of the run directory. This directory holds Neo4j's runtime state, such as a pidfile when it " +
