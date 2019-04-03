@@ -34,28 +34,34 @@ import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.subject.SimplePrincipalCollection;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.UserManager;
+import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
+import org.neo4j.server.security.auth.BasicLoginContext;
 import org.neo4j.server.security.auth.RealmLifecycle;
 import org.neo4j.server.security.auth.SecureHasher;
 import org.neo4j.server.security.auth.ShiroAuthToken;
 
-import static java.lang.String.format;
+import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
 
 /**
  * Shiro realm using a Neo4j graph to store users
  */
-public class BasicSystemGraphRealm extends AuthorizingRealm implements RealmLifecycle, UserManager, CredentialsMatcher
+public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManager, UserManager, UserManagerSupplier, RealmLifecycle, CredentialsMatcher
 {
     private boolean initOnStart;
     private final BasicSystemGraphInitializer systemGraphInitializer;
@@ -357,5 +363,62 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements RealmLife
     protected void clearCacheForUser( String username )
     {
         clearCache( new SimplePrincipalCollection( username, this.getName() ) );
+    }
+
+    @Override
+    public UserManager getUserManager( AuthSubject authSubject, boolean isUserManager )
+    {
+        return this;
+    }
+
+    @Override
+    public UserManager getUserManager()
+    {
+        return this;
+    }
+
+    @Override
+    public LoginContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException
+    {
+        try
+        {
+            assertValidScheme( authToken );
+
+            String username = AuthToken.safeCast( AuthToken.PRINCIPAL, authToken );
+            byte[] password = AuthToken.safeCastCredentials( AuthToken.CREDENTIALS, authToken );
+
+            User user = getUser( username );
+            AuthenticationResult result = AuthenticationResult.FAILURE;
+            if ( user != null )
+            {
+                result = authenticationStrategy.authenticate( user, password );
+                if ( result == AuthenticationResult.SUCCESS && user.passwordChangeRequired() )
+                {
+                    result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+                }
+            }
+            return new BasicLoginContext( user, result );
+        }
+        catch ( InvalidArgumentsException e )
+        {
+            throw new InvalidAuthTokenException( e.getMessage() );
+        }
+        finally
+        {
+            AuthToken.clearCredentials( authToken );
+        }
+    }
+
+    private void assertValidScheme( Map<String,Object> token ) throws InvalidAuthTokenException
+    {
+        String scheme = AuthToken.safeCast( AuthToken.SCHEME_KEY, token );
+        if ( scheme.equals( "none" ) )
+        {
+            throw invalidToken( ", scheme 'none' is only allowed when auth is disabled." );
+        }
+        if ( !scheme.equals( AuthToken.BASIC_SCHEME ) )
+        {
+            throw invalidToken( ", scheme '" + scheme + "' is not supported." );
+        }
     }
 }

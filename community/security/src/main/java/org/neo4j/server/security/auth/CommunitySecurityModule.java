@@ -20,26 +20,32 @@
 package org.neo4j.server.security.auth;
 
 import java.io.File;
+import java.util.function.Supplier;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.security.systemgraph.BasicSystemGraphInitializer;
+import org.neo4j.server.security.systemgraph.BasicSystemGraphOperations;
+import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
+import org.neo4j.server.security.systemgraph.ContextSwitchingSystemGraphQueryExecutor;
 import org.neo4j.time.Clocks;
 
 @ServiceProvider
 public class CommunitySecurityModule extends SecurityModule
 {
-    private BasicAuthManager authManager;
+    private BasicSystemGraphRealm authManager;
+    private DatabaseManager<?> databaseManager;
 
     @Override
     public String getName()
@@ -50,17 +56,15 @@ public class CommunitySecurityModule extends SecurityModule
     @Override
     public void setup( Dependencies dependencies ) throws KernelException
     {
+        org.neo4j.collection.Dependencies platformDependencies = (org.neo4j.collection.Dependencies) dependencies.dependencySatisfier();
+        this.databaseManager = platformDependencies.resolveDependency( DatabaseManager.class );
+
         Config config = dependencies.config();
         GlobalProcedures globalProcedures = dependencies.procedures();
         LogProvider logProvider = dependencies.logService().getUserLogProvider();
         FileSystemAbstraction fileSystem = dependencies.fileSystem();
-        final UserRepository userRepository = getUserRepository( config, logProvider, fileSystem );
-        final UserRepository initialUserRepository = getInitialUserRepository( config, logProvider, fileSystem );
 
-        final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
-
-        authManager = new BasicAuthManager( userRepository, passwordPolicy, Clocks.systemClock(),
-                initialUserRepository, config );
+        authManager = createBasicSystemGraphRealm( config, logProvider, fileSystem );
 
         life.add( dependencies.dependencySatisfier().satisfyDependency( authManager ) );
 
@@ -118,5 +122,35 @@ public class CommunitySecurityModule extends SecurityModule
             userStoreFile = new File( authStoreDir, fileName );
         }
         return userStoreFile;
+    }
+
+    private BasicSystemGraphRealm createBasicSystemGraphRealm( Config config, LogProvider logProvider, FileSystemAbstraction fileSystem )
+    {
+        ContextSwitchingSystemGraphQueryExecutor queryExecutor = new ContextSwitchingSystemGraphQueryExecutor( databaseManager,
+                config.get( GraphDatabaseSettings.default_database ) );
+
+        SecureHasher secureHasher = new SecureHasher();
+        BasicSystemGraphOperations systemGraphOperations = new BasicSystemGraphOperations( queryExecutor, secureHasher );
+
+        Supplier<UserRepository> migrationUserRepositorySupplier = () -> CommunitySecurityModule.getUserRepository( config, logProvider, fileSystem );
+        Supplier<UserRepository> initialUserRepositorySupplier = () -> CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem );
+
+        BasicSystemGraphInitializer systemGraphInitializer = new BasicSystemGraphInitializer( queryExecutor, systemGraphOperations,
+                migrationUserRepositorySupplier, initialUserRepositorySupplier, secureHasher, logProvider.getLog( getClass() ) );
+
+        return new BasicSystemGraphRealm(
+                systemGraphOperations,
+                systemGraphInitializer,
+                true, // always init on start in community
+                secureHasher,
+                new BasicPasswordPolicy(),
+                createAuthenticationStrategy( config ),
+                true // native authentication in always enabled in community
+        );
+    }
+
+    public static AuthenticationStrategy createAuthenticationStrategy( Config config )
+    {
+        return new RateLimitedAuthenticationStrategy( Clocks.systemClock(), config );
     }
 }

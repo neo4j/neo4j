@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -68,7 +69,7 @@ public class AuthProceduresIT
 
     private GraphDatabaseAPI db;
     private EphemeralFileSystemAbstraction fs;
-    private BasicAuthManager authManager;
+    private BasicSystemGraphRealm authManager;
     private LoginContext admin;
 
     @BeforeEach
@@ -76,7 +77,7 @@ public class AuthProceduresIT
     {
         fs = new EphemeralFileSystemAbstraction();
         db = (GraphDatabaseAPI) createGraphDatabase( fs );
-        authManager = db.getDependencyResolver().resolveDependency( BasicAuthManager.class );
+        authManager = db.getDependencyResolver().resolveDependency( BasicSystemGraphRealm.class );
         admin = login( "neo4j", "neo4j" );
         admin.subject().setPasswordChangeNoLongerRequired();
     }
@@ -97,7 +98,7 @@ public class AuthProceduresIT
         // Given
         assertEmpty( admin, "CALL dbms.security.changePassword('abc')" );
 
-        assert authManager.getUser( "neo4j" ).credentials().matchesPassword( "abc" );
+        assert authManager.getUser( "neo4j" ).credentials().matchesPassword( UTF8.encode( "abc" ) );
     }
 
     @Test
