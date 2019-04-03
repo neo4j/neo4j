@@ -64,6 +64,7 @@ abstract class TreeNode<KEY,VALUE>
     static final byte LEAF_FLAG = 1;
     static final byte INTERNAL_FLAG = 0;
     static final long NO_NODE_FLAG = 0;
+    static final long NO_OFFLOAD_ID = -1;
 
     static final int NO_KEY_VALUE_SIZE_CAP = -1;
 
@@ -235,6 +236,8 @@ abstract class TreeNode<KEY,VALUE>
     {
         cursor.shiftBytes( baseOffset + (pos + 1) * slotSize, (totalSlotCount - (pos + 1)) * slotSize, -slotSize );
     }
+
+    abstract long offloadIdAt( PageCursor cursor, int pos, Type type );
 
     abstract KEY keyAt( PageCursor cursor, KEY into, int pos, Type type );
 

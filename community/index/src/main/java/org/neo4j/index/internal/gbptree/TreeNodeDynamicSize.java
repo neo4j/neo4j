@@ -146,6 +146,21 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
+    long offloadIdAt( PageCursor cursor, int pos, Type type )
+    {
+        placeCursorAtActualKey( cursor, pos, type );
+
+        // Read key
+        long keyValueSize = readKeyValueSize( cursor );
+        boolean offload = extractOffload( keyValueSize );
+        if ( offload )
+        {
+            return DynamicSizeUtil.readOffloadId( cursor );
+        }
+        return NO_OFFLOAD_ID;
+    }
+
+    @Override
     KEY keyAt( PageCursor cursor, KEY into, int pos, Type type )
     {
         placeCursorAtActualKey( cursor, pos, type );

@@ -80,7 +80,8 @@ class ConsistencyCheckerTest
         PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( pageSize );
         SimpleIdProvider idProvider = new SimpleIdProvider( cursor::duplicate );
         InternalTreeLogic<MutableLong,MutableLong> logic = new InternalTreeLogic<>( idProvider, node, layout, NO_MONITOR );
-        cursor.next( idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
+        long root = idProvider.acquireNewId( stableGeneration, unstableGeneration );
+        cursor.next( root );
         node.initializeLeaf( cursor, stableGeneration, unstableGeneration );
         logic.initialize( cursor );
         StructurePropagation<MutableLong> structure = new StructurePropagation<>( layout.newKey(), layout.newKey(),
@@ -95,8 +96,8 @@ class ConsistencyCheckerTest
                         stableGeneration, unstableGeneration );
                 if ( structure.hasRightKeyInsert )
                 {
-                    goTo( cursor, "new root",
-                            idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
+                    root = idProvider.acquireNewId( stableGeneration, unstableGeneration );
+                    goTo( cursor, "new root", root );
                     node.initializeInternal( cursor, stableGeneration, unstableGeneration );
                     node.setChildAt( cursor, structure.midChild, 0, stableGeneration, unstableGeneration );
                     node.insertKeyAndRightChildAt( cursor, structure.rightKey, structure.rightChild, 0, 0,
@@ -106,6 +107,7 @@ class ConsistencyCheckerTest
                 }
                 if ( structure.hasMidChildUpdate )
                 {
+                    root = structure.midChild;
                     logic.initialize( cursor );
                 }
                 structure.clear();
@@ -117,8 +119,10 @@ class ConsistencyCheckerTest
         // WHEN
         ConsistencyChecker<MutableLong> cc =
                 new ConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration );
+        var expectedGeneration = unstableGeneration;
+        goTo( cursor, "back to root", root );
         RuntimeException exception =
-                assertThrows( RuntimeException.class, () -> cc.checkSpace( cursor, idProvider.lastId(), ImmutableEmptyLongIterator.INSTANCE ) );
+                assertThrows( RuntimeException.class, () -> cc.check( cursor, expectedGeneration, idProvider.lastId(), ImmutableEmptyLongIterator.INSTANCE ) );
         assertThat( exception.getMessage(), containsString( "unused pages" ) );
     }
 }

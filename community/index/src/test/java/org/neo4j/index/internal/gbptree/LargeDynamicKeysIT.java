@@ -139,7 +139,9 @@ class LargeDynamicKeysIT
             }
             Collections.shuffle( entries, random.random() );
             insertAndValidate( tree, entries );
+            tree.consistencyCheck();
             removeAndValidate( tree, entries );
+            tree.consistencyCheck();
         }
     }
 
@@ -172,6 +174,7 @@ class LargeDynamicKeysIT
             }
 
             insertAndValidate( index, entries );
+            index.consistencyCheck();
         }
     }
 
@@ -236,6 +239,7 @@ class LargeDynamicKeysIT
             }
 
             insertAndValidate( tree, entries );
+            tree.consistencyCheck();
         }
     }
 

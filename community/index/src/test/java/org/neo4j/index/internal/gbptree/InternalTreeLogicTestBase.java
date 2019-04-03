@@ -1529,7 +1529,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         goTo( readCursor, rootId );
         ConsistencyChecker<KEY> consistencyChecker =
                 new ConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration );
-        consistencyChecker.check( readCursor, rootGeneration );
+        consistencyChecker.check( readCursor, rootGeneration, id.lastId(), id.unacquiredIds() );
         goTo( readCursor, currentPageId );
     }
 

@@ -98,6 +98,12 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     {   // no-op
     }
 
+    @Override
+    long offloadIdAt( PageCursor cursor, int pos, Type type )
+    {
+        return NO_OFFLOAD_ID;
+    }
+
     private static int childSize()
     {
         return SIZE_PAGE_REFERENCE;

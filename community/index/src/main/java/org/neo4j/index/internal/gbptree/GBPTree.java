@@ -1239,16 +1239,15 @@ public class GBPTree<KEY,VALUE> implements Closeable
             ConsistencyChecker<KEY> consistencyChecker = new ConsistencyChecker<>( bTreeNode, layout,
                     stableGeneration( generation ), unstableGeneration );
 
-            long rootGeneration = root.goTo( cursor );
-            boolean check = consistencyChecker.check( cursor, rootGeneration );
-            root.goTo( cursor );
-
             final MutableLongSet freelistIds = new LongHashSet();
             freeList.visitFreelistPageIds( freelistIds::add );
             freeList.visitUnacquiredIds( freelistIds::add, unstableGeneration );
-            boolean checkSpace = consistencyChecker.checkSpace( cursor, freeList.lastId(), freelistIds.longIterator() );
 
-            return check && checkSpace;
+            long rootGeneration = root.goTo( cursor );
+            boolean check = consistencyChecker.check( cursor, rootGeneration, freeList.lastId(), freelistIds.longIterator() );
+            root.goTo( cursor );
+
+            return check;
         }
     }
 
