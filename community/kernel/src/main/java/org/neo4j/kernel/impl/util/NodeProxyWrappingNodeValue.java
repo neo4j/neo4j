@@ -62,7 +62,10 @@ public class NodeProxyWrappingNodeValue extends NodeValue
         {
             l = Values.stringArray();
             p = VirtualValues.EMPTY_MAP;
-
+        }
+        catch ( IllegalStateException e )
+        {
+            throw new ReadAndDeleteTransactionConflictException( e );
         }
 
         if ( id() < 0 )

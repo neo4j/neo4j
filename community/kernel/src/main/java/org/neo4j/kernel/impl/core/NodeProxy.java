@@ -58,6 +58,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -653,6 +654,11 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         catch ( LabelNotFoundKernelException e )
         {
             throw new IllegalStateException( "Label retrieved through kernel API should exist.", e );
+        }
+        catch ( InvalidRecordException e )
+        {
+            // This can happen if the labels are stored in a dynamic record, and the node is deleted by an overlapping committed transaction.
+            throw new IllegalStateException( "This node might have been deleted by an overlapping committed transaction.", e );
         }
     }
 

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.util;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
@@ -53,6 +54,17 @@ public class RelationshipProxyWrappingValue extends RelationshipValue
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
+        if ( relationship instanceof RelationshipProxy )
+        {
+            RelationshipProxy proxy = (RelationshipProxy) relationship;
+            if ( !proxy.initializeData() )
+            {
+                // If the relationship has been deleted since it was found by the query, then we'll have to tell the client that their transaction conflicted,
+                // and that they need to retry it.
+                throw new ReadAndDeleteTransactionConflictException();
+            }
+        }
+
         MapValue p;
         try
         {
@@ -61,7 +73,10 @@ public class RelationshipProxyWrappingValue extends RelationshipValue
         catch ( NotFoundException e )
         {
             p = VirtualValues.EMPTY_MAP;
-
+        }
+        catch ( IllegalStateException e )
+        {
+            throw new ReadAndDeleteTransactionConflictException( e );
         }
 
         if ( id() < 0 )

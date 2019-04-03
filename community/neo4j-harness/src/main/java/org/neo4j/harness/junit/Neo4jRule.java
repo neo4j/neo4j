@@ -27,7 +27,9 @@ import java.io.File;
 import java.io.PrintStream;
 import java.net.URI;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
+import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
@@ -47,7 +49,7 @@ public class Neo4jRule implements TestRule, TestServerBuilder
 {
     private TestServerBuilder builder;
     private ServerControls controls;
-    private PrintStream dumpLogsOnFailureTarget;
+    private Supplier<PrintStream> dumpLogsOnFailureTarget;
 
     Neo4jRule( TestServerBuilder builder )
     {
@@ -82,7 +84,7 @@ public class Neo4jRule implements TestRule, TestServerBuilder
                     {
                         if ( dumpLogsOnFailureTarget != null )
                         {
-                            sc.printLogs( dumpLogsOnFailureTarget );
+                            sc.printLogs( dumpLogsOnFailureTarget.get() );
                         }
 
                         throw t;
@@ -176,6 +178,12 @@ public class Neo4jRule implements TestRule, TestServerBuilder
     }
 
     public Neo4jRule dumpLogsOnFailure( PrintStream out )
+    {
+        dumpLogsOnFailureTarget = () -> out;
+        return this;
+    }
+
+    public Neo4jRule dumpLogsOnFailure( Supplier<PrintStream> out )
     {
         dumpLogsOnFailureTarget = out;
         return this;
