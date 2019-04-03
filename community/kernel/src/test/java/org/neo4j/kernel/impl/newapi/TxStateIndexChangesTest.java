@@ -69,8 +69,13 @@ import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForSu
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForRangeSeek;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForRangeSeekByPrefix;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForScan;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForSeek;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains;
 import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.doubleValue;
+import static org.neo4j.values.storable.Values.intArray;
+import static org.neo4j.values.storable.Values.intValue;
+import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 class TxStateIndexChangesTest
@@ -542,6 +547,7 @@ class TxStateIndexChangesTest
     class CompositeIndex
     {
         private final IndexDescriptor compositeIndex = TestIndexDescriptorFactory.forLabel( 1, 1, 2 );
+        private final IndexDescriptor compositeIndex3properties = TestIndexDescriptorFactory.forLabel( 1, 1, 2, 3 );
 
         @Test
         void shouldSeekOnAnEmptyTxState()
@@ -584,12 +590,18 @@ class TxStateIndexChangesTest
                     .withAdded( 42L, "42value1", "42value2" )
                     .withAdded( 43L, "43value1", "43value2" )
                     .build();
+            IndexQuery[] predicate = new IndexQuery[]{
+                    IndexQuery.exact( -1, stringValue( "43value1" ) ),
+                    IndexQuery.range( -1, null, false, stringValue( "44val" ), true )
+            };
 
             // WHEN
             AddedAndRemoved changes = indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "43value1", "43value2" ) );
+            AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForSeek( state, compositeIndex, predicate, IndexOrder.NONE );
 
             // THEN
             assertContains( changes.getAdded(), 43L );
+            assertContains( changesWithValues.getAdded(), nodeWithPropertyValues( 43L, "43value1", "43value2" ) );
         }
 
         @Test
@@ -600,16 +612,22 @@ class TxStateIndexChangesTest
                     .withAdded( 42L, 42001.0, 42002.0 )
                     .withAdded( 43L, 43001.0, 43002.0 )
                     .build();
+            IndexQuery[] predicate = new IndexQuery[]{
+                    IndexQuery.exact( -1, doubleValue( 43001.0 ) ),
+                    IndexQuery.range( -1, doubleValue( 43000.0 ), true, null, false )
+            };
 
             // WHEN
             AddedAndRemoved changes = indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( 43001.0, 43002.0 ) );
+            AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForSeek( state, compositeIndex, predicate, IndexOrder.NONE );
 
             // THEN
             assertContains( changes.getAdded(), 43L );
+            assertContains( changesWithValues.getAdded(), nodeWithPropertyValues( 43L, 43001.0, 43002.0 ) );
         }
 
         @Test
-        void shouldHandleMixedAddsAndRemovesEntry()
+        void shouldHandleMixedAddsAndRemovesEntryForScan()
         {
             // GIVEN
             ReadableTransactionState state = new TxStateBuilder()
@@ -631,20 +649,66 @@ class TxStateIndexChangesTest
         }
 
         @Test
+        void shouldHandleMixedAddsAndRemovesEntryForSeek()
+        {
+            // GIVEN
+            ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded( 42L, "42value1", "42value2" )
+                    .withAdded( 43L, "43value1", "43value2" )
+                    .withRemoved( 43L, "43value1", "43value2" )
+                    .withRemoved( 44L, "44value1", "44value2" )
+                    .build();
+
+            // WHEN
+            AddedAndRemoved changes42 = indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "42value1", "42value2" ) );
+            AddedAndRemoved changes43 = indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "43value1", "43value2" ) );
+            AddedAndRemoved changes44 = indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "44value1", "44value2" ) );
+
+            AddedWithValuesAndRemoved changesWithValues42 =
+                    indexUpdatesWithValuesForSeek( state, compositeIndex, getPredicate( stringValue( "42value1" ) ), IndexOrder.NONE );
+            AddedWithValuesAndRemoved changesWithValues43 =
+                    indexUpdatesWithValuesForSeek( state, compositeIndex, getPredicate( stringValue( "43value1" ) ), IndexOrder.NONE );
+            AddedWithValuesAndRemoved changesWithValues44 =
+                    indexUpdatesWithValuesForSeek( state, compositeIndex, getPredicate( stringValue( "44value1" ) ), IndexOrder.NONE );
+
+            // THEN
+            assertContains( changes42.getAdded(), 42L );
+            assertTrue( changes42.getRemoved().isEmpty() );
+            assertTrue( changes43.isEmpty() );
+            assertTrue( changes44.getAdded().isEmpty() );
+            assertContains( changes44.getRemoved(), 44L );
+
+            assertContains( changesWithValues42.getAdded(), nodeWithPropertyValues( 42L, "42value1", "42value2" ) );
+            assertTrue( changesWithValues42.getRemoved().isEmpty() );
+            assertTrue( changesWithValues43.isEmpty() );
+            assertFalse( changesWithValues44.getAdded().iterator().hasNext() );
+            assertContains( changesWithValues44.getRemoved(), 44L );
+        }
+
+        @Test
         void shouldSeekWhenThereAreManyEntriesWithTheSameValues()
         {
             // GIVEN (note that 44 has the same properties as 43)
             ReadableTransactionState state = new TxStateBuilder()
-                    .withAdded( 42L, "42value1", "42value2" )
-                    .withAdded( 43L, "43value1", "43value2" )
-                    .withAdded( 44L, "43value1", "43value2" )
+                    .withAdded( 42L, "42value1", "42value2", "42value3" )
+                    .withAdded( 43L, "43value1", "43value2", "43value3" )
+                    .withAdded( 44L, "43value1", "43value2", "43value3" )
+                    .withAdded( 45L, "43value1", "42value2", "42value3" )
                     .build();
+            IndexQuery[] predicate = new IndexQuery[]{
+                    IndexQuery.exact( -1, stringValue( "43value1" ) ),
+                    IndexQuery.exact( -1, stringValue( "43value2" ) ),
+                    IndexQuery.exists( -1 )
+            };
 
             // WHEN
-            AddedAndRemoved changes = indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "43value1", "43value2" ) );
+            AddedAndRemoved changes = indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "43value1", "43value2", "43value3" ) );
+            AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForSeek( state, compositeIndex3properties, predicate, IndexOrder.NONE );
 
             // THEN
             assertContains( changes.getAdded(), 43L, 44L );
+            assertContains( changesWithValues.getAdded(), nodeWithPropertyValues( 43L, "43value1", "43value2", "43value3" ),
+                    nodeWithPropertyValues( 44L, "43value1", "43value2", "43value3" ) );
         }
 
         @Test
@@ -665,8 +729,106 @@ class TxStateIndexChangesTest
             assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "sneaker", false ) ).getAdded(), 12L );
             assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( new int[]{10, 100}, "array-buddy" ) ).getAdded(), 13L );
             assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( 40.1, 40.2 ) ).getAdded(), 14L );
+
+            assertContains( indexUpdatesWithValuesForSeek( state, compositeIndex, getPredicate( stringValue( "hi" ) ), IndexOrder.NONE ).getAdded(),
+                    nodeWithPropertyValues( 10L, "hi", 3 ) );
+            assertContains( indexUpdatesWithValuesForSeek( state, compositeIndex, getPredicate( longValue( 9L ) ), IndexOrder.NONE ).getAdded(),
+                    nodeWithPropertyValues( 11L, 9L, 33L ) );
+            assertContains( indexUpdatesWithValuesForSeek( state, compositeIndex, getPredicate( stringValue( "sneaker" ) ), IndexOrder.NONE ).getAdded(),
+                    nodeWithPropertyValues( 12L, "sneaker", false ) );
+            assertContains( indexUpdatesWithValuesForSeek( state, compositeIndex, getPredicate( intArray( new int[]{10, 100} ) ), IndexOrder.NONE ).getAdded(),
+                    nodeWithPropertyValues( 13L, new int[]{10, 100}, "array-buddy" ) );
+            assertContains( indexUpdatesWithValuesForSeek( state, compositeIndex, getPredicate( doubleValue( 40.1 ) ), IndexOrder.NONE ).getAdded(),
+                    nodeWithPropertyValues( 14L, 40.1, 40.2 ) );
         }
 
+        @Test
+        void shouldComputeIndexUpdatesForRangeSeek()
+        {
+            assertRangeSeekForOrder( IndexOrder.NONE );
+            assertRangeSeekForOrder( IndexOrder.ASCENDING );
+            assertRangeSeekForOrder( IndexOrder.DESCENDING );
+        }
+
+        @Test
+        void shouldComputeIndexUpdatesForRangeSeekByPrefix()
+        {
+            assertRangeSeekByPrefixForOrder( IndexOrder.NONE );
+            assertRangeSeekByPrefixForOrder( IndexOrder.ASCENDING );
+            assertRangeSeekByPrefixForOrder( IndexOrder.DESCENDING );
+        }
+
+        private void assertRangeSeekForOrder( IndexOrder indexOrder )
+        {
+            final ReadableTransactionState state =
+                    new TxStateBuilder()
+                            .withAdded( 42L, 520, "random42" )
+                            .withAdded( 43L, 510, "random43" )
+                            .withAdded( 44L, 550, "random44" )
+                            .withAdded( 45L, 500, "random45" )
+                            .withAdded( 46L, "530", "random46" )
+                            .withAdded( 47L, "560", "random47" )
+                            .withAdded( 48L, "540", "random48" )
+                            .build();
+
+            NodeWithPropertyValues[] expectedInt = new NodeWithPropertyValues[]{
+                    nodeWithPropertyValues( 43L, 510, "random43" ),
+                    nodeWithPropertyValues( 42L, 520, "random42" ),
+                    nodeWithPropertyValues( 44L, 550, "random44" )
+            };
+            NodeWithPropertyValues[] expectedString = new NodeWithPropertyValues[]{
+                    nodeWithPropertyValues( 48L, "540", "random48" ),
+                    nodeWithPropertyValues( 47L, "560", "random47" )
+            };
+
+            AddedAndRemoved changesInt =
+                    indexUpdatesForRangeSeek( state, index, IndexQuery.range( -1, intValue( 500 ), false, intValue( 600 ), false ), indexOrder );
+            AddedAndRemoved changesString =
+                    indexUpdatesForRangeSeek( state, index, IndexQuery.range( -1, stringValue( "530" ), false, null, false ), indexOrder );
+            AddedWithValuesAndRemoved changesWithValuesInt =
+                    indexUpdatesWithValuesForRangeSeek( state, index, IndexQuery.range( -1, intValue( 500 ), false, intValue( 600 ), false ), indexOrder );
+            AddedWithValuesAndRemoved changesWithValuesString =
+                    indexUpdatesWithValuesForRangeSeek( state, index, IndexQuery.range( -1, stringValue( "530" ), false, null, false ), indexOrder );
+
+            assertContains( indexOrder, changesInt, changesWithValuesInt, expectedInt );
+            assertContains( indexOrder, changesString, changesWithValuesString, expectedString );
+        }
+
+        private void assertRangeSeekByPrefixForOrder( IndexOrder indexOrder )
+        {
+            // GIVEN
+            ReadableTransactionState state = new TxStateBuilder()
+                    .withAdded( 40L, "Aaron", "Bass" )
+                    .withAdded( 41L, "Agatha", "Christie" )
+                    .withAdded( 42L, "Andreas", "Jona" )
+                    .withAdded( 43L, "Barbarella", "Fonda" )
+                    .withAdded( 44L, "Andrea", "Kormos" )
+                    .withAdded( 45L, "Aristotle", "Nicomachus" )
+                    .withAdded( 46L, "Barbara", "Mikellen" )
+                    .withAdded( 47L, "Andy", "Gallagher" )
+                    .withAdded( 48L, "Cinderella", "Tremaine" )
+                    .withAdded( 49L, "Andromeda", "Black" )
+                    .build();
+
+            // WHEN
+            AddedAndRemoved changes = indexUpdatesForRangeSeekByPrefix( state, index, stringValue( "And" ), indexOrder );
+            AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForRangeSeekByPrefix( state, index, stringValue( "And" ), indexOrder );
+
+            NodeWithPropertyValues[] expected = {
+                    nodeWithPropertyValues( 44L, "Andrea", "Kormos" ),
+                    nodeWithPropertyValues( 42L, "Andreas", "Jona" ),
+                    nodeWithPropertyValues( 49L, "Andromeda", "Black" ),
+                    nodeWithPropertyValues( 47L, "Andy", "Gallagher" )
+            };
+
+            // THEN
+            assertContains( indexOrder, changes, changesWithValues, expected );
+        }
+
+        private IndexQuery[] getPredicate( Value value )
+        {
+            return new IndexQuery[]{IndexQuery.exact( -1, value ), IndexQuery.exists( -1 )};
+        }
     }
 
     private void assertContains( IndexOrder indexOrder,
