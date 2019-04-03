@@ -78,6 +78,7 @@
             -Dorg.org.neo4j.kernel.impl.newapi.DefaultCursors.trackCursors=true
             -Dorg.org.neo4j.codegen.bytecode.ByteCodeExpressionVisitor.checkByteCode=true
             -Djunit.jupiter.extensions.autodetection.enabled=true
+            -Djunit.jupiter.execution.parallel.enabled=true
             -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${test.runner.jvm.settings.additional}
         </test.runner.jvm.settings>
         <jetty.version>9.4.11.v20180605</jetty.version>

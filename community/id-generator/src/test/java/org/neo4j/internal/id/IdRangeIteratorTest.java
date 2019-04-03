@@ -20,15 +20,18 @@
 package org.neo4j.internal.id;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
 
 import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
 
+@Execution( CONCURRENT )
 class IdRangeIteratorTest
 {
     @Test

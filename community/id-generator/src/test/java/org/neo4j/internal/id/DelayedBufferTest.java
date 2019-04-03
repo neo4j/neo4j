@@ -20,6 +20,7 @@
 package org.neo4j.internal.id;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
 
 import java.time.Clock;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,12 +39,14 @@ import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.Suppliers.singleton;
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 
+@Execution( CONCURRENT )
 class DelayedBufferTest
 {
     @Test
