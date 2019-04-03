@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OffloadStoreTest
 {
@@ -48,17 +50,78 @@ class OffloadStoreTest
     }
 
     @Test
-    void mustReadKey() throws IOException
+    void mustReadKeyAndValue() throws IOException
     {
-        OffloadStore<RawBytes,RawBytes> offloadStore = new OffloadStoreImpl<>( layout, idProvider, pcFactory, idValidator, PAGE_SIZE );
+        OffloadStore<RawBytes,RawBytes> offloadStore = getOffloadStore();
+
+        RawBytes key = layout.newKey();
+        RawBytes value = layout.newValue();
+        key.bytes = new byte[200];
+        value.bytes = new byte[offloadStore.maxEntrySize() - layout.keySize( key )];
+        long offloadId = offloadStore.writeKeyValue( key, value, STABLE_GENERATION, UNSTABLE_GENERATION );
+
+        {
+            RawBytes into = layout.newKey();
+            offloadStore.readKey( offloadId, into );
+            assertEquals( 0, layout.compare( key, into ) );
+        }
+
+        {
+            RawBytes into = layout.newKey();
+            offloadStore.readValue( offloadId, into );
+            assertEquals( 0, layout.compare( value, into ) );
+        }
+
+        {
+            RawBytes intoKey = layout.newKey();
+            RawBytes intoValue = layout.newValue();
+            offloadStore.readKeyValue( offloadId, intoKey, intoValue );
+            assertEquals( 0, layout.compare( key, intoKey ) );
+            assertEquals( 0, layout.compare( value, intoValue ) );
+        }
+    }
+
+    @Test
+    void mustInitializeOffloadPage() throws IOException
+    {
+        OffloadStoreImpl<RawBytes,RawBytes> offloadStore = getOffloadStore();
 
         RawBytes key = layout.newKey();
         key.bytes = new byte[200];
         long offloadId = offloadStore.writeKey( key, STABLE_GENERATION, UNSTABLE_GENERATION );
 
-        RawBytes into = layout.newKey();
-        offloadStore.readKey( offloadId, into );
+        cursor.next( offloadId );
+        assertEquals( TreeNode.NODE_TYPE_OFFLOAD, TreeNode.nodeType( cursor ) );
+    }
 
-        assertEquals( 0, layout.compare( key, into ) );
+    @Test
+    void mustAssertOnOffloadPageDuringRead()
+    {
+        OffloadStoreImpl<RawBytes,RawBytes> offloadStore = getOffloadStore();
+        String expectedMessage = "Tried to read from offload store but page is not an offload page";
+
+        {
+            RawBytes key = layout.newKey();
+            IOException exception = assertThrows( IOException.class, () -> offloadStore.readKey( 0, key ) );
+            assertTrue( exception.getMessage().contains( expectedMessage ) );
+        }
+
+        {
+            RawBytes value = layout.newValue();
+            IOException exception = assertThrows( IOException.class, () -> offloadStore.readValue( 0, value ) );
+            assertTrue( exception.getMessage().contains( expectedMessage ) );
+        }
+
+        {
+            RawBytes key = layout.newKey();
+            RawBytes value = layout.newValue();
+            IOException exception = assertThrows( IOException.class, () -> offloadStore.readKeyValue( 0, key, value ) );
+            assertTrue( exception.getMessage().contains( expectedMessage ) );
+        }
+    }
+
+    private OffloadStoreImpl<RawBytes,RawBytes> getOffloadStore()
+    {
+        return new OffloadStoreImpl<>( layout, idProvider, pcFactory, idValidator, PAGE_SIZE );
     }
 }

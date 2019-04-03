@@ -30,6 +30,7 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 
 public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
 {
+    private static final int SIZE_HEADER = Byte.BYTES;
     private static final int SIZE_KEY_SIZE = Integer.BYTES;
     private static final int SIZE_VALUE_SIZE = Integer.BYTES;
     private final Layout<KEY,VALUE> layout;
@@ -64,6 +65,11 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
             {
                 placeCursorAtOffloadId( cursor, offloadId );
 
+                if ( !readHeader( cursor ) )
+                {
+                    continue;
+                }
+                cursor.setOffset( SIZE_HEADER );
                 int keySize = cursor.getInt();
                 int valueSize = cursor.getInt();
                 if ( keyValueSizeTooLarge( keySize, valueSize ) || keySize < 0 || valueSize < 0 )
@@ -74,7 +80,7 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
                 layout.readKey( cursor, into, keySize );
             }
             while ( cursor.shouldRetry() );
-            checkOutOfBoundsAndClosed( cursor );
+            checkOutOfBounds( cursor );
             cursor.checkAndClearCursorException();
         }
     }
@@ -90,6 +96,11 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
             {
                 placeCursorAtOffloadId( cursor, offloadId );
 
+                if ( !readHeader( cursor ) )
+                {
+                    continue;
+                }
+                cursor.setOffset( SIZE_HEADER );
                 int keySize = cursor.getInt();
                 int valueSize = cursor.getInt();
                 if ( keyValueSizeTooLarge( keySize, valueSize ) || keySize < 0 )
@@ -101,7 +112,7 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
                 layout.readValue( cursor, value, valueSize );
             }
             while ( cursor.shouldRetry() );
-            checkOutOfBoundsAndClosed( cursor );
+            checkOutOfBounds( cursor );
             cursor.checkAndClearCursorException();
         }
     }
@@ -117,6 +128,11 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
             {
                 placeCursorAtOffloadId( cursor, offloadId );
 
+                if ( !readHeader( cursor ) )
+                {
+                    continue;
+                }
+                cursor.setOffset( SIZE_HEADER );
                 int keySize = cursor.getInt();
                 int valueSize = cursor.getInt();
                 if ( keyValueSizeTooLarge( keySize, valueSize ) || keySize < 0 )
@@ -128,7 +144,7 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
                 layout.readValue( cursor, into, valueSize );
             }
             while ( cursor.shouldRetry() );
-            checkOutOfBoundsAndClosed( cursor );
+            checkOutOfBounds( cursor );
             cursor.checkAndClearCursorException();
         }
     }
@@ -137,11 +153,13 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
     public long writeKey( KEY key, long stableGeneration, long unstableGeneration ) throws IOException
     {
         int keySize = layout.keySize( key );
-        long newId = acquireNewId( keySize, stableGeneration, unstableGeneration );
+        long newId = acquireNewId( stableGeneration, unstableGeneration );
         try ( PageCursor cursor = pcFactory.create( newId, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
             placeCursorAtOffloadId( cursor, newId );
 
+            writeHeader( cursor );
+            cursor.setOffset( SIZE_HEADER );
             putKeyValueSize( cursor, keySize, 0 );
             layout.writeKey( cursor, key );
             return newId;
@@ -153,11 +171,13 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
     {
         int keySize = layout.keySize( key );
         int valueSize = layout.valueSize( value );
-        long newId = acquireNewId( keySize + valueSize, stableGeneration, unstableGeneration );
+        long newId = acquireNewId( stableGeneration, unstableGeneration );
         try ( PageCursor cursor = pcFactory.create( newId, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
             placeCursorAtOffloadId( cursor, newId );
 
+            writeHeader( cursor );
+            cursor.setOffset( SIZE_HEADER );
             putKeyValueSize( cursor, keySize, valueSize );
             layout.writeKey( cursor, key );
             layout.writeValue( cursor, value );
@@ -174,16 +194,33 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
     @VisibleForTesting
     static int maxEntrySizeFromPageSize( int pageSize )
     {
-        return pageSize - SIZE_KEY_SIZE - SIZE_VALUE_SIZE;
+        return pageSize - SIZE_HEADER - SIZE_KEY_SIZE - SIZE_VALUE_SIZE;
     }
 
-    private void putKeyValueSize( PageCursor cursor, int keySize, int valueSize )
+    static void writeHeader( PageCursor cursor )
+    {
+        cursor.putByte( TreeNode.BYTE_POS_NODE_TYPE, TreeNode.NODE_TYPE_OFFLOAD );
+    }
+
+    private boolean readHeader( PageCursor cursor )
+    {
+        byte type = TreeNode.nodeType( cursor );
+        if ( type != TreeNode.NODE_TYPE_OFFLOAD )
+        {
+            cursor.setCursorException( format( "Tried to read from offload store but page is not an offload page. Expected %d but was %d",
+                    TreeNode.NODE_TYPE_OFFLOAD, type ) );
+            return false;
+        }
+        return true;
+    }
+
+    private static void putKeyValueSize( PageCursor cursor, int keySize, int valueSize )
     {
         cursor.putInt( keySize );
         cursor.putInt( valueSize );
     }
 
-    private long acquireNewId( int keySize, long stableGeneration, long unstableGeneration ) throws IOException
+    private long acquireNewId( long stableGeneration, long unstableGeneration ) throws IOException
     {
         return idProvider.acquireNewId( stableGeneration, unstableGeneration );
     }
@@ -191,23 +228,6 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
     private void placeCursorAtOffloadId( PageCursor cursor, long offloadId ) throws IOException
     {
         PageCursorUtil.goTo( cursor, "offload page", offloadId );
-    }
-
-    /**
-     * todo: Copied from SeekCursor. Unify usage
-     */
-    private void checkOutOfBoundsAndClosed( PageCursor cursor )
-    {
-        try
-        {
-            checkOutOfBounds( cursor );
-        }
-        catch ( TreeInconsistencyException e )
-        {
-            // Only check the closed status here when we get an out of bounds to avoid making
-            // this check for every call to next.
-            throw e;
-        }
     }
 
     private boolean keyValueSizeTooLarge( int keySize, int valueSize )

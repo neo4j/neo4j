@@ -51,6 +51,7 @@ abstract class TreeNode<KEY,VALUE>
     static final int BYTE_POS_NODE_TYPE = 0;
     static final byte NODE_TYPE_TREE_NODE = 1;
     static final byte NODE_TYPE_FREE_LIST_NODE = 2;
+    static final byte NODE_TYPE_OFFLOAD = 3;
 
     static final int SIZE_PAGE_REFERENCE = GenerationSafePointerPair.SIZE;
     static final int BYTE_POS_TYPE = BYTE_POS_NODE_TYPE + Byte.BYTES;
