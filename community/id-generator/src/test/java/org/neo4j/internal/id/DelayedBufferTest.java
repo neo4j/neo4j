@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.id;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,25 +29,25 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.neo4j.function.Predicates;
 import org.neo4j.test.Race;
 import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.ThreadLocalRandom.current;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.Suppliers.singleton;
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 
-public class DelayedBufferTest
+class DelayedBufferTest
 {
     @Test
-    public void shouldHandleTheWholeWorkloadShebang() throws Throwable
+    void shouldHandleTheWholeWorkloadShebang() throws Throwable
     {
         // GIVEN
         final int size = 1_000;
@@ -83,7 +83,7 @@ public class DelayedBufferTest
         // ... ensuring the test is sane itself (did we really offer all these IDs?)
         for ( int i = 0; i < size; i++ )
         {
-            assertEquals( "ID " + i, (byte) 1, offeredIds[i] );
+            assertEquals( (byte) 1, offeredIds[i], "ID " + i );
         }
         maintenance.halt();
         buffer.close();
@@ -93,7 +93,7 @@ public class DelayedBufferTest
     }
 
     @Test
-    public void shouldNotReleaseValuesUntilCrossedThreshold()
+    void shouldNotReleaseValuesUntilCrossedThreshold()
     {
         // GIVEN
         VerifyingConsumer consumer = new VerifyingConsumer( 30 );
@@ -169,12 +169,11 @@ public class DelayedBufferTest
     }
 
     @Test
-    public void shouldClearCurrentChunk()
+    void shouldClearCurrentChunk()
     {
         // GIVEN
         Consumer<long[]> consumer = mock( Consumer.class );
-        DelayedBuffer<Long> buffer = new DelayedBuffer<>( singleton( 0L ), Predicates.alwaysTrue(),
-                10, consumer );
+        DelayedBuffer<Long> buffer = new DelayedBuffer<>( singleton( 0L ), alwaysTrue(), 10, consumer );
         buffer.offer( 0 );
         buffer.offer( 1 );
         buffer.offer( 2 );
@@ -188,7 +187,7 @@ public class DelayedBufferTest
     }
 
     @Test
-    public void shouldClearPreviousChunks()
+    void shouldClearPreviousChunks()
     {
         // GIVEN
         Consumer<long[]> consumer = mock( Consumer.class );
@@ -213,11 +212,11 @@ public class DelayedBufferTest
 
     private static class MaintenanceThread extends Thread
     {
-        private final DelayedBuffer buffer;
+        private final DelayedBuffer<Long> buffer;
         private final long nanoInterval;
         private volatile boolean end;
 
-        MaintenanceThread( DelayedBuffer buffer, long nanoInterval )
+        MaintenanceThread( DelayedBuffer<Long> buffer, long nanoInterval )
         {
             this.buffer = buffer;
             this.nanoInterval = nanoInterval;

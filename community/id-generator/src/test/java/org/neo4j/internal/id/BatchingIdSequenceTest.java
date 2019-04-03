@@ -19,37 +19,40 @@
  */
 package org.neo4j.internal.id;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.neo4j.internal.id.IdGeneratorImpl.INTEGER_MINUS_ONE;
+import static org.neo4j.internal.id.IdValidator.hasReservedIdInRange;
+import static org.neo4j.internal.id.IdValidator.isReservedId;
 
-public class BatchingIdSequenceTest
+class BatchingIdSequenceTest
 {
     @Test
-    public void ShouldSkipNullId()
+    void ShouldSkipNullId()
     {
         BatchingIdSequence idSequence = new BatchingIdSequence();
 
-        idSequence.set( IdGeneratorImpl.INTEGER_MINUS_ONE - 1 );
-        assertEquals( IdGeneratorImpl.INTEGER_MINUS_ONE - 1, idSequence.peek() );
+        idSequence.set( INTEGER_MINUS_ONE - 1 );
+        assertEquals( INTEGER_MINUS_ONE - 1, idSequence.peek() );
 
         // The 'NULL Id' should be skipped, and never be visible anywhere.
         // Peek should always return what nextId will return
 
-        assertEquals( IdGeneratorImpl.INTEGER_MINUS_ONE - 1, idSequence.nextId() );
-        assertEquals( IdGeneratorImpl.INTEGER_MINUS_ONE + 1, idSequence.peek() );
-        assertEquals( IdGeneratorImpl.INTEGER_MINUS_ONE + 1, idSequence.nextId() );
+        assertEquals( INTEGER_MINUS_ONE - 1, idSequence.nextId() );
+        assertEquals( INTEGER_MINUS_ONE + 1, idSequence.peek() );
+        assertEquals( INTEGER_MINUS_ONE + 1, idSequence.nextId() );
 
         // And what if someone were to set it directly to the NULL id
-        idSequence.set( IdGeneratorImpl.INTEGER_MINUS_ONE );
+        idSequence.set( INTEGER_MINUS_ONE );
 
-        assertEquals( IdGeneratorImpl.INTEGER_MINUS_ONE + 1, idSequence.peek() );
-        assertEquals( IdGeneratorImpl.INTEGER_MINUS_ONE + 1, idSequence.nextId() );
+        assertEquals( INTEGER_MINUS_ONE + 1, idSequence.peek() );
+        assertEquals( INTEGER_MINUS_ONE + 1, idSequence.nextId() );
     }
 
     @Test
-    public void resetShouldSetDefault()
+    void resetShouldSetDefault()
     {
         BatchingIdSequence idSequence = new BatchingIdSequence();
 
@@ -67,12 +70,12 @@ public class BatchingIdSequenceTest
     }
 
     @Test
-    public void shouldSkipReservedIdWhenGettingBatches()
+    void shouldSkipReservedIdWhenGettingBatches()
     {
         // GIVEN
         int batchSize = 10;
         BatchingIdSequence idSequence = new BatchingIdSequence(
-                IdGeneratorImpl.INTEGER_MINUS_ONE - batchSize - batchSize / 2 );
+                INTEGER_MINUS_ONE - batchSize - batchSize / 2 );
 
         // WHEN
         IdRange range1 = idSequence.nextIdBatch( batchSize );
@@ -83,14 +86,13 @@ public class BatchingIdSequenceTest
         assertNoReservedId( range2 );
     }
 
-    private void assertNoReservedId( IdRange range )
+    private static void assertNoReservedId( IdRange range )
     {
         for ( long id : range.getDefragIds() )
         {
-            assertFalse( IdValidator.isReservedId( id ) );
+            assertFalse( isReservedId( id ) );
         }
 
-        assertFalse( IdValidator.hasReservedIdInRange( range.getRangeStart(),
-                range.getRangeStart() + range.getRangeLength() ) );
+        assertFalse( hasReservedIdInRange( range.getRangeStart(), range.getRangeStart() + range.getRangeLength() ) );
     }
 }

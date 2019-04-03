@@ -43,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
@@ -114,7 +115,7 @@ class FreeIdKeeperTest
 
         int batchSize = 10;
         FreeIdKeeper keeper = getFreeIdKeeperAggressive( channel, batchSize );
-        Mockito.reset( channel ); // because we get the position in the constructor, we need to reset all calls on the spy
+        reset( channel ); // because we get the position in the constructor, we need to reset all calls on the spy
 
         // when
         // we free 9 ids

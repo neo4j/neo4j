@@ -19,60 +19,65 @@
  */
 package org.neo4j.internal.id;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.internal.id.IdController.ConditionSnapshot;
 import org.neo4j.internal.id.configuration.CommunityIdTypeConfigurationProvider;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.id.IdType.STRING_BLOCK;
 
-public class BufferingIdGeneratorFactoryTest
+@ExtendWith( EphemeralFileSystemExtension.class )
+class BufferingIdGeneratorFactoryTest
 {
-    @Rule
-    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
 
     @Test
-    public void shouldDelayFreeingOfAggressivelyReusedIds()
+    void shouldDelayFreeingOfAggressivelyReusedIds()
     {
         // GIVEN
         MockedIdGeneratorFactory actual = new MockedIdGeneratorFactory();
         ControllableSnapshotSupplier boundaries = new ControllableSnapshotSupplier();
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual, new CommunityIdTypeConfigurationProvider() );
         bufferingIdGeneratorFactory.initialize( boundaries );
-        IdGenerator idGenerator = bufferingIdGeneratorFactory.open( new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE );
+        IdGenerator idGenerator = bufferingIdGeneratorFactory.open( new File( "doesnt-matter" ), 10, STRING_BLOCK, () -> 0L, Integer.MAX_VALUE );
 
         // WHEN
         idGenerator.freeId( 7 );
-        verifyNoMoreInteractions( actual.get( IdType.STRING_BLOCK ) );
+        verifyNoMoreInteractions( actual.get( STRING_BLOCK ) );
 
         // after some maintenance and transaction still not closed
         bufferingIdGeneratorFactory.maintenance();
-        verifyNoMoreInteractions( actual.get( IdType.STRING_BLOCK ) );
+        verifyNoMoreInteractions( actual.get( STRING_BLOCK ) );
 
         // although after transactions have all closed
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
         bufferingIdGeneratorFactory.maintenance();
 
         // THEN
-        verify( actual.get( IdType.STRING_BLOCK ) ).freeId( 7 );
+        verify( actual.get( STRING_BLOCK ) ).freeId( 7 );
     }
 
-    private static class ControllableSnapshotSupplier implements Supplier<IdController.ConditionSnapshot>
+    private static class ControllableSnapshotSupplier implements Supplier<ConditionSnapshot>
     {
-        IdController.ConditionSnapshot mostRecentlyReturned;
+        ConditionSnapshot mostRecentlyReturned;
 
         @Override
-        public IdController.ConditionSnapshot get()
+        public ConditionSnapshot get()
         {
-            return mostRecentlyReturned = mock( IdController.ConditionSnapshot.class );
+            return mostRecentlyReturned = mock( ConditionSnapshot.class );
         }
 
         void setMostRecentlyReturnedSnapshotToAllClosed()
