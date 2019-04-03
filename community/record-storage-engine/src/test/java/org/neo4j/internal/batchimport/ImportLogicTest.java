@@ -77,7 +77,7 @@ class ImportLogicTest
                 testDirectory.databaseLayout(), defaultFormat(), DEFAULT, getInstance(), AdditionalInitialIds.EMPTY, defaults() ) )
         {
             //noinspection EmptyTryBlock
-            try ( ImportLogic logic = new ImportLogic( testDirectory.databaseLayout(), fileSystem, stores, DEFAULT, defaults(), getInstance(), monitor,
+            try ( ImportLogic logic = new ImportLogic( testDirectory.databaseLayout(), stores, DEFAULT, defaults(), getInstance(), monitor,
                     defaultFormat(), Collector.EMPTY, NO_MONITOR ) )
             {
                 // nothing to run in this import
@@ -156,7 +156,7 @@ class ImportLogicTest
                             new DataStatistics.RelationshipTypeCount( 1, 66 )
                     };
             DataStatistics dataStatistics = new DataStatistics( 100123, 100456, relationshipTypeCounts );
-            try ( ImportLogic logic = new ImportLogic( testDirectory.databaseLayout(), fileSystem, stores, DEFAULT, defaults(), getInstance(), monitor,
+            try ( ImportLogic logic = new ImportLogic( testDirectory.databaseLayout(), stores, DEFAULT, defaults(), getInstance(), monitor,
                     defaultFormat(), Collector.EMPTY, NO_MONITOR ) )
             {
                 logic.putState( dataStatistics );

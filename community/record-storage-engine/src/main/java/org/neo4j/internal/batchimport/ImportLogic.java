@@ -132,7 +132,6 @@ public class ImportLogic implements Closeable
     };
 
     private final File databaseDirectory;
-    private final FileSystemAbstraction fileSystem;
     private final BatchingNeoStores neoStore;
     private final Configuration config;
     private final Config dbConfig;
@@ -164,7 +163,6 @@ public class ImportLogic implements Closeable
 
     /**
      * @param databaseLayout directory which the db will be created in.
-     * @param fileSystem {@link FileSystemAbstraction} that the {@code databaseLayout} lives in.
      * @param neoStore {@link BatchingNeoStores} to import into.
      * @param config import-specific {@link Configuration}.
      * @param logService {@link LogService} to use.
@@ -173,12 +171,10 @@ public class ImportLogic implements Closeable
      * @param badCollector {@link Collector} for bad entries.
      * @param monitor {@link Monitor} for some events.
      */
-    public ImportLogic( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, BatchingNeoStores neoStore,
-            Configuration config, Config dbConfig, LogService logService, ExecutionMonitor executionMonitor,
-            RecordFormats recordFormats, Collector badCollector, Monitor monitor )
+    public ImportLogic( DatabaseLayout databaseLayout, BatchingNeoStores neoStore, Configuration config, Config dbConfig, LogService logService,
+            ExecutionMonitor executionMonitor, RecordFormats recordFormats, Collector badCollector, Monitor monitor )
     {
         this.databaseDirectory = databaseLayout.databaseDirectory();
-        this.fileSystem = fileSystem;
         this.neoStore = neoStore;
         this.config = config;
         this.dbConfig = dbConfig;
