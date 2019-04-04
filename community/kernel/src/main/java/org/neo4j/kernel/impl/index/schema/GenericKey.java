@@ -88,7 +88,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     public static final int SIZE_NUMBER_FLOAT =    Integer.BYTES;  /* raw value bits */
     public static final int SIZE_NUMBER_DOUBLE =   Long.BYTES;     /* raw value bits */
     public static final int SIZE_ARRAY_LENGTH =    Short.BYTES;
-    static final int BIGGEST_REASONABLE_ARRAY_LENGTH = PAGE_SIZE / 2 / SIZE_NUMBER_BYTE;
+    static final int BIGGEST_REASONABLE_ARRAY_LENGTH = PAGE_SIZE / SIZE_NUMBER_BYTE;
 
     static final long TRUE = 1;
     static final long FALSE = 0;
