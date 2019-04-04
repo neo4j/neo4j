@@ -192,7 +192,7 @@ class DatabaseStartupTest
         }
     }
 
-    private DatabaseManager getDatabaseManager( GraphDatabaseAPI databaseService )
+    private static DatabaseManager<?> getDatabaseManager( GraphDatabaseAPI databaseService )
     {
         return databaseService.getDependencyResolver().resolveDependency( DatabaseManager.class );
     }

@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.database;
 
-import java.util.Comparator;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
 public class DatabaseId implements Comparable<DatabaseId>
 {
-    public static final Comparator<DatabaseId> DATABASE_ID_COMPARATOR = Comparator.comparing( DatabaseId::name );
     private final String name;
 
     public DatabaseId( String name )
@@ -70,6 +68,6 @@ public class DatabaseId implements Comparable<DatabaseId>
     @Override
     public int compareTo( DatabaseId o )
     {
-        return DATABASE_ID_COMPARATOR.compare( this, o );
+        return this.name.compareTo( o.name );
     }
 }

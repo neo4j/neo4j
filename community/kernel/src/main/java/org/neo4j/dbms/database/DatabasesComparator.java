@@ -19,8 +19,6 @@
  */
 package org.neo4j.dbms.database;
 
-import org.eclipse.collections.impl.block.factory.Comparators;
-
 import java.util.Comparator;
 import java.util.Objects;
 
@@ -37,12 +35,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
  */
 public class DatabasesComparator implements Comparator<DatabaseId>
 {
-    private final Comparator<DatabaseId> baseComparator;
-
-    public DatabasesComparator()
-    {
-        this.baseComparator = Comparators.naturalOrder();
-    }
 
     @Override
     public int compare( DatabaseId left, DatabaseId right )
@@ -55,11 +47,11 @@ public class DatabasesComparator implements Comparator<DatabaseId>
         }
         else
         {
-            return baseComparator.compare( left, right );
+            return left.compareTo( right );
         }
     }
 
-    private boolean isSystemDatabase( DatabaseId id )
+    private static boolean isSystemDatabase( DatabaseId id )
     {
         return Objects.equals( id.name(), SYSTEM_DATABASE_NAME );
     }
