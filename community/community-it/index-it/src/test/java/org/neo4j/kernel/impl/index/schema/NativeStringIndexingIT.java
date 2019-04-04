@@ -31,10 +31,12 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
+import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -53,6 +55,9 @@ import static org.junit.Assert.fail;
 
 public class NativeStringIndexingIT
 {
+    private static final int KEY_SIZE_LIMIT = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE );
+    private static final int STRING_SIZE_LIMIT = KEY_SIZE_LIMIT - Long.BYTES;
+    private static final int STRING_INLINE_LIMIT = TreeNodeDynamicSize.needOffloadCap( PageCache.PAGE_SIZE ) - Long.BYTES;
     private static final Label LABEL = TestLabels.LABEL_ONE;
     private static final String KEY = "key";
     private static final String KEY2 = "key2";
@@ -78,7 +83,7 @@ public class NativeStringIndexingIT
                 String string;
                 do
                 {
-                    string = random.nextAlphaNumericString( 3_000, 4_000 );
+                    string = random.nextAlphaNumericString( STRING_INLINE_LIMIT / 2, STRING_INLINE_LIMIT );
                 }
                 while ( strings.containsKey( string ) );
 
@@ -108,7 +113,7 @@ public class NativeStringIndexingIT
         createIndex( KEY );
 
         // when a string slightly longer than the native string limit
-        int length = 5_000;
+        int length = STRING_SIZE_LIMIT + 1;
         try
         {
             try ( Transaction tx = db.beginTx() )

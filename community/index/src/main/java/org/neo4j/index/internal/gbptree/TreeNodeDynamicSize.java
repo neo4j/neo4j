@@ -133,7 +133,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return OffloadStoreImpl.maxEntrySizeFromPageSize( pageSize );
     }
 
-    private static int needOffloadCap( int pageSize )
+    @VisibleForTesting
+    public static int needOffloadCap( int pageSize )
     {
         return (pageSize - HEADER_LENGTH_DYNAMIC) / LEAST_NUMBER_OF_ENTRIES_PER_PAGE - SIZE_TOTAL_OVERHEAD;
     }
