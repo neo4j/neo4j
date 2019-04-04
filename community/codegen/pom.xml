@@ -50,6 +50,18 @@
     </licenses>
 
     <dependencies>
+        <!-- scala -->
+
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+        </dependency>
+
+        <dependency>
+            <artifactId>scala-reflect</artifactId>
+            <groupId>org.scala-lang</groupId>
+        </dependency>
+
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-unsafe</artifactId>
@@ -100,6 +112,11 @@
 
     <build>
         <plugins>
+           <plugin>
+               <groupId>net.alchim31.maven</groupId>
+               <artifactId>scala-maven-plugin</artifactId>
+            </plugin>
+
             <plugin>
                 <!--
          The ASM library is notorious for making breaking changes to their API, so
