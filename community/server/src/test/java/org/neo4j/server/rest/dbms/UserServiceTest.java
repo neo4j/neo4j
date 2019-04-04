@@ -29,6 +29,7 @@ import java.security.Principal;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -36,11 +37,9 @@ import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
-import org.neo4j.server.security.auth.AuthenticationStrategy;
-import org.neo4j.server.security.auth.BasicAuthManager;
-import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.BasicLoginContext;
-import org.neo4j.server.security.auth.InMemoryUserRepository;
+import org.neo4j.server.security.systemgraph.BasicInMemorySystemGraphOperations;
+import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.test.server.EntityOutputFormat;
 
 import static org.hamcrest.Matchers.containsString;
@@ -62,8 +61,7 @@ public class UserServiceTest
 
     protected UserManagerSupplier setupUserManagerSupplier()
     {
-        return new BasicAuthManager( new InMemoryUserRepository(), new BasicPasswordPolicy(),
-                mock( AuthenticationStrategy.class ), new InMemoryUserRepository() );
+        return new BasicSystemGraphRealm( new BasicInMemorySystemGraphOperations(), Config.defaults() );
     }
 
     protected LoginContext setupSubject() throws InvalidArgumentsException
@@ -138,7 +136,7 @@ public class UserServiceTest
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
-        UserService userService = new UserService( mock( BasicAuthManager.class ), new JsonFormat(), outputFormat );
+        UserService userService = new UserService( mock( BasicSystemGraphRealm.class ), new JsonFormat(), outputFormat );
 
         // When
         Response response = userService.getUser( "fred", req );
@@ -192,7 +190,7 @@ public class UserServiceTest
         when( req.getUserPrincipal() ).thenReturn( null );
 
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
-        UserService userService = new UserService( mock( BasicAuthManager.class ), new JsonFormat(), outputFormat );
+        UserService userService = new UserService( mock( BasicSystemGraphRealm.class ), new JsonFormat(), outputFormat );
 
         // When
         Response response = userService.setPassword( USERNAME, req, "{ \"password\" : \"test\" }" );
@@ -248,7 +246,7 @@ public class UserServiceTest
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
-        UserService userService = new UserService( mock( BasicAuthManager.class ), new JsonFormat(), outputFormat );
+        UserService userService = new UserService( mock( BasicSystemGraphRealm.class ), new JsonFormat(), outputFormat );
 
         // When
         Response response = userService.setPassword( USERNAME, req, "xxx" );
@@ -268,7 +266,7 @@ public class UserServiceTest
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
-        UserService userService = new UserService( mock( BasicAuthManager.class ), new JsonFormat(), outputFormat );
+        UserService userService = new UserService( mock( BasicSystemGraphRealm.class ), new JsonFormat(), outputFormat );
 
         // When
         Response response = userService.setPassword( USERNAME, req, "{ \"unknown\" : \"unknown\" }" );
@@ -289,7 +287,7 @@ public class UserServiceTest
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
-        UserService userService = new UserService( mock( BasicAuthManager.class ), new JsonFormat(), outputFormat );
+        UserService userService = new UserService( mock( BasicSystemGraphRealm.class ), new JsonFormat(), outputFormat );
 
         // When
         Response response = userService.setPassword( USERNAME, req, "{ \"password\" : 1 }" );

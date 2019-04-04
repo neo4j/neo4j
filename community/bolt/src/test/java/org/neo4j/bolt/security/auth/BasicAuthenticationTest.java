@@ -32,18 +32,14 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.PasswordPolicy;
-import org.neo4j.server.security.auth.BasicAuthManager;
-import org.neo4j.server.security.auth.InMemoryUserRepository;
-import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.server.security.systemgraph.BasicInMemorySystemGraphOperations;
+import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.string.UTF8;
-import org.neo4j.time.Clocks;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class BasicAuthenticationTest
@@ -215,12 +211,8 @@ public class BasicAuthenticationTest
 
     private static Authentication createAuthentication( int maxFailedAttempts ) throws Exception
     {
-        UserRepository users = new InMemoryUserRepository();
-        PasswordPolicy policy = mock( PasswordPolicy.class );
-
         Config config = Config.defaults( GraphDatabaseSettings.auth_max_failed_attempts, String.valueOf( maxFailedAttempts ) );
-
-        BasicAuthManager manager = new BasicAuthManager( users, policy, Clocks.systemClock(), users, config );
+        BasicSystemGraphRealm manager = new BasicSystemGraphRealm( new BasicInMemorySystemGraphOperations(), config );
         Authentication authentication = new BasicAuthentication( manager, manager );
         manager.newUser( "bob", UTF8.encode( "secret" ), true );
         manager.newUser( "mike", UTF8.encode( "secret2" ), false );

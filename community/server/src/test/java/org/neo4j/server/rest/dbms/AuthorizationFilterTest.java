@@ -36,8 +36,8 @@ import javax.ws.rs.core.HttpHeaders;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.server.security.auth.BasicAuthManager;
 import org.neo4j.server.security.auth.BasicLoginContext;
+import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
 import static org.hamcrest.Matchers.containsString;
@@ -56,7 +56,7 @@ import static org.neo4j.test.AuthTokenUtil.authTokenArgumentMatcher;
 
 public class AuthorizationFilterTest
 {
-    private final BasicAuthManager authManager = mock( BasicAuthManager.class );
+    private final BasicSystemGraphRealm authManager = mock( BasicSystemGraphRealm.class );
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     private final HttpServletRequest servletRequest = mock( HttpServletRequest.class );

@@ -29,7 +29,8 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
-import org.neo4j.time.Clocks;
+import org.neo4j.server.security.systemgraph.BasicInMemorySystemGraphOperations;
+import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -38,19 +39,13 @@ import static org.neo4j.server.security.auth.SecurityTestUtils.password;
 
 public class SecurityContextDescriptionTest
 {
-    private BasicAuthManager manager;
+    private BasicSystemGraphRealm manager;
     private SecurityContext context;
 
     @Before
     public void setup() throws Throwable
     {
-        manager =
-            new BasicAuthManager(
-                    new InMemoryUserRepository(),
-                    new BasicPasswordPolicy(),
-                    Clocks.systemClock(),
-                    new InMemoryUserRepository(),
-                    Config.defaults() );
+        manager = new BasicSystemGraphRealm( new BasicInMemorySystemGraphOperations(), Config.defaults() );
         manager.init();
         manager.start();
         manager.newUser( "johan", password( "bar" ), false );

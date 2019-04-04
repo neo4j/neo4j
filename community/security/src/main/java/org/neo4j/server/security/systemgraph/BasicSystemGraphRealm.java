@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -52,9 +53,12 @@ import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicLoginContext;
+import org.neo4j.server.security.auth.BasicPasswordPolicy;
+import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.RealmLifecycle;
 import org.neo4j.server.security.auth.SecureHasher;
 import org.neo4j.server.security.auth.ShiroAuthToken;
+import org.neo4j.time.Clocks;
 
 import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
 
@@ -100,6 +104,22 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
 
         setAuthenticationCachingEnabled( true );
         setCredentialsMatcher( this );
+    }
+
+    /**
+     * Simplified constructor used for testing
+     */
+    public BasicSystemGraphRealm( BasicSystemGraphOperations basicSystemGraphOperations, Config config )
+    {
+        this (
+                basicSystemGraphOperations,
+                null,
+                false,
+                new SecureHasher(),
+                new BasicPasswordPolicy(),
+                new RateLimitedAuthenticationStrategy( Clocks.systemClock(), config ),
+                true
+        );
     }
 
     @Override
@@ -387,7 +407,7 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
             String username = AuthToken.safeCast( AuthToken.PRINCIPAL, authToken );
             byte[] password = AuthToken.safeCastCredentials( AuthToken.CREDENTIALS, authToken );
 
-            User user = getUser( username );
+            User user = silentlyGetUser( username );
             AuthenticationResult result = AuthenticationResult.FAILURE;
             if ( user != null )
             {
@@ -398,10 +418,6 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
                 }
             }
             return new BasicLoginContext( user, result );
-        }
-        catch ( InvalidArgumentsException e )
-        {
-            throw new InvalidAuthTokenException( e.getMessage() );
         }
         finally
         {
