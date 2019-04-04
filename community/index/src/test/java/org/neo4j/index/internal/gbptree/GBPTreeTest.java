@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.CoreMatchers;
@@ -1631,7 +1632,9 @@ public class GBPTreeTest
         // with an exception.
 
         List<Long> trace = new ArrayList<>();
-        PageCache pageCache = pageCacheWithTrace( trace );
+        MutableBoolean onOffSwitch = new MutableBoolean( true );
+        PageCursorTracer pageCursorTracer = trackingPageCursorTracer( trace, onOffSwitch );
+        PageCache pageCache = pageCacheWithTrace( pageCursorTracer );
 
         // Build a tree with root and two children.
         try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
@@ -1639,6 +1642,9 @@ public class GBPTreeTest
             // Insert data until we have a split in root
             treeWithRootSplit( trace, tree );
             long corruptChild = trace.get( 1 );
+
+            // We are not interested in further trace tracking
+            onOffSwitch.setFalse();
 
             // Corrupt the child
             corruptTheChild( pageCache, corruptChild );
@@ -1666,7 +1672,9 @@ public class GBPTreeTest
         try
         {
             List<Long> trace = new ArrayList<>();
-            PageCache pageCache = pageCacheWithTrace( trace );
+            MutableBoolean onOffSwitch = new MutableBoolean( true );
+            PageCursorTracer pageCursorTracer = trackingPageCursorTracer( trace, onOffSwitch );
+            PageCache pageCache = pageCacheWithTrace( pageCursorTracer );
 
             // Build a tree with root and two children.
             try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
@@ -1675,6 +1683,9 @@ public class GBPTreeTest
                 treeWithRootSplit( trace, tree );
                 long leftChild = trace.get( 1 );
                 long rightChild = trace.get( 2 );
+
+                // Stop trace tracking because we will soon start pinning pages from different threads
+                onOffSwitch.setFalse();
 
                 // Corrupt the child
                 corruptTheChild( pageCache, leftChild );
@@ -1714,6 +1725,22 @@ public class GBPTreeTest
         {
             FeatureToggles.clear( TripCountingRootCatchup.class, TripCountingRootCatchup.MAX_TRIP_COUNT_NAME );
         }
+    }
+
+    private DefaultPageCursorTracer trackingPageCursorTracer( List<Long> trace, MutableBoolean onOffSwitch )
+    {
+        return new DefaultPageCursorTracer()
+        {
+            @Override
+            public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
+            {
+                if ( onOffSwitch.isTrue() )
+                {
+                    trace.add( filePageId );
+                }
+                return super.beginPin( writeLock, filePageId, swapper );
+            }
+        };
     }
 
     private void assertFutureFailsWithTreeInconsistencyException( Future<Object> execute1 ) throws InterruptedException
@@ -1780,18 +1807,9 @@ public class GBPTreeTest
         }
     }
 
-    private PageCache pageCacheWithTrace( List<Long> trace )
+    private PageCache pageCacheWithTrace( PageCursorTracer pageCursorTracer  )
     {
         // A page cache tracer that we can use to see when tree has seen enough updates and to figure out on which page the child sits.Trace( trace );
-        PageCursorTracer pageCursorTracer = new DefaultPageCursorTracer()
-        {
-            @Override
-            public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
-            {
-                trace.add( filePageId );
-                return super.beginPin( writeLock, filePageId, swapper );
-            }
-        };
         PageCursorTracerSupplier pageCursorTracerSupplier = () -> pageCursorTracer;
         return createPageCache( DEFAULT_PAGE_SIZE, pageCursorTracerSupplier );
     }
