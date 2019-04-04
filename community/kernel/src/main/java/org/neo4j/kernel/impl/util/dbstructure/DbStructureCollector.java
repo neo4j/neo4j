@@ -387,7 +387,6 @@ public class DbStructureCollector implements DbStructureVisitor
                 @Override
                 public Pair<String[],String[]> next()
                 {
-                    //TODO: Add support for composite indexes
                     SchemaDescriptor next = iterator.next();
                     EntityType type = next.entityType();
                     String[] entityTokens;
