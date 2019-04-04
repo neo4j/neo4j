@@ -26,11 +26,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
@@ -245,13 +248,7 @@ class LargeDynamicKeysIT
 
     private void insertAndValidate( GBPTree<RawBytes,RawBytes> tree, List<Pair<RawBytes,RawBytes>> entries ) throws IOException
     {
-        try ( Writer<RawBytes,RawBytes> writer = tree.writer() )
-        {
-            for ( Pair<RawBytes,RawBytes> entry : entries )
-            {
-                writer.put( entry.first(), entry.other() );
-            }
-        }
+        processWithCheckpoints( tree, entries, ( writer, entry ) -> writer.put( entry.first(), entry.other() ) );
 
         for ( Pair<RawBytes,RawBytes> entry : entries )
         {
@@ -261,18 +258,35 @@ class LargeDynamicKeysIT
 
     private void removeAndValidate( GBPTree<RawBytes,RawBytes> tree, List<Pair<RawBytes,RawBytes>> entries ) throws IOException
     {
-        try ( Writer<RawBytes,RawBytes> writer = tree.writer() )
+        processWithCheckpoints( tree, entries, ( writer, entry ) ->
         {
-            for ( Pair<RawBytes,RawBytes> entry : entries )
-            {
-                RawBytes removed = writer.remove( entry.first() );
-                assertEquals( 0, layout.compare( removed, entry.other() ) );
-            }
-        }
+            RawBytes removed = writer.remove( entry.first() );
+            assertEquals( 0, layout.compare( removed, entry.other() ) );
+        } );
 
         for ( Pair<RawBytes,RawBytes> entry : entries )
         {
             assertDontFind( tree, entry.first() );
+        }
+    }
+
+    private void processWithCheckpoints( GBPTree<RawBytes,RawBytes> tree, List<Pair<RawBytes,RawBytes>> entries,
+            BiConsumer<Writer<RawBytes,RawBytes>,Pair<RawBytes,RawBytes>> writerAction )
+            throws IOException
+    {
+        double checkpointFrequency = 0.05;
+        Iterator<Pair<RawBytes,RawBytes>> iterator = entries.iterator();
+        while ( iterator.hasNext() )
+        {
+            try ( Writer<RawBytes,RawBytes> writer = tree.writer() )
+            {
+                while ( iterator.hasNext() && random.nextDouble() > checkpointFrequency )
+                {
+                    Pair<RawBytes,RawBytes> entry = iterator.next();
+                    writerAction.accept( writer, entry );
+                }
+            }
+            tree.checkpoint( IOLimiter.UNLIMITED );
         }
     }
 
