@@ -85,7 +85,6 @@ public class SystemGraphCredential implements Credential
         } );
     }
 
-    // TODO: try to make package-private again once authentication is in community
     public static SystemGraphCredential createCredentialForPassword( byte[] password, SecureHasher secureHasher )
     {
         SimpleHash hash = secureHasher.hash( password );
@@ -100,14 +99,14 @@ public class SystemGraphCredential implements Credential
 
     static String serialize( SystemGraphCredential credential )
     {
-        String algortihm = credential.hashedCredentials.getAlgorithmName();
+        String algorithm = credential.hashedCredentials.getAlgorithmName();
         String iterations = Integer.toString( credential.hashedCredentials.getIterations() );
         String encodedSalt = credential.hashedCredentials.getSalt().toHex();
         String encodedPassword = credential.hashedCredentials.toHex();
-        return String.join( credentialSeparator, algortihm, encodedPassword, encodedSalt, iterations );
+        return String.join( credentialSeparator, algorithm, encodedPassword, encodedSalt, iterations );
     }
 
-    static SystemGraphCredential deserialize( String part, SecureHasher secureHasher ) throws FormatException
+    public static SystemGraphCredential deserialize( String part, SecureHasher secureHasher ) throws FormatException
     {
         String[] split = part.split( credentialSeparator, -1 );
         if ( split.length < 3 || split.length > 4 )

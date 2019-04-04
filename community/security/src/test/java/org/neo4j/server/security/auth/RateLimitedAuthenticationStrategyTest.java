@@ -36,6 +36,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.auth_lock_time;
+import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
 import static org.neo4j.server.security.auth.SecurityTestUtils.password;
 
 public class RateLimitedAuthenticationStrategyTest
@@ -46,7 +47,7 @@ public class RateLimitedAuthenticationStrategyTest
         // Given
         FakeClock clock = getFakeClock();
         AuthenticationStrategy authStrategy = newAuthStrategy( clock, 3 );
-        User user = new User.Builder( "user", LegacyCredential.forPassword( "right" ) ).build();
+        User user = new User.Builder( "user", credentialFor( "right" ) ).build();
 
         // Then
         assertThat( authStrategy.authenticate( user, password( "right" ) ), equalTo( AuthenticationResult.SUCCESS ) );
@@ -58,7 +59,7 @@ public class RateLimitedAuthenticationStrategyTest
         // Given
         FakeClock clock = getFakeClock();
         AuthenticationStrategy authStrategy = newAuthStrategy( clock, 3 );
-        User user = new User.Builder( "user", LegacyCredential.forPassword( "right" ) ).build();
+        User user = new User.Builder( "user", credentialFor( "right" ) ).build();
 
         // Then
         assertThat( authStrategy.authenticate( user, password( "wrong" ) ), equalTo( AuthenticationResult.FAILURE ) );
@@ -70,7 +71,7 @@ public class RateLimitedAuthenticationStrategyTest
         // Given
         FakeClock clock = getFakeClock();
         AuthenticationStrategy authStrategy = newAuthStrategy( clock, 3 );
-        User user = new User.Builder( "user", LegacyCredential.forPassword( "right" ) ).build();
+        User user = new User.Builder( "user", credentialFor( "right" ) ).build();
 
         // When we've failed two times
         assertThat( authStrategy.authenticate( user, password( "wrong" ) ), equalTo( AuthenticationResult.FAILURE ) );
@@ -103,7 +104,7 @@ public class RateLimitedAuthenticationStrategyTest
         // Given
         FakeClock clock = getFakeClock();
         AuthenticationStrategy authStrategy = newAuthStrategy( clock, maxFailedAttempts, lockDuration );
-        User user = new User.Builder( "user", LegacyCredential.forPassword( "right" ) ).build();
+        User user = new User.Builder( "user", credentialFor( "right" ) ).build();
 
         // When we've failed max number of times
         for ( int i = 0; i < maxFailedAttempts; i++ )
@@ -126,7 +127,7 @@ public class RateLimitedAuthenticationStrategyTest
         // Given
         FakeClock clock = getFakeClock();
         AuthenticationStrategy authStrategy = newAuthStrategy( clock, maxFailedAttempts, lockDuration );
-        User user = new User.Builder( "user", LegacyCredential.forPassword( "right" ) ).build();
+        User user = new User.Builder( "user", credentialFor( "right" ) ).build();
 
         // When we've failed max number of times
         for ( int i = 0; i < maxFailedAttempts; i++ )
@@ -160,7 +161,7 @@ public class RateLimitedAuthenticationStrategyTest
     {
         FakeClock clock = getFakeClock();
         AuthenticationStrategy authStrategy = newAuthStrategy( clock, maxFailedAttempts );
-        User user = new User.Builder( "user", LegacyCredential.forPassword( "right" ) ).build();
+        User user = new User.Builder( "user", credentialFor( "right" ) ).build();
 
         int attempts = ThreadLocalRandom.current().nextInt( 5, 100 );
         for ( int i = 0; i < attempts; i++ )

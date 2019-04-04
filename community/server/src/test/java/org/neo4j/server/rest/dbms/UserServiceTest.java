@@ -179,7 +179,7 @@ public class UserServiceTest
 
         // Then
         assertThat( response.getStatus(), equalTo( 200 ) );
-        userManager.getUser( USERNAME ).credentials().matchesPassword( "test" );
+        userManager.getUser( USERNAME ).credentials().matchesPassword( password( "test" ) );
     }
 
     @Test

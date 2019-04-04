@@ -22,18 +22,20 @@ package org.neo4j.server.security.auth;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.security.User;
+import org.neo4j.server.security.systemgraph.SystemGraphCredential;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
 
 public class UserTest
 {
     @Test
     public void shouldBuildImmutableUser()
     {
-        LegacyCredential abc = LegacyCredential.forPassword( "123abc" );
-        LegacyCredential fruit = LegacyCredential.forPassword( "fruit" );
+        SystemGraphCredential abc = credentialFor( "123abc" );
+        SystemGraphCredential fruit = credentialFor( "fruit" );
         User u1 = new User.Builder( "Steve", abc ).build();
         User u2 = new User.Builder( "Steve", fruit )
                 .withRequiredPasswordChange( true )

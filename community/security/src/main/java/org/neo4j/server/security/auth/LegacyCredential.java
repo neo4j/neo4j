@@ -30,12 +30,12 @@ import org.neo4j.string.HexString;
 import org.neo4j.string.UTF8;
 
 /**
- * This class is used for community security, InternalFlatFile, SetDefaultAdminCommand and SetInitialPasswordCommand
- * The new commercial security has its own more secure version of Credential
+ * This class is used for 3.5 community security, InternalFlatFile, SetDefaultAdminCommand and SetInitialPasswordCommand
+ * The new security has its own more secure version of Credential
  */
 public class LegacyCredential implements Credential
 {
-    public static final String DIGEST_ALGO = "SHA-256";
+    static final String DIGEST_ALGO = "SHA-256";
 
     public static final LegacyCredential INACCESSIBLE = new LegacyCredential( new byte[]{}, new byte[]{} );
 

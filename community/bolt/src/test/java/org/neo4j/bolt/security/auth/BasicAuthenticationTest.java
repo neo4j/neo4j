@@ -34,13 +34,13 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.security.systemgraph.BasicInMemorySystemGraphOperations;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
-import org.neo4j.string.UTF8;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.server.security.auth.SecurityTestUtils.password;
 
 public class BasicAuthenticationTest
 {
@@ -54,7 +54,7 @@ public class BasicAuthenticationTest
     {
         // When
         AuthenticationResult result =
-                authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", UTF8.encode( "secret2" ) ) );
+                authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", password( "secret2" ) ) );
 
         // Then
         assertThat( result.getLoginContext().subject().username(), equalTo( "mike" ) );
@@ -69,7 +69,7 @@ public class BasicAuthenticationTest
         exception.expectMessage( "The client is unauthorized due to authentication failure." );
 
         // When
-        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", UTF8.encode( "banana" ) ) );
+        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "banana" ) ) );
     }
 
     @Test
@@ -77,7 +77,7 @@ public class BasicAuthenticationTest
     {
         // When
         AuthenticationResult result =
-                authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", UTF8.encode( "secret" ) ) );
+                authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "secret" ) ) );
 
         // Then
         assertTrue( result.credentialsExpired() );
@@ -94,7 +94,7 @@ public class BasicAuthenticationTest
         {
             try
             {
-                auth.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", UTF8.encode( "gelato" ) ) );
+                auth.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "gelato" ) ) );
             }
             catch ( AuthenticationException e )
             {
@@ -108,7 +108,7 @@ public class BasicAuthenticationTest
         exception.expectMessage( "The client has provided incorrect authentication details too many times in a row." );
 
         //When
-        auth.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", UTF8.encode( "gelato" ) ) );
+        auth.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "gelato" ) ) );
     }
 
     @Test
@@ -116,20 +116,20 @@ public class BasicAuthenticationTest
     {
         // When
         authentication.authenticate(
-                map( "scheme", "basic", "principal", "mike", "credentials", UTF8.encode( "secret2" ),
-                        "new_credentials", UTF8.encode( "secret" ) ) );
+                map( "scheme", "basic", "principal", "mike", "credentials", password( "secret2" ),
+                        "new_credentials", password( "secret" ) ) );
 
         // Then
-        authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", UTF8.encode( "secret" ) ) );
+        authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", password( "secret" ) ) );
     }
 
     @Test
     public void shouldClearCredentialsAfterUse() throws Exception
     {
         // When
-        byte[] oldPassword = UTF8.encode( "secret2" );
-        byte[] newPassword1 = UTF8.encode( "secret" );
-        byte[] newPassword2 = UTF8.encode( "secret" );
+        byte[] oldPassword = password( "secret2" );
+        byte[] newPassword1 = password( "secret" );
+        byte[] newPassword2 = password( "secret" );
 
         authentication.authenticate(
                 map( "scheme", "basic", "principal", "mike", "credentials", oldPassword,
@@ -148,7 +148,7 @@ public class BasicAuthenticationTest
     {
         // When
         AuthenticationResult result = authentication.authenticate(
-                map( "scheme", "basic", "principal", "bob", "credentials", UTF8.encode( "secret" ), "new_credentials", UTF8.encode( "secret2" ) ) );
+                map( "scheme", "basic", "principal", "bob", "credentials", password( "secret" ), "new_credentials", password( "secret2" ) ) );
 
         // Then
         assertThat(result.credentialsExpired(), equalTo( false ));
@@ -163,8 +163,8 @@ public class BasicAuthenticationTest
         exception.expectMessage( "The client is unauthorized due to authentication failure." );
 
         // When
-        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", UTF8.encode( "gelato" ),
-                "new_credentials", UTF8.encode( "secret2" ) ) );
+        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "gelato" ),
+                "new_credentials", password( "secret2" ) ) );
     }
 
     @Test
@@ -175,7 +175,7 @@ public class BasicAuthenticationTest
         exception.expect( hasStatus( Status.Security.Unauthorized ) );
 
         // When
-        authentication.authenticate( map( "principal", "bob", "credentials", UTF8.encode( "secret" ) ) );
+        authentication.authenticate( map( "principal", "bob", "credentials", password( "secret" ) ) );
     }
 
     @Test
@@ -200,7 +200,7 @@ public class BasicAuthenticationTest
 
         // When
         authentication
-                .authenticate( map( "scheme", "basic", "principal", singletonList( "bob" ), "credentials", UTF8.encode( "secret" ) ) );
+                .authenticate( map( "scheme", "basic", "principal", singletonList( "bob" ), "credentials", password( "secret" ) ) );
     }
 
     @Before
@@ -214,8 +214,8 @@ public class BasicAuthenticationTest
         Config config = Config.defaults( GraphDatabaseSettings.auth_max_failed_attempts, String.valueOf( maxFailedAttempts ) );
         BasicSystemGraphRealm manager = new BasicSystemGraphRealm( new BasicInMemorySystemGraphOperations(), config );
         Authentication authentication = new BasicAuthentication( manager, manager );
-        manager.newUser( "bob", UTF8.encode( "secret" ), true );
-        manager.newUser( "mike", UTF8.encode( "secret2" ), false );
+        manager.newUser( "bob", password( "secret" ), true );
+        manager.newUser( "mike", password( "secret2" ), false );
 
         return authentication;
     }
