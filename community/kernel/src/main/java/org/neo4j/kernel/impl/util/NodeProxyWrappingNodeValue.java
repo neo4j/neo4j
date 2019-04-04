@@ -92,7 +92,7 @@ public class NodeProxyWrappingNodeValue extends NodeValue
                     {
                         ls.add( label.name() );
                     }
-                    l = labels = Values.stringArray( ls.toArray( new String[ls.size()] ) );
+                    l = labels = Values.stringArray( ls.toArray( new String[0] ) );
 
                 }
             }
