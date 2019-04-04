@@ -20,7 +20,6 @@
 package org.neo4j.kernel.recovery;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,9 +48,8 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.valueOf;
@@ -75,7 +73,7 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 
-@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+@PageCacheExtension
 class RecoveryIT
 {
     private static final int TEN_KB = (int) ByteUnit.kibiBytes( 10 );
@@ -83,6 +81,8 @@ class RecoveryIT
     private DefaultFileSystemAbstraction fileSystem;
     @Inject
     private TestDirectory directory;
+    @Inject
+    private PageCache pageCache;
 
     @Test
     void recoveryRequiredOnDatabaseWithoutCorrectCheckpoints() throws Exception
@@ -463,6 +463,46 @@ class RecoveryIT
         assertEquals( 3, countCheckPointsInTransactionLogs() );
     }
 
+    @Test
+    void recoverDatabaseWithoutOneIdFile() throws Exception
+    {
+        GraphDatabaseAPI db = createDatabase();
+        generateSomeData( db );
+        DatabaseLayout layout = db.databaseLayout();
+        db.shutdown();
+
+        fileSystem.deleteFileOrThrow( layout.idRelationshipStore() );
+        assertTrue( isRecoveryRequired( fileSystem, layout, defaults() ) );
+
+        performRecovery( fileSystem, pageCache, defaults(), layout );
+        assertFalse( isRecoveryRequired( fileSystem, layout, defaults() ) );
+
+        assertTrue( fileSystem.fileExists( layout.idRelationshipStore() ) );
+    }
+
+    @Test
+    void recoverDatabaseWithoutIdFiles() throws Exception
+    {
+        GraphDatabaseAPI db = createDatabase();
+        generateSomeData( db );
+        DatabaseLayout layout = db.databaseLayout();
+        db.shutdown();
+
+        for ( File idFile : layout.idFiles() )
+        {
+            fileSystem.deleteFileOrThrow( idFile );
+        }
+        assertTrue( isRecoveryRequired( fileSystem, layout, defaults() ) );
+
+        performRecovery( fileSystem, pageCache, defaults(), layout );
+        assertFalse( isRecoveryRequired( fileSystem, layout, defaults() ) );
+
+        for ( File idFile : layout.idFiles() )
+        {
+            assertTrue( fileSystem.fileExists( idFile ) );
+        }
+    }
+
     private void createSingleNode( GraphDatabaseService service )
     {
         try ( Transaction transaction = service.beginTx() )
@@ -589,9 +629,9 @@ class RecoveryIT
         }
     }
 
-    private GraphDatabaseService createDatabase()
+    private GraphDatabaseAPI createDatabase()
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.databaseDir() );
+        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.databaseDir() );
     }
 
     private void startStopDatabaseWithForcedRecovery()

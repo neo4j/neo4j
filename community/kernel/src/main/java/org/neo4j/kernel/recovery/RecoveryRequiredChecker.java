@@ -65,6 +65,10 @@ class RecoveryRequiredChecker
         {
             return false;
         }
+        if ( !allIdFilesExist( databaseLayout ) )
+        {
+            return true;
+        }
         return new RecoveryStartInformationProvider( tailScanner, NO_MONITOR ).get().isRecoveryRequired();
     }
 
@@ -75,5 +79,10 @@ class RecoveryRequiredChecker
                 .withConfig( config )
                 .withLogEntryReader( reader ).build();
         return new LogTailScanner( logFiles, reader, new Monitors() );
+    }
+
+    private boolean allIdFilesExist( DatabaseLayout databaseLayout )
+    {
+        return databaseLayout.idFiles().stream().allMatch( fs::fileExists );
     }
 }

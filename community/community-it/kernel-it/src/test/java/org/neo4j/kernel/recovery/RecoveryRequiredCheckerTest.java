@@ -34,10 +34,9 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
@@ -45,11 +44,13 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.configuration.LayoutConfig.of;
 
-@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class RecoveryRequiredCheckerTest
 {
     @RegisterExtension
@@ -57,9 +58,7 @@ class RecoveryRequiredCheckerTest
     @Inject
     private TestDirectory testDirectory;
     @Inject
-    private EphemeralFileSystemAbstraction fileSystem;
-
-    private final Monitors monitors = new Monitors();
+    private FileSystemAbstraction fileSystem;
 
     private File storeDir;
     private DatabaseLayout databaseLayout;
@@ -70,12 +69,13 @@ class RecoveryRequiredCheckerTest
     {
         databaseLayout = testDirectory.databaseLayout();
         storeDir = databaseLayout.databaseDirectory();
-        new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();
     }
 
     @Test
     void shouldNotWantToRecoverIntactStore() throws Exception
     {
+        startStopDatabase( fileSystem, storeDir );
+
         PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
         RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
 
@@ -106,7 +106,7 @@ class RecoveryRequiredCheckerTest
 
             assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( true ) );
 
-            new TestGraphDatabaseFactory().setFileSystem( fileSystemAbstraction ).newImpermanentDatabase( storeDir ).shutdown();
+            new TestGraphDatabaseFactory().setFileSystem( fileSystemAbstraction ).newEmbeddedDatabase( storeDir ).shutdown();
 
             assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( false ) );
         }
@@ -121,9 +121,53 @@ class RecoveryRequiredCheckerTest
         recoverBrokenStoreWithConfig( config );
     }
 
+    @Test
+    void shouldNotWantToRecoverEmptyStore() throws Exception
+    {
+        DatabaseLayout databaseLayout = DatabaseLayout.of( testDirectory.directory( "dir-without-store" ) );
+
+        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
+        RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
+
+        assertFalse( checker.isRecoveryRequiredAt( databaseLayout ) );
+    }
+
+    @Test
+    void shouldWantToRecoverStoreWithoutOneIdFile() throws Exception
+    {
+        startStopDatabase( fileSystem, storeDir );
+        assertAllIdFilesExist();
+
+        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
+        RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
+        assertFalse( checker.isRecoveryRequiredAt( databaseLayout ) );
+
+        fileSystem.deleteFileOrThrow( databaseLayout.idNodeStore() );
+
+        assertTrue( checker.isRecoveryRequiredAt( databaseLayout ) );
+    }
+
+    @Test
+    void shouldWantToRecoverStoreWithoutAllIdFiles() throws Exception
+    {
+        startStopDatabase( fileSystem, storeDir );
+        assertAllIdFilesExist();
+
+        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
+        RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
+        assertFalse( checker.isRecoveryRequiredAt( databaseLayout ) );
+
+        for ( File idFile : databaseLayout.idFiles() )
+        {
+            fileSystem.deleteFileOrThrow( idFile );
+        }
+
+        assertTrue( checker.isRecoveryRequiredAt( databaseLayout ) );
+    }
+
     private void recoverBrokenStoreWithConfig( Config config ) throws IOException
     {
-        try ( FileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( storeDir, fileSystem, config ) )
+        try ( EphemeralFileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( storeDir, config ) )
         {
             PageCache pageCache = pageCacheExtension.getPageCache( fileSystemAbstraction );
 
@@ -144,7 +188,15 @@ class RecoveryRequiredCheckerTest
 
     private FileSystemAbstraction createAndCrashWithDefaultConfig()
     {
-        return createSomeDataAndCrash( storeDir, fileSystem, Config.defaults() );
+        return createSomeDataAndCrash( storeDir, Config.defaults() );
+    }
+
+    private void assertAllIdFilesExist()
+    {
+        for ( File idFile : databaseLayout.idFiles() )
+        {
+            assertTrue( fileSystem.fileExists( idFile ), "ID file " + idFile + " does not exist" );
+        }
     }
 
     private static RecoveryRequiredChecker getRecoveryCheckerWithDefaultConfig( FileSystemAbstraction fileSystem, PageCache pageCache,
@@ -159,13 +211,14 @@ class RecoveryRequiredCheckerTest
         return new RecoveryRequiredChecker( fileSystem, pageCache, config, storageEngineFactory );
     }
 
-    private static FileSystemAbstraction createSomeDataAndCrash( File store, EphemeralFileSystemAbstraction fileSystem, Config config )
+    private static EphemeralFileSystemAbstraction createSomeDataAndCrash( File store, Config config )
     {
+        EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
-                        .setFileSystem( fileSystem )
-                        .newImpermanentDatabaseBuilder( store )
-                        .setConfig( config.getRaw() )
-                        .newGraphDatabase();
+                .setFileSystem( fileSystem )
+                .newEmbeddedDatabaseBuilder( store )
+                .setConfig( config.getRaw() )
+                .newGraphDatabase();
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -176,5 +229,10 @@ class RecoveryRequiredCheckerTest
         EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
         db.shutdown();
         return snapshot;
+    }
+
+    private static void startStopDatabase( FileSystemAbstraction fileSystem, File storeDir )
+    {
+        new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newEmbeddedDatabase( storeDir ).shutdown();
     }
 }
