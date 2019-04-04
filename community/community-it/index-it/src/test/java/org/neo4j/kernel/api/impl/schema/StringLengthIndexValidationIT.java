@@ -50,7 +50,8 @@ public class StringLengthIndexValidationIT
             .withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() );
 
     private static final String propKey = "largeString";
-    private static final int keySizeLimit = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE ) - Long.BYTES;
+    private static final int sizeOfEntityId = Long.BYTES;
+    private static final int keySizeLimit = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE ) - sizeOfEntityId;
 
     @Test
     public void shouldSuccessfullyWriteAndReadWithinIndexKeySizeLimit()

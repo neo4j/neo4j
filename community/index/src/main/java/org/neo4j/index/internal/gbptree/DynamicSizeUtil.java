@@ -39,15 +39,22 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.putUnsignedShort;
  * If {@code T} is set key is dead.
  * If {@code K} is set the next byte contains the higher order bits of the key size.
  * If {@code V} is set there is a value size to be read directly after key size.
- * This first byte can fit key size < 32 and we only need the second byte if key size is larger.
- * Together with the second byte we can fit key size < 8192.
+ * This first byte can fit key size <= 31 (0x1F) and we only need the second byte if key size is larger.
+ *
+ * The second key byte is:
+ * <pre>
+ * [O,k,k,k,k,k,k,k]
+ * </pre>
+ * If {@code O} is set there is either an offload id to be read after after keyValueSize or it is the most significant bit of the key size, depending on
+ * context. Together with the second byte we can fit key size <= 4095 (0xFFF) if {@code O} denotes offload or size <= 8191 (0x1FFF) if denotes most
+ * significant bit.
  *
  * Byte following key size bytes (second or third byte depending on how many bytes needed for key size):
  * <pre>
  * [V,v,v,v,v,v,v,v]
  * </pre>
  * If {@code V} is set the next byte contains the higher order bits of the value size.
- * This first value size byte can fit value size < 128 and with the second byte we can fit value size < 32768.
+ * This first value size byte can fit value size <= 127 (0x7F) and with the second byte we can fit value size <= 32767 (0x7FFF).
  *
  * So in total key/value size has six different looks (not including tombstone being set or not set):
  * <pre>
@@ -71,6 +78,9 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.putUnsignedShort;
  *
  * Offload entry
  * [0,1,0,_,_,_,_,_][1,_,_,_,_,_,_,_][offloadId 8B]
+ *
+ * Two byte key (no offload)
+ * [0,1,0,k,k,k,k,k][k,k,k,k,k,k,k,k]
  *
  * </pre>
  * This key/value size format is used, both for leaves and internal nodes even though internal nodes can never have values.
@@ -103,6 +113,8 @@ public class DynamicSizeUtil
     static final int MASK_ONE_BYTE_KEY_SIZE = 0x1F;
     // max two-byte key size to map to the k's in [_,_,_,k,k,k,k,k][_,k,k,k,k,k,k,k]
     static final int MAX_TWO_BYTE_KEY_SIZE = 0xFFF;
+    // max two-byte key size to map to the k's in [_,_,_,k,k,k,k,k][k,k,k,k,k,k,k,k]
+    static final int MAX_TWO_BYTE_KEY_SIZE_NO_OFFLOAD = 0x1FFF;
     // mask for one-byte value size to map to the v's in [_,v,v,v,v,v,v,v]
     static final int MASK_ONE_BYTE_VALUE_SIZE = 0x7F;
     // max two-byte value size to map to the v's in [_,v,v,v,v,v,v,v][v,v,v,v,v,v,v,v]
@@ -148,11 +160,11 @@ public class DynamicSizeUtil
             if ( hasAdditionalKeySize )
             {
                 firstByte |= FLAG_ADDITIONAL_KEY_SIZE;
-                if ( keySize > MAX_TWO_BYTE_KEY_SIZE )
+                if ( keySize > MAX_TWO_BYTE_KEY_SIZE_NO_OFFLOAD )
                 {
                     throw new IllegalArgumentException(
                             format( "Max supported key size is %d, but tried to store key of size %d. Please see index documentation for limitations.",
-                                    MAX_TWO_BYTE_KEY_SIZE, keySize ) );
+                                    MAX_TWO_BYTE_KEY_SIZE_NO_OFFLOAD, keySize ) );
                 }
             }
             if ( hasValueSize )
@@ -163,7 +175,7 @@ public class DynamicSizeUtil
 
             if ( hasAdditionalKeySize )
             {
-                // Assuming no key size larger than 4k
+                // Assuming no key size larger than maxKeySize limit
                 cursor.putByte( (byte) (keySize >> SHIFT_LSB_KEY_SIZE) );
             }
         }
@@ -196,7 +208,7 @@ public class DynamicSizeUtil
         return true;
     }
 
-    public static long readKeyValueSize( PageCursor cursor )
+    public static long readKeyValueSize( PageCursor cursor, boolean msbIsOffload )
     {
         byte firstByte = cursor.getByte();
         boolean hasTombstone = hasTombstone( firstByte );
@@ -208,7 +220,7 @@ public class DynamicSizeUtil
         {
             byte secondByte = cursor.getByte();
             boolean hasOffload = hasOffload( secondByte );
-            if ( hasOffload )
+            if ( hasOffload && msbIsOffload )
             {
                 return (hasTombstone ? FLAG_READ_TOMBSTONE : 0) | FLAG_READ_OFFLOAD;
             }

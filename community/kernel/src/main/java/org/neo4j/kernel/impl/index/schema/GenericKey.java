@@ -92,7 +92,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
 
     static final long TRUE = 1;
     static final long FALSE = 0;
-    private static final int TYPE_ID_SIZE = Byte.BYTES;
+    static final int TYPE_ID_SIZE = Byte.BYTES;
     private static final double[] NO_COORDINATES = new double[0];
 
     // Immutable

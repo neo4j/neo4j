@@ -19,14 +19,18 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
+import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
@@ -112,7 +116,6 @@ public class GenericBlockBasedIndexPopulatorTest
     {
         // given
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
-        boolean closed = false;
         try
         {
             // when
@@ -134,10 +137,7 @@ public class GenericBlockBasedIndexPopulatorTest
         }
         finally
         {
-            if ( !closed )
-            {
-                populator.close( true );
-            }
+            populator.close( true );
         }
     }
 
@@ -146,7 +146,6 @@ public class GenericBlockBasedIndexPopulatorTest
     {
         // given
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
-        boolean closed = false;
         try
         {
             // when
@@ -171,10 +170,7 @@ public class GenericBlockBasedIndexPopulatorTest
         }
         finally
         {
-            if ( !closed )
-            {
-                populator.close( true );
-            }
+            populator.close( true );
         }
     }
 
@@ -183,7 +179,6 @@ public class GenericBlockBasedIndexPopulatorTest
     {
         // given
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
-        boolean closed = false;
         try
         {
             // when
@@ -208,10 +203,7 @@ public class GenericBlockBasedIndexPopulatorTest
         }
         finally
         {
-            if ( !closed )
-            {
-                populator.close( true );
-            }
+            populator.close( true );
         }
     }
 
@@ -220,7 +212,6 @@ public class GenericBlockBasedIndexPopulatorTest
     {
         // given
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
-        boolean closed = false;
         try
         {
             // when
@@ -243,19 +234,82 @@ public class GenericBlockBasedIndexPopulatorTest
         }
         finally
         {
-            if ( !closed )
-            {
-                populator.close( true );
-            }
+            populator.close( true );
         }
     }
 
-    private void assertHasEntry( BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator, Value duplicate, int expectedId )
+    @Test
+    public void shouldHandleEntriesOfMaxSize() throws IndexEntryConflictException
+    {
+        // given
+        int sizeOfEntityId = GenericKey.ENTITY_ID_SIZE;
+        int sizeOfType = GenericKey.TYPE_ID_SIZE;
+        int sizeOfStringLength = GenericKey.SIZE_STRING_LENGTH;
+        int keySizeLimit = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE );
+        int stringKeyOverhead = sizeOfEntityId + sizeOfType + sizeOfStringLength;
+
+        String largestString = RandomStringUtils.randomAlphabetic( keySizeLimit - stringKeyOverhead );
+        TextValue largestStringValue = stringValue( largestString );
+        IndexEntryUpdate<StoreIndexDescriptor> update = add( 1, INDEX_DESCRIPTOR, largestStringValue );
+
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( INDEX_DESCRIPTOR );
+        try
+        {
+            // when
+            Collection<IndexEntryUpdate<?>> updates = Collections.singleton( update );
+            populator.add( updates );
+            populator.scanCompleted( nullInstance );
+
+            // then
+            assertHasEntry( populator, largestStringValue, 1 );
+        }
+        finally
+        {
+            populator.close( true );
+        }
+    }
+
+    @Test
+    public void shouldThrowForEntriesLargerThanMaxSize() throws IndexEntryConflictException
+    {
+        // given
+        int sizeOfEntityId = GenericKey.ENTITY_ID_SIZE;
+        int sizeOfType = GenericKey.TYPE_ID_SIZE;
+        int sizeOfStringLength = GenericKey.SIZE_STRING_LENGTH;
+        int keySizeLimit = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE );
+        int stringKeyOverhead = sizeOfEntityId + sizeOfType + sizeOfStringLength;
+
+        String largestString = RandomStringUtils.randomAlphabetic( keySizeLimit - stringKeyOverhead + 1 );
+        TextValue largestStringValue = stringValue( largestString );
+        IndexEntryUpdate<StoreIndexDescriptor> update = add( 1, INDEX_DESCRIPTOR, largestStringValue );
+
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( INDEX_DESCRIPTOR );
+        try
+        {
+            // when
+            Collection<IndexEntryUpdate<?>> updates = Collections.singleton( update );
+            populator.add( updates );
+            populator.scanCompleted( nullInstance );
+
+            // if not
+            fail( "Expected to throw for value larger than max size." );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // then good
+        }
+        finally
+        {
+            populator.close( true );
+        }
+    }
+
+    private void assertHasEntry( BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator, Value entry, int expectedId )
     {
         try ( NativeIndexReader<GenericKey,NativeIndexValue> reader = populator.newReader() )
         {
             SimpleNodeValueClient valueClient = new SimpleNodeValueClient();
-            IndexQuery.ExactPredicate exact = IndexQuery.exact( INDEX_DESCRIPTOR.properties()[0], duplicate );
+            IndexQuery.ExactPredicate exact = IndexQuery.exact( INDEX_DESCRIPTOR.properties()[0], entry );
             reader.query( QueryContext.NULL_CONTEXT, valueClient, IndexOrder.NONE, false, exact );
             assertTrue( valueClient.next() );
             long id = valueClient.reference;

@@ -84,14 +84,14 @@ class BlockEntry<KEY,VALUE>
 
     static <KEY, VALUE> void read( PageCursor pageCursor, Layout<KEY,VALUE> layout, KEY key, VALUE value )
     {
-        long entrySize = readKeyValueSize( pageCursor );
+        long entrySize = readKeyValueSize( pageCursor, false );
         layout.readKey( pageCursor, key, extractKeySize( entrySize ) );
         layout.readValue( pageCursor, value, extractValueSize( entrySize ) );
     }
 
     static <KEY, VALUE> void read( PageCursor pageCursor, Layout<KEY,VALUE> layout, KEY key )
     {
-        long entrySize = readKeyValueSize( pageCursor );
+        long entrySize = readKeyValueSize( pageCursor, false );
         layout.readKey( pageCursor, key, extractKeySize( entrySize ) );
     }
 

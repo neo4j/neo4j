@@ -120,7 +120,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             throw new MetadataMismatchException(
                     "We need to fit at least %d key-value entries per page in leaves. To do that a key-value entry can be at most %dB " +
                             "with current page size of %dB. We require this cap to be at least %dB.",
-                    LEAST_NUMBER_OF_ENTRIES_PER_PAGE, needOffloadCap, pageSize, Long.SIZE );
+                    LEAST_NUMBER_OF_ENTRIES_PER_PAGE, needOffloadCap, pageSize, Long.BYTES );
         }
 
         tmpKeyLeft = layout.newKey();
@@ -151,7 +151,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         placeCursorAtActualKey( cursor, pos, type );
 
         // Read key
-        long keyValueSize = readKeyValueSize( cursor );
+        long keyValueSize = readKeyValueSize( cursor, true );
         boolean offload = extractOffload( keyValueSize );
         if ( offload )
         {
@@ -166,7 +166,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         placeCursorAtActualKey( cursor, pos, type );
 
         // Read key
-        long keyValueSize = readKeyValueSize( cursor );
+        long keyValueSize = readKeyValueSize( cursor, true );
         boolean offload = extractOffload( keyValueSize );
         if ( !offload )
         {
@@ -200,7 +200,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         placeCursorAtActualKey( cursor, pos, LEAF );
 
-        long keyValueSize = readKeyValueSize( cursor );
+        long keyValueSize = readKeyValueSize( cursor, true );
         int keySize = extractKeySize( keyValueSize );
         int valueSize = extractValueSize( keyValueSize );
         boolean offload = extractOffload( keyValueSize );
@@ -308,7 +308,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         placeCursorAtActualKey( cursor, pos, LEAF );
         int keyOffset = cursor.getOffset();
-        long keyValueSize = readKeyValueSize( cursor );
+        long keyValueSize = readKeyValueSize( cursor, true );
         boolean offload = DynamicSizeUtil.extractOffload( keyValueSize );
         int keySize = extractKeySize( keyValueSize );
         int valueSize = extractValueSize( keyValueSize );
@@ -338,7 +338,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         placeCursorAtActualKey( cursor, keyPos, INTERNAL );
         int keyOffset = cursor.getOffset();
-        long keyValueSize = readKeyValueSize( cursor );
+        long keyValueSize = readKeyValueSize( cursor, true );
         int keySize = extractKeySize( keyValueSize );
         boolean offload = extractOffload( keyValueSize );
 
@@ -369,7 +369,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         placeCursorAtActualKey( cursor, keyPos, INTERNAL );
         int keyOffset = cursor.getOffset();
-        long keyValueSize = readKeyValueSize( cursor );
+        long keyValueSize = readKeyValueSize( cursor, true );
         int keySize = extractKeySize( keyValueSize );
         boolean offload = extractOffload( keyValueSize );
 
@@ -403,7 +403,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         placeCursorAtActualKey( cursor, pos, INTERNAL );
 
-        long keyValueSize = readKeyValueSize( cursor );
+        long keyValueSize = readKeyValueSize( cursor, true );
         int oldKeySize = extractKeySize( keyValueSize );
         int oldValueSize = extractValueSize( keyValueSize );
         if ( keyValueSizeTooLarge( oldKeySize, oldValueSize ) )
@@ -426,7 +426,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         placeCursorAtActualKey( cursor, pos, LEAF );
 
         // Read value
-        long keyValueSize = readKeyValueSize( cursor );
+        long keyValueSize = readKeyValueSize( cursor, true );
         int keySize = extractKeySize( keyValueSize );
         int valueSize = extractValueSize( keyValueSize );
         boolean offload = extractOffload( keyValueSize );
@@ -460,7 +460,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         placeCursorAtActualKey( cursor, pos, LEAF );
 
-        long keyValueSize = readKeyValueSize( cursor );
+        long keyValueSize = readKeyValueSize( cursor, true );
         int keySize = extractKeySize( keyValueSize );
         int oldValueSize = extractValueSize( keyValueSize );
         int newValueSize = layout.valueSize( value );
@@ -969,7 +969,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         // What to copy?
         placeCursorAtActualKey( fromCursor, fromPos, LEAF );
         int fromKeyOffset = fromCursor.getOffset();
-        long keyValueSize = readKeyValueSize( fromCursor );
+        long keyValueSize = readKeyValueSize( fromCursor, true );
         int keySize = extractKeySize( keyValueSize );
         int valueSize = extractValueSize( keyValueSize );
         boolean offload = extractOffload( keyValueSize );
@@ -1022,7 +1022,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         // What to copy?
         placeCursorAtActualKey( fromCursor, fromPos, LEAF );
         int fromKeyOffset = fromCursor.getOffset();
-        long keyValueSize = readKeyValueSize( fromCursor );
+        long keyValueSize = readKeyValueSize( fromCursor, true );
         int keySize = extractKeySize( keyValueSize );
         int valueSize = extractValueSize( keyValueSize );
         boolean offload = extractOffload( keyValueSize );
@@ -1047,7 +1047,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         while ( currentOffset < pageSize )
         {
             cursor.setOffset( currentOffset );
-            long keyValueSize = readKeyValueSize( cursor );
+            long keyValueSize = readKeyValueSize( cursor, true );
             int keySize = extractKeySize( keyValueSize );
             int valueSize = extractValueSize( keyValueSize );
             boolean offload = extractOffload( keyValueSize );
@@ -1071,7 +1071,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         while ( currentOffset < pageSize )
         {
             cursor.setOffset( currentOffset );
-            long keyValueSize = readKeyValueSize( cursor );
+            long keyValueSize = readKeyValueSize( cursor, true );
             int keySize = extractKeySize( keyValueSize );
             boolean offload = extractOffload( keyValueSize );
             boolean dead = extractTombstone( keyValueSize );
@@ -1138,7 +1138,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         // What to copy?
         placeCursorAtActualKey( fromCursor, fromPos, INTERNAL );
         int fromKeyOffset = fromCursor.getOffset();
-        long keyValueSize = readKeyValueSize( fromCursor );
+        long keyValueSize = readKeyValueSize( fromCursor, true );
         int keySize = extractKeySize( keyValueSize );
         boolean offload = extractOffload( keyValueSize );
 
@@ -1321,7 +1321,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     private int totalSpaceOfKeyValue( PageCursor cursor, int pos )
     {
         placeCursorAtActualKey( cursor, pos, LEAF );
-        long keyValueSize = readKeyValueSize( cursor );
+        long keyValueSize = readKeyValueSize( cursor, true );
         int keySize = extractKeySize( keyValueSize );
         int valueSize = extractValueSize( keyValueSize );
         boolean offload = extractOffload( keyValueSize );
@@ -1331,7 +1331,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     private int totalSpaceOfKeyChild( PageCursor cursor, int pos )
     {
         placeCursorAtActualKey( cursor, pos, INTERNAL );
-        long keyValueSize = readKeyValueSize( cursor );
+        long keyValueSize = readKeyValueSize( cursor, true );
         int keySize = extractKeySize( keyValueSize );
         boolean offload = extractOffload( keyValueSize );
         return bytesKeyOffset() + getOverhead( keySize, 0, offload ) + childSize() + keySize;
@@ -1472,7 +1472,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         {
             StringJoiner singleKey = new StringJoiner( "|" );
             singleKey.add( Integer.toString( cursor.getOffset() ) );
-            long keyValueSize = readKeyValueSize( cursor );
+            long keyValueSize = readKeyValueSize( cursor, true );
             int keySize = extractKeySize( keyValueSize );
             boolean offload = extractOffload( keyValueSize );
             int valueSize = 0;
@@ -1589,7 +1589,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         while ( nextKeyOffset < pageSize )
         {
             cursor.setOffset( nextKeyOffset );
-            long keyValueSize = readKeyValueSize( cursor );
+            long keyValueSize = readKeyValueSize( cursor, true );
             int keySize = extractKeySize( keyValueSize );
             int valueSize = extractValueSize( keyValueSize );
             boolean offload = extractOffload( keyValueSize );
