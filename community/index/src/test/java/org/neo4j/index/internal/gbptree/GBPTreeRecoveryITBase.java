@@ -81,7 +81,7 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
     @Before
     public void setUp()
     {
-        this.layout = getLayout( random );
+        this.layout = getLayout( random, PAGE_SIZE );
         loadCountTransactions = random.intBetween( 300, 1_000 );
         minInsertCountPerBatch = 30;
         maxInsertCountPerBatch = 200;
@@ -89,7 +89,7 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
         maxRemoveCountPerBatch = 20;
     }
 
-    protected abstract TestLayout<KEY,VALUE> getLayout( RandomRule random );
+    protected abstract TestLayout<KEY,VALUE> getLayout( RandomRule random, int pageSize );
 
     @Test
     public void shouldRecoverFromCrashBeforeFirstCheckpoint() throws Exception

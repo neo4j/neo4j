@@ -28,7 +28,7 @@ import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 public class GBPTreeConcurrencyFixedSizeIT extends GBPTreeConcurrencyITBase<MutableLong,MutableLong>
 {
     @Override
-    protected TestLayout<MutableLong,MutableLong> getLayout( RandomRule random )
+    protected TestLayout<MutableLong,MutableLong> getLayout( RandomRule random, int pageSize )
     {
         return longLayout().withKeyPadding( random.intBetween( 0, 10 ) ).build();
     }

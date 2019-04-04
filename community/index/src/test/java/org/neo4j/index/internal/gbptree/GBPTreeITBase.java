@@ -80,8 +80,9 @@ abstract class GBPTreeITBase<KEY,VALUE>
             throws IOException
     {
         // some random padding
-        layout = getLayout( random );
-        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem, config().withPageSize( 512 ).withAccessChecks( true ) );
+        int pageSize = 512;
+        layout = getLayout( random, pageSize );
+        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem, config().withPageSize( pageSize ).withAccessChecks( true ) );
         return index = new GBPTreeBuilder<>( pageCache, testDirectory.file( "index" ), layout ).build();
     }
 
@@ -90,7 +91,7 @@ abstract class GBPTreeITBase<KEY,VALUE>
         return index.writer( ratioToKeepInLeftOnSplit );
     }
 
-    abstract TestLayout<KEY,VALUE> getLayout( RandomRule random );
+    abstract TestLayout<KEY,VALUE> getLayout( RandomRule random, int pageSize );
 
     abstract Class<KEY> getKeyClass();
 

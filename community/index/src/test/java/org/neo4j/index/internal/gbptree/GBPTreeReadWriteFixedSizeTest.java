@@ -21,12 +21,14 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 
+import org.neo4j.test.rule.RandomRule;
+
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
 public class GBPTreeReadWriteFixedSizeTest extends GBPTreeReadWriteTestBase<MutableLong,MutableLong>
 {
     @Override
-    TestLayout<MutableLong,MutableLong> getLayout()
+    TestLayout<MutableLong,MutableLong> getLayout( RandomRule random, int pageSize )
     {
         return longLayout().build();
     }

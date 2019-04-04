@@ -60,10 +60,10 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
     void setUp()
     {
         indexFile = testDirectory.file( "index" );
-        layout = getLayout();
+        layout = getLayout( random, pageCache.pageSize() );
     }
 
-    abstract TestLayout<KEY,VALUE> getLayout();
+    abstract TestLayout<KEY,VALUE> getLayout( RandomRule random, int pageSize );
 
     @Test
     void shouldSeeSimpleInsertions() throws Exception

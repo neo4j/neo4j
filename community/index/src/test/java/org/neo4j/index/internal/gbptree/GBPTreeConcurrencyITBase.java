@@ -99,12 +99,12 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
     private GBPTree<KEY,VALUE> createIndex() throws IOException
     {
         int pageSize = 512;
-        layout = getLayout( random );
+        layout = getLayout( random, pageSize );
         PageCache pageCache = pageCacheExtension.getPageCache( fileSystem, config().withPageSize( pageSize ).withAccessChecks( true ) );
         return index = new GBPTreeBuilder<>( pageCache, testDirectory.file( "index" ), layout ).build();
     }
 
-    protected abstract TestLayout<KEY,VALUE> getLayout( RandomRule random );
+    protected abstract TestLayout<KEY,VALUE> getLayout( RandomRule random, int pageSize );
 
     @AfterEach
     void consistencyCheckAndClose() throws IOException

@@ -21,11 +21,13 @@ package org.neo4j.index.internal.gbptree;
 
 import org.neo4j.test.rule.RandomRule;
 
+import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
+
 public class GBPTreeConcurrencyDynamicSizeIT extends GBPTreeConcurrencyITBase<RawBytes,RawBytes>
 {
     @Override
-    protected TestLayout<RawBytes,RawBytes> getLayout( RandomRule random )
+    protected TestLayout<RawBytes,RawBytes> getLayout( RandomRule random, int pageSize )
     {
-        return new SimpleByteArrayLayout();
+        return new SimpleByteArrayLayout( keyValueSizeCapFromPageSize( pageSize ) / 2, random.intBetween( 0, 10 ) );
     }
 }
