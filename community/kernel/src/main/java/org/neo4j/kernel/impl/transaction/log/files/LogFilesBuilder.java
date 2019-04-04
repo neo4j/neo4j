@@ -330,7 +330,7 @@ public class LogFilesBuilder
     private TransactionIdStore readOnlyTransactionIdStore() throws IOException
     {
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
-        return storageEngineFactory.readOnlyTransactionIdStore( pageCache, databaseLayout );
+        return storageEngineFactory.readOnlyTransactionIdStore( databaseLayout, pageCache );
     }
 
     private LogVersionRepository readOnlyLogVersionRepository() throws IOException

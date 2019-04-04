@@ -223,7 +223,7 @@ public class GlobalModule
         {
             String legacyDatabaseName = "graph.db";
             DatabaseLayout legacyDatabaseLayout = storeLayout.databaseLayout( legacyDatabaseName );
-            if ( storageEngineFactory.storageExists( fileSystem, pageCache, legacyDatabaseLayout ) )
+            if ( storageEngineFactory.storageExists( fileSystem, legacyDatabaseLayout, pageCache ) )
             {
                 Log internalLog = logService.getInternalLog( getClass() );
                 globalConfig.augment( GraphDatabaseSettings.default_database, legacyDatabaseName );

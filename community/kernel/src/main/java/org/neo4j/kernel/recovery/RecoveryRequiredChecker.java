@@ -61,7 +61,7 @@ class RecoveryRequiredChecker
 
     boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, LogTailScanner tailScanner )
     {
-        if ( !storageEngineFactory.storageExists( fs, pageCache, databaseLayout ) )
+        if ( !storageEngineFactory.storageExists( fs, databaseLayout, pageCache ) )
         {
             return false;
         }

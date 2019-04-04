@@ -121,13 +121,13 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public boolean storageExists( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout )
+    public boolean storageExists( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache )
     {
         return NeoStores.isStorePresent( pageCache, databaseLayout );
     }
 
     @Override
-    public TransactionIdStore readOnlyTransactionIdStore( PageCache pageCache, DatabaseLayout databaseLayout ) throws IOException
+    public TransactionIdStore readOnlyTransactionIdStore( DatabaseLayout databaseLayout, PageCache pageCache ) throws IOException
     {
         return new ReadOnlyTransactionIdStore( pageCache, databaseLayout );
     }
