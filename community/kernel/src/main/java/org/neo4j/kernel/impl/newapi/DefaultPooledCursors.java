@@ -32,9 +32,11 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
 {
     private final StorageReader storageReader;
     private DefaultNodeCursor nodeCursor;
+    private FullAccessNodeCursor fullAccessNodeCursor;
     private DefaultRelationshipScanCursor relationshipScanCursor;
     private DefaultRelationshipTraversalCursor relationshipTraversalCursor;
     private DefaultPropertyCursor propertyCursor;
+    private FullAccessPropertyCursor fullAccessPropertyCursor;
     private DefaultRelationshipGroupCursor relationshipGroupCursor;
     private DefaultNodeValueIndexCursor nodeValueIndexCursor;
     private DefaultNodeLabelIndexCursor nodeLabelIndexCursor;
@@ -71,6 +73,34 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
             nodeCursor.release();
         }
         nodeCursor = cursor;
+    }
+
+    @Override
+    public FullAccessNodeCursor allocateFullAccessNodeCursor()
+    {
+        if ( fullAccessNodeCursor == null )
+        {
+            return trace( new FullAccessNodeCursor( this::acceptFullAccess, storageReader.allocateNodeCursor() ) );
+        }
+
+        try
+        {
+            return fullAccessNodeCursor;
+        }
+        finally
+        {
+            fullAccessNodeCursor = null;
+        }
+    }
+
+    public void acceptFullAccess( DefaultNodeCursor cursor )
+    {
+        if ( fullAccessNodeCursor != null )
+        {
+            fullAccessNodeCursor.release();
+        }
+        fullAccessNodeCursor = (FullAccessNodeCursor) cursor;
+
     }
 
     @Override
@@ -152,6 +182,33 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
             propertyCursor.release();
         }
         propertyCursor = cursor;
+    }
+
+    @Override
+    public FullAccessPropertyCursor allocateFullAccessPropertyCursor()
+    {
+        if ( fullAccessPropertyCursor == null )
+        {
+            return trace( new FullAccessPropertyCursor( this::acceptFullAccess, storageReader.allocatePropertyCursor() ) );
+        }
+
+        try
+        {
+            return fullAccessPropertyCursor;
+        }
+        finally
+        {
+            fullAccessPropertyCursor = null;
+        }
+    }
+
+    public void acceptFullAccess( DefaultPropertyCursor cursor )
+    {
+        if ( fullAccessPropertyCursor != null )
+        {
+            fullAccessPropertyCursor.release();
+        }
+        fullAccessPropertyCursor = (FullAccessPropertyCursor) cursor;
     }
 
     @Override
@@ -269,6 +326,11 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
             nodeCursor.release();
             nodeCursor = null;
         }
+        if ( fullAccessNodeCursor != null )
+        {
+            fullAccessNodeCursor.release();
+            fullAccessNodeCursor = null;
+        }
         if ( relationshipScanCursor != null )
         {
             relationshipScanCursor.release();
@@ -283,6 +345,11 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         {
             propertyCursor.release();
             propertyCursor = null;
+        }
+        if ( fullAccessPropertyCursor != null )
+        {
+            fullAccessPropertyCursor.release();
+            fullAccessPropertyCursor = null;
         }
         if ( relationshipGroupCursor != null )
         {

@@ -53,6 +53,12 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     }
 
     @Override
+    public NodeCursor allocateFullAccessNodeCursor()
+    {
+        return trace( new FullAccessNodeCursor( DefaultNodeCursor::release, storageReader.allocateNodeCursor() ) );
+    }
+
+    @Override
     public RelationshipScanCursor allocateRelationshipScanCursor()
     {
         return trace( new DefaultRelationshipScanCursor(
@@ -70,6 +76,13 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     public PropertyCursor allocatePropertyCursor()
     {
         return trace( new DefaultPropertyCursor(
+                DefaultPropertyCursor::release, storageReader.allocatePropertyCursor() ) );
+    }
+
+    @Override
+    public PropertyCursor allocateFullAccessPropertyCursor()
+    {
+        return trace( new FullAccessPropertyCursor(
                 DefaultPropertyCursor::release, storageReader.allocatePropertyCursor() ) );
     }
 

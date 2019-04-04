@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.Arrays;
 import java.util.Iterator;
 
+import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -40,6 +43,8 @@ public class DefaultPropertyCursor implements PropertyCursor
     private StorageProperty txStateValue;
     private AssertOpen assertOpen;
     private final CursorPool<DefaultPropertyCursor> pool;
+    private AccessMode accessMode;
+    private boolean allowPropertiesForLabel;
 
     DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor )
     {
@@ -53,6 +58,7 @@ public class DefaultPropertyCursor implements PropertyCursor
 
         init( read, assertOpen );
         storeCursor.initNodeProperties( reference );
+        allowPropertiesForLabel = allowsLabels( nodeReference );
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -67,12 +73,27 @@ public class DefaultPropertyCursor implements PropertyCursor
         }
     }
 
+    boolean allowsLabels( long nodeReference )
+    {
+        boolean allowed = true;
+        if ( !accessMode.allowsReadAllLabels() )
+        {
+            NodeCursor nodeCursor = read.cursors().allocateFullAccessNodeCursor();
+            read.singleNode( nodeReference, nodeCursor );
+            nodeCursor.next();
+            allowed = accessMode.allowsReadLabels( Arrays.stream( nodeCursor.labels().all() ).mapToInt( l -> (int) l ) );
+            nodeCursor.close();
+        }
+        return allowed;
+    }
+
     void initRelationship( long relationshipReference, long reference, Read read, AssertOpen assertOpen )
     {
         assert relationshipReference != NO_ID;
 
         init( read, assertOpen );
         storeCursor.initRelationshipProperties( reference );
+        allowPropertiesForLabel = true;
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -91,6 +112,7 @@ public class DefaultPropertyCursor implements PropertyCursor
     {
         init( read, assertOpen );
         storeCursor.initGraphProperties();
+        allowPropertiesForLabel = true;
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -116,6 +138,7 @@ public class DefaultPropertyCursor implements PropertyCursor
     {
         this.assertOpen = assertOpen;
         this.read = read;
+        accessMode = read.ktx.securityContext().mode();
     }
 
     @Override
@@ -129,9 +152,9 @@ public class DefaultPropertyCursor implements PropertyCursor
         return hasNext;
     }
 
-    private boolean allowed( int propertyKey )
+    boolean allowed( int propertyKey )
     {
-        return read.ktx.securityContext().mode().allowsPropertyReads( propertyKey );
+        return allowPropertiesForLabel && accessMode.allowsPropertyReads( propertyKey );
     }
 
     private boolean innerNext()

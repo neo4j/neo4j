@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.eclipse.collections.api.block.predicate.primitive.LongPredicate;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
@@ -28,7 +27,6 @@ import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.util.Arrays;
-import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 import org.neo4j.internal.kernel.api.LabelSet;
@@ -47,12 +45,13 @@ import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeD
 
 class DefaultNodeCursor implements NodeCursor
 {
-    private Read read;
-    private HasChanges hasChanges = HasChanges.MAYBE;
+    Read read;
+    HasChanges hasChanges = HasChanges.MAYBE;
     private LongIterator addedNodes;
-    private StorageNodeCursor storeCursor;
-    private long currentAddedInTx;
+    StorageNodeCursor storeCursor;
+    long currentAddedInTx;
     private long single;
+    private AccessMode accessMode;
 
     private final CursorPool<DefaultNodeCursor> pool;
 
@@ -70,6 +69,7 @@ class DefaultNodeCursor implements NodeCursor
         this.currentAddedInTx = NO_ID;
         this.hasChanges = HasChanges.MAYBE;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
+        this.accessMode = read.ktx.securityContext().mode();
     }
 
     boolean scanBatch( Read read, AllNodeScan scan, int sizeHint, LongIterator addedNodes, boolean hasChanges )
@@ -79,6 +79,7 @@ class DefaultNodeCursor implements NodeCursor
         this.currentAddedInTx = NO_ID;
         this.hasChanges = hasChanges ? HasChanges.YES : HasChanges.NO;
         this.addedNodes = addedNodes;
+        this.accessMode = read.ktx.securityContext().mode();
         boolean scanBatch = storeCursor.scanBatch( scan, sizeHint );
         return addedNodes.hasNext() || scanBatch;
     }
@@ -91,6 +92,7 @@ class DefaultNodeCursor implements NodeCursor
         this.currentAddedInTx = NO_ID;
         this.hasChanges = HasChanges.MAYBE;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
+        this.accessMode = read.ktx.securityContext().mode();
     }
 
     @Override
@@ -108,16 +110,13 @@ class DefaultNodeCursor implements NodeCursor
     @Override
     public LabelSet labels()
     {
-        // TODO decide if this should be filtered or not, also fix alternative for when called from traversal checking if allowed to see node
-        final AccessMode accessMode = read.ktx.securityContext().mode();
-
         if ( currentAddedInTx != NO_ID )
         {
             //Node added in tx-state, no reason to go down to store and check
             TransactionState txState = read.txState();
             // Select only allowed labels
             final LongSet labels = txState.nodeStateLabelDiffSets( currentAddedInTx ).getAdded();
-            return Labels.from( labels.select( label -> allowedLabels( accessMode, label ) ) );
+            return Labels.from( labels.select( this::allowedLabels ) );
         }
         else if ( hasChanges() )
         {
@@ -127,20 +126,18 @@ class DefaultNodeCursor implements NodeCursor
             final MutableLongSet labels = new LongHashSet();
             for ( long labelToken : longs )
             {
-                if ( allowedLabels( accessMode, labelToken ) )
-                {
-                    labels.add( labelToken );
-                }
+                labels.add( labelToken );
             }
 
             //Augment what was found in store with what we have in tx state
-            return Labels.from( txState.augmentLabels( labels, txState.getNodeState( storeCursor.entityReference() ) ) );
+            return Labels.from( txState.augmentLabels( labels, txState.getNodeState( storeCursor.entityReference() ) ).select(
+                    this::allowedLabels ) );
         }
         else
         {
             //Nothing in tx state, just read the data.
             final long[] labels = storeCursor.labels();
-            final LongStream allowedLabels = LongStream.of( labels ).filter( label -> allowedLabels( accessMode, label ) );
+            final LongStream allowedLabels = LongStream.of( labels ).filter( this::allowedLabels );
             return Labels.from( allowedLabels.toArray() );
         }
     }
@@ -148,7 +145,7 @@ class DefaultNodeCursor implements NodeCursor
     @Override
     public boolean hasLabel( int label )
     {
-        if ( !allowedLabels( read.ktx.securityContext().mode(), label ) )
+        if ( !allowedLabels( label ) )
         {
             return false;
         }
@@ -171,7 +168,7 @@ class DefaultNodeCursor implements NodeCursor
         return storeCursor.hasLabel( label );
     }
 
-    private boolean allowedLabels( AccessMode accessMode, long... labels )
+    boolean allowedLabels( long... labels )
     {
         return accessMode.allowsReadLabels( Arrays.stream( labels ).mapToInt( l -> (int) l ) );
     }
@@ -191,16 +188,7 @@ class DefaultNodeCursor implements NodeCursor
     @Override
     public void properties( PropertyCursor cursor )
     {
-        // TODO: if adding exists permission, these must be filtered for read here
-        AccessMode accessMode = read.ktx.securityContext().mode();
-        if ( allowedLabels( accessMode, labels().all() ) )
-        {
-            ((DefaultPropertyCursor) cursor).initNode( nodeReference(), propertiesReference(), read, read );
-        }
-        else
-        {
-            cursor.close();
-        }
+        ((DefaultPropertyCursor) cursor).initNode( nodeReference(), propertiesReference(), read, read );
     }
 
     @Override
@@ -251,7 +239,6 @@ class DefaultNodeCursor implements NodeCursor
         {
             if ( addedNodes.hasNext() )
             {
-                // TODO probably don't need to check here since we've already been allowed to create/change them in the transaction
                 currentAddedInTx = addedNodes.next();
                 return true;
             }
@@ -265,9 +252,7 @@ class DefaultNodeCursor implements NodeCursor
         {
             boolean skip = hasChanges && read.txState().nodeIsDeletedInThisTx( storeCursor.entityReference() );
             // TODO could maybe optimize away the allowsReadAll check here and use a FullAccessNodeCursor instead
-            // TODO this should check for USE privilege instead of READ
-            AccessMode accessMode = read.ktx.securityContext().mode();
-            if ( !skip && (accessMode.allowsReadAllLabels() || allowedLabels( accessMode, storeCursor.labels() )) )
+            if ( !skip && (accessMode.allowsReadAllLabels() || allowedLabels( storeCursor.labels() )) )
             {
                 return true;
             }
@@ -284,6 +269,7 @@ class DefaultNodeCursor implements NodeCursor
             hasChanges = HasChanges.MAYBE;
             addedNodes = ImmutableEmptyLongIterator.INSTANCE;
             storeCursor.reset();
+            accessMode = null;
 
             pool.accept( this );
         }
@@ -299,7 +285,7 @@ class DefaultNodeCursor implements NodeCursor
      * NodeCursor should only see changes that are there from the beginning
      * otherwise it will not be stable.
      */
-    private boolean hasChanges()
+    boolean hasChanges()
     {
         switch ( hasChanges )
         {

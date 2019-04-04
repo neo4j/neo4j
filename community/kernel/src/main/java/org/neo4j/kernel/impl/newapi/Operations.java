@@ -148,11 +148,9 @@ public class Operations implements Write, SchemaWrite
 
     public void initialize()
     {
-        this.nodeCursor = cursors.allocateNodeCursor();
-        this.propertyCursor = cursors.allocatePropertyCursor();
+        this.nodeCursor = cursors.allocateFullAccessNodeCursor();
+        this.propertyCursor = cursors.allocateFullAccessPropertyCursor();
         this.relationshipCursor = cursors.allocateRelationshipScanCursor();
-
-        // TODO create internal cursor with full access
     }
 
     @Override
@@ -430,7 +428,7 @@ public class Operations implements Write, SchemaWrite
 
     /**
      * Fetch the property values for all properties in schema for a given node. Return these as an exact predicate
-     * array.
+     * array. This is run with no security check.
      */
     private IndexQuery.ExactPredicate[] getAllPropertyValues( SchemaDescriptor schema, int changedPropertyKeyId,
             Value changedValue )

@@ -68,6 +68,14 @@ public class ManagedTestCursors implements CursorFactory
     }
 
     @Override
+    public NodeCursor allocateFullAccessNodeCursor()
+    {
+        NodeCursor n = cursors.allocateFullAccessNodeCursor();
+        allCursors.add( n );
+        return n;
+    }
+
+    @Override
     public RelationshipScanCursor allocateRelationshipScanCursor()
     {
         RelationshipScanCursor n = cursors.allocateRelationshipScanCursor();
@@ -87,6 +95,14 @@ public class ManagedTestCursors implements CursorFactory
     public PropertyCursor allocatePropertyCursor()
     {
         PropertyCursor n = cursors.allocatePropertyCursor();
+        allCursors.add( n );
+        return n;
+    }
+
+    @Override
+    public PropertyCursor allocateFullAccessPropertyCursor()
+    {
+        PropertyCursor n = cursors.allocateFullAccessPropertyCursor();
         allCursors.add( n );
         return n;
     }

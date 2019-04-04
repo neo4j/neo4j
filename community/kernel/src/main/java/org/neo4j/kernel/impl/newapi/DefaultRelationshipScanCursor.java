@@ -114,13 +114,18 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         {
             return true;
         }
-        // TODO should be able to do this in a cheaper way
-        NodeCursor originNodeCursor = read.cursors().allocateNodeCursor();
-        NodeCursor targetNodeCursor = read.cursors().allocateNodeCursor();
-        read.singleNode( storeCursor.sourceNodeReference(), originNodeCursor );
-        read.singleNode( storeCursor.targetNodeReference(), targetNodeCursor );
-        return originNodeCursor.next() && mode.allowsReadLabels( Arrays.stream( originNodeCursor.labels().all() ).mapToInt( l -> (int) l ) ) &&
-               targetNodeCursor.next() && mode.allowsReadLabels( Arrays.stream( targetNodeCursor.labels().all() ).mapToInt( l -> (int) l ) );
+        NodeCursor nodeCursor = read.cursors().allocateFullAccessNodeCursor();
+        read.singleNode( storeCursor.sourceNodeReference(), nodeCursor );
+        boolean allowed = nodeCursor.next() && mode.allowsReadLabels( Arrays.stream( nodeCursor.labels().all() ).mapToInt( l -> (int) l ) );
+
+        if ( allowed )
+        {
+            read.singleNode( storeCursor.targetNodeReference(), nodeCursor );
+            allowed = nodeCursor.next() && mode.allowsReadLabels( Arrays.stream( nodeCursor.labels().all() ).mapToInt( l -> (int) l ) );
+        }
+
+        nodeCursor.close();
+        return allowed;
     }
 
     @Override

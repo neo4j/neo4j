@@ -62,6 +62,12 @@ public class StubCursorFactory implements CursorFactory
     }
 
     @Override
+    public NodeCursor allocateFullAccessNodeCursor()
+    {
+        return poll( nodeCursors );
+    }
+
+    @Override
     public RelationshipScanCursor allocateRelationshipScanCursor()
     {
         return poll( relationshipScanCursors );
@@ -76,6 +82,13 @@ public class StubCursorFactory implements CursorFactory
     @Override
     public PropertyCursor allocatePropertyCursor()
     {
+        return poll( propertyCursors );
+    }
+
+    @Override
+    public PropertyCursor allocateFullAccessPropertyCursor()
+    {
+        // TODO do we need to have real full access here, or is it fine to share with the normal propertyCursors?
         return poll( propertyCursors );
     }
 

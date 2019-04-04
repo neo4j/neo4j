@@ -98,9 +98,9 @@ class FulltextIndexTransactionState implements Closeable
         modifiedEntityIdsInThisTransaction.clear(); // Clear this so we don't filter out entities who have had their changes reversed since last time.
         writer.resetWriterState();
 
-        try ( NodeCursor nodeCursor = visitingNodes ? cursors.allocateNodeCursor() : null;
+        try ( NodeCursor nodeCursor = visitingNodes ? cursors.allocateFullAccessNodeCursor() : null;
               RelationshipScanCursor relationshipCursor = visitingNodes ? null : cursors.allocateRelationshipScanCursor();
-              PropertyCursor propertyCursor = cursors.allocatePropertyCursor() )
+              PropertyCursor propertyCursor = cursors.allocateFullAccessPropertyCursor() )
         {
             state.accept( txStateVisitor.init( read, nodeCursor, relationshipCursor, propertyCursor ) );
         }

@@ -99,8 +99,8 @@ class OperationsLockTest
     private final Locks.Client locks = mock( Locks.Client.class );
     private final Write write = mock( Write.class );
     private InOrder order;
-    private DefaultNodeCursor nodeCursor;
-    private DefaultPropertyCursor propertyCursor;
+    private FullAccessNodeCursor nodeCursor;
+    private FullAccessPropertyCursor propertyCursor;
     private DefaultRelationshipScanCursor relationshipCursor;
     private TransactionState txState;
     private AllStoreHolder allStoreHolder;
@@ -122,11 +122,11 @@ class OperationsLockTest
         when( transaction.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
 
         DefaultPooledCursors cursors = mock( DefaultPooledCursors.class );
-        nodeCursor = mock( DefaultNodeCursor.class );
-        propertyCursor = mock( DefaultPropertyCursor.class );
+        nodeCursor = mock( FullAccessNodeCursor.class );
+        propertyCursor = mock( FullAccessPropertyCursor.class );
         relationshipCursor = mock( DefaultRelationshipScanCursor.class );
-        when( cursors.allocateNodeCursor() ).thenReturn( nodeCursor );
-        when( cursors.allocatePropertyCursor() ).thenReturn( propertyCursor );
+        when( cursors.allocateFullAccessNodeCursor() ).thenReturn( nodeCursor );
+        when( cursors.allocateFullAccessPropertyCursor() ).thenReturn( propertyCursor );
         when( cursors.allocateRelationshipScanCursor() ).thenReturn( relationshipCursor );
         StorageEngine engine = mock( StorageEngine.class );
         storageReader = mock( StorageReader.class );

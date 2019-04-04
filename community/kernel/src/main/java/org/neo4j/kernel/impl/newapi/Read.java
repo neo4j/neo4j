@@ -104,15 +104,9 @@ abstract class Read implements TxStateHolder,
             throw new IndexNotApplicableKernelException( "Node index seek can only be performed on node indexes: " + index );
         }
 
-        if ( hasForbiddenProperties( indexSession.reference ) )
-        {
-            cursor.close();
-            return;
-        }
-
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         client.setRead( this );
-        IndexProgressor.EntityValueClient withSecurity = injectSecurity( client, ktx.securityContext().mode(), indexSession.reference.schema() );
+        IndexProgressor.EntityValueClient withSecurity = injectSecurity( client, ktx.securityContext().mode(), indexSession.reference );
         IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( withSecurity, query, indexSession.reader );
         indexSession.reader.query( this, withFullPrecision, indexOrder, needsValues, query );
     }
@@ -122,12 +116,6 @@ abstract class Read implements TxStateHolder,
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException
     {
         ktx.assertOpen();
-        // TODO check label whitelist this is for reltypes
-        if ( hasForbiddenProperties( index ) )
-        {
-            cursor.close();
-            return;
-        }
         if ( index.schema().entityType() != EntityType.RELATIONSHIP )
         {
             throw new IndexNotApplicableKernelException( "Relationship index seek can only be performed on node indexes: " + index );
@@ -136,7 +124,8 @@ abstract class Read implements TxStateHolder,
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         IndexReader reader = indexReader( index, false );
         client.setRead( this );
-        IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( client, query, reader );
+        IndexProgressor.EntityValueClient withSecurity = injectSecurity( client, ktx.securityContext().mode(), index );
+        IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( withSecurity, query, reader );
         reader.query( this, withFullPrecision, IndexOrder.NONE, false, query );
     }
 
@@ -152,13 +141,23 @@ abstract class Read implements TxStateHolder,
     }
 
     private IndexProgressor.EntityValueClient injectSecurity( IndexProgressor.EntityValueClient cursor, AccessMode accessMode,
-            SchemaDescriptor schemaDescriptor )
+            IndexReference reference )
     {
-        if ( !accessMode.allowsReadAllLabels() )
+        // old property blacklisting
+        for ( int prop : reference.properties() )
+        {
+            if ( !accessMode.allowsPropertyReads( prop ) )
+            {
+                return new NodeLabelSecurityFilter( cursor, cursors.allocateFullAccessNodeCursor(), this, AccessMode.Static.NONE );
+            }
+        }
+
+        SchemaDescriptor schema = reference.schema();
+        if ( schema.entityType().equals( EntityType.NODE ) && !accessMode.allowsReadAllLabels() )
         {
             boolean allowsAll = true;
             boolean allowsSome = false;
-            for ( int label : schemaDescriptor.getEntityTokenIds() )
+            for ( int label : schema.getEntityTokenIds() )
             {
                 boolean allowed = accessMode.allowsReadLabels( IntStream.of( label ) );
                 allowsAll &= allowed;
@@ -168,12 +167,12 @@ abstract class Read implements TxStateHolder,
             if ( !allowsSome )
             {
                 // nothing matching the whitelist
-                return new NodeLabelSecurityFilter( cursor, cursors.allocateNodeCursor(), this, AccessMode.Static.NONE );
+                return new NodeLabelSecurityFilter( cursor, cursors.allocateFullAccessNodeCursor(), this, AccessMode.Static.NONE );
             }
             else if ( !allowsAll )
             {
                 // only some matching whitelist
-                return new NodeLabelSecurityFilter( cursor, cursors.allocateNodeCursor(), this, ktx.securityContext().mode() );
+                return new NodeLabelSecurityFilter( cursor, cursors.allocateFullAccessNodeCursor(), this, ktx.securityContext().mode() );
             }
         }
         // everything in this index is whitelisted
@@ -286,32 +285,13 @@ abstract class Read implements TxStateHolder,
             throw new IndexNotApplicableKernelException( "Node index scan can only be performed on node indexes: " + index );
         }
 
-        if ( hasForbiddenProperties( indexSession.reference ) )
-        {
-            cursor.close();
-            return;
-        }
-
         // for a scan, we simply query for existence of the first property, which covers all entries in an index
         int firstProperty = indexSession.reference.properties()[0];
 
         DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
         cursorImpl.setRead( this );
-        IndexProgressor.EntityValueClient withSecurity = injectSecurity( cursorImpl, ktx.securityContext().mode(), indexSession.reference.schema() );
+        IndexProgressor.EntityValueClient withSecurity = injectSecurity( cursorImpl, ktx.securityContext().mode(), indexSession.reference );
         indexSession.reader.query( this, withSecurity, indexOrder, needsValues, IndexQuery.exists( firstProperty ) );
-    }
-
-    private boolean hasForbiddenProperties( IndexReference index )
-    {
-        AccessMode mode = ktx.securityContext().mode();
-        for ( int prop : index.properties() )
-        {
-            if ( !mode.allowsPropertyReads( prop ) )
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override

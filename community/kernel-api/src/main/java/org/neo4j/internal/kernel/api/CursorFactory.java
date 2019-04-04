@@ -29,6 +29,8 @@ public interface CursorFactory
 
     NodeCursor allocateNodeCursor();
 
+    NodeCursor allocateFullAccessNodeCursor();
+
     RelationshipScanCursor allocateRelationshipScanCursor();
 
     RelationshipTraversalCursor allocateRelationshipTraversalCursor();
@@ -36,6 +38,8 @@ public interface CursorFactory
     // properties
 
     PropertyCursor allocatePropertyCursor();
+
+    PropertyCursor allocateFullAccessPropertyCursor();
 
     // traversal
 
