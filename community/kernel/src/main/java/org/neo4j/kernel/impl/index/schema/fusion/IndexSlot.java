@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 public enum IndexSlot
 {
+    GENERIC,
     STRING,
     NUMBER,
     SPATIAL,

@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
@@ -125,5 +126,11 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     public IndexSample sampleResult()
     {
         return combineSamples( instanceSelector.transform( IndexPopulator::sampleResult ) );
+    }
+
+    @Override
+    public void scanCompleted( PhaseTracker phaseTracker ) throws IndexEntryConflictException
+    {
+        instanceSelector.throwingForAll( ip -> ip.scanCompleted( phaseTracker ) );
     }
 }

@@ -32,23 +32,21 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
-import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
-import org.neo4j.kernel.impl.index.schema.TemporalIndexProvider;
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionSlotSelector10;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionSlotSelector30;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE10;
+import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 
 @ServiceProvider
-public class NativeLuceneFusionIndexProviderFactory10 extends NativeLuceneFusionIndexProviderFactory<NativeLuceneFusionIndexProviderFactory10.Dependencies>
+public class NativeLuceneFusionIndexProviderFactory30 extends NativeLuceneFusionIndexProviderFactory<NativeLuceneFusionIndexProviderFactory30.Dependencies>
 {
-    private static final String KEY = NATIVE10.providerKey();
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, NATIVE10.providerVersion() );
+    public static final String KEY = NATIVE30.providerKey();
+    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, NATIVE30.providerVersion() );
 
-    public NativeLuceneFusionIndexProviderFactory10()
+    public NativeLuceneFusionIndexProviderFactory30()
     {
         super( KEY );
     }
@@ -74,16 +72,12 @@ public class NativeLuceneFusionIndexProviderFactory10 extends NativeLuceneFusion
         boolean readOnly = IndexProviderFactoryUtil.isReadOnly( config, operationalMode );
         boolean archiveFailedIndex = config.get( GraphDatabaseSettings.archive_failed_index );
 
-        NumberIndexProvider number =
-                IndexProviderFactoryUtil.numberProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
-        SpatialIndexProvider spatial =
-                IndexProviderFactoryUtil.spatialProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly, config );
-        TemporalIndexProvider temporal =
-                IndexProviderFactoryUtil.temporalProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
+        GenericNativeIndexProvider generic =
+                new GenericNativeIndexProvider( childDirectoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly, config );
         LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, childDirectoryStructure, monitor, config, operationalMode );
 
-        return new FusionIndexProvider( EMPTY, EMPTY, number, spatial, temporal, lucene,
-                new FusionSlotSelector10(), DESCRIPTOR, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex );
+        return new FusionIndexProvider( generic, EMPTY, EMPTY, EMPTY, EMPTY, lucene, new FusionSlotSelector30(),
+                DESCRIPTOR, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex );
     }
 
     private static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File databaseDirectory )

@@ -87,8 +87,8 @@ public class LuceneIndexProviderFactory extends AbstractIndexProviderFactory<Luc
         SpatialIndexProvider spatial =
                 IndexProviderFactoryUtil.spatialProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly, config );
 
-        return new FusionIndexProvider( EMPTY, EMPTY, spatial, temporal, lucene, new FusionSlotSelector00(),
-                PROVIDER_DESCRIPTOR, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex );
+        return new FusionIndexProvider( EMPTY, EMPTY, EMPTY, spatial, temporal, lucene,
+                new FusionSlotSelector00(), PROVIDER_DESCRIPTOR, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex );
     }
 
     private static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File databaseDirectory )

@@ -123,8 +123,8 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     private final SpaceFillingCurveConfiguration configuration;
     private final boolean archiveFailedIndex;
 
-    GenericNativeIndexProvider( IndexDirectoryStructure.Factory directoryStructureFactory, PageCache pageCache, FileSystemAbstraction fs, Monitor monitor,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, Config config )
+    public GenericNativeIndexProvider( IndexDirectoryStructure.Factory directoryStructureFactory, PageCache pageCache, FileSystemAbstraction fs,
+            Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, Config config )
     {
         super( DESCRIPTOR, directoryStructureFactory, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
 

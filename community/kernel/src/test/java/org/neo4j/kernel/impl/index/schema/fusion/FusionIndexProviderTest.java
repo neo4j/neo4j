@@ -61,6 +61,7 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.fill
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
@@ -112,6 +113,11 @@ public class FusionIndexProviderTest
         {
             switch ( aliveSlots[i] )
             {
+            case GENERIC:
+                IndexProvider generic = mockProvider( StringIndexProvider.class, "generic" );
+                providers.put( GENERIC, generic );
+                aliveProviders[i] = generic;
+                break;
             case STRING:
                 IndexProvider string = mockProvider( StringIndexProvider.class, "string" );
                 providers.put( STRING, string );
@@ -142,6 +148,7 @@ public class FusionIndexProviderTest
             }
         }
         fusionIndexProvider = new FusionIndexProvider(
+                providers.get( GENERIC ),
                 providers.get( STRING ),
                 providers.get( NUMBER ),
                 providers.get( SPATIAL ),

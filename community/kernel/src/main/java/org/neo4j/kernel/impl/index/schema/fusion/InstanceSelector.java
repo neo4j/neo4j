@@ -140,6 +140,21 @@ class InstanceSelector<T>
     }
 
     /**
+     * Convenience method for doing something to all instances, even those that haven't already been instantiated.
+     * If consumer throws for any instance, the rest will not be called.
+     *
+     * @param consumer {@link ThrowingConsumer} which performs some action on an instance.
+     */
+    <E extends Exception> void throwingForAll( ThrowingConsumer<T,E> consumer ) throws E
+    {
+        T exception = null;
+        for ( IndexSlot slot : IndexSlot.values() )
+        {
+            consumer.accept( select( slot ) );
+        }
+    }
+
+    /**
      * Perform a final action on instantiated instances and then closes this selector, preventing further instantiation.
      *
      * @param consumer {@link Consumer} which performs some action on an instance.

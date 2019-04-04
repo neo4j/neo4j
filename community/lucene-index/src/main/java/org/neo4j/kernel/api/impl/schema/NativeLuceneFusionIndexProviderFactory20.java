@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.index.schema.fusion.FusionSlotSelector20;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE20;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 
 @ServiceProvider
 public class NativeLuceneFusionIndexProviderFactory20 extends NativeLuceneFusionIndexProviderFactory<NativeLuceneFusionIndexProviderFactory20.Dependencies>
@@ -84,8 +85,8 @@ public class NativeLuceneFusionIndexProviderFactory20 extends NativeLuceneFusion
                 IndexProviderFactoryUtil.temporalProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
         LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, childDirectoryStructure, monitor, config, operationalMode );
 
-        return new FusionIndexProvider( string, number, spatial, temporal, lucene, new FusionSlotSelector20(),
-                DESCRIPTOR, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex );
+        return new FusionIndexProvider( EMPTY, string, number, spatial, temporal, lucene,
+                new FusionSlotSelector20(), DESCRIPTOR, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex );
     }
 
     public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File databaseDirectory )
