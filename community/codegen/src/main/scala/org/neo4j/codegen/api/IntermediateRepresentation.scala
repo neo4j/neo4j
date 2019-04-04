@@ -317,6 +317,8 @@ case class NewInstance(constructor: Constructor, params: Seq[IntermediateReprese
   */
 case class NewArray(baseType: codegen.TypeReference, size: Int) extends IntermediateRepresentation
 
+case class Returns(representation: IntermediateRepresentation) extends IntermediateRepresentation
+
 case class OneTime(inner: IntermediateRepresentation)(private var used: Boolean) extends IntermediateRepresentation {
   def isUsed: Boolean = used
   def use(): Unit = {
@@ -568,6 +570,11 @@ object IntermediateRepresentation {
   def declare(typeReference: codegen.TypeReference, name: String) = DeclareLocalVariable(typeReference, name)
 
   def assign(name: String, value: IntermediateRepresentation) = AssignToLocalVariable(name, value)
+
+  def declareAndAssign(typeReference: TypeReference, name: String, value: IntermediateRepresentation): IntermediateRepresentation =
+    block(declare(typeReference, name), assign(name, value))
+
+  def returns(value: IntermediateRepresentation): IntermediateRepresentation = Returns(value)
 
   def tryCatch[E](name: String)(ops: IntermediateRepresentation)(onError: IntermediateRepresentation)
                  (implicit typ: Manifest[E]) =
