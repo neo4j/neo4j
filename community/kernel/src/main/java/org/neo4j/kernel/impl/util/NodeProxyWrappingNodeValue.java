@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.Values;
@@ -63,7 +64,7 @@ public class NodeProxyWrappingNodeValue extends NodeValue
             l = Values.stringArray();
             p = VirtualValues.EMPTY_MAP;
         }
-        catch ( IllegalStateException e )
+        catch ( InvalidRecordException e )
         {
             throw new ReadAndDeleteTransactionConflictException( e );
         }
