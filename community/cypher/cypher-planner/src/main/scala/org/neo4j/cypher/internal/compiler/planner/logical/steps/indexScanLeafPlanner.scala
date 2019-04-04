@@ -58,7 +58,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
       case AsPropertyScannable(scannable) =>
         val name = scannable.name
-        val predicate = if (scannable.solvesPredicate) Some(scannable.expr) else None
+        val predicate = if (scannable.solvesPredicate) None else Some(scannable.expr)
 
         val plans = produce(name, qg, interestingOrder, scannable.property, CTAny, predicate, lpp.planNodeIndexScan(_, _, _, _, _, _, _, context), context)
         maybeLeafPlans(name, plans)
@@ -102,9 +102,9 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
   private def findNonScannableVariables(predicates: Seq[Expression], context: LogicalPlanningContext) =
     predicates.flatMap {
-      case predicate@AsDynamicPropertyNonScannable(nonScannableId) if context.semanticTable.isNode(nonScannableId) =>
+      case AsDynamicPropertyNonScannable(nonScannableId) if context.semanticTable.isNode(nonScannableId) =>
         Some(nonScannableId)
-      case predicate@AsStringRangeNonSeekable(nonScannableId) if context.semanticTable.isNode(nonScannableId) =>
+      case AsStringRangeNonSeekable(nonScannableId) if context.semanticTable.isNode(nonScannableId) =>
         Some(nonScannableId)
       case _ =>
         None

@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.logical.plans.{Union, UnwindCollection, ValueHa
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.AssertionRunner.Thunk
 import org.neo4j.cypher.internal.v4_0.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Attributes, IdGen}
 import org.neo4j.cypher.internal.v4_0.util.{AssertionRunner, ExhaustiveShortestPathForbiddenException, InputPosition, InternalException}
