@@ -22,6 +22,7 @@ package org.neo4j.kernel.database;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
 public class DatabaseId implements Comparable<DatabaseId>
 {
@@ -66,8 +67,22 @@ public class DatabaseId implements Comparable<DatabaseId>
     }
 
     @Override
-    public int compareTo( DatabaseId o )
+    public int compareTo( DatabaseId that )
     {
-        return this.name.compareTo( o.name );
+        boolean leftIsSystem = isSystemDatabase( this );
+        boolean rightIsSystem = isSystemDatabase( that );
+        if ( leftIsSystem || rightIsSystem )
+        {
+            return Boolean.compare( rightIsSystem, leftIsSystem );
+        }
+        else
+        {
+            return this.name.compareTo( that.name );
+        }
+    }
+
+    private static boolean isSystemDatabase( DatabaseId id )
+    {
+        return Objects.equals( id.name(), SYSTEM_DATABASE_NAME );
     }
 }

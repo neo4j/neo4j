@@ -28,7 +28,6 @@ import java.util.function.BiConsumer;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.dbms.database.DatabasesComparator;
 import org.neo4j.graphdb.facade.spi.ClassicCoreSPI;
 import org.neo4j.graphdb.factory.module.DatabaseModule;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -56,7 +55,7 @@ public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends
         this.globalModule = globalModule;
         this.edition = edition;
         this.graphDatabaseFacade = graphDatabaseFacade;
-        this.databaseMap = new ConcurrentSkipListMap<>( new DatabasesComparator() );
+        this.databaseMap = new ConcurrentSkipListMap<>();
     }
 
     @Override
