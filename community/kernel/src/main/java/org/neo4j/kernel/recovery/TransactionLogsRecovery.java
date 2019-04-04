@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.recovery;
 
-import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
 
 import org.neo4j.common.ProgressReporter;
@@ -63,11 +62,12 @@ public class TransactionLogsRecovery extends LifecycleAdapter
     }
 
     @Override
-    public void init() throws IOException
+    public void init() throws Exception
     {
         RecoveryStartInformation recoveryStartInformation = recoveryService.getRecoveryStartInformation();
         if ( !recoveryStartInformation.isRecoveryRequired() )
         {
+            schemaLife.init();
             return;
         }
 
