@@ -28,9 +28,15 @@ import org.neo4j.util.VisibleForTesting;
 import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 
+/**
+ * Offload page layout: [HEADER 9B| KEYSIZE 4B| VALUESIZE 4B | KEY | VALUE]
+ * [HEADER]: [TYPE 1B | RESERVED SPACE 8B]
+ * Key and value size are simple integers
+ * Key and value layout is decided by layout.
+ */
 public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
 {
-    private static final int SIZE_HEADER = Byte.BYTES;
+    private static final int SIZE_HEADER = Byte.BYTES + Long.BYTES;
     private static final int SIZE_KEY_SIZE = Integer.BYTES;
     private static final int SIZE_VALUE_SIZE = Integer.BYTES;
     private final Layout<KEY,VALUE> layout;
