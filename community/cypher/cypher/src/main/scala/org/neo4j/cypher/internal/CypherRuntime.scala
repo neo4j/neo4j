@@ -24,11 +24,11 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.frontend.phases.RecordingNotificationLogger
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.{CypherMorselRuntimeSchedulerOption, CypherRuntimeOption, RuntimeUnsupportedException, exceptionHandler}
 import org.neo4j.internal.kernel.api.SchemaRead
@@ -162,7 +162,8 @@ case class CypherRuntimeConfiguration(workers: Int,
                                       morselSize: Int,
                                       schedulerTracing: SchedulerTracingConfiguration,
                                       waitTimeout: Duration,
-                                      lenientCreateRelationship: Boolean)
+                                      lenientCreateRelationship: Boolean,
+                                      fuseOperators: Boolean)
 
 sealed trait SchedulerTracingConfiguration
 case object NoSchedulerTracing extends SchedulerTracingConfiguration

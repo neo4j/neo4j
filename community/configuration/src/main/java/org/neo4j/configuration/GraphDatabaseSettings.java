@@ -378,6 +378,10 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<String> cypher_morsel_runtime_scheduler =
             setting( "unsupported.cypher.morsel_runtime_scheduler", STRING, "simple" );
 
+    @Internal
+    public static final Setting<Boolean> cypher_morsel_fuse_operators =
+            setting( "unsupported.cypher.morsel_fuse_operators", BOOLEAN, "true" );
+
     @Description( "The maximum amount of time to wait for the database to become available, when " +
                   "starting a new transaction." )
     @Internal
