@@ -319,7 +319,7 @@ public class BasicSystemGraphRealmTest
     }
 
     @Test
-    void shouldReturnNullWhenSettingPasswordForUnknownUser() throws Throwable
+    void shouldReturnNullWhenSettingPasswordForUnknownUser()
     {
         // When
         try

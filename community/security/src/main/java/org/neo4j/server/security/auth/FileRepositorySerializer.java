@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Random;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.server.security.auth.exception.FormatException;

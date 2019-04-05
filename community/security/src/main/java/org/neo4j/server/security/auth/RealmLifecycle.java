@@ -29,7 +29,7 @@ public interface RealmLifecycle
     class Adapter implements RealmLifecycle
     {
         @Override
-        public void initialize() throws Exception
+        public void initialize()
         {
         }
 

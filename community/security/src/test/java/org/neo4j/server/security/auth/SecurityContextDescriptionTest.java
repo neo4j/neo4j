@@ -53,7 +53,7 @@ public class SecurityContextDescriptionTest
     }
 
     @After
-    public void teardown() throws Throwable
+    public void teardown()
     {
         manager.stop();
         manager.shutdown();

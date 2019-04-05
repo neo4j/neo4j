@@ -43,7 +43,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
 
     /** Master list of users */
     protected volatile List<User> users = new ArrayList<>();
-    protected AtomicLong lastLoaded = new AtomicLong( 0L );
+    AtomicLong lastLoaded = new AtomicLong( 0L );
 
     // Allow all ascii from '!' to '~', apart from ',' and ':' which are used as separators in flat file
     private final Pattern usernamePattern = Pattern.compile( "^[\\x21-\\x2B\\x2D-\\x39\\x3B-\\x7E]+$" );

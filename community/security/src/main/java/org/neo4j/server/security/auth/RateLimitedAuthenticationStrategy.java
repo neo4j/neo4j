@@ -43,19 +43,19 @@ public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
         private final AtomicInteger failedAuthAttempts = new AtomicInteger();
         private long lastFailedAttemptTime;
 
-        public boolean authenticationPermitted()
+        boolean authenticationPermitted()
         {
             return maxFailedAttempts <= 0 || // amount of attempts is not limited
                    failedAuthAttempts.get() < maxFailedAttempts || // less failed attempts than configured
                    clock.millis() >= lastFailedAttemptTime + lockDurationMs; // auth lock duration expired
         }
 
-        public void authSuccess()
+        void authSuccess()
         {
             failedAuthAttempts.set( 0 );
         }
 
-        public void authFailed()
+        void authFailed()
         {
             failedAuthAttempts.incrementAndGet();
             lastFailedAttemptTime = clock.millis();

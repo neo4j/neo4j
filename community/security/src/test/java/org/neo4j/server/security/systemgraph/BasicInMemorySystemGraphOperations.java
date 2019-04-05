@@ -88,7 +88,7 @@ public class BasicInMemorySystemGraphOperations extends BasicSystemGraphOperatio
         {
             throw new InvalidArgumentsException( "User '" + username + "' does not exist." );
         }
-        User augmented = null;
+        User augmented;
         try
         {
             augmented = user.augment()
