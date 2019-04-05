@@ -137,16 +137,19 @@ public class CommunityEditionModule extends StandaloneEditionModule
     protected Function<DatabaseId,TokenHolders> createTokenHolderProvider( GlobalModule platform )
     {
         Config globalConfig = platform.getGlobalConfig();
-        Supplier<Kernel> kernelSupplier = () ->
-                platform.getGlobalDependencies().resolveDependency( DefaultDatabaseManager.class )
-                        .getDatabaseContext( new DatabaseId( config.get( GraphDatabaseSettings.default_database ) ) )
-                        .map( DatabaseContext::database )
-                        .map( Database::getKernel )
-                        .orElseThrow( () -> new IllegalStateException( "Default database kernel should be always accessible" ) );
-        return ignored -> new TokenHolders(
-                new DelegatingTokenHolder( createPropertyKeyCreator( globalConfig, kernelSupplier ), TokenHolder.TYPE_PROPERTY_KEY ),
-                new DelegatingTokenHolder( createLabelIdCreator( globalConfig, kernelSupplier ), TokenHolder.TYPE_LABEL ),
-                new DelegatingTokenHolder( createRelationshipTypeCreator( globalConfig, kernelSupplier ), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+        return databaseId -> {
+            DatabaseManager<?> databaseManager = platform.getGlobalDependencies().resolveDependency( DefaultDatabaseManager.class );
+            Supplier<Kernel> kernelSupplier = () ->
+            {
+                DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseId )
+                        .orElseThrow( () -> new IllegalStateException( "Default and system database kernels should always be accessible" ) );
+                return databaseContext.dependencies().resolveDependency( Kernel.class );
+            };
+            return new TokenHolders(
+                    new DelegatingTokenHolder( createPropertyKeyCreator( globalConfig, kernelSupplier ), TokenHolder.TYPE_PROPERTY_KEY ),
+                    new DelegatingTokenHolder( createLabelIdCreator( globalConfig, kernelSupplier ), TokenHolder.TYPE_LABEL ),
+                    new DelegatingTokenHolder( createRelationshipTypeCreator( globalConfig, kernelSupplier ), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+        };
     }
 
     protected IdContextFactory createIdContextFactory( GlobalModule globalModule, FileSystemAbstraction fileSystem )
