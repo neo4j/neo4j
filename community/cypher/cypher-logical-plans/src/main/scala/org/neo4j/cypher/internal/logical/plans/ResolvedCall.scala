@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.v4_0.util.{InputPosition, SyntaxException}
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckResult._
-import org.neo4j.cypher.internal.v4_0.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckResult._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheck, SemanticError, SemanticExpressionCheck, SemanticState}
+import org.neo4j.cypher.internal.v4_0.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.v4_0.util.{InputPosition, SyntaxException}
 
 object ResolvedCall {
   def apply(signatureLookup: QualifiedName => ProcedureSignature)(unresolved: UnresolvedCall): ResolvedCall = {
@@ -115,8 +115,13 @@ case class ResolvedCall(signature: ProcedureSignature,
         else if (signature.inputSignature.size == 1) s"argument of type ${signature.inputSignature.head.typ.toNeoTypeString}"
         else s"arguments of type ${signature.inputSignature.map(_.typ.toNeoTypeString).mkString(", ")}") +
           signature.description.map(d => s"${System.lineSeparator()}Description: $d").getOrElse("")
+
+        val defaultArgMsg = if (usedDefaultArgs.nonEmpty) {
+          val isOrAre = if (usedDefaultArgs.length > 1) "are" else "is"
+          s" (where ${usedDefaultArgs.length} $isOrAre optional)."
+        } else "."
         error(_: SemanticState, SemanticError(
-          s"""Procedure call does not provide the required number of arguments: got $actualNumArgs expected $expectedNumArgs.
+          s"""Procedure call does not provide the required number of arguments: got ${callArguments.length} expected $expectedNumArgs$defaultArgMsg
              |
              |Procedure ${signature.name} has signature: $signature
              |meaning that it expects $expectedNumArgs $msg""".stripMargin, position))
