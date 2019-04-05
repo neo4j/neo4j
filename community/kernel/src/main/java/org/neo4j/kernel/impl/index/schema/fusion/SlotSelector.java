@@ -29,8 +29,10 @@ import org.neo4j.values.storable.ValueGroup;
 /**
  * Given a set of values selects a slot to use.
  */
-interface SlotSelector
+public interface SlotSelector
 {
+    SlotSelector nullInstance = new NullInstance();
+
     int INSTANCE_COUNT = 5;
 
     int UNKNOWN = -1;
@@ -71,6 +73,20 @@ interface SlotSelector
                         String.format( "Only indexes expected to be separated from IndexProvider.EMPTY are %s but was %s",
                                 Arrays.toString( aliveIndex ), Arrays.toString( instances ) ) );
             }
+        }
+    }
+
+    class NullInstance implements SlotSelector
+    {
+        @Override
+        public void validateSatisfied( IndexProvider[] instances )
+        {   // no-op
+        }
+
+        @Override
+        public <V> int selectSlot( V[] values, Function<V,ValueGroup> groupOf )
+        {
+            throw new UnsupportedOperationException( "NullInstance cannot select a slot for you. Please use the real deal." );
         }
     }
 }

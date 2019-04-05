@@ -370,4 +370,48 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
             return "{key=" + key + ", version=" + version + "}";
         }
     }
+
+    public static class Adaptor extends IndexProvider
+    {
+        protected Adaptor( Descriptor descriptor, int priority, IndexDirectoryStructure.Factory directoryStructureFactory )
+        {
+            super( descriptor, priority, directoryStructureFactory );
+        }
+
+        @Override
+        public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+        {
+            return null;
+        }
+
+        @Override
+        public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+        {
+            return null;
+        }
+
+        @Override
+        public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
+        {
+            return null;
+        }
+
+        @Override
+        public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
+        {
+            return null;
+        }
+
+        @Override
+        public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+        {
+            return null;
+        }
+
+        @Override
+        public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
+        {
+            return null;
+        }
+    }
 }

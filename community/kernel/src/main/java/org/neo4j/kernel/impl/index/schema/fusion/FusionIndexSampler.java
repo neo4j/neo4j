@@ -23,6 +23,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
+import static org.neo4j.io.IOUtils.closeAllSilently;
+
 public class FusionIndexSampler implements IndexSampler
 {
     private final IndexSampler[] samplers;
@@ -55,5 +57,11 @@ public class FusionIndexSampler implements IndexSampler
             sampleSize += sample.sampleSize();
         }
         return new IndexSample( indexSize, uniqueValues, sampleSize );
+    }
+
+    @Override
+    public void close()
+    {
+        closeAllSilently( samplers );
     }
 }
