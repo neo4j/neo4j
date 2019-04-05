@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.modules;
 
+import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
+
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
@@ -71,7 +74,7 @@ public class DBMSModule implements ServerModule
     {
         if ( config.get( GraphDatabaseSettings.auth_enabled ) )
         {
-            return Collections.singletonList( UserService.class );
+            return Arrays.asList( UserService.class, JacksonJsonProvider.class );
         }
         return Collections.emptyList();
     }

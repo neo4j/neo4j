@@ -17,28 +17,54 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.domain;
+package org.neo4j.server.http.error;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+import java.util.List;
 
-public class URIHelper
+public class ErrorRepresentation
 {
-    private URIHelper()
+    private List<Error> errors;
+
+    public List<Error> getErrors()
     {
+        return errors;
     }
 
-    public static String encode( String value )
+    public void setErrors( List<Error> errors )
     {
-        try
+        this.errors = errors;
+    }
+
+    public static class Error
+    {
+
+        private String code;
+        private String message;
+
+        public Error( String code, String message )
         {
-            return URLEncoder.encode( value, StandardCharsets.UTF_8.name() )
-                    .replaceAll( "\\+", "%20" );
+            this.code = code;
+            this.message = message;
         }
-        catch ( UnsupportedEncodingException e )
+
+        public String getCode()
         {
-            throw new RuntimeException( e );
+            return code;
+        }
+
+        public void setCode( String code )
+        {
+            this.code = code;
+        }
+
+        public String getMessage()
+        {
+            return message;
+        }
+
+        public void setMessage( String message )
+        {
+            this.message = message;
         }
     }
 }

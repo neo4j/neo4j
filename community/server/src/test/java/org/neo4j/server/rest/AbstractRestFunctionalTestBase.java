@@ -27,7 +27,6 @@ import java.util.Map;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
@@ -39,8 +38,6 @@ import org.neo4j.test.server.SharedServerTestBase;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.rest.web.Surface.PATH_NODES;
-import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIPS;
 import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
@@ -76,21 +73,6 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     protected String getDatabaseUri()
     {
         return "http://localhost:" + getLocalHttpPort() + "/db/";
-    }
-
-    protected String getNodeUri( Node node )
-    {
-        return getNodeUri(node.getId());
-    }
-
-    protected String getNodeUri( long node )
-    {
-        return getDataUri() + PATH_NODES + "/" + node;
-    }
-
-    protected String getRelationshipUri( Relationship relationship )
-    {
-        return getDataUri() + PATH_RELATIONSHIPS + "/" + relationship.getId();
     }
 
     protected String txUri()

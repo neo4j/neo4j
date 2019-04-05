@@ -29,6 +29,7 @@ import org.neo4j.test.server.HTTP;
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
+import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -74,7 +75,7 @@ public class AuthorizationCorsIT extends CommunityServerTestBase
     {
         startServer( true );
         HTTP.Response passwordChangeResponse = changePassword( "neo4j", "neo4j", "newPassword" );
-        assertEquals( OK.getStatusCode(), passwordChangeResponse.status() );
+        assertEquals( NO_CONTENT.getStatusCode(), passwordChangeResponse.status() );
         assertCorsHeaderPresent( passwordChangeResponse );
 
         HTTP.Response queryResponse = runQuery( "neo4j", "newPassword" );

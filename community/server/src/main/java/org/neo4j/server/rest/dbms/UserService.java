@@ -21,14 +21,17 @@ package org.neo4j.server.rest.dbms;
 
 import java.io.IOException;
 import java.security.Principal;
-import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -36,43 +39,37 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.impl.security.User;
+import org.neo4j.server.http.error.Neo4jHttpException;
 import org.neo4j.server.rest.repr.AuthorizationRepresentation;
-import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.repr.ExceptionRepresentation;
-import org.neo4j.server.rest.repr.InputFormat;
-import org.neo4j.server.rest.repr.OutputFormat;
-import org.neo4j.server.rest.Neo4jError;
+import org.neo4j.server.rest.repr.PasswordChangeRepresentation;
 import org.neo4j.string.UTF8;
 
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.neo4j.server.rest.dbms.AuthorizedRequestWrapper.getLoginContextFromUserPrincipal;
-import static org.neo4j.server.rest.web.CustomStatusType.UNPROCESSABLE;
 
 @Path( "/user" )
+@Produces( MediaType.APPLICATION_JSON )
+@Consumes( MediaType.APPLICATION_JSON )
 public class UserService
 {
-    public static final String PASSWORD = "password";
-
     private final UserManagerSupplier userManagerSupplier;
-    private final InputFormat input;
-    private final OutputFormat output;
+    private final UriInfo uriInfo;
+    private final Principal principal;
 
-    public UserService( @Context UserManagerSupplier userManagerSupplier, @Context InputFormat input, @Context OutputFormat
-            output )
+    public UserService( @Context UserManagerSupplier userManagerSupplier, @Context HttpServletRequest request, @Context UriInfo uriInfo )
     {
         this.userManagerSupplier = userManagerSupplier;
-        this.input = input;
-        this.output = output;
+        this.uriInfo = uriInfo;
+
+        principal = request.getUserPrincipal();
     }
 
     @GET
     @Path( "/{username}" )
-    public Response getUser( @PathParam( "username" ) String username, @Context HttpServletRequest req )
+    public AuthorizationRepresentation getUser( @PathParam( "username" ) String username )
     {
-        Principal principal = req.getUserPrincipal();
         if ( principal == null || !principal.getName().equals( username ) )
         {
-            return output.notFound();
+            throw new NotFoundException();
         }
 
         LoginContext loginContext = getLoginContextFromUserPrincipal( principal );
@@ -81,71 +78,45 @@ public class UserService
         try
         {
             User user = userManager.getUser( username );
-            return output.ok( new AuthorizationRepresentation( user ) );
+            String passwordChange = uriInfo.getAbsolutePathBuilder().path( "password" ).build().toString();
+            return new AuthorizationRepresentation( user, passwordChange );
         }
         catch ( InvalidArgumentsException e )
         {
-            return output.notFound();
+            throw new NotFoundException();
         }
     }
 
     @POST
     @Path( "/{username}/password" )
-    public Response setPassword( @PathParam( "username" ) String username, @Context HttpServletRequest req,
-            String payload )
+    public void setPassword( @PathParam( "username" ) String username, PasswordChangeRepresentation payload ) throws IOException
     {
-        Principal principal = req.getUserPrincipal();
         if ( principal == null || !principal.getName().equals( username ) )
         {
-            return output.notFound();
+            throw new NotFoundException();
         }
 
-        final Map<String, Object> deserialized;
-        try
+        if ( payload.getPassword() == null )
         {
-            deserialized = input.readMap( payload );
+            throw new Neo4jHttpException( 422, Status.Request.InvalidFormat, "Required parameter 'password' is missing." );
         }
-        catch ( BadInputException e )
-        {
-            return output.response( BAD_REQUEST, new ExceptionRepresentation(
-                    new Neo4jError( Status.Request.InvalidFormat, e.getMessage() ) ) );
-        }
-
-        Object o = deserialized.get( PASSWORD );
-        if ( o == null )
-        {
-            return output.response( UNPROCESSABLE, new ExceptionRepresentation(
-                    new Neo4jError( Status.Request.InvalidFormat, String.format( "Required parameter '%s' is missing.", PASSWORD ) ) ) );
-        }
-        if ( !( o instanceof String ) )
-        {
-            return output.response( UNPROCESSABLE, new ExceptionRepresentation(
-                    new Neo4jError( Status.Request.InvalidFormat, String.format( "Expected '%s' to be a string.", PASSWORD ) ) ) );
-        }
-        String newPassword = (String) o;
 
         try
         {
             LoginContext loginContext = getLoginContextFromUserPrincipal( principal );
             if ( loginContext == null )
             {
-                return output.notFound();
+                throw new NotFoundException();
             }
             else
             {
                 UserManager userManager = userManagerSupplier.getUserManager( loginContext.subject(), false );
-                userManager.setUserPassword( username, UTF8.encode( newPassword ), false );
+                userManager.setUserPassword( username, UTF8.encode( payload.getPassword() ), false );
             }
-        }
-        catch ( IOException e )
-        {
-            return output.serverErrorWithoutLegacyStacktrace( e );
         }
         catch ( InvalidArgumentsException e )
         {
-            return output.response( UNPROCESSABLE, new ExceptionRepresentation(
-                    new Neo4jError( e.status(), e.getMessage() ) ) );
+            throw new Neo4jHttpException( 422, e.status(), e.getMessage() );
         }
-        return output.ok();
     }
 }

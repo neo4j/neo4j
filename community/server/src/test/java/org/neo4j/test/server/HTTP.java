@@ -268,7 +268,14 @@ public class HTTP
         public Response( ClientResponse response )
         {
             this.response = sanityCheck( response );
-            this.entity = response.getEntity( String.class );
+            if ( response.getStatus() == 204 )
+            {
+                entity = "";
+            }
+            else
+            {
+                this.entity = response.getEntity( String.class );
+            }
         }
 
         public int status()

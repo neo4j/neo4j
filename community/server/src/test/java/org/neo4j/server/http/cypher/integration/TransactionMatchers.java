@@ -25,6 +25,8 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
 import java.text.ParseException;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -36,7 +38,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.server.rest.repr.util.RFC1123;
 import org.neo4j.test.server.HTTP;
 
 import static java.lang.String.format;
@@ -68,9 +69,10 @@ public class TransactionMatchers
             {
                 try
                 {
-                    return RFC1123.parseTimestamp( item ).getTime() > 0;
+                    ZonedDateTime.parse( item, DateTimeFormatter.RFC_1123_DATE_TIME );
+                    return true;
                 }
-                catch ( ParseException e )
+                catch ( Exception e )
                 {
                     return false;
                 }

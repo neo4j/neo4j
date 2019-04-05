@@ -68,7 +68,6 @@ import org.neo4j.server.http.cypher.TransactionFacade;
 import org.neo4j.server.http.cypher.TransactionHandleRegistry;
 import org.neo4j.server.http.cypher.TransactionRegistry;
 import org.neo4j.server.http.cypher.TransitionalPeriodTransactionMessContainer;
-import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.server.web.RotatingRequestLog;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
@@ -120,7 +119,6 @@ public abstract class AbstractNeoServer implements NeoServer
     protected Supplier<AuthManager> authManagerSupplier;
     protected Supplier<UserManagerSupplier> userManagerSupplier;
     protected Supplier<SslPolicyLoader> sslPolicyFactorySupplier;
-    private DatabaseActions databaseActions;
     private TransactionFacade transactionFacade;
 
     private TransactionHandleRegistry transactionRegistry;
@@ -175,11 +173,6 @@ public abstract class AbstractNeoServer implements NeoServer
     public DependencyResolver getDependencyResolver()
     {
         return dependencyResolver;
-    }
-
-    protected DatabaseActions createDatabaseActions()
-    {
-        return new DatabaseActions( database.getGraph() );
     }
 
     private TransactionFacade createTransactionalActions()
@@ -405,7 +398,6 @@ public abstract class AbstractNeoServer implements NeoServer
         ComponentsBinder binder = new ComponentsBinder();
 
         binder.addSingletonBinding( database, Database.class );
-        binder.addSingletonBinding( databaseActions, DatabaseActions.class );
         binder.addSingletonBinding( database.getGraph(), GraphDatabaseService.class );
         binder.addSingletonBinding( this, NeoServer.class );
         binder.addSingletonBinding( getConfig(), Config.class );
@@ -486,7 +478,6 @@ public abstract class AbstractNeoServer implements NeoServer
             Log serverLog = logService.getInternalLog( ServerComponentsLifecycleAdapter.class );
             serverLog.info( "Starting web server" );
             connectorPortRegister = dependencyResolver.resolveDependency( ConnectorPortRegister.class );
-            databaseActions = createDatabaseActions();
 
             transactionFacade = createTransactionalActions();
 

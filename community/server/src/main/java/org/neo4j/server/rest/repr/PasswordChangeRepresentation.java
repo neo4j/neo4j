@@ -1,3 +1,5 @@
+package org.neo4j.server.rest.repr;
+
 /*
  * Copyright (c) 2002-2019 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
@@ -17,22 +19,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.repr;
-
-import java.util.Map;
-
-public class CypherRepresentationDispatcher extends RepresentationDispatcher
+public class PasswordChangeRepresentation
 {
-    @Override
-    protected Representation dispatchOtherProperty( Object property, String param )
+    private String password;
+
+    public String getPassword()
     {
-        if ( property instanceof Map )
-        {
-            return new MapRepresentation( (Map) property );
-        }
-        else
-        {
-            return super.dispatchOtherProperty( property, param );
-        }
+        return password;
+    }
+
+    public void setPassword( String password )
+    {
+        this.password = password;
     }
 }

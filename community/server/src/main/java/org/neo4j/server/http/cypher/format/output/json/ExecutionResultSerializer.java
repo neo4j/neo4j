@@ -26,8 +26,10 @@ import org.codehaus.jackson.JsonGenerator;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -46,7 +48,6 @@ import org.neo4j.server.http.cypher.format.api.StatementStartEvent;
 import org.neo4j.server.http.cypher.format.api.TransactionInfoEvent;
 import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
 import org.neo4j.server.http.cypher.format.input.json.InputStatement;
-import org.neo4j.server.rest.repr.util.RFC1123;
 import org.neo4j.server.http.cypher.TransitionalPeriodTransactionMessContainer;
 
 import static org.neo4j.server.http.cypher.format.api.TransactionNotificationState.OPEN;
@@ -204,7 +205,10 @@ class ExecutionResultSerializer
                 out.writeObjectFieldStart( "transaction" );
                 if ( transactionInfoEvent.getExpirationTimestamp() >= 0 )
                 {
-                    out.writeStringField( "expires", RFC1123.formatDate( new Date( transactionInfoEvent.getExpirationTimestamp() ) ) );
+                    String expires = Instant.ofEpochMilli( transactionInfoEvent.getExpirationTimestamp() )
+                            .atZone( ZoneId.of( "GMT" ) )
+                            .format( DateTimeFormatter.RFC_1123_DATE_TIME );
+                    out.writeStringField( "expires", expires );
                 }
                 out.writeEndObject();
             }

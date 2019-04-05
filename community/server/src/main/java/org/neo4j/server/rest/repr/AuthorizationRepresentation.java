@@ -19,35 +19,38 @@
  */
 package org.neo4j.server.rest.repr;
 
+import org.codehaus.jackson.annotate.JsonProperty;
+
 import org.neo4j.kernel.impl.security.User;
 
-import static java.lang.String.format;
-
-public class AuthorizationRepresentation extends ObjectRepresentation
+public class AuthorizationRepresentation
 {
-    private final User user;
+    @JsonProperty( "username" )
+    private final String userName;
+    @JsonProperty( "password_change_required" )
+    private final boolean passwordChangeRequired;
+    @JsonProperty( "password_change" )
+    private final String passwordChange;
 
-    public AuthorizationRepresentation( User user )
+    public AuthorizationRepresentation( User user, String passwordChange )
     {
-        super( RepresentationType.AUTHORIZATION );
-        this.user = user;
+        this.userName = user.name();
+        this.passwordChangeRequired = user.passwordChangeRequired();
+        this.passwordChange = passwordChange;
     }
 
-    @Mapping( "username" )
-    public ValueRepresentation user()
+    public String getUserName()
     {
-        return ValueRepresentation.string( user.name() );
+        return userName;
     }
 
-    @Mapping( "password_change_required" )
-    public ValueRepresentation passwordChangeRequired()
+    public boolean isPasswordChangeRequired()
     {
-        return ValueRepresentation.bool( user.passwordChangeRequired() );
+        return passwordChangeRequired;
     }
 
-    @Mapping( "password_change" )
-    public ValueRepresentation passwordChange()
+    public String getPasswordChange()
     {
-        return ValueRepresentation.uri( format( "/user/%s/password", user.name() ) );
+        return passwordChange;
     }
 }

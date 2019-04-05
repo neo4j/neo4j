@@ -35,7 +35,6 @@ import org.neo4j.server.rest.repr.PathRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationFormat;
-import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
 
 import org.neo4j.server.http.cypher.TransactionStateChecker;
 

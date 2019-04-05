@@ -61,10 +61,7 @@ public class RESTApiModule implements ServerModule
 
     private List<Class<?>> getClassNames()
     {
-        return Arrays.asList(
-                CypherResource.class,
-                JsonMessageBodyReader.class,
-                JsonMessageBodyWriter.class );
+        return Arrays.asList( CypherResource.class, JsonMessageBodyReader.class, JsonMessageBodyWriter.class );
     }
 
     @Override

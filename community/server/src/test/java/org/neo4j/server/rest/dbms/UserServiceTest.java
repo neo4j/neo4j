@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest.dbms;
 
+import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,8 +27,11 @@ import org.junit.Test;
 import java.io.IOException;
 import java.net.URI;
 import java.security.Principal;
+import java.util.Arrays;
+import java.util.Collections;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
+import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
@@ -35,11 +39,11 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
-import org.neo4j.server.rest.repr.OutputFormat;
-import org.neo4j.server.rest.repr.formats.JsonFormat;
+import org.neo4j.server.http.error.Neo4jHttpExceptionMapper;
+import org.neo4j.server.rest.TestWebServer;
+import org.neo4j.server.rest.repr.PasswordChangeRepresentation;
 import org.neo4j.server.security.auth.BasicLoginContext;
-import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
-import org.neo4j.test.server.EntityOutputFormat;
+import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -58,6 +62,10 @@ public class UserServiceTest
     private UserManagerSupplier userManagerSupplier;
     private Principal neo4jPrinciple;
     private UserManager userManager;
+    private UriInfo uriInfo;
+    private UriBuilder uriBuilder;
+    private HttpServletRequest req;
+    private String userResourceUri;
 
     protected UserManagerSupplier setupUserManagerSupplier()
     {
@@ -77,6 +85,13 @@ public class UserServiceTest
         userManager.newUser( USERNAME, password( "neo4j" ), true );
         LoginContext subject = setupSubject();
 
+        req = mock( HttpServletRequest.class );
+
+        uriInfo = mock( UriInfo.class );
+        uriBuilder = mock( UriBuilder.class );
+        when( uriInfo.getAbsolutePathBuilder() ).thenReturn( uriBuilder );
+        when( uriBuilder.path( "password" ) ).thenReturn( uriBuilder );
+
         neo4jPrinciple = new DelegatingPrincipal( USERNAME, subject );
     }
 
@@ -90,132 +105,156 @@ public class UserServiceTest
     }
 
     @Test
-    public void shouldReturnValidUserRepresentation() throws Exception
+    public void shouldReturnValidUserRepresentation()
     {
         // Given
-        HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
+        when( uriBuilder.build() ).thenReturn( URI.create( String.format( "http://www.example.com/user/%s/password", USERNAME ) ) );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
-        UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
+        UserService userService = new UserService( userManagerSupplier, req, uriInfo );
 
-        // When
-        Response response = userService.getUser( USERNAME, req );
+        doWithServer( userService, () ->
+        {
+            // When
+            HTTP.Response response = HTTP.GET( userResourceUri + "/" + USERNAME );
 
-        // Then
-        assertThat( response.getStatus(), equalTo( 200 ) );
-        String json = new String( (byte[]) response.getEntity() );
-        assertNotNull( json );
-        assertThat( json, containsString( String.format( "\"username\" : \"%s\"", USERNAME ) ) );
-        assertThat( json, containsString( String.format( "\"password_change\" : \"http://www.example.com/user/%s/password\"", USERNAME ) ) );
-        assertThat( json, containsString( "\"password_change_required\" : true" ) );
+            // Then
+            assertThat( response.status(), equalTo( 200 ) );
+            String json = response.rawContent();
+            assertNotNull( json );
+            assertThat( json, containsString( String.format( "\"username\":\"%s\"", USERNAME ) ) );
+            assertThat( json, containsString( String.format( "\"password_change\":\"http://www.example.com/user/%s/password\"", USERNAME ) ) );
+            assertThat( json, containsString( "\"password_change_required\":true" ) );
+        } );
     }
 
     @Test
-    public void shouldReturn404WhenRequestingUserIfNotAuthenticated() throws Exception
+    public void shouldReturn404WhenRequestingUserIfNotAuthenticated()
     {
         // Given
-        HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( null );
+        when( uriBuilder.build() ).thenReturn( URI.create( String.format( "http://www.example.com/user/%s/password", USERNAME ) ) );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
-        UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
+        UserService userService = new UserService( userManagerSupplier, req, uriInfo );
 
-        // When
-        Response response = userService.getUser( USERNAME, req );
+        doWithServer( userService, () ->
+        {
+            // When
+            HTTP.Response response = HTTP.GET( userResourceUri + "/" + USERNAME );
 
-        // Then
-        assertThat( response.getStatus(), equalTo( 404 ) );
+            // Then
+            assertThat( response.status(), equalTo( 404 ) );
+        } );
     }
 
     @Test
-    public void shouldReturn404WhenRequestingUserIfDifferentUser() throws Exception
+    public void shouldReturn404WhenRequestingUserIfDifferentUser()
     {
         // Given
-        HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
+        when( uriBuilder.build() ).thenReturn( URI.create( String.format( "http://www.example.com/user/%s/password", USERNAME ) ) );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
-        UserService userService = new UserService( mock( BasicSystemGraphRealm.class ), new JsonFormat(), outputFormat );
+        UserService userService = new UserService( userManagerSupplier, req, uriInfo );
 
-        // When
-        Response response = userService.getUser( "fred", req );
+        doWithServer( userService, () ->
+        {
+            // When
+            HTTP.Response response = HTTP.GET( userResourceUri + "/fred" );
 
-        // Then
-        assertThat( response.getStatus(), equalTo( 404 ) );
+            // Then
+            assertThat( response.status(), equalTo( 404 ) );
+        } );
     }
 
     @Test
     public void shouldReturn404WhenRequestingUserIfUnknownUser() throws Exception
     {
         // Given
-        HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
+        when( uriBuilder.build() ).thenReturn( URI.create( String.format( "http://www.example.com/user/%s/password", USERNAME ) ) );
 
         userManager.deleteUser( USERNAME );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
-        UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
+        UserService userService = new UserService( userManagerSupplier, req, uriInfo );
 
-        // When
-        Response response = userService.getUser( USERNAME, req );
+        doWithServer( userService, () ->
+        {
+            // When
+            HTTP.Response response = HTTP.GET( userResourceUri + "/fred" );
 
-        // Then
-        assertThat( response.getStatus(), equalTo( 404 ) );
+            // Then
+            assertThat( response.status(), equalTo( 404 ) );
+        } );
     }
 
     @Test
     public void shouldChangePasswordAndReturnSuccess() throws Exception
     {
         // Given
-        HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
+        when( uriBuilder.build() ).thenReturn( URI.create( String.format( "http://www.example.com/user/%s/password", USERNAME ) ) );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
-        UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
+        UserService userService = new UserService( userManagerSupplier, req, uriInfo );
 
-        // When
-        Response response = userService.setPassword( USERNAME, req, "{ \"password\" : \"test\" }" );
+        PasswordChangeRepresentation passwordChangeRepresentation = new PasswordChangeRepresentation();
+        passwordChangeRepresentation.setPassword( "test" );
 
-        // Then
-        assertThat( response.getStatus(), equalTo( 200 ) );
+        doWithServer( userService, () ->
+        {
+            // When
+            HTTP.Response response = HTTP.POST( userResourceUri + "/" + USERNAME + "/password", passwordChangeRepresentation );
+
+            // Then
+            assertThat( response.status(), equalTo( 204 ) );
+        } );
         userManager.getUser( USERNAME ).credentials().matchesPassword( password( "test" ) );
     }
 
     @Test
-    public void shouldReturn404WhenChangingPasswordIfNotAuthenticated() throws Exception
+    public void shouldReturn404WhenChangingPasswordIfNotAuthenticated()
     {
         // Given
-        HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( null );
+        when( uriBuilder.build() ).thenReturn( URI.create( String.format( "http://www.example.com/user/%s/password", USERNAME ) ) );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
-        UserService userService = new UserService( mock( BasicSystemGraphRealm.class ), new JsonFormat(), outputFormat );
+        UserService userService = new UserService( userManagerSupplier, req, uriInfo );
 
-        // When
-        Response response = userService.setPassword( USERNAME, req, "{ \"password\" : \"test\" }" );
+        PasswordChangeRepresentation passwordChangeRepresentation = new PasswordChangeRepresentation();
+        passwordChangeRepresentation.setPassword( "test" );
 
-        // Then
-        assertThat( response.getStatus(), equalTo( 404 ) );
+        doWithServer( userService, () ->
+        {
+            // When
+            HTTP.Response response = HTTP.POST( userResourceUri + "/" + USERNAME + "/password", passwordChangeRepresentation );
+
+            // Then
+            assertThat( response.status(), equalTo( 404 ) );
+        } );
     }
 
     @Test
-    public void shouldReturn404WhenChangingPasswordIfDifferentUser() throws Exception
+    public void shouldReturn404WhenChangingPasswordIfDifferentUser()
     {
         // Given
-        HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
+        when( uriBuilder.build() ).thenReturn( URI.create( String.format( "http://www.example.com/user/%s/password", USERNAME ) ) );
 
         UserManager userManager = mock( UserManager.class );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
-        UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
+        UserService userService = new UserService( userManagerSupplier, req, uriInfo );
 
-        // When
-        Response response = userService.setPassword( "fred", req, "{ \"password\" : \"test\" }" );
+        PasswordChangeRepresentation passwordChangeRepresentation = new PasswordChangeRepresentation();
+        passwordChangeRepresentation.setPassword( "test" );
 
-        // Then
-        assertThat( response.getStatus(), equalTo( 404 ) );
+        doWithServer( userService, () ->
+        {
+            // When
+            HTTP.Response response = HTTP.POST( userResourceUri + "/fred/password", passwordChangeRepresentation );
+
+            // Then
+            assertThat( response.status(), equalTo( 404 ) );
+        } );
+
         verifyZeroInteractions( userManager );
     }
 
@@ -223,122 +262,118 @@ public class UserServiceTest
     public void shouldReturn422WhenChangingPasswordIfUnknownUser() throws Exception
     {
         // Given
-        HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
+        when( uriBuilder.build() ).thenReturn( URI.create( String.format( "http://www.example.com/user/%s/password", USERNAME ) ) );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
-        UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
+        UserService userService = new UserService( userManagerSupplier, req, uriInfo );
 
         userManager.deleteUser( USERNAME );
 
-        // When
-        Response response = userService.setPassword( USERNAME, req, "{ \"password\" : \"test\" }" );
+        PasswordChangeRepresentation passwordChangeRepresentation = new PasswordChangeRepresentation();
+        passwordChangeRepresentation.setPassword( "test" );
 
-        // Then
-        assertThat( response.getStatus(), equalTo( 422 ) );
+        doWithServer( userService, () ->
+        {
+            // When
+            HTTP.Response response = HTTP.POST( userResourceUri + "/" + USERNAME + "/password", passwordChangeRepresentation );
+
+            // Then
+            assertThat( response.status(), equalTo( 422 ) );
+        } );
     }
 
     @Test
-    public void shouldReturn400IfPayloadIsInvalid() throws Exception
+    public void shouldReturn422IfMissingPassword()
     {
         // Given
-        HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
+        when( uriBuilder.build() ).thenReturn( URI.create( String.format( "http://www.example.com/user/%s/password", USERNAME ) ) );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
-        UserService userService = new UserService( mock( BasicSystemGraphRealm.class ), new JsonFormat(), outputFormat );
+        UserService userService = new UserService( userManagerSupplier, req, uriInfo );
 
-        // When
-        Response response = userService.setPassword( USERNAME, req, "xxx" );
+        PasswordChangeRepresentation passwordChangeRepresentation = new PasswordChangeRepresentation();
+        passwordChangeRepresentation.setPassword( null );
 
-        // Then
-        assertThat( response.getStatus(), equalTo( 400 ) );
-        String json = new String( (byte[]) response.getEntity() );
-        assertNotNull( json );
-        assertThat( json, containsString( "\"code\" : \"Neo.ClientError.Request.InvalidFormat\"" ) );
+        doWithServer( userService, () ->
+        {
+            // When
+            HTTP.Response response = HTTP.POST( userResourceUri + "/" + USERNAME + "/password", passwordChangeRepresentation );
+
+            // Then
+            assertThat( response.status(), equalTo( 422 ) );
+            String json = response.rawContent();
+            assertNotNull( json );
+            assertThat( json, containsString( "\"code\":\"Neo.ClientError.Request.InvalidFormat\"" ) );
+            assertThat( json, containsString( "\"message\":\"Required parameter 'password' is missing.\"" ) );
+        } );
     }
 
     @Test
-    public void shouldReturn422IfMissingPassword() throws Exception
+    public void shouldReturn422IfEmptyPassword()
     {
         // Given
-        HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
+        when( uriBuilder.build() ).thenReturn( URI.create( String.format( "http://www.example.com/user/%s/password", USERNAME ) ) );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
-        UserService userService = new UserService( mock( BasicSystemGraphRealm.class ), new JsonFormat(), outputFormat );
+        UserService userService = new UserService( userManagerSupplier, req, uriInfo );
 
-        // When
-        Response response = userService.setPassword( USERNAME, req, "{ \"unknown\" : \"unknown\" }" );
+        PasswordChangeRepresentation passwordChangeRepresentation = new PasswordChangeRepresentation();
+        passwordChangeRepresentation.setPassword( "" );
 
-        // Then
-        assertThat( response.getStatus(), equalTo( 422 ) );
-        String json = new String( (byte[]) response.getEntity() );
-        assertNotNull( json );
-        assertThat( json, containsString( "\"code\" : \"Neo.ClientError.Request.InvalidFormat\"" ) );
-        assertThat( json, containsString( "\"message\" : \"Required parameter 'password' is missing.\"" ) );
+        doWithServer( userService, () ->
+        {
+            // When
+            HTTP.Response response = HTTP.POST( userResourceUri + "/" + USERNAME + "/password", passwordChangeRepresentation );
+
+            // Then
+            assertThat( response.status(), equalTo( 422 ) );
+            String json = response.rawContent();
+            assertNotNull( json );
+            assertThat( json, containsString( "\"code\":\"Neo.ClientError.General.InvalidArguments\"" ) );
+            assertThat( json, containsString( "\"message\":\"A password cannot be empty.\"" ) );
+        } );
     }
 
     @Test
-    public void shouldReturn422IfInvalidPasswordType() throws Exception
+    public void shouldReturn422IfPasswordIdentical()
     {
         // Given
-        HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
+        when( uriBuilder.build() ).thenReturn( URI.create( String.format( "http://www.example.com/user/%s/password", USERNAME ) ) );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
-        UserService userService = new UserService( mock( BasicSystemGraphRealm.class ), new JsonFormat(), outputFormat );
+        UserService userService = new UserService( userManagerSupplier, req, uriInfo );
 
-        // When
-        Response response = userService.setPassword( USERNAME, req, "{ \"password\" : 1 }" );
+        PasswordChangeRepresentation passwordChangeRepresentation = new PasswordChangeRepresentation();
+        passwordChangeRepresentation.setPassword( "neo4j" );
 
-        // Then
-        assertThat( response.getStatus(), equalTo( 422 ) );
-        String json = new String( (byte[]) response.getEntity() );
-        assertNotNull( json );
-        assertThat( json, containsString( "\"code\" : \"Neo.ClientError.Request.InvalidFormat\"" ) );
-        assertThat( json, containsString( "\"message\" : \"Expected 'password' to be a string.\"" ) );
+        doWithServer( userService, () ->
+        {
+            // When
+            HTTP.Response response = HTTP.POST( userResourceUri + "/" + USERNAME + "/password", passwordChangeRepresentation );
+
+            // Then
+            assertThat( response.status(), equalTo( 422 ) );
+            String json = response.rawContent();
+            assertNotNull( json );
+            assertThat( json, containsString( "\"code\":\"Neo.ClientError.General.InvalidArguments\"" ) );
+            assertThat( json, containsString( "\"message\":\"Old password and new password cannot be the same.\"" ) );
+        } );
     }
 
-    @Test
-    public void shouldReturn422IfEmptyPassword() throws Exception
+    private void doWithServer( Object userEndpoint, Runnable code )
     {
-        // Given
-        HttpServletRequest req = mock( HttpServletRequest.class );
-        when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
-
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
-        UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
-
-        // When
-        Response response = userService.setPassword( USERNAME, req, "{ \"password\" : \"\" }" );
-
-        // Then
-        assertThat( response.getStatus(), equalTo( 422 ) );
-        String json = new String( (byte[]) response.getEntity() );
-        assertNotNull( json );
-        assertThat( json, containsString( "\"code\" : \"Neo.ClientError.General.InvalidArguments\"" ) );
-        assertThat( json, containsString( "\"message\" : \"A password cannot be empty.\"" ) );
-    }
-
-    @Test
-    public void shouldReturn422IfPasswordIdentical() throws Exception
-    {
-        // Given
-        HttpServletRequest req = mock( HttpServletRequest.class );
-        when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
-
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
-        UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
-
-        // When
-        Response response = userService.setPassword( USERNAME, req, "{ \"password\" : \"neo4j\" }" );
-
-        // Then
-        assertThat( response.getStatus(), equalTo( 422 ) );
-        String json = new String( (byte[]) response.getEntity() );
-        assertNotNull( json );
-        assertThat( json, containsString( "\"code\" : \"Neo.ClientError.General.InvalidArguments\"" ) );
-        assertThat( json, containsString( "\"message\" : \"Old password and new password cannot be the same.\"" ) );
+        TestWebServer testWebServer = new TestWebServer( "/*", Arrays.asList( JacksonJsonProvider.class, Neo4jHttpExceptionMapper.class ),
+                Collections.singletonList( userEndpoint ) );
+        testWebServer.start();
+        int port = testWebServer.getPort();
+        userResourceUri = "http://localhost:" + port + "/user";
+        try
+        {
+            code.run();
+        }
+        finally
+        {
+            testWebServer.stop();
+        }
     }
 }

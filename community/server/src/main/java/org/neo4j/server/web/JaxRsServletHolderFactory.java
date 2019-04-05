@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.web;
 
+import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
@@ -31,6 +32,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import org.neo4j.server.bind.ComponentsBinder;
+import org.neo4j.server.http.error.Neo4jHttpExceptionMapper;
 import org.neo4j.server.modules.ServerModule;
 
 import static org.glassfish.jersey.server.ServerProperties.WADL_FEATURE_DISABLE;
@@ -45,6 +47,13 @@ public class JaxRsServletHolderFactory
     private final Set<String> packages = new HashSet<>();
     private final Set<Class<?>> classes = new HashSet<>();
     private final List<Injectable<?>> injectables = new ArrayList<>();
+
+    public JaxRsServletHolderFactory()
+    {
+        // add classes common to all mount points
+        classes.add( Neo4jHttpExceptionMapper.class );
+        classes.add( JacksonJsonProvider.class );
+    }
 
     public void addPackages( List<String> packages, Collection<Injectable<?>> injectableProviders )
     {
