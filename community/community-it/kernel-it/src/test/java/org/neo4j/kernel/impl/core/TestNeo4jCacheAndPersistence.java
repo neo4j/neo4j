@@ -533,7 +533,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     private GraphDatabaseService getImpermanentDatabase( Map<String,String> config )
     {
         return new TestGraphDatabaseFactory()
-                .newImpermanentDatabaseBuilder( testDirectory.directory( "impermanent" ) )
+                .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
                 .setConfig( config )
                 .newGraphDatabase();
     }

@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -140,7 +141,7 @@ class DatabaseShutdownTest
                     globalLife = globalModule.getGlobalLife();
                     return globalModule;
                 }
-            }.newFacade( storeDir, config, dependencies );
+            }.newFacade( storeDir, config, dependencies ).database( config.get( GraphDatabaseSettings.default_database ) );
         }
 
         LifecycleStatus getDatabaseStatus()

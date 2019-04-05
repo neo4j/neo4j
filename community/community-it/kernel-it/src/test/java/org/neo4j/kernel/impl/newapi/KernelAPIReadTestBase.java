@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +36,9 @@ import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.neo4j.kernel.impl.newapi.TestUtils.createTemporaryFolder;
 
@@ -50,6 +54,7 @@ import static org.neo4j.kernel.impl.newapi.TestUtils.createTemporaryFolder;
  * @param <ReadSupport> The test support for the current test.
  */
 @SuppressWarnings( "WeakerAccess" )
+@ExtendWith( TestDirectoryExtension.class )
 public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTestSupport>
 {
     protected static File folder;
@@ -59,6 +64,9 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     protected SchemaRead schemaRead;
     protected Token token;
     protected ManagedTestCursors cursors;
+
+    @Inject
+    private TestDirectory testDirectory;
 
     @AfterEach
     public void closeTransaction() throws Exception
@@ -74,7 +82,6 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
         if ( testSupport != null )
         {
             testSupport.tearDown();
-            folder.delete();
             testSupport = null;
         }
     }
@@ -97,9 +104,8 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     {
         if ( testSupport == null )
         {
-            folder = createTemporaryFolder();
             testSupport = newTestSupport();
-            testSupport.setup( folder, this::createTestGraph );
+            testSupport.setup( testDirectory.databaseDir(), this::createTestGraph );
         }
         Kernel kernel = testSupport.kernelToTest();
         tx = beginTransaction( kernel );

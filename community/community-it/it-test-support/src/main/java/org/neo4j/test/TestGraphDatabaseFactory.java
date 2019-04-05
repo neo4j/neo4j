@@ -54,6 +54,7 @@ import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.SystemNanoClock;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.connectors.Connector.ConnectorType.BOLT;
 
 /**
@@ -183,7 +184,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return this;
     }
 
-    public TestGraphDatabaseFactory addExtensions( Iterable<ExtensionFactory<?>> extensions )
+    private TestGraphDatabaseFactory addExtensions( Iterable<ExtensionFactory<?>> extensions )
     {
         getCurrentState().addExtensions( extensions );
         return this;
@@ -217,15 +218,9 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         final TestGraphDatabaseFactoryState state = getStateCopy();
         GraphDatabaseBuilder.DatabaseCreator creator =
                 createImpermanentDatabaseCreator( storeDir, state );
-        TestGraphDatabaseBuilder builder = createImpermanentGraphDatabaseBuilder( creator );
+        GraphDatabaseBuilder builder = new GraphDatabaseBuilder( creator ).setConfig( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         configure( builder, storeDir );
         return builder;
-    }
-
-    private TestGraphDatabaseBuilder createImpermanentGraphDatabaseBuilder(
-            GraphDatabaseBuilder.DatabaseCreator creator )
-    {
-        return new TestGraphDatabaseBuilder( creator );
     }
 
     @Override
@@ -233,14 +228,14 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             ExternalDependencies dependencies )
     {
         return new TestGraphDatabaseFacadeFactory( getCurrentState() ).newFacade( storeDir, config,
-                GraphDatabaseDependencies.newDependencies( dependencies ) );
+                GraphDatabaseDependencies.newDependencies( dependencies ) ).database( config.get( GraphDatabaseSettings.default_database ) );
     }
 
     protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator( final File storeDir,
             final TestGraphDatabaseFactoryState state )
     {
         return config -> new TestGraphDatabaseFacadeFactory( state, true ).newFacade( storeDir, config,
-                GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
+                GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) ).database( config.get( GraphDatabaseSettings.default_database ) );
     }
 
     public static class TestGraphDatabaseFacadeFactory extends GraphDatabaseFacadeFactory

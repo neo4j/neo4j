@@ -62,7 +62,6 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
       e.getMessage should include (org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.POPULATION_FAILURE_MESSAGE)
     } finally {
       graph.shutdown()
-      new File("target/test-data/test-impermanent-db").deleteAll()
     }
   }
 

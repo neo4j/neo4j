@@ -40,6 +40,7 @@ import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -449,7 +450,8 @@ class DatabaseRecoveryIT
                                         return globalModule;
                                     }
                                 };
-                                return factory.newFacade( storeDir, config, newDependencies( state.databaseDependencies() ) );
+                                return factory.newFacade( storeDir, config, newDependencies( state.databaseDependencies() ) )
+                                        .database( config.get( GraphDatabaseSettings.default_database ) );
                             }
                         };
                     }

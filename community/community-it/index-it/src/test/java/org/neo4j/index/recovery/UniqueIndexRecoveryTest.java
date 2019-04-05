@@ -32,6 +32,7 @@ import java.util.Random;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;

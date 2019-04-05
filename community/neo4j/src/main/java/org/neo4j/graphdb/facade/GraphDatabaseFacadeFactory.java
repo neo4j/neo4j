@@ -30,6 +30,8 @@ import org.neo4j.common.Edition;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseManagementService;
+import org.neo4j.dbms.database.DatabaseManagementServiceImpl;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.UnableToStartDatabaseException;
 import org.neo4j.exceptions.KernelException;
@@ -107,7 +109,7 @@ public class GraphDatabaseFacadeFactory
      * @param dependencies the dependencies required to construct the {@link GraphDatabaseFacade}
      * @return the newly constructed {@link GraphDatabaseFacade}
      */
-    public GraphDatabaseFacade newFacade( File storeDir, Config config, final ExternalDependencies dependencies )
+    public DatabaseManagementService newFacade( File storeDir, Config config, final ExternalDependencies dependencies )
     {
         return initFacade( storeDir, config, dependencies, new GraphDatabaseFacade() );
     }
@@ -122,7 +124,7 @@ public class GraphDatabaseFacadeFactory
      * @param graphDatabaseFacade the already created facade which needs initialisation
      * @return the initialised {@link GraphDatabaseFacade}
      */
-    public GraphDatabaseFacade initFacade( File storeDir, Map<String,String> params, final ExternalDependencies dependencies,
+    public DatabaseManagementService initFacade( File storeDir, Map<String,String> params, final ExternalDependencies dependencies,
             final GraphDatabaseFacade graphDatabaseFacade )
     {
         return initFacade( storeDir, Config.defaults( params ), dependencies, graphDatabaseFacade );
@@ -138,7 +140,7 @@ public class GraphDatabaseFacadeFactory
      * @param graphDatabaseFacade the already created facade which needs initialisation
      * @return the initialised {@link GraphDatabaseFacade}
      */
-    public GraphDatabaseFacade initFacade( File storeDir, Config config, final ExternalDependencies dependencies,
+    public DatabaseManagementService initFacade( File storeDir, Config config, final ExternalDependencies dependencies,
             final GraphDatabaseFacade graphDatabaseFacade )
     {
         GlobalModule globalModule = createGlobalModule( storeDir, config, dependencies );
@@ -149,6 +151,8 @@ public class GraphDatabaseFacadeFactory
         LogService logService = globalModule.getLogService();
         Logger logger = logService.getInternalLog( getClass() ).infoLogger();
         DatabaseManager<?> databaseManager = createAndInitializeDatabaseManager( globalModule, edition, graphDatabaseFacade, logger );
+        DatabaseManagementService managementService =
+                new DatabaseManagementServiceImpl( databaseManager, globalModule.getGlobalAvailabilityGuard(), globalLife, logger );
 
         GlobalProcedures globalProcedures = setupProcedures( globalModule, edition, databaseManager );
         globalDependencies.satisfyDependency( new NonTransactionalDbmsOperations( globalProcedures ) );
@@ -165,14 +169,13 @@ public class GraphDatabaseFacadeFactory
         globalLife.add( new PublishPageCacheTracerMetricsAfterStart( globalModule.getTracers().getPageCursorTracerSupplier() ) );
 
         RuntimeException error = null;
-        GraphDatabaseFacade databaseFacade = null;
         try
         {
             edition.createDatabases( databaseManager, config );
             globalLife.start();
             verifySystemDatabaseStart( databaseManager );
             DatabaseId defaultDatabase = new DatabaseId( config.get( GraphDatabaseSettings.default_database ) );
-            databaseFacade = databaseManager.getDatabaseContext( defaultDatabase ).orElseThrow( () -> new IllegalStateException(
+            databaseManager.getDatabaseContext( defaultDatabase ).orElseThrow( () -> new IllegalStateException(
                     String.format( "Database %s not found. Please check the logs for startup errors.", defaultDatabase ) ) ).databaseFacade();
 
         }
@@ -202,7 +205,7 @@ public class GraphDatabaseFacadeFactory
             throw error;
         }
 
-        return databaseFacade;
+        return managementService;
     }
 
     private static void verifySystemDatabaseStart( DatabaseManager<?> databaseManager )

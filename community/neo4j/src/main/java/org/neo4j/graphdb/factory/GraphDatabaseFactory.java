@@ -135,7 +135,8 @@ public class GraphDatabaseFactory
         }
         config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
         config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
-        return getGraphDatabaseFacadeFactory().newFacade( databasesRoot, config, dependencies );
+        return getGraphDatabaseFacadeFactory().newFacade( databasesRoot, config, dependencies ).database(
+                config.get( GraphDatabaseSettings.default_database ) );
     }
 
     protected GraphDatabaseFacadeFactory getGraphDatabaseFacadeFactory()

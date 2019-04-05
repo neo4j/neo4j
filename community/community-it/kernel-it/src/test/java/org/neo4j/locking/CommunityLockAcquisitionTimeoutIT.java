@@ -227,7 +227,8 @@ public class CommunityLockAcquisitionTimeoutIT
                 GraphDatabaseFactoryState state )
         {
             return config -> customFacadeFactory.newFacade( storeDir, config,
-                    GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
+                    GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) ).database(
+                    config.get( GraphDatabaseSettings.default_database ) );
         }
     }
 

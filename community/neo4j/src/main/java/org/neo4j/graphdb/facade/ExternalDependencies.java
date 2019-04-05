@@ -35,8 +35,7 @@ public interface ExternalDependencies
 {
     /**
      * Allowed to be null. Null means that no external {@link Monitors} was created,
-     * let the
-     * database create its own monitors instance.
+     * let the database create its own monitors instance.
      */
     Monitors monitors();
 

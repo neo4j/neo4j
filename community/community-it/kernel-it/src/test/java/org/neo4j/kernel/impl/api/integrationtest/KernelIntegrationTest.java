@@ -178,7 +178,7 @@ public abstract class KernelIntegrationTest
     {
         GraphDatabaseBuilder graphDatabaseBuilder = configure( createGraphDatabaseFactory() )
                 .setFileSystem( testDir.getFileSystem() )
-                .newEmbeddedDatabaseBuilder( testDir.storeDir() );
+                .newEmbeddedDatabaseBuilder( testDir.databaseDir() );
         return configure( graphDatabaseBuilder ).newGraphDatabase();
     }
 

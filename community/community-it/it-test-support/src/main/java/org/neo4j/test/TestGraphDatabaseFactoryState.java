@@ -30,13 +30,13 @@ public class TestGraphDatabaseFactoryState extends GraphDatabaseFactoryState
     private LogProvider internalLogProvider;
     private SystemNanoClock clock;
 
-    public TestGraphDatabaseFactoryState()
+    TestGraphDatabaseFactoryState()
     {
         fileSystem = null;
         internalLogProvider = null;
     }
 
-    public TestGraphDatabaseFactoryState( TestGraphDatabaseFactoryState previous )
+    TestGraphDatabaseFactoryState( TestGraphDatabaseFactoryState previous )
     {
         super( previous );
         fileSystem = previous.fileSystem;

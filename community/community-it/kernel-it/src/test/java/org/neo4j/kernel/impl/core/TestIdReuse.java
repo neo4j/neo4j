@@ -19,72 +19,78 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TestIdReuse
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+class TestIdReuse
 {
+    @Inject
+    private EphemeralFileSystemAbstraction fileSystem;
+    @Inject
+    private TestDirectory testDirectory;
+
     @Test
-    public void makeSureIdsGetsReusedForPropertyStore()
+    void makeSureIdsGetsReusedForPropertyStore()
     {
-        makeSureIdsGetsReused( "neostore.propertystore.db", 10, 200 );
+        makeSureIdsGetsReused( testDirectory.databaseLayout().propertyStore(), 10, 200 );
     }
 
     @Test
-    public void makeSureIdsGetsReusedForArrayStore()
+    void makeSureIdsGetsReusedForArrayStore()
     {
         long[] array = new long[500];
         for ( int i = 0; i < array.length; i++ )
         {
             array[i] = 0xFFFFFFFFFFFFL + i;
         }
-        makeSureIdsGetsReused( "neostore.propertystore.db.arrays", array, 20 );
+        makeSureIdsGetsReused( testDirectory.databaseLayout().propertyArrayStore(), array, 20 );
     }
 
     @Test
-    public void makeSureIdsGetsReusedForStringStore()
+    void makeSureIdsGetsReusedForStringStore()
     {
         String string = "something";
         for ( int i = 0; i < 100; i++ )
         {
             string += "something else " + i;
         }
-        makeSureIdsGetsReused( "neostore.propertystore.db.strings", string, 20 );
+        makeSureIdsGetsReused( testDirectory.databaseLayout().propertyStringStore(), string, 20 );
     }
 
-    @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-
-    private void makeSureIdsGetsReused( String fileName, Object value, int iterations )
+    private void makeSureIdsGetsReused( File storeFile, Object value, int iterations )
     {
-        File storeDir = new File( "target/var/idreuse" );
-        File file = new File( storeDir, fileName );
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).
-            newImpermanentDatabaseBuilder( storeDir ).
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).
+            newImpermanentDatabaseBuilder( testDirectory.databaseDir() ).
             newGraphDatabase();
         for ( int i = 0; i < 5; i++ )
         {
             setAndRemoveSomeProperties( db, value );
         }
         db.shutdown();
-        long sizeBefore = file.length();
-        db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
+        long sizeBefore = storeFile.length();
+        db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( testDirectory.databaseDir() );
         for ( int i = 0; i < iterations; i++ )
         {
             setAndRemoveSomeProperties( db, value );
         }
         db.shutdown();
-        assertEquals( sizeBefore, file.length() );
+        assertEquals( sizeBefore, storeFile.length() );
     }
 
     private void setAndRemoveSomeProperties( GraphDatabaseService graphDatabaseService, Object value )

@@ -29,8 +29,7 @@ import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
 /**
- * The main access point to a running Neo4j instance. The most common way to instantiate a {@link GraphDatabaseService}
- * is as follows:
+ * The most common way to instantiate a {@link GraphDatabaseService} is as follows:
  * <pre>
  * <code>GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( new File("var/graphDb") );
  * // ... use Neo4j

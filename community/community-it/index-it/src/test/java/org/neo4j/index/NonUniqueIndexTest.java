@@ -25,6 +25,7 @@ import java.io.File;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -144,7 +145,7 @@ class NonUniqueIndexTest
                 };
             }
         }.newFacade( testDirectory.storeDir(), config,
-                graphDatabaseFactoryState.databaseDependencies() );
+                graphDatabaseFactoryState.databaseDependencies() ).database( config.get( GraphDatabaseSettings.default_database ) );
     }
 
     private static CentralJobScheduler newSlowJobScheduler()

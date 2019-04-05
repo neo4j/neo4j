@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.facade.embedded.EmbeddedGraphDatabase;
@@ -59,16 +60,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     private static final boolean TRACK_UNCLOSED_DATABASE_INSTANCES = false;
     private static final Map<File, Exception> startedButNotYetClosed = new ConcurrentHashMap<>();
 
-    protected static final File PATH = new File( "target/test-data/impermanent-db" );
-
-    /**
-     * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
-     */
-    @Deprecated
-    public ImpermanentGraphDatabase()
-    {
-        this( new HashMap<>() );
-    }
+    protected static final File PATH = new File( "target/test-data/" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
 
     /*
      * TODO this shouldn't be here. It so happens however that some tests may use the database
@@ -101,16 +93,6 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     {
         this( storeDir, params,
                 Iterables.cast( Services.loadAll( ExtensionFactory.class ) ) );
-    }
-
-    /**
-     * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
-     */
-    @Deprecated
-    public ImpermanentGraphDatabase( Map<String, String> params,
-                                     Iterable<ExtensionFactory<?>> extensions )
-    {
-        this( PATH, params, extensions );
     }
 
     /**

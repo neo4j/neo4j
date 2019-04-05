@@ -62,9 +62,4 @@ public class DatabaseModule
                         editionModule.getThreadToTransactionBridge() );
         globalProcedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
     }
-
-    public CoreAPIAvailabilityGuard getCoreAPIAvailabilityGuard()
-    {
-        return coreAPIAvailabilityGuard;
-    }
 }

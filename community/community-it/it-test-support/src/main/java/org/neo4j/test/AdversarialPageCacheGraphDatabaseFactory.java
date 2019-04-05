@@ -81,7 +81,7 @@ public class AdversarialPageCacheGraphDatabaseFactory
                             }
                         };
                     }
-                }.newFacade( dir, config, dependencies );
+                }.newFacade( dir, config, dependencies ).database( config.get( GraphDatabaseSettings.default_database ) );
             }
         };
     }

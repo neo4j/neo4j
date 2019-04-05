@@ -34,6 +34,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -60,10 +61,11 @@ public class TestExceptionTypeOnInvalidIds
     @BeforeClass
     public static void createDatabase()
     {
-        graphdb = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.storeDir() );
-        File databaseDirectory = testDirectory.databaseLayout( "read_only" ).databaseDirectory();
-        new TestGraphDatabaseFactory().newEmbeddedDatabase( databaseDirectory ).shutdown();
-        graphDbReadOnly = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory ).
+        var writableLayout = testDirectory.databaseLayout( testDirectory.storeDir( "writable" ) );
+        var readOnlyLayout = testDirectory.databaseLayout( testDirectory.storeDir( "readOnly" ) );
+        graphdb = new TestGraphDatabaseFactory().newEmbeddedDatabase( writableLayout.databaseDirectory() );
+        new TestGraphDatabaseFactory().newEmbeddedDatabase( readOnlyLayout.databaseDirectory() ).shutdown();
+        graphDbReadOnly = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( readOnlyLayout.databaseDirectory() ).
             setConfig( GraphDatabaseSettings.read_only, TRUE ).
             newGraphDatabase();
     }

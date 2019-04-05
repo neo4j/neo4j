@@ -28,6 +28,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
@@ -127,7 +128,8 @@ class CommitContentionTest
             {
                 return new SkipTransactionDatabaseStats();
             }
-        } ).newFacade( testDirectory.storeDir(), Config.defaults(), state.databaseDependencies() );
+        } ).newFacade( testDirectory.storeDir(), Config.defaults(), state.databaseDependencies() )
+                .database( Config.defaults().get( GraphDatabaseSettings.default_database ));
     }
 
     private void waitForFirstTransactionToStartPushing() throws InterruptedException
