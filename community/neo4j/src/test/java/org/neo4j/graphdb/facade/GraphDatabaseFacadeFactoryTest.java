@@ -27,7 +27,7 @@ import java.io.File;
 import java.util.Collections;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.dmbs.database.DefaultDatabaseManager;
+import org.neo4j.dbms.database.DefaultDatabaseManager;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;

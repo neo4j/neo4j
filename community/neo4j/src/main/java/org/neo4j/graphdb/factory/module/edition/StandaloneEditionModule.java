@@ -23,7 +23,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.dmbs.database.DefaultDatabaseManager;
+import org.neo4j.dbms.database.DefaultDatabaseManager;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
 import org.neo4j.graphdb.factory.module.edition.context.StandaloneDatabaseComponents;
