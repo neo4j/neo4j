@@ -210,6 +210,10 @@ object CodeGeneration {
     case NewArray(baseType, size) =>
       codegen.Expression.newArray(baseType, size)
 
+    case Returns(value: IntermediateRepresentation) =>
+      block.returns(compileExpression(value, block))
+      codegen.Expression.EMPTY
+
     //while(test) { body }
     case Loop(test, body) =>
       beginBlock(block.whileLoop(compileExpression(test, block)))(compileExpression(body, _))
