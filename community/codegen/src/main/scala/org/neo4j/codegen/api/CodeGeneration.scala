@@ -121,6 +121,10 @@ object CodeGeneration {
       block.expression(codegen.Expression.arraySet(compileExpression(array, block), compileExpression(offset, block), compileExpression(value, block)))
       codegen.Expression.EMPTY
 
+    //array.length
+    case ArrayLength(array) =>
+     codegen.Expression.arrayLength(compileExpression(array, block))
+
     // array[offset]
     case ArrayLoad(array, offset) => codegen.Expression.arrayLoad(compileExpression(array, block), constant(offset))
 

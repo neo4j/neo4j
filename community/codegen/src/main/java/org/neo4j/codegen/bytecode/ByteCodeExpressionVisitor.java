@@ -41,6 +41,7 @@ import static org.objectweb.asm.Opcodes.AASTORE;
 import static org.objectweb.asm.Opcodes.ACONST_NULL;
 import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.ANEWARRAY;
+import static org.objectweb.asm.Opcodes.ARRAYLENGTH;
 import static org.objectweb.asm.Opcodes.BALOAD;
 import static org.objectweb.asm.Opcodes.BASTORE;
 import static org.objectweb.asm.Opcodes.BIPUSH;
@@ -262,6 +263,14 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         index.accept( this );
         value.accept( this );
         arrayStore( value.type() );
+    }
+
+    @Override
+    public void arrayLength( Expression array )
+    {
+        assert array.type().isArray();
+        array.accept( this );
+        methodVisitor.visitInsn( ARRAYLENGTH );
     }
 
     @Override

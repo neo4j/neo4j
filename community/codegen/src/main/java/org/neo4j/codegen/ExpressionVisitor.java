@@ -31,6 +31,8 @@ public interface ExpressionVisitor
 
     void arraySet( Expression array, Expression index, Expression value );
 
+    void arrayLength( Expression array );
+
     void getField( Expression target, FieldReference field );
 
     void constant( Object value );

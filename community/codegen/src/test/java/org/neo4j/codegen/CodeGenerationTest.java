@@ -2247,6 +2247,24 @@ public abstract class CodeGenerationTest
                         .invoke( "a","b" ) );
     }
 
+    @Test
+    void shouldCheckLengthOfArray() throws Throwable
+    {
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "lengthOfArray" ) )
+        {
+            try ( CodeBlock body = simple.generateMethod( int.class, "length", param( long[].class, "array" )) )
+            {
+                body.returns( Expression.arrayLength( body.load( "array" ) ));
+            }
+            handle = simple.handle();
+        }
+
+        assertEquals( 3,
+                (int) instanceMethod( handle.newInstance(), "length", long[].class )
+                        .invoke( new long[]{3L, 4L, 3L} ) );
+    }
+
     private <T, U> void assertArrayLoad( Class<T> returnType, Class<U> arrayType, U array, int index, T expected )
             throws Throwable
     {

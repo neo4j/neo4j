@@ -100,6 +100,14 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
+    public void arrayLength( Expression array )
+    {
+        result.append( "length{array=" );
+        array.accept( this );
+        result.append( "}" );
+    }
+
+    @Override
     public void getField( Expression target, FieldReference field )
     {
         result.append( "get{target=" );

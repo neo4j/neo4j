@@ -117,6 +117,12 @@ case class ArrayLoad(array: IntermediateRepresentation, offset: Int) extends Int
 case class ArraySet(array: IntermediateRepresentation, offset: IntermediateRepresentation, value: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
+  * Returns the lenght of an array
+  * @param array the length of the array
+  */
+case class ArrayLength(array: IntermediateRepresentation) extends IntermediateRepresentation
+
+/**
   * Defines ternary expression, i.e. {{{condition ? onTrue : onFalse}}}
   *
   * @param condition the condition to test
@@ -528,6 +534,8 @@ object IntermediateRepresentation {
 
   def arraySet(array: IntermediateRepresentation, offset: Int, value: IntermediateRepresentation): IntermediateRepresentation =
     ArraySet(array, constant(offset), value)
+
+  def arrayLength(array: IntermediateRepresentation): IntermediateRepresentation = ArrayLength(array)
 
   def ternary(condition: IntermediateRepresentation,
               onTrue: IntermediateRepresentation,
