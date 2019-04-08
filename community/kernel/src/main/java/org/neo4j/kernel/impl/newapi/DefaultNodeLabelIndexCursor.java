@@ -90,8 +90,14 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
     private boolean allowsLabels( LabelSet labels )
     {
         AccessMode mode = read.ktx.securityContext().mode();
-        // TODO labels can be null... what to do?
-        return labels == null || mode.allowsReadLabels( Arrays.stream( labels.all() ).mapToInt( l -> (int) l ) );
+        if ( labels == null )
+        {
+            return mode.allowsTraverseAllLabels();
+        }
+        else
+        {
+            return mode.allowsTraverseAllLabels() || mode.allowsTraverseLabels( Arrays.stream( labels.all() ).mapToInt( l -> (int) l ) );
+        }
     }
 
     @Override

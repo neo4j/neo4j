@@ -298,7 +298,7 @@ abstract class Read implements TxStateHolder,
     public final void nodeLabelScan( int label, NodeLabelIndexCursor cursor )
     {
         ktx.assertOpen();
-        if ( !ktx.securityContext().mode().allowsReadLabels( IntStream.of( label ) ) )
+        if ( !ktx.securityContext().mode().allowsTraverseLabels( IntStream.of( label ) ) )
         {
             cursor.close();
             return;

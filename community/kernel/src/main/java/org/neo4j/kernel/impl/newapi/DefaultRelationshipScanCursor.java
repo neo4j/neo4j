@@ -110,18 +110,18 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
     private boolean allowedToSeeEndNode()
     {
         AccessMode mode = read.ktx.securityContext().mode();
-        if ( mode.allowsReadAllLabels() )
+        if ( mode.allowsTraverseAllLabels() )
         {
             return true;
         }
         NodeCursor nodeCursor = read.cursors().allocateFullAccessNodeCursor();
         read.singleNode( storeCursor.sourceNodeReference(), nodeCursor );
-        boolean allowed = nodeCursor.next() && mode.allowsReadLabels( Arrays.stream( nodeCursor.labels().all() ).mapToInt( l -> (int) l ) );
+        boolean allowed = nodeCursor.next() && mode.allowsTraverseLabels( Arrays.stream( nodeCursor.labels().all() ).mapToInt( l -> (int) l ) );
 
         if ( allowed )
         {
             read.singleNode( storeCursor.targetNodeReference(), nodeCursor );
-            allowed = nodeCursor.next() && mode.allowsReadLabels( Arrays.stream( nodeCursor.labels().all() ).mapToInt( l -> (int) l ) );
+            allowed = nodeCursor.next() && mode.allowsTraverseLabels( Arrays.stream( nodeCursor.labels().all() ).mapToInt( l -> (int) l ) );
         }
 
         nodeCursor.close();

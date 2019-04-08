@@ -65,6 +65,18 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
+    public boolean allowsTraverseAllLabels()
+    {
+        return wrapping.allowsTraverseAllLabels();
+    }
+
+    @Override
+    public boolean allowsTraverseLabels( IntStream labels )
+    {
+        return wrapping.allowsTraverseLabels( labels );
+    }
+
+    @Override
     public boolean allowsPropertyReads( int propertyKey )
     {
         return wrapping.allowsPropertyReads( propertyKey );

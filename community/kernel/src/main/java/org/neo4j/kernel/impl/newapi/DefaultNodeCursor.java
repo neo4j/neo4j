@@ -251,13 +251,18 @@ class DefaultNodeCursor implements NodeCursor
         while ( storeCursor.next() )
         {
             boolean skip = hasChanges && read.txState().nodeIsDeletedInThisTx( storeCursor.entityReference() );
-            // TODO could maybe optimize away the allowsReadAll check here and use a FullAccessNodeCursor instead
-            if ( !skip && (accessMode.allowsReadAllLabels() || allowedLabels( storeCursor.labels() )) )
+            if ( !skip && allowsTraverse() )
             {
                 return true;
             }
         }
         return false;
+    }
+
+    boolean allowsTraverse()
+    {
+        return accessMode.allowsTraverseAllLabels() ||
+               accessMode.allowsTraverseLabels( Arrays.stream( storeCursor.labels() ).mapToInt( l -> (int) l ) );
     }
 
     @Override

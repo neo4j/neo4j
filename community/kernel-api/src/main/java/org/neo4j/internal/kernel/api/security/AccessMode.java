@@ -110,6 +110,18 @@ public interface AccessMode
         }
 
         @Override
+        public boolean allowsTraverseAllLabels()
+        {
+            return read;
+        }
+
+        @Override
+        public boolean allowsTraverseLabels( IntStream labels )
+        {
+            return read;
+        }
+
+        @Override
         public boolean allowsReadAllLabels()
         {
             return read;
@@ -145,6 +157,9 @@ public interface AccessMode
     boolean allowsWrites();
     boolean allowsTokenCreates();
     boolean allowsSchemaWrites();
+
+    boolean allowsTraverseAllLabels();
+    boolean allowsTraverseLabels( IntStream labels );
 
     boolean allowsReadAllLabels();
     boolean allowsReadLabels( IntStream labels );

@@ -71,4 +71,10 @@ public class FullAccessNodeCursor extends DefaultNodeCursor
     {
         return true;
     }
+
+    @Override
+    boolean allowsTraverse()
+    {
+        return true;
+    }
 }
