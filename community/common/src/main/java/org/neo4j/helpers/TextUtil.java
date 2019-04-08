@@ -22,9 +22,6 @@ package org.neo4j.helpers;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.StringTokenizer;
 
 /**
@@ -35,66 +32,6 @@ public class TextUtil
 {
     private TextUtil()
     {
-    }
-
-    public static String templateString( String templateString, Map<String, ?> data )
-    {
-        return templateString( templateString, "\\$", data );
-    }
-
-    public static String templateString( String templateString,
-            String variablePrefix, Map<String, ?> data )
-    {
-        // Sort data strings on length.
-        Map<Integer, List<String>> lengthMap =
-            new HashMap<>();
-        int longest = 0;
-        for ( String key : data.keySet() )
-        {
-            int length = key.length();
-            if ( length > longest )
-            {
-                longest = length;
-            }
-
-            List<String> innerList;
-            Integer innerKey = length;
-            if ( lengthMap.containsKey( innerKey ) )
-            {
-                innerList = lengthMap.get( innerKey );
-            }
-            else
-            {
-                innerList = new ArrayList<>();
-                lengthMap.put( innerKey, innerList );
-            }
-            innerList.add( key );
-        }
-
-        // Replace it.
-        String result = templateString;
-        for ( int i = longest; i >= 0; i-- )
-        {
-            Integer lengthKey = i;
-            if ( !lengthMap.containsKey( lengthKey ) )
-            {
-                continue;
-            }
-
-            List<String> list = lengthMap.get( lengthKey );
-            for ( String key : list )
-            {
-                Object value = data.get( key );
-                if ( value != null )
-                {
-                    String replacement = data.get( key ).toString();
-                    String regExpMatchString = variablePrefix + key;
-                    result = result.replaceAll( regExpMatchString, replacement );
-                }
-            }
-        }
-
-        return result;
     }
 
     private static String[] splitAndKeepEscapedSpaces( String string, boolean preserveEscapes, boolean preserveSpaceEscapes )
@@ -188,7 +125,7 @@ public class TextUtil
                 }
                 else
                 {
-                    Collections.addAll( result, TextUtil.splitAndKeepEscapedSpaces( token, preserveEscapeCharacters, preserveSpaceEscapeCharacters ) );
+                    Collections.addAll( result, splitAndKeepEscapedSpaces( token, preserveEscapeCharacters, preserveSpaceEscapeCharacters ) );
                 }
             }
             inside = !inside;

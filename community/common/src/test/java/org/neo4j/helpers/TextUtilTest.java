@@ -21,31 +21,10 @@ package org.neo4j.helpers;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TextUtilTest
 {
-    @Test
-    void shouldReplaceVariablesWithValuesInTemplateString()
-    {
-        // given
-        String template = "This is a $FIRST that $SECOND $THIRD!";
-        Map<String,String> values = new HashMap<>();
-        values.put( "FIRST", "String" );
-        values.put( "SECOND", "should" );
-        values.put( "THIRD", "act as a template!" );
-
-        // when
-        String string = TextUtil.templateString( template, values );
-
-        // then
-        assertEquals( "This is a String that should act as a template!!", string );
-    }
-
     @Test
     void shouldTokenizeStringWithWithoutQuotes()
     {

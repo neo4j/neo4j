@@ -80,7 +80,6 @@ public abstract class HeapAllocation
         }
         catch ( Throwable e )
         {
-            //noinspection ConstantConditions -- this can actually happen if the code order is wrong
             if ( NOT_AVAILABLE == null )
             {
                 throw new LinkageError( "Bad code loading order.", e );
