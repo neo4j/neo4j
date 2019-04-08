@@ -380,17 +380,21 @@ case class ClassDeclaration(packageName: String,
                             implementsInterfaces: Seq[codegen.TypeReference],
                             constructorParameters: Seq[Parameter],
                             initializationCode: IntermediateRepresentation,
-                            fields: Seq[Field],
-                            methods: Seq[MethodDeclaration])
+                            genFields: () => Seq[Field],
+                            methods: Seq[MethodDeclaration]) {
+  def fields: Seq[Field] = genFields()
+}
 
 case class MethodDeclaration(methodName: String,
                              owner: codegen.TypeReference,
                              returnType: codegen.TypeReference,
                              parameters: Seq[Parameter],
                              body: IntermediateRepresentation,
-                             localVariables: Seq[LocalVariable] = Seq.empty,
+                             genLocalVariables: () => Seq[LocalVariable] = () => Seq.empty,
                              parameterizedWith: Option[(String, codegen.TypeReference.Bound)] = None,
-                             throws: Option[TypeReference] = None)
+                             throws: Option[TypeReference] = None) {
+  def localVariables: Seq[LocalVariable] = genLocalVariables()
+}
 
 case class ConstructorDeclaration(constructor: Constructor,
                                   body: IntermediateRepresentation)
