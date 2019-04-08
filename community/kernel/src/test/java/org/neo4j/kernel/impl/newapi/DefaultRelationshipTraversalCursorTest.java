@@ -20,9 +20,12 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.junit.Test;
+import org.mockito.internal.util.reflection.FieldSetter;
 
 import java.util.stream.LongStream;
 
+import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -50,13 +53,13 @@ public class DefaultRelationshipTraversalCursorTest
     // Regular traversal of a sparse chain
 
     @Test
-    public void regularSparseTraversal()
+    public void regularSparseTraversal() throws NoSuchFieldException
     {
         regularTraversal( relationship, false );
     }
 
     @Test
-    public void regularSparseTraversalWithTxState()
+    public void regularSparseTraversalWithTxState() throws NoSuchFieldException
     {
         regularTraversalWithTxState( relationship, false );
     }
@@ -64,13 +67,13 @@ public class DefaultRelationshipTraversalCursorTest
     // Dense traversal is just like regular for this class, denseness is handled by the store
 
     @Test
-    public void regularDenseTraversal()
+    public void regularDenseTraversal() throws NoSuchFieldException
     {
         regularTraversal( relationshipGroup, true );
     }
 
     @Test
-    public void regularDenseTraversalWithTxState()
+    public void regularDenseTraversalWithTxState() throws NoSuchFieldException
     {
         regularTraversalWithTxState( relationshipGroup, true );
     }
@@ -78,7 +81,7 @@ public class DefaultRelationshipTraversalCursorTest
     // Sparse traversal but with tx-state filtering
 
     @Test
-    public void sparseTraversalWithTxStateFiltering()
+    public void sparseTraversalWithTxStateFiltering() throws NoSuchFieldException
     {
         // given
         StorageRelationshipTraversalCursor storeCursor =
@@ -108,7 +111,7 @@ public class DefaultRelationshipTraversalCursorTest
     // Sparse traversal but with filtering both of store and tx-state
 
     @Test
-    public void sparseTraversalWithFiltering()
+    public void sparseTraversalWithFiltering() throws NoSuchFieldException
     {
         // given
         StorageRelationshipTraversalCursor storeCursor =
@@ -137,7 +140,7 @@ public class DefaultRelationshipTraversalCursorTest
     // Empty store, but filter tx-state
 
     @Test
-    public void emptyStoreOutgoingOfType()
+    public void emptyStoreOutgoingOfType() throws NoSuchFieldException
     {
         // given
         StorageRelationshipTraversalCursor storeCursor = emptyStoreCursor();
@@ -159,7 +162,7 @@ public class DefaultRelationshipTraversalCursorTest
     }
 
     @Test
-    public void emptyStoreIncomingOfType()
+    public void emptyStoreIncomingOfType() throws NoSuchFieldException
     {
         // given
         StorageRelationshipTraversalCursor storeCursor = emptyStoreCursor();
@@ -182,7 +185,7 @@ public class DefaultRelationshipTraversalCursorTest
     }
 
     @Test
-    public void emptyStoreLoopsOfType()
+    public void emptyStoreLoopsOfType() throws NoSuchFieldException
     {
         // given
         StorageRelationshipTraversalCursor storeCursor = emptyStoreCursor();
@@ -206,7 +209,7 @@ public class DefaultRelationshipTraversalCursorTest
 
     // HELPERS
 
-    private void regularTraversal( long reference, boolean dense )
+    private void regularTraversal( long reference, boolean dense ) throws NoSuchFieldException
     {
         // given
         StorageRelationshipTraversalCursor storeCursor = storeCursor( 100, 102, 104 );
@@ -220,7 +223,7 @@ public class DefaultRelationshipTraversalCursorTest
         assertRelationships( cursor, 100, 102, 104 );
     }
 
-    private void regularTraversalWithTxState( long reference, boolean dense )
+    private void regularTraversalWithTxState( long reference, boolean dense ) throws NoSuchFieldException
     {
         // given
         StorageRelationshipTraversalCursor storeCursor = storeCursor( 100, 102, 104 );
@@ -234,19 +237,26 @@ public class DefaultRelationshipTraversalCursorTest
         assertRelationships( cursor, 3, 4, 100, 102, 104 );
     }
 
-    private Read emptyTxState()
+    private Read emptyTxState() throws NoSuchFieldException
     {
-        return mock( Read.class );
+        Read read = mock( Read.class );
+        KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
+        FieldSetter.setField(read, Read.class.getDeclaredField("ktx"), ktx);
+        when( ktx.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
+        return read;
     }
 
-    private Read txState( long... ids )
+    private Read txState( long... ids ) throws NoSuchFieldException
     {
         return txState( LongStream.of( ids ).mapToObj( id -> rel( id, node, node, type ) ).toArray( Rel[]::new ) );
     }
 
-    private Read txState( Rel... rels )
+    private Read txState( Rel... rels ) throws NoSuchFieldException
     {
         Read read = mock( Read.class );
+        KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
+        FieldSetter.setField(read, Read.class.getDeclaredField("ktx"), ktx);
+        when( ktx.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
         if ( rels.length > 0 )
         {
             TxState txState = new TxState();
