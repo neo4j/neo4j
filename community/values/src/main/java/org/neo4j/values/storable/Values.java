@@ -61,6 +61,8 @@ import static org.neo4j.values.storable.TimeValue.time;
 @SuppressWarnings( "WeakerAccess" )
 public final class Values
 {
+    public static final Value MIN_GLOBAL = DateTimeValue.MIN_VALUE;
+    public static final Value MAX_GLOBAL = NoValue.NO_VALUE;
     public static final Value MIN_NUMBER = Values.doubleValue( Double.NEGATIVE_INFINITY );
     public static final Value MAX_NUMBER = Values.doubleValue( Double.NaN );
     public static final Value ZERO_FLOAT = Values.doubleValue( 0.0 );
