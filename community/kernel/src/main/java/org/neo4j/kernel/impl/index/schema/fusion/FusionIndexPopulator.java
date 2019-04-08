@@ -72,7 +72,7 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
         LazyInstanceSelector<Collection<IndexEntryUpdate<?>>> batchSelector = new LazyInstanceSelector<>( slot -> new ArrayList<>() );
         for ( IndexEntryUpdate<?> update : updates )
         {
-            batchSelector.select( slotSelector.selectSlot( update.values(), GROUP_OF ) ).add( update );
+            batchSelector.select( slotSelector.selectSlot( update.values(), CATEGORY_OF ) ).add( update );
         }
 
         // Manual loop due do multiple exception types
@@ -119,7 +119,7 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     @Override
     public void includeSample( IndexEntryUpdate<?> update )
     {
-        instanceSelector.select( slotSelector.selectSlot( update.values(), GROUP_OF ) ).includeSample( update );
+        instanceSelector.select( slotSelector.selectSlot( update.values(), CATEGORY_OF ) ).includeSample( update );
     }
 
     @Override

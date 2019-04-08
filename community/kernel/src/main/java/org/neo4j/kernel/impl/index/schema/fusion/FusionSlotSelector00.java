@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import java.util.function.Function;
 
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueCategory;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
@@ -41,15 +41,15 @@ public class FusionSlotSelector00 implements SlotSelector
     }
 
     @Override
-    public <V> IndexSlot selectSlot( V[] values, Function<V,ValueGroup> groupOf )
+    public <V> IndexSlot selectSlot( V[] values, Function<V,ValueCategory> categoryOf )
     {
         if ( values.length > 1 )
         {
             return LUCENE;
         }
 
-        ValueGroup singleGroup = groupOf.apply( values[0] );
-        switch ( singleGroup.category() )
+        ValueCategory singleCategory = categoryOf.apply( values[0] );
+        switch ( singleCategory )
         {
         case GEOMETRY:
             return SPATIAL;

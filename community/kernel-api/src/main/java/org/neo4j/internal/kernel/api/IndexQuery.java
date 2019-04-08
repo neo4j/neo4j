@@ -30,6 +30,7 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.UTF8StringValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
@@ -243,6 +244,11 @@ public abstract class IndexQuery
      * @return Target {@link ValueGroup} for query or {@link ValueGroup#UNKNOWN} if not targeting single group.
      */
     public abstract ValueGroup valueGroup();
+
+    public ValueCategory valueCategory()
+    {
+        return valueGroup().category();
+    }
 
     public enum IndexQueryType
     {

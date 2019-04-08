@@ -25,7 +25,7 @@ import java.util.function.Function;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueCategory;
 
 /**
  * Acting as a simplifier for the multiplexing that is going in inside a fusion index. A fusion index consists of multiple parts,
@@ -36,7 +36,7 @@ import org.neo4j.values.storable.ValueGroup;
  */
 public abstract class FusionIndexBase<T>
 {
-    static Function<Value,ValueGroup> GROUP_OF = Value::valueGroup;
+    static Function<Value,ValueCategory> CATEGORY_OF = value -> value.valueGroup().category();
 
     final SlotSelector slotSelector;
     final InstanceSelector<T> instanceSelector;

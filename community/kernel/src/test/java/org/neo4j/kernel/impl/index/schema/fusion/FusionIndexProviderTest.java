@@ -56,7 +56,7 @@ import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.NONE;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.GROUP_OF;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.CATEGORY_OF;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.fill;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
@@ -178,7 +178,7 @@ public class FusionIndexProviderTest
             for ( Value value : group )
             {
                 // when
-                IndexProvider selected = instanceSelector.select( slotSelector.selectSlot( array( value ), GROUP_OF ) );
+                IndexProvider selected = instanceSelector.select( slotSelector.selectSlot( array( value ), CATEGORY_OF ) );
 
                 // then
                 assertSame( orLucene( providers.get( slot ) ), selected );
@@ -191,7 +191,7 @@ public class FusionIndexProviderTest
             for ( Value secondValue : allValues )
             {
                 // when
-                IndexProvider selected = instanceSelector.select( slotSelector.selectSlot( array( firstValue, secondValue ), GROUP_OF ) );
+                IndexProvider selected = instanceSelector.select( slotSelector.selectSlot( array( firstValue, secondValue ), CATEGORY_OF ) );
 
                 // then
                 assertSame( providers.get( LUCENE ), selected );

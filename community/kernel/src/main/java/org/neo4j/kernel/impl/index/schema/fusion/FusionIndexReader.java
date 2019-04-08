@@ -56,7 +56,7 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
     @Override
     public long countIndexedNodes( long nodeId, int[] propertyKeyIds, Value... propertyValues )
     {
-        return instanceSelector.select( slotSelector.selectSlot( propertyValues, GROUP_OF ) ).countIndexedNodes( nodeId, propertyKeyIds, propertyValues );
+        return instanceSelector.select( slotSelector.selectSlot( propertyValues, CATEGORY_OF ) ).countIndexedNodes( nodeId, propertyKeyIds, propertyValues );
     }
 
     @Override
@@ -69,7 +69,7 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
     public void query( QueryContext context, IndexProgressor.EntityValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
             throws IndexNotApplicableKernelException
     {
-        IndexSlot slot = slotSelector.selectSlot( predicates, IndexQuery::valueGroup );
+        IndexSlot slot = slotSelector.selectSlot( predicates, IndexQuery::valueCategory );
         if ( slot != null )
         {
             instanceSelector.select( slot ).query( context, cursor, indexOrder, needsValues, predicates );
@@ -131,7 +131,7 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
     @Override
     public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
-        IndexSlot slot = slotSelector.selectSlot( predicates, IndexQuery::valueGroup );
+        IndexSlot slot = slotSelector.selectSlot( predicates, IndexQuery::valueCategory );
         if ( slot != null )
         {
             return instanceSelector.select( slot ).hasFullValuePrecision( predicates );
