@@ -53,7 +53,7 @@ import static org.neo4j.values.storable.ValueTuple.COMPARATOR;
 
 @SuppressWarnings( "FieldCanBeLocal" )
 @ExtendWith( RandomExtension.class )
-public class IndexProvidedOrderNativeBTree10Test extends KernelAPIReadTestBase<ReadTestSupport>
+public class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBase<ReadTestSupport>
 {
     private static int N_NODES = 10000;
     private static int N_ITERATIONS = 100;
@@ -172,7 +172,7 @@ public class IndexProvidedOrderNativeBTree10Test extends KernelAPIReadTestBase<R
                         actualIdsInOrder.add( node.nodeReference() );
                     }
 
-                    assertEquals( expectedIdsInOrder, actualIdsInOrder, "actual node ids not in same order as expected" );
+                    assertEquals( expectedIdsInOrder, actualIdsInOrder, "actual node ids not in same order as expected for value type " + type );
 
                 }
             }
