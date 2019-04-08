@@ -53,7 +53,7 @@ import static org.neo4j.values.storable.ValueTuple.COMPARATOR;
 
 @SuppressWarnings( "FieldCanBeLocal" )
 @ExtendWith( RandomExtension.class )
-public class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBase<ReadTestSupport>
+public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBase<ReadTestSupport>
 {
     private static int N_NODES = 10000;
     private static int N_ITERATIONS = 100;
@@ -69,9 +69,11 @@ public class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBase<ReadTe
     public ReadTestSupport newTestSupport()
     {
         ReadTestSupport readTestSupport = new ReadTestSupport();
-        readTestSupport.addSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName() );
+        readTestSupport.addSetting( GraphDatabaseSettings.default_schema_provider, getSchemaIndex().providerName() );
         return readTestSupport;
     }
+
+    abstract GraphDatabaseSettings.SchemaIndex getSchemaIndex();
 
     @Override
     public void createTestGraph( GraphDatabaseService graphDb )
