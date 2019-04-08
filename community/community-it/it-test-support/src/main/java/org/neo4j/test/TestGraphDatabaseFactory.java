@@ -22,39 +22,28 @@ package org.neo4j.test;
 import java.io.File;
 import java.util.Collections;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.Settings;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
-import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.extension.ExtensionFactory;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
-import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.logging.internal.LogService;
-import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.connectors.Connector.ConnectorType.BOLT;
 
 /**
@@ -224,141 +213,17 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
     }
 
     @Override
-    protected GraphDatabaseService newEmbeddedDatabase( File storeDir, Config config,
+    protected DatabaseManagementService newEmbeddedDatabase( File storeDir, Config config,
             ExternalDependencies dependencies )
     {
         return new TestGraphDatabaseFacadeFactory( getCurrentState() ).newFacade( storeDir, config,
-                GraphDatabaseDependencies.newDependencies( dependencies ) ).database( config.get( GraphDatabaseSettings.default_database ) );
+                GraphDatabaseDependencies.newDependencies( dependencies ) );
     }
 
     protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator( final File storeDir,
             final TestGraphDatabaseFactoryState state )
     {
         return config -> new TestGraphDatabaseFacadeFactory( state, true ).newFacade( storeDir, config,
-                GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) ).database( config.get( GraphDatabaseSettings.default_database ) );
-    }
-
-    public static class TestGraphDatabaseFacadeFactory extends GraphDatabaseFacadeFactory
-    {
-        private final TestGraphDatabaseFactoryState state;
-        private final boolean impermanent;
-
-        protected TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent )
-        {
-            this( state, impermanent, DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
-        }
-
-        public TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent,
-                DatabaseInfo databaseInfo, Function<GlobalModule,AbstractEditionModule> editionFactory )
-        {
-            super( databaseInfo, editionFactory );
-            this.state = state;
-            this.impermanent = impermanent;
-        }
-
-        TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state )
-        {
-            this( state, false );
-        }
-
-        @Override
-        protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
-        {
-            File databasesRoot = configureAndGetDatabaseRoot( storeDir, config );
-
-            if ( !config.isConfigured( GraphDatabaseSettings.shutdown_transaction_end_timeout ) )
-            {
-                config.augment( GraphDatabaseSettings.shutdown_transaction_end_timeout, "0s" );
-            }
-            config.augment( GraphDatabaseSettings.ephemeral, impermanent ? Settings.TRUE : Settings.FALSE );
-            if ( impermanent )
-            {
-                return new ImpermanentTestDatabaseGlobalModule( databasesRoot, config, dependencies, this.databaseInfo );
-            }
-            else
-            {
-                return new TestDatabaseGlobalModule( databasesRoot, config, dependencies, this.databaseInfo );
-            }
-        }
-
-        protected File configureAndGetDatabaseRoot( File storeDir, Config config )
-        {
-            File absoluteStoreDir = storeDir.getAbsoluteFile();
-            File databasesRoot = absoluteStoreDir.getParentFile();
-            config.augment( GraphDatabaseSettings.default_database, absoluteStoreDir.getName() );
-            config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
-            return databasesRoot;
-        }
-
-        class TestDatabaseGlobalModule extends GlobalModule
-        {
-
-            TestDatabaseGlobalModule( File storeDir, Config config, ExternalDependencies dependencies, DatabaseInfo databaseInfo )
-            {
-                super( storeDir, config, databaseInfo, dependencies );
-            }
-
-            @Override
-            protected FileSystemAbstraction createFileSystemAbstraction()
-            {
-                FileSystemAbstraction fs = state.getFileSystem();
-                if ( fs != null )
-                {
-                    return fs;
-                }
-                else
-                {
-                    return createNewFileSystem();
-                }
-            }
-
-            protected FileSystemAbstraction createNewFileSystem()
-            {
-                return super.createFileSystemAbstraction();
-            }
-
-            @Override
-            protected LogService createLogService( LogProvider userLogProvider )
-            {
-                LogProvider internalLogProvider = state.getInternalLogProvider();
-                if ( internalLogProvider == null )
-                {
-                    if ( !impermanent )
-                    {
-                        return super.createLogService( userLogProvider );
-                    }
-                    internalLogProvider = NullLogProvider.getInstance();
-                }
-                return new SimpleLogService( userLogProvider, internalLogProvider );
-            }
-
-            @Override
-            protected SystemNanoClock createClock()
-            {
-                SystemNanoClock clock = state.clock();
-                return clock != null ? clock : super.createClock();
-            }
-        }
-
-        private class ImpermanentTestDatabaseGlobalModule extends TestDatabaseGlobalModule
-        {
-
-            ImpermanentTestDatabaseGlobalModule( File storeDir, Config config, ExternalDependencies dependencies, DatabaseInfo databaseInfo )
-            {
-                super( storeDir, config, dependencies, databaseInfo );
-            }
-
-            @Override
-            protected FileSystemAbstraction createNewFileSystem()
-            {
-                return new EphemeralFileSystemAbstraction();
-            }
-
-            @Override
-            protected StoreLocker createStoreLocker()
-            {
-                return new StoreLocker( getFileSystem(), getStoreLayout() );
-            }
-        }
+                GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
     }
 }

@@ -40,7 +40,7 @@ import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -93,11 +93,11 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -107,6 +107,7 @@ import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.AdversarialPageCacheGraphDatabaseFactory;
+import org.neo4j.test.TestGraphDatabaseFacadeFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.TestLabels;
@@ -437,7 +438,7 @@ class DatabaseRecoveryIT
                         {
 
                             @Override
-                            public GraphDatabaseService newDatabase( @Nonnull Config config )
+                            public DatabaseManagementService newDatabase( @Nonnull Config config )
                             {
                                 TestGraphDatabaseFacadeFactory factory = new TestGraphDatabaseFacadeFactory( state, true )
                                 {
@@ -450,8 +451,7 @@ class DatabaseRecoveryIT
                                         return globalModule;
                                     }
                                 };
-                                return factory.newFacade( storeDir, config, newDependencies( state.databaseDependencies() ) )
-                                        .database( config.get( GraphDatabaseSettings.default_database ) );
+                                return factory.newFacade( storeDir, config, newDependencies( state.databaseDependencies() ) );
                             }
                         };
                     }

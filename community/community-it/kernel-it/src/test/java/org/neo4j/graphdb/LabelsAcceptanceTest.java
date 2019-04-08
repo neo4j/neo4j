@@ -31,36 +31,30 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.UnderlyingStorageException;
-import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
+import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.configuration.CommunityIdTypeConfigurationProvider;
-import org.neo4j.internal.id.configuration.IdTypeConfiguration;
-import org.neo4j.internal.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
-import org.neo4j.test.impl.EphemeralIdGenerator;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -73,6 +67,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -209,7 +204,7 @@ public class LabelsAcceptanceTest
     public void oversteppingMaxNumberOfLabelsShouldFailGracefully()
     {
         // Given
-        GraphDatabaseService graphDatabase = beansAPIWithNoMoreLabelIds();
+        GraphDatabaseService graphDatabase = new CustomLabelTestGraphDatabaseFactory().newImpermanentDatabase();
 
         // When
         try ( Transaction tx = graphDatabase.beginTx() )
@@ -697,99 +692,66 @@ public class LabelsAcceptanceTest
         return "Label-" + index;
     }
 
-    @SuppressWarnings( "deprecation" )
-    private GraphDatabaseService beansAPIWithNoMoreLabelIds()
+    private static class CustomIdGenerationEditionModule extends CommunityEditionModule
     {
-        final EphemeralIdGenerator.Factory idFactory = new EphemeralIdGenerator.Factory()
+        CustomIdGenerationEditionModule( GlobalModule globalModule )
         {
-            private IdTypeConfigurationProvider idTypeConfigurationProvider = new CommunityIdTypeConfigurationProvider();
+            super( globalModule );
+        }
 
-            @Override
-            public IdGenerator open( File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
-            {
-                if ( idType == IdType.LABEL_TOKEN )
-                {
-                    IdGenerator generator = generators.get( idType );
-                    if ( generator == null )
+        @Override
+        protected IdContextFactory createIdContextFactory( GlobalModule globalModule, FileSystemAbstraction fileSystem )
+        {
+            return IdContextFactoryBuilder.of( new CommunityIdTypeConfigurationProvider(), globalModule.getJobScheduler() ).withIdGenerationFactoryProvider(
+                    any -> new DefaultIdGeneratorFactory( globalModule.getFileSystem() )
                     {
-                        IdTypeConfiguration idTypeConfiguration =
-                                idTypeConfigurationProvider.getIdTypeConfiguration( idType );
-                        generator = new EphemeralIdGenerator( idType, idTypeConfiguration )
+                        @Override
+                        public IdGenerator open( File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
                         {
-                            @Override
-                            public long nextId()
+                            IdGenerator idGenerator = super.open( fileName, grabSize, idType, highId, maxId );
+                            if ( idType != IdType.LABEL_TOKEN )
                             {
-                                // Same exception as the one thrown by IdGeneratorImpl
-                                throw new UnderlyingStorageException( "Id capacity exceeded" );
+                                return idGenerator;
                             }
-                        };
-                        generators.put( idType, generator );
-                    }
-                    return generator;
-                }
-                return super.open( fileName, grabSize, idType, () -> Long.MAX_VALUE, Long.MAX_VALUE );
-            }
-        };
-
-        TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory()
-        {
-            @Override
-            protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator(
-                    final File storeDir, final TestGraphDatabaseFactoryState state )
-            {
-                return new GraphDatabaseBuilder.DatabaseCreator()
-                {
-                    @Override
-                    public GraphDatabaseService newDatabase( @Nonnull Config config )
-                    {
-                        return new ImpermanentGraphDatabase( storeDir, config,
-                                GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) )
-                        {
-                            @Override
-                            protected void create(
-                                    File storeDir,
-                                    Config config,
-                                    ExternalDependencies dependencies )
+                            return new IdGenerator.Delegate( idGenerator )
                             {
-                                Function<GlobalModule,AbstractEditionModule> factory =
-                                        globalModule -> new CommunityEditionModuleWithCustomIdContextFactory( globalModule, idFactory );
-                                new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, factory )
+                                @Override
+                                public long nextId()
                                 {
-
-                                    @Override
-                                    protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
-                                    {
-                                        return new ImpermanentGlobalModule( storeDir, config, databaseInfo, dependencies );
-                                    }
-                                }.initFacade( storeDir, config, dependencies, this );
-                            }
-                        };
-                    }
-                };
-            }
-        };
-
-        return dbFactory.newImpermanentDatabase( testDirectory.directory( "impermanent-directory" ) );
+                                    throw new UnderlyingStorageException( "Id capacity exceeded" );
+                                }
+                            };
+                        }
+                    } ).build();
+        }
     }
 
-    private Node createNode( GraphDatabaseService db, Label... labels )
+    private static class CustomIdGeneratorFacadeFactory extends GraphDatabaseFacadeFactory
+    {
+        CustomIdGeneratorFacadeFactory()
+        {
+            super( DatabaseInfo.COMMUNITY, CustomIdGenerationEditionModule::new );
+        }
+    }
+
+    private class CustomLabelTestGraphDatabaseFactory extends TestGraphDatabaseFactory
+    {
+        @Override
+        protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator( File storeDir,
+                TestGraphDatabaseFactoryState state )
+        {
+            return config -> new CustomIdGeneratorFacadeFactory().newFacade( storeDir, config,
+                    newDependencies( state.databaseDependencies() ) );
+        }
+    }
+
+    private static Node createNode( GraphDatabaseService db, Label... labels )
     {
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( labels );
             tx.success();
             return node;
-        }
-    }
-
-    private static class CommunityEditionModuleWithCustomIdContextFactory extends CommunityEditionModule
-    {
-        CommunityEditionModuleWithCustomIdContextFactory( GlobalModule globalModule, EphemeralIdGenerator.Factory idFactory )
-        {
-            super( globalModule );
-            idContextFactory = IdContextFactoryBuilder.of( globalModule.getFileSystem(), globalModule.getJobScheduler() )
-                    .withIdGenerationFactoryProvider( any -> idFactory )
-                    .build();
         }
     }
 }

@@ -262,7 +262,7 @@ public class EagerResultIT
     private class CustomGraphDatabaseFactory extends TestGraphDatabaseFactory
     {
 
-        private GraphDatabaseFacadeFactory customFacadeFactory;
+        private final GraphDatabaseFacadeFactory customFacadeFactory;
 
         CustomGraphDatabaseFactory( GraphDatabaseFacadeFactory customFacadeFactory )
         {
@@ -274,8 +274,7 @@ public class EagerResultIT
                 GraphDatabaseFactoryState state )
         {
             return config -> customFacadeFactory.newFacade( storeDir, config,
-                    GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) ).database(
-                    config.get( GraphDatabaseSettings.default_database ) );
+                    GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
         }
     }
 

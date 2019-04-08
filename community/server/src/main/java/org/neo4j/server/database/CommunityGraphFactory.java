@@ -40,3 +40,4 @@ public class CommunityGraphFactory implements GraphFactory
         return (GraphDatabaseFacade) facadeFactory.newFacade( storeDir, config, dependencies ).database( config.get( GraphDatabaseSettings.default_database ) );
     }
 }
+

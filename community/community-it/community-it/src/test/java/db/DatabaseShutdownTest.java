@@ -27,8 +27,8 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.DatabaseEventHandlerAdapter;
@@ -99,7 +99,7 @@ class DatabaseShutdownTest
         private volatile boolean failFlush;
 
         @Override
-        protected GraphDatabaseService newEmbeddedDatabase( File storeDir, Config config,
+        protected DatabaseManagementService newEmbeddedDatabase( File storeDir, Config config,
                 ExternalDependencies dependencies )
         {
             return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
@@ -141,7 +141,7 @@ class DatabaseShutdownTest
                     globalLife = globalModule.getGlobalLife();
                     return globalModule;
                 }
-            }.newFacade( storeDir, config, dependencies ).database( config.get( GraphDatabaseSettings.default_database ) );
+            }.newFacade( storeDir, config, dependencies );
         }
 
         LifecycleStatus getDatabaseStatus()

@@ -32,7 +32,6 @@ import javax.annotation.Nonnull;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseManagementService;
-import org.neo4j.dbms.database.DatabaseManagementServiceImpl;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 
@@ -54,7 +53,7 @@ public class GraphDatabaseBuilder
          * @param config initial configuration for the database.
          * @return an instance of {@link GraphDatabaseService}.
          */
-        GraphDatabaseService newDatabase( @Nonnull Config config );
+        DatabaseManagementService newDatabase( @Nonnull Config config );
     }
 
     protected DatabaseCreator creator;
@@ -196,6 +195,11 @@ public class GraphDatabaseBuilder
      * @return an instance of GraphDatabaseService
      */
     public GraphDatabaseService newGraphDatabase()
+    {
+        return newDatabaseManagementService().database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+    }
+
+    public DatabaseManagementService newDatabaseManagementService()
     {
         return creator.newDatabase( Config.defaults( config ) );
     }

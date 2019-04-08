@@ -215,7 +215,7 @@ public class CommunityLockAcquisitionTimeoutIT
 
     private static class CustomClockTestGraphDatabaseFactory extends TestGraphDatabaseFactory
     {
-        private GraphDatabaseFacadeFactory customFacadeFactory;
+        private final GraphDatabaseFacadeFactory customFacadeFactory;
 
         CustomClockTestGraphDatabaseFactory( GraphDatabaseFacadeFactory customFacadeFactory )
         {
@@ -227,8 +227,7 @@ public class CommunityLockAcquisitionTimeoutIT
                 GraphDatabaseFactoryState state )
         {
             return config -> customFacadeFactory.newFacade( storeDir, config,
-                    GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) ).database(
-                    config.get( GraphDatabaseSettings.default_database ) );
+                    GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
         }
     }
 

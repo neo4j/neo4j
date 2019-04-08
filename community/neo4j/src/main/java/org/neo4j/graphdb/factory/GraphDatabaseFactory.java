@@ -28,6 +28,7 @@ import org.neo4j.common.Edition;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
@@ -107,19 +108,19 @@ public class GraphDatabaseFactory
      * See {@link #newDatabase(File, Config, ExternalDependencies)} instead.
      */
     @Deprecated
-    protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> settings,
+    protected DatabaseManagementService newDatabase( File storeDir, Map<String,String> settings,
                                                 ExternalDependencies dependencies )
     {
         return newDatabase( storeDir, Config.defaults( settings ), dependencies );
     }
 
-    protected GraphDatabaseService newEmbeddedDatabase( File storeDir, Config config,
+    protected DatabaseManagementService newEmbeddedDatabase( File storeDir, Config config,
                                                         ExternalDependencies dependencies )
     {
-        return GraphDatabaseFactory.this.newDatabase( storeDir, config, dependencies );
+        return newDatabase( storeDir, config, dependencies );
     }
 
-    protected GraphDatabaseService newDatabase( File storeDir, Config config,
+    protected DatabaseManagementService newDatabase( File storeDir, Config config,
                                                 ExternalDependencies dependencies )
     {
         File absoluteStoreDir = storeDir.getAbsoluteFile();
@@ -135,8 +136,7 @@ public class GraphDatabaseFactory
         }
         config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
         config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
-        return getGraphDatabaseFacadeFactory().newFacade( databasesRoot, config, dependencies ).database(
-                config.get( GraphDatabaseSettings.default_database ) );
+        return getGraphDatabaseFacadeFactory().newFacade( databasesRoot, config, dependencies );
     }
 
     protected GraphDatabaseFacadeFactory getGraphDatabaseFacadeFactory()
@@ -185,7 +185,7 @@ public class GraphDatabaseFactory
         }
 
         @Override
-        public GraphDatabaseService newDatabase( @Nonnull Config config )
+        public DatabaseManagementService newDatabase( @Nonnull Config config )
         {
             return newEmbeddedDatabase( storeDir, config, state.databaseDependencies() );
         }

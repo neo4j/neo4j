@@ -25,7 +25,7 @@ import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.pagecache.AdversarialPageCache;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -51,7 +51,7 @@ public class AdversarialPageCacheGraphDatabaseFactory
         return new TestGraphDatabaseFactory()
         {
             @Override
-            protected GraphDatabaseService newEmbeddedDatabase( File dir, Config config, ExternalDependencies
+            protected DatabaseManagementService newEmbeddedDatabase( File dir, Config config, ExternalDependencies
                     dependencies )
             {
                 return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
@@ -81,7 +81,7 @@ public class AdversarialPageCacheGraphDatabaseFactory
                             }
                         };
                     }
-                }.newFacade( dir, config, dependencies ).database( config.get( GraphDatabaseSettings.default_database ) );
+                }.newFacade( dir, config, dependencies );
             }
         };
     }
