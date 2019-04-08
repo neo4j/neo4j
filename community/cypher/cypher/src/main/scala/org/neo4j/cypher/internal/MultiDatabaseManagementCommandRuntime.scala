@@ -64,7 +64,7 @@ case class MultiDatabaseManagementCommandRuntime(normalExecutionEngine: Executio
     case CreateDatabase(dbName) => (ctx, _) =>
       SystemCommandExecutionPlan("CreateDatabase", normalExecutionEngine,
         "MERGE (d:Database {name:$name}) SET d.status = $status RETURN d.name as name, d.status as status",
-        VirtualValues.map(Array("name", "status"), Array(Values.stringValue(dbName), Values.stringValue("started")))
+        VirtualValues.map(Array("name", "status"), Array(Values.stringValue(dbName), Values.stringValue("created")))
       )
 
     // DROP DATABASE foo
@@ -72,6 +72,34 @@ case class MultiDatabaseManagementCommandRuntime(normalExecutionEngine: Executio
       SystemCommandExecutionPlan("DeleteDatabase", normalExecutionEngine,
         "MATCH (d:Database {name:$name}) SET d.status = $status RETURN d.name as name, d.status as status",
         VirtualValues.map(Array("name", "status"), Array(Values.stringValue(dbName), Values.stringValue("deleted")))
+      )
+
+    // START DATABASE foo
+    case StartDatabase(dbName) => (_, _) =>
+      SystemCommandExecutionPlan("StartDatabase", normalExecutionEngine,
+        "MATCH (d:Database {name:$name})" +
+          "WHERE d.status IN $oldStatus" +
+          " SET d.status = $status RETURN d.name as name, d.status as status",
+        VirtualValues.map(
+          Array("name", "oldStatus", "status"),
+          Array(Values.stringValue(dbName),
+            VirtualValues.list(Values.stringValue("created"), Values.stringValue("offline")),
+            Values.stringValue("online")
+          )
+        )
+      )
+
+    // STOP DATABASE foo
+    case StopDatabase(dbName) => (_, _) =>
+      SystemCommandExecutionPlan("StopDatabase", normalExecutionEngine,
+        "MATCH (d:Database {name:$name, status:$oldStatus}) SET d.status = $status RETURN d.name as name, d.status as status",
+        VirtualValues.map(
+          Array("name", "oldStatus", "status"),
+          Array(Values.stringValue(dbName),
+            Values.stringValue("online"),
+            Values.stringValue("offline")
+          )
+        )
       )
   }
 }

@@ -79,6 +79,12 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case x @ DropDatabase(dbName) =>
       s"${x.name} $dbName"
 
+    case x @ StartDatabase(dbName) =>
+      s"${x.name} $dbName"
+
+    case x @ StopDatabase(dbName) =>
+      s"${x.name} $dbName"
+
     case x @ CreateGraph(catalogName, query) =>
       val graphName = catalogName.parts.mkString(".")
       s"${x.name} $graphName {$NL${queryPart(query)}$NL}"

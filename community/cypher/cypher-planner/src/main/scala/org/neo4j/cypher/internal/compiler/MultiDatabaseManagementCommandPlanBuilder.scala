@@ -59,6 +59,14 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
       case DropDatabase(dbName) =>
         Some(plans.DropDatabase(dbName))
 
+      // DROP DATABASE foo
+      case StartDatabase(dbName) =>
+        Some(plans.StartDatabase(dbName))
+
+      // DROP DATABASE foo
+      case StopDatabase(dbName) =>
+        Some(plans.StopDatabase(dbName))
+
       case _ => None
     }
 

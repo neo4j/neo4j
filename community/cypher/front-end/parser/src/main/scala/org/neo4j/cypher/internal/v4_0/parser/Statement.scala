@@ -32,7 +32,7 @@ trait Statement extends Parser
   )
 
   def CatalogCommand: Rule1[CatalogDDL] = rule("Catalog DDL statement") {
-    ShowDatabase | ShowDatabases | CreateDatabase | DropDatabase | CreateGraph | DropGraph | CreateView | DropView
+    ShowDatabase | ShowDatabases | CreateDatabase | DropDatabase | StartDatabase | StopDatabase | CreateGraph | DropGraph | CreateView | DropView
   }
 
   def ShowDatabase = rule("CATALOG SHOW DATABASE") {
@@ -49,6 +49,14 @@ trait Statement extends Parser
 
   def DropDatabase = rule("CATALOG DROP DATABASE") {
     group(optional(keyword("CATALOG")) ~~ keyword("DROP DATABASE") ~~ DatabaseNameString) ~~>> (ast.DropDatabase(_))
+  }
+
+  def StartDatabase = rule("CATALOG START DATABASE") {
+    group(optional(keyword("CATALOG")) ~~ keyword("START DATABASE") ~~ DatabaseNameString) ~~>> (ast.StartDatabase(_))
+  }
+
+  def StopDatabase = rule("CATALOG STOP DATABASE") {
+    group(optional(keyword("CATALOG")) ~~ keyword("STOP DATABASE") ~~ DatabaseNameString) ~~>> (ast.StopDatabase(_))
   }
 
   def CreateGraph = rule("CATALOG CREATE GRAPH") {

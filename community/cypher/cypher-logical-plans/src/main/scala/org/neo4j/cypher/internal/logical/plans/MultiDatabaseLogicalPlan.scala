@@ -36,3 +36,5 @@ case class ShowDatabases()(implicit idGen: IdGen) extends MultiDatabaseLogicalPl
 case class ShowDatabase(dbName: String)(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(idGen)
 case class CreateDatabase(dbName: String)(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(idGen)
 case class DropDatabase(dbName: String)(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(idGen)
+case class StartDatabase(dbName: String)(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(idGen)
+case class StopDatabase(dbName: String)(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(idGen)

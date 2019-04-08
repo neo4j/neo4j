@@ -77,6 +77,24 @@ final case class DropDatabase(dbName: String)(val position: InputPosition) exten
       SemanticState.recordCurrentScope(this)
 }
 
+final case class StartDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+
+  override def name = "CATALOG START DATABASE"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
+final case class StopDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+
+  override def name = "CATALOG STOP DATABASE"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
 object CreateGraph {
   def apply(graphName: CatalogName, query: Query)(position: InputPosition): CreateGraph =
     CreateGraph(graphName, query.part)(position)

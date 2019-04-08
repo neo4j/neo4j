@@ -168,6 +168,14 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val dbName = Database(name)
         PlanDescriptionImpl(id, "DropDatabase", NoChildren, Seq(dbName), variables)
 
+      case StartDatabase(name) =>
+        val dbName = Database(name)
+        PlanDescriptionImpl(id, "StartDatabase", NoChildren, Seq(dbName), variables)
+
+      case StopDatabase(name) =>
+        val dbName = Database(name)
+        PlanDescriptionImpl(id, "StopDatabase", NoChildren, Seq(dbName), variables)
+
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 
