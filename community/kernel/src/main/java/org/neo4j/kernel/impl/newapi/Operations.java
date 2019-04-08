@@ -125,7 +125,9 @@ public class Operations implements Write, SchemaWrite
     private final IndexingProvidersService indexProviders;
     private final Config config;
     private DefaultNodeCursor nodeCursor;
+    private DefaultNodeCursor restrictedNodeCursor;
     private DefaultPropertyCursor propertyCursor;
+    private DefaultPropertyCursor restrictedPropertyCursor;
     private DefaultRelationshipScanCursor relationshipCursor;
 
     public Operations( AllStoreHolder allStoreHolder, StorageReader storageReader, IndexTxStateUpdater updater,
@@ -151,6 +153,8 @@ public class Operations implements Write, SchemaWrite
         this.nodeCursor = cursors.allocateFullAccessNodeCursor();
         this.propertyCursor = cursors.allocateFullAccessPropertyCursor();
         this.relationshipCursor = cursors.allocateRelationshipScanCursor();
+        this.restrictedNodeCursor = cursors.allocateNodeCursor();
+        this.restrictedPropertyCursor = cursors.allocatePropertyCursor();
     }
 
     @Override
@@ -749,6 +753,11 @@ public class Operations implements Write, SchemaWrite
             nodeCursor.close();
             nodeCursor = null;
         }
+        if ( restrictedNodeCursor != null )
+        {
+            restrictedNodeCursor.close();
+            restrictedNodeCursor = null;
+        }
         if ( propertyCursor != null )
         {
             propertyCursor.close();
@@ -758,6 +767,11 @@ public class Operations implements Write, SchemaWrite
         {
             relationshipCursor.close();
             relationshipCursor = null;
+        }
+        if ( restrictedPropertyCursor != null )
+        {
+            restrictedPropertyCursor.close();
+            restrictedPropertyCursor = null;
         }
 
         cursors.assertClosed();
@@ -781,7 +795,7 @@ public class Operations implements Write, SchemaWrite
 
     public DefaultNodeCursor nodeCursor()
     {
-        return nodeCursor;
+        return restrictedNodeCursor;
     }
 
     public DefaultRelationshipScanCursor relationshipCursor()
@@ -791,7 +805,7 @@ public class Operations implements Write, SchemaWrite
 
     public DefaultPropertyCursor propertyCursor()
     {
-        return propertyCursor;
+        return restrictedPropertyCursor;
     }
 
     @Override
