@@ -31,11 +31,13 @@ import org.neo4j.token.api.TokenIdPrettyPrinter;
 
 public class DefaultRelationTypeSchemaDescriptor implements RelationTypeSchemaDescriptor
 {
+    private final IndexType indexType;
     private final int relTypeId;
     private final int[] propertyIds;
 
-    DefaultRelationTypeSchemaDescriptor( int relTypeId, int... propertyIds )
+    DefaultRelationTypeSchemaDescriptor( IndexType indexType, int relTypeId, int... propertyIds )
     {
+        this.indexType = indexType;
         this.relTypeId = relTypeId;
         this.propertyIds = propertyIds;
     }
@@ -108,9 +110,9 @@ public class DefaultRelationTypeSchemaDescriptor implements RelationTypeSchemaDe
     }
 
     @Override
-    public boolean isFulltextIndex()
+    public IndexType getIndexType()
     {
-        return false;
+        return indexType;
     }
 
     @Override

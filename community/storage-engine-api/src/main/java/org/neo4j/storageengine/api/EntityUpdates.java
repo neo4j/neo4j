@@ -33,12 +33,13 @@ import java.util.Objects;
 import org.neo4j.collection.PrimitiveArrays;
 import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
-import static org.neo4j.internal.schema.SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
+import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
 import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.Changed;
 import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.NoValue;
 import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.UnChanged;
@@ -345,7 +346,7 @@ public class EntityUpdates
         return affectedBefore || affectedAfter;
     }
 
-    private boolean hasPropsBefore( int[] propertyIds, SchemaDescriptor.PropertySchemaType propertySchemaType )
+    private boolean hasPropsBefore( int[] propertyIds, PropertySchemaType propertySchemaType )
     {
         boolean found = false;
         for ( int propertyId : propertyIds )
@@ -366,7 +367,7 @@ public class EntityUpdates
         return found;
     }
 
-    private boolean hasPropsAfter( int[] propertyIds, SchemaDescriptor.PropertySchemaType propertySchemaType )
+    private boolean hasPropsAfter( int[] propertyIds, PropertySchemaType propertySchemaType )
     {
         boolean found = false;
         for ( int propertyId : propertyIds )
@@ -411,7 +412,7 @@ public class EntityUpdates
     /**
      * This method should only be called in a context where you know that your entity is relevant both before and after
      */
-    private boolean valuesChanged( int[] propertyIds, SchemaDescriptor.PropertySchemaType propertySchemaType )
+    private boolean valuesChanged( int[] propertyIds, PropertySchemaType propertySchemaType )
     {
         if ( propertySchemaType == COMPLETE_ALL_TOKENS )
         {

@@ -43,11 +43,11 @@ class ConstraintDescriptorFactoryTest
 
         desc = ConstraintDescriptorFactory.existsForLabel( LABEL_ID, 1 );
         assertThat( desc.type(), equalTo( ConstraintDescriptor.Type.EXISTS ) );
-        assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
+        assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabelNoIndex( LABEL_ID, 1 ) ) );
 
         desc = ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, 1 );
         assertThat( desc.type(), equalTo( ConstraintDescriptor.Type.EXISTS ) );
-        assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forRelType( REL_TYPE_ID, 1 ) ) );
+        assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forRelTypeNoIndex( REL_TYPE_ID, 1 ) ) );
     }
 
     @Test
@@ -83,9 +83,9 @@ class ConstraintDescriptorFactoryTest
         assertThat( desc.type(), equalTo( ConstraintDescriptor.Type.UNIQUE_EXISTS ) );
         assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
 
-        desc = ConstraintDescriptorFactory.existsForSchema( SchemaDescriptorFactory.forRelType( REL_TYPE_ID, 1 ) );
+        desc = ConstraintDescriptorFactory.existsForSchema( SchemaDescriptorFactory.forRelTypeNoIndex( REL_TYPE_ID, 1 ) );
         assertThat( desc.type(), equalTo( ConstraintDescriptor.Type.EXISTS) );
-        assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forRelType( REL_TYPE_ID, 1 ) ) );
+        assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forRelTypeNoIndex( REL_TYPE_ID, 1 ) ) );
     }
 
     @Test

@@ -42,7 +42,7 @@ import static java.util.Arrays.stream;
 import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.internal.schema.SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
+import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
 
 @ExtendWith( RandomExtension.class )
 class SchemaDescriptorLookupSetTest

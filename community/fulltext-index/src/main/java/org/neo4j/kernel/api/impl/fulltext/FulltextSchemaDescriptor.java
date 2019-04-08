@@ -23,6 +23,8 @@ import java.util.Properties;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaComputer;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaProcessor;
@@ -100,7 +102,7 @@ class FulltextSchemaDescriptor implements SchemaDescriptor
     }
 
     @Override
-    public SchemaDescriptor.PropertySchemaType propertySchemaType()
+    public PropertySchemaType propertySchemaType()
     {
         return schema.propertySchemaType();
     }
@@ -112,9 +114,9 @@ class FulltextSchemaDescriptor implements SchemaDescriptor
     }
 
     @Override
-    public boolean isFulltextIndex()
+    public IndexType getIndexType()
     {
-        return true;
+        return schema.getIndexType();
     }
 
     @Override

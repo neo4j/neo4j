@@ -48,7 +48,6 @@ import static org.hamcrest.Matchers.emptyIterable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@SuppressWarnings( "unchecked" )
 class EntityUpdatesTest
 {
     private static final long nodeId = 0;
@@ -65,8 +64,7 @@ class EntityUpdatesTest
     private static final LabelSchemaDescriptor index1 = SchemaDescriptorFactory.forLabel( labelId1, propertyKeyId1 );
     private static final LabelSchemaDescriptor index2 = SchemaDescriptorFactory.forLabel( labelId1, propertyKeyId2 );
     private static final LabelSchemaDescriptor index3 = SchemaDescriptorFactory.forLabel( labelId1, propertyKeyId3 );
-    private static final LabelSchemaDescriptor index123
-            = SchemaDescriptorFactory.forLabel( labelId1, propertyKeyId1, propertyKeyId2, propertyKeyId3 );
+    private static final LabelSchemaDescriptor index123 = SchemaDescriptorFactory.forLabel( labelId1, propertyKeyId1, propertyKeyId2, propertyKeyId3 );
     private static final List<LabelSchemaDescriptor> indexes = Arrays.asList( index1, index2, index3, index123 );
     private static final MultiTokenSchemaDescriptor nonSchemaIndex =
             SchemaDescriptorFactory.multiToken( new int[]{labelId1, labelId2}, EntityType.NODE, propertyKeyId1, propertyKeyId2, propertyKeyId3 );

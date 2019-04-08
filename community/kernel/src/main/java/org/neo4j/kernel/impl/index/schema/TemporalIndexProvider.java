@@ -182,12 +182,6 @@ public class TemporalIndexProvider extends IndexProvider
         }
 
         @Override
-        public boolean isFulltextIndex()
-        {
-            return false;
-        }
-
-        @Override
         public boolean isEventuallyConsistent()
         {
             return false;

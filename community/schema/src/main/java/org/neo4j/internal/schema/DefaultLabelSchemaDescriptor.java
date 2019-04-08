@@ -31,11 +31,13 @@ import org.neo4j.token.api.TokenIdPrettyPrinter;
 
 public class DefaultLabelSchemaDescriptor implements LabelSchemaDescriptor
 {
+    private final IndexType indexType;
     private final int labelId;
     private final int[] propertyIds;
 
-    DefaultLabelSchemaDescriptor( int labelId, int... propertyIds )
+    DefaultLabelSchemaDescriptor( IndexType indexType, int labelId, int... propertyIds )
     {
+        this.indexType = indexType;
         this.labelId = labelId;
         this.propertyIds = propertyIds;
     }
@@ -108,9 +110,9 @@ public class DefaultLabelSchemaDescriptor implements LabelSchemaDescriptor
     }
 
     @Override
-    public boolean isFulltextIndex()
+    public IndexType getIndexType()
     {
-        return false;
+        return indexType;
     }
 
     @Override

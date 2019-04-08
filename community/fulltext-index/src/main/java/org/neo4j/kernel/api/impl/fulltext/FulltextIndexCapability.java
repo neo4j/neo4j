@@ -46,12 +46,6 @@ class FulltextIndexCapability implements IndexCapability
     }
 
     @Override
-    public boolean isFulltextIndex()
-    {
-        return true;
-    }
-
-    @Override
     public boolean isEventuallyConsistent()
     {
         return isEventuallyConsistent;

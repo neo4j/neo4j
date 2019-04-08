@@ -77,6 +77,7 @@ import org.neo4j.internal.recordstorage.SchemaCache;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.DefaultLabelSchemaDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.SchemaRule;
@@ -437,27 +438,25 @@ public class BatchInserterImpl implements BatchInserter
         propertyCreator.primitiveSetProperty( primitiveRecord, propertyKey, ValueUtils.asValue( propertyValue ), propertyRecords );
     }
 
-    private void validateIndexCanBeCreated( int labelId, int[] propertyKeyIds )
+    private void validateIndexCanBeCreated( DefaultLabelSchemaDescriptor schemaDescriptor )
     {
-        verifyIndexOrUniquenessConstraintCanBeCreated( labelId, propertyKeyIds,
-                "Index for given {label;property} already exists" );
+        verifyIndexOrUniquenessConstraintCanBeCreated( schemaDescriptor, "Index for given {label;property} already exists" );
     }
 
-    private void validateUniquenessConstraintCanBeCreated( int labelId, int[] propertyKeyIds )
+    private void validateUniquenessConstraintCanBeCreated( LabelSchemaDescriptor schemaDescriptor )
     {
-        verifyIndexOrUniquenessConstraintCanBeCreated( labelId, propertyKeyIds,
+        verifyIndexOrUniquenessConstraintCanBeCreated( schemaDescriptor,
                 "It is not allowed to create node keys, uniqueness constraints or indexes on the same {label;property}" );
     }
 
-    private void validateNodeKeyConstraintCanBeCreated( int labelId, int[] propertyKeyIds )
+    private void validateNodeKeyConstraintCanBeCreated( LabelSchemaDescriptor schemaDescriptor )
     {
-        verifyIndexOrUniquenessConstraintCanBeCreated( labelId, propertyKeyIds,
+        verifyIndexOrUniquenessConstraintCanBeCreated( schemaDescriptor,
                 "It is not allowed to create node keys, uniqueness constraints or indexes on the same {label;property}" );
     }
 
-    private void verifyIndexOrUniquenessConstraintCanBeCreated( int labelId, int[] propertyKeyIds, String errorMessage )
+    private void verifyIndexOrUniquenessConstraintCanBeCreated( LabelSchemaDescriptor schemaDescriptor, String errorMessage )
     {
-        LabelSchemaDescriptor schemaDescriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
         ConstraintDescriptor constraintDescriptor = ConstraintDescriptorFactory.uniqueForSchema( schemaDescriptor );
         ConstraintDescriptor nodeKeyDescriptor = ConstraintDescriptorFactory.nodeKeyForSchema( schemaDescriptor );
         if ( schemaCache.hasIndex( schemaDescriptor ) ||
@@ -490,9 +489,8 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private IndexReference createIndex( int labelId, int[] propertyKeyIds, Optional<String> indexName )
+    private IndexReference createIndex( LabelSchemaDescriptor schema, Optional<String> indexName )
     {
-        LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
         IndexProvider provider = indexProviderMap.getDefaultProvider();
         IndexProviderDescriptor providerDescriptor = provider.getProviderDescriptor();
         IndexDescriptor index = IndexDescriptorFactory.forSchema( schema, indexName, providerDescriptor );
@@ -1161,10 +1159,11 @@ public class BatchInserterImpl implements BatchInserter
         {
             int labelId = getOrCreateLabelId( label.name() );
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( propertyKeys );
+            DefaultLabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
 
-            validateIndexCanBeCreated( labelId, propertyKeyIds );
+            validateIndexCanBeCreated( schema );
 
-            IndexReference indexReference = createIndex( labelId, propertyKeyIds, indexName );
+            IndexReference indexReference = createIndex( schema, indexName );
             return new IndexDefinitionImpl( this, indexReference, new Label[]{label}, propertyKeys, false );
         }
 
@@ -1181,7 +1180,7 @@ public class BatchInserterImpl implements BatchInserter
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( indexDefinition.getPropertyKeys() );
             LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
 
-            validateUniquenessConstraintCanBeCreated( labelId, propertyKeyIds );
+            validateUniquenessConstraintCanBeCreated( descriptor );
             createUniquenessConstraintRule( descriptor );
             return new UniquenessConstraintDefinition( this, indexDefinition );
         }
@@ -1193,7 +1192,7 @@ public class BatchInserterImpl implements BatchInserter
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( indexDefinition.getPropertyKeys() );
             LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
 
-            validateNodeKeyConstraintCanBeCreated( labelId, propertyKeyIds );
+            validateNodeKeyConstraintCanBeCreated( descriptor );
             createNodeKeyConstraintRule( descriptor );
             return new NodeKeyConstraintDefinition( this, indexDefinition );
         }

@@ -32,12 +32,14 @@ import org.neo4j.token.api.TokenIdPrettyPrinter;
 
 public class MultiTokenSchemaDescriptor implements SchemaDescriptor
 {
+    private final IndexType indexType;
     private final int[] entityTokens;
     private final EntityType entityType;
     private final int[] propertyIds;
 
-    MultiTokenSchemaDescriptor( int[] entityTokens, EntityType entityType, int[] propertyIds )
+    MultiTokenSchemaDescriptor( IndexType indexType, int[] entityTokens, EntityType entityType, int[] propertyIds )
     {
+        this.indexType = indexType;
         this.entityTokens = entityTokens;
         this.entityType = entityType;
         this.propertyIds = propertyIds;
@@ -112,7 +114,7 @@ public class MultiTokenSchemaDescriptor implements SchemaDescriptor
     }
 
     @Override
-    public SchemaDescriptor.PropertySchemaType propertySchemaType()
+    public PropertySchemaType propertySchemaType()
     {
         return PropertySchemaType.PARTIAL_ANY_TOKEN;
     }
@@ -124,9 +126,9 @@ public class MultiTokenSchemaDescriptor implements SchemaDescriptor
     }
 
     @Override
-    public boolean isFulltextIndex()
+    public IndexType getIndexType()
     {
-        return false;
+        return indexType;
     }
 
     @Override

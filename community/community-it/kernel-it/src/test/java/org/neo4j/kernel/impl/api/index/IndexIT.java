@@ -166,8 +166,7 @@ public class IndexIT extends KernelIntegrationTest
 
         // WHEN
         Transaction transaction = newTransaction( AUTH_DISABLED );
-        IndexReference addedRule = transaction.schemaWrite()
-                                                   .indexCreate( SchemaDescriptorFactory.forLabel( labelId, 10 ) );
+        IndexReference addedRule = transaction.schemaWrite().indexCreate( SchemaDescriptorFactory.forLabel( labelId, 10 ) );
         Set<IndexReference> indexRulesInTx = asSet( transaction.schemaRead().indexesGetForLabel( labelId ) );
         commit();
 

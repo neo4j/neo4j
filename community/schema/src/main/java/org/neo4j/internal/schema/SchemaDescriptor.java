@@ -105,9 +105,9 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
         }
 
         @Override
-        public boolean isFulltextIndex()
+        public IndexType getIndexType()
         {
-            return false;
+            return IndexType.NOT_AN_INDEX;
         }
     };
 
@@ -133,19 +133,6 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
      * @return true if the supplied ids are relevant to this schema unit.
      */
     boolean isAffected( long[] entityTokenIds );
-
-    /**
-     * This enum signifies how this schema should behave in regards to updates.
-     * {@link PropertySchemaType#COMPLETE_ALL_TOKENS} signifies that this schema unit only should be affected by updates that match the entire schema,
-     * i.e. when all properties are present. If you are unsure then this is probably what you want.
-     * {@link PropertySchemaType#PARTIAL_ANY_TOKEN} signifies that this schema unit should be affected by any update that is partial match of the schema,
-     *  i.e. at least one of the properties of this schema unit is present.
-     */
-    enum PropertySchemaType
-    {
-        COMPLETE_ALL_TOKENS,
-        PARTIAL_ANY_TOKEN
-    }
 
     /**
      * Computes some value by feeding this object into the given SchemaComputer.
@@ -233,9 +220,9 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
     PropertySchemaType propertySchemaType();
 
     /**
-     * @return whether or not this is a descriptor of a fulltext index.
+     * @return the {@link IndexType} that is defined by this schema. If this schema does not define an index, then {@link IndexType#NOT_AN_INDEX} is returned.
      */
-    boolean isFulltextIndex();
+    IndexType getIndexType();
 
     /**
      * Create a predicate that checks whether a schema descriptor Supplier supplies the given schema descriptor.

@@ -41,7 +41,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
-import static org.neo4j.internal.schema.SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
+import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.LabelIdArray.prependNodeId;
 

@@ -84,9 +84,9 @@ public class DefaultIndexDescriptor implements IndexDescriptor
     }
 
     @Override
-    public boolean isFulltextIndex()
+    public IndexType getIndexType()
     {
-        return schema.isFulltextIndex();
+        return schema.getIndexType();
     }
 
     @Override

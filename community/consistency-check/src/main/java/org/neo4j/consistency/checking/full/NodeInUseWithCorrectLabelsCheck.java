@@ -30,7 +30,7 @@ import org.neo4j.consistency.checking.LabelChainWalker;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -45,10 +45,10 @@ public class NodeInUseWithCorrectLabelsCheck
         implements ComparativeRecordChecker<RECORD, NodeRecord, REPORT>
 {
     private final long[] indexLabels;
-    private final SchemaDescriptor.PropertySchemaType propertySchemaType;
+    private final PropertySchemaType propertySchemaType;
     private final boolean checkStoreToIndex;
 
-    public NodeInUseWithCorrectLabelsCheck( long[] expectedEntityTokenIds, SchemaDescriptor.PropertySchemaType propertySchemaType, boolean checkStoreToIndex )
+    public NodeInUseWithCorrectLabelsCheck( long[] expectedEntityTokenIds, PropertySchemaType propertySchemaType, boolean checkStoreToIndex )
     {
         this.propertySchemaType = propertySchemaType;
         this.checkStoreToIndex = checkStoreToIndex;
@@ -99,7 +99,7 @@ public class NodeInUseWithCorrectLabelsCheck
     {
         storeLabels = sortAndDeduplicate( storeLabels );
 
-        if ( propertySchemaType == SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS )
+        if ( propertySchemaType == PropertySchemaType.COMPLETE_ALL_TOKENS )
         {
             // The node must have all of the labels specified by the index.
             int indexLabelsCursor = 0;
@@ -136,7 +136,7 @@ public class NodeInUseWithCorrectLabelsCheck
                 storeLabelsCursor++;
             }
         }
-        else if ( propertySchemaType == SchemaDescriptor.PropertySchemaType.PARTIAL_ANY_TOKEN )
+        else if ( propertySchemaType == PropertySchemaType.PARTIAL_ANY_TOKEN )
         {
             // The node must have at least one label in the index.
             for ( long storeLabel : storeLabels )

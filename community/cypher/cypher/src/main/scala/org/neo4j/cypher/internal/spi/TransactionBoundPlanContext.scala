@@ -34,7 +34,7 @@ import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
 import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs, _}
-import org.neo4j.internal.schema.{ConstraintDescriptor, SchemaDescriptorFactory}
+import org.neo4j.internal.schema.{ConstraintDescriptor, IndexKind, SchemaDescriptorFactory}
 import org.neo4j.procedure.Mode
 import org.neo4j.values.storable.ValueCategory
 
@@ -109,9 +109,9 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
             case api.IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
           }
         }
-        if (reference.isFulltextIndex || reference.isEventuallyConsistent) {
-          // Ignore fulltext indexes for now, because we don't know how to correctly plan for and query them. Not yet, anyway.
-          // Also, ignore eventually consistent indexes. Those are for explicit querying via procesures.
+        if (reference.getIndexType.getKind == IndexKind.GENERAL || reference.isEventuallyConsistent) {
+          // Ignore IndexKind.SPECIAL indexes, because we don't know how to correctly plan for and query them. Not yet, anyway.
+          // Also, ignore eventually consistent indexes. Those are for explicit querying via procedures.
           None
         } else {
           Some(IndexDescriptor(label, properties, limitations, orderCapability, valueCapability, isUnique))
@@ -146,7 +146,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       val labelId = getLabelId(labelName)
       val propertyKeyId = getPropertyKeyId(propertyKey)
 
-      tc.schemaRead.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)).hasNext
+      tc.schemaRead.constraintsGetForSchema(SchemaDescriptorFactory.forLabelNoIndex(labelId, propertyKeyId)).hasNext
     } catch {
       case _: KernelException => false
     }

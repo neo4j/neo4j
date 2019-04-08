@@ -110,12 +110,6 @@ public class NumberIndexProvider extends NativeIndexProvider<NumberIndexKey,Nati
         }
 
         @Override
-        public boolean isFulltextIndex()
-        {
-            return false;
-        }
-
-        @Override
         public boolean isEventuallyConsistent()
         {
             return false;

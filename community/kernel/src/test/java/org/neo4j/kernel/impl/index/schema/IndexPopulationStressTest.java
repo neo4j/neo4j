@@ -124,7 +124,7 @@ public class IndexPopulationStressTest
     @Rule
     public PageCacheAndDependenciesRule rules = new PageCacheAndDependenciesRule().with( new DefaultFileSystemRule() );
 
-    protected final StoreIndexDescriptor descriptor = forSchema( forLabel( 0, 0 ), PROVIDER ).withId( 0 );
+    private final StoreIndexDescriptor descriptor = forSchema( forLabel( 0, 0 ), PROVIDER ).withId( 0 );
     private final StoreIndexDescriptor descriptor2 = forSchema( forLabel( 1, 0 ), PROVIDER ).withId( 1 );
     private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( 1000, 0.2, true );
     private final NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );

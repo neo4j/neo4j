@@ -38,6 +38,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.SchemaRule;
@@ -234,7 +235,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
     private static void schemaDescriptorToMap( SchemaDescriptor schemaDescriptor, Map<String,Value> map )
     {
         EntityType entityType = schemaDescriptor.entityType();
-        SchemaDescriptor.PropertySchemaType propertySchemaType = schemaDescriptor.propertySchemaType();
+        PropertySchemaType propertySchemaType = schemaDescriptor.propertySchemaType();
         int[] entityTokenIds = schemaDescriptor.getEntityTokenIds();
         int[] propertyIds = schemaDescriptor.getPropertyIds();
         putStringProperty( map, PROP_SCHEMA_DESCRIPTOR_ENTITY_TYPE, entityType.name() );

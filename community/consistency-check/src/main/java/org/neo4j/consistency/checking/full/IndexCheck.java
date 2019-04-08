@@ -25,6 +25,7 @@ import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
+import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.StorageIndexReference;
 
@@ -45,7 +46,7 @@ public class IndexCheck implements RecordCheck<IndexEntry,ConsistencyReport.Inde
         {
             entityTokenLongIds[i] = entityTokenIntIds[i];
         }
-        SchemaDescriptor.PropertySchemaType propertySchemaType = schema.propertySchemaType();
+        PropertySchemaType propertySchemaType = schema.propertySchemaType();
         entityType = schema.entityType();
         if ( entityType == EntityType.NODE )
         {

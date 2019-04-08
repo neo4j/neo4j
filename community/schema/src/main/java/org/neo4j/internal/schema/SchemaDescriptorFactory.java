@@ -30,16 +30,41 @@ public class SchemaDescriptorFactory
 
     public static DefaultLabelSchemaDescriptor forLabel( int labelId, int... propertyIds )
     {
+        return forLabelOfType( IndexType.ANY_GENERAL, labelId, propertyIds );
+    }
+
+    public static DefaultLabelSchemaDescriptor forLabelFulltext( int labelId, int... propertyIds )
+    {
+        return forLabelOfType( IndexType.FULLTEXT, labelId, propertyIds );
+    }
+
+    public static LabelSchemaDescriptor forLabelNoIndex( int labelId, int... propertyIds )
+    {
+        return forLabelOfType( IndexType.NOT_AN_INDEX, labelId, propertyIds );
+    }
+
+    public static DefaultLabelSchemaDescriptor forLabelOfType( IndexType indexType, int labelId, int... propertyIds )
+    {
         validateLabelIds( labelId );
         validatePropertyIds( propertyIds );
-        return new DefaultLabelSchemaDescriptor( labelId, propertyIds );
+        return new DefaultLabelSchemaDescriptor( indexType, labelId, propertyIds );
     }
 
     public static DefaultRelationTypeSchemaDescriptor forRelType( int relTypeId, int... propertyIds )
     {
+        return forRelTypeOfType( IndexType.NOT_AN_INDEX, relTypeId, propertyIds );
+    }
+
+    public static DefaultRelationTypeSchemaDescriptor forRelTypeNoIndex( int relTypeId, int... propertyIds )
+    {
+        return forRelTypeOfType( IndexType.NOT_AN_INDEX, relTypeId, propertyIds );
+    }
+
+    public static DefaultRelationTypeSchemaDescriptor forRelTypeOfType( IndexType indexType, int relTypeId, int... propertyIds )
+    {
         validateRelationshipTypeIds( relTypeId );
         validatePropertyIds( propertyIds );
-        return new DefaultRelationTypeSchemaDescriptor( relTypeId, propertyIds );
+        return new DefaultRelationTypeSchemaDescriptor( indexType, relTypeId, propertyIds );
     }
 
     public static MultiTokenSchemaDescriptor multiToken( int[] entityTokens, EntityType entityType, int... propertyIds )
@@ -56,7 +81,8 @@ public class SchemaDescriptorFactory
         default:
             throw new IllegalArgumentException( "Cannot create schemadescriptor of type :" + entityType );
         }
-        return new MultiTokenSchemaDescriptor( entityTokens, entityType, propertyIds );
+        IndexType indexType = IndexType.FULLTEXT; // TODO assume FULLTEXT for now.
+        return new MultiTokenSchemaDescriptor( indexType, entityTokens, entityType, propertyIds );
     }
 
     private static void validatePropertyIds( int[] propertyIds )

@@ -520,7 +520,7 @@ public class BuiltInProcedures
 
         private static IndexType getIndexTypeOf( IndexReference index )
         {
-            if ( index.isFulltextIndex() )
+            if ( index.getIndexType() == org.neo4j.internal.schema.IndexType.FULLTEXT )
             {
                 if ( index.schema().entityType() == EntityType.NODE )
                 {

@@ -78,12 +78,6 @@ public class FusionIndexCapability implements IndexCapability
     }
 
     @Override
-    public boolean isFulltextIndex()
-    {
-        return false;
-    }
-
-    @Override
     public boolean isEventuallyConsistent()
     {
         return false;

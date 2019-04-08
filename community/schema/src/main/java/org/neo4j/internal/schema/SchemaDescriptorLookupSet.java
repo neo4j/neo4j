@@ -28,8 +28,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static java.lang.Math.toIntExact;
-import static org.neo4j.internal.schema.SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
-import static org.neo4j.internal.schema.SchemaDescriptor.PropertySchemaType.PARTIAL_ANY_TOKEN;
+import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
+import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
 
 /**
  * Collects and provides efficient access to {@link SchemaDescriptor}, based on complete list of entity tokens and partial or complete list of property keys.
@@ -243,7 +243,7 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
             // Add optimized path for when property list is fully known
             descriptors.add( schemaDescriptor );
             int[] propertyKeyIds = sortedPropertyKeyIds( schemaDescriptor.schema() );
-            SchemaDescriptor.PropertySchemaType propertySchemaType = schemaDescriptor.schema().propertySchemaType();
+            PropertySchemaType propertySchemaType = schemaDescriptor.schema().propertySchemaType();
             if ( propertySchemaType == COMPLETE_ALL_TOKENS )
             {
                 // Just add the first token id to the top level set
@@ -281,7 +281,7 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
             // Remove from the optimized path
             descriptors.remove( schemaDescriptor );
             int[] propertyKeyIds = sortedPropertyKeyIds( schemaDescriptor.schema() );
-            SchemaDescriptor.PropertySchemaType propertySchemaType = schemaDescriptor.schema().propertySchemaType();
+            PropertySchemaType propertySchemaType = schemaDescriptor.schema().propertySchemaType();
             if ( propertySchemaType == COMPLETE_ALL_TOKENS )
             {
                 int firstPropertyKeyId = propertyKeyIds[0];

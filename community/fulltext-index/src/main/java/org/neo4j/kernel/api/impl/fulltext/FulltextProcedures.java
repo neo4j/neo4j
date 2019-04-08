@@ -49,6 +49,7 @@ import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -256,7 +257,7 @@ public class FulltextProcedures
     private IndexReference getValidIndexReference( @Name( "indexName" ) String name )
     {
         IndexReference indexReference = tx.schemaRead().indexGetForName( name );
-        if ( indexReference == IndexReference.NO_INDEX || !indexReference.isFulltextIndex() )
+        if ( indexReference == IndexReference.NO_INDEX || indexReference.getIndexType() != IndexType.FULLTEXT )
         {
             throw new IllegalArgumentException( "There is no such fulltext schema index: " + name );
         }

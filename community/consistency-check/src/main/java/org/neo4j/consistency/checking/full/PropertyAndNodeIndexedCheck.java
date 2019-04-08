@@ -43,6 +43,7 @@ import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.LookupFilter;
@@ -280,7 +281,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
 
     static boolean entityIntersectsSchema( IntObjectMap<PropertyBlock> entityPropertyMap, SchemaDescriptor schema )
     {
-        boolean requireAllTokens = schema.propertySchemaType() == SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
+        boolean requireAllTokens = schema.propertySchemaType() == PropertySchemaType.COMPLETE_ALL_TOKENS;
         if ( requireAllTokens )
         {
             return hasAllProperties( entityPropertyMap, schema.getPropertyIds() );

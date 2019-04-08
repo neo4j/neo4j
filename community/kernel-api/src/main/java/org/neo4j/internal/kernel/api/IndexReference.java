@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.values.storable.ValueCategory;
@@ -68,6 +69,11 @@ public interface IndexReference extends IndexCapability, SchemaDescriptorSupplie
     String userDescription( TokenNameLookup tokenNameLookup );
 
     /**
+     * Returns the {@link IndexType} of this index reference.
+     */
+    IndexType getIndexType();
+
+    /**
      * Sorts indexes by type, returning first GENERAL indexes, followed by UNIQUE. Implementation is not suitable in
      * hot path.
      *
@@ -95,12 +101,6 @@ public interface IndexReference extends IndexCapability, SchemaDescriptorSupplie
         public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
             return IndexCapability.NO_CAPABILITY.valueCapability( valueCategories );
-        }
-
-        @Override
-        public boolean isFulltextIndex()
-        {
-            return false;
         }
 
         @Override
@@ -149,6 +149,12 @@ public interface IndexReference extends IndexCapability, SchemaDescriptorSupplie
         public String userDescription( TokenNameLookup tokenNameLookup )
         {
             return SchemaDescriptor.NO_SCHEMA.userDescription( tokenNameLookup );
+        }
+
+        @Override
+        public IndexType getIndexType()
+        {
+            return IndexType.NOT_AN_INDEX;
         }
     };
 }

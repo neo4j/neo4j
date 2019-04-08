@@ -47,7 +47,10 @@ public interface IndexDescriptor extends SchemaDescriptorSupplier
      */
     String userDescription( TokenNameLookup tokenNameLookup );
 
-    boolean isFulltextIndex();
+    /**
+     * Returns the {@link IndexType} of this index reference.
+     */
+    IndexType getIndexType();
 
     boolean isEventuallyConsistent();
 

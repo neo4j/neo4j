@@ -91,6 +91,7 @@ import static org.neo4j.helpers.collection.Iterators.addToCollection;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.map;
 import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabelNoIndex;
 import static org.neo4j.internal.schema.SchemaDescriptorFactory.forRelType;
 import static org.neo4j.internal.schema.SchemaDescriptorFactory.multiToken;
 import static org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl.labelNameList;
@@ -709,7 +710,7 @@ public class SchemaImpl implements Schema
                     int labelId = tokenWrite.labelGetOrCreateForName( label.name() );
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, propertyKeys );
                     transaction.schemaWrite().nodePropertyExistenceConstraintCreate(
-                            forLabel( labelId, propertyKeyIds ) );
+                            forLabelNoIndex( labelId, propertyKeyIds ) );
                     return new NodePropertyExistenceConstraintDefinition( this, label, propertyKeys );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException |
