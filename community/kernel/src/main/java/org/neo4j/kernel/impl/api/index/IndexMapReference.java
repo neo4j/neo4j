@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.eclipse.collections.api.set.primitive.IntSet;
-
-import java.util.Set;
+import java.util.Collection;
 import java.util.function.Function;
 
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.values.storable.Value;
 
@@ -105,10 +104,26 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return indexMap.getAllIndexProxies();
     }
 
-    public Set<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, IntSet properties,
-            EntityType entityType )
+    public Collection<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, int[] sortedProperties,
+            boolean propertyListIsComplete, EntityType entityType )
     {
-        return indexMap.getRelatedIndexes( changedEntityTokens, unchangedEntityTokens, properties, entityType );
+        return indexMap.getRelatedIndexes( changedEntityTokens, unchangedEntityTokens, sortedProperties, propertyListIsComplete, entityType );
+    }
+
+    public Collection<IndexBackedConstraintDescriptor> getRelatedConstraints( long[] changedLabels, long[] unchangedLabels, int[] sortedProperties,
+            boolean propertyListIsComplete, EntityType entityType )
+    {
+        return indexMap.getRelatedConstraints( changedLabels, unchangedLabels, sortedProperties, propertyListIsComplete, entityType );
+    }
+
+    public boolean hasRelatedSchema( long[] labels, int propertyKey, EntityType entityType )
+    {
+        return indexMap.hasRelatedSchema( labels, propertyKey, entityType );
+    }
+
+    public boolean hasRelatedSchema( int label, EntityType entityType )
+    {
+        return indexMap.hasRelatedSchema( label, entityType );
     }
 
     public IndexUpdaterMap createIndexUpdaterMap( IndexUpdateMode mode )

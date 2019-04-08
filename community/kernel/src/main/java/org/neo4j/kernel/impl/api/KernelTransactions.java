@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionStateManager;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.TokenHolders;
@@ -100,7 +101,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final MonotonicCounter userTransactionIdCounter = MonotonicCounter.newAtomicMonotonicCounter();
     private final AutoIndexing autoIndexing;
     private final ExplicitIndexStore explicitIndexStore;
-    private final IndexingProvidersService indexProviders;
+    private final IndexingService indexingService;
     private final TokenHolders tokenHolders;
     private final String currentDatabaseName;
     private final Dependencies dataSourceDependencies;
@@ -143,7 +144,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             Procedures procedures, TransactionIdStore transactionIdStore, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef,
             AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability, AutoIndexing autoIndexing,
             ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
-            ConstraintSemantics constraintSemantics, SchemaState schemaState, IndexingProvidersService indexProviders, TokenHolders tokenHolders,
+            ConstraintSemantics constraintSemantics, SchemaState schemaState, IndexingService indexingService, TokenHolders tokenHolders,
             String currentDatabaseName, Dependencies dataSourceDependencies )
     {
         this.config = config;
@@ -166,7 +167,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.accessCapability = accessCapability;
         this.autoIndexing = autoIndexing;
         this.explicitIndexStore = explicitIndexStore;
-        this.indexProviders = indexProviders;
+        this.indexingService = indexingService;
         this.tokenHolders = tokenHolders;
         this.currentDatabaseName = currentDatabaseName;
         this.dataSourceDependencies = dataSourceDependencies;
@@ -368,7 +369,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                             tracers.pageCursorTracerSupplier, storageEngine, accessCapability,
                             autoIndexing,
                             explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
-                            schemaState, indexProviders, tokenHolders, dataSourceDependencies );
+                            schemaState, indexingService, tokenHolders, dataSourceDependencies );
             this.transactions.add( tx );
             return tx;
         }

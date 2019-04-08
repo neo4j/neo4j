@@ -19,16 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.eclipse.collections.api.map.primitive.LongObjectMap;
-
 import java.util.Iterator;
-import java.util.List;
 
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.impl.api.index.EntityCommandGrouper;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 
 /**
  * Provides direct access to updates.
@@ -49,8 +45,8 @@ public class DirectIndexUpdates implements IndexUpdates
     }
 
     @Override
-    public void feed( LongObjectMap<List<PropertyCommand>> propCommandsByNodeId, LongObjectMap<List<PropertyCommand>> propCommandsByRelationshipId,
-            LongObjectMap<NodeCommand> nodeCommands, LongObjectMap<Command.RelationshipCommand> relationshipCommandPrimitiveLongObjectMap )
+    public void feed( EntityCommandGrouper<Command.NodeCommand>.Cursor nodeCommands,
+            EntityCommandGrouper<Command.RelationshipCommand>.Cursor relationshipCommands )
     {
         throw new UnsupportedOperationException();
     }

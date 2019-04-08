@@ -61,7 +61,6 @@ import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
-import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
@@ -143,7 +142,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync;
     private final IndexStoreView indexStoreView;
     private final ExplicitIndexProvider explicitIndexProviderLookup;
-    private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
     private final IdController idController;
     private final int denseNodeThreshold;
     private final int recordIdBatchSize;
@@ -190,7 +188,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
         try
         {
-            indexUpdatesConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
             schemaCache = new SchemaCache( constraintSemantics, Collections.emptyList(), indexProviderMap );
             schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
 
@@ -204,7 +201,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             this.indexProviderMap = indexProviderMap;
             indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, indexProviderMap,
                     indexStoreView, tokenNameLookup,
-                    Iterators.asList( schemaStorage.indexesGetAll() ), logProvider, userLogProvider,
+                    Iterators.asList( schemaStorage.loadAllSchemaRules() ), logProvider, userLogProvider,
                     indexingServiceMonitor, schemaState );
 
             integrityValidator = new IntegrityValidator( neoStores, indexingService );
@@ -336,7 +333,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             // Schema index application
             appliers.add( new IndexBatchTransactionApplier( indexingService, labelScanStoreSync, indexUpdatesSync,
                     neoStores.getNodeStore(), neoStores.getRelationshipStore(),
-                    indexUpdatesConverter, indexActivator ) );
+                    neoStores.getPropertyStore(), indexActivator ) );
 
             // Explicit index application
             appliers.add(

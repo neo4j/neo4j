@@ -73,7 +73,7 @@ import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionStateCloseExce
 import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionStateHolder;
 import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionStateManager;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -199,7 +199,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier, StorageEngine storageEngine, AccessCapability accessCapability,
             AutoIndexing autoIndexing, ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
             CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics, SchemaState schemaState,
-            IndexingProvidersService indexProviders, TokenHolders tokenHolders, Dependencies dataSourceDependencies )
+            IndexingService indexingService, TokenHolders tokenHolders, Dependencies dataSourceDependencies )
     {
         this.schemaWriteGuard = schemaWriteGuard;
         this.hooks = hooks;
@@ -229,14 +229,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.operations =
                 new Operations(
                         allStoreHolder,
-                        new IndexTxStateUpdater( storageReader, allStoreHolder, indexProviders ), storageReader,
+                        new IndexTxStateUpdater( allStoreHolder, indexingService ), storageReader,
                         this,
                         new KernelToken( storageReader, this, tokenHolders ),
                         cursors,
                         autoIndexing,
                         constraintIndexCreator,
                         constraintSemantics,
-                        indexProviders,
+                        indexingService,
                         config );
         this.collectionsFactory = collectionsFactorySupplier.create();
     }

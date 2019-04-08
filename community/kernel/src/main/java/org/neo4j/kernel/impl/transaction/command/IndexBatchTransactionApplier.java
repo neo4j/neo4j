@@ -35,12 +35,15 @@ import org.neo4j.kernel.impl.api.index.PropertyCommandsExtractor;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.OnlineIndexUpdates;
 import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.util.concurrent.AsyncApply;
 import org.neo4j.util.concurrent.WorkSync;
@@ -58,7 +61,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync;
     private final SingleTransactionApplier transactionApplier;
     private final IndexActivator indexActivator;
-    private final PropertyPhysicalToLogicalConverter indexUpdateConverter;
+    private final PropertyStore propertyStore;
 
     private List<NodeLabelUpdate> labelUpdates;
     private IndexUpdates indexUpdates;
@@ -66,12 +69,12 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
 
     public IndexBatchTransactionApplier( IndexingService indexingService, WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync,
             WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync, NodeStore nodeStore, RelationshipStore relationshipStore,
-            PropertyPhysicalToLogicalConverter indexUpdateConverter, IndexActivator indexActivator )
+            PropertyStore propertyStore, IndexActivator indexActivator )
     {
         this.indexingService = indexingService;
         this.labelScanStoreSync = labelScanStoreSync;
         this.indexUpdatesSync = indexUpdatesSync;
-        this.indexUpdateConverter = indexUpdateConverter;
+        this.propertyStore = propertyStore;
         this.transactionApplier = new SingleTransactionApplier( nodeStore, relationshipStore );
         this.indexActivator = indexActivator;
     }
@@ -150,8 +153,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
             {
                 // Queue the index updates. When index updates from all transactions in this batch have been accumulated
                 // we'll feed them to the index updates work sync at the end of the batch
-                indexUpdates().feed( indexUpdatesExtractor.propertyCommandsByNodeIds(), indexUpdatesExtractor.propertyCommandsByRelationshipIds(),
-                        indexUpdatesExtractor.nodeCommandsById(), indexUpdatesExtractor.relationshipCommandsById() );
+                indexUpdates().feed( indexUpdatesExtractor.getNodeCommands(), indexUpdatesExtractor.getRelationshipCommands() );
                 indexUpdatesExtractor.close();
             }
 
@@ -167,7 +169,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         {
             if ( indexUpdates == null )
             {
-                indexUpdates = new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, indexUpdateConverter );
+                indexUpdates = new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, new PropertyPhysicalToLogicalConverter( propertyStore ) );
             }
             return indexUpdates;
         }
@@ -215,8 +217,10 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         @Override
         public boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command ) throws IOException
         {
+            SchemaRule schemaRule = command.getSchemaRule();
             if ( command.getSchemaRule() instanceof StoreIndexDescriptor )
             {
+                StoreIndexDescriptor indexRule = (StoreIndexDescriptor) schemaRule;
                 // Why apply index updates here? Here's the thing... this is a batch applier, which means that
                 // index updates are gathered throughout the batch and applied in the end of the batch.
                 // Assume there are some transactions creating or modifying nodes that may not be covered
@@ -231,22 +235,39 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                 case UPDATE:
                     // Shouldn't we be more clear about that we are waiting for an index to come online here?
                     // right now we just assume that an update to index records means wait for it to be online.
-                    if ( ((StoreIndexDescriptor) command.getSchemaRule()).canSupportUniqueConstraint() )
+                    if ( indexRule.canSupportUniqueConstraint() )
                     {
                         // Register activations into the IndexActivator instead of IndexingService to avoid deadlock
                         // that could insue for applying batches of transactions where a previous transaction in the same
                         // batch acquires a low-level commit lock that prevents the very same index population to complete.
-                        indexActivator.activateIndex( command.getSchemaRule().getId() );
+                        indexActivator.activateIndex( schemaRule.getId() );
                     }
                     break;
                 case CREATE:
                     // Add to list so that all these indexes will be created in one call later
                     createdIndexes = createdIndexes == null ? new ArrayList<>() : createdIndexes;
-                    createdIndexes.add( (StoreIndexDescriptor) command.getSchemaRule() );
+                    createdIndexes.add( indexRule );
                     break;
                 case DELETE:
-                    indexingService.dropIndex( (StoreIndexDescriptor) command.getSchemaRule() );
-                    indexActivator.indexDropped( command.getSchemaRule().getId() );
+                    indexingService.dropIndex( indexRule );
+                    indexActivator.indexDropped( schemaRule.getId() );
+                    break;
+                default:
+                    throw new IllegalStateException( command.getMode().name() );
+                }
+            }
+            // Keep IndexingService updated on constraint changes
+            else if ( schemaRule instanceof ConstraintRule )
+            {
+                ConstraintRule constraintRule = (ConstraintRule) schemaRule;
+                switch ( command.getMode() )
+                {
+                case CREATE:
+                case UPDATE:
+                    indexingService.putConstraint( constraintRule );
+                    break;
+                case DELETE:
+                    indexingService.removeConstraint( constraintRule.getId() );
                     break;
                 default:
                     throw new IllegalStateException( command.getMode().name() );

@@ -19,15 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.eclipse.collections.api.map.primitive.LongObjectMap;
-
-import java.util.List;
-
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.impl.api.index.EntityCommandGrouper;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 
 /**
  * Set of updates ({@link IndexEntryUpdate}) to apply to indexes.
@@ -36,13 +31,10 @@ public interface IndexUpdates extends Iterable<IndexEntryUpdate<SchemaDescriptor
 {
     /**
      * Feeds updates raw material in the form of node/property commands, to create updates from.
-     * @param propCommandsByNodeId {@link PropertyCommand} grouped by node id.
-     * @param propCommandsByRelationshipId
-     * @param nodeCommands {@link NodeCommand} by node id.
-     * @param relationshipCommandPrimitiveLongObjectMap
+     * @param nodeCommands node data
+     * @param relationshipCommands relationship data
      */
-    void feed( LongObjectMap<List<PropertyCommand>> propCommandsByNodeId, LongObjectMap<List<PropertyCommand>> propCommandsByRelationshipId,
-            LongObjectMap<NodeCommand> nodeCommands, LongObjectMap<Command.RelationshipCommand> relationshipCommandPrimitiveLongObjectMap );
+    void feed( EntityCommandGrouper<Command.NodeCommand>.Cursor nodeCommands, EntityCommandGrouper<Command.RelationshipCommand>.Cursor relationshipCommands );
 
     boolean hasUpdates();
 }

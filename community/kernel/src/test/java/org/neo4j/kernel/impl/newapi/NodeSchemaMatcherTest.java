@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
-import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
@@ -50,6 +49,7 @@ public class NodeSchemaMatcherTest
     private static final int unIndexedPropId = 22;
     private static final int nonExistentPropId = 23;
     private static final int specialPropId = 24;
+    private static final int[] props = new int[]{propId1, propId2, unIndexedPropId};
 
     IndexDescriptor index1 = forLabel( labelId1, propId1 );
     IndexDescriptor index1_2 = forLabel( labelId1, propId1, propId2 );
@@ -75,8 +75,7 @@ public class NodeSchemaMatcherTest
     {
         // when
         List<IndexDescriptor> matched = new ArrayList<>();
-        NodeSchemaMatcher.onMatchingSchema( iterator( index1 ), node,
-                new StubPropertyCursor(), unIndexedPropId, ( schema, props ) -> matched.add( schema ) );
+        NodeSchemaMatcher.onMatchingSchema( iterator( index1 ), unIndexedPropId, props, matched::add );
 
         // then
         assertThat( matched, contains( index1 ) );
@@ -87,8 +86,7 @@ public class NodeSchemaMatcherTest
     {
         // when
         List<IndexDescriptor> matched = new ArrayList<>();
-        NodeSchemaMatcher.onMatchingSchema( iterator( index1_2 ), node, new StubPropertyCursor(),
-                unIndexedPropId, ( schema, props ) -> matched.add( schema ) );
+        NodeSchemaMatcher.onMatchingSchema( iterator( index1_2 ), unIndexedPropId, props, matched::add );
 
         // then
         assertThat( matched, contains( index1_2 ) );
@@ -99,8 +97,7 @@ public class NodeSchemaMatcherTest
     {
         // when
         List<IndexDescriptor> matched = new ArrayList<>();
-        NodeSchemaMatcher.onMatchingSchema( iterator( indexWithMissingProperty ), node, new StubPropertyCursor(),
-                unIndexedPropId, ( schema, props ) -> matched.add( schema ) );
+        NodeSchemaMatcher.onMatchingSchema( iterator( indexWithMissingProperty ), unIndexedPropId, props, matched::add );
 
         // then
         assertThat( matched, empty() );
@@ -111,8 +108,7 @@ public class NodeSchemaMatcherTest
     {
         // when
         List<IndexDescriptor> matched = new ArrayList<>();
-        NodeSchemaMatcher.onMatchingSchema( iterator( indexWithMissingLabel ), node, new StubPropertyCursor(),
-                unIndexedPropId, ( schema, props ) -> matched.add( schema ) );
+        NodeSchemaMatcher.onMatchingSchema( iterator( indexWithMissingLabel ), node.labels().all(), unIndexedPropId, props, matched::add );
 
         // then
         assertThat( matched, empty() );
@@ -123,8 +119,7 @@ public class NodeSchemaMatcherTest
     {
         // when
         List<IndexDescriptor> matched = new ArrayList<>();
-        NodeSchemaMatcher.onMatchingSchema( iterator( indexOnSpecialProperty ), node, new StubPropertyCursor(),
-                specialPropId, ( schema, props ) -> matched.add( schema ) );
+        NodeSchemaMatcher.onMatchingSchema( iterator( indexOnSpecialProperty ), specialPropId, props, matched::add );
 
         // then
         assertThat( matched, contains( indexOnSpecialProperty ) );
@@ -138,9 +133,7 @@ public class NodeSchemaMatcherTest
 
         // when
         final List<IndexDescriptor> matched = new ArrayList<>();
-        NodeSchemaMatcher.onMatchingSchema(
-                indexes.iterator(), node, new StubPropertyCursor(), unIndexedPropId,
-                ( schema, props ) -> matched.add( schema ) );
+        NodeSchemaMatcher.onMatchingSchema( indexes.iterator(), unIndexedPropId, props, matched::add );
 
         // then
         assertThat( matched, equalTo( indexes ) );

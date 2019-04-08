@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
-import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -76,7 +75,7 @@ public class IndexBatchTransactionApplierTest
         TransactionToApply tx = mock( TransactionToApply.class );
         PropertyStore propertyStore = mock( PropertyStore.class );
         try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexing, labelScanSync, indexUpdatesSync, mock( NodeStore.class ),
-                mock( RelationshipStore.class ), new PropertyPhysicalToLogicalConverter( propertyStore ), new IndexActivator( indexing ) ) )
+                mock( RelationshipStore.class ), propertyStore, new IndexActivator( indexing ) ) )
         {
             try ( TransactionApplier txApplier = applier.startTx( tx ) )
             {
@@ -114,7 +113,7 @@ public class IndexBatchTransactionApplierTest
         StoreIndexDescriptor rule3 = uniqueForSchema( forLabel( 3, 1 ), providerDescriptor ).withIds( indexId3, constraintId3 );
         try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexing, labelScanSync,
                 indexUpdatesSync, mock( NodeStore.class ), mock( RelationshipStore.class ),
-                new PropertyPhysicalToLogicalConverter( propertyStore ), indexActivator ) )
+                propertyStore, indexActivator ) )
         {
             try ( TransactionApplier txApplier = applier.startTx( tx ) )
             {

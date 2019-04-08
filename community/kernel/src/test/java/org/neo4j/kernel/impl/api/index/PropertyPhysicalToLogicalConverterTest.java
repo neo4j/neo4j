@@ -26,17 +26,16 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyRecordChange;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -47,11 +46,10 @@ import org.neo4j.values.storable.Values;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
-
+import static org.junit.Assert.assertTrue;
 
 public class PropertyPhysicalToLogicalConverterTest
 {
-
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
@@ -70,8 +68,7 @@ public class PropertyPhysicalToLogicalConverterTest
     public void before()
     {
         StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(),
-                EmptyVersionContextSupplier.EMPTY );
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         neoStores = storeFactory.openAllNeoStores( true );
         store = neoStores.getPropertyStore();
         converter = new PropertyPhysicalToLogicalConverter( store );
@@ -93,9 +90,7 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, value ) );
 
         // WHEN
-        assertThat(
-                convert( none, none, change( before, after ) ),
-                equalTo( EntityUpdates.forEntity( 0 ).added( key, value ).build() ) );
+        assertThat( convert( none, none, change( before, after ) ), equalTo( EntityUpdates.forEntity( 0, false ).added( key, value ).build() ) );
     }
 
     @Test
@@ -112,7 +107,7 @@ public class PropertyPhysicalToLogicalConverterTest
         EntityUpdates update = convert( none, none, change( before, after ) );
 
         // THEN
-        EntityUpdates expected = EntityUpdates.forEntity( 0 ).changed( key, valueBefore, valueAfter ).build();
+        EntityUpdates expected = EntityUpdates.forEntity( 0, false ).changed( key, valueBefore, valueAfter ).build();
         assertEquals( expected, update );
     }
 
@@ -126,9 +121,7 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, value ) );
 
         // WHEN
-        assertThat(
-                convert( none, none, change( before, after ) ),
-                equalTo( EntityUpdates.forEntity( 0 ).build() ) );
+        assertThat( convert( none, none, change( before, after ) ), equalTo( EntityUpdates.forEntity( 0, false ).build() ) );
     }
 
     @Test
@@ -144,7 +137,7 @@ public class PropertyPhysicalToLogicalConverterTest
         EntityUpdates update = convert( none, none, change( before, after ) );
 
         // THEN
-        EntityUpdates expected = EntityUpdates.forEntity( 0 ).removed( key, value ).build();
+        EntityUpdates expected = EntityUpdates.forEntity( 0, false ).removed( key, value ).build();
         assertEquals( expected, update );
     }
 
@@ -157,9 +150,7 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, longString ) );
 
         // THEN
-        assertThat(
-                convert( none, none, change( before, after ) ),
-                equalTo( EntityUpdates.forEntity( 0 ).added( key, longString ).build() ) );
+        assertThat( convert( none, none, change( before, after ) ), equalTo( EntityUpdates.forEntity( 0, false ).added( key, longString ).build() ) );
     }
 
     @Test
@@ -174,7 +165,7 @@ public class PropertyPhysicalToLogicalConverterTest
         EntityUpdates update = convert( none, none, change( before, after ) );
 
         // THEN
-        EntityUpdates expected = EntityUpdates.forEntity( 0 ).changed( key, longString, longerString ).build();
+        EntityUpdates expected = EntityUpdates.forEntity( 0, false ).changed( key, longString, longerString ).build();
         assertEquals( expected, update );
     }
 
@@ -190,7 +181,7 @@ public class PropertyPhysicalToLogicalConverterTest
         EntityUpdates update = convert( none, none, change( before, after ) );
 
         // THEN
-        EntityUpdates expected = EntityUpdates.forEntity( 0 ).removed( key, longString ).build();
+        EntityUpdates expected = EntityUpdates.forEntity( 0, false ).removed( key, longString ).build();
         assertEquals( expected, update );
     }
 
@@ -201,18 +192,14 @@ public class PropertyPhysicalToLogicalConverterTest
         int key = 12;
         Value oldValue = Values.of( "value1" );
         Value newValue = Values.of( "value two" );
-        PropertyRecordChange movedFrom = change(
-                propertyRecord( property( key, oldValue ) ),
-                propertyRecord() );
-        PropertyRecordChange movedTo = change(
-                propertyRecord(),
-                propertyRecord( property( key, newValue ) ) );
+        Command.PropertyCommand movedFrom = change( propertyRecord( property( key, oldValue ) ), propertyRecord() );
+        Command.PropertyCommand movedTo = change( propertyRecord(), propertyRecord( property( key, newValue ) ) );
 
         // WHEN
         EntityUpdates update = convert( none, none, movedFrom, movedTo );
 
         // THEN
-        EntityUpdates expected = EntityUpdates.forEntity( 0 ).changed( key, oldValue, newValue ).build();
+        EntityUpdates expected = EntityUpdates.forEntity( 0, false ).changed( key, oldValue, newValue ).build();
         assertEquals( expected, update );
     }
 
@@ -239,34 +226,24 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     private EntityUpdates convert( long[] labelsBefore,
-            long[] labelsAfter, PropertyRecordChange change )
+            long[] labelsAfter, Command.PropertyCommand... changes )
     {
-        return convert( labelsBefore, labelsAfter, new PropertyRecordChange[] {change} );
-    }
-
-    private EntityUpdates convert( long[] labelsBefore,
-            long[] labelsAfter, PropertyRecordChange... changes )
-    {
-        EntityUpdates.Builder updates = EntityUpdates.forEntity( (long) 0 ).withTokens( labelsBefore ).withTokensAfter( labelsAfter );
-        converter.convertPropertyRecord( 0, Iterables.iterable( changes ), updates );
+        long nodeId = 0;
+        EntityUpdates.Builder updates = EntityUpdates.forEntity( (long) 0, false ).withTokens( labelsBefore ).withTokensAfter( labelsAfter );
+        EntityCommandGrouper grouper = new EntityCommandGrouper<>( Command.NodeCommand.class, 8 );
+        grouper.add( new Command.NodeCommand( new NodeRecord( nodeId ), new NodeRecord( nodeId ) ) );
+        for ( Command.PropertyCommand change : changes )
+        {
+            grouper.add( change );
+        }
+        EntityCommandGrouper.Cursor cursor = grouper.sortAndAccessGroups();
+        assertTrue( cursor.nextEntity() );
+        converter.convertPropertyRecord( cursor, updates );
         return updates.build();
     }
 
-    private PropertyRecordChange change( final PropertyRecord before, final PropertyRecord after )
+    private Command.PropertyCommand change( final PropertyRecord before, final PropertyRecord after )
     {
-        return new PropertyRecordChange()
-        {
-            @Override
-            public PropertyRecord getBefore()
-            {
-                return before;
-            }
-
-            @Override
-            public PropertyRecord getAfter()
-            {
-                return after;
-            }
-        };
+        return new Command.PropertyCommand( before, after );
     }
 }

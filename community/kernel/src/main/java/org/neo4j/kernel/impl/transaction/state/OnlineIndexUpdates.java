@@ -19,20 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.map.primitive.LongObjectMap;
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.impl.api.index.EntityCommandGrouper;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
@@ -41,12 +34,15 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.storageengine.api.EntityType;
 
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
+import static org.neo4j.kernel.impl.transaction.command.Command.Mode.CREATE;
+import static org.neo4j.kernel.impl.transaction.command.Command.Mode.DELETE;
 
 /**
  * Derives logical index updates from physical records, provided by {@link NodeCommand node commands},
@@ -55,7 +51,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  * properties matching existing and online indexes; in that case the properties for that node needs to be read
  * from store since the commands in that transaction cannot itself provide enough information.
  *
- * One instance can be {@link #feed(LongObjectMap, LongObjectMap, LongObjectMap, LongObjectMap) fed} data about
+ * One instance can be {@link IndexUpdates#feed(EntityCommandGrouper.Cursor,EntityCommandGrouper.Cursor) fed} data about
  * multiple transactions, to be {@link #iterator() accessed} later.
  */
 public class OnlineIndexUpdates implements IndexUpdates
@@ -84,32 +80,16 @@ public class OnlineIndexUpdates implements IndexUpdates
     }
 
     @Override
-    public void feed( LongObjectMap<List<PropertyCommand>> propCommandsByNodeId,
-            LongObjectMap<List<PropertyCommand>> propertyCommandsByRelationshipId, LongObjectMap<NodeCommand> nodeCommands,
-            LongObjectMap<RelationshipCommand> relationshipCommands )
+    public void feed( EntityCommandGrouper<NodeCommand>.Cursor nodeCommands, EntityCommandGrouper<RelationshipCommand>.Cursor relationshipCommands )
     {
-        LongIterator nodeIds = allKeys( nodeCommands, propCommandsByNodeId ).longIterator();
-        while ( nodeIds.hasNext() )
+        while ( nodeCommands.nextEntity() )
         {
-            long nodeId = nodeIds.next();
-            gatherUpdatesFor( nodeId, nodeCommands.get( nodeId ), propCommandsByNodeId.get( nodeId ) );
+            gatherUpdatesFor( nodeCommands.currentEntityId(), nodeCommands.currentEntityCommand(), nodeCommands );
         }
-        LongIterator relationshipIds = allKeys( relationshipCommands, propertyCommandsByRelationshipId ).longIterator();
-        while ( relationshipIds.hasNext() )
+        while ( relationshipCommands.nextEntity() )
         {
-            long relationshipId = relationshipIds.next();
-            gatherUpdatesFor( relationshipId, relationshipCommands.get( relationshipId ), propertyCommandsByRelationshipId.get( relationshipId ) );
+            gatherUpdatesFor( relationshipCommands.currentEntityId(), relationshipCommands.currentEntityCommand(), relationshipCommands );
         }
-    }
-
-    private LongSet allKeys( LongObjectMap... maps )
-    {
-        final MutableLongSet keys = new LongHashSet();
-        for ( LongObjectMap map : maps )
-        {
-            keys.addAll( map.keySet() );
-        }
-        return keys;
     }
 
     @Override
@@ -118,7 +98,7 @@ public class OnlineIndexUpdates implements IndexUpdates
         return !updates.isEmpty();
     }
 
-    private void gatherUpdatesFor( long nodeId, NodeCommand nodeCommand, List<PropertyCommand> propertyCommands )
+    private void gatherUpdatesFor( long nodeId, NodeCommand nodeCommand, EntityCommandGrouper<NodeCommand>.Cursor propertyCommands )
     {
         EntityUpdates.Builder nodePropertyUpdate =
                 gatherUpdatesFromCommandsForNode( nodeId, nodeCommand, propertyCommands );
@@ -132,7 +112,8 @@ public class OnlineIndexUpdates implements IndexUpdates
         }
     }
 
-    private void gatherUpdatesFor( long relationshipId, RelationshipCommand relationshipCommand, List<PropertyCommand> propertyCommands )
+    private void gatherUpdatesFor( long relationshipId, RelationshipCommand relationshipCommand,
+            EntityCommandGrouper<RelationshipCommand>.Cursor propertyCommands )
     {
         EntityUpdates.Builder relationshipPropertyUpdate = gatherUpdatesFromCommandsForRelationship( relationshipId, relationshipCommand, propertyCommands );
 
@@ -147,7 +128,7 @@ public class OnlineIndexUpdates implements IndexUpdates
 
     private EntityUpdates.Builder gatherUpdatesFromCommandsForNode( long nodeId,
             NodeCommand nodeChanges,
-            List<PropertyCommand> propertyCommandsForNode )
+            EntityCommandGrouper<NodeCommand>.Cursor propertyCommandsForNode )
     {
         long[] nodeLabelsBefore;
         long[] nodeLabelsAfter;
@@ -178,18 +159,22 @@ public class OnlineIndexUpdates implements IndexUpdates
         }
 
         // First get possible Label changes
-        EntityUpdates.Builder nodePropertyUpdates = EntityUpdates.forEntity( nodeId ).withTokens( nodeLabelsBefore ).withTokensAfter( nodeLabelsAfter );
+        boolean complete = providesCompleteListOfProperties( nodeChanges );
+        EntityUpdates.Builder nodePropertyUpdates =
+                EntityUpdates.forEntity( nodeId, complete ).withTokens( nodeLabelsBefore ).withTokensAfter( nodeLabelsAfter );
 
         // Then look for property changes
-        if ( propertyCommandsForNode != null )
-        {
-            converter.convertPropertyRecord( nodeId, Iterables.cast( propertyCommandsForNode ), nodePropertyUpdates );
-        }
+        converter.convertPropertyRecord( propertyCommandsForNode, nodePropertyUpdates );
         return nodePropertyUpdates;
     }
 
+    private static boolean providesCompleteListOfProperties( Command entityCommand )
+    {
+        return entityCommand != null && (entityCommand.getMode() == CREATE || entityCommand.getMode() == DELETE);
+    }
+
     private EntityUpdates.Builder gatherUpdatesFromCommandsForRelationship( long relationshipId, RelationshipCommand relationshipCommand,
-            List<PropertyCommand> propertyCommands )
+            EntityCommandGrouper<RelationshipCommand>.Cursor propertyCommands )
     {
         long reltypeBefore;
         long reltypeAfter;
@@ -203,12 +188,10 @@ public class OnlineIndexUpdates implements IndexUpdates
             RelationshipRecord relationshipRecord = loadRelationship( relationshipId );
             reltypeBefore = reltypeAfter = relationshipRecord.getType();
         }
+        boolean complete = providesCompleteListOfProperties( relationshipCommand );
         EntityUpdates.Builder relationshipPropertyUpdates =
-                EntityUpdates.forEntity( relationshipId ).withTokens( reltypeBefore ).withTokensAfter( reltypeAfter );
-        if ( propertyCommands != null )
-        {
-            converter.convertPropertyRecord( relationshipId, Iterables.cast( propertyCommands ), relationshipPropertyUpdates );
-        }
+                EntityUpdates.forEntity( relationshipId, complete ).withTokens( reltypeBefore ).withTokensAfter( reltypeAfter );
+        converter.convertPropertyRecord( propertyCommands, relationshipPropertyUpdates );
         return relationshipPropertyUpdates;
     }
 

@@ -19,22 +19,23 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.eclipse.collections.api.iterator.IntIterator;
-import org.eclipse.collections.api.map.primitive.IntObjectMap;
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+import java.util.Arrays;
+import java.util.Comparator;
 
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyRecordChange;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.values.storable.Value;
 
 public class PropertyPhysicalToLogicalConverter
 {
+    private static final Comparator<PropertyBlock> BLOCK_COMPARATOR = ( o1, o2 ) -> Integer.compare( o1.getKeyIndexId(), o2.getKeyIndexId() );
+
     private final PropertyStore propertyStore;
+    private PropertyBlock[] beforeBlocks = new PropertyBlock[8];
+    private int beforeBlocksCursor;
+    private PropertyBlock[] afterBlocks = new PropertyBlock[8];
+    private int afterBlocksCursor;
 
     public PropertyPhysicalToLogicalConverter( PropertyStore propertyStore )
     {
@@ -44,19 +45,50 @@ public class PropertyPhysicalToLogicalConverter
     /**
      * Converts physical changes to PropertyRecords for a entity into logical updates
      */
-    public void convertPropertyRecord( long entityId, Iterable<PropertyRecordChange> changes,
-            EntityUpdates.Builder properties )
+    public void convertPropertyRecord( EntityCommandGrouper<?>.Cursor changes, EntityUpdates.Builder properties )
     {
-        MutableIntObjectMap<PropertyBlock> beforeMap = new IntObjectHashMap<>();
-        MutableIntObjectMap<PropertyBlock> afterMap = new IntObjectHashMap<>();
-        mapBlocks( entityId, changes, beforeMap, afterMap );
+        mapBlocks( changes );
 
-        final IntIterator uniqueIntIterator = uniqueIntIterator( beforeMap, afterMap );
-        while ( uniqueIntIterator.hasNext() )
+        int bc = 0;
+        int ac = 0;
+        while ( bc < beforeBlocksCursor || ac < afterBlocksCursor )
         {
-            int key = uniqueIntIterator.next();
-            PropertyBlock beforeBlock = beforeMap.get( key );
-            PropertyBlock afterBlock = afterMap.get( key );
+            PropertyBlock beforeBlock = null;
+            PropertyBlock afterBlock = null;
+
+            int beforeKey = Integer.MAX_VALUE;
+            int afterKey = Integer.MAX_VALUE;
+            int key;
+            if ( bc < beforeBlocksCursor )
+            {
+                beforeBlock = beforeBlocks[bc];
+                beforeKey = beforeBlock.getKeyIndexId();
+            }
+            if ( ac < afterBlocksCursor )
+            {
+                afterBlock = afterBlocks[ac];
+                afterKey = afterBlock.getKeyIndexId();
+            }
+
+            if ( beforeKey < afterKey )
+            {
+                afterBlock = null;
+                key = beforeKey;
+                bc++;
+            }
+            else if ( beforeKey > afterKey )
+            {
+                beforeBlock = null;
+                key = afterKey;
+                ac++;
+            }
+            else
+            {
+                // They are the same
+                key = afterKey;
+                bc++;
+                ac++;
+            }
 
             if ( beforeBlock != null && afterBlock != null )
             {
@@ -75,49 +107,45 @@ public class PropertyPhysicalToLogicalConverter
                 {
                     properties.added( key, valueOf( afterBlock ) );
                 }
-                else if ( beforeBlock != null )
-                {
-                    properties.removed( key, valueOf( beforeBlock ) );
-                }
                 else
                 {
-                    throw new IllegalStateException( "Weird, an update with no property value for before or after" );
+                    properties.removed( key, valueOf( beforeBlock ) );
                 }
             }
         }
     }
 
-    private IntIterator uniqueIntIterator( IntObjectMap<PropertyBlock> beforeMap, IntObjectMap<PropertyBlock> afterMap )
+    private void mapBlocks( EntityCommandGrouper<?>.Cursor changes )
     {
-        final MutableIntSet keys = new IntHashSet();
-        keys.addAll( beforeMap.keySet() );
-        keys.addAll( afterMap.keySet() );
-        return keys.intIterator();
-    }
-
-    private void mapBlocks( long entityId, Iterable<PropertyRecordChange> changes,
-            MutableIntObjectMap<PropertyBlock> beforeMap, MutableIntObjectMap<PropertyBlock> afterMap )
-    {
-        for ( PropertyRecordChange change : changes )
+        beforeBlocksCursor = 0;
+        afterBlocksCursor = 0;
+        while ( true )
         {
-            equalCheck( change.getBefore().getEntityId(), entityId );
-            equalCheck( change.getAfter().getEntityId(), entityId );
-            mapBlocks( change.getBefore(), beforeMap );
-            mapBlocks( change.getAfter(), afterMap );
-        }
-    }
+            Command.PropertyCommand change = changes.nextProperty();
+            if ( change == null )
+            {
+                break;
+            }
 
-    private void equalCheck( long entityId, long expectedEntityId )
-    {
-        assert entityId == expectedEntityId : "Entity id differs expected " + expectedEntityId + ", but was " + entityId;
-    }
-
-    private void mapBlocks( PropertyRecord record, MutableIntObjectMap<PropertyBlock> blocks )
-    {
-        for ( PropertyBlock block : record )
-        {
-            blocks.put( block.getKeyIndexId(), block );
+            for ( PropertyBlock block : change.getBefore() )
+            {
+                if ( beforeBlocksCursor == beforeBlocks.length )
+                {
+                    beforeBlocks = Arrays.copyOf( beforeBlocks, beforeBlocksCursor * 2 );
+                }
+                beforeBlocks[beforeBlocksCursor++] = block;
+            }
+            for ( PropertyBlock block : change.getAfter() )
+            {
+                if ( afterBlocksCursor == afterBlocks.length )
+                {
+                    afterBlocks = Arrays.copyOf( afterBlocks, afterBlocksCursor * 2 );
+                }
+                afterBlocks[afterBlocksCursor++] = block;
+            }
         }
+        Arrays.sort( beforeBlocks, 0, beforeBlocksCursor, BLOCK_COMPARATOR );
+        Arrays.sort( afterBlocks, 0, afterBlocksCursor, BLOCK_COMPARATOR );
     }
 
     private Value valueOf( PropertyBlock block )

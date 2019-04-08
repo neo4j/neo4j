@@ -20,19 +20,15 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
-import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.map.primitive.LongObjectMap;
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
-import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.impl.block.factory.Functions;
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -40,6 +36,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
+import org.neo4j.kernel.api.schema.constraints.IndexBackedConstraintDescriptor;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
@@ -52,38 +51,40 @@ import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 public final class IndexMap implements Cloneable
 {
     private final MutableLongObjectMap<IndexProxy> indexesById;
+    private final MutableLongObjectMap<IndexBackedConstraintDescriptor> uniquenessConstraintsById;
     private final Map<SchemaDescriptor,IndexProxy> indexesByDescriptor;
     private final MutableObjectLongMap<SchemaDescriptor> indexIdsByDescriptor;
-    private final MutableIntObjectMap<Set<SchemaDescriptor>> descriptorsByLabel;
-    private final MutableIntObjectMap<Set<SchemaDescriptor>> descriptorsByReltype;
-    private final MutableIntObjectMap<Set<SchemaDescriptor>> nodeDescriptorsByProperty;
-    private final MutableIntObjectMap<Set<SchemaDescriptor>> relationshipDescriptorsByProperty;
+    private final SchemaDescriptorLookupSet<SchemaDescriptor> descriptorsByLabelThenProperty;
+    private final SchemaDescriptorLookupSet<SchemaDescriptor> descriptorsByReltypeThenProperty;
+    private final SchemaDescriptorLookupSet<IndexBackedConstraintDescriptor> constraintsByLabelThenProperty;
+    private final SchemaDescriptorLookupSet<IndexBackedConstraintDescriptor> constraintsByRelTypeThenProperty;
 
     public IndexMap()
     {
-        this( new LongObjectHashMap<>(), new HashMap<>(), new ObjectLongHashMap<>() );
-    }
-
-    IndexMap( MutableLongObjectMap<IndexProxy> indexesById )
-    {
-        this( indexesById, indexesByDescriptor( indexesById ), indexIdsByDescriptor( indexesById ) );
+        this( new LongObjectHashMap<>(), new HashMap<>(), new ObjectLongHashMap<>(), new LongObjectHashMap<>() );
     }
 
     private IndexMap(
             MutableLongObjectMap<IndexProxy> indexesById,
             Map<SchemaDescriptor,IndexProxy> indexesByDescriptor,
-            MutableObjectLongMap<SchemaDescriptor> indexIdsByDescriptor )
+            MutableObjectLongMap<SchemaDescriptor> indexIdsByDescriptor,
+            MutableLongObjectMap<IndexBackedConstraintDescriptor> uniquenessConstraintsById )
     {
         this.indexesById = indexesById;
         this.indexesByDescriptor = indexesByDescriptor;
         this.indexIdsByDescriptor = indexIdsByDescriptor;
-        this.descriptorsByLabel = new IntObjectHashMap<>();
-        this.descriptorsByReltype = new IntObjectHashMap<>();
-        this.nodeDescriptorsByProperty = new IntObjectHashMap<>();
-        this.relationshipDescriptorsByProperty = new IntObjectHashMap<>();
+        this.uniquenessConstraintsById = uniquenessConstraintsById;
+        this.descriptorsByLabelThenProperty = new SchemaDescriptorLookupSet<>();
+        this.descriptorsByReltypeThenProperty = new SchemaDescriptorLookupSet<>();
         for ( SchemaDescriptor schema : indexesByDescriptor.keySet() )
         {
             addDescriptorToLookups( schema );
+        }
+        this.constraintsByLabelThenProperty = new SchemaDescriptorLookupSet<>();
+        this.constraintsByRelTypeThenProperty = new SchemaDescriptorLookupSet<>();
+        for ( IndexBackedConstraintDescriptor constraint : uniquenessConstraintsById.values() )
+        {
+            addConstraintToLookups( constraint );
         }
     }
 
@@ -112,7 +113,7 @@ public final class IndexMap implements Cloneable
         addDescriptorToLookups( schema );
     }
 
-    public IndexProxy removeIndexProxy( long indexId )
+    IndexProxy removeIndexProxy( long indexId )
     {
         IndexProxy removedProxy = indexesById.remove( indexId );
         if ( removedProxy == null )
@@ -122,16 +123,7 @@ public final class IndexMap implements Cloneable
 
         SchemaDescriptor schema = removedProxy.getDescriptor().schema();
         indexesByDescriptor.remove( schema );
-        if ( schema.entityType() == EntityType.NODE )
-        {
-            removeFromLookup( schema.getEntityTokenIds(), schema, descriptorsByLabel );
-            removeFromLookup( schema.getPropertyIds(), schema, nodeDescriptorsByProperty );
-        }
-        else if ( schema.entityType() == EntityType.RELATIONSHIP )
-        {
-            removeFromLookup( schema.getEntityTokenIds(), schema, descriptorsByReltype );
-            removeFromLookup( schema.getPropertyIds(), schema, relationshipDescriptorsByProperty );
-        }
+        selectIndexesByEntityType( schema.entityType() ).remove( schema );
 
         return removedProxy;
     }
@@ -141,39 +133,152 @@ public final class IndexMap implements Cloneable
         indexesById.forEachKeyValue( consumer );
     }
 
-    public Iterable<IndexProxy> getAllIndexProxies()
+    Iterable<IndexProxy> getAllIndexProxies()
     {
         return indexesById.values();
     }
 
-    /**
-     * Get all indexes that would be affected by changes in the input labels and/or properties. The returned
-     * indexes are guaranteed to contain all affected indexes, but might also contain unaffected indexes as
-     * we cannot provide matching without checking unaffected properties for composite indexes.
-     *
-     * @param changedEntityTokens set of labels that have changed
-     * @param unchangedEntityTokens set of labels that are unchanged
-     * @param properties set of properties
-     * @param entityType type of indexes to get
-     * @return set of SchemaDescriptors describing the potentially affected indexes
-     */
-    public Set<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, IntSet properties, EntityType entityType )
+    void putUniquenessConstraint( ConstraintRule rule )
+    {
+        IndexBackedConstraintDescriptor constraintDescriptor = (IndexBackedConstraintDescriptor) rule.getConstraintDescriptor();
+        uniquenessConstraintsById.put( rule.getId(), constraintDescriptor );
+        constraintsByLabelThenProperty.add( constraintDescriptor );
+    }
+
+    void removeUniquenessConstraint( long constraintId )
+    {
+        IndexBackedConstraintDescriptor constraint = uniquenessConstraintsById.remove( constraintId );
+        if ( constraint != null )
+        {
+            selectConstraintsByEntityType( constraint.schema().entityType() ).remove( constraint );
+        }
+    }
+
+    private SchemaDescriptorLookupSet<IndexBackedConstraintDescriptor> selectConstraintsByEntityType( EntityType entityType )
     {
         switch ( entityType )
         {
         case NODE:
-            return getRelatedDescriptors( changedEntityTokens, unchangedEntityTokens, properties, descriptorsByLabel, nodeDescriptorsByProperty );
+            return constraintsByLabelThenProperty;
         case RELATIONSHIP:
-            return getRelatedDescriptors( changedEntityTokens, unchangedEntityTokens, properties, descriptorsByReltype, relationshipDescriptorsByProperty );
+            return constraintsByRelTypeThenProperty;
         default:
-            throw new IllegalArgumentException( "The given EntityType cannot be indexed: " + entityType );
+            throw new IllegalArgumentException( "Unknown entity type " + entityType );
         }
+    }
+
+    private SchemaDescriptorLookupSet<SchemaDescriptor> selectIndexesByEntityType( EntityType entityType )
+    {
+        switch ( entityType )
+        {
+        case NODE:
+            return descriptorsByLabelThenProperty;
+        case RELATIONSHIP:
+            return descriptorsByReltypeThenProperty;
+        default:
+            throw new IllegalArgumentException( "Unknown entity type " + entityType );
+        }
+    }
+
+    boolean hasRelatedSchema( long[] labels, int propertyKey, EntityType entityType )
+    {
+        return selectIndexesByEntityType( entityType ).has( labels, propertyKey ) || selectConstraintsByEntityType( entityType ).has( labels, propertyKey );
+    }
+
+    boolean hasRelatedSchema( int label, EntityType entityType )
+    {
+        return selectIndexesByEntityType( entityType ).has( label ) || selectConstraintsByEntityType( entityType ).has( label );
+    }
+
+    /**
+     * Get all descriptors that would be affected by changes in the input labels and/or properties. The returned
+     * descriptors are guaranteed to contain all affected indexes, but might also contain unaffected indexes as
+     * we cannot provide matching without checking unaffected properties for composite indexes.
+     *
+     * @param changedEntityTokens set of labels that have changed
+     * @param unchangedEntityTokens set of labels that are unchanged
+     * @param sortedProperties sorted list of properties
+     * @param entityType type of indexes to get
+     * @return set of SchemaDescriptors describing the potentially affected indexes
+     */
+    public Set<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, int[] sortedProperties,
+            boolean propertyListIsComplete, EntityType entityType )
+    {
+        return getRelatedDescriptors( selectIndexesByEntityType( entityType ), changedEntityTokens, unchangedEntityTokens, sortedProperties,
+                propertyListIsComplete );
+    }
+
+    /**
+     * Get all uniqueness constraints that would be affected by changes in the input labels and/or properties. The returned
+     * set is guaranteed to contain all affected constraints, but might also contain unaffected constraints as
+     * we cannot provide matching without checking unaffected properties for composite indexes.
+     *
+     * @param changedEntityTokens set of labels that have changed
+     * @param unchangedEntityTokens set of labels that are unchanged
+     * @param sortedProperties sorted list of properties
+     * @param entityType type of indexes to get
+     * @return set of SchemaDescriptors describing the potentially affected indexes
+     */
+    public Set<IndexBackedConstraintDescriptor> getRelatedConstraints( long[] changedEntityTokens, long[] unchangedEntityTokens, int[] sortedProperties,
+            boolean propertyListIsComplete, EntityType entityType )
+    {
+        return getRelatedDescriptors( selectConstraintsByEntityType( entityType ), changedEntityTokens, unchangedEntityTokens, sortedProperties,
+                propertyListIsComplete );
+    }
+
+    /**
+     * @param changedLabels set of labels that have changed
+     * @param unchangedLabels set of labels that are unchanged
+     * @param sortedProperties set of properties
+     * @param propertyListIsComplete whether or not the property list is complete. For CREATE/DELETE the list is complete, but may not be for UPDATEs.
+     * @return set of SchemaDescriptors describing the potentially affected indexes
+     */
+    private <T extends SchemaDescriptorSupplier> Set<T> getRelatedDescriptors( SchemaDescriptorLookupSet<T> set, long[] changedLabels, long[] unchangedLabels,
+            int[] sortedProperties, boolean propertyListIsComplete )
+    {
+        if ( set.isEmpty() )
+        {
+            return Collections.emptySet();
+        }
+
+        Set<T> descriptors = new HashSet<>();
+        if ( propertyListIsComplete )
+        {
+            set.matchingDescriptorsForCompleteListOfProperties( descriptors, changedLabels, sortedProperties );
+        }
+        else
+        {
+            // At the time of writing this the commit process won't load the complete list of property keys for an entity.
+            // Because of this the matching cannot be as precise as if the complete list was known.
+            // Anyway try to make the best out of it and narrow down the list of potentially related indexes as much as possible.
+            if ( sortedProperties.length == 0 )
+            {
+                // Only labels changed. Since we don't know which properties this entity has let's include all indexes for the changed labels.
+                set.matchingDescriptors( descriptors, changedLabels );
+            }
+            else if ( changedLabels.length == 0 )
+            {
+                // Only properties changed. Since we don't know which other properties this entity has let's include all indexes
+                // for the (unchanged) labels on this entity that has any match on any of the changed properties.
+                set.matchingDescriptorsForPartialListOfProperties( descriptors, unchangedLabels, sortedProperties );
+            }
+            else
+            {
+                // Both labels and properties changed.
+                // All indexes for the changed labels must be included.
+                // Also include all indexes for any of the changed or unchanged labels that has any match on any of the changed properties.
+                set.matchingDescriptors( descriptors, changedLabels );
+                set.matchingDescriptorsForPartialListOfProperties( descriptors, unchangedLabels, sortedProperties );
+            }
+        }
+        return descriptors;
     }
 
     @Override
     public IndexMap clone()
     {
-        return new IndexMap( LongObjectHashMap.newMap( indexesById ), cloneMap( indexesByDescriptor ), new ObjectLongHashMap<>( indexIdsByDescriptor ) );
+        return new IndexMap( LongObjectHashMap.newMap( indexesById ), cloneMap( indexesByDescriptor ), new ObjectLongHashMap<>( indexIdsByDescriptor ),
+                LongObjectHashMap.newMap( uniquenessConstraintsById ) );
     }
 
     public Iterator<SchemaDescriptor> descriptors()
@@ -202,55 +307,12 @@ public final class IndexMap implements Cloneable
 
     private void addDescriptorToLookups( SchemaDescriptor schema )
     {
-        if ( schema.entityType() == EntityType.NODE )
-        {
-            for ( int entityTokenId : schema.getEntityTokenIds() )
-            {
-                addToLookup( entityTokenId, schema, descriptorsByLabel );
-            }
-            for ( int propertyId : schema.getPropertyIds() )
-            {
-                addToLookup( propertyId, schema, nodeDescriptorsByProperty );
-            }
-        }
-        else if ( schema.entityType() == EntityType.RELATIONSHIP )
-        {
-            for ( int entityTokenId : schema.getEntityTokenIds() )
-            {
-                addToLookup( entityTokenId, schema, descriptorsByReltype );
-            }
-            for ( int propertyId : schema.getPropertyIds() )
-            {
-                addToLookup( propertyId, schema, relationshipDescriptorsByProperty );
-            }
-        }
+        selectIndexesByEntityType( schema.entityType() ).add( schema );
     }
 
-    private void addToLookup(
-            int key,
-            SchemaDescriptor schema,
-            MutableIntObjectMap<Set<SchemaDescriptor>> lookup )
+    private void addConstraintToLookups( IndexBackedConstraintDescriptor constraint )
     {
-        Set<SchemaDescriptor> descriptors = lookup.get( key );
-        if ( descriptors == null )
-        {
-            descriptors = new HashSet<>();
-            lookup.put( key, descriptors );
-        }
-        descriptors.add( schema );
-    }
-
-    private void removeFromLookup( int[] keys, SchemaDescriptor schema, MutableIntObjectMap<Set<SchemaDescriptor>> lookup )
-    {
-        for ( int key : keys )
-        {
-            Set<SchemaDescriptor> descriptors = lookup.get( key );
-            descriptors.remove( schema );
-            if ( descriptors.isEmpty() )
-            {
-                lookup.remove( key );
-            }
-        }
+        selectConstraintsByEntityType( constraint.schema().entityType() ).add( constraint );
     }
 
     private static Map<SchemaDescriptor, IndexProxy> indexesByDescriptor( LongObjectMap<IndexProxy> indexesById )
@@ -263,61 +325,5 @@ public final class IndexMap implements Cloneable
         final MutableObjectLongMap<SchemaDescriptor> map = new ObjectLongHashMap<>( indexesById.size() );
         indexesById.forEachKeyValue( ( id, indexProxy ) -> map.put( indexProxy.getDescriptor().schema(), id ) );
         return map;
-    }
-
-    /**
-     * Get descriptors affected by changed properties. Implementation checks whether doing
-     * the lookup using the unchanged labels or the changed properties given the smallest final
-     * set of indexes, and chooses the best way.
-     *
-     * @param changedEntityTokens set of entity token ids that are changed
-     * @param unchangedEntityTokens set of entity token ids that are unchanged
-     * @param properties set of properties that have changed
-     * @param descriptorsByEntityToken map from entity token id to descriptors
-     * @param descriptorsByProperty map from property ids to descriptors
-     * @return set of SchemaDescriptors describing the potentially affected indexes
-     */
-    private Set<SchemaDescriptor> getRelatedDescriptors( long[] changedEntityTokens, long[] unchangedEntityTokens, IntSet properties,
-            IntObjectMap<Set<SchemaDescriptor>> descriptorsByEntityToken, IntObjectMap<Set<SchemaDescriptor>> descriptorsByProperty )
-    {
-        // Grab all indexes relevant to a changed property.
-        Set<SchemaDescriptor> indexesByProperties = extractIndexesByProperties( properties, descriptorsByProperty );
-
-        // Make sure that that index really is relevant by intersecting it with indexes relevant for unchanged entity tokens.
-        Set<SchemaDescriptor> indexesByUnchangedEntityTokens = extractIndexesByEntityTokens( unchangedEntityTokens, descriptorsByEntityToken );
-        indexesByProperties.retainAll( indexesByUnchangedEntityTokens );
-
-        // Add the indexes relevant for the changed entity tokens.
-        Set<SchemaDescriptor> descriptors = extractIndexesByEntityTokens( changedEntityTokens, descriptorsByEntityToken );
-        descriptors.addAll( indexesByProperties );
-        return descriptors;
-    }
-
-    private Set<SchemaDescriptor> extractIndexesByEntityTokens( long[] entityTokenIds, IntObjectMap<Set<SchemaDescriptor>> descriptors )
-    {
-        Set<SchemaDescriptor> set = new HashSet<>();
-        for ( long label : entityTokenIds )
-        {
-            Set<SchemaDescriptor> forLabel = descriptors.get( (int) label );
-            if ( forLabel != null )
-            {
-                set.addAll( forLabel );
-            }
-        }
-        return set;
-    }
-
-    private Set<SchemaDescriptor> extractIndexesByProperties( IntSet properties, IntObjectMap<Set<SchemaDescriptor>> descriptorsByProperty )
-    {
-        Set<SchemaDescriptor> set = new HashSet<>();
-        for ( IntIterator iterator = properties.intIterator(); iterator.hasNext(); )
-        {
-            Set<SchemaDescriptor> forProperty = descriptorsByProperty.get( iterator.next() );
-            if ( forProperty != null )
-            {
-                set.addAll( forProperty );
-            }
-        }
-        return set;
     }
 }

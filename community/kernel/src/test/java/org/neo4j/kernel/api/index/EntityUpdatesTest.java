@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -78,7 +77,7 @@ public class EntityUpdatesTest
     public void shouldNotGenerateUpdatesForEmptyNodeUpdates()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId ).build();
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, false ).build();
 
         // Then
         assertThat( updates.forIndexKeys( indexes, assertNoLoading(), EntityType.NODE ), emptyIterable() );
@@ -88,7 +87,7 @@ public class EntityUpdatesTest
     public void shouldNotGenerateUpdateForMultipleExistingPropertiesAndLabels()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId ).withTokens( label )
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, false ).withTokens( label )
                 .existing( propertyKeyId1, Values.of( "Neo" ) )
                 .existing( propertyKeyId2, Values.of( 100L ) )
                 .existing( propertyKeyId3, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) )
@@ -102,7 +101,7 @@ public class EntityUpdatesTest
     public void shouldNotGenerateUpdatesForLabelAdditionWithNoProperties()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId ).withTokens( empty ).withTokensAfter( label ).build();
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, false ).withTokens( empty ).withTokensAfter( label ).build();
 
         // Then
         assertThat( updates.forIndexKeys( indexes, propertyLoader(), EntityType.NODE ), emptyIterable() );
@@ -112,7 +111,7 @@ public class EntityUpdatesTest
     public void shouldGenerateUpdateForLabelAdditionWithExistingProperty()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId ).withTokens( empty ).withTokensAfter( label ).build();
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, false ).withTokens( empty ).withTokensAfter( label ).build();
 
         // Then
         assertThat(
@@ -127,7 +126,7 @@ public class EntityUpdatesTest
     {
         // When
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( empty ).withTokensAfter( label )
+                EntityUpdates.forEntity( nodeId, false ).withTokens( empty ).withTokensAfter( label )
                         .existing( propertyKeyId1, Values.of( "Neo" ) )
                         .existing( propertyKeyId2, Values.of( 100L ) )
                         .existing( propertyKeyId3, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) )
@@ -149,7 +148,7 @@ public class EntityUpdatesTest
     {
         // When
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( label ).withTokensAfter( label )
+                EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( label )
                         .added( propertyKeyId1, Values.of( "Neo" ) )
                         .added( propertyKeyId3, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) )
                         .build();
@@ -165,7 +164,7 @@ public class EntityUpdatesTest
     {
         // When
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( label ).withTokensAfter( label )
+                EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( label )
                         .added( propertyKeyId1, Values.of( "Neo" ) )
                         .added( propertyKeyId3, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) )
                         .build();
@@ -182,7 +181,7 @@ public class EntityUpdatesTest
     public void shouldNotGenerateUpdatesForLabelRemovalWithNoProperties()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId ).withTokens( label ).withTokensAfter( empty ).build();
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( empty ).build();
 
         // Then
         assertThat( updates.forIndexKeys( indexes, propertyLoader(), EntityType.NODE ), emptyIterable() );
@@ -193,7 +192,7 @@ public class EntityUpdatesTest
     {
         // When
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( label ).withTokensAfter( empty ).build();
+                EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( empty ).build();
 
         // Then
         assertThat(
@@ -208,7 +207,7 @@ public class EntityUpdatesTest
     {
         // When
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( label ).withTokensAfter( empty ).build();
+                EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( empty ).build();
 
         // Then
         assertThat(
@@ -225,7 +224,7 @@ public class EntityUpdatesTest
     public void shouldNotGenerateUpdatesForPropertyAdditionWithNoLabels()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId )
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, false )
                 .added( property1.propertyKeyId(), property1.value() )
                 .build();
 
@@ -237,7 +236,7 @@ public class EntityUpdatesTest
     public void shouldGenerateUpdatesForSinglePropertyAdditionWithLabels()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId ).withTokens( label )
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, false ).withTokens( label )
                 .added( property1.propertyKeyId(), property1.value() )
                 .build();
 
@@ -253,7 +252,7 @@ public class EntityUpdatesTest
     public void shouldGenerateUpdatesForMultiplePropertyAdditionWithLabels()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId ).withTokens( label )
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, false ).withTokens( label )
                 .added( property1.propertyKeyId(), property1.value() )
                 .added( property2.propertyKeyId(), property2.value() )
                 .added( property3.propertyKeyId(), property3.value() )
@@ -274,7 +273,7 @@ public class EntityUpdatesTest
     public void shouldNotGenerateUpdatesForLabelAddAndPropertyRemove()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId ).withTokens( empty ).withTokensAfter( label )
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, false ).withTokens( empty ).withTokensAfter( label )
                 .removed( property1.propertyKeyId(), property1.value() )
                 .removed( property2.propertyKeyId(), property2.value() )
                 .removed( property3.propertyKeyId(), property3.value() )
@@ -288,7 +287,7 @@ public class EntityUpdatesTest
     public void shouldNotGenerateUpdatesForLabelRemoveAndPropertyAdd()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId ).withTokens( label ).withTokensAfter( empty )
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( empty )
                 .added( property1.propertyKeyId(), property1.value() )
                 .added( property2.propertyKeyId(), property2.value() )
                 .added( property3.propertyKeyId(), property3.value() )
@@ -302,7 +301,7 @@ public class EntityUpdatesTest
     public void shouldNotLoadPropertyForLabelsAndNoPropertyChanges()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId ).withTokens( label ).build();
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, false ).withTokens( label ).build();
 
         // Then
         assertThat(
@@ -314,7 +313,7 @@ public class EntityUpdatesTest
     public void shouldNotLoadPropertyForNoLabelsAndButPropertyAddition()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId ).withTokens( empty )
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, false ).withTokens( empty )
                 .added( property1.propertyKeyId(), property1.value() )
                 .build();
 
@@ -329,7 +328,7 @@ public class EntityUpdatesTest
     {
         // When
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( label ).withTokensAfter( label )
+                EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( label )
                         .added( propertyKeyId1, Values.of( "Neo" ) )
                         .build();
 
@@ -345,7 +344,7 @@ public class EntityUpdatesTest
     {
         // When
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( label ).withTokensAfter( label )
+                EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( label )
                         .added( property1.propertyKeyId(), property1.value() )
                         .added( property2.propertyKeyId(), property2.value() )
                         .added( property3.propertyKeyId(), property3.value() )
@@ -364,7 +363,7 @@ public class EntityUpdatesTest
         // When
         Value newValue2 = Values.of( 10L );
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( label ).withTokensAfter( label )
+                EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( label )
                         .changed( property2.propertyKeyId(), property2.value(), newValue2 )
                         .build();
 
@@ -383,7 +382,7 @@ public class EntityUpdatesTest
         Value newValue2 = Values.of( 10L );
         Value newValue3 = Values.pointValue( CoordinateReferenceSystem.WGS84, 32.3, 15.6 );
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( label ).withTokensAfter( label )
+                EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( label )
                         .changed( property1.propertyKeyId(), property1.value(), newValue1 )
                         .changed( property2.propertyKeyId(), property2.value(), newValue2 )
                         .changed( property3.propertyKeyId(), property3.value(), newValue3 )
@@ -401,7 +400,7 @@ public class EntityUpdatesTest
     {
         // When
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( label ).withTokensAfter( label )
+                EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( label )
                         .removed( property2.propertyKeyId(), property2.value() )
                         .build();
 
@@ -417,7 +416,7 @@ public class EntityUpdatesTest
     {
         // When
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( label ).withTokensAfter( label )
+                EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( label )
                         .removed( property2.propertyKeyId(), property2.value() )
                         .build();
 
@@ -433,7 +432,7 @@ public class EntityUpdatesTest
     {
         // When
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( empty ).withTokensAfter( label ).build();
+                EntityUpdates.forEntity( nodeId, false ).withTokens( empty ).withTokensAfter( label ).build();
 
         // Then
         assertThat(
@@ -447,7 +446,7 @@ public class EntityUpdatesTest
     {
         // When
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( empty ).withTokensAfter( allLabels ).build();
+                EntityUpdates.forEntity( nodeId, false ).withTokens( empty ).withTokensAfter( allLabels ).build();
 
         // Then
         assertThat(
@@ -461,7 +460,7 @@ public class EntityUpdatesTest
     {
         // When
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( label ).withTokensAfter( allLabels ).build();
+                EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( allLabels ).build();
 
         // Then
         assertThat(
@@ -475,7 +474,7 @@ public class EntityUpdatesTest
     {
         // When
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( label ).withTokensAfter( labelId1, unusedLabelId ).build();
+                EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( labelId1, unusedLabelId ).build();
 
         // Then
         assertThat(
@@ -489,7 +488,7 @@ public class EntityUpdatesTest
     {
         // When
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( label ).withTokensAfter( unusedLabelId ).build();
+                EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( unusedLabelId ).build();
 
         // Then
         assertThat(
@@ -503,7 +502,7 @@ public class EntityUpdatesTest
     {
         // When
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( allLabels ).withTokensAfter( label ).build();
+                EntityUpdates.forEntity( nodeId, false ).withTokens( allLabels ).withTokensAfter( label ).build();
 
         // Then
         assertThat(
@@ -517,7 +516,7 @@ public class EntityUpdatesTest
     {
         // When
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( label ).withTokensAfter( empty ).build();
+                EntityUpdates.forEntity( nodeId, false ).withTokens( label ).withTokensAfter( empty ).build();
 
         // Then
         assertThat(

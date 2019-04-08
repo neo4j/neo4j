@@ -380,6 +380,19 @@ public abstract class Command implements StorageCommand
             return handler.visitPropertyCommand( this );
         }
 
+        public long getEntityId()
+        {
+            if ( after.isNodeSet() )
+            {
+                return after.getNodeId();
+            }
+            if ( after.isRelSet() )
+            {
+                return after.getRelId();
+            }
+            throw new UnsupportedOperationException( format( "Unexpected owner of property %s, neither a node nor a relationship", after ) );
+        }
+
         public long getNodeId()
         {
             return after.getNodeId();
