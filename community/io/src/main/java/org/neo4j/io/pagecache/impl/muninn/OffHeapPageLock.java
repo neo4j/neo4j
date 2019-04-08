@@ -183,8 +183,7 @@ public final class OffHeapPageLock
             boolean unwritablyLocked = (s & EXL_MASK) != 0;
             boolean writeCountOverflow = (s & CNT_MASK) == CNT_MASK;
 
-            // bitwise-OR to reduce branching and allow more ILP
-            if ( unwritablyLocked | writeCountOverflow )
+            if ( unwritablyLocked || writeCountOverflow )
             {
                 return failWriteLock( s, writeCountOverflow );
             }

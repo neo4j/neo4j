@@ -49,7 +49,7 @@ public enum RecordLoad
     {
         // FORCE mode always return true so that record data will always be loaded, even if not in use.
         // The other modes only loads records that are in use.
-        return this == FORCE | inUse;
+        return this == FORCE || inUse;
     }
 
     /**
@@ -58,11 +58,11 @@ public enum RecordLoad
     public final boolean verify( AbstractBaseRecord record )
     {
         boolean inUse = record.inUse();
-        if ( this == NORMAL & !inUse )
+        if ( this == NORMAL && !inUse )
         {
             throw new InvalidRecordException( record + " not in use" );
         }
-        return this == FORCE | inUse;
+        return this == FORCE || inUse;
     }
 
     /**

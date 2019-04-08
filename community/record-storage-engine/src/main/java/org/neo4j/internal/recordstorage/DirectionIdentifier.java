@@ -32,8 +32,8 @@ public class DirectionIdentifier
     {
         boolean isOut = rel.getFirstNode() == startNode.getId();
         boolean isIn = rel.getSecondNode() == startNode.getId();
-        assert isOut | isIn;
-        if ( isOut & isIn )
+        assert isOut || isIn;
+        if ( isOut && isIn )
         {
             return DirectionWrapper.BOTH;
         }

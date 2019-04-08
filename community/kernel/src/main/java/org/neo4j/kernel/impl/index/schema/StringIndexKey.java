@@ -139,7 +139,7 @@ class StringIndexKey extends NativeIndexSingleValueKey<StringIndexKey>
             return 0;
         }
 
-        return lexicographicalUnsignedByteArrayCompare( bytes, bytesLength, other.bytes, other.bytesLength, ignoreLength | other.ignoreLength );
+        return lexicographicalUnsignedByteArrayCompare( bytes, bytesLength, other.bytes, other.bytesLength, ignoreLength || other.ignoreLength );
     }
 
     /**

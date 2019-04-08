@@ -200,7 +200,7 @@ class TraversalBranchImpl implements TraversalBranch
     @Override
     public void evaluation( Evaluation eval )
     {
-        setEvaluation( Evaluation.of( includes() & eval.includes(), continues() & eval.continues() ) );
+        setEvaluation( Evaluation.of( includes() && eval.includes(), continues() && eval.continues() ) );
     }
 
     @Override

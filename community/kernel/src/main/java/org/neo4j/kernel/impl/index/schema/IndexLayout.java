@@ -96,7 +96,7 @@ abstract class IndexLayout<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         if ( valueComparison == 0 )
         {
             // This is a special case where we need also compare entityId to support inclusive/exclusive
-            if ( o1.getCompareId() & o2.getCompareId() )
+            if ( o1.getCompareId() && o2.getCompareId() )
             {
                 return Long.compare( o1.getEntityId(), o2.getEntityId() );
             }

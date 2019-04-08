@@ -104,7 +104,7 @@ abstract class MuninnPageCursor extends PageCursor
         this.pf_flags = pf_flags;
         this.eagerFlush = isFlagRaised( pf_flags, PF_EAGER_FLUSH );
         this.noFault = isFlagRaised( pf_flags, PF_NO_FAULT );
-        this.noGrow = noFault | isFlagRaised( pf_flags, PagedFile.PF_NO_GROW );
+        this.noGrow = noFault || isFlagRaised( pf_flags, PagedFile.PF_NO_GROW );
     }
 
     private boolean isFlagRaised( int flagSet, int flag )
@@ -296,7 +296,7 @@ abstract class MuninnPageCursor extends PageCursor
                 // item and try again, as the eviction thread would have set the chunk array slot to null.
                 long pageRef = pagedFile.deref( mappedPageId );
                 boolean locked = tryLockPage( pageRef );
-                if ( locked & pagedFile.isBoundTo( pageRef, swapperId, filePageId ) )
+                if ( locked && pagedFile.isBoundTo( pageRef, swapperId, filePageId ) )
                 {
                     pinCursorToPage( pageRef, filePageId, swapper );
                     pinEvent.hit();
@@ -826,10 +826,10 @@ abstract class MuninnPageCursor extends PageCursor
             throw new IllegalArgumentException( "Target cursor must be writable" );
         }
         if ( sourceOffset >= 0
-             & targetOffset >= 0
-             & sourceOffset < sourcePageSize
-             & targetOffset < targetPageSize
-             & lengthInBytes >= 0 )
+             && targetOffset >= 0
+             && sourceOffset < sourcePageSize
+             && targetOffset < targetPageSize
+             && lengthInBytes >= 0 )
         {
             MuninnPageCursor cursor = (MuninnPageCursor) targetCursor;
             int remainingSource = sourcePageSize - sourceOffset;
@@ -863,7 +863,7 @@ abstract class MuninnPageCursor extends PageCursor
         int pos = buf.position();
         int bytesToCopy = Math.min( buf.limit() - pos, pageSize - sourceOffset );
         long source = pointer + sourceOffset;
-        if ( sourceOffset < getCurrentPageSize() & sourceOffset >= 0 )
+        if ( sourceOffset < getCurrentPageSize() && sourceOffset >= 0 )
         {
             long target = UnsafeUtil.getDirectByteBufferAddress( buf );
             UnsafeUtil.copyMemory( source, target + pos, bytesToCopy );
@@ -894,10 +894,10 @@ abstract class MuninnPageCursor extends PageCursor
         int targetStart = sourceStart + shift;
         int targetEnd = sourceStart + length + shift;
         if ( sourceStart < 0
-                | sourceEnd > filePageSize
-                | targetStart < 0
-                | targetEnd > filePageSize
-                | length < 0 )
+                || sourceEnd > filePageSize
+                || targetStart < 0
+                || targetEnd > filePageSize
+                || length < 0 )
         {
             outOfBounds = true;
             return;
@@ -959,7 +959,7 @@ abstract class MuninnPageCursor extends PageCursor
     public void setOffset( int offset )
     {
         this.offset = offset;
-        if ( offset < 0 | offset > filePageSize )
+        if ( offset < 0 || offset > filePageSize )
         {
             this.offset = 0;
             outOfBounds = true;

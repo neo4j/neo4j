@@ -158,7 +158,7 @@ class TextType extends Type
         }
 
         return lexicographicalUnsignedByteArrayCompare( this_byteArray, (int) this_long0, that_byteArray, (int) that_long0,
-                booleanOf( this_long2 ) | booleanOf( that_long2 ) );
+                booleanOf( this_long2 ) || booleanOf( that_long2 ) );
     }
 
     static void put( PageCursor cursor, byte[] byteArray, long long0, long long2 )

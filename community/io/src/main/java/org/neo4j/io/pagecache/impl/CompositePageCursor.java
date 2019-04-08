@@ -448,13 +448,13 @@ public class CompositePageCursor extends PageCursor
     @Override
     public boolean shouldRetry() throws IOException
     {
-        boolean needsRetry = first.shouldRetry() | second.shouldRetry();
-        if ( needsRetry )
+        if ( first.shouldRetry() || second.shouldRetry() )
         {
             rewind();
             checkAndClearBoundsFlag();
+            return true;
         }
-        return needsRetry;
+        return false;
     }
 
     @Override
@@ -478,7 +478,9 @@ public class CompositePageCursor extends PageCursor
     @Override
     public boolean checkAndClearBoundsFlag()
     {
-        boolean bounds = outOfBounds | first.checkAndClearBoundsFlag() | second.checkAndClearBoundsFlag();
+        boolean firstOOB = first.checkAndClearBoundsFlag();
+        boolean secondOOB = second.checkAndClearBoundsFlag();
+        boolean bounds = outOfBounds || firstOOB || secondOOB;
         outOfBounds = false;
         return bounds;
     }

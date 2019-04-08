@@ -995,7 +995,7 @@ public enum LongerShortString
      */
     private static LongerShortString getEncodingTable( int encodingHeader )
     {
-        if ( encodingHeader < 0 | ENCODINGS_BY_ENCODING.length <= encodingHeader )
+        if ( encodingHeader < 0 || ENCODINGS_BY_ENCODING.length <= encodingHeader )
         {
             return null;
         }

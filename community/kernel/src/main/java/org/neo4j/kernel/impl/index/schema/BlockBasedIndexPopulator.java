@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.Writer;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;

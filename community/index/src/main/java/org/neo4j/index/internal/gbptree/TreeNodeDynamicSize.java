@@ -1177,7 +1177,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
             // We may come closer to split by keeping one more in left
             int space;
-            if ( currentPos == insertPos & !includedNew )
+            if ( currentPos == insertPos && !includedNew )
             {
                 space = totalSpaceOfKeyChild( newKey );
                 includedNew = true;
@@ -1257,7 +1257,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
             // We may come closer to split by keeping one more in left
             int currentSpace;
-            if ( currentPos == insertPos & !includedNew )
+            if ( currentPos == insertPos && !includedNew )
             {
                 currentSpace = spaceOfNewKey;
                 includedNew = true;

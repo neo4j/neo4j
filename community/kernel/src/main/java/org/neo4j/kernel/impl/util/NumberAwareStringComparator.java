@@ -41,17 +41,16 @@ public class NumberAwareStringComparator implements Comparator<String>
 {
     public static final Comparator<String> INSTANCE = new NumberAwareStringComparator();
 
-    @SuppressWarnings( { "rawtypes", "unchecked" } )
+    @SuppressWarnings( "unchecked" )
     @Override
     public int compare( String o1, String o2 )
     {
         Iterator<Comparable> c1 = comparables( o1 );
         Iterator<Comparable> c2 = comparables( o2 );
-        // Single "|" to get both expressions always evaluated, you know, it's a good pattern to
-        // call hasNext before next on iterators.
-        boolean c1Has;
-        boolean c2Has;
-        while ( (c1Has = c1.hasNext()) | (c2Has = c2.hasNext()) )
+
+        boolean c1Has = c1.hasNext();
+        boolean c2Has = c2.hasNext();
+        while ( c1Has || c2Has )
         {
             if ( !c1Has )
             {
@@ -67,16 +66,17 @@ public class NumberAwareStringComparator implements Comparator<String>
             {
                 return diff;
             }
+            c1Has = c1.hasNext();
+            c2Has = c2.hasNext();
             // else continue
         }
         // All elements are comparable with each other
         return 0;
     }
 
-    @SuppressWarnings( "rawtypes" )
     private Iterator<Comparable> comparables( final String string )
     {
-        return new PrefetchingIterator<Comparable>()
+        return new PrefetchingIterator<>()
         {
             private int index;
 
