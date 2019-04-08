@@ -35,6 +35,12 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
+    public boolean allowsTokenReads()
+    {
+        return wrapping.allowsTokenReads();
+    }
+
+    @Override
     public boolean allowsReads()
     {
         return wrapping.allowsReads();

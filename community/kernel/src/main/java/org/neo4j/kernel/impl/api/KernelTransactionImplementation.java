@@ -817,7 +817,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public TokenRead tokenRead()
     {
-        assertAllowsReads();
+        assertAllowsTokenReads();
         return operations.token();
     }
 
@@ -871,6 +871,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public LockTracer lockTracer()
     {
         return currentStatement.lockTracer();
+    }
+
+    private void assertAllowsTokenReads()
+    {
+        AccessMode accessMode = securityContext.mode();
+        if ( !accessMode.allowsTokenReads() )
+        {
+            throw accessMode.onViolation( format( "Token read operations are not allowed for %s.", securityContext().description() ) );
+        }
     }
 
     private void assertAllowsReads()
