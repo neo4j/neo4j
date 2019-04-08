@@ -25,7 +25,6 @@ import java.util.List;
 import static java.lang.String.format;
 import static java.lang.String.join;
 import static java.util.Arrays.stream;
-import static org.neo4j.codegen.TypeReference.typeReference;
 
 public final class ByteCodeUtils
 {
@@ -266,15 +265,8 @@ public final class ByteCodeUtils
             }
             else
             {
-                Method method = clazz.getDeclaredMethod( methodReference.name(), stream( parameters )
+                clazz.getMethod( methodReference.name(), stream( parameters )
                         .map( ByteCodeUtils::asClass ).toArray( Class<?>[]::new ) );
-
-                if ( !typeReference( method.getReturnType() ).equals( methodReference.returns() ) )
-                {
-                    throw new AssertionError( format( "Invalid return type, expected %s but was %s",
-                            methodReference.returns(),
-                            typeReference( method.getReturnType() ) ) );
-                }
             }
         }
         catch ( NoSuchMethodException e )
