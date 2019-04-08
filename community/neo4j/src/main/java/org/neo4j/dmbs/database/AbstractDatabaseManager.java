@@ -100,10 +100,10 @@ public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends
         ClassicCoreSPI spi = new ClassicCoreSPI( globalModule, dataSource, log, dataSource.coreAPIAvailabilityGuard, edition.getThreadToTransactionBridge() );
         Database database = dataSource.database;
         facade.init( spi, edition.getThreadToTransactionBridge(), globalConfig, database.getTokenHolders() );
-        return databaseContextFactory( database, facade );
+        return createDatabaseContext( database, facade );
     }
 
-    protected abstract T databaseContextFactory( Database database, GraphDatabaseFacade facade );
+    protected abstract T createDatabaseContext( Database database, GraphDatabaseFacade facade );
 
     protected final void forEachDatabase( BiConsumer<DatabaseId,T> consumer, boolean systemDatabaseLast )
     {
