@@ -85,11 +85,10 @@ class RecoveryRequiredCheckerTest
     @Test
     void shouldWantToRecoverBrokenStore() throws Exception
     {
-        try ( FileSystemAbstraction fileSystemAbstraction = createAndCrashWithDefaultConfig() )
+        try ( EphemeralFileSystemAbstraction ephemeralFs = createAndCrashWithDefaultConfig() )
         {
-
-            PageCache pageCache = pageCacheExtension.getPageCache( fileSystemAbstraction );
-            RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystemAbstraction, pageCache, storageEngineFactory );
+            PageCache pageCache = pageCacheExtension.getPageCache( ephemeralFs );
+            RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( ephemeralFs, pageCache, storageEngineFactory );
 
             assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( true ) );
         }
@@ -98,15 +97,15 @@ class RecoveryRequiredCheckerTest
     @Test
     void shouldBeAbleToRecoverBrokenStore() throws Exception
     {
-        try ( FileSystemAbstraction fileSystemAbstraction = createAndCrashWithDefaultConfig() )
+        try ( EphemeralFileSystemAbstraction ephemeralFs = createAndCrashWithDefaultConfig() )
         {
-            PageCache pageCache = pageCacheExtension.getPageCache( fileSystemAbstraction );
+            PageCache pageCache = pageCacheExtension.getPageCache( ephemeralFs );
 
-            RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystemAbstraction, pageCache, storageEngineFactory );
+            RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( ephemeralFs, pageCache, storageEngineFactory );
 
             assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( true ) );
 
-            new TestGraphDatabaseFactory().setFileSystem( fileSystemAbstraction ).newEmbeddedDatabase( storeDir ).shutdown();
+            startStopDatabase( ephemeralFs, storeDir );
 
             assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( false ) );
         }
@@ -167,16 +166,16 @@ class RecoveryRequiredCheckerTest
 
     private void recoverBrokenStoreWithConfig( Config config ) throws IOException
     {
-        try ( EphemeralFileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( storeDir, config ) )
+        try ( EphemeralFileSystemAbstraction ephemeralFs = createSomeDataAndCrash( storeDir, config ) )
         {
-            PageCache pageCache = pageCacheExtension.getPageCache( fileSystemAbstraction );
+            PageCache pageCache = pageCacheExtension.getPageCache( ephemeralFs );
 
-            RecoveryRequiredChecker recoveryChecker = getRecoveryChecker( fileSystemAbstraction, pageCache, storageEngineFactory, config );
+            RecoveryRequiredChecker recoveryChecker = getRecoveryChecker( ephemeralFs, pageCache, storageEngineFactory, config );
 
             assertThat( recoveryChecker.isRecoveryRequiredAt( testDirectory.databaseLayout( of( config ) ) ), is( true ) );
 
             new TestGraphDatabaseFactory()
-                    .setFileSystem( fileSystemAbstraction )
+                    .setFileSystem( ephemeralFs )
                     .newEmbeddedDatabaseBuilder( storeDir )
                     .setConfig( config.getRaw() )
                     .newGraphDatabase()
@@ -186,7 +185,7 @@ class RecoveryRequiredCheckerTest
         }
     }
 
-    private FileSystemAbstraction createAndCrashWithDefaultConfig()
+    private EphemeralFileSystemAbstraction createAndCrashWithDefaultConfig() throws IOException
     {
         return createSomeDataAndCrash( storeDir, Config.defaults() );
     }
@@ -211,24 +210,26 @@ class RecoveryRequiredCheckerTest
         return new RecoveryRequiredChecker( fileSystem, pageCache, config, storageEngineFactory );
     }
 
-    private static EphemeralFileSystemAbstraction createSomeDataAndCrash( File store, Config config )
+    private static EphemeralFileSystemAbstraction createSomeDataAndCrash( File store, Config config ) throws IOException
     {
-        EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-        final GraphDatabaseService db = new TestGraphDatabaseFactory()
-                .setFileSystem( fileSystem )
-                .newEmbeddedDatabaseBuilder( store )
-                .setConfig( config.getRaw() )
-                .newGraphDatabase();
-
-        try ( Transaction tx = db.beginTx() )
+        try ( EphemeralFileSystemAbstraction ephemeralFs = new EphemeralFileSystemAbstraction() )
         {
-            db.createNode();
-            tx.success();
-        }
+            final GraphDatabaseService db = new TestGraphDatabaseFactory()
+                    .setFileSystem( ephemeralFs )
+                    .newEmbeddedDatabaseBuilder( store )
+                    .setConfig( config.getRaw() )
+                    .newGraphDatabase();
 
-        EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
-        db.shutdown();
-        return snapshot;
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.createNode();
+                tx.success();
+            }
+
+            EphemeralFileSystemAbstraction snapshot = ephemeralFs.snapshot();
+            db.shutdown();
+            return snapshot;
+        }
     }
 
     private static void startStopDatabase( FileSystemAbstraction fileSystem, File storeDir )
