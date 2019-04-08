@@ -97,7 +97,7 @@ public abstract class CodeGenerationStrategy<Configuration> implements CodeGener
                 else
                 {
                     generator.setByteCodeVisitor( new ByteCodeVisitor.Multiplex(
-                            visitors.toArray( new ByteCodeVisitor[visitors.size()] ) ) );
+                            visitors.toArray( new ByteCodeVisitor[0] ) ) );
                 }
             }
             return generator;

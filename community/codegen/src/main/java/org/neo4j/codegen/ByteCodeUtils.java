@@ -42,6 +42,10 @@ public final class ByteCodeUtils
     public static String className( TypeReference reference )
     {
         StringBuilder builder = new StringBuilder();
+        if ( reference.isArray() )
+        {
+           builder.append( "[L" );
+        }
         if ( !reference.packageName().isEmpty() )
         {
             builder.append( reference.packageName() ).append( '.' );
@@ -52,6 +56,10 @@ public final class ByteCodeUtils
             builder.append( parent.name() ).append( '$' );
         }
         builder.append( reference.name() );
+        if ( reference.isArray() )
+        {
+            builder.append( ";" );
+        }
         return builder.toString();
     }
 
@@ -252,13 +260,21 @@ public final class ByteCodeUtils
         try
         {
             TypeReference[] parameters = methodReference.parameters();
-            Method method = clazz.getDeclaredMethod( methodReference.name(), stream( parameters )
-                    .map( ByteCodeUtils::asClass ).toArray( Class<?>[]::new ) );
-            if ( !typeReference( method.getReturnType() ).equals( methodReference.returns() ) )
+            if (methodReference.isConstructor())
             {
-                throw new AssertionError( format( "Invalid return type, expected %s but was %s",
-                        methodReference.returns(),
-                        typeReference( method.getReturnType() ) ) );
+                clazz.getDeclaredConstructor( stream( parameters ).map( ByteCodeUtils::asClass ).toArray( Class<?>[]::new ) );
+            }
+            else
+            {
+                Method method = clazz.getDeclaredMethod( methodReference.name(), stream( parameters )
+                        .map( ByteCodeUtils::asClass ).toArray( Class<?>[]::new ) );
+
+                if ( !typeReference( method.getReturnType() ).equals( methodReference.returns() ) )
+                {
+                    throw new AssertionError( format( "Invalid return type, expected %s but was %s",
+                            methodReference.returns(),
+                            typeReference( method.getReturnType() ) ) );
+                }
             }
         }
         catch ( NoSuchMethodException e )

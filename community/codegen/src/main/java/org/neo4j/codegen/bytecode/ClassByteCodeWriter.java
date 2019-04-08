@@ -80,6 +80,7 @@ class ClassByteCodeWriter implements ClassEmitter
     @Override
     public MethodEmitter method( MethodDeclaration signature )
     {
+
         return new MethodByteCodeEmitter( classVisitor, signature, base );
     }
 
