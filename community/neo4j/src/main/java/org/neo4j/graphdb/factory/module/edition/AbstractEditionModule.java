@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.transaction.stats.GlobalTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionListenerFactory;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.Logger;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.procedure.builtin.BuiltInDbmsProcedures;
 import org.neo4j.procedure.builtin.BuiltInFunctions;
@@ -118,7 +117,7 @@ public abstract class AbstractEditionModule
     protected abstract BaseRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule, DatabaseManager<?> databaseManager );
 
     public abstract DatabaseManager<?> createDatabaseManager( GraphDatabaseFacade graphDatabaseFacade,
-            GlobalModule globalModule, Logger msgLog );
+            GlobalModule globalModule, Log msgLog );
 
     /**
      * Returns {@code false} because {@link DatabaseManager}'s lifecycle is not managed by any component by default.

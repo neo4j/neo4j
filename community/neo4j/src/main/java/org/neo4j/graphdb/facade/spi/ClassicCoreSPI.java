@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.lifecycle.LifecycleException;
-import org.neo4j.logging.Logger;
+import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.values.virtual.MapValue;
 
@@ -54,11 +54,11 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
 {
     private final GlobalModule platform;
     private final DatabaseModule dataSource;
-    private final Logger msgLog;
+    private final Log msgLog;
     private final CoreAPIAvailabilityGuard availability;
     private final ThreadToStatementContextBridge threadToTransactionBridge;
 
-    public ClassicCoreSPI( GlobalModule platform, DatabaseModule dataSource, Logger msgLog, CoreAPIAvailabilityGuard availability,
+    public ClassicCoreSPI( GlobalModule platform, DatabaseModule dataSource, Log msgLog, CoreAPIAvailabilityGuard availability,
             ThreadToStatementContextBridge threadToTransactionBridge )
     {
         this.platform = platform;
@@ -153,13 +153,13 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     {
         try
         {
-            msgLog.log( "Shutdown started" );
+            msgLog.info( "Shutdown started" );
             dataSource.database.getDatabaseAvailabilityGuard().shutdown();
             platform.getGlobalLife().shutdown();
         }
         catch ( LifecycleException throwable )
         {
-            msgLog.log( "Shutdown failed", throwable );
+            msgLog.error( "Shutdown failed", throwable );
             throw throwable;
         }
     }

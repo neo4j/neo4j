@@ -60,7 +60,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.Logger;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.procedure.ProcedureTransaction;
 import org.neo4j.procedure.builtin.SpecialBuiltInProcedures;
@@ -149,10 +148,10 @@ public class GraphDatabaseFacadeFactory
         LifeSupport globalLife = globalModule.getGlobalLife();
 
         LogService logService = globalModule.getLogService();
-        Logger logger = logService.getInternalLog( getClass() ).infoLogger();
-        DatabaseManager<?> databaseManager = createAndInitializeDatabaseManager( globalModule, edition, graphDatabaseFacade, logger );
+        Log internalLog = logService.getInternalLog( getClass() );
+        DatabaseManager<?> databaseManager = createAndInitializeDatabaseManager( globalModule, edition, graphDatabaseFacade, internalLog );
         DatabaseManagementService managementService =
-                new DatabaseManagementServiceImpl( databaseManager, globalModule.getGlobalAvailabilityGuard(), globalLife, logger );
+                new DatabaseManagementServiceImpl( databaseManager, globalModule.getGlobalAvailabilityGuard(), globalLife, internalLog );
 
         GlobalProcedures globalProcedures = setupProcedures( globalModule, edition, databaseManager );
         globalDependencies.satisfyDependency( new NonTransactionalDbmsOperations( globalProcedures ) );
@@ -168,21 +167,26 @@ public class GraphDatabaseFacadeFactory
         globalLife.add( new StartupWaiter( globalModule.getGlobalAvailabilityGuard(), edition.getTransactionStartTimeout() ) );
         globalLife.add( new PublishPageCacheTracerMetricsAfterStart( globalModule.getTracers().getPageCursorTracerSupplier() ) );
 
+        startDatabaseServer( config, globalModule, edition, globalLife, internalLog, databaseManager, managementService );
+
+        return managementService;
+    }
+
+    private void startDatabaseServer( Config config, GlobalModule globalModule, AbstractEditionModule edition, LifeSupport globalLife, Log internalLog,
+            DatabaseManager<?> databaseManager, DatabaseManagementService managementService )
+    {
         RuntimeException error = null;
         try
         {
             edition.createDatabases( databaseManager, config );
             globalLife.start();
             verifySystemDatabaseStart( databaseManager );
-            DatabaseId defaultDatabase = new DatabaseId( config.get( GraphDatabaseSettings.default_database ) );
-            databaseManager.getDatabaseContext( defaultDatabase ).orElseThrow( () -> new IllegalStateException(
-                    String.format( "Database %s not found. Please check the logs for startup errors.", defaultDatabase ) ) ).databaseFacade();
-
         }
-        catch ( final Throwable throwable )
+        catch ( Throwable throwable )
         {
-            error = new RuntimeException( "Error starting " + getClass().getName() + ", " +
-                    globalModule.getStoreLayout().storeDirectory(), throwable );
+            String message = "Error starting database server at " + globalModule.getStoreLayout().storeDirectory();
+            error = new RuntimeException( message, throwable );
+            internalLog.error( message, throwable );
         }
         finally
         {
@@ -190,7 +194,7 @@ public class GraphDatabaseFacadeFactory
             {
                 try
                 {
-                    graphDatabaseFacade.shutdown();
+                    managementService.shutdown();
                 }
                 catch ( Throwable shutdownError )
                 {
@@ -201,11 +205,9 @@ public class GraphDatabaseFacadeFactory
 
         if ( error != null )
         {
-            logger.log( "Failed to start database", error );
+            internalLog.error( "Failed to start database server.", error );
             throw error;
         }
-
-        return managementService;
     }
 
     private static void verifySystemDatabaseStart( DatabaseManager<?> databaseManager )
@@ -298,9 +300,9 @@ public class GraphDatabaseFacadeFactory
     }
 
     private static DatabaseManager<?> createAndInitializeDatabaseManager( GlobalModule platform,
-            AbstractEditionModule edition, GraphDatabaseFacade facade, Logger logger )
+            AbstractEditionModule edition, GraphDatabaseFacade facade, Log log )
     {
-        DatabaseManager<?> databaseManager = edition.createDatabaseManager( facade, platform, logger );
+        DatabaseManager<?> databaseManager = edition.createDatabaseManager( facade, platform, log );
         if ( !edition.handlesDatabaseManagerLifecycle() )
         {
             // only add database manager to the lifecycle when edition doesn't manage it already

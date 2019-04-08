@@ -27,7 +27,7 @@ import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.logging.Logger;
+import org.neo4j.logging.Log;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.util.Preconditions.checkState;
@@ -35,7 +35,7 @@ import static org.neo4j.util.Preconditions.checkState;
 public final class DefaultDatabaseManager extends AbstractDatabaseManager<StandaloneDatabaseContext>
 {
 
-    public DefaultDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Logger log, GraphDatabaseFacade graphDatabaseFacade )
+    public DefaultDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Log log, GraphDatabaseFacade graphDatabaseFacade )
     {
         super( globalModule, edition, log, graphDatabaseFacade );
     }

@@ -36,7 +36,7 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Logger;
+import org.neo4j.logging.Log;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 
@@ -47,9 +47,9 @@ public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends
     private final GlobalModule globalModule;
     private final AbstractEditionModule edition;
     private final GraphDatabaseFacade graphDatabaseFacade;
-    protected final Logger log;
+    protected final Log log;
 
-    protected AbstractDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Logger log, GraphDatabaseFacade graphDatabaseFacade )
+    protected AbstractDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Log log, GraphDatabaseFacade graphDatabaseFacade )
     {
         this.log = log;
         this.globalModule = globalModule;
@@ -79,7 +79,7 @@ public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends
 
     protected T createNewDatabaseContext( DatabaseId databaseId )
     {
-        log.log( "Creating '%s' database.", databaseId.name() );
+        log.info( "Creating '%s' database.", databaseId.name() );
         Config globalConfig = globalModule.getGlobalConfig();
         GraphDatabaseFacade facade =
                 globalConfig.get( default_database ).equals( databaseId.name() ) ? graphDatabaseFacade : new GraphDatabaseFacade();
@@ -105,21 +105,21 @@ public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends
             catch ( Throwable t )
             {
                 context.fail( t );
-                log.log( "Fail to perform operation with a database " + contextKey, t );
+                log.error( "Fail to perform operation with a database " + contextKey, t );
             }
         }
     }
 
     protected void startDatabase( DatabaseId databaseId, T context )
     {
-        log.log( "Starting '%s' database.", databaseId.name() );
+        log.info( "Starting '%s' database.", databaseId.name() );
         Database database = context.database();
         database.start();
     }
 
     protected void stopDatabase( DatabaseId databaseId, T context )
     {
-        log.log( "Stop '%s' database.", databaseId.name() );
+        log.info( "Stop '%s' database.", databaseId.name() );
         Database database = context.database();
         database.stop();
     }

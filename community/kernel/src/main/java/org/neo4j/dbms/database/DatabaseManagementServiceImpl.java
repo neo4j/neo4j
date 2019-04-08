@@ -26,22 +26,22 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.logging.Logger;
+import org.neo4j.logging.Log;
 
 public class DatabaseManagementServiceImpl implements DatabaseManagementService
 {
     private final DatabaseManager<?> databaseManager;
     private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
     private final Lifecycle globalLife;
-    private final Logger logger;
+    private final Log log;
 
     public DatabaseManagementServiceImpl( DatabaseManager<?> databaseManager, CompositeDatabaseAvailabilityGuard globalAvailabilityGuard, Lifecycle globalLife,
-            Logger logger )
+            Log log )
     {
         this.databaseManager = databaseManager;
         this.globalAvailabilityGuard = globalAvailabilityGuard;
         this.globalLife = globalLife;
-        this.logger = logger;
+        this.log = log;
     }
 
     @Override
@@ -85,15 +85,15 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
     {
         try
         {
-            logger.log( "Shutdown started" );
+            log.info( "Shutdown started" );
             globalAvailabilityGuard.shutdown();
             globalLife.shutdown();
         }
         catch ( Exception throwable )
         {
-            logger.log( "Shutdown failed", throwable );
-            throw new RuntimeException( throwable );
+            String message = "Shutdown failed";
+            log.error( message, throwable );
+            throw new RuntimeException( message, throwable );
         }
-
     }
 }

@@ -74,7 +74,7 @@ class GraphDatabaseFacadeFactoryTest
     void shouldThrowAppropriateExceptionIfStartFails()
     {
         RuntimeException startupError = new RuntimeException();
-        GraphDatabaseFacadeFactory db = newFaultyGraphDatabaseFacadeFactory( startupError );
+        GraphDatabaseFacadeFactory db = newFaultyGraphDatabaseFacadeFactory( startupError, null );
         RuntimeException startException =
                 assertThrows( RuntimeException.class, () -> db.initFacade( testDirectory.storeDir(), Collections.emptyMap(), deps, mockFacade ) );
         assertEquals( startupError, Exceptions.rootCause( startException ) );
@@ -86,17 +86,16 @@ class GraphDatabaseFacadeFactoryTest
         RuntimeException startupError = new RuntimeException();
         RuntimeException shutdownError = new RuntimeException();
 
-        GraphDatabaseFacadeFactory db = newFaultyGraphDatabaseFacadeFactory( startupError );
-        doThrow( shutdownError ).when( mockFacade ).shutdown();
+        GraphDatabaseFacadeFactory db = newFaultyGraphDatabaseFacadeFactory( startupError, shutdownError );
         RuntimeException initException =
                 assertThrows( RuntimeException.class, () -> db.initFacade( testDirectory.storeDir(), Collections.emptyMap(), deps, mockFacade ) );
 
         assertTrue( initException.getMessage().startsWith( "Error starting " ) );
         assertEquals( startupError, initException.getCause() );
-        assertEquals( shutdownError, initException.getSuppressed()[0] );
+        assertEquals( shutdownError, initException.getSuppressed()[0].getCause() );
     }
 
-    private GraphDatabaseFacadeFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError )
+    private GraphDatabaseFacadeFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError, RuntimeException shutdownError )
     {
         GlobalModule globalModule = new GlobalModule( testDirectory.storeDir(), Config.defaults(), COMMUNITY, newDependencies() );
         AbstractEditionModule editionModule = new CommunityEditionModule( globalModule )
@@ -110,6 +109,10 @@ class GraphDatabaseFacadeFactoryTest
             {
                 final LifeSupport lifeMock = mock( LifeSupport.class );
                 doThrow( startupError ).when( lifeMock ).start();
+                if ( shutdownError != null )
+                {
+                    doThrow( shutdownError ).when( lifeMock ).shutdown();
+                }
                 doAnswer( invocation -> invocation.getArgument( 0 ) ).when( lifeMock ).add( any( Lifecycle.class ) );
 
                 return new GlobalModule( storeDir, config, databaseInfo, dependencies )

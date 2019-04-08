@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
-import org.neo4j.logging.Logger;
+import org.neo4j.logging.Log;
 import org.neo4j.token.TokenHolders;
 
 public abstract class StandaloneEditionModule extends AbstractEditionModule
@@ -76,7 +76,7 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
     }
 
     @Override
-    public DatabaseManager<?> createDatabaseManager( GraphDatabaseFacade graphDatabaseFacade, GlobalModule globalModule, Logger msgLog )
+    public DatabaseManager<?> createDatabaseManager( GraphDatabaseFacade graphDatabaseFacade, GlobalModule globalModule, Log msgLog )
     {
         return new DefaultDatabaseManager( globalModule, this, msgLog, graphDatabaseFacade );
     }
