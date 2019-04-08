@@ -83,13 +83,10 @@ public class CommunityEditionModule extends StandaloneEditionModule
 {
     public static final String COMMUNITY_SECURITY_MODULE_ID = "community-security-module";
 
-    private final Config config;
     protected final SslPolicyLoader sslPolicyLoader;
 
     public CommunityEditionModule( GlobalModule globalModule )
     {
-        this.config = globalModule.getGlobalConfig();
-
         Dependencies globalDependencies = globalModule.getGlobalDependencies();
         Config globalConfig = globalModule.getGlobalConfig();
         LogService logService = globalModule.getLogService();
