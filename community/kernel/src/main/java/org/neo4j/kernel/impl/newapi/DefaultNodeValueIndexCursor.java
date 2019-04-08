@@ -120,13 +120,14 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
                 {
                 case exists:
                     // If composite index all following will be exists as well so no need to consider those
-                    if(exactQueryValues.isEmpty())
+                    if ( exactQueryValues.isEmpty() )
                     {
                         // First query is exists, use scan
                         setNeedsValuesIfRequiresOrder();
                         scanQuery( descriptor );
                     }
-                    else {
+                    else
+                    {
                         setNeedsValuesIfRequiresOrder();
                         rangeQuery( descriptor, exactValues, null );
                     }
@@ -357,7 +358,8 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
         if ( needsValues )
         {
-            AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForRangeSeekByPrefix( txState, descriptor, equalityPrefix, predicate.prefix(), indexOrder );
+            AddedWithValuesAndRemoved changes =
+                    indexUpdatesWithValuesForRangeSeekByPrefix( txState, descriptor, equalityPrefix, predicate.prefix(), indexOrder );
             addedWithValues = changes.getAdded().iterator();
             removed = removed( txState, changes.getRemoved() );
         }

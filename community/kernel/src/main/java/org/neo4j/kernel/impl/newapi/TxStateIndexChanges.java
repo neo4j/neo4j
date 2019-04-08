@@ -215,12 +215,12 @@ class TxStateIndexChanges
         }
         int size = descriptor.schema().getPropertyIds().length;
         ValueTuple floor = getCompositeValueTuple( size, equalityPrefix, prefix, true );
-        ValueTuple max_string = getCompositeValueTuple( size, equalityPrefix, Values.MAX_STRING, false );
+        ValueTuple maxString = getCompositeValueTuple( size, equalityPrefix, Values.MAX_STRING, false );
 
         MutableLongList added = LongLists.mutable.empty();
         MutableLongSet removed = LongSets.mutable.empty();
 
-        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : sortedUpdates.subMap( floor, max_string ).entrySet() )
+        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : sortedUpdates.subMap( floor, maxString ).entrySet() )
         {
             Value key = entry.getKey().valueAt( equalityPrefix.length );
             // Needs to check type since the subMap might include non-TextValue for composite index
@@ -251,12 +251,12 @@ class TxStateIndexChanges
         }
         int keySize = descriptor.schema().getPropertyIds().length;
         ValueTuple floor = getCompositeValueTuple( keySize, equalityPrefix, prefix, true );
-        ValueTuple max_string = getCompositeValueTuple( keySize, equalityPrefix, Values.MAX_STRING, false );
+        ValueTuple maxString = getCompositeValueTuple( keySize, equalityPrefix, Values.MAX_STRING, false );
 
         MutableList<NodeWithPropertyValues> added = Lists.mutable.empty();
         MutableLongSet removed = LongSets.mutable.empty();
 
-        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : sortedUpdates.subMap( floor, max_string ).entrySet() )
+        for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : sortedUpdates.subMap( floor, maxString ).entrySet() )
         {
             ValueTuple key = entry.getKey();
             Value prefixKey = key.valueAt( equalityPrefix.length );
