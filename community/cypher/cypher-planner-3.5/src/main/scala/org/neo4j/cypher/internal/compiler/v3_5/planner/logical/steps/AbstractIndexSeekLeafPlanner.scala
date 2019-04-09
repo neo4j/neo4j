@@ -36,9 +36,11 @@ import org.neo4j.cypher.internal.v3_5.util.symbols.CypherType
 abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpressions {
 
   // Abstract methods ***********
+
   protected def constructPlan(idName: String,
                               label: LabelToken,
                               properties: Seq[IndexedProperty],
+                              isUnique: Boolean,
                               valueExpr: QueryExpression[Expression],
                               hint: Option[UsingIndexHint],
                               argumentIds: Set[String],
@@ -47,6 +49,8 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                              (solvedPredicates: Seq[Expression], predicatesForCardinalityEstimation: Seq[Expression]): LogicalPlan
 
   protected def findIndexesForLabel(labelId: Int, context: LogicalPlanningContext): Iterator[IndexDescriptor]
+
+  // Concrete methods ***********
 
   override def producePlanFor(predicates: Set[Expression], qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Set[LeafPlansForVariable] = {
     implicit val labelPredicateMap: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
@@ -105,7 +109,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
          indexDescriptor: IndexDescriptor <- findIndexesForLabel(labelId, context);
          (predicates, canGetValues, providedOrder) <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates, interestingOrder))
       yield
-        createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, predicates, canGetValues, providedOrder, context, semanticTable)
+        createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, predicates, indexDescriptor.isUnique, canGetValues, providedOrder, context, semanticTable)
   }
 
   private def createLogicalPlan(idName: String,
@@ -115,6 +119,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                                 labelName: LabelName,
                                 labelId: LabelId,
                                 indexCompatiblePredicates: Seq[IndexCompatiblePredicate],
+                                isUnique: Boolean,
                                 canGetValues: Seq[GetValueFromIndexBehavior],
                                 providedOrder: ProvidedOrder,
                                 context: LogicalPlanningContext,
@@ -134,7 +139,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       case (propertyName, getValue) => IndexedProperty(PropertyKeyToken(propertyName, semanticTable.id(propertyName).head), getValue)
     }
     val entryConstructor: (Seq[Expression], Seq[Expression]) => LogicalPlan =
-      constructPlan(idName, LabelToken(labelName, labelId), properties, queryExpression, hint, argumentIds, providedOrder, context)
+      constructPlan(idName, LabelToken(labelName, labelId), properties, isUnique, queryExpression, hint, argumentIds, providedOrder, context)
 
     val solvedPredicates = indexCompatiblePredicates.filter(_.solvesPredicate).map(p => p.propertyPredicate) :+ labelPredicate
     val predicatesForCardinalityEstimation = indexCompatiblePredicates.map(p => p.propertyPredicate) :+ labelPredicate

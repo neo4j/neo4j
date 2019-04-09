@@ -64,7 +64,8 @@ case class IndexDescriptor(label: LabelId,
                            properties: Seq[PropertyKeyId],
                            limitations: Set[IndexLimitation] = Set.empty[IndexLimitation],
                            orderCapability: OrderCapability = IndexDescriptor.noOrderCapability,
-                           valueCapability: ValueCapability = IndexDescriptor.noValueCapability) {
+                           valueCapability: ValueCapability = IndexDescriptor.noValueCapability,
+                           isUnique: Boolean = false) {
   val isComposite: Boolean = properties.length > 1
 
   def property: PropertyKeyId = if (isComposite) throw new IllegalArgumentException("Cannot get single property of multi-property index") else properties.head
