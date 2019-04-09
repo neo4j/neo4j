@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner
 import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
-import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexOrderCapability, StatisticsCompletingGraphStatistics}
+import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v3_5.logical.plans.ProcedureSignature
+import org.neo4j.cypher.internal.v3_5.util.{LabelId, PropertyKeyId, RelTypeId}
 import org.neo4j.helpers.collection.{Pair, Visitable}
 import org.neo4j.kernel.impl.util.dbstructure.{DbStructureCollector, DbStructureLookup, DbStructureVisitor}
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v3_5.util.{LabelId, PropertyKeyId, RelTypeId}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -48,7 +48,7 @@ case class DbStructureLogicalPlanningConfiguration(cypherCompilerConfig: CypherP
 
     new RealLogicalPlanningConfiguration(cypherCompilerConfig) {
 
-      override def updateSemanticTableWithTokens(table: SemanticTable) = {
+      override def updateSemanticTableWithTokens(table: SemanticTable): SemanticTable = {
         resolvedPropertyKeys.foreach { case (keyName, keyId) => table.resolvedPropertyKeyNames.put(keyName, PropertyKeyId(keyId)) }
         resolvedLabels.foreach{ case (keyName, keyId) => table.resolvedLabelNames.put(keyName, LabelId(keyId)) }
         resolvedRelTypeNames.foreach{ case (keyName, keyId) => table.resolvedRelTypeNames.put(keyName, RelTypeId(keyId))}
@@ -58,19 +58,16 @@ case class DbStructureLogicalPlanningConfiguration(cypherCompilerConfig: CypherP
       override val graphStatistics: GraphStatistics =
         new StatisticsCompletingGraphStatistics(underlyingStatistics)
 
-      override val indexes: Set[(String, Seq[String])] = indexSet(lookup.knownIndices())
-      override val indexesWithValues: Set[(String, Seq[String])] = Set.empty
-      override val indexesWithOrdering: Map[(String, Seq[String]), IndexOrderCapability] = Map.empty
+      override val indexes: Map[IndexDef, IndexType] = indexSet(lookup.knownIndices())
       override def procedureSignatures: Set[ProcedureSignature] = Set.empty
       override val knownLabels: Set[String] = resolvedLabels.keys.toSet
-      override val labelsById: Map[Int, String] = resolvedLabels.map(pair => (pair._2.id -> pair._1)).toMap
-      override val uniqueIndexes: Set[(String, Seq[String])] = indexSet(lookup.knownUniqueIndices())
+      override val labelsById: Map[Int, String] = resolvedLabels.map(pair => pair._2.id -> pair._1).toMap
     }
   }
 
-  private def indexSet(indices: util.Iterator[Pair[Array[String], Array[String]]]): Set[(String, Seq[String])] =
+  private def indexSet(indices: util.Iterator[Pair[Array[String], Array[String]]]): Map[IndexDef, IndexType] =
     //We use a zero index here as to not bleed multi-token descriptors into cypher.
-    indices.asScala.map { pair => pair.first().apply(0) -> pair.other().to[Seq] }.toSet
+    indices.asScala.map { pair => IndexDef(pair.first().head, pair.other().toSeq) -> new IndexType }.toMap
 
   private def resolveTokens[T](iterator: util.Iterator[Pair[Integer, String]])(f: Int => T): mutable.Map[String, T] = {
     val builder = mutable.Map.newBuilder[String, T]
