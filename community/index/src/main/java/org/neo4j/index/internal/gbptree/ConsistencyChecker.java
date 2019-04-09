@@ -20,6 +20,8 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -59,6 +61,7 @@ class ConsistencyChecker<KEY>
     private final long stableGeneration;
     private final long unstableGeneration;
     private final GenerationKeeper generationTarget = new GenerationKeeper();
+    private final MutableLongList offloadIds = new LongArrayList();
 
     ConsistencyChecker( TreeNode<KEY,?> node, Layout<KEY,?> layout, long stableGeneration, long unstableGeneration )
     {
@@ -93,7 +96,7 @@ class ConsistencyChecker<KEY>
             addToSeenList( seenIds, freelistIds.next(), lastId );
         }
 
-        KeyRange<KEY> openRange = new KeyRange<>( comparator, null, null, layout, null );
+        KeyRange<KEY> openRange = new KeyRange<>( comparator, layout );
         boolean result = checkSubtree( cursor, openRange, expectedGeneration, 0, seenIds, lastId );
 
         // Assert that rightmost node on each level has empty right sibling.
@@ -219,7 +222,6 @@ class ConsistencyChecker<KEY>
                     " isn't a tree node, parent expected range " + range );
         }
 
-        List<Long> offloadIds = new ArrayList<>();
         do
         {
             offloadIds.clear();
@@ -372,7 +374,7 @@ class ConsistencyChecker<KEY>
         return node.childAt( cursor, pos, stableGeneration, unstableGeneration, childGeneration );
     }
 
-    private void assertKeyOrder( PageCursor cursor, KeyRange<KEY> range, int keyCount, TreeNode.Type type, List<Long> offloadIds )
+    private void assertKeyOrder( PageCursor cursor, KeyRange<KEY> range, int keyCount, TreeNode.Type type, MutableLongList offloadIds )
     {
         KEY prev = layout.newKey();
         boolean first = true;
@@ -455,6 +457,11 @@ class ConsistencyChecker<KEY>
         private final KEY toExclusive;
         private final Layout<KEY,?> layout;
         private final KeyRange<KEY> superRange;
+
+        private KeyRange( Comparator<KEY> comparator, Layout<KEY,?> layout )
+        {
+            this( comparator, null, null, layout, null );
+        }
 
         private KeyRange( Comparator<KEY> comparator, KEY fromInclusive, KEY toExclusive, Layout<KEY,?> layout,
                 KeyRange<KEY> superRange )
