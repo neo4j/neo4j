@@ -54,13 +54,6 @@ public class RelationshipProxyWrappingValue extends RelationshipValue
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-        if ( !isPopulated() )
-        {
-            // If the relationship has been deleted since it was found by the query, then we'll have to tell the client that their transaction conflicted,
-            // and that they need to retry it.
-            throw new ReadAndDeleteTransactionConflictException();
-        }
-
         MapValue p;
         try
         {
