@@ -41,7 +41,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public abstract class Value extends AnyValue
 {
-    private static final Pattern MAP_PATTERN = Pattern.compile( "\\{(.*)\\}" );
+    private static final Pattern MAP_PATTERN = Pattern.compile( "\\{(.*)}" );
 
     private static final Pattern KEY_VALUE_PATTERN =
             Pattern.compile( "(?:\\A|,)\\s*+(?<k>[a-z_A-Z]\\w*+)\\s*:\\s*(?<v>[^\\s,]+)" );

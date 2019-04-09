@@ -86,7 +86,6 @@ class AnyValueComparator implements TernaryComparator<AnyValue>
 
         if ( x == 0 )
         {
-            //noinspection ConstantConditions
             // Do not turn this into ?-operator
             if ( isValue1 )
             {

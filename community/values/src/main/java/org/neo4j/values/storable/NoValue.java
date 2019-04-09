@@ -32,7 +32,6 @@ import org.neo4j.values.ValueMapper;
  */
 public final class NoValue extends Value
 {
-    @SuppressWarnings( "WeakerAccess" )
     public static final NoValue NO_VALUE = new NoValue();
 
     private NoValue()

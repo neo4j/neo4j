@@ -42,7 +42,7 @@ public abstract class ArrayValue extends Value implements SequenceValue
     @Override
     public Iterator<AnyValue> iterator()
     {
-        return new Iterator<AnyValue>()
+        return new Iterator<>()
         {
             private int offset;
 

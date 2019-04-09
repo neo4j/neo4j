@@ -43,13 +43,6 @@ public class CharArray extends TextArray
         return other.equals( value );
     }
 
-    // TODO: should we support this?
-//    @Override
-//    boolean equals( String x )
-//    {
-//        return false;
-//    }
-
     @Override
     public boolean equals( char[] x )
     {

@@ -91,7 +91,7 @@ public enum PointFields
                 }
             };
 
-    public String propertyKey;
+    public final String propertyKey;
 
     PointFields( String propertyKey )
     {
