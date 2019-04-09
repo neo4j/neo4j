@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.index.sampler;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.io.IOUtils;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
@@ -65,5 +66,11 @@ public class AggregatingIndexSampler implements IndexSampler
         long uniqueValues = Math.addExact( sample1.uniqueValues(), sample2.uniqueValues() );
         long sampleSize = Math.addExact( sample1.sampleSize(), sample2.sampleSize() );
         return new IndexSample( indexSize, uniqueValues, sampleSize );
+    }
+
+    @Override
+    public void close()
+    {
+        IOUtils.closeAllSilently( indexSamplers );
     }
 }

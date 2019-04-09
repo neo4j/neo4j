@@ -26,7 +26,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -100,12 +99,12 @@ class LuceneSchemaIndexPopulationIT
                 // now index is online and should contain updates data
                 assertTrue( uniqueIndex.isOnline() );
 
-                try ( IndexReader indexReader = indexAccessor.newReader() )
+                try ( IndexReader indexReader = indexAccessor.newReader();
+                      IndexSampler indexSampler = indexReader.createSampler() )
                 {
                     long[] nodes = PrimitiveLongCollections.asArray( indexReader.query( IndexQuery.exists( 1 ) ) );
                     assertEquals( affectedNodes, nodes.length );
 
-                    IndexSampler indexSampler = indexReader.createSampler();
                     IndexSample sample = indexSampler.sampleIndex();
                     assertEquals( affectedNodes, sample.indexSize() );
                     assertEquals( affectedNodes, sample.uniqueValues() );
@@ -115,8 +114,7 @@ class LuceneSchemaIndexPopulationIT
         }
     }
 
-    private void generateUpdates( LuceneIndexAccessor indexAccessor, int nodesToUpdate )
-            throws IOException, IndexEntryConflictException
+    private void generateUpdates( LuceneIndexAccessor indexAccessor, int nodesToUpdate ) throws IndexEntryConflictException
     {
         try ( IndexUpdater updater = indexAccessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
