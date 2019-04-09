@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.util;
 
 import java.util.ArrayList;
 
+import org.neo4j.exceptions.StoreFailureException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -62,7 +63,10 @@ public class NodeProxyWrappingNodeValue extends NodeValue
         {
             l = Values.stringArray();
             p = VirtualValues.EMPTY_MAP;
-
+        }
+        catch ( StoreFailureException e )
+        {
+            throw new ReadAndDeleteTransactionConflictException( e );
         }
 
         if ( id() < 0 )
@@ -80,7 +84,7 @@ public class NodeProxyWrappingNodeValue extends NodeValue
             labels();
             properties();
         }
-        catch ( NotFoundException e )
+        catch ( NotFoundException | StoreFailureException e )
         {
             // best effort, cannot do more
         }
@@ -107,7 +111,7 @@ public class NodeProxyWrappingNodeValue extends NodeValue
                     {
                         ls.add( label.name() );
                     }
-                    l = labels = Values.stringArray( ls.toArray( new String[ls.size()] ) );
+                    l = labels = Values.stringArray( ls.toArray( new String[0] ) );
 
                 }
             }

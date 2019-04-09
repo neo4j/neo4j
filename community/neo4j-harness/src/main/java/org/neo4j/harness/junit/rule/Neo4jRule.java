@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.PrintStream;
 import java.net.URI;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
@@ -53,7 +54,7 @@ public class Neo4jRule implements TestRule
 {
     private Neo4jBuilder builder;
     private InProcessNeo4j neo4j;
-    private PrintStream dumpLogsOnFailureTarget;
+    private Supplier<PrintStream> dumpLogsOnFailureTarget;
 
     protected Neo4jRule( Neo4jBuilder builder )
     {
@@ -88,7 +89,7 @@ public class Neo4jRule implements TestRule
                     {
                         if ( dumpLogsOnFailureTarget != null )
                         {
-                            sc.printLogs( dumpLogsOnFailureTarget );
+                            sc.printLogs( dumpLogsOnFailureTarget.get() );
                         }
 
                         throw t;
@@ -266,6 +267,20 @@ public class Neo4jRule implements TestRule
      * @return this configurator instance
      */
     public Neo4jRule dumpLogsOnFailure( PrintStream out )
+    {
+        dumpLogsOnFailureTarget = () -> out;
+        return this;
+    }
+
+    /**
+     * Dump available logs on failure.
+     * <p>
+     * Similar to {@link #dumpLogsOnFailure(PrintStream)}, but permits late-binding the stream, or producing the stream based on some computation.
+     *
+     * @param out the supplier of the stream that will be used to dump logs info.
+     * @return this configurator instance.
+     */
+    public Neo4jRule dumpLogsOnFailure( Supplier<PrintStream> out )
     {
         dumpLogsOnFailureTarget = out;
         return this;
