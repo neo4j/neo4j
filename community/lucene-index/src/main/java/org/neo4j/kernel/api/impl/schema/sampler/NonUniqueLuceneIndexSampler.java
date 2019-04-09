@@ -57,7 +57,7 @@ public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
     }
 
     @Override
-    protected IndexSample performSampling() throws IndexNotFoundKernelException
+    public IndexSample sampleIndex() throws IndexNotFoundKernelException
     {
         NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( indexSamplingConfig.sampleSizeLimit() );
         IndexReader indexReader = indexSearcher.getIndexReader();

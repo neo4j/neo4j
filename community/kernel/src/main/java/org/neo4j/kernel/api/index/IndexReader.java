@@ -114,4 +114,40 @@ public interface IndexReader extends Resource
             // do nothing
         }
     };
+
+    class Adaptor implements IndexReader
+    {
+        @Override
+        public long countIndexedNodes( long nodeId, int[] propertyKeyIds, Value... propertyValues )
+        {
+            return 0;
+        }
+
+        @Override
+        public IndexSampler createSampler()
+        {
+            return null;
+        }
+
+        @Override
+        public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+        {
+        }
+
+        @Override
+        public boolean hasFullValuePrecision( IndexQuery... predicates )
+        {
+            return false;
+        }
+
+        @Override
+        public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues )
+        {
+        }
+
+        @Override
+        public void close()
+        {
+        }
+    }
 }

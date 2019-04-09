@@ -30,7 +30,7 @@ public class OnlineIndexSamplingJobFactory implements IndexSamplingJobFactory
     private final LogProvider logProvider;
     private final TokenNameLookup nameLookup;
 
-    OnlineIndexSamplingJobFactory( IndexStatisticsStore indexStatisticsStore, TokenNameLookup nameLookup, LogProvider logProvider )
+    public OnlineIndexSamplingJobFactory( IndexStatisticsStore indexStatisticsStore, TokenNameLookup nameLookup, LogProvider logProvider )
     {
         this.indexStatisticsStore = indexStatisticsStore;
         this.logProvider = logProvider;
