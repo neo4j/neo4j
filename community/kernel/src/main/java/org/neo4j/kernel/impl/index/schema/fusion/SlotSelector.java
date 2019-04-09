@@ -76,7 +76,7 @@ public interface SlotSelector
         }
 
         @Override
-        public <V> IndexSlot selectSlot( V[] values, Function<V,ValueGroup> groupOf )
+        public <V> IndexSlot selectSlot( V[] values, Function<V,ValueCategory> categoryOf )
         {
             throw new UnsupportedOperationException( "NullInstance cannot select a slot for you. Please use the real deal." );
         }
