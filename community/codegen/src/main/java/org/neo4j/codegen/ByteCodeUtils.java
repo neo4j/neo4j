@@ -260,9 +260,10 @@ public final class ByteCodeUtils
         try
         {
             TypeReference[] parameters = methodReference.parameters();
-            if (methodReference.isConstructor())
+            if ( methodReference.isConstructor() )
             {
-                clazz.getDeclaredConstructor( stream( parameters ).map( ByteCodeUtils::asClass ).toArray( Class<?>[]::new ) );
+                clazz.getDeclaredConstructor(
+                        stream( parameters ).map( ByteCodeUtils::asClass ).toArray( Class<?>[]::new ) );
             }
             else
             {
