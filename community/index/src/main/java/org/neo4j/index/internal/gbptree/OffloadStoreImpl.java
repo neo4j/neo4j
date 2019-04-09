@@ -51,7 +51,7 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
         this.idProvider = idProvider;
         this.pcFactory = pcFactory;
         this.offloadIdValidator = offloadIdValidator;
-        this.maxEntrySize = maxEntrySizeFromPageSize( pageSize );
+        this.maxEntrySize = keyValueSizeCapFromPageSize( pageSize );
     }
 
     @Override
@@ -198,7 +198,7 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
     }
 
     @VisibleForTesting
-    static int maxEntrySizeFromPageSize( int pageSize )
+    static int keyValueSizeCapFromPageSize( int pageSize )
     {
         return pageSize - SIZE_HEADER - SIZE_KEY_SIZE - SIZE_VALUE_SIZE;
     }

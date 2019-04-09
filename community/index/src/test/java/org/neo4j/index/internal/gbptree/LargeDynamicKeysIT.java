@@ -63,11 +63,11 @@ class LargeDynamicKeysIT
     private TestDirectory testDirectory;
 
     @Test
-    void putSingleKeyLargeThanOffloadCap() throws IOException
+    void putSingleKeyLargeThanInlineCap() throws IOException
     {
         try ( GBPTree<RawBytes,RawBytes> tree = createIndex() )
         {
-            int keySize = tree.needOffloadCap();
+            int keySize = tree.inlineKeyValueSizeCap();
             RawBytes key = key( keySize + 1 );
             RawBytes value = value( 0 );
             try ( Writer<RawBytes,RawBytes> writer = tree.writer() )
@@ -79,11 +79,11 @@ class LargeDynamicKeysIT
     }
 
     @Test
-    void removeSingleKeyLargeThanOffloadCap() throws IOException
+    void removeSingleKeyLargeThanInlineCap() throws IOException
     {
         try ( GBPTree<RawBytes,RawBytes> tree = createIndex() )
         {
-            int keySize = tree.needOffloadCap();
+            int keySize = tree.inlineKeyValueSizeCap();
             RawBytes key = key( keySize + 1 );
             RawBytes value = value( 0 );
             try ( Writer<RawBytes,RawBytes> writer = tree.writer() )

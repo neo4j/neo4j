@@ -1466,9 +1466,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
         return bTreeNode.keyValueSizeCap();
     }
 
-    int needOffloadCap()
+    int inlineKeyValueSizeCap()
     {
-        return bTreeNode.needOffloadCap();
+        return bTreeNode.inlineKeyValueSizeCap();
     }
 
     private static <KEY, VALUE> OffloadStoreImpl<KEY,VALUE> buildOffload( Layout<KEY,VALUE> layout, IdProvider idProvider, PagedFile pagedFile, int pageSize )

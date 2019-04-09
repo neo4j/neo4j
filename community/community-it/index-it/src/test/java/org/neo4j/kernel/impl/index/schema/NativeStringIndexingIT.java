@@ -58,7 +58,7 @@ public class NativeStringIndexingIT
     private static final int SIZE_OF_ENTITY_ID = Long.BYTES;
     private static final int KEY_SIZE_LIMIT = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE );
     private static final int STRING_SIZE_LIMIT = KEY_SIZE_LIMIT - SIZE_OF_ENTITY_ID;
-    private static final int STRING_INLINE_LIMIT = TreeNodeDynamicSize.needOffloadCap( PageCache.PAGE_SIZE ) - SIZE_OF_ENTITY_ID;
+    private static final int STRING_INLINE_LIMIT = TreeNodeDynamicSize.inlineKeyValueSizeCap( PageCache.PAGE_SIZE ) - SIZE_OF_ENTITY_ID;
     private static final Label LABEL = TestLabels.LABEL_ONE;
     private static final String KEY = "key";
     private static final String KEY2 = "key2";

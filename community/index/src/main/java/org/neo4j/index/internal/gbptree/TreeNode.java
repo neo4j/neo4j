@@ -293,7 +293,7 @@ abstract class TreeNode<KEY,VALUE>
 
     abstract int keyValueSizeCap();
 
-    abstract int needOffloadCap();
+    abstract int inlineKeyValueSizeCap();
 
     /**
      * This method can throw and should not be used on read path.

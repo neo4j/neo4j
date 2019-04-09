@@ -198,7 +198,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    int needOffloadCap()
+    int inlineKeyValueSizeCap()
     {
         return keyValueSizeCap();
     }

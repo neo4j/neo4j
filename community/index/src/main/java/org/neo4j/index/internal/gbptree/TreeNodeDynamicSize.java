@@ -93,7 +93,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
     private static final int LEAST_NUMBER_OF_ENTRIES_PER_PAGE = 2;
     private static final int MINIMUM_ENTRY_SIZE_CAP = Long.SIZE;
-    private final int needOffloadCap;
+    private final int inlineKeyValueSizeCap;
     private final int keyValueSizeCap;
     private final MutableIntStack deadKeysOffset = new IntArrayStack();
     private final MutableIntStack aliveKeysOffset = new IntArrayStack();
@@ -112,15 +112,15 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         this.offloadStore = offloadStore;
         totalSpace = pageSize - HEADER_LENGTH_DYNAMIC;
         halfSpace = totalSpace / 2;
-        needOffloadCap = needOffloadCap( pageSize );
+        inlineKeyValueSizeCap = inlineKeyValueSizeCap( pageSize );
         keyValueSizeCap = offloadStore.maxEntrySize();
 
-        if ( needOffloadCap < MINIMUM_ENTRY_SIZE_CAP )
+        if ( inlineKeyValueSizeCap < MINIMUM_ENTRY_SIZE_CAP )
         {
             throw new MetadataMismatchException(
                     "We need to fit at least %d key-value entries per page in leaves. To do that a key-value entry can be at most %dB " +
                             "with current page size of %dB. We require this cap to be at least %dB.",
-                    LEAST_NUMBER_OF_ENTRIES_PER_PAGE, needOffloadCap, pageSize, Long.BYTES );
+                    LEAST_NUMBER_OF_ENTRIES_PER_PAGE, inlineKeyValueSizeCap, pageSize, Long.BYTES );
         }
 
         tmpKeyLeft = layout.newKey();
@@ -130,11 +130,11 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @VisibleForTesting
     public static int keyValueSizeCapFromPageSize( int pageSize )
     {
-        return OffloadStoreImpl.maxEntrySizeFromPageSize( pageSize );
+        return OffloadStoreImpl.keyValueSizeCapFromPageSize( pageSize );
     }
 
     @VisibleForTesting
-    public static int needOffloadCap( int pageSize )
+    public static int inlineKeyValueSizeCap( int pageSize )
     {
         return (pageSize - HEADER_LENGTH_DYNAMIC) / LEAST_NUMBER_OF_ENTRIES_PER_PAGE - SIZE_TOTAL_OVERHEAD;
     }
@@ -169,19 +169,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         // Read key
         long keyValueSize = readKeyValueSize( cursor, true );
         boolean offload = extractOffload( keyValueSize );
-        if ( !offload )
-        {
-
-            int keySize = extractKeySize( keyValueSize );
-            int valueSize = extractValueSize( keyValueSize );
-            if ( keyValueSizeTooLarge( keySize, valueSize ) || keySize < 0 )
-            {
-                readUnreliableKeyValueSize( cursor, keySize, valueSize, keyValueSize, pos );
-                return into;
-            }
-            layout.readKey( cursor, into, keySize );
-        }
-        else
+        if ( offload )
         {
             long offloadId = DynamicSizeUtil.readOffloadId( cursor );
             try
@@ -192,6 +180,18 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             {
                 cursor.setCursorException( "Failed to read key from offload, cause: " + e.getMessage() );
             }
+        }
+        else
+        {
+
+            int keySize = extractKeySize( keyValueSize );
+            int valueSize = extractValueSize( keyValueSize );
+            if ( keyValueSizeTooLarge( keySize, valueSize ) || keySize < 0 )
+            {
+                readUnreliableKeyValueSize( cursor, keySize, valueSize, keyValueSize, pos );
+                return into;
+            }
+            layout.readKey( cursor, into, keySize );
         }
         return into;
     }
@@ -205,17 +205,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         int keySize = extractKeySize( keyValueSize );
         int valueSize = extractValueSize( keyValueSize );
         boolean offload = extractOffload( keyValueSize );
-        if ( !offload )
-        {
-            if ( keyValueSizeTooLarge( keySize, valueSize ) || keySize < 0 || valueSize < 0 )
-            {
-                readUnreliableKeyValueSize( cursor, keySize, valueSize, keyValueSize, pos );
-                return;
-            }
-            layout.readKey( cursor, intoKey, keySize );
-            layout.readValue( cursor, intoValue, valueSize );
-        }
-        else
+        if ( offload )
         {
             long offloadId = DynamicSizeUtil.readOffloadId( cursor );
             try
@@ -227,6 +217,16 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
                 cursor.setCursorException( "Failed to read keyValue from offload, cause: " + e.getMessage() );
             }
         }
+        else
+        {
+            if ( keyValueSizeTooLarge( keySize, valueSize ) || keySize < 0 || valueSize < 0 )
+            {
+                readUnreliableKeyValueSize( cursor, keySize, valueSize, keyValueSize, pos );
+                return;
+            }
+            layout.readKey( cursor, intoKey, keySize );
+            layout.readValue( cursor, intoValue, valueSize );
+        }
     }
 
     @Override
@@ -237,7 +237,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         int currentKeyOffset = getAllocOffset( cursor );
         int keySize = layout.keySize( key );
         int newKeyOffset;
-        if ( !offload( keySize ) )
+        if ( canInline( keySize ) )
         {
             newKeyOffset = currentKeyOffset - keySize - getOverhead( keySize, 0, false );
 
@@ -274,7 +274,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         int keySize = layout.keySize( key );
         int valueSize = layout.valueSize( value );
         int newKeyValueOffset;
-        if ( !offload( keySize + valueSize ) )
+        if ( canInline( keySize + valueSize ) )
         {
             newKeyValueOffset = currentKeyValueOffset - keySize - valueSize - getOverhead( keySize, valueSize, false );
 
@@ -431,17 +431,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         int keySize = extractKeySize( keyValueSize );
         int valueSize = extractValueSize( keyValueSize );
         boolean offload = extractOffload( keyValueSize );
-        if ( !offload )
-        {
-            if ( keyValueSizeTooLarge( keySize, valueSize ) || keySize < 0 || valueSize < 0 )
-            {
-                readUnreliableKeyValueSize( cursor, keySize, valueSize, keyValueSize, pos );
-                return into;
-            }
-            progressCursor( cursor, keySize );
-            layout.readValue( cursor, into, valueSize );
-        }
-        else
+        if ( offload )
         {
             long offloadId = readOffloadId( cursor );
             try
@@ -452,6 +442,16 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             {
                 cursor.setCursorException( "Failed to read value from offload, cause: " + e.getMessage() );
             }
+        }
+        else
+        {
+            if ( keyValueSizeTooLarge( keySize, valueSize ) || keySize < 0 || valueSize < 0 )
+            {
+                readUnreliableKeyValueSize( cursor, keySize, valueSize, keyValueSize, pos );
+                return into;
+            }
+            progressCursor( cursor, keySize );
+            layout.readValue( cursor, into, valueSize );
         }
         return into;
     }
@@ -494,9 +494,9 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    public int needOffloadCap()
+    public int inlineKeyValueSizeCap()
     {
-        return needOffloadCap;
+        return inlineKeyValueSizeCap;
     }
 
     @Override
@@ -1294,8 +1294,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         int keySize = layout.keySize( key );
         int valueSize = layout.valueSize( value );
-        boolean offload = offload( keySize + valueSize );
-        if ( !offload )
+        boolean canInline = canInline( keySize + valueSize );
+        if ( canInline )
         {
             return bytesKeyOffset() + getOverhead( keySize, valueSize, false ) + keySize + valueSize;
         }
@@ -1308,8 +1308,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     private int totalSpaceOfKeyChild( KEY key )
     {
         int keySize = layout.keySize( key );
-        boolean offload = offload( keySize);
-        if ( !offload )
+        boolean canInline = canInline( keySize);
+        if ( canInline )
         {
             return bytesKeyOffset() + getOverhead( keySize, 0, false) + childSize() + keySize;
         }
@@ -1436,7 +1436,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @Override
     public String toString()
     {
-        return "TreeNodeDynamicSize[pageSize:" + pageSize + ", keyValueSizeCap:" + keyValueSizeCap() + ", needOffloadCap:" + needOffloadCap + "]";
+        return "TreeNodeDynamicSize[pageSize:" + pageSize + ", keyValueSizeCap:" + keyValueSizeCap() + ", inlineKeyValueSizeCap:" + inlineKeyValueSizeCap + "]";
     }
 
     private String asString( PageCursor cursor, boolean includeValue, boolean includeAllocSpace,
@@ -1497,7 +1497,12 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             {
                 singleKey.add( "_" );
             }
-            if ( !offload )
+            if ( offload )
+            {
+                long offloadId = readOffloadId( cursor );
+                singleKey.add( Long.toString( offloadId ) );
+            }
+            else
             {
                 layout.readKey( cursor, readKey, keySize );
                 if ( type == LEAF )
@@ -1514,11 +1519,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
                 {
                     singleKey.add( readValue.toString() );
                 }
-            }
-            else
-            {
-                long offloadId = readOffloadId( cursor );
-                singleKey.add( Long.toString( offloadId ) );
             }
             keys.add( singleKey.toString() );
         }
@@ -1644,8 +1644,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return offsetArray.toString();
     }
 
-    private boolean offload( int entrySize )
+    private boolean canInline( int entrySize )
     {
-        return entrySize > needOffloadCap;
+        return entrySize <= inlineKeyValueSizeCap;
     }
 }
