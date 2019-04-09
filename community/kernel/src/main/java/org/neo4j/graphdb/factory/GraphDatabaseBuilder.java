@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -196,7 +197,15 @@ public class GraphDatabaseBuilder
      */
     public GraphDatabaseService newGraphDatabase()
     {
-        return newDatabaseManagementService().database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+        DatabaseManagementService managementService = newDatabaseManagementService();
+        return managementService.database( getDefaultDatabaseName( managementService ) );
+    }
+
+    private static String getDefaultDatabaseName( DatabaseManagementService managementService )
+    {
+        List<String> databases = managementService.listDatabases();
+        databases.remove( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
+        return databases.get( 0 );
     }
 
     public DatabaseManagementService newDatabaseManagementService()
