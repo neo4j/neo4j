@@ -96,7 +96,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         id = new SimpleIdProvider( cursor::duplicate );
 
         layout = getLayout();
-        PageCursorFactory pcFactory = ( id, flags ) -> cursor.duplicate( id );
+        OffloadPageCursorFactory pcFactory = ( id, flags ) -> cursor.duplicate( id );
         OffloadIdValidator idValidator = OffloadIdValidator.ALWAYS_TRUE;
         OffloadStoreImpl<KEY,VALUE> offloadStore = new OffloadStoreImpl<>( layout, id, pcFactory, idValidator, PAGE_SIZE );
         node = getTreeNode( PAGE_SIZE, layout, offloadStore );

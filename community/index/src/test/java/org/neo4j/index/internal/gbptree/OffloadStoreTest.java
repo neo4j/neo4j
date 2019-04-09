@@ -37,7 +37,7 @@ class OffloadStoreTest
     private static final SimpleByteArrayLayout layout = new SimpleByteArrayLayout( false );
     private PageAwareByteArrayCursor cursor;
     private SimpleIdProvider idProvider;
-    private PageCursorFactory pcFactory;
+    private OffloadPageCursorFactory pcFactory;
     private OffloadIdValidator idValidator;
 
     @BeforeEach

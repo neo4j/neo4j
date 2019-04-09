@@ -41,11 +41,11 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
     private static final int SIZE_VALUE_SIZE = Integer.BYTES;
     private final Layout<KEY,VALUE> layout;
     private final IdProvider idProvider;
-    private final PageCursorFactory pcFactory;
+    private final OffloadPageCursorFactory pcFactory;
     private final OffloadIdValidator offloadIdValidator;
     private final int maxEntrySize;
 
-    OffloadStoreImpl( Layout<KEY,VALUE> layout, IdProvider idProvider, PageCursorFactory pcFactory, OffloadIdValidator offloadIdValidator, int pageSize )
+    OffloadStoreImpl( Layout<KEY,VALUE> layout, IdProvider idProvider, OffloadPageCursorFactory pcFactory, OffloadIdValidator offloadIdValidator, int pageSize )
     {
         this.layout = layout;
         this.idProvider = idProvider;

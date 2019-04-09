@@ -116,7 +116,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         readCursor.next( newId );
 
         layout = getLayout();
-        PageCursorFactory pcFactory = ( id, flags ) -> cursor.duplicate( id );
+        OffloadPageCursorFactory pcFactory = ( id, flags ) -> cursor.duplicate( id );
         OffloadIdValidator idValidator = OffloadIdValidator.ALWAYS_TRUE;
         OffloadStoreImpl<KEY,VALUE> offloadStore = new OffloadStoreImpl<>( layout, id, pcFactory, idValidator, pageSize );
         node = getTreeNode( pageSize, layout, offloadStore );

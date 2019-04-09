@@ -76,7 +76,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     OffloadStoreImpl<KEY,VALUE> createOffloadStore()
     {
         SimpleIdProvider idProvider = new SimpleIdProvider( cursor::duplicate );
-        PageCursorFactory pcFactory = ( id, flags ) -> cursor.duplicate( id );
+        OffloadPageCursorFactory pcFactory = ( id, flags ) -> cursor.duplicate( id );
         OffloadIdValidator idValidator = OffloadIdValidator.ALWAYS_TRUE;
         return new OffloadStoreImpl<>( layout, idProvider, pcFactory, idValidator, PAGE_SIZE );
     }

@@ -21,10 +21,15 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
 
+import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
 
+/**
+ * This interface exists so that {@link OffloadStoreImpl} can be used in {@link GBPTree} tests that are not backed by a page cache but
+ * rather by {@link ByteArrayPageCursor}.
+ */
 @FunctionalInterface
-interface PageCursorFactory
+interface OffloadPageCursorFactory
 {
     PageCursor create( long pageId, int pf_flags ) throws IOException;
 }

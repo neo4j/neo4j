@@ -1473,7 +1473,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     private static <KEY, VALUE> OffloadStoreImpl<KEY,VALUE> buildOffload( Layout<KEY,VALUE> layout, IdProvider idProvider, PagedFile pagedFile, int pageSize )
     {
-        PageCursorFactory pcFactory = pagedFile::io;
+        OffloadPageCursorFactory pcFactory = pagedFile::io;
         OffloadIdValidator idValidator = id -> id >= IdSpace.MIN_TREE_NODE_ID && id <= pagedFile.getLastPageId();
         return new OffloadStoreImpl<>( layout, idProvider, pcFactory, idValidator, pageSize );
     }
