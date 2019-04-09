@@ -21,6 +21,7 @@ package org.neo4j.test.rule;
 
 import org.apache.commons.lang3.ObjectUtils;
 
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -193,6 +194,12 @@ public class PageCacheRule extends ExternalResource
         {
             return nextReadIsInconsistent.getAndSet( false );
         }
+
+        @Override
+        public Optional<Throwable> getLastAdversaryException()
+        {
+            return Optional.empty();
+        }
     }
 
     private static class RandomInconsistentReadAdversary implements Adversary
@@ -208,6 +215,12 @@ public class PageCacheRule extends ExternalResource
         public final boolean injectFailureOrMischief( Class<? extends Throwable>... failureTypes )
         {
             return ThreadLocalRandom.current().nextBoolean();
+        }
+
+        @Override
+        public Optional<Throwable> getLastAdversaryException()
+        {
+            return Optional.empty();
         }
     }
 }

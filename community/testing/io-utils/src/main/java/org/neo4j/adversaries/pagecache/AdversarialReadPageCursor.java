@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.adversaries.Adversary;
@@ -136,6 +137,12 @@ class AdversarialReadPageCursor extends DelegatingPageCursor
         public boolean injectFailureOrMischief( Class<? extends Throwable>... failureTypes )
         {
             return adversary.injectFailureOrMischief( failureTypes );
+        }
+
+        @Override
+        public Optional<Throwable> getLastAdversaryException()
+        {
+            return adversary.getLastAdversaryException();
         }
 
         private boolean hasPreparedInconsistentRead()

@@ -19,14 +19,19 @@
  */
 package org.neo4j.adversaries;
 
+import java.util.Optional;
 import java.util.Random;
+
+import static java.util.Optional.ofNullable;
+import static org.apache.commons.lang3.exception.ExceptionUtils.rethrow;
 
 @SuppressWarnings( "unchecked" )
 public abstract class AbstractAdversary implements Adversary
 {
     protected final Random rng;
+    private volatile Throwable adversaryException;
 
-    public AbstractAdversary()
+    AbstractAdversary()
     {
         rng = new Random();
     }
@@ -43,23 +48,25 @@ public abstract class AbstractAdversary implements Adversary
         Throwable throwable;
         try
         {
-            throwable = type.newInstance();
+            throwable = type.getDeclaredConstructor().newInstance();
         }
         catch ( Exception e )
         {
             throw new AssertionError( new Exception( "Failed to instantiate failure", e ) );
         }
-        sneakyThrow( throwable );
+        try
+        {
+            rethrow( throwable );
+        }
+        finally
+        {
+            adversaryException = throwable;
+        }
     }
 
-    public static void sneakyThrow( Throwable throwable )
+    @Override
+    public Optional<Throwable> getLastAdversaryException()
     {
-        _sneakyThrow( throwable );
-    }
-
-    // http://youtu.be/7qXXWHfJha4
-    private static <T extends Throwable> void _sneakyThrow( Throwable throwable ) throws T
-    {
-        throw (T) throwable;
+        return ofNullable( adversaryException );
     }
 }

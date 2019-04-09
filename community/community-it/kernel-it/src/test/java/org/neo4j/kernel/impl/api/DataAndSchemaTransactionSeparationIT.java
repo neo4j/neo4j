@@ -195,9 +195,7 @@ public class DataAndSchemaTransactionSeparationIT
             }
             catch ( AssertionError e )
             {
-                AssertionError error = new AssertionError( message + ": " + e.getMessage() );
-                error.setStackTrace( e.getStackTrace() );
-                throw error;
+                throw new AssertionError( message + ": " + e.getMessage(), e );
             }
         }
 

@@ -19,6 +19,8 @@
  */
 package org.neo4j.adversaries;
 
+import java.util.Optional;
+
 public interface Adversary
 {
     /**
@@ -31,4 +33,9 @@ public interface Adversary
      * other kinds of mischeif should happen, or <code>false</code> if nothing bad should happen.
      */
     boolean injectFailureOrMischief( Class<? extends Throwable>... failureTypes );
+
+    /**
+     * @return return exception that was thrown last by adversary if any
+     */
+    Optional<Throwable> getLastAdversaryException();
 }

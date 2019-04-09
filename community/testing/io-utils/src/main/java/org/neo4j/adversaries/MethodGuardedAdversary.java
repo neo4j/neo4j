@@ -19,6 +19,7 @@
  */
 package org.neo4j.adversaries;
 
+import java.lang.StackWalker.StackFrame;
 import java.lang.reflect.Method;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -33,15 +34,22 @@ public class MethodGuardedAdversary extends StackTraceElementGuardedAdversary
 {
     public MethodGuardedAdversary( Adversary delegate, Method... victimMethodSet )
     {
-        super( delegate, new Predicate<StackTraceElement>()
-        {
-            private final Set<String> victimMethods = Stream.of( victimMethodSet ).map( Method::getName ).collect( toSet() );
+        super( delegate, new MethodsFramePredicate( victimMethodSet ) );
+    }
 
-            @Override
-            public boolean test( StackTraceElement stackTraceElement )
-            {
-                return victimMethods.contains( stackTraceElement.getMethodName() );
-            }
-        } );
+    private static class MethodsFramePredicate implements Predicate<StackFrame>
+    {
+        private final Set<String> victimMethods;
+
+        MethodsFramePredicate( Method... victimMethodSet )
+        {
+            victimMethods = Stream.of( victimMethodSet ).map( Method::getName ).collect( toSet() );
+        }
+
+        @Override
+        public boolean test( StackFrame stackFrame )
+        {
+            return victimMethods.contains( stackFrame.getMethodName() );
+        }
     }
 }

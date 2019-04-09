@@ -28,6 +28,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.Flushable;
 import java.io.IOException;
+import java.lang.StackWalker.StackFrame;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -59,11 +60,11 @@ import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
-import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
+import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
@@ -293,10 +294,9 @@ public class BatchingTransactionAppenderConcurrencyTest
         };
     }
 
-    private Predicate<StackTraceElement> failMethod( final Class<?> klass, final String methodName )
+    private static Predicate<StackFrame> failMethod( final Class<?> klass, final String methodName )
     {
-        return element -> element.getClassName().equals( klass.getName() ) &&
-                          element.getMethodName().equals( methodName );
+        return frame -> frame.getClassName().equals( klass.getName() ) && frame.getMethodName().equals( methodName );
     }
 
     private BatchingTransactionAppender createTransactionAppender()

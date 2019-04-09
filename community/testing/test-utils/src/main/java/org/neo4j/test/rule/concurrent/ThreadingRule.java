@@ -37,9 +37,9 @@ import org.neo4j.function.FailableConsumer;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.function.ThrowingSupplier;
-import org.neo4j.test.ReflectionUtil;
 
 import static org.neo4j.function.ThrowingPredicate.throwingPredicate;
+import static org.neo4j.test.ReflectionUtil.verifyMethodExists;
 
 public class ThreadingRule extends ExternalResource
 {
@@ -177,25 +177,18 @@ public class ThreadingRule extends ExternalResource
         };
     }
 
-    /*Sample Stacktrace for method on owner*/
     public static Predicate<Thread> waitingWhileIn( final Class<?> owner, final String method )
     {
-        return new Predicate<Thread>()
+        verifyMethodExists( owner, method );
+        return new Predicate<>()
         {
             @Override
             public boolean test( Thread thread )
             {
-                ReflectionUtil.verifyMethodExists( owner, method );
-
                 if ( thread.getState() == Thread.State.WAITING || thread.getState() == Thread.State.TIMED_WAITING )
                 {
-                    for ( StackTraceElement element : thread.getStackTrace() )
-                    {
-                        if ( element.getClassName().equals( owner.getName() ) && element.getMethodName().equals( method ) )
-                        {
-                            return true;
-                        }
-                    }
+                    return StackWalker.getInstance().walk( s -> s.filter(
+                            frame -> frame.getClassName().equals( owner.getName() ) && frame.getMethodName().equals( method ) ).findAny() ).isPresent();
                 }
                 return false;
             }
@@ -203,8 +196,7 @@ public class ThreadingRule extends ExternalResource
             @Override
             public String toString()
             {
-                return String.format( "Predicate[Thread.state=WAITING && thread.getStackTrace() contains %s.%s()]",
-                        owner.getName(), method );
+                return String.format( "Predicate[Thread.state=WAITING && call stack contains %s.%s()]", owner.getName(), method );
             }
         };
     }

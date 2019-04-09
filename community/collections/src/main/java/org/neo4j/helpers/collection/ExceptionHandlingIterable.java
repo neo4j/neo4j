@@ -19,6 +19,8 @@
  */
 package org.neo4j.helpers.collection;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 import java.util.Iterator;
 
 /**
@@ -35,12 +37,6 @@ public class ExceptionHandlingIterable<T> implements Iterable<T>
     public ExceptionHandlingIterable( Iterable<T> source )
     {
         this.source = source;
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private static <T extends Throwable> void sneakyThrow( Throwable throwable ) throws T
-    {
-        throw (T) throwable;
     }
 
     @Override
@@ -99,9 +95,7 @@ public class ExceptionHandlingIterable<T> implements Iterable<T>
 
     protected void rethrow( Throwable t )
     {
-        // TODO it's pretty bad that we have to do this. We should refactor our exception hierarchy
-        // to eliminate the need for this hack.
-        ExceptionHandlingIterable.sneakyThrow( t );
+        ExceptionUtils.rethrow( t );
     }
 
     protected boolean exceptionOnHasNext( Throwable t )

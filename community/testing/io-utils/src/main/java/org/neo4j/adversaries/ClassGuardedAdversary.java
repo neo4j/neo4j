@@ -19,6 +19,7 @@
  */
 package org.neo4j.adversaries;
 
+import java.lang.StackWalker.StackFrame;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -36,28 +37,34 @@ public class ClassGuardedAdversary extends StackTraceElementGuardedAdversary
 
     public ClassGuardedAdversary( Adversary delegate, Class<?>... victimClassSet )
     {
-        super( delegate, new Predicate<StackTraceElement>()
-        {
-            private final Set<String> victimClasses = Stream.of( victimClassSet ).map( Class::getName ).collect( toSet() );
-
-            @Override
-            public boolean test( StackTraceElement stackTraceElement )
-            {
-                return victimClasses.contains( stackTraceElement.getClassName() );
-            }
-        } );
+        super( delegate, new ClassFramePredicate( victimClassSet ) );
     }
 
     /**
      * Specifies victims as arbitrary {@link StackTraceElement} {@link Predicate}.
      *
      * @param delegate {@link Adversary} to delegate calls to.
-     * @param victims arbitrary {@link Predicate} for {@link StackTraceElement} in the executing
+     * @param predicate arbitrary {@link Predicate} for {@link StackTraceElement} in the executing
      * thread and if any of the elements in the current stack trace matches then failure is injected.
      */
-    @SafeVarargs
-    public ClassGuardedAdversary( Adversary delegate, Predicate<StackTraceElement>... victims )
+    public ClassGuardedAdversary( Adversary delegate, Predicate<StackFrame> predicate )
     {
-        super( delegate, victims );
+        super( delegate, predicate );
+    }
+
+    private static class ClassFramePredicate implements Predicate<StackFrame>
+    {
+        private final Set<String> victimClasses;
+
+        ClassFramePredicate( Class<?>... victimClassSet )
+        {
+            this.victimClasses = Stream.of( victimClassSet ).map( Class::getName ).collect( toSet() );
+        }
+
+        @Override
+        public boolean test( StackFrame stackFrame )
+        {
+            return victimClasses.contains( stackFrame.getClassName() );
+        }
     }
 }

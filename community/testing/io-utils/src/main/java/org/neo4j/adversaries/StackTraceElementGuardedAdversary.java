@@ -19,19 +19,20 @@
  */
 package org.neo4j.adversaries;
 
+import java.lang.StackWalker.StackFrame;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 public class StackTraceElementGuardedAdversary implements Adversary
 {
     private final Adversary delegate;
-    private final Predicate<StackTraceElement>[] checks;
+    private final Predicate<StackFrame> check;
     private volatile boolean enabled;
 
-    @SafeVarargs
-    public StackTraceElementGuardedAdversary( Adversary delegate, Predicate<StackTraceElement>... checks )
+    StackTraceElementGuardedAdversary( Adversary delegate, Predicate<StackFrame> check )
     {
         this.delegate = delegate;
-        this.checks = checks;
+        this.check = check;
         enabled = true;
     }
 
@@ -40,41 +41,25 @@ public class StackTraceElementGuardedAdversary implements Adversary
     {
         if ( enabled && calledFromVictimStackTraceElement() )
         {
-            delegateFailureInjection( failureTypes );
+            delegate.injectFailure( failureTypes );
         }
     }
 
     @Override
     public boolean injectFailureOrMischief( Class<? extends Throwable>... failureTypes )
     {
-        return enabled && calledFromVictimStackTraceElement() && delegateFailureOrMischiefInjection( failureTypes );
+        return enabled && calledFromVictimStackTraceElement() && delegate.injectFailureOrMischief( failureTypes );
     }
 
-    protected void delegateFailureInjection( Class<? extends Throwable>[] failureTypes )
+    @Override
+    public Optional<Throwable> getLastAdversaryException()
     {
-        delegate.injectFailure( failureTypes );
-    }
-
-    protected boolean delegateFailureOrMischiefInjection( Class<? extends Throwable>[] failureTypes )
-    {
-        return delegate.injectFailureOrMischief( failureTypes );
+        return delegate.getLastAdversaryException();
     }
 
     private boolean calledFromVictimStackTraceElement()
     {
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        for ( StackTraceElement element : stackTrace )
-        {
-            for ( Predicate<StackTraceElement> check : checks )
-            {
-                if ( check.test( element ) )
-                {
-                    return true;
-                }
-            }
-
-        }
-        return false;
+        return StackWalker.getInstance().walk( s -> s.filter( check ).findAny() ).isPresent();
     }
 
     public void disable()
