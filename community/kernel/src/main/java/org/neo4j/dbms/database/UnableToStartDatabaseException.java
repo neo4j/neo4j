@@ -21,7 +21,7 @@ package org.neo4j.dbms.database;
 
 /** * An error
  */
-public class UnableToStartDatabaseException extends DatabaseManagerException
+public class UnableToStartDatabaseException extends DatabaseManagementException
 {
     public UnableToStartDatabaseException()
     {

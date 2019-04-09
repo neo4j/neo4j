@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 
+import org.neo4j.dbms.database.DatabaseManagementException;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -67,7 +68,7 @@ class DefaultDatabaseManagerIT
     void createDatabase()
     {
         DatabaseManager<?> databaseManager = getDatabaseManager();
-        assertThrows( IllegalStateException.class, () -> databaseManager.createDatabase( DEFAULT_DATABASE_ID ) );
+        assertThrows( DatabaseManagementException.class, () -> databaseManager.createDatabase( DEFAULT_DATABASE_ID ) );
     }
 
     @Test

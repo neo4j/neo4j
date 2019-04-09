@@ -20,27 +20,27 @@
 package org.neo4j.dbms.database;
 
 /**
- * General exception, thrown in the event of errors when managing individual databases' lifecycles.
- * @see DatabaseManager
+ * General exception, thrown in the event of errors when managing individual databases.
+ * @see DatabaseManagementService
  */
-public class DatabaseManagerException extends RuntimeException
+public class DatabaseManagementException extends RuntimeException
 {
-    public DatabaseManagerException()
+    public DatabaseManagementException()
     {
         super();
     }
 
-    public DatabaseManagerException( String message )
+    public DatabaseManagementException( String message )
     {
         super( message );
     }
 
-    public DatabaseManagerException( String message, Throwable cause )
+    public DatabaseManagementException( String message, Throwable cause )
     {
         super( message, cause );
     }
 
-    public DatabaseManagerException( Throwable cause )
+    public DatabaseManagementException( Throwable cause )
     {
         super( cause );
     }

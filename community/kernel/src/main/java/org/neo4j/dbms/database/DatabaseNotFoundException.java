@@ -22,7 +22,7 @@ package org.neo4j.dbms.database;
 /**
  * A {@link DatabaseManager} tried to perform some operation on a database, but no database with that name currently exists.
  */
-public class DatabaseNotFoundException extends DatabaseManagerException
+public class DatabaseNotFoundException extends DatabaseManagementException
 {
     public DatabaseNotFoundException()
     {

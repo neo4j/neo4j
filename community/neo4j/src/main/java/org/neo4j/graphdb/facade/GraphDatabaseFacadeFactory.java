@@ -21,6 +21,7 @@ package org.neo4j.graphdb.facade;
 
 import java.io.File;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 import org.neo4j.bolt.BoltServer;
@@ -175,7 +176,7 @@ public class GraphDatabaseFacadeFactory
     private void startDatabaseServer( Config config, GlobalModule globalModule, AbstractEditionModule edition, LifeSupport globalLife, Log internalLog,
             DatabaseManager<?> databaseManager, DatabaseManagementService managementService )
     {
-        RuntimeException error = null;
+        RuntimeException startupException = null;
         try
         {
             edition.createDatabases( databaseManager, config );
@@ -185,12 +186,12 @@ public class GraphDatabaseFacadeFactory
         catch ( Throwable throwable )
         {
             String message = "Error starting database server at " + globalModule.getStoreLayout().storeDirectory();
-            error = new RuntimeException( message, throwable );
+            startupException = new RuntimeException( message, throwable );
             internalLog.error( message, throwable );
         }
         finally
         {
-            if ( error != null )
+            if ( startupException != null )
             {
                 try
                 {
@@ -198,22 +199,28 @@ public class GraphDatabaseFacadeFactory
                 }
                 catch ( Throwable shutdownError )
                 {
-                    error.addSuppressed( shutdownError );
+                    startupException.addSuppressed( shutdownError );
                 }
             }
         }
 
-        if ( error != null )
+        if ( startupException != null )
         {
-            internalLog.error( "Failed to start database server.", error );
-            throw error;
+            internalLog.error( "Failed to start database server.", startupException );
+            throw startupException;
         }
     }
 
     private static void verifySystemDatabaseStart( DatabaseManager<?> databaseManager )
     {
-        DatabaseContext systemContext = databaseManager.getDatabaseContext( new DatabaseId( SYSTEM_DATABASE_NAME ) ).get();
-        if ( systemContext.isFailed() )
+        Optional<? extends DatabaseContext> databaseContext = databaseManager.getDatabaseContext( new DatabaseId( SYSTEM_DATABASE_NAME ) );
+        if ( databaseContext.isEmpty() )
+        {
+            throw new UnableToStartDatabaseException( SYSTEM_DATABASE_NAME + " not found." );
+        }
+
+        DatabaseContext systemContext = databaseContext.get();
+        if ( databaseContext.get().isFailed() )
         {
             throw new UnableToStartDatabaseException( SYSTEM_DATABASE_NAME + " failed to start.", systemContext.failureCause() );
         }

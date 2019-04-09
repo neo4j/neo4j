@@ -21,6 +21,7 @@ package org.neo4j.dmbs.database;
 
 import java.util.Optional;
 
+import org.neo4j.dbms.database.DatabaseManagementException;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
@@ -30,7 +31,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.Log;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.util.Preconditions.checkState;
 
 public final class DefaultDatabaseManager extends AbstractDatabaseManager<StandaloneDatabaseContext>
 {
@@ -50,8 +50,7 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     public synchronized StandaloneDatabaseContext createDatabase( DatabaseId databaseId )
     {
         requireNonNull( databaseId );
-        checkState( databaseMap.size() < 2,
-                String.format( "System and default database are already created. Fail to create another database: %s", databaseId.name() ) );
+        checkDatabaseLimit( databaseId );
         StandaloneDatabaseContext databaseContext = createNewDatabaseContext( databaseId );
         databaseMap.put( databaseId, databaseContext );
         return databaseContext;
@@ -66,18 +65,26 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     @Override
     public void dropDatabase( DatabaseId ignore )
     {
-        throw new UnsupportedOperationException( "Default database manager does not support database drop." );
+        throw new DatabaseManagementException( "Default database manager does not support database drop." );
     }
 
     @Override
     public void stopDatabase( DatabaseId ignore )
     {
-        throw new UnsupportedOperationException( "Default database manager does not support database stop." );
+        throw new DatabaseManagementException( "Default database manager does not support database stop." );
     }
 
     @Override
     public void startDatabase( DatabaseId databaseName )
     {
-        throw new UnsupportedOperationException( "Default database manager does not support starting databases." );
+        throw new DatabaseManagementException( "Default database manager does not support starting databases." );
+    }
+
+    private void checkDatabaseLimit( DatabaseId databaseId )
+    {
+        if ( databaseMap.size() >= 2 )
+        {
+            throw new DatabaseManagementException( "Default database already exists. Fail to create another database: " + databaseId.name() );
+        }
     }
 }
