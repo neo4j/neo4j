@@ -231,7 +231,7 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
         return idProvider.acquireNewId( stableGeneration, unstableGeneration );
     }
 
-    private void placeCursorAtOffloadId( PageCursor cursor, long offloadId ) throws IOException
+    private static void placeCursorAtOffloadId( PageCursor cursor, long offloadId ) throws IOException
     {
         PageCursorUtil.goTo( cursor, "offload page", offloadId );
     }
@@ -241,7 +241,7 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
         return keySize > maxEntrySize || valueSize > maxEntrySize || (keySize + valueSize) > maxEntrySize;
     }
 
-    private void readUnreliableKeyValueSize( PageCursor cursor, int keySize, int valueSize )
+    private static void readUnreliableKeyValueSize( PageCursor cursor, int keySize, int valueSize )
     {
         cursor.setCursorException( format( "Read unreliable key, id=%d, keySize=%d, valueSize=%d", cursor.getCurrentPageId(), keySize, valueSize ) );
     }

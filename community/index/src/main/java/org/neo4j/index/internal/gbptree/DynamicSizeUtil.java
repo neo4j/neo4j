@@ -118,7 +118,7 @@ public class DynamicSizeUtil
     // mask for one-byte value size to map to the v's in [_,v,v,v,v,v,v,v]
     static final int MASK_ONE_BYTE_VALUE_SIZE = 0x7F;
     // max two-byte value size to map to the v's in [_,v,v,v,v,v,v,v][v,v,v,v,v,v,v,v]
-    private static final int MAX_TWO_BYTE_VALUE_SIZE = 0x7FFF;
+    static final int MAX_TWO_BYTE_VALUE_SIZE = 0x7FFF;
     private static final int FLAG_HAS_VALUE_SIZE = 0x20;
     private static final int FLAG_ADDITIONAL_KEY_SIZE = 0x40;
     private static final int FLAG_ADDITIONAL_VALUE_SIZE = 0x80;
@@ -219,8 +219,7 @@ public class DynamicSizeUtil
         if ( hasAdditionalKeySize )
         {
             byte secondByte = cursor.getByte();
-            boolean hasOffload = hasOffload( secondByte );
-            if ( hasOffload && msbIsOffload )
+            if ( msbIsOffload && hasOffload( secondByte ) )
             {
                 return (hasTombstone ? FLAG_READ_TOMBSTONE : 0) | FLAG_READ_OFFLOAD;
             }

@@ -1212,8 +1212,8 @@ class InternalTreeLogic<KEY,VALUE>
      * @param into VALUE in which to store removed value
      * @param keyCount Key count of node before remove
      * @param pos Position to remove from
-     * @param stableGeneration
-     * @param unstableGeneration
+     * @param stableGeneration stable generation, i.e. generations <= this generation are considered stable.
+     * @param unstableGeneration unstable generation, i.e. generation which is under development right now.
      * @return keyCount after remove
      */
     private int simplyRemoveFromLeaf( PageCursor cursor, VALUE into, int keyCount, int pos, long stableGeneration, long unstableGeneration ) throws IOException

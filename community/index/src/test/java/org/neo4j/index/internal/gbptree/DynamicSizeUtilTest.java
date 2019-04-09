@@ -28,6 +28,11 @@ import org.neo4j.io.pagecache.PageCursor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.MASK_ONE_BYTE_KEY_SIZE;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.MASK_ONE_BYTE_VALUE_SIZE;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.MAX_TWO_BYTE_KEY_SIZE;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.MAX_TWO_BYTE_KEY_SIZE_NO_OFFLOAD;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.MAX_TWO_BYTE_VALUE_SIZE;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractKeySize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractValueSize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putKeyValueSize;
@@ -35,14 +40,14 @@ import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readKeyValueSize;
 
 class DynamicSizeUtilTest
 {
-    private static final int KEY_ONE_BYTE_MAX = 0x1F;
+    private static final int KEY_ONE_BYTE_MAX = MASK_ONE_BYTE_KEY_SIZE;
     private static final int KEY_TWO_BYTE_MIN = KEY_ONE_BYTE_MAX + 1;
-    private static final int KEY_TWO_BYTE_MAX = 0xFFF;
-    private static final int KEY_TWO_BYTE_NO_OFFLOAD_MAX = 0x1FFF;
+    private static final int KEY_TWO_BYTE_MAX = MAX_TWO_BYTE_KEY_SIZE;
+    private static final int KEY_TWO_BYTE_NO_OFFLOAD_MAX = MAX_TWO_BYTE_KEY_SIZE_NO_OFFLOAD;
     private static final int VAL_ONE_BYTE_MIN = 1;
-    private static final int VAL_ONE_BYTE_MAX = 0x7F;
+    private static final int VAL_ONE_BYTE_MAX = MASK_ONE_BYTE_VALUE_SIZE;
     private static final int VAL_TWO_BYTE_MIN = VAL_ONE_BYTE_MAX + 1;
-    private static final int VAL_TWO_BYTE_MAX = 0x7FFF;
+    private static final int VAL_TWO_BYTE_MAX = MAX_TWO_BYTE_VALUE_SIZE;
 
     private PageCursor cursor;
 
