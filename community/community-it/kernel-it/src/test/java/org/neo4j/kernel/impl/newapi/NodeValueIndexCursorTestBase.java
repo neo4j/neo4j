@@ -803,7 +803,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     void shouldProvideValuesForPoints() throws Exception
     {
         // given
-        assumeTrue( indexProvidesAllValues() );
+        assumeTrue( indexProvidesSpatialValues() );
 
         int label = token.nodeLabel( "What" );
         int prop = token.propertyKey( "ever" );

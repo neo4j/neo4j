@@ -47,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE20;
+import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.helpers.collection.Iterables.single;
 
@@ -91,16 +91,16 @@ class ConstraintRecoveryIT
         dbFactory.setMonitors( monitors );
 
         // This test relies on behaviour that is specific to the Lucene populator, where uniqueness is controlled
-        // after index has been populated, which is why we're using NATIVE20 and index booleans (they end up in Lucene)
+        // after index has been populated, which is why we're using NATIVE30 and index string (they end up in Lucene)
         db = (GraphDatabaseAPI) dbFactory.newImpermanentDatabaseBuilder( pathToDb )
-                .setConfig( default_schema_provider, NATIVE20.providerName() )
+                .setConfig( default_schema_provider, NATIVE30.providerName() )
                 .newGraphDatabase();
 
         try ( Transaction tx = db.beginTx() )
         {
             for ( int i = 0; i < 2; i++ )
             {
-                db.createNode( LABEL ).setProperty( KEY, true );
+                db.createNode( LABEL ).setProperty( KEY, "true" );
             }
 
             tx.success();

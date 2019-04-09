@@ -24,7 +24,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -34,7 +33,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
@@ -44,14 +43,14 @@ import org.neo4j.values.storable.PointValue;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20.subProviderDirectoryStructure;
+import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory30.subProviderDirectoryStructure;
 import static org.neo4j.values.storable.Values.pointValue;
 
 public class FusionIndexIT
 {
     @Rule
     public DbmsRule db = new EmbeddedDbmsRule()
-            .withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() );
+            .withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE30.providerName() );
 
     private DatabaseLayout databaseLayout;
     private final Label label = Label.label( "label" );
@@ -70,13 +69,13 @@ public class FusionIndexIT
     }
 
     @Test
-    public void mustRebuildFusionIndexIfNativePartIsMissing() throws IOException
+    public void mustRebuildFusionIndexIfNativePartIsMissing()
     {
         // given
         initializeIndexWithDataAndShutdown();
 
         // when
-        IndexProviderDescriptor descriptor = NumberIndexProvider.NATIVE_PROVIDER_DESCRIPTOR;
+        IndexProviderDescriptor descriptor = GenericNativeIndexProvider.DESCRIPTOR;
         deleteIndexFilesFor( descriptor );
 
         // then
@@ -85,7 +84,7 @@ public class FusionIndexIT
     }
 
     @Test
-    public void mustRebuildFusionIndexIfLucenePartIsMissing() throws IOException
+    public void mustRebuildFusionIndexIfLucenePartIsMissing()
     {
         // given
         initializeIndexWithDataAndShutdown();
@@ -100,14 +99,14 @@ public class FusionIndexIT
     }
 
     @Test
-    public void mustRebuildFusionIndexIfCompletelyMissing() throws IOException
+    public void mustRebuildFusionIndexIfCompletelyMissing()
     {
         // given
         initializeIndexWithDataAndShutdown();
 
         // when
         IndexProviderDescriptor luceneDescriptor = LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR;
-        IndexProviderDescriptor nativeDescriptor = NumberIndexProvider.NATIVE_PROVIDER_DESCRIPTOR;
+        IndexProviderDescriptor nativeDescriptor = GenericNativeIndexProvider.DESCRIPTOR;
         deleteIndexFilesFor( luceneDescriptor );
         deleteIndexFilesFor( nativeDescriptor );
 

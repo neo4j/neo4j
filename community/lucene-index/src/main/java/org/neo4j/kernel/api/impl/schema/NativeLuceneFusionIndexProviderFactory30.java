@@ -80,7 +80,7 @@ public class NativeLuceneFusionIndexProviderFactory30 extends NativeLuceneFusion
                 DESCRIPTOR, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex );
     }
 
-    private static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File databaseDirectory )
+    static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File databaseDirectory )
     {
         return NativeLuceneFusionIndexProviderFactory.subProviderDirectoryStructure( databaseDirectory, DESCRIPTOR );
     }

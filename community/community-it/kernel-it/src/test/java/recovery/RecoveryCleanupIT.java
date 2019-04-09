@@ -166,6 +166,12 @@ class RecoveryCleanupIT
     }
 
     @Test
+    void nativeIndexFusion30MustLogCrashPointerCleanupDuringRecovery() throws Exception
+    {
+        nativeIndexMustLogCrashPointerCleanupDuringRecovery( GraphDatabaseSettings.SchemaIndex.NATIVE30, "native-btree-1.0" );
+    }
+
+    @Test
     void nativeIndexBTreeMustLogCrashPointerCleanupDuringRecovery() throws Exception
     {
         nativeIndexMustLogCrashPointerCleanupDuringRecovery( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10, "index" );

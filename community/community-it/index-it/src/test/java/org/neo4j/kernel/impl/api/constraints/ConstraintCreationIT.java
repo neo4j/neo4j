@@ -36,7 +36,7 @@ import org.neo4j.test.rule.EmbeddedDbmsRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
-import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE20;
+import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 
 public class ConstraintCreationIT
@@ -51,7 +51,7 @@ public class ConstraintCreationIT
     public void shouldNotLeaveLuceneIndexFilesHangingAroundIfConstraintCreationFails()
     {
         // given
-        db.withSetting( default_schema_provider, NATIVE20.providerName() ); // <-- includes Lucene sub-provider
+        db.withSetting( default_schema_provider, NATIVE30.providerName() ); // <-- includes Lucene sub-provider
         attemptAndFailConstraintCreation();
 
         // then
