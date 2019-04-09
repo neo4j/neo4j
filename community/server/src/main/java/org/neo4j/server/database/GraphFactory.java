@@ -23,6 +23,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
+@FunctionalInterface
 public interface GraphFactory
 {
     GraphDatabaseFacade newGraphDatabase( Config config, ExternalDependencies dependencies );
