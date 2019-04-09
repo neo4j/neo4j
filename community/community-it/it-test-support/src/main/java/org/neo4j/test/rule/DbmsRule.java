@@ -121,25 +121,23 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
 
     private <T> T transaction( Function<? super GraphDatabaseService, T> function, boolean commit )
     {
-        return tx( getGraphDatabaseAPI(), commit, RetryHandler.NO_RETRY, function );
+        return tx( getGraphDatabaseAPI(), commit, function );
     }
 
     /**
      * Perform a transaction, with the option to automatically retry on failure.
      *
      * @param db {@link GraphDatabaseService} to apply the transaction on.
-     * @param retry {@link RetryHandler} deciding what type of failures to retry on.
      * @param transaction {@link Consumer} containing the transaction logic.
      */
-    public static void tx( GraphDatabaseService db, RetryHandler retry,
-            Consumer<? super GraphDatabaseService> transaction )
+    public static void tx( GraphDatabaseService db, Consumer<? super GraphDatabaseService> transaction )
     {
         Function<? super GraphDatabaseService,Void> voidFunction = _db ->
         {
             transaction.accept( _db );
             return null;
         };
-        tx( db, true, retry, voidFunction );
+        tx( db, true, voidFunction );
     }
 
     /**
@@ -148,32 +146,19 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
      *
      * @param db {@link GraphDatabaseService} to apply the transaction on.
      * @param commit whether or not to call {@link Transaction#success()} in the end.
-     * @param retry {@link RetryHandler} deciding what type of failures to retry on.
      * @param transaction {@link Function} containing the transaction logic and returning a result.
      * @return result from transaction {@link Function}.
      */
-    public static <T> T tx( GraphDatabaseService db, boolean commit,
-            RetryHandler retry, Function<? super GraphDatabaseService, T> transaction )
+    public static <T> T tx( GraphDatabaseService db, boolean commit, Function<? super GraphDatabaseService,T> transaction )
     {
-        while ( true )
+        try ( Transaction tx = db.beginTx() )
         {
-            try ( Transaction tx = db.beginTx() )
+            T result = transaction.apply( db );
+            if ( commit )
             {
-                T result = transaction.apply( db );
-                if ( commit )
-                {
-                    tx.success();
-                }
-                return result;
+                tx.success();
             }
-            catch ( Throwable t )
-            {
-                if ( !retry.retryOn( t ) )
-                {
-                    throw t;
-                }
-                // else continue one more time
-            }
+            return result;
         }
     }
 
