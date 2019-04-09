@@ -51,12 +51,14 @@ object CodeGeneration {
     }
   }
 
-  private def beginBlock[Block <: AutoCloseable,T](block: Block)(exhaustBlock: Block => T): T = {
-    try {
-      exhaustBlock(block)
-    } finally {
-      block.close()
-    }
+  private def beginBlock[Block <: AutoCloseable, T](block: Block)(exhaustBlock: Block => T): T = {
+    /*
+     * In the java API we are using try-with-resources for this. This is slightly problematic since we
+     * are then always calling close which potentially will hide errors thrown in code generation.
+     */
+    val result = exhaustBlock(block)
+    block.close()
+    result
   }
 
   private def generateConstructor(clazz: codegen.ClassGenerator, fields: Seq[Field], params: Seq[Parameter] = Seq.empty,
