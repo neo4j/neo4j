@@ -300,4 +300,48 @@ public abstract class IndexProvider extends LifecycleAdapter
     }
 
     public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache );
+
+    public static class Adaptor extends IndexProvider
+    {
+        protected Adaptor( IndexProviderDescriptor descriptor, IndexDirectoryStructure.Factory directoryStructureFactory )
+        {
+            super( descriptor, directoryStructureFactory );
+        }
+
+        @Override
+        public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+        {
+            return null;
+        }
+
+        @Override
+        public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+        {
+            return null;
+        }
+
+        @Override
+        public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
+        {
+            return null;
+        }
+
+        @Override
+        public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
+        {
+            return null;
+        }
+
+        @Override
+        public IndexCapability getCapability( StoreIndexDescriptor descriptor )
+        {
+            return null;
+        }
+
+        @Override
+        public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
+        {
+            return null;
+        }
+    }
 }

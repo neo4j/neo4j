@@ -621,10 +621,9 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
         processAll( updates );
-        try ( IndexReader reader = accessor.newReader() )
+        try ( IndexReader reader = accessor.newReader();
+              IndexSampler sampler = reader.createSampler() )
         {
-            IndexSampler sampler = reader.createSampler();
-
             // when
             IndexSample sample = sampler.sampleIndex();
 

@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.schema.sampler;
 import org.neo4j.helpers.TaskControl;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
 /**
@@ -39,27 +38,6 @@ abstract class LuceneIndexSampler implements IndexSampler
     }
 
     /**
-     * Perform actual sampling.
-     *
-     * @return the index sampling result.
-     * @throws IndexNotFoundKernelException if the index is dropped while sampling.
-     */
-    protected abstract IndexSample performSampling() throws IndexNotFoundKernelException;
-
-    @Override
-    public final IndexSample sampleIndex() throws IndexNotFoundKernelException
-    {
-        try
-        {
-            return performSampling();
-        }
-        finally
-        {
-            completeSampling();
-        }
-    }
-
-    /**
      * Check if sampling was canceled.
      *
      * @throws IndexNotFoundKernelException if cancellation was requested.
@@ -72,7 +50,8 @@ abstract class LuceneIndexSampler implements IndexSampler
         }
     }
 
-    private void completeSampling()
+    @Override
+    public void close()
     {
         executionTicket.close();
     }

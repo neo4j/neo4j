@@ -314,9 +314,10 @@ public class DatabaseIndexAccessorTest
             return nothing;
         }, null, waitingWhileIn( TaskCoordinator.class, "awaitCompletion" ), 3, SECONDS );
 
-        try ( IndexReader reader = indexReader /* do not inline! */ )
+        try ( IndexReader reader = indexReader /* do not inline! */;
+              IndexSampler sampler = indexSampler /* do not inline! */ )
         {
-            indexSampler.sampleIndex();
+            sampler.sampleIndex();
             fail( "expected exception" );
         }
         catch ( IndexNotFoundKernelException e )

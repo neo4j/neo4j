@@ -63,9 +63,9 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
         {
             try
             {
-                try ( IndexReader reader = indexProxy.newReader() )
+                try ( IndexReader reader = indexProxy.newReader();
+                      IndexSampler sampler = reader.createSampler() )
                 {
-                    IndexSampler sampler = reader.createSampler();
                     IndexSample sample = sampler.sampleIndex();
 
                     // check again if the index is online before saving the counts in the store
