@@ -28,7 +28,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
@@ -55,9 +54,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.filter;
-import static org.neo4j.internal.schema.SchemaDescriptorPredicates.hasEntityToken;
 import static org.neo4j.internal.schema.SchemaDescriptorPredicates.hasLabel;
-import static org.neo4j.internal.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 
@@ -99,14 +96,6 @@ public class IndexTxStateUpdaterTest
                 {
                     Integer argument = x.getArgument( 0 );
                     return filter( hasLabel( argument ), indexes.iterator() );
-                } );
-        when( storageReader.indexesGetRelated( any(), anyInt(), any() ) )
-                .thenAnswer( x ->
-                {
-                    long[] entityTokens = x.getArgument( 0 );
-                    Integer propertyKeyId = x.getArgument( 1 );
-                    EntityType entityType = x.getArgument( 2 );
-                    return filter( hasProperty( propertyKeyId ).and( hasEntityToken( entityTokens, entityType ) ), indexes.iterator() );
                 } );
         when( storageReader.indexesGetRelated( any(), anyInt(), any() ) ).thenAnswer( invocationOnMock ->
         {

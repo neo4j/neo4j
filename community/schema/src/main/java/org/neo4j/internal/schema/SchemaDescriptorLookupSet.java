@@ -77,7 +77,7 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
     /**
      * @return whether or not this set is empty, i.e. {@code true} if no descriptors have been added.
      */
-    boolean isEmpty()
+    public boolean isEmpty()
     {
         return byEntityToken.isEmpty();
     }

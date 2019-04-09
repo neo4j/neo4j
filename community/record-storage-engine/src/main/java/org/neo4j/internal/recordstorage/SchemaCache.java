@@ -328,7 +328,7 @@ public class SchemaCache
         <T extends SchemaDescriptorSupplier> Set<T> getSchemaRelatedTo( SchemaDescriptorLookupSet<T> set, long[] changedEntityTokens,
                 long[] unchangedEntityTokens, int[] properties, boolean propertyListIsComplete )
         {
-            if ( indexDescriptorById.isEmpty() )
+            if ( set.isEmpty() )
             {
                 return Collections.emptySet();
             }

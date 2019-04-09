@@ -118,9 +118,9 @@ public class IndexTxStateUpdater
             NodeSchemaMatcher.onMatchingSchema( indexes.iterator(), propertyKeyId, existingPropertyKeyIds,
                     index ->
                     {
-                        Value[] values = getValueTuple( node, propertyCursor, propertyKeyId, value, index.schema().getPropertyIds(), materializedProperties );
-                        indexingService.validateBeforeCommit( index.schema(), values );
-                        read.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(), null, ValueTuple.of( values ) );
+                        Value[] values = getValueTuple( node, propertyCursor, propertyKeyId, value, index.getPropertyIds(), materializedProperties );
+                        indexingService.validateBeforeCommit( index, values );
+                        read.txState().indexDoUpdateEntry( index, node.nodeReference(), null, ValueTuple.of( values ) );
                     } );
         }
     }
@@ -135,8 +135,8 @@ public class IndexTxStateUpdater
             NodeSchemaMatcher.onMatchingSchema( indexes.iterator(), propertyKeyId, existingPropertyKeyIds,
                     index ->
                     {
-                        Value[] values = getValueTuple( node, propertyCursor, propertyKeyId, value, index.schema().getPropertyIds(), materializedProperties );
-                        read.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(), ValueTuple.of( values ), null );
+                        Value[] values = getValueTuple( node, propertyCursor, propertyKeyId, value, index.getPropertyIds(), materializedProperties );
+                        read.txState().indexDoUpdateEntry( index, node.nodeReference(), ValueTuple.of( values ), null );
                     } );
         }
     }
