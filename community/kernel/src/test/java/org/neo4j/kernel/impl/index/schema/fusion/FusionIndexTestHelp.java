@@ -44,6 +44,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
@@ -135,6 +136,7 @@ class FusionIndexTestHelp
     static EnumMap<IndexSlot,Value[]> valuesByGroup()
     {
         EnumMap<IndexSlot,Value[]> values = new EnumMap<>( IndexSlot.class );
+        values.put( GENERIC, new Value[0] );
         values.put( STRING, FusionIndexTestHelp.valuesSupportedByString() );
         values.put( NUMBER, FusionIndexTestHelp.valuesSupportedByNumber() );
         values.put( SPATIAL, FusionIndexTestHelp.valuesSupportedBySpatial() );
