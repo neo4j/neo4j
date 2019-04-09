@@ -19,14 +19,10 @@
  */
 package org.neo4j.dbms.database;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -52,12 +48,6 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
     public GraphDatabaseService database( String name ) throws DatabaseNotFoundException
     {
         return databaseManager.getDatabaseContext( new DatabaseId( name ) ).orElseThrow( () -> new DatabaseNotFoundException( name ) ).databaseFacade();
-    }
-
-    @Override
-    public Result execute( String statement )
-    {
-        return null;
     }
 
     @Override

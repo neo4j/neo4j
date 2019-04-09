@@ -22,7 +22,6 @@ package org.neo4j.dbms.database;
 import java.util.List;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Result;
 
 /**
  * The {@link DatabaseManagementService} provides an API to manage databases and provided access to the managed database services.
@@ -36,13 +35,6 @@ public interface DatabaseManagementService
      * @throws DatabaseNotFoundException if no database service with the given name is found.
      */
     GraphDatabaseService database( String name ) throws DatabaseNotFoundException;
-
-    /**
-     * Run Cypher DDL against the system database.
-     * @param statement Cypher DDL statement
-     * @return execution result
-     */
-    Result execute( String statement );
 
     /**
      * Create a new database.
