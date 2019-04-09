@@ -27,8 +27,7 @@ import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.runtime.{InputCursor, InputDataStream, NoInput, QueryStatistics}
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.{CypherRuntime, LogicalQuery, RuntimeContext}
-import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
+import org.neo4j.cypher.internal.{CypherRuntime, ExecutionPlan, LogicalQuery, RuntimeContext}
 import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
 import org.neo4j.dbms.database.DatabaseManagementService
 import org.neo4j.graphdb._
@@ -122,6 +121,13 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
              ): RuntimeResult =
     runtimeTestSupport.run(logicalQuery, runtime, NoInput, (_, result) => result)
 
+  def execute(executablePlan: ExecutionPlan): RuntimeResult =
+    runtimeTestSupport.run(executablePlan, NoInput, (_, result) => result)
+
+  def buildPlan(logicalQuery: LogicalQuery,
+                runtime: CypherRuntime[CONTEXT]): ExecutionPlan =
+    runtimeTestSupport.compile(logicalQuery, runtime)
+
   def executeAndContext(logicalQuery: LogicalQuery,
                         runtime: CypherRuntime[CONTEXT],
                         input: InputValues
@@ -134,9 +140,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     val nAttempts = 100
     for (_ <- 0 until nAttempts) {
       val (result, context) = executeAndContext(logicalQuery, runtime, input)
-      result.accept(new QueryResultVisitor[Exception] {
-        override def visit(row: QueryResult.Record): Boolean = true
-      })
+      result.accept((_: QueryResult.Record) => true)
       if (condition.test(context))
         return
     }
