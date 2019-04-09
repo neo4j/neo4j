@@ -21,8 +21,8 @@ package org.neo4j.internal.schema;
 
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,21 +34,24 @@ import java.util.function.Predicate;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.util.Arrays.stream;
 import static org.apache.commons.lang3.ArrayUtils.contains;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.schema.SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
 
-public class SchemaDescriptorLookupSetTest
+@ExtendWith( RandomExtension.class )
+class SchemaDescriptorLookupSetTest
 {
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
 
     @Test
-    public void shouldLookupSingleKeyDescriptors()
+    void shouldLookupSingleKeyDescriptors()
     {
         // given
         SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
@@ -64,7 +67,7 @@ public class SchemaDescriptorLookupSetTest
     }
 
     @Test
-    public void shouldLookupSingleKeyAndSharedCompositeKeyDescriptors()
+    void shouldLookupSingleKeyAndSharedCompositeKeyDescriptors()
     {
         // given
         SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
@@ -82,7 +85,7 @@ public class SchemaDescriptorLookupSetTest
     }
 
     @Test
-    public void shouldLookupCompositeKeyDescriptor()
+    void shouldLookupCompositeKeyDescriptor()
     {
         // given
         SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
@@ -102,7 +105,7 @@ public class SchemaDescriptorLookupSetTest
     }
 
     @Test
-    public void shouldLookupAllByEntityToken()
+    void shouldLookupAllByEntityToken()
     {
         // given
         SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
@@ -126,13 +129,13 @@ public class SchemaDescriptorLookupSetTest
     }
 
     @Test
-    public void shouldAddRemoveAndLookupRandomDescriptorsNoIdempotentOperations()
+    void shouldAddRemoveAndLookupRandomDescriptorsNoIdempotentOperations()
     {
         shouldAddRemoveAndLookupRandomDescriptors( false );
     }
 
     @Test
-    public void shouldAddRemoveAndLookupRandomDescriptorsWithIdempotentOperations()
+    void shouldAddRemoveAndLookupRandomDescriptorsWithIdempotentOperations()
     {
         shouldAddRemoveAndLookupRandomDescriptors( true );
     }
