@@ -599,7 +599,6 @@ public class MuninnPageCache implements PageCache
             {
                 flushAllPagesParallel( files, limiter );
             }
-            syncDevice();
         }
         clearEvictorException();
     }
@@ -653,11 +652,6 @@ public class MuninnPageCache implements PageCache
             FlushEventOpportunity flushOpportunity = fileFlush.flushEventOpportunity();
             muninnPagedFile.flushAndForceInternal( flushOpportunity, false, limiter );
         }
-    }
-
-    void syncDevice()
-    {
-        swapperFactory.syncDevice();
     }
 
     @Override

@@ -273,7 +273,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( swapper ) )
         {
             flushAndForceInternal( flushEvent.flushEventOpportunity(), false, limiter );
-            syncDevice();
         }
         pageCache.clearEvictorException();
     }
@@ -291,7 +290,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( swapper ) )
         {
             flushAndForceInternal( flushEvent.flushEventOpportunity(), true, IOLimiter.UNLIMITED );
-            syncDevice();
         }
         pageCache.clearEvictorException();
     }
@@ -525,11 +523,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             }
         }
         return success;
-    }
-
-    private void syncDevice()
-    {
-        pageCache.syncDevice();
     }
 
     @Override

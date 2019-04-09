@@ -69,12 +69,6 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
     }
 
     @Override
-    public void syncDevice()
-    {
-        // Nothing do to, since we `fsync` files individually in `force()`.
-    }
-
-    @Override
     public void close()
     {
         // We have nothing to close

@@ -40,9 +40,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -4328,113 +4326,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         } );
     }
 
-    private int nextPowerOf2( int i )
+    private static int nextPowerOf2( int i )
     {
         return 1 << (32 - Integer.numberOfLeadingZeros( i ));
-    }
-
-    private PageSwapperFactory factoryCountingSyncDevice( final AtomicInteger syncDeviceCounter, final Queue<Integer> expectedCountsInForce )
-    {
-        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory()
-        {
-            @Override
-            public void syncDevice()
-            {
-                super.syncDevice();
-                syncDeviceCounter.getAndIncrement();
-            }
-
-            @Override
-            public PageSwapper createPageSwapper( File file, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist,
-                    boolean noChannelStriping ) throws IOException
-            {
-                PageSwapper delegate = super.createPageSwapper( file, filePageSize, onEviction, createIfNotExist, noChannelStriping );
-                return new DelegatingPageSwapper( delegate )
-                {
-                    @Override
-                    public void force() throws IOException
-                    {
-                        super.force();
-                        assertThat( syncDeviceCounter.get(), is( expectedCountsInForce.poll() ) );
-                    }
-                };
-            }
-        };
-        factory.open( fs, Configuration.EMPTY );
-        return factory;
-    }
-
-    @SafeVarargs
-    private static <E> Queue<E> queue( E... items )
-    {
-        Queue<E> queue = new ConcurrentLinkedQueue<>();
-        for ( E item : items )
-        {
-            queue.offer( item );
-        }
-        return queue;
-    }
-
-    @Test
-    void mustSyncDeviceWhenFlushAndForcingPagedFile()
-    {
-        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
-        {
-            AtomicInteger syncDeviceCounter = new AtomicInteger();
-            AtomicInteger expectedCountInForce = new AtomicInteger();
-            Queue<Integer> expectedCountsInForce = queue( 0,      // at `p1.flushAndForce` no `syncDevice` has happened before the force
-                    1, 2 ); // closing+forcing the files one by one, we get 2 more `syncDevice`
-            PageSwapperFactory factory = factoryCountingSyncDevice( syncDeviceCounter, expectedCountsInForce );
-            try ( PageCache cache = createPageCache( factory, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                    EmptyVersionContextSupplier.EMPTY );
-                    PagedFile p1 = cache.map( existingFile( "a" ), filePageSize );
-                    PagedFile p2 = cache.map( existingFile( "b" ), filePageSize ) )
-            {
-                try ( PageCursor cursor = p1.io( 0, PF_SHARED_WRITE_LOCK ) )
-                {
-                    assertTrue( cursor.next() );
-                }
-                try ( PageCursor cursor = p2.io( 0, PF_SHARED_WRITE_LOCK ) )
-                {
-                    assertTrue( cursor.next() );
-                }
-
-                p1.flushAndForce();
-                expectedCountInForce.set( 1 );
-                assertThat( syncDeviceCounter.get(), is( 1 ) );
-            }
-        } );
-    }
-
-    @Test
-    void mustSyncDeviceWhenFlushAndForcingPageCache()
-    {
-        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
-        {
-            AtomicInteger syncDeviceCounter = new AtomicInteger();
-            AtomicInteger expectedCountInForce = new AtomicInteger();
-            Queue<Integer> expectedCountsInForce = queue( 0, 0,   // `cache.flushAndForce` forces the individual files, no `syncDevice` yet
-                    1, 2 ); // after test, files are closed+forced one by one
-            PageSwapperFactory factory = factoryCountingSyncDevice( syncDeviceCounter, expectedCountsInForce );
-            try ( PageCache cache = createPageCache( factory, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                    EmptyVersionContextSupplier.EMPTY );
-                    PagedFile p1 = cache.map( existingFile( "a" ), filePageSize );
-                    PagedFile p2 = cache.map( existingFile( "b" ), filePageSize ) )
-            {
-                try ( PageCursor cursor = p1.io( 0, PF_SHARED_WRITE_LOCK ) )
-                {
-                    assertTrue( cursor.next() );
-                }
-                try ( PageCursor cursor = p2.io( 0, PF_SHARED_WRITE_LOCK ) )
-                {
-                    assertTrue( cursor.next() );
-                }
-
-                cache.flushAndForce();
-                expectedCountInForce.set( 1 );
-                assertThat( syncDeviceCounter.get(), is( 1 ) );
-            }
-        } );
     }
 
     @Test
@@ -4627,7 +4521,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertThat( flushCounter.get(), is( 1 ) );
     }
 
-    private SingleFilePageSwapperFactory flushCountingPageSwapperFactory( AtomicInteger flushCounter )
+    private static SingleFilePageSwapperFactory flushCountingPageSwapperFactory( AtomicInteger flushCounter )
     {
         return new SingleFilePageSwapperFactory()
         {
@@ -5004,7 +4898,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         verifyRecordsMatchExpected( 0, recordSize, buffer );
     }
 
-    private void zapBuffer( ByteBuffer buffer )
+    private static void zapBuffer( ByteBuffer buffer )
     {
         byte zero = (byte) 0;
         if ( buffer.hasArray() )
@@ -5335,7 +5229,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    private void assertZeroes( PageCursor cursor, int offset, int length )
+    private static void assertZeroes( PageCursor cursor, int offset, int length )
     {
         for ( int i = 0; i < length; i++ )
         {
@@ -6134,7 +6028,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    private void verifyNoFaultAccessToInMemoryPages( PageCursor faulter, PageCursor nofault ) throws IOException
+    private static void verifyNoFaultAccessToInMemoryPages( PageCursor faulter, PageCursor nofault ) throws IOException
     {
         assertTrue( faulter.next() ); // Page 0 now exists.
         assertTrue( nofault.next() ); // NO_FAULT next on page that is in memory.
@@ -6145,7 +6039,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         verifyNoFaultCursorIsInMemory( nofault, 1L ); // Still bound.
     }
 
-    private void verifyNoFaultCursorIsInMemory( PageCursor nofault, long expectedPageId )
+    private static void verifyNoFaultCursorIsInMemory( PageCursor nofault, long expectedPageId )
     {
         assertThat( nofault.getCurrentPageId(), is( expectedPageId ) );
         nofault.getByte();
@@ -6170,7 +6064,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    private DefaultPageCursorTracerSupplier getCursorTracerSupplier( DefaultPageCacheTracer cacheTracer )
+    private static DefaultPageCursorTracerSupplier getCursorTracerSupplier( DefaultPageCacheTracer cacheTracer )
     {
         DefaultPageCursorTracerSupplier cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
         // This cursor tracer is thread-local, so we'll initialise it on behalf of this thread.
@@ -6236,7 +6130,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    private void verifyNoFaultAccessToPagesNotInMemory( DefaultPageCacheTracer cacheTracer, DefaultPageCursorTracerSupplier cursorTracerSupplier,
+    private static void verifyNoFaultAccessToPagesNotInMemory( DefaultPageCacheTracer cacheTracer, DefaultPageCursorTracerSupplier cursorTracerSupplier,
             PageCursor nofault ) throws IOException
     {
         assertTrue( nofault.next() ); // File contains a page id 0.
@@ -6253,7 +6147,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertThat( cacheTracer.faults(), is( 0L ) );
     }
 
-    private void verifyNoFaultReadIsNotInMemory( PageCursor nofault )
+    private static void verifyNoFaultReadIsNotInMemory( PageCursor nofault )
     {
         assertThat( nofault.getCurrentPageId(), is( PageCursor.UNBOUND_PAGE_ID ) );
         nofault.getByte();
@@ -6262,7 +6156,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertTrue( nofault.checkAndClearBoundsFlag() ); // Access must be out of bounds.
     }
 
-    private void verifyNoFaultWriteIsOutOfBounds( PageCursor nofault ) throws IOException
+    private static void verifyNoFaultWriteIsOutOfBounds( PageCursor nofault ) throws IOException
     {
         assertTrue( nofault.next( 0 ) );
         assertThat( nofault.getCurrentPageId(), is( PageCursor.UNBOUND_PAGE_ID ) );

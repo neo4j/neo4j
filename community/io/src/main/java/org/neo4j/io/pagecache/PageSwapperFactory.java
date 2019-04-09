@@ -84,17 +84,6 @@ public interface PageSwapperFactory extends NamedService
             boolean noChannelStriping ) throws IOException;
 
     /**
-     * Forces all prior writes made through all non-closed PageSwappers that this factory has created, to all the
-     * relevant devices, such that the writes are durable when this call returns.
-     * <p>
-     * This method has no effect if the {@link PageSwapper#force()} method forces the writes for the individual file.
-     * The {@link PageCache#flushAndForce()} method will first call <code>force</code> on the PageSwappers for all
-     * mapped files, then call <code>syncDevice</code> on the PageSwapperFactory. This way, the writes are always made
-     * durable regardless of which method that does the forcing.
-     */
-    void syncDevice();
-
-    /**
      * Close and release any resources associated with this PageSwapperFactory, that it may have opened or acquired
      * during its construction or use.
      * <p>
