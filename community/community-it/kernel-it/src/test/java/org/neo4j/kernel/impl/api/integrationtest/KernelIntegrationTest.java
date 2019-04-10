@@ -253,26 +253,28 @@ public abstract class KernelIntegrationTest
 
     Iterator<Long> nodeGetRelationships( Transaction transaction, long node, Direction direction, int[] types )
     {
-        NodeCursor cursor = transaction.cursors().allocateNodeCursor();
-        transaction.dataRead().singleNode( node, cursor );
-        if ( !cursor.next() )
+        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor() )
         {
-            return emptyIterator();
-        }
+            transaction.dataRead().singleNode( node, cursor );
+            if ( !cursor.next() )
+            {
+                return emptyIterator();
+            }
 
-        switch ( direction )
-        {
-        case OUTGOING:
-            return outgoingIterator( transaction.cursors(), cursor, types,
-                    ( id, startNodeId, typeId, endNodeId ) -> id );
-        case INCOMING:
-            return incomingIterator( transaction.cursors(), cursor, types,
-                    ( id, startNodeId, typeId, endNodeId ) -> id );
-        case BOTH:
-            return allIterator( transaction.cursors(), cursor, types,
-                    ( id, startNodeId, typeId, endNodeId ) -> id );
-        default:
-            throw new IllegalStateException( direction + " is not a valid direction" );
+            switch ( direction )
+            {
+            case OUTGOING:
+                return outgoingIterator( transaction.cursors(), cursor, types,
+                        ( id, startNodeId, typeId, endNodeId ) -> id );
+            case INCOMING:
+                return incomingIterator( transaction.cursors(), cursor, types,
+                        ( id, startNodeId, typeId, endNodeId ) -> id );
+            case BOTH:
+                return allIterator( transaction.cursors(), cursor, types,
+                        ( id, startNodeId, typeId, endNodeId ) -> id );
+            default:
+                throw new IllegalStateException( direction + " is not a valid direction" );
+            }
         }
     }
 
