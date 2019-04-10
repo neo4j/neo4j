@@ -170,13 +170,14 @@ class ImportCommandTest
     @Test
     void letImporterDecideAboutDatabaseExistence() throws Exception
     {
+        File report = testDir.file( "report" );
         Path homeDir = testDir.directory( "home" ).toPath();
         PrintStream nullOutput = new PrintStream( NULL_OUTPUT_STREAM );
         OutsideWorld outsideWorld = new RealOutsideWorld( nullOutput, nullOutput, new ByteArrayInputStream( new byte[0] ) );
         Path confPath = testDir.directory( "conf" ).toPath();
         ImportCommand importCommand = new ImportCommand( homeDir, confPath, outsideWorld );
         File nodesFile = createTextFile( "nodes.csv", ":ID", "1", "2" );
-        String[] arguments = {"--mode=csv", "--database=existing.db", "--nodes=" + nodesFile.getAbsolutePath()};
+        String[] arguments = {"--mode=csv", "--database=existing.db", "--nodes=" + nodesFile.getAbsolutePath(), "--report-file=" + report.getAbsolutePath()};
 
         // First run an import so that a database gets created
         importCommand.execute( arguments );
