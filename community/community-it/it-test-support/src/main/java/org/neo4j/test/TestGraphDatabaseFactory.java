@@ -89,11 +89,11 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return builder.newGraphDatabase();
     }
 
-    public GraphDatabaseService newImpermanentDatabase( File storeDir , Map<Setting<?>,String> config )
+    public DatabaseManagementService newImpermanentService( File storeDir , Map<Setting<?>,String> config )
     {
         GraphDatabaseBuilder builder = newImpermanentDatabaseBuilder(storeDir);
         setConfig( config, builder );
-        return builder.newGraphDatabase();
+        return builder.newDatabaseManagementService();
     }
 
     private void setConfig( Map<Setting<?>,String> config, GraphDatabaseBuilder builder )

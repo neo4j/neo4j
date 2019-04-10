@@ -49,7 +49,6 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 class KernelRecoveryTest
@@ -89,7 +88,7 @@ class KernelRecoveryTest
         }
     }
 
-    private void applyTransactions( List<TransactionRepresentation> transactions, GraphDatabaseAPI rebuilt ) throws TransactionFailureException
+    private static void applyTransactions( List<TransactionRepresentation> transactions, GraphDatabaseAPI rebuilt ) throws TransactionFailureException
     {
         TransactionCommitProcess commitProcess = rebuilt.getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
         for ( TransactionRepresentation transaction : transactions )
@@ -111,7 +110,7 @@ class KernelRecoveryTest
     {
         DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) ).newImpermanentService( testDirectory.directory( name ) );
-        return managementService.database( DEFAULT_DATABASE_NAME );
+        return managementService.database( name );
     }
 
     private static long createNode( GraphDatabaseService db, String key, Object value )

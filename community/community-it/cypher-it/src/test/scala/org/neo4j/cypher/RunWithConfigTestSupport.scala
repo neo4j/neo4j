@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import java.io.File
 import java.util
 
+import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -31,8 +32,8 @@ import scala.collection.JavaConverters._
 trait RunWithConfigTestSupport {
   def runWithConfig(m: (Setting[_], String)*)(run: GraphDatabaseCypherService => Unit) = {
     val config: util.Map[Setting[_], String] = m.toMap.asJava
-    val storeDir = new File("target/test-data/impermanent-custom-config")
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase(storeDir, config)
+    val storeDir = new File("target/test-data/neo4j")
+    val graph = new TestGraphDatabaseFactory().newImpermanentService(storeDir, config).database(DEFAULT_DATABASE_NAME)
     try {
       run(new GraphDatabaseCypherService(graph))
     } finally {
