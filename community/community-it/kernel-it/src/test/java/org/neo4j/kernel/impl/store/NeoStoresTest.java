@@ -527,7 +527,7 @@ public class NeoStoresTest
     public void setVersion() throws Exception
     {
         FileSystemAbstraction fileSystem = fs.get();
-        File storeDir = dir.databaseDir();
+        File storeDir = dir.storeDir();
         createTestDatabase( fileSystem, storeDir ).shutdown();
         DatabaseLayout databaseLayout = dir.databaseLayout();
         assertEquals( 0, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 10 ) );

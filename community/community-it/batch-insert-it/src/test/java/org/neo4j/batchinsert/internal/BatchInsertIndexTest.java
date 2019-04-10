@@ -191,7 +191,7 @@ public class BatchInsertIndexTest
     {
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fileSystemRule.get() );
-        DatabaseManagementService managementService = factory.newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
+        DatabaseManagementService managementService = factory.newImpermanentDatabaseBuilder( testDirectory.storeDir() )
                 // Shouldn't be necessary to set dense node threshold since it's a stick config
                 .setConfig( config.getRaw() ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );

@@ -103,7 +103,7 @@ class FulltextIndexConsistencyCheckIT
     void before()
     {
         GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-        builder = factory.newEmbeddedDatabaseBuilder( testDirectory.databaseDir() );
+        builder = factory.newEmbeddedDatabaseBuilder( testDirectory.storeDir() );
     }
 
     @AfterEach
@@ -544,7 +544,7 @@ class FulltextIndexConsistencyCheckIT
         DatabaseManagementService managementService = new TestGraphDatabaseFactory( NullLogProvider.getInstance() ).setFileSystem( fs )
                 .removeExtensions( INDEX_PROVIDERS_FILTER )
                 .addExtension( new FailingGenericNativeIndexProviderFactory( SKIP_ONLINE_UPDATES ) )
-                .newDatabaseManagementService( testDirectory.databaseDir() );
+                .newDatabaseManagementService( testDirectory.storeDir() );
         db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {

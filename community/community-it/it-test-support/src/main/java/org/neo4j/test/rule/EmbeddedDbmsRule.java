@@ -69,7 +69,7 @@ public class EmbeddedDbmsRule extends DbmsRule
     @Override
     protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
     {
-        return factory.newEmbeddedDatabaseBuilder( testDirectory.databaseDir() );
+        return factory.newEmbeddedDatabaseBuilder( testDirectory.storeDir() );
     }
 
     @Override

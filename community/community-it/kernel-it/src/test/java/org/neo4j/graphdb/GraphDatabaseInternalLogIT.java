@@ -51,7 +51,7 @@ public class GraphDatabaseInternalLogIT
     public void shouldWriteToInternalDiagnosticsLog() throws Exception
     {
         // Given
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.databaseDir() )
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.storeDir() )
                 .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() ).newDatabaseManagementService();
         managementService.database( DEFAULT_DATABASE_NAME ).shutdown();
         File internalLog = new File( testDir.directory( "logs" ), INTERNAL_LOG_FILE );

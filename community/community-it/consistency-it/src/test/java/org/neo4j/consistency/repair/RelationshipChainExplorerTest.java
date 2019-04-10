@@ -128,7 +128,7 @@ public class RelationshipChainExplorerTest
 
     private StoreAccess createStoreWithOneHighDegreeNodeAndSeveralDegreeTwoNodes( int nDegreeTwoNodes )
     {
-        File storeDirectory = testDirectory.databaseDir();
+        File storeDirectory = testDirectory.storeDir();
         DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( storeDirectory )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )

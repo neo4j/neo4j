@@ -69,7 +69,7 @@ public class KernelDiagnosticsIT
         for ( GraphDatabaseSettings.SchemaIndex schemaIndex : GraphDatabaseSettings.SchemaIndex.values() )
         {
             // given
-            File dbDir = new File( directory.databaseDir(), String.valueOf( i++ ) );
+            File dbDir = new File( directory.storeDir(), String.valueOf( i++ ) );
             createIndexInIsolatedDbInstance( dbDir, schemaIndex );
 
             // when

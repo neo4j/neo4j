@@ -68,7 +68,7 @@ public class StoreLockerLifecycleAdapterTest
         GraphDatabaseService db = newDb();
         try
         {
-            DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.databaseDir() )
+            DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.storeDir() )
                         .setConfig( config ).newDatabaseManagementService();
             managementService.database( DEFAULT_DATABASE_NAME );
 
@@ -86,7 +86,7 @@ public class StoreLockerLifecycleAdapterTest
 
     private GraphDatabaseService newDb()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( directory.databaseDir() );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( directory.storeDir() );
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

@@ -61,7 +61,7 @@ public class TestReadOnlyNeo4j
         DbRepresentation someData = createSomeData();
         DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) )
-                .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
+                .newImpermanentDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( GraphDatabaseSettings.read_only, Settings.TRUE ).newDatabaseManagementService();
         GraphDatabaseService readGraphDb = managementService.database( DEFAULT_DATABASE_NAME );
         assertEquals( someData, DbRepresentation.of( readGraphDb ) );
@@ -83,7 +83,7 @@ public class TestReadOnlyNeo4j
     {
         RelationshipType type = withName( "KNOWS" );
         DatabaseManagementService managementService = new TestGraphDatabaseFactory()
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) ).newImpermanentService( testDirectory.databaseDir() );
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) ).newImpermanentService( testDirectory.storeDir() );
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
@@ -106,7 +106,7 @@ public class TestReadOnlyNeo4j
     public void testReadOnlyOperationsAndNoTransaction()
     {
         DatabaseManagementService
-                managementService = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentService( testDirectory.databaseDir() );
+                managementService = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentService( testDirectory.storeDir() );
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         Transaction tx = db.beginTx();

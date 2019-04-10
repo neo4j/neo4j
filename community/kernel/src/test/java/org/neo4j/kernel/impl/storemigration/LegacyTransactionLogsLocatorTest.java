@@ -45,7 +45,7 @@ class LegacyTransactionLogsLocatorTest
     void transactionLogsDirectoryEqualsToDatabaseDirectoryWithDefaultConfiguration()
     {
         LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( Config.defaults(), testDirectory.databaseLayout() );
-        assertEquals( testDirectory.databaseDir(), logsLocator.getTransactionLogsDirectory() );
+        assertEquals( testDirectory.storeDir(), logsLocator.getTransactionLogsDirectory() );
     }
 
     @Test

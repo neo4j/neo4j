@@ -51,7 +51,7 @@ class TestTxEntries
     @Test
     void testStartEntryWrittenOnceOnRollback()
     {
-        File storeDir = testDirectory.databaseDir();
+        File storeDir = testDirectory.storeDir();
         DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentService( storeDir );
         final GraphDatabaseService db = managementService1.database( DEFAULT_DATABASE_NAME );
         createSomeTransactions( db );

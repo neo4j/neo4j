@@ -66,8 +66,6 @@ public class TestGraphDatabaseFacadeFactory extends GraphDatabaseFacadeFactory
     @Override
     protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
     {
-        File databasesRoot = configureAndGetDatabaseRoot( storeDir, config );
-
         if ( !config.isConfigured( GraphDatabaseSettings.shutdown_transaction_end_timeout ) )
         {
             config.augment( GraphDatabaseSettings.shutdown_transaction_end_timeout, "0s" );
@@ -75,21 +73,12 @@ public class TestGraphDatabaseFacadeFactory extends GraphDatabaseFacadeFactory
         config.augment( GraphDatabaseSettings.ephemeral, impermanent ? Settings.TRUE : Settings.FALSE );
         if ( impermanent )
         {
-            return new ImpermanentTestDatabaseGlobalModule( databasesRoot, config, dependencies, this.databaseInfo );
+            return new ImpermanentTestDatabaseGlobalModule( storeDir, config, dependencies, this.databaseInfo );
         }
         else
         {
-            return new TestDatabaseGlobalModule( databasesRoot, config, dependencies, this.databaseInfo );
+            return new TestDatabaseGlobalModule( storeDir, config, dependencies, this.databaseInfo );
         }
-    }
-
-    protected File configureAndGetDatabaseRoot( File storeDir, Config config )
-    {
-        File absoluteStoreDir = storeDir.getAbsoluteFile();
-        File databasesRoot = absoluteStoreDir.getParentFile();
-        config.augment( GraphDatabaseSettings.default_database, absoluteStoreDir.getName() );
-        config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
-        return databasesRoot;
     }
 
     class TestDatabaseGlobalModule extends GlobalModule

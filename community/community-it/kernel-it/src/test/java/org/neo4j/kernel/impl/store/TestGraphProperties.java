@@ -181,7 +181,7 @@ class TestGraphProperties
     @Test
     void firstRecordOtherThanZeroIfNotFirst()
     {
-        File storeDir = testDirectory.databaseDir();
+        File storeDir = testDirectory.storeDir();
         DatabaseManagementService managementService1 = factory.newImpermanentService( storeDir );
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
         Transaction tx = db.beginTx();
@@ -257,7 +257,7 @@ class TestGraphProperties
     @Test
     void twoUncleanInARow() throws Exception
     {
-        File databaseDir = testDirectory.databaseDir();
+        File databaseDir = testDirectory.storeDir();
         try ( EphemeralFileSystemAbstraction snapshot = produceUncleanStore( fs, databaseDir ) )
         {
             try ( EphemeralFileSystemAbstraction snapshot2 = produceUncleanStore( snapshot, databaseDir ) )

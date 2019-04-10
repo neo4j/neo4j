@@ -355,7 +355,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
     private void prepareDbWithDeletedRelationshipPartOfTheChain()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.databaseDir() )
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
                 .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );

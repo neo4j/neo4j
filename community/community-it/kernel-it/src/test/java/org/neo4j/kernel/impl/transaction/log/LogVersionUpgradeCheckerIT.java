@@ -73,7 +73,7 @@ class LogVersionUpgradeCheckerIT
         // Try to start with upgrading disabled
         DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( fileSystem )
-                .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
+                .newImpermanentDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( allow_upgrade, FALSE ).newDatabaseManagementService();
         final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         db.shutdown();
@@ -86,7 +86,7 @@ class LogVersionUpgradeCheckerIT
 
         // Try to start with upgrading disabled
         DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( fileSystem )
-                                    .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
+                                    .newImpermanentDatabaseBuilder( testDirectory.storeDir() )
                                     .setConfig( allow_upgrade, FALSE ).newDatabaseManagementService();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
@@ -110,7 +110,7 @@ class LogVersionUpgradeCheckerIT
         // Try to start with upgrading enabled
         DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( fileSystem )
-                .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
+                .newImpermanentDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( allow_upgrade, TRUE ).newDatabaseManagementService();
         final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         db.shutdown();
@@ -120,7 +120,7 @@ class LogVersionUpgradeCheckerIT
     {
         DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( fileSystem )
-                .newImpermanentDatabaseBuilder( testDirectory.databaseDir() ).newDatabaseManagementService();
+                .newImpermanentDatabaseBuilder( testDirectory.storeDir() ).newDatabaseManagementService();
         final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         try ( Transaction tx = db.beginTx() )

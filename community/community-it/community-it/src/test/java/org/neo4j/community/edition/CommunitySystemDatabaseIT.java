@@ -78,7 +78,7 @@ class CommunitySystemDatabaseIT
     void setUp()
     {
         DatabaseManagementService
-                managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.databaseDir() ).newDatabaseManagementService();
+                managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() ).newDatabaseManagementService();
         database = managementService.database( DEFAULT_DATABASE_NAME );
         databaseManager = getDatabaseManager( database );
         defaultDb = getDatabaseByName( databaseManager, new DatabaseId( DEFAULT_DATABASE_NAME ) );

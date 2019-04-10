@@ -48,7 +48,7 @@ class DatabaseLayoutTest
     @Test
     void databaseLayoutForAbsoluteFile()
     {
-        File databaseDir = testDirectory.databaseDir();
+        File databaseDir = testDirectory.storeDir();
         DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDir );
         assertEquals( databaseLayout.databaseDirectory(), databaseDir );
     }

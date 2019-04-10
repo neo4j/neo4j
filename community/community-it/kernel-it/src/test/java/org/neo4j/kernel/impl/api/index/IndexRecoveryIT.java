@@ -302,7 +302,7 @@ class IndexRecoveryIT
         factory.setFileSystem( fs );
         factory.setExtensions( singletonList( mockedIndexProviderFactory ) );
         factory.setMonitors( monitors );
-        DatabaseManagementService managementService = factory.newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
+        DatabaseManagementService managementService = factory.newImpermanentDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).newDatabaseManagementService();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }

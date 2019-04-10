@@ -80,7 +80,7 @@ public class BlockBasedIndexPopulatorTest
     {
         fs = storage.fileSystem();
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "test", "v1" );
-        IndexDirectoryStructure directoryStructure = directoriesByProvider( storage.directory().databaseDir() ).forProvider( providerDescriptor );
+        IndexDirectoryStructure directoryStructure = directoriesByProvider( storage.directory().storeDir() ).forProvider( providerDescriptor );
         indexFiles = new IndexFiles.Directory( fs, directoryStructure, INDEX_DESCRIPTOR.getId() );
     }
 

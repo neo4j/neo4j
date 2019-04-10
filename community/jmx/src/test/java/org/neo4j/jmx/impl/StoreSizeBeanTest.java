@@ -81,7 +81,7 @@ class StoreSizeBeanTest
     void setUp() throws IOException
     {
         logFiles = LogFilesBuilder
-                .logFilesBasedOnlyBuilder( testDirectory.databaseDir(), fs )
+                .logFilesBasedOnlyBuilder( testDirectory.storeDir(), fs )
                 .withLogEntryReader( logEntryReader() )
                 .build();
 
@@ -113,7 +113,7 @@ class StoreSizeBeanTest
         when( database.getDatabaseLayout() ).thenReturn( testDirectory.databaseLayout() );
 
         // Create bean
-        KernelData kernelData = new KernelData( fs, mock( PageCache.class ), testDirectory.databaseDir(), config );
+        KernelData kernelData = new KernelData( fs, mock( PageCache.class ), testDirectory.storeDir(), config );
         managementData = new ManagementData( new StoreSizeBean(), kernelData, database, ManagementSupport.load() );
         storeSizeBean = StoreSizeBean.createBean( managementData, false, 0, mock( Clock.class ) );
 

@@ -59,7 +59,7 @@ class GraphDatabaseFactoryIT
     @Test
     void startSystemAndDefaultDatabase()
     {
-        DatabaseManagementService managementService = new GraphDatabaseFactory().newDatabaseManagementService( testDirectory.databaseDir() );
+        DatabaseManagementService managementService = new GraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -78,7 +78,7 @@ class GraphDatabaseFactoryIT
     @Test
     void configuredDatabasesRootPath()
     {
-        File factoryDir = testDirectory.databaseDir();
+        File factoryDir = testDirectory.storeDir();
         File databasesDir = testDirectory.directory( "my_databases" );
 
         DatabaseManagementService managementService = new GraphDatabaseFactory()
@@ -102,7 +102,7 @@ class GraphDatabaseFactoryIT
     @Test
     void notConfiguredDatabasesRootPath()
     {
-        File factoryDir = testDirectory.databaseDir();
+        File factoryDir = testDirectory.storeDir();
 
         DatabaseManagementService managementService = new GraphDatabaseFactory().newDatabaseManagementService( factoryDir );
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );

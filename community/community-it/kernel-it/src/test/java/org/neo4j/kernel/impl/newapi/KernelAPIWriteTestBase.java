@@ -23,7 +23,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -34,8 +33,6 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-
-import static org.neo4j.kernel.impl.newapi.TestUtils.createTemporaryFolder;
 
 /**
  * KernelAPIWriteTestBase is the basis of write tests targeting the Kernel API.
@@ -69,7 +66,7 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
         if ( testSupport == null )
         {
             testSupport = newTestSupport();
-            testSupport.setup( testDirectory.databaseDir() );
+            testSupport.setup( testDirectory.storeDir() );
             graphDb = testSupport.graphBackdoor();
         }
         testSupport.clearGraph();

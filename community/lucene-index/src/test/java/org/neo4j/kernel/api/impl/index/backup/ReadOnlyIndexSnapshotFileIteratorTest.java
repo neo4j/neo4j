@@ -58,7 +58,7 @@ public class ReadOnlyIndexSnapshotFileIteratorTest
     @BeforeEach
     void setUp() throws IOException
     {
-        indexDir = testDir.databaseDir();
+        indexDir = testDir.storeDir();
         dir = DirectoryFactory.PERSISTENT.open( indexDir );
     }
 

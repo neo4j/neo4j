@@ -203,7 +203,7 @@ class ConsistencyCheckToolTest
     {
         assertThrows( ToolFailureException.class, () -> {
             createGraphDbAndKillIt( Config.defaults() );
-            runConsistencyCheckToolWith( fs, testDirectory.databaseDir().getAbsolutePath() );
+            runConsistencyCheckToolWith( fs, testDirectory.storeDir().getAbsolutePath() );
         } );
     }
 
@@ -217,7 +217,7 @@ class ConsistencyCheckToolTest
             Config customConfig = Config.defaults();
             createGraphDbAndKillIt( customConfig );
             MapUtil.store( customConfig.getRaw(), fs.openAsOutputStream( customConfigFile, false ) );
-            String[] args = {testDirectory.databaseDir().getPath(), "-config", customConfigFile.getPath()};
+            String[] args = {testDirectory.storeDir().getPath(), "-config", customConfigFile.getPath()};
 
             runConsistencyCheckToolWith( fs, args );
         } );
@@ -245,7 +245,7 @@ class ConsistencyCheckToolTest
     {
         DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( fs )
-                .newEmbeddedDatabaseBuilder( testDirectory.databaseDir() )
+                .newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( config.getRaw()  ).newDatabaseManagementService();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
@@ -276,13 +276,13 @@ class ConsistencyCheckToolTest
     private void restoreStoreCopy( File logFilesDirectory, File tempLogsDirectory, File tempStoreDirectory ) throws IOException
     {
         fs.copyRecursively( tempLogsDirectory, logFilesDirectory );
-        fs.copyRecursively( tempStoreDirectory, testDirectory.databaseDir() );
+        fs.copyRecursively( tempStoreDirectory, testDirectory.storeDir() );
     }
 
     private void createStoreCopy( File logFilesDirectory, File tempLogsDirectory, File tempStoreDirectory ) throws IOException
     {
         fs.copyRecursively( logFilesDirectory, tempLogsDirectory );
-        fs.copyRecursively( testDirectory.databaseDir(), tempStoreDirectory );
+        fs.copyRecursively( testDirectory.storeDir(), tempStoreDirectory );
     }
 
     private static void runConsistencyCheckToolWith( FileSystemAbstraction fileSystem, String... args )

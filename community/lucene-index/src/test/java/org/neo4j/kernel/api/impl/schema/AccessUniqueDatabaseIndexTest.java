@@ -153,7 +153,7 @@ class AccessUniqueDatabaseIndexTest
     private PartitionedIndexStorage getIndexStorage()
     {
         IndexStorageFactory storageFactory = new IndexStorageFactory( directoryFactory, fileSystem,
-                directoriesByProviderKey( testDirectory.databaseDir() ).forProvider( PROVIDER_DESCRIPTOR ) );
+                directoriesByProviderKey( testDirectory.storeDir() ).forProvider( PROVIDER_DESCRIPTOR ) );
         return storageFactory.indexStorageOf( 1 );
     }
 

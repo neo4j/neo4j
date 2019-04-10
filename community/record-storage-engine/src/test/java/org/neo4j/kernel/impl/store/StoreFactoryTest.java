@@ -126,11 +126,11 @@ public class StoreFactoryTest
 
         // WHEN
         neoStores = storeFactory.openAllNeoStores( true );
-        assertTrue( fsRule.get().listFiles( testDirectory.databaseDir() ).length >= StoreType.values().length );
+        assertTrue( fsRule.get().listFiles( testDirectory.storeDir() ).length >= StoreType.values().length );
 
         // THEN
         neoStores.close();
-        assertEquals( 0, fsRule.get().listFiles( testDirectory.databaseDir() ).length );
+        assertEquals( 0, fsRule.get().listFiles( testDirectory.storeDir() ).length );
     }
 
     @Test
@@ -148,7 +148,7 @@ public class StoreFactoryTest
         StoreFactory storeFactory = storeFactory( Config.defaults() );
         storeFactory.openAllNeoStores( true ).close();
         FileSystemAbstraction fs = fsRule.get();
-        for ( File f : fs.listFiles( testDirectory.databaseDir() ) )
+        for ( File f : fs.listFiles( testDirectory.storeDir() ) )
         {
             fs.truncate( f, 0 );
         }

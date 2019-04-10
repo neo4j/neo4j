@@ -107,7 +107,7 @@ class UniqueIndexSeekIT
     private GraphDatabaseAPI createDatabase( TrackingIndexExtensionFactory indexExtensionFactory )
     {
         DatabaseManagementService managementService = new TestGraphDatabaseFactory()
-                        .setExtensions( singletonList( indexExtensionFactory ) ).newEmbeddedDatabaseBuilder( directory.databaseDir() )
+                        .setExtensions( singletonList( indexExtensionFactory ) ).newEmbeddedDatabaseBuilder( directory.storeDir() )
                         .setConfig( default_schema_provider, DESCRIPTOR.name() ).newDatabaseManagementService();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }

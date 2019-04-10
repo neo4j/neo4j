@@ -180,7 +180,7 @@ class DatabaseStartupTest
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
         DatabaseManagementService managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).newDatabaseManagementService(
-                testDirectory.databaseDir() );
+                testDirectory.storeDir() );
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

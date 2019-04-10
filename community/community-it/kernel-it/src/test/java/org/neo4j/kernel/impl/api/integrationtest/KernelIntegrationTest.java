@@ -180,7 +180,7 @@ public abstract class KernelIntegrationTest
     {
         GraphDatabaseBuilder graphDatabaseBuilder = configure( createGraphDatabaseFactory() )
                 .setFileSystem( testDir.getFileSystem() )
-                .newEmbeddedDatabaseBuilder( testDir.databaseDir() );
+                .newEmbeddedDatabaseBuilder( testDir.storeDir() );
         DatabaseManagementService managementService = configure( graphDatabaseBuilder ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }

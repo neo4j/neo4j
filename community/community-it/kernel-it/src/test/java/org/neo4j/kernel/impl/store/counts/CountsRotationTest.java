@@ -114,7 +114,7 @@ public class CountsRotationTest
     {
         fs = fsRule.get();
         dbBuilder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
-                .newImpermanentDatabaseBuilder( testDir.databaseDir() );
+                .newImpermanentDatabaseBuilder( testDir.storeDir() );
         pageCache = pcRule.getPageCache( fs );
     }
 
@@ -333,7 +333,7 @@ public class CountsRotationTest
         adversary.disable();
 
         DatabaseManagementService managementService = AdversarialPageCacheGraphDatabaseFactory.create( fs, adversary )
-                .newEmbeddedDatabaseBuilder( testDir.databaseDir() ).newDatabaseManagementService();
+                .newEmbeddedDatabaseBuilder( testDir.storeDir() ).newDatabaseManagementService();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         CountDownLatch txStartLatch = new CountDownLatch( 1 );

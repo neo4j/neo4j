@@ -77,7 +77,7 @@ class TestCrashWithRebuildSlow
     void crashAndRebuildSlowWithDynamicStringDeletions() throws Exception
     {
         DatabaseManagementService managementService1 = new TestGraphDatabaseFactory()
-                .setFileSystem( fs ).newImpermanentDatabaseBuilder( testDir.databaseDir() )
+                .setFileSystem( fs ).newImpermanentDatabaseBuilder( testDir.storeDir() )
                 .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" ).newDatabaseManagementService();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
         List<Long> deletedNodeIds = produceNonCleanDefraggedStringStore( db );
@@ -110,10 +110,10 @@ class TestCrashWithRebuildSlow
         assertThat( snapshotChecksum, equalTo( checksumBefore ) );
 
         // Recover with unsupported.dbms.id_generator_fast_rebuild_enabled=false
-        assertNumberOfFreeIdsEquals( testDir.databaseDir(), snapshot, 0 );
+        assertNumberOfFreeIdsEquals( testDir.storeDir(), snapshot, 0 );
         DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( snapshot )
-                .newImpermanentDatabaseBuilder( testDir.databaseDir() )
+                .newImpermanentDatabaseBuilder( testDir.storeDir() )
                 .setConfig( GraphDatabaseSettings.rebuild_idgenerators_fast, FALSE ).newDatabaseManagementService();
         GraphDatabaseAPI newDb = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         Map<IdType,Long> highIdsAfterCrash = getHighIds( newDb );

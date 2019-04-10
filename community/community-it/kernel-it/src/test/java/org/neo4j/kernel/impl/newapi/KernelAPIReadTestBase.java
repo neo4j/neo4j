@@ -40,8 +40,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.neo4j.kernel.impl.newapi.TestUtils.createTemporaryFolder;
-
 /**
  * KernelAPIReadTestBase is the basis of read tests targeting the Kernel API.
  *
@@ -105,7 +103,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
         if ( testSupport == null )
         {
             testSupport = newTestSupport();
-            testSupport.setup( testDirectory.databaseDir(), this::createTestGraph );
+            testSupport.setup( testDirectory.storeDir(), this::createTestGraph );
         }
         Kernel kernel = testSupport.kernelToTest();
         tx = beginTransaction( kernel );

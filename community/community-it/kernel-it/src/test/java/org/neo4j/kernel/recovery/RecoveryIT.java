@@ -342,7 +342,7 @@ class RecoveryIT
     void startDatabaseWithRemovedMultipleTransactionLogFiles() throws Exception
     {
         DatabaseManagementService managementService = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( directory.databaseDir() )
+                .newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" ).newDatabaseManagementService();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         while ( countTransactionLogFiles() < 5 )
@@ -364,7 +364,7 @@ class RecoveryIT
     void killAndStartDatabaseAfterTransactionLogsRemoval() throws Exception
     {
         DatabaseManagementService managementService = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( directory.databaseDir() )
+                .newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" ).newDatabaseManagementService();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         while ( countTransactionLogFiles() < 5 )
@@ -396,7 +396,7 @@ class RecoveryIT
     void killAndStartDatabaseAfterTransactionLogsRemovalWithSeveralFilesWithoutCheckpoint() throws Exception
     {
         DatabaseManagementService managementService = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( directory.databaseDir() )
+                .newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" ).newDatabaseManagementService();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         while ( countTransactionLogFiles() < 5 )
@@ -427,7 +427,7 @@ class RecoveryIT
     void startDatabaseAfterTransactionLogsRemovalAndKillAfterRecovery() throws Exception
     {
         DatabaseManagementService managementService = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( directory.databaseDir() )
+                .newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" ).newDatabaseManagementService();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         while ( countTransactionLogFiles() < 5 )
@@ -632,7 +632,7 @@ class RecoveryIT
 
     private GraphDatabaseAPI createDatabase()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( directory.databaseDir() );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( directory.storeDir() );
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -643,7 +643,7 @@ class RecoveryIT
 
     private GraphDatabaseService startDatabaseWithForcedRecovery()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.databaseDir() )
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( fail_on_missing_files, FALSE ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }

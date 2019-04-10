@@ -78,7 +78,7 @@ class CheckPointerIntegrationTest
     @BeforeEach
     void setup()
     {
-        File storeDir = testDirectory.databaseDir();
+        File storeDir = testDirectory.storeDir();
         builder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .newImpermanentDatabaseBuilder( storeDir );
     }

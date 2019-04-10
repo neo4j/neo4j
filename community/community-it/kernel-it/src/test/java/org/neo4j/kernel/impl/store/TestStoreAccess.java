@@ -70,7 +70,7 @@ class TestStoreAccess
 
     private EphemeralFileSystemAbstraction produceUncleanStore()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentService( testDirectory.databaseDir() );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentService( testDirectory.storeDir() );
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {

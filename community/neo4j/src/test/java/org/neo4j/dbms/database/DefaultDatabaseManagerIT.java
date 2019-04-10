@@ -53,7 +53,7 @@ class DefaultDatabaseManagerIT
     @BeforeEach
     void setUp()
     {
-        DatabaseManagementService managementService = new GraphDatabaseFactory().newDatabaseManagementService( testDirectory.databaseDir() );
+        DatabaseManagementService managementService = new GraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
         database = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

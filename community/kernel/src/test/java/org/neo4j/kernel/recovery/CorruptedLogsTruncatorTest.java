@@ -74,7 +74,7 @@ class CorruptedLogsTruncatorTest
     @BeforeEach
     void setUp() throws Exception
     {
-        databaseDirectory = testDirectory.databaseDir();
+        databaseDirectory = testDirectory.storeDir();
         SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseDirectory, fs )

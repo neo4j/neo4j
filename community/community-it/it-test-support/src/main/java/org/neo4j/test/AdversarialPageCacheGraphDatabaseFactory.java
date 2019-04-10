@@ -24,7 +24,6 @@ import java.io.File;
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.pagecache.AdversarialPageCache;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
@@ -60,11 +59,7 @@ public class AdversarialPageCacheGraphDatabaseFactory
                     @Override
                     protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
                     {
-                        File absoluteStoreDir = storeDir.getAbsoluteFile();
-                        File databasesRoot = absoluteStoreDir.getParentFile();
-                        config.augment( GraphDatabaseSettings.default_database, absoluteStoreDir.getName() );
-                        config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
-                        return new GlobalModule( databasesRoot, config, databaseInfo, dependencies )
+                        return new GlobalModule( storeDir, config, databaseInfo, dependencies )
                         {
                             @Override
                             protected FileSystemAbstraction createFileSystemAbstraction()

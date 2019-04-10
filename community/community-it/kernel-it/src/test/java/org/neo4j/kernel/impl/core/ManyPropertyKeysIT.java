@@ -116,7 +116,7 @@ class ManyPropertyKeysIT
     private GraphDatabaseAPI database()
     {
         DatabaseManagementService managementService = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( testDirectory.databaseDir() )
+                .newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( GraphDatabaseSettings.fail_on_missing_files, Settings.FALSE ).newDatabaseManagementService();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }

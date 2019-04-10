@@ -117,7 +117,7 @@ class RecoveryCorruptedTransactionLogIT
     @BeforeEach
     void setUp() throws Exception
     {
-        databaseDirectory = directory.databaseDir();
+        databaseDirectory = directory.storeDir();
         monitors.addMonitorListener( recoveryMonitor );
         databaseFactory = new TestGraphDatabaseFactory()
                 .setInternalLogProvider( logProvider )

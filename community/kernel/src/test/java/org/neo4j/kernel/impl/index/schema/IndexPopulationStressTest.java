@@ -143,7 +143,7 @@ public class IndexPopulationStressTest
 
     private IndexDirectoryStructure.Factory directory()
     {
-        File storeDir = rules.directory().databaseDir();
+        File storeDir = rules.directory().storeDir();
         return directoriesBySubProvider( directoriesByProvider( storeDir ).forProvider( PROVIDER ) );
     }
 

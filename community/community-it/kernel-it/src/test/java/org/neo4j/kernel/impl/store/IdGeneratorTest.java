@@ -513,7 +513,7 @@ class IdGeneratorTest
     @Test
     void commandsGetWrittenOnceSoThatFreedIdsGetsAddedOnlyOnce() throws Exception
     {
-        GraphDatabaseService db = createTestDatabase( testDirectory.databaseDir() );
+        GraphDatabaseService db = createTestDatabase( testDirectory.storeDir() );
         RelationshipType type = withName( "SOME_TYPE" );
 
         // This transaction will, if some commands may be executed more than
@@ -547,7 +547,7 @@ class IdGeneratorTest
         // After a clean shutdown, create new nodes and relationships and see so
         // that
         // all ids are unique.
-        db = createTestDatabase( testDirectory.databaseDir() );
+        db = createTestDatabase( testDirectory.storeDir() );
         tx = db.beginTx();
         commonNode = db.getNodeById( commonNode.getId() );
         for ( int i = 0; i < 100; i++ )

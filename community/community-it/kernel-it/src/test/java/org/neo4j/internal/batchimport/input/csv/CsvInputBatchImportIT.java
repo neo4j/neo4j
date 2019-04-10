@@ -314,7 +314,7 @@ class CsvInputBatchImportIT
                 expectedRelationships, expectedNodeCounts, expectedRelationshipCounts );
 
         // Do the verification
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( directory.databaseDir() );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( directory.storeDir() );
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {

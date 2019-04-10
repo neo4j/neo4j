@@ -153,7 +153,7 @@ public class DetectAllRelationshipInconsistenciesIT
     private GraphDatabaseAPI getGraphDatabaseAPI()
     {
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-        DatabaseManagementService managementService = factory.newEmbeddedDatabaseBuilder( directory.databaseDir() )
+        DatabaseManagementService managementService = factory.newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
                 .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );

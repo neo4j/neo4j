@@ -172,7 +172,7 @@ public class SpatialIndexSettingsTest
 
     private SpatialIndexProvider newSpatialIndexProvider( Config config )
     {
-        return new SpatialIndexProvider( pageCache, fs, directoriesByProvider( directory.databaseDir() ), monitor, immediate(), false, config );
+        return new SpatialIndexProvider( pageCache, fs, directoriesByProvider( directory.storeDir() ), monitor, immediate(), false, config );
     }
 
     private void addUpdates( SpatialIndexProvider provider, StoreIndexDescriptor schemaIndexDescriptor,
@@ -209,7 +209,7 @@ public class SpatialIndexSettingsTest
 
     private File indexRoot()
     {
-        return new File( new File( new File( directory.databaseDir(), "schema" ), "index" ), "spatial-1.0" );
+        return new File( new File( new File( directory.storeDir(), "schema" ), "index" ), "spatial-1.0" );
     }
 
     private void createEmptyIndex( StoreIndexDescriptor schemaIndexDescriptor, ConfiguredSpaceFillingCurveSettingsCache configuredSettings )

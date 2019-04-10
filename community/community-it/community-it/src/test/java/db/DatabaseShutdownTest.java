@@ -87,7 +87,7 @@ class DatabaseShutdownTest
     @Test
     void invokeKernelEventHandlersBeforeShutdown()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.databaseDir() );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         ShutdownListenerDatabaseEventHandler shutdownHandler = new ShutdownListenerDatabaseEventHandler();
         database.registerDatabaseEventHandler( shutdownHandler );

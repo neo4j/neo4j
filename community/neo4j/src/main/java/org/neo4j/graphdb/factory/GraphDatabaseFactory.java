@@ -119,20 +119,8 @@ public class GraphDatabaseFactory
     protected DatabaseManagementService newDatabase( File storeDir, Config config,
                                                 ExternalDependencies dependencies )
     {
-        File absoluteStoreDir = storeDir.getAbsoluteFile();
-        File databasesRoot;
-        if ( config.isConfigured( GraphDatabaseSettings.databases_root_path ) )
-        {
-            databasesRoot = config.get( GraphDatabaseSettings.databases_root_path );
-        }
-        else
-        {
-            databasesRoot = absoluteStoreDir.getParentFile();
-            config.augment( GraphDatabaseSettings.default_database, absoluteStoreDir.getName() );
-        }
         config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
-        config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
-        return getGraphDatabaseFacadeFactory().newFacade( databasesRoot, config, dependencies );
+        return getGraphDatabaseFacadeFactory().newFacade( storeDir, config, dependencies );
     }
 
     protected GraphDatabaseFacadeFactory getGraphDatabaseFacadeFactory()

@@ -85,7 +85,7 @@ class CountsComputerTest
     void setup()
     {
         dbBuilder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
-                .newImpermanentDatabaseBuilder( testDirectory.databaseDir() );
+                .newImpermanentDatabaseBuilder( testDirectory.storeDir() );
     }
 
     @Test

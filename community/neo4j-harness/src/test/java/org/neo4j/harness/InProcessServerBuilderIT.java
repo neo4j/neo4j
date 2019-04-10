@@ -255,7 +255,7 @@ class InProcessServerBuilderIT
             db.shutdown();
         }
 
-        try ( InProcessNeo4j neo4j = getTestBuilder( directory.databaseDir() ).copyFrom( existingStoreDir ).build() )
+        try ( InProcessNeo4j neo4j = getTestBuilder( directory.storeDir() ).copyFrom( existingStoreDir ).build() )
         {
             // Then
             try ( Transaction tx = neo4j.graph().beginTx() )

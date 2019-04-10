@@ -56,7 +56,7 @@ class CommunityGlobalTransactionStatsIT
     @BeforeEach
     void setUp()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.databaseDir() );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
         database = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

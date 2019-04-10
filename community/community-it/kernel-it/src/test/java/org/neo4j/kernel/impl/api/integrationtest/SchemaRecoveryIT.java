@@ -133,7 +133,7 @@ class SchemaRecoveryIT
 
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs );
-        DatabaseManagementService managementService = factory.newImpermanentService( testDirectory.databaseDir() );
+        DatabaseManagementService managementService = factory.newImpermanentService( testDirectory.storeDir() );
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 

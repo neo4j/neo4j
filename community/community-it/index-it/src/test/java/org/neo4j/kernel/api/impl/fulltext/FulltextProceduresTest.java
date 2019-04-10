@@ -136,7 +136,7 @@ public class FulltextProceduresTest
     public void before()
     {
         GraphDatabaseFactory factory = new GraphDatabaseFactory();
-        builder = factory.newEmbeddedDatabaseBuilder( testDirectory.databaseDir() );
+        builder = factory.newEmbeddedDatabaseBuilder( testDirectory.storeDir() );
         builder.setConfig( GraphDatabaseSettings.store_internal_log_level, "DEBUG" );
     }
 

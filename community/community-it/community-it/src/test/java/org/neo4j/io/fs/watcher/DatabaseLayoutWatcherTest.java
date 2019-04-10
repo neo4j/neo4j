@@ -70,8 +70,8 @@ class DatabaseLayoutWatcherTest
 
         watcher.start();
 
-        verify( fileWatcher ).watch( testDirectory.databaseDir() );
-        verify( fileWatcher ).watch( testDirectory.databaseDir().getParentFile() );
+        verify( fileWatcher ).watch( testDirectory.storeDir() );
+        verify( fileWatcher ).watch( testDirectory.storeDir().getParentFile() );
         verify( fileWatcher ).addFileWatchEventListener( eventListener );
     }
 

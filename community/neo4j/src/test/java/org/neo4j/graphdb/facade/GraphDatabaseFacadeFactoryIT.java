@@ -111,7 +111,7 @@ class GraphDatabaseFacadeFactoryIT
     private DatabaseManagementService getDatabaseManagementService()
     {
         GraphDatabaseFacadeFactory graphDatabaseFacadeFactory = new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
-        return graphDatabaseFacadeFactory.initFacade( testDirectory.databaseDir(), Config.defaults(), GraphDatabaseDependencies.newDependencies(),
+        return graphDatabaseFacadeFactory.initFacade( testDirectory.storeDir(), Config.defaults(), GraphDatabaseDependencies.newDependencies(),
                 new GraphDatabaseFacade() );
     }
 

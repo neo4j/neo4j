@@ -153,7 +153,7 @@ class DatabaseRecoveryIT
     @Test
     void idGeneratorsRebuildAfterRecovery() throws IOException
     {
-        GraphDatabaseService database = startDatabase( directory.databaseDir() );
+        GraphDatabaseService database = startDatabase( directory.storeDir() );
         int numberOfNodes = 10;
         try ( Transaction transaction = database.beginTx() )
         {
@@ -182,7 +182,7 @@ class DatabaseRecoveryIT
     @Test
     void reportProgressOnRecovery() throws IOException
     {
-        GraphDatabaseService database = startDatabase( directory.databaseDir() );
+        GraphDatabaseService database = startDatabase( directory.storeDir() );
         for ( int i = 0; i < 10; i++ )
         {
             try ( Transaction transaction = database.beginTx() )
@@ -208,7 +208,7 @@ class DatabaseRecoveryIT
     @Test
     void shouldRecoverIdsCorrectlyWhenWeCreateAndDeleteANodeInTheSameRecoveryRun() throws IOException
     {
-        GraphDatabaseService database = startDatabase( directory.databaseDir() );
+        GraphDatabaseService database = startDatabase( directory.storeDir() );
         Label testLabel = Label.label( "testLabel" );
         final String propertyToDelete = "propertyToDelete";
         final String validPropertyName = "validProperty";
@@ -263,7 +263,7 @@ class DatabaseRecoveryIT
             ClassGuardedAdversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, true ), Command.RelationshipCommand.class );
             adversary.disable();
 
-            File databaseDir = directory.databaseDir();
+            File databaseDir = directory.storeDir();
             DatabaseManagementService managementService = AdversarialPageCacheGraphDatabaseFactory.create( fileSystem, adversary )
                     .newEmbeddedDatabaseBuilder( databaseDir ).newDatabaseManagementService();
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
@@ -392,7 +392,7 @@ class DatabaseRecoveryIT
     {
         // given
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentService( directory.databaseDir() );
+        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentService( directory.storeDir() );
         GraphDatabaseService db = managementService1.database( DEFAULT_DATABASE_NAME );
         produceRandomGraphUpdates( db, 100 );
         checkPoint( db );
@@ -459,7 +459,7 @@ class DatabaseRecoveryIT
                     }
                 }
                 .setFileSystem( crashedFs )
-                .setMonitors( monitors ).newImpermanentService( directory.databaseDir() );
+                .setMonitors( monitors ).newImpermanentService( directory.storeDir() );
 
         managementService.database( DEFAULT_DATABASE_NAME )
                 .shutdown();

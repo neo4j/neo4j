@@ -46,7 +46,7 @@ class TestGraphDatabaseFactoryTest
     @Test
     void databaseStartsWithSystemAndDefaultDatabase()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.databaseDir() );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -61,7 +61,7 @@ class TestGraphDatabaseFactoryTest
     @Test
     void impermanentDatabaseStartsWithSystemAndDefaultDatabase()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService( testDirectory.databaseDir() );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService( testDirectory.storeDir() );
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

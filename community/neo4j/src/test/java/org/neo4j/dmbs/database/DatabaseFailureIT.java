@@ -95,7 +95,7 @@ class DatabaseFailureIT
 
     private GraphDatabaseAPI startDatabase()
     {
-        DatabaseManagementService managementService = new GraphDatabaseFactory().newDatabaseManagementService( testDirectory.databaseDir() );
+        DatabaseManagementService managementService = new GraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 }
