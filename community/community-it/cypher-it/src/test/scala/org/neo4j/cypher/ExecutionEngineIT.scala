@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
@@ -103,7 +104,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("should not refer to stale plan context in the cached execution plans") {
     // given
-    db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    db = new TestGraphDatabaseFactory().newImpermanentService().database(DEFAULT_DATABASE_NAME)
 
     // when
     db.execute("EXPLAIN MERGE (a:A) ON MATCH SET a.prop = 21  RETURN *").close()
@@ -112,7 +113,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("should crash of erroneous parameters values if they are used") {
     // given
-    db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    db = new TestGraphDatabaseFactory().newImpermanentService().database(DEFAULT_DATABASE_NAME)
 
     // when
     val params = new java.util.HashMap[String, AnyRef]()
@@ -128,7 +129,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("should ignore erroneous parameters values if they are not used") {
     // given
-    db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    db = new TestGraphDatabaseFactory().newImpermanentService().database(DEFAULT_DATABASE_NAME)
 
     // when
     val params = new java.util.HashMap[String, AnyRef]()
