@@ -19,10 +19,10 @@
  */
 package org.neo4j.dmbs.database;
 
-import java.util.Collections;
+import java.util.NavigableMap;
 import java.util.SortedMap;
-import java.util.concurrent.ConcurrentNavigableMap;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 import org.neo4j.configuration.Config;
@@ -38,12 +38,12 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 
+import static java.util.Collections.unmodifiableNavigableMap;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 
 public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends LifecycleAdapter implements DatabaseManager<T>
 {
-
-    protected final ConcurrentSkipListMap<DatabaseId,T> databaseMap;
+    protected final ConcurrentHashMap<DatabaseId,T> databaseMap;
     private final GlobalModule globalModule;
     private final AbstractEditionModule edition;
     private final GraphDatabaseFacade graphDatabaseFacade;
@@ -55,26 +55,39 @@ public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends
         this.globalModule = globalModule;
         this.edition = edition;
         this.graphDatabaseFacade = graphDatabaseFacade;
-        this.databaseMap = new ConcurrentSkipListMap<>();
+        this.databaseMap = new ConcurrentHashMap<>();
     }
 
     @Override
     public void start() throws Exception
     {
-        forEachDatabase( databaseMap, this::startDatabase );
+        startAllDatabases();
+    }
+
+    protected void startAllDatabases()
+    {
+        forEachDatabase( this::startDatabase, false );
     }
 
     @Override
     public void stop() throws Exception
     {
-        //We want to reverse databases in the opposite order to which they were started.
-        // Amongst other things this helps to ensure that the system database is stopped last.
-        forEachDatabase( databaseMap.descendingMap(), this::stopDatabase );
+        stopAllDatabases();
+    }
+
+    private void stopAllDatabases()
+    {
+        forEachDatabase( this::stopDatabase, true );
     }
 
     public final SortedMap<DatabaseId,T> registeredDatabases()
     {
-        return Collections.unmodifiableSortedMap( databaseMap );
+        return databasesSnapshot();
+    }
+
+    private NavigableMap<DatabaseId,T> databasesSnapshot()
+    {
+        return unmodifiableNavigableMap( new TreeMap<>( databaseMap ) );
     }
 
     protected T createNewDatabaseContext( DatabaseId databaseId )
@@ -92,20 +105,22 @@ public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends
 
     protected abstract T databaseContextFactory( Database database, GraphDatabaseFacade facade );
 
-    protected final void forEachDatabase( ConcurrentNavigableMap<DatabaseId,T> dbMap, BiConsumer<DatabaseId,T> consumer )
+    protected final void forEachDatabase( BiConsumer<DatabaseId,T> consumer, boolean systemDatabaseLast )
     {
-        for ( var databaseContextEntry : dbMap.entrySet() )
+        var snapshot = systemDatabaseLast ? databasesSnapshot().descendingMap().entrySet() : databasesSnapshot().entrySet();
+
+        for ( var entry : snapshot )
         {
-            T context = databaseContextEntry.getValue();
-            DatabaseId contextKey = databaseContextEntry.getKey();
+            DatabaseId databaseId = entry.getKey();
+            T context = entry.getValue();
             try
             {
-                consumer.accept( contextKey, context );
+                consumer.accept( databaseId, context );
             }
             catch ( Throwable t )
             {
                 context.fail( t );
-                log.error( "Fail to perform operation with a database " + contextKey, t );
+                log.error( "Failed to perform operation with database " + databaseId, t );
             }
         }
     }
