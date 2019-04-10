@@ -106,11 +106,14 @@ class NonUniqueIndexTest
                         ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
                 IndexReference index = ktx.schemaRead().index( ktx.tokenRead().nodeLabel( LABEL ), ktx.tokenRead().propertyKey( KEY ) );
                 IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
-                NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor();
-                ktx.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, IndexQuery.exact( 1, VALUE ) );
-                assertTrue( cursor.next() );
-                assertEquals( node.getId(), cursor.nodeReference() );
-                assertFalse( cursor.next() );
+                try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
+                {
+                    ktx.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false,
+                            IndexQuery.exact( 1, VALUE ) );
+                    assertTrue( cursor.next() );
+                    assertEquals( node.getId(), cursor.nodeReference() );
+                    assertFalse( cursor.next() );
+                }
                 tx.success();
             }
         }

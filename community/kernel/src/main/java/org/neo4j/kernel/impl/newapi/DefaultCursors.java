@@ -88,4 +88,5 @@ abstract class DefaultCursors
             }
         }
     }
+
 }
