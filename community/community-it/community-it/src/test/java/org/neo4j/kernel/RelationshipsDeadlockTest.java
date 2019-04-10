@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -46,6 +47,7 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @Disabled( "This test demonstrates a deadlock during concurrent relationship creation." )
 @ExtendWith( TestDirectoryExtension.class )
@@ -76,7 +78,8 @@ class RelationshipsDeadlockTest
     @BeforeEach
     void setUp()
     {
-        db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.storeDir() );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
+        db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @AfterEach

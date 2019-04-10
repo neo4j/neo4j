@@ -59,7 +59,8 @@ class GraphDatabaseFactoryIT
     @Test
     void startSystemAndDefaultDatabase()
     {
-        GraphDatabaseAPI database = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
+        DatabaseManagementService managementService = new GraphDatabaseFactory().newDatabaseManagementService( testDirectory.databaseDir() );
+        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             DependencyResolver dependencyResolver = database.getDependencyResolver();
@@ -103,7 +104,8 @@ class GraphDatabaseFactoryIT
     {
         File factoryDir = testDirectory.databaseDir();
 
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( factoryDir );
+        DatabaseManagementService managementService = new GraphDatabaseFactory().newDatabaseManagementService( factoryDir );
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             assertFalse( isEmptyOrNonExistingDirectory( fs, new File( factoryDir.getParent(), DEFAULT_DATABASE_NAME ) ) );

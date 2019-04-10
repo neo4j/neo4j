@@ -46,7 +46,8 @@ class TestGraphDatabaseFactoryTest
     @Test
     void databaseStartsWithSystemAndDefaultDatabase()
     {
-        GraphDatabaseAPI database = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.databaseDir() );
+        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             checkAvailableDatabases( database );

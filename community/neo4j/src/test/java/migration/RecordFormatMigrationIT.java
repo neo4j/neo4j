@@ -149,7 +149,8 @@ class RecordFormatMigrationIT
         }
         database.shutdown();
 
-        GraphDatabaseService databaseService = new GraphDatabaseFactory().newEmbeddedDatabase( databaseDirectory );
+        DatabaseManagementService managementService = new GraphDatabaseFactory().newDatabaseManagementService( databaseDirectory );
+        GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             assertDefaultDatabaseFailed( databaseService );

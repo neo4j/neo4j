@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.UnableToStartDatabaseException;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -94,6 +95,7 @@ class DatabaseFailureIT
 
     private GraphDatabaseAPI startDatabase()
     {
-        return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
+        DatabaseManagementService managementService = new GraphDatabaseFactory().newDatabaseManagementService( testDirectory.databaseDir() );
+        return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

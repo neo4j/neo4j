@@ -24,14 +24,12 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import javax.annotation.Nonnull;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
@@ -198,13 +196,6 @@ public class GraphDatabaseBuilder
         }
 
         return this;
-    }
-
-    private static String getDefaultDatabaseName( DatabaseManagementService managementService )
-    {
-        List<String> databases = managementService.listDatabases();
-        databases.remove( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
-        return databases.get( 0 );
     }
 
     public DatabaseManagementService newDatabaseManagementService()

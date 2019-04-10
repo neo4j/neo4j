@@ -106,10 +106,10 @@ public abstract class AbstractNeo4jTestCase
             }
         }
 
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
-        threadLocalGraphDb.set( (GraphDatabaseAPI) (requiresPersistentGraphDatabase ?
-                                                    new TestGraphDatabaseFactory().newEmbeddedDatabase( getStorePath(
-                                                            "neo-test" ) ) : managementService.database( DEFAULT_DATABASE_NAME )) );
+        DatabaseManagementService impermanentService = new TestGraphDatabaseFactory().newImpermanentService();
+        DatabaseManagementService permanentService = new TestGraphDatabaseFactory().newDatabaseManagementService( getStorePath( "neo-test" ) );
+        threadLocalGraphDb.set( (GraphDatabaseAPI) (requiresPersistentGraphDatabase ? permanentService.database( DEFAULT_DATABASE_NAME ) :
+                                                    impermanentService.database( DEFAULT_DATABASE_NAME )) );
     }
 
     public GraphDatabaseAPI getGraphDbAPI()

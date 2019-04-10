@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -44,6 +45,7 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class DynamicIndexStoreViewIT
@@ -57,8 +59,8 @@ public class DynamicIndexStoreViewIT
     @Test
     public void populateDbWithConcurrentUpdates() throws Exception
     {
-        GraphDatabaseService database =
-                new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.databaseDir() );
+        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             RandomValues randomValues = RandomValues.create();

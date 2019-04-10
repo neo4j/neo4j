@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -53,6 +54,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
@@ -82,7 +84,8 @@ class RecoverIndexDropIT
         // given a transaction stream ending in an INDEX DROP command.
         CommittedTransactionRepresentation dropTransaction = prepareDropTransaction();
         var databaseLayout = directory.databaseLayout();
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( databaseLayout.databaseDirectory() );
+        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().newDatabaseManagementService( databaseLayout.databaseDirectory() );
+        GraphDatabaseService db = managementService1.database( DEFAULT_DATABASE_NAME );
         createIndex( db );
         db.shutdown();
         appendDropTransactionToTransactionLog( directory.databaseLayout().getTransactionLogsDirectory(), dropTransaction );
@@ -91,7 +94,9 @@ class RecoverIndexDropIT
         Monitors monitors = new Monitors();
         AssertRecoveryIsPerformed recoveryMonitor = new AssertRecoveryIsPerformed();
         monitors.addMonitorListener( recoveryMonitor );
-        db = new TestGraphDatabaseFactory().setMonitors( monitors ).newEmbeddedDatabase( databaseLayout.databaseDirectory() );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setMonitors( monitors ).newDatabaseManagementService(
+                databaseLayout.databaseDirectory() );
+        db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             assertTrue( recoveryMonitor.recoveryWasPerformed );
@@ -134,7 +139,8 @@ class RecoverIndexDropIT
 
     private CommittedTransactionRepresentation prepareDropTransaction() throws IOException
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.directory( "preparation" ) );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( directory.directory( "preparation" ) );
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             // Create index

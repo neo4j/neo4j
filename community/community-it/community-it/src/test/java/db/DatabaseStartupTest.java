@@ -76,7 +76,8 @@ class DatabaseStartupTest
         // create a store
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         File databaseDir = databaseLayout.databaseDirectory();
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( databaseDir );
+        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().newDatabaseManagementService( databaseDir );
+        GraphDatabaseService db = managementService1.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
@@ -93,7 +94,8 @@ class DatabaseStartupTest
                     MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ));
         }
 
-        GraphDatabaseService databaseService = new TestGraphDatabaseFactory().newEmbeddedDatabase( databaseDir );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( databaseDir );
+        GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             assertThrows( TransactionFailureException.class, databaseService::beginTx );
@@ -116,7 +118,8 @@ class DatabaseStartupTest
         // create a store
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         File databaseDirectory = databaseLayout.databaseDirectory();
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( databaseDirectory );
+        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().newDatabaseManagementService( databaseDirectory );
+        GraphDatabaseService db = managementService1.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
@@ -167,7 +170,8 @@ class DatabaseStartupTest
         File directory = new File( "notAbsoluteDirectory" );
         EphemeralCommunityFacadeFactory factory = new EphemeralCommunityFacadeFactory();
         GraphDatabaseFactory databaseFactory = new EphemeralGraphDatabaseFactory( factory );
-        GraphDatabaseService service = databaseFactory.newEmbeddedDatabase( directory );
+        DatabaseManagementService managementService = databaseFactory.newDatabaseManagementService( directory );
+        GraphDatabaseService service = managementService.database( DEFAULT_DATABASE_NAME );
         service.shutdown();
     }
 
@@ -175,7 +179,9 @@ class DatabaseStartupTest
     void dumpSystemDiagnosticLoggingOnStartup()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        GraphDatabaseService database = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).newEmbeddedDatabase( testDirectory.databaseDir() );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).newDatabaseManagementService(
+                testDirectory.databaseDir() );
+        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             logProvider.assertContainsMessageContaining( "System diagnostics" );

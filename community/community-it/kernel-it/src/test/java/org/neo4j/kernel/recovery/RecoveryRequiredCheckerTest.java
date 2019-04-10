@@ -236,6 +236,7 @@ class RecoveryRequiredCheckerTest
 
     private static void startStopDatabase( FileSystemAbstraction fileSystem, File storeDir )
     {
-        new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newEmbeddedDatabase( storeDir ).shutdown();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newDatabaseManagementService( storeDir );
+        managementService.database( DEFAULT_DATABASE_NAME ).shutdown();
     }
 }

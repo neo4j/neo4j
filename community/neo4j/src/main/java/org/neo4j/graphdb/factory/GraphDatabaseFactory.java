@@ -29,7 +29,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.database.DatabaseManagementService;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
@@ -38,12 +37,10 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Monitors;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-
 /**
  * Creates a {@link org.neo4j.graphdb.GraphDatabaseService} with Community Edition features.
  * <p>
- * Use {@link #newEmbeddedDatabase(File)} or
+ * Use {@link #newDatabaseManagementService(File)} or
  * {@link #newEmbeddedDatabaseBuilder(File)} to create a database instance.
  * <p>
  */
@@ -71,13 +68,9 @@ public class GraphDatabaseFactory
         return new GraphDatabaseFactoryState( getCurrentState() );
     }
 
-    /**
-     * @param storeDir desired embedded database store dir
-     */
-    public GraphDatabaseService newEmbeddedDatabase( File storeDir )
+    public DatabaseManagementService newDatabaseManagementService( File storeDir )
     {
-        DatabaseManagementService managementService = newEmbeddedDatabaseBuilder( storeDir ).newDatabaseManagementService();
-        return managementService.database( DEFAULT_DATABASE_NAME );
+        return newEmbeddedDatabaseBuilder( storeDir ).newDatabaseManagementService();
     }
 
     /**

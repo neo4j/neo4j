@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import java.io.File
 import java.util.concurrent.TimeUnit
 
+import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.GraphDatabaseService
@@ -109,7 +110,8 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     val providerFactory = new FailingGenericNativeIndexProviderFactory(POPULATION)
     dbFactory.removeExtensions(TestGraphDatabaseFactory.INDEX_PROVIDERS_FILTER)
     dbFactory.addExtension(providerFactory)
-    graph = new GraphDatabaseCypherService(dbFactory.newEmbeddedDatabase(storeDir))
+    val managementService = dbFactory.newDatabaseManagementService(storeDir)
+    graph = new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
     eengine = createEngine(graph)
     execute("create (:Person {name:42})")
     execute("CREATE INDEX ON :Person(name)")

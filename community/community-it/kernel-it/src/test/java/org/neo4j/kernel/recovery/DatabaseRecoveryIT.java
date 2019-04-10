@@ -827,7 +827,9 @@ class DatabaseRecoveryIT
 
     private GraphDatabaseService startDatabase( File storeDir )
     {
-        return new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).newEmbeddedDatabase( storeDir );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).newDatabaseManagementService(
+                storeDir );
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     public class UpdateCapturingIndexProvider extends IndexProvider

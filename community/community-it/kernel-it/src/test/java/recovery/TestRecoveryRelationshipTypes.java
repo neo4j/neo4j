@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
@@ -41,6 +42,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.lang.Runtime.getRuntime;
 import static java.lang.System.exit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.test.proc.ProcessUtil.getClassPath;
 import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
 
@@ -60,7 +62,8 @@ class TestRecoveryRelationshipTypes
                 getClassPath(), getClass().getName(), storeDir.getAbsolutePath()} ).waitFor() );
 
         // When
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         // Then
         try ( Transaction ignored = db.beginTx();
@@ -82,7 +85,8 @@ class TestRecoveryRelationshipTypes
         }
 
         File storeDir = new File( args[0] );
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );

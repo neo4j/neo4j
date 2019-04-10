@@ -62,8 +62,10 @@ public class TestExceptionTypeOnInvalidIds
     {
         var writableLayout = testDirectory.databaseLayout( testDirectory.storeDir( "writable" ) );
         var readOnlyLayout = testDirectory.databaseLayout( testDirectory.storeDir( "readOnly" ) );
-        graphdb = new TestGraphDatabaseFactory().newEmbeddedDatabase( writableLayout.databaseDirectory() );
-        new TestGraphDatabaseFactory().newEmbeddedDatabase( readOnlyLayout.databaseDirectory() ).shutdown();
+        DatabaseManagementService managementService2 = new TestGraphDatabaseFactory().newDatabaseManagementService( writableLayout.databaseDirectory() );
+        graphdb = managementService2.database( DEFAULT_DATABASE_NAME );
+        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().newDatabaseManagementService( readOnlyLayout.databaseDirectory() );
+        managementService1.database( DEFAULT_DATABASE_NAME ).shutdown();
         DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( readOnlyLayout.databaseDirectory() ).
             setConfig( GraphDatabaseSettings.read_only, TRUE ).newDatabaseManagementService();
         graphDbReadOnly = managementService.database( DEFAULT_DATABASE_NAME );

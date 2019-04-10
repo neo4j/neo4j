@@ -28,6 +28,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.File;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Args;
@@ -42,6 +43,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( TestDirectoryExtension.class )
 class DatabaseImporterTest
@@ -91,7 +93,8 @@ class DatabaseImporterTest
         File homeStoreDir = testDir.databaseDir( "home" );
         try
         {
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( homeStoreDir );
+            DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( homeStoreDir );
+            db = managementService.database( DEFAULT_DATABASE_NAME );
             try ( Transaction transaction = db.beginTx() )
             {
                 db.createNode();

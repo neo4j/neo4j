@@ -83,7 +83,9 @@ class FileWatchIT
         File customStoreRoot = testDirectory.storeDir( "customStore" );
         databaseLayout = testDirectory.databaseLayout( customStoreRoot );
         logProvider = new AssertableLogProvider();
-        database = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).newEmbeddedDatabase( databaseLayout.databaseDirectory() );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).newDatabaseManagementService(
+                databaseLayout.databaseDirectory() );
+        database = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @AfterEach
@@ -128,9 +130,10 @@ class FileWatchIT
             GraphDatabaseService db = null;
             try
             {
-                db = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
-                        .setFileSystem( new NonWatchableFileSystemAbstraction() )
-                        .newEmbeddedDatabase( testDirectory.storeDir( "failed-start-db" ) );
+                DatabaseManagementService managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
+                                .setFileSystem( new NonWatchableFileSystemAbstraction() ).newDatabaseManagementService(
+                                testDirectory.storeDir( "failed-start-db" ) );
+                db = managementService.database( DEFAULT_DATABASE_NAME );
 
                 logProvider.assertContainsMessageContaining(
                         "Can not create file watcher for current file system. " + "File monitoring capabilities for store files will be disabled." );

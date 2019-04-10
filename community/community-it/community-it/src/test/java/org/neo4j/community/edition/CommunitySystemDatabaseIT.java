@@ -202,7 +202,8 @@ class CommunitySystemDatabaseIT
         try
         {
             File disabledSystemDbDirectory = testDirectory.databaseDir( "withSystemDd" );
-            databaseWithSystemDb = new TestGraphDatabaseFactory().newEmbeddedDatabase( disabledSystemDbDirectory );
+            DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( disabledSystemDbDirectory );
+            databaseWithSystemDb = managementService.database( DEFAULT_DATABASE_NAME );
             DatabaseManager<?> databaseManager = getDatabaseManager( databaseWithSystemDb );
             assertTrue( databaseManager.getDatabaseContext( new DatabaseId( SYSTEM_DATABASE_NAME ) ).isPresent() );
         }

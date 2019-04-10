@@ -541,10 +541,11 @@ class FulltextIndexConsistencyCheckIT
 
         // Remove the property without updating the index
         db.shutdown();
-        db = new TestGraphDatabaseFactory( NullLogProvider.getInstance() ).setFileSystem( fs )
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory( NullLogProvider.getInstance() ).setFileSystem( fs )
                 .removeExtensions( INDEX_PROVIDERS_FILTER )
                 .addExtension( new FailingGenericNativeIndexProviderFactory( SKIP_ONLINE_UPDATES ) )
-                .newEmbeddedDatabase( testDirectory.databaseDir() );
+                .newDatabaseManagementService( testDirectory.databaseDir() );
+        db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
             db.getNodeById( nodeId ).removeProperty( "prop" );

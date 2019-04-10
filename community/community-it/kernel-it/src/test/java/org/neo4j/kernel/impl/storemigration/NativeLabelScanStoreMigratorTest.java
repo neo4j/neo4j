@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -64,6 +65,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.collection.PrimitiveLongCollections.countAndClose;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
 
 @PageCacheExtension
@@ -239,7 +241,8 @@ class NativeLabelScanStoreMigratorTest
 
     private void prepare34DatabaseWithNodes()
     {
-        GraphDatabaseService embeddedDatabase = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
+        GraphDatabaseService embeddedDatabase = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             try ( Transaction transaction = embeddedDatabase.beginTx() )
@@ -260,7 +263,8 @@ class NativeLabelScanStoreMigratorTest
 
     private void prepareEmpty34Database() throws IOException
     {
-        new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
+        managementService.database( DEFAULT_DATABASE_NAME ).shutdown();
         fileSystem.deleteFile( nativeLabelIndex );
         MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(),
                 Position.STORE_VERSION, versionStringToLong( StandardV3_4.STORE_VERSION ) );

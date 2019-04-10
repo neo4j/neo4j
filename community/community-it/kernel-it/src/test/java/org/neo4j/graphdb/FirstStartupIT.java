@@ -24,10 +24,12 @@ import org.junit.Test;
 
 import java.io.File;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.helpers.collection.Iterables.count;
 
 public class FirstStartupIT
@@ -40,7 +42,8 @@ public class FirstStartupIT
     {
         // When
         File storeDir = testDir.absolutePath();
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         // Then
         try ( Transaction ignore = db.beginTx() )

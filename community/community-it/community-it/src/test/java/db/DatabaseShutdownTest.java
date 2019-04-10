@@ -60,6 +60,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class, } )
 class DatabaseShutdownTest
@@ -72,7 +73,8 @@ class DatabaseShutdownTest
     {
         TestGraphDatabaseFactoryWithFailingPageCacheFlush factory = new TestGraphDatabaseFactoryWithFailingPageCacheFlush();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        GraphDatabaseService databaseService = factory.newEmbeddedDatabase( databaseLayout.databaseDirectory() );
+        DatabaseManagementService managementService = factory.newDatabaseManagementService( databaseLayout.databaseDirectory() );
+        GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
         DatabaseManager<?> databaseManager = ((GraphDatabaseAPI) databaseService).getDependencyResolver().resolveDependency( DatabaseManager.class );
         var databaseContext = databaseManager.getDatabaseContext( new DatabaseId( databaseLayout.getDatabaseName() ) );
         factory.setFailFlush( true );
@@ -85,7 +87,8 @@ class DatabaseShutdownTest
     @Test
     void invokeKernelEventHandlersBeforeShutdown()
     {
-        GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.databaseDir() );
+        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         ShutdownListenerDatabaseEventHandler shutdownHandler = new ShutdownListenerDatabaseEventHandler();
         database.registerDatabaseEventHandler( shutdownHandler );
         database.shutdown();

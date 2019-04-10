@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileLock;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
@@ -49,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class StoreLockerTest
@@ -260,14 +262,19 @@ class StoreLockerTest
     void mustPreventMultipleInstancesFromStartingOnSameStore()
     {
         File storeDir = target.storeDir();
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
+        GraphDatabaseService db = managementService1.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
             tx.success();
         }
 
-        assertThrows( Exception.class, () -> new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir ) );
+        assertThrows( Exception.class, () ->
+        {
+            DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
+            managementService.database( DEFAULT_DATABASE_NAME );
+        } );
         db.shutdown();
     }
 
