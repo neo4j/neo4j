@@ -254,6 +254,10 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver) extends AstConstructionT
     appendAtCurrentIndent(UnaryOperator(source => Expand(source, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandAll)))
   }
 
+  def nodeHashJoin(nodes: String*): LogicalQueryBuilder = {
+    appendAtCurrentIndent(BinaryOperator((left, right) => NodeHashJoin(nodes.toSet, left, right)))
+  }
+
   def argument(): LogicalQueryBuilder =
     appendAtCurrentIndent(LeafOperator(Argument()))
 

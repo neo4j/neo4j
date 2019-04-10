@@ -41,6 +41,7 @@ import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.{BeforeAndAfterEach, Tag}
 
 import scala.collection.mutable.ArrayBuffer
+import scala.util.Random
 
 object RuntimeTestSuite {
   val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
@@ -102,6 +103,17 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     } finally tx.close()
   }
 
+  def select[X](things: Seq[X],
+                selectivity: Double = 1.0,
+                duplicateProbability: Double = 0.0,
+                nullProbability: Double = 0.0): Seq[X] = {
+    val rng = new Random(42)
+    for {thing<- things if rng.nextDouble() < selectivity
+         dup <- if (rng.nextDouble() < duplicateProbability) Seq(thing, thing) else Seq(thing)
+         nullifiedDup = if (rng.nextDouble() < nullProbability) null.asInstanceOf[X] else dup
+    } yield nullifiedDup
+  }
+
   // EXECUTE
 
   def execute(logicalQuery: LogicalQuery,
@@ -153,6 +165,12 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   def inputValues(rows: Array[Any]*): InputValues =
     new InputValues().and(rows: _*)
+
+  def batchedInputValues(batchSize: Int, rows: Array[Any]*): InputValues = {
+    val input = new InputValues()
+    rows.grouped(batchSize).foreach(batch => input.and(batch: _*))
+    input
+  }
 
   //noinspection ScalaUnnecessaryParentheses
   def inputColumns(nBatches: Int, batchSize: Int, valueFunctions: (Int => Any)*): InputValues = {
