@@ -207,10 +207,12 @@ public class FulltextProcedures
                         return true;
                     }
                 }
+                cursor.close();
                 return false;
             }
         };
-        return StreamSupport.stream( spliterator, false );
+        Stream<NodeOutput> stream = StreamSupport.stream( spliterator, false );
+        return stream.onClose( cursor::close );
     }
 
     @Description( "Query the given fulltext index. Returns the matching relationships and their lucene query score, ordered by score." )
@@ -244,10 +246,11 @@ public class FulltextProcedures
                         return true;
                     }
                 }
+                cursor.close();
                 return false;
             }
         };
-        return StreamSupport.stream( spliterator, false );
+        return StreamSupport.stream( spliterator, false ).onClose( cursor::close );
     }
 
     private IndexReference getValidIndexReference( @Name( "indexName" ) String name )
