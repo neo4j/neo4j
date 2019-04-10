@@ -87,27 +87,27 @@ class PipeExecutionResult(val result: IteratorBasedResult,
     else if (result.mapIterator.hasNext) ConsumptionState.HAS_MORE
     else ConsumptionState.EXHAUSTED
 
-    override def request(numberOfRecords: Long): Unit = {
-      resultRequested = true
-      if (reactiveIterator == null) {
-        val iterator =
-          if (result.recordIterator.isDefined) result.recordIterator.get.map(_.fields())
-          else result.mapIterator.map(r => fieldNames.map(r.getByName))
-        reactiveIterator = new ReactiveIterator(iterator, this)
-      }
-      reactiveIterator.addDemand(numberOfRecords)
+  override def request(numberOfRecords: Long): Unit = {
+    resultRequested = true
+    if (reactiveIterator == null) {
+      val iterator =
+        if (result.recordIterator.isDefined) result.recordIterator.get.map(_.fields())
+        else result.mapIterator.map(r => fieldNames.map(r.getByName))
+      reactiveIterator = new ReactiveIterator(iterator, this)
     }
+    reactiveIterator.addDemand(numberOfRecords)
+  }
 
-    override def cancel(): Unit = {
-      if (reactiveIterator != null) {
-        reactiveIterator.cancel()
-      }
+  override def cancel(): Unit = {
+    if (reactiveIterator != null) {
+      reactiveIterator.cancel()
     }
+  }
 
-    override def await(): Boolean = {
-      if (reactiveIterator == null) {
-        throw new InternalException("Call to await before calling request")
-      }
-      reactiveIterator.await(subscriber)
+  override def await(): Boolean = {
+    if (reactiveIterator == null) {
+      throw new InternalException("Call to await before calling request")
     }
+    reactiveIterator.await(subscriber)
+  }
 }

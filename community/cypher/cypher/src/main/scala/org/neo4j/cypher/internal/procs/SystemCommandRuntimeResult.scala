@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 /**
   * Empty result, as produced by a system command.
   */
-case class SystemCommandRuntimeResult(ctx: QueryContext, subscriber: QuerySubscriber, execution: InternalExecutionResult) extends RuntimeResult{
+case class SystemCommandRuntimeResult(ctx: QueryContext, subscriber: QuerySubscriber, execution: InternalExecutionResult) extends RuntimeResult {
 
   override val fieldNames: Array[String] = execution.fieldNames()
   private var resultRequested = false

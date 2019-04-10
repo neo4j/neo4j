@@ -44,26 +44,38 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
                               cypherRuntime: CypherRuntimeOption,
                               cypherUpdateStrategy: CypherUpdateStrategy,
                               executionEngineProvider: () => ExecutionEngine): Compiler = {
-    cypherVersion match {
-      // 3.5
-      case CypherVersion.v3_5 =>
-        CypherCurrentCompiler(
-          Cypher3_5Planner(plannerConfig, MasterCompiler.CLOCK, kernelMonitors, log,
-            cypherPlanner, cypherUpdateStrategy, LastCommittedTxIdProvider(graph)),
-          CommunityRuntimeFactory.getRuntime(cypherRuntime, plannerConfig.useErrorsOverWarnings),
-          CommunityRuntimeContextCreator(runtimeConfig),
-          kernelMonitors
-        )
 
-      // 4.0
+    val planner = cypherVersion match {
+      case CypherVersion.`v3_5` =>
+        Cypher3_5Planner(
+          plannerConfig,
+          MasterCompiler.CLOCK,
+          kernelMonitors,
+          log,
+          cypherPlanner,
+          cypherUpdateStrategy,
+          LastCommittedTxIdProvider(graph))
+
       case CypherVersion.v4_0 =>
-        CypherCurrentCompiler(
-          Cypher4_0Planner(plannerConfig, MasterCompiler.CLOCK, kernelMonitors, log,
-            cypherPlanner, cypherUpdateStrategy, LastCommittedTxIdProvider(graph)),
-          CommunityRuntimeFactory.getRuntime(cypherRuntime, plannerConfig.useErrorsOverWarnings),
-          CommunityRuntimeContextCreator(runtimeConfig),
-          kernelMonitors
-        )
+        Cypher4_0Planner(
+          plannerConfig,
+          MasterCompiler.CLOCK,
+          kernelMonitors,
+          log,
+          cypherPlanner,
+          cypherUpdateStrategy,
+          LastCommittedTxIdProvider(graph))
     }
+
+    val runtime = if (plannerConfig.planSystemCommands)
+      MultiDatabaseManagementCommandRuntime(executionEngineProvider())
+    else
+      CommunityRuntimeFactory.getRuntime(cypherRuntime, plannerConfig.useErrorsOverWarnings)
+
+    CypherCurrentCompiler(
+      planner,
+      runtime,
+      CommunityRuntimeContextCreator(runtimeConfig),
+      kernelMonitors)
   }
 }

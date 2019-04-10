@@ -25,15 +25,21 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.CommunityCompilerFactory;
+import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.CypherConfiguration;
 import org.neo4j.cypher.internal.CypherRuntimeConfiguration;
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration;
+import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.values.virtual.MapValue;
 
 @ServiceProvider
 public class CommunityCypherEngineProvider extends QueryEngineProvider
@@ -50,6 +56,12 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
         return 42; // Lower means better. The enterprise version will have a lower number
     }
 
+    protected CompilerFactory makeCompilerFactory( GraphDatabaseCypherService queryService, Monitors monitors, LogProvider logProvider,
+            CypherPlannerConfiguration plannerConfig, CypherRuntimeConfiguration runtimeConfig )
+    {
+        return new CommunityCompilerFactory( queryService, monitors, logProvider, plannerConfig, runtimeConfig );
+    }
+
     @Override
     protected QueryExecutionEngine createEngine( Dependencies deps, GraphDatabaseAPI graphAPI )
     {
@@ -60,34 +72,37 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
         LogService logService = resolver.resolveDependency( LogService.class );
         Monitors monitors = resolver.resolveDependency( Monitors.class );
         Config config = resolver.resolveDependency( Config.class );
+        boolean isSystemDatabase = graphAPI.databaseLayout().getDatabaseName().startsWith( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
         CypherConfiguration cypherConfig = CypherConfiguration.fromConfig( config );
-        CypherPlannerConfiguration plannerConfig = cypherConfig.toCypherPlannerConfiguration( config,
-                graphAPI.databaseLayout().getDatabaseName().startsWith( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) );
+        CypherPlannerConfiguration plannerConfig = cypherConfig.toCypherPlannerConfiguration( config, isSystemDatabase );
         CypherRuntimeConfiguration runtimeConfig = cypherConfig.toCypherRuntimeConfiguration();
         LogProvider logProvider = logService.getInternalLogProvider();
-        CommunityCompilerFactory compilerFactory =
-                new CommunityCompilerFactory( queryService, monitors, logProvider, plannerConfig, runtimeConfig );
+        CompilerFactory compilerFactory = makeCompilerFactory( queryService, monitors, logProvider, plannerConfig, runtimeConfig );
         deps.satisfyDependencies( compilerFactory );
-        return createEngine( queryService, config, logProvider, compilerFactory );
-    }
-
-    private QueryExecutionEngine createEngine( GraphDatabaseCypherService queryService, Config config,
-                                               LogProvider logProvider, CommunityCompilerFactory compilerFactory )
-    {
-        return config.get( GraphDatabaseSettings.snapshot_query ) ?
-               snapshotEngine( queryService, config, logProvider, compilerFactory ) :
-               standardEngine( queryService, logProvider, compilerFactory );
-    }
-
-    private SnapshotExecutionEngine snapshotEngine( GraphDatabaseCypherService queryService, Config config,
-                                                    LogProvider logProvider, CommunityCompilerFactory compilerFactory )
-    {
-        return new SnapshotExecutionEngine( queryService, config, logProvider, compilerFactory );
-    }
-
-    private ExecutionEngine standardEngine( GraphDatabaseCypherService queryService, LogProvider logProvider,
-                                            CommunityCompilerFactory compilerFactory )
-    {
-        return new ExecutionEngine( queryService, logProvider, compilerFactory );
+        if ( isSystemDatabase )
+        {
+            CypherPlannerConfiguration innerPlannerConfig = cypherConfig.toCypherPlannerConfiguration( config, false );
+            CommunityCompilerFactory innerCompilerFactory =
+                    new CommunityCompilerFactory( queryService, monitors, logProvider, innerPlannerConfig, runtimeConfig );
+            DatabaseManager databaseManager = resolver.resolveDependency( DatabaseManager.class );
+            ExecutionEngine inner = new ExecutionEngine( queryService, logProvider, innerCompilerFactory );
+            databaseManager.setInnerSystemExecutionEngine( new DatabaseManager.SystemDatabaseInnerEngine()
+            {
+                @Override
+                public Result execute( String query, MapValue parameters, TransactionalContext context ) throws QueryExecutionKernelException
+                {
+                    return inner.executeQuery( query, parameters, context, false );
+                }
+            } );
+            return new SystemExecutionEngine( queryService, logProvider, compilerFactory, innerCompilerFactory );
+        }
+        else if ( config.get( GraphDatabaseSettings.snapshot_query ) )
+        {
+            return new SnapshotExecutionEngine( queryService, config, logProvider, compilerFactory );
+        }
+        else
+        {
+            return new ExecutionEngine( queryService, logProvider, compilerFactory );
+        }
     }
 }

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
+import org.neo4j.cypher.internal.procs.{SystemCommandExecutionPlan, UpdatingSystemCommandExecutionPlan}
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
@@ -62,28 +62,39 @@ case class MultiDatabaseManagementCommandRuntime(normalExecutionEngine: Executio
 
     // CREATE DATABASE foo
     case CreateDatabase(dbName) => (ctx, _) =>
-      SystemCommandExecutionPlan("CreateDatabase", normalExecutionEngine,
-        "MERGE (d:Database {name:$name}) SET d.status = $status RETURN d.name as name, d.status as status",
-        VirtualValues.map(Array("name", "status"), Array(Values.stringValue(dbName), Values.stringValue("created")))
+      UpdatingSystemCommandExecutionPlan("CreateDatabase", normalExecutionEngine,
+        "CREATE (d:Database {name:$name}) " +
+          "SET d.status = $status RETURN d.name as name, d.status as status",
+        VirtualValues.map(Array("name", "status"), Array(Values.stringValue(dbName), Values.stringValue("online"))),
+        record => {}  //TODO: Make sure we have a uniqueness constraint on Database(name)
       )
 
     // DROP DATABASE foo
     case DropDatabase(dbName) => (_, _) =>
-      SystemCommandExecutionPlan("DeleteDatabase", normalExecutionEngine,
-        "MATCH (d:Database {name:$name}) SET d.status = $status RETURN d.name as name, d.status as status",
-        VirtualValues.map(Array("name", "status"), Array(Values.stringValue(dbName), Values.stringValue("deleted")))
+      UpdatingSystemCommandExecutionPlan("DeleteDatabase", normalExecutionEngine,
+        "OPTIONAL MATCH (d:Database {name:$name}), (d2: Database{name:$name}) " +
+          "WHERE d2.status <> $requiredStatus "+
+          "SET d2.status = $status " +
+          "RETURN d.name as name, d.status as status, d2.name as db",
+        VirtualValues.map(Array("name", "requiredStatus","status"), Array(Values.stringValue(dbName),
+          Values.stringValue("offline"),
+          Values.stringValue("deleted"))),
+        record => {
+          if (record.get("name") == null) throw new IllegalStateException("Cannot delete non existent database '" + dbName + "'")
+          if (record.get("db") == null) throw new IllegalStateException("Cannot delete database '" + dbName + "' that is not offline. It is: " + record.get("status"))
+        }
       )
 
     // START DATABASE foo
     case StartDatabase(dbName) => (_, _) =>
       SystemCommandExecutionPlan("StartDatabase", normalExecutionEngine,
-        "MATCH (d:Database {name:$name})" +
-          "WHERE d.status IN $oldStatus" +
-          " SET d.status = $status RETURN d.name as name, d.status as status",
+        "MATCH (d:Database {name:$name, status: $oldStatus})" +
+          " SET d.status = $status " +
+          "RETURN d.name as name, d.status as status",
         VirtualValues.map(
           Array("name", "oldStatus", "status"),
           Array(Values.stringValue(dbName),
-            VirtualValues.list(Values.stringValue("created"), Values.stringValue("offline")),
+            Values.stringValue("offline"),
             Values.stringValue("online")
           )
         )
@@ -92,7 +103,8 @@ case class MultiDatabaseManagementCommandRuntime(normalExecutionEngine: Executio
     // STOP DATABASE foo
     case StopDatabase(dbName) => (_, _) =>
       SystemCommandExecutionPlan("StopDatabase", normalExecutionEngine,
-        "MATCH (d:Database {name:$name, status:$oldStatus}) SET d.status = $status RETURN d.name as name, d.status as status",
+        "MATCH (d:Database {name:$name, status:$oldStatus}) SET d.status = $status " +
+          "RETURN d.name as name, d.status as status",
         VirtualValues.map(
           Array("name", "oldStatus", "status"),
           Array(Values.stringValue(dbName),

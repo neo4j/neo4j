@@ -44,7 +44,7 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
 {
     private final DatabaseManager<?> databaseManager;
     private final String defaultDbName;
-    private GraphDatabaseFacade systemDb;
+    private DatabaseManager.SystemDatabaseInnerAccessor<?> systemDb;
     private ThreadToStatementContextBridge threadToStatementContextBridge;
 
     public ContextSwitchingSystemGraphQueryExecutor( DatabaseManager<?> databaseManager, String defaultDbName )
@@ -185,12 +185,12 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
         return threadToStatementContextBridge;
     }
 
-    private GraphDatabaseFacade getSystemDb()
+    private DatabaseManager.SystemDatabaseInnerAccessor<?> getSystemDb()
     {
         // Resolve systemDb on the first call
         if ( systemDb == null )
         {
-            systemDb = getDb( SYSTEM_DATABASE_NAME ).databaseFacade();
+            systemDb = databaseManager.getSystemDatabaseInnerAccessor();
         }
         return systemDb;
     }

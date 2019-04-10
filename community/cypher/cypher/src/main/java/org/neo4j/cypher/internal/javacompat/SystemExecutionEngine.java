@@ -26,10 +26,9 @@ import org.neo4j.logging.LogProvider;
 
 /**
  * To run a Cypher query, use this class.
- *
+ * <p>
  * This class construct and initialize both the cypher compiler and the cypher runtime, which is a very expensive
  * operation so please make sure this will be constructed only once and properly reused.
- *
  */
 public class SystemExecutionEngine extends ExecutionEngine
 {
@@ -40,13 +39,15 @@ public class SystemExecutionEngine extends ExecutionEngine
      * This is used for processing system database commands, where the outer Cypher engine will only understand DDL commands
      * and translate them into normal Cypher against the SYSTEM database, processed by the inner Cypher runtime, which understands normal Cypher.
      */
-    public SystemExecutionEngine( GraphDatabaseQueryService queryService, LogProvider logProvider, CompilerFactory systemCompilerFactory, CompilerFactory normalCompilerFactory )
+    public SystemExecutionEngine( GraphDatabaseQueryService queryService, LogProvider logProvider, CompilerFactory systemCompilerFactory,
+            CompilerFactory normalCompilerFactory )
     {
-        normalExecutionEngine = makeExecutionEngine(queryService, logProvider, new CompilerLibrary(normalCompilerFactory, this::normalExecutionEngine));
-        cypherExecutionEngine = makeExecutionEngine(queryService, logProvider, new CompilerLibrary(systemCompilerFactory, this::normalExecutionEngine));
+        normalExecutionEngine = makeExecutionEngine( queryService, logProvider, new CompilerLibrary( normalCompilerFactory, this::normalExecutionEngine ) );
+        cypherExecutionEngine = makeExecutionEngine( queryService, logProvider, new CompilerLibrary( systemCompilerFactory, this::normalExecutionEngine ) );
     }
 
-    private org.neo4j.cypher.internal.ExecutionEngine normalExecutionEngine() {
+    protected org.neo4j.cypher.internal.ExecutionEngine normalExecutionEngine()
+    {
         return normalExecutionEngine;
     }
 }

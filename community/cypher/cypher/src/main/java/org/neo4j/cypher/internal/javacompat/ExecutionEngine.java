@@ -60,14 +60,23 @@ public class ExecutionEngine implements QueryExecutionEngine
      */
     public ExecutionEngine( GraphDatabaseQueryService queryService, LogProvider logProvider, CompilerFactory compilerFactory )
     {
-        cypherExecutionEngine = makeExecutionEngine(queryService, logProvider, new CompilerLibrary(compilerFactory, this::getCypherExecutionEngine ));
+        cypherExecutionEngine = makeExecutionEngine( queryService, logProvider, new CompilerLibrary( compilerFactory, this::getCypherExecutionEngine ) );
+    }
+
+    /**
+     * Creates an execution engine from the inner engine of a system execution engine
+     */
+    public ExecutionEngine( SystemExecutionEngine inner )
+    {
+        cypherExecutionEngine = inner.normalExecutionEngine();
     }
 
     protected ExecutionEngine()
     {
     }
 
-    public org.neo4j.cypher.internal.ExecutionEngine getCypherExecutionEngine() {
+    public org.neo4j.cypher.internal.ExecutionEngine getCypherExecutionEngine()
+    {
         return cypherExecutionEngine;
     }
 
