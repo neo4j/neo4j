@@ -94,6 +94,23 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     input.hasMore should be(true)
   }
 
+  test("should support limit with null values") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .limit(10)
+      .input(variables = Seq("x"))
+      .build()
+
+    val input = inputColumns(100000, 3, x => if (x % 2 == 0) x else null).stream()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    runtimeResult should beColumns("x").withRows(rowCount(10))
+
+    input.hasMore should be(true)
+  }
+
   test("should support apply-limit") {
     // given
     val nodesPerLabel = 100
