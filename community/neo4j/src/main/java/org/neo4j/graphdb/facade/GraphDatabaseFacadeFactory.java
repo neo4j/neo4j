@@ -173,7 +173,7 @@ public class GraphDatabaseFacadeFactory
         return managementService;
     }
 
-    private void startDatabaseServer( Config config, GlobalModule globalModule, AbstractEditionModule edition, LifeSupport globalLife, Log internalLog,
+    private static void startDatabaseServer( Config config, GlobalModule globalModule, AbstractEditionModule edition, LifeSupport globalLife, Log internalLog,
             DatabaseManager<?> databaseManager, DatabaseManagementService managementService )
     {
         RuntimeException startupException = null;
