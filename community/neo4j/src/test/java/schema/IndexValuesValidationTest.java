@@ -28,6 +28,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -43,6 +44,7 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
@@ -58,10 +60,10 @@ class IndexValuesValidationTest
 
     void setUp( String... settings )
     {
-        database = new GraphDatabaseFactory()
+        DatabaseManagementService managementService = new GraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( directory.storeDir() )
-                .setConfig( stringMap( settings ) )
-                .newGraphDatabase();
+                .setConfig( stringMap( settings ) ).newDatabaseManagementService();
+        database = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @AfterEach

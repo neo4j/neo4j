@@ -36,6 +36,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -134,9 +135,9 @@ public class StoreUpgradeOnStartupTest
 
     private GraphDatabaseService createGraphDatabaseService()
     {
-        return new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( workingDatabaseLayout.databaseDirectory() )
-                .setConfig( GraphDatabaseSettings.allow_upgrade, "true" )
-                .newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.allow_upgrade, "true" ).newDatabaseManagementService();
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

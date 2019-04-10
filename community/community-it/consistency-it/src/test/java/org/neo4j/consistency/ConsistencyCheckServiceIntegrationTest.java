@@ -39,6 +39,7 @@ import org.neo4j.configuration.Settings;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -72,6 +73,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.LUCENE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE20;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -196,10 +198,10 @@ public class ConsistencyCheckServiceIntegrationTest
         // given
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration = Config.defaults( settings() );
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
-                .setConfig( "dbms.backup.enabled", "false" )
-                .newGraphDatabase();
+                .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         String propertyKey = "itemId";
         Label label = Label.label( "Item" );
@@ -347,15 +349,16 @@ public class ConsistencyCheckServiceIntegrationTest
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
         builder.setConfig( settings( settings ) );
 
-        return builder.newGraphDatabase();
+        DatabaseManagementService managementService = builder.newDatabaseManagementService();
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private void prepareDbWithDeletedRelationshipPartOfTheChain()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.databaseDir() )
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.databaseDir() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
-                .setConfig( "dbms.backup.enabled", "false" )
-                .newGraphDatabase();
+                .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
 
@@ -393,11 +396,11 @@ public class ConsistencyCheckServiceIntegrationTest
         File tmpLogDir = new File( testDirectory.directory(), "logs" );
         fs.mkdir( tmpLogDir );
         var databaseLayout = testDirectory.databaseLayout();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( databaseLayout.databaseDirectory() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
-                .setConfig( "dbms.backup.enabled", "false" )
-                .newGraphDatabase();
+                .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
         RelationshipType relationshipType = RelationshipType.withName( "testRelationshipType" );
         try ( Transaction tx = db.beginTx() )

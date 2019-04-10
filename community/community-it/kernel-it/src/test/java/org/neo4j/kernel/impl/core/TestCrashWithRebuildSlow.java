@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -59,6 +60,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.Settings.FALSE;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
@@ -74,10 +76,10 @@ class TestCrashWithRebuildSlow
     @Test
     void crashAndRebuildSlowWithDynamicStringDeletions() throws Exception
     {
-        final GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory()
                 .setFileSystem( fs ).newImpermanentDatabaseBuilder( testDir.databaseDir() )
-                .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
-                .newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" ).newDatabaseManagementService();
+        final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
         List<Long> deletedNodeIds = produceNonCleanDefraggedStringStore( db );
         Map<IdType,Long> highIdsBeforeCrash = getHighIds( db );
 
@@ -109,11 +111,11 @@ class TestCrashWithRebuildSlow
 
         // Recover with unsupported.dbms.id_generator_fast_rebuild_enabled=false
         assertNumberOfFreeIdsEquals( testDir.databaseDir(), snapshot, 0 );
-        GraphDatabaseAPI newDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( snapshot )
                 .newImpermanentDatabaseBuilder( testDir.databaseDir() )
-                .setConfig( GraphDatabaseSettings.rebuild_idgenerators_fast, FALSE )
-                .newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.rebuild_idgenerators_fast, FALSE ).newDatabaseManagementService();
+        GraphDatabaseAPI newDb = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         Map<IdType,Long> highIdsAfterCrash = getHighIds( newDb );
         assertEquals( highIdsBeforeCrash, highIdsAfterCrash );
 

@@ -38,6 +38,8 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Monitors;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+
 /**
  * Creates a {@link org.neo4j.graphdb.GraphDatabaseService} with Community Edition features.
  * <p>
@@ -74,7 +76,8 @@ public class GraphDatabaseFactory
      */
     public GraphDatabaseService newEmbeddedDatabase( File storeDir )
     {
-        return newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
+        DatabaseManagementService managementService = newEmbeddedDatabaseBuilder( storeDir ).newDatabaseManagementService();
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     /**

@@ -34,6 +34,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
@@ -58,6 +59,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
@@ -131,9 +133,9 @@ public class JUnitRuleTestIT
         Config config = Config.defaults( data_directory, oldDir.toPath().toString() );
         File rootDirectory = config.get( databases_root_path );
         DatabaseLayout databaseLayout = DatabaseLayout.of( rootDirectory, LayoutConfig.of( config ), DEFAULT_DATABASE_NAME );
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseLayout.databaseDirectory() )
-                .setConfig( GraphDatabaseSettings.transaction_logs_root_path, new File( oldDir, DEFAULT_TX_LOGS_ROOT_DIR_NAME ).getAbsolutePath() )
-                .newGraphDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseLayout.databaseDirectory() )
+                .setConfig( transaction_logs_root_path, new File( oldDir, DEFAULT_TX_LOGS_ROOT_DIR_NAME ).getAbsolutePath() ).newDatabaseManagementService();
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         try
         {

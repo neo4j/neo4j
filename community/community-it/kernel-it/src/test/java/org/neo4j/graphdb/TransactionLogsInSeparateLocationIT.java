@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
@@ -42,6 +43,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class TransactionLogsInSeparateLocationIT
@@ -62,9 +64,9 @@ class TransactionLogsInSeparateLocationIT
 
     private static void performTransactions( String txPath, File storeDir )
     {
-        GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( GraphDatabaseSettings.transaction_logs_root_path, txPath )
-                .newGraphDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
+                .setConfig( GraphDatabaseSettings.transaction_logs_root_path, txPath ).newDatabaseManagementService();
+        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         for ( int i = 0; i < 10; i++ )
         {
             try ( Transaction transaction = database.beginTx() )

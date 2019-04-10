@@ -37,6 +37,7 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -72,6 +73,7 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion;
 
@@ -231,8 +233,9 @@ public class StoreUpgraderInterruptionTestIT
 
     private static void startStopDatabase( File storeDir )
     {
-        GraphDatabaseService databaseService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
-                        .setConfig( GraphDatabaseSettings.allow_upgrade, "true" ).newGraphDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
+                        .setConfig( GraphDatabaseSettings.allow_upgrade, "true" ).newDatabaseManagementService();
+        GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
         databaseService.shutdown();
     }
 }

@@ -40,9 +40,9 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("by default when using cypher 3.5 some queries should default to COST") {
     //given
-    db = new TestGraphDatabaseFactory()
-      .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.5").newGraphDatabase()
+    val managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.5").newDatabaseManagementService()
+    db = managementService.database(DEFAULT_DATABASE_NAME)
     val service = new GraphDatabaseCypherService(db)
 
     //when
@@ -58,9 +58,10 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("by default when using cypher 4.0 some queries should default to COST") {
     //given
-    db = new TestGraphDatabaseFactory()
+    val managementService = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "4.0").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "4.0").newDatabaseManagementService()
+    db = managementService.database(DEFAULT_DATABASE_NAME)
     val service = new GraphDatabaseCypherService(db)
 
     //when
@@ -76,10 +77,11 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("should be able to force COST as default when using cypher 4.0") {
     //given
-    db = new TestGraphDatabaseFactory()
+    val managementService = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "4.0").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "4.0").newDatabaseManagementService
+    db = managementService.database(DEFAULT_DATABASE_NAME)
     val service = new GraphDatabaseCypherService(db)
 
     //when
@@ -92,9 +94,10 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("should work if query cache size is set to zero") {
     //given
-    db = new TestGraphDatabaseFactory()
+    val managementService = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.query_cache_size, "0").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.query_cache_size, "0").newDatabaseManagementService()
+    db = managementService.database(DEFAULT_DATABASE_NAME)
 
     // when
     db.execute("RETURN 42").close()

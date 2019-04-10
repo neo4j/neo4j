@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -64,6 +65,7 @@ import static java.time.Duration.ofMinutes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( TestDirectoryExtension.class )
 class FileWatchIT
@@ -254,11 +256,11 @@ class FileWatchIT
             GraphDatabaseService db = null;
             try
             {
-                db = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
-                        .setFileSystem( new NonWatchableFileSystemAbstraction() )
-                        .newEmbeddedDatabaseBuilder( testDirectory.databaseLayout( "failed-start-db" ).databaseDirectory() )
-                        .setConfig( GraphDatabaseSettings.filewatcher_enabled, Settings.FALSE )
-                        .newGraphDatabase();
+                DatabaseManagementService managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
+                                .setFileSystem( new NonWatchableFileSystemAbstraction() )
+                                .newEmbeddedDatabaseBuilder( testDirectory.databaseLayout( "failed-start-db" ).databaseDirectory() )
+                                .setConfig( GraphDatabaseSettings.filewatcher_enabled, Settings.FALSE ).newDatabaseManagementService();
+                db = managementService.database( DEFAULT_DATABASE_NAME );
 
                 logProvider.assertContainsMessageContaining( "File watcher disabled by configuration." );
             }

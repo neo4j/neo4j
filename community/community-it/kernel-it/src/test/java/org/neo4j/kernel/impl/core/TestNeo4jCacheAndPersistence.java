@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -48,6 +49,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 
@@ -532,9 +534,9 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 
     private GraphDatabaseService getImpermanentDatabase( Map<String,String> config )
     {
-        return new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
-                .setConfig( config )
-                .newGraphDatabase();
+                .setConfig( config ).newDatabaseManagementService();
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

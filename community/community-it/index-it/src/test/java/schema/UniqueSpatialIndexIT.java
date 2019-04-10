@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -50,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( TestDirectoryExtension.class )
 class UniqueSpatialIndexIT
@@ -204,6 +206,7 @@ class UniqueSpatialIndexIT
         TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
         GraphDatabaseBuilder builder = dbFactory.newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() );
-        db = builder.newGraphDatabase();
+        DatabaseManagementService managementService = builder.newDatabaseManagementService();
+        db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

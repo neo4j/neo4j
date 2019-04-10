@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -46,6 +47,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 public class ConcurrentChangesOnEntitiesTest
 {
@@ -62,9 +64,9 @@ public class ConcurrentChangesOnEntitiesTest
     @Before
     public void setup()
     {
-        db = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( testDirectory.databaseDir() )
-                .newGraphDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( testDirectory.databaseDir() ).newDatabaseManagementService();
+        db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @Test

@@ -26,6 +26,7 @@ import org.junit.Rule;
 import java.util.Iterator;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -55,6 +56,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allIterator;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingIterator;
@@ -179,7 +181,8 @@ public abstract class KernelIntegrationTest
         GraphDatabaseBuilder graphDatabaseBuilder = configure( createGraphDatabaseFactory() )
                 .setFileSystem( testDir.getFileSystem() )
                 .newEmbeddedDatabaseBuilder( testDir.databaseDir() );
-        return configure( graphDatabaseBuilder ).newGraphDatabase();
+        DatabaseManagementService managementService = configure( graphDatabaseBuilder ).newDatabaseManagementService();
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     protected TestGraphDatabaseFactory createGraphDatabaseFactory()

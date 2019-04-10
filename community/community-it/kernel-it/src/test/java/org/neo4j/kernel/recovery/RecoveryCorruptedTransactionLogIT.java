@@ -38,6 +38,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -618,9 +619,9 @@ class RecoveryCorruptedTransactionLogIT
 
     private GraphDatabaseAPI startDbNoRecoveryOfCorruptedLogs()
     {
-        return (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabaseBuilder( databaseDirectory )
-                .setConfig( GraphDatabaseSettings.fail_on_corrupted_log_files, Settings.FALSE )
-                .newGraphDatabase();
+        DatabaseManagementService managementService = databaseFactory.newEmbeddedDatabaseBuilder( databaseDirectory )
+                .setConfig( GraphDatabaseSettings.fail_on_corrupted_log_files, Settings.FALSE ).newDatabaseManagementService();
+        return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private void createEmptyDatabase()

@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -44,6 +45,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestLabels;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 
 @RunWith( Parameterized.class )
@@ -68,7 +70,9 @@ public class DefaultSchemaIndexConfigTest
     public void shouldUseConfiguredIndexProvider() throws IndexNotFoundKernelException
     {
         // given
-        GraphDatabaseService db = dbBuilder.setConfig( default_schema_provider, provider == null ? null : provider.providerName() ).newGraphDatabase();
+        GraphDatabaseBuilder graphDatabaseBuilder = dbBuilder.setConfig( default_schema_provider, provider == null ? null : provider.providerName() );
+        DatabaseManagementService managementService = graphDatabaseBuilder.newDatabaseManagementService();
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             // when

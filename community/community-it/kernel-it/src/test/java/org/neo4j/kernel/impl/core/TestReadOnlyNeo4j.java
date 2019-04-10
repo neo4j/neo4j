@@ -59,11 +59,11 @@ public class TestReadOnlyNeo4j
     public void testSimple()
     {
         DbRepresentation someData = createSomeData();
-        GraphDatabaseService readGraphDb = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) )
                 .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
-                .setConfig( GraphDatabaseSettings.read_only, Settings.TRUE )
-                .newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.read_only, Settings.TRUE ).newDatabaseManagementService();
+        GraphDatabaseService readGraphDb = managementService.database( DEFAULT_DATABASE_NAME );
         assertEquals( someData, DbRepresentation.of( readGraphDb ) );
 
         try ( Transaction tx = readGraphDb.beginTx() )

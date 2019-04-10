@@ -44,6 +44,7 @@ import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpConnector.Encryption;
 import org.neo4j.configuration.ssl.ClientAuth;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -243,7 +244,8 @@ class InProcessServerBuilderIT
         DatabaseLayout databaseLayout = DatabaseLayout.of( rootDirectory, LayoutConfig.of( config ), DEFAULT_DATABASE_NAME );
         GraphDatabaseBuilder databaseBuilder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseLayout.databaseDirectory() )
                 .setConfig( transaction_logs_root_path, new File( existingStoreDir, DEFAULT_TX_LOGS_ROOT_DIR_NAME ).getAbsolutePath() );
-        GraphDatabaseService db = databaseBuilder.newGraphDatabase();
+        DatabaseManagementService managementService1 = databaseBuilder.newDatabaseManagementService();
+        GraphDatabaseService db = managementService1.database( DEFAULT_DATABASE_NAME );
         try
         {
             db.execute( "create ()" );
@@ -269,7 +271,8 @@ class InProcessServerBuilderIT
         }
 
         // Then: we still only have one node since the server is supposed to work on a copy
-        db = databaseBuilder.newGraphDatabase();
+        DatabaseManagementService managementService = databaseBuilder.newDatabaseManagementService();
+        db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             try ( Transaction tx = db.beginTx() )

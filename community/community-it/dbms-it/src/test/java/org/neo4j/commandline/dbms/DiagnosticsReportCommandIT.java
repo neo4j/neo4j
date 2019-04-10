@@ -37,6 +37,7 @@ import java.util.Collections;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.RealOutsideWorld;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.test.extension.Inject;
@@ -49,6 +50,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
 class DiagnosticsReportCommandIT
@@ -61,8 +63,9 @@ class DiagnosticsReportCommandIT
     @BeforeEach
     void setUp()
     {
-        database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
-                .newGraphDatabase();
+        DatabaseManagementService
+                managementService = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() ).newDatabaseManagementService();
+        database = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @AfterEach

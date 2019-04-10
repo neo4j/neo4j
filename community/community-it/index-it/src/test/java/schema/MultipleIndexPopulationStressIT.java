@@ -37,6 +37,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -78,6 +79,7 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.multi_threaded_schema_index_population_enabled;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
@@ -175,10 +177,10 @@ public class MultipleIndexPopulationStressIT
 
     private void populateDbAndIndexes( int nodeCount, boolean multiThreaded ) throws InterruptedException
     {
-        final GraphDatabaseService db = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( directory.databaseDir() )
-                .setConfig( multi_threaded_schema_index_population_enabled, multiThreaded + "" )
-                .newGraphDatabase();
+                .setConfig( multi_threaded_schema_index_population_enabled, multiThreaded + "" ).newDatabaseManagementService();
+        final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             createIndexes( db );
@@ -212,10 +214,10 @@ public class MultipleIndexPopulationStressIT
 
     private void dropIndexes()
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( directory.databaseDir() )
-                .setConfig( GraphDatabaseSettings.pagecache_memory, "8m" )
-                .newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.pagecache_memory, "8m" ).newDatabaseManagementService();
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
             for ( IndexDefinition index : db.schema().getIndexes() )

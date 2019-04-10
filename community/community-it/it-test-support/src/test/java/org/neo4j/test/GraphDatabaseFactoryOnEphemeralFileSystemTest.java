@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -39,6 +40,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 public class GraphDatabaseFactoryOnEphemeralFileSystemTest
@@ -53,7 +55,9 @@ public class GraphDatabaseFactoryOnEphemeralFileSystemTest
     @BeforeEach
     void createDb()
     {
-        db = createGraphDatabaseFactory().setFileSystem( fs ).newEmbeddedDatabaseBuilder( dir.storeDir() ).newGraphDatabase();
+        DatabaseManagementService managementService = createGraphDatabaseFactory().setFileSystem( fs )
+                .newEmbeddedDatabaseBuilder( dir.storeDir() ).newDatabaseManagementService();
+        db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     protected TestGraphDatabaseFactory createGraphDatabaseFactory()

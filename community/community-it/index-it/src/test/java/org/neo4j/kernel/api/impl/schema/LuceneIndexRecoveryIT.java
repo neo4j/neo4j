@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -54,6 +55,7 @@ import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asUniqueSet;
@@ -228,8 +230,9 @@ class LuceneIndexRecoveryIT
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs );
         factory.setExtensions( Collections.singletonList( indexProviderFactory ) );
-        db = (GraphDatabaseAPI) factory.newImpermanentDatabaseBuilder()
-                .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).newGraphDatabase();
+        DatabaseManagementService managementService = factory.newImpermanentDatabaseBuilder()
+                .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).newDatabaseManagementService();
+        db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private void killDb()

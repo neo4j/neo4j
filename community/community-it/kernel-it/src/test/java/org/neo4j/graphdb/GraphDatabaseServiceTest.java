@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.impl.MyRelTypes;
@@ -47,6 +48,7 @@ import static org.hamcrest.Matchers.iterableWithSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 public class GraphDatabaseServiceTest
 {
@@ -434,7 +436,8 @@ public class GraphDatabaseServiceTest
 
     private GraphDatabaseService getTemporaryDatabase()
     {
-        return new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( testDirectory.directory( "impermanent" ) )
-                .setConfig( GraphDatabaseSettings.shutdown_transaction_end_timeout, "10s" ).newGraphDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( testDirectory.directory( "impermanent" ) )
+                .setConfig( GraphDatabaseSettings.shutdown_transaction_end_timeout, "10s" ).newDatabaseManagementService();
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

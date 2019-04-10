@@ -33,6 +33,7 @@ import org.neo4j.batchinsert.BatchInserters;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
@@ -60,6 +61,7 @@ import org.neo4j.values.storable.Values;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -189,10 +191,10 @@ public class BatchInsertIndexTest
     {
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fileSystemRule.get() );
-        return factory.newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
+        DatabaseManagementService managementService = factory.newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
                 // Shouldn't be necessary to set dense node threshold since it's a stick config
-                .setConfig( config.getRaw() )
-                .newGraphDatabase();
+                .setConfig( config.getRaw() ).newDatabaseManagementService();
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private void awaitIndexesOnline( GraphDatabaseService db )

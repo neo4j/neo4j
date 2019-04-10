@@ -35,6 +35,7 @@ import java.util.function.Predicate;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -64,6 +65,7 @@ import org.neo4j.time.FakeClock;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 public class CommunityLockAcquisitionTimeoutIT
 {
@@ -87,11 +89,11 @@ public class CommunityLockAcquisitionTimeoutIT
     public static void setUp()
     {
         CustomClockFacadeFactory facadeFactory = new CustomClockFacadeFactory();
-        database = new CustomClockTestGraphDatabaseFactory( facadeFactory )
+        DatabaseManagementService managementService = new CustomClockTestGraphDatabaseFactory( facadeFactory )
                 .newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( GraphDatabaseSettings.lock_acquisition_timeout, "2s" )
-                .setConfig( "dbms.backup.enabled", "false" )
-                .newGraphDatabase();
+                .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
+        database = managementService.database( DEFAULT_DATABASE_NAME );
 
         createTestNode( marker );
     }

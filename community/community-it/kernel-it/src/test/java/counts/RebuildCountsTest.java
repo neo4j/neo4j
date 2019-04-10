@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -52,6 +53,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
@@ -222,12 +224,12 @@ class RebuildCountsTest
 
         fs.mkdirs( storeDir );
         TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
-        db = dbFactory.setUserLogProvider( userLogProvider )
+        DatabaseManagementService managementService = dbFactory.setUserLogProvider( userLogProvider )
                       .setInternalLogProvider( internalLogProvider )
                       .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                       .newImpermanentDatabaseBuilder( storeDir )
-                      .setConfig( index_background_sampling_enabled, "false" )
-                      .newGraphDatabase();
+                      .setConfig( index_background_sampling_enabled, "false" ).newDatabaseManagementService();
+        db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private void doCleanShutdown()

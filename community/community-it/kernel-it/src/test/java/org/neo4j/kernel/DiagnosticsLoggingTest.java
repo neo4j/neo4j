@@ -24,11 +24,14 @@ import org.junit.Test;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.CleanupRule;
+
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 public class DiagnosticsLoggingTest
 {
@@ -39,12 +42,11 @@ public class DiagnosticsLoggingTest
     public void shouldSeeExpectedDiagnostics()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        GraphDatabaseService db =
-                new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
                 .newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.dump_configuration, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.pagecache_memory, "4M" )
-                .newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.pagecache_memory, "4M" ).newDatabaseManagementService();
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         cleanupRule.add( db );
 
         // THEN we should have logged

@@ -39,6 +39,7 @@ import org.neo4j.consistency.statistics.DefaultCounts;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.statistics.VerboseStatistics;
 import org.neo4j.consistency.store.DirectStoreAccess;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -105,6 +106,7 @@ import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
 
 import static java.lang.System.currentTimeMillis;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
@@ -626,10 +628,10 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
         Applier()
         {
-            database = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                    .newEmbeddedDatabaseBuilder( directory.databaseDir() )
-                    .setConfig( "dbms.backup.enabled", "false" )
-                    .newGraphDatabase();
+            DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+                        .newEmbeddedDatabaseBuilder( directory.databaseDir() )
+                        .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
+            database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
             DependencyResolver dependencyResolver = database.getDependencyResolver();
 
             commitProcess = new TransactionRepresentationCommitProcess(
@@ -677,14 +679,17 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     private void generateInitialData()
     {
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.databaseDir() );
-        GraphDatabaseAPI graphDb = (GraphDatabaseAPI) builder
+        DatabaseManagementService managementService = builder
                 .setConfig( GraphDatabaseSettings.record_format, formatName )
                 // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
                 // tests and records around that. Those tests could change, but the simpler option is to just
                 // keep the block size to 60 and let them be.
                 .setConfig( GraphDatabaseSettings.label_block_size, "60" )
-                .setConfig( "dbms.backup.enabled", "false" )
-                .newGraphDatabase();
+                .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
+        // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
+        // tests and records around that. Those tests could change, but the simpler option is to just
+        // keep the block size to 60 and let them be.
+        GraphDatabaseAPI graphDb = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             generateInitialData( graphDb );

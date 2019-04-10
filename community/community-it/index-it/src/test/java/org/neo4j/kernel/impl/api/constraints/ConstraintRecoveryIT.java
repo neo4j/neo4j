@@ -91,10 +91,10 @@ class ConstraintRecoveryIT
         dbFactory.setMonitors( monitors );
 
         // This test relies on behaviour that is specific to the Lucene populator, where uniqueness is controlled
-        // after index has been populated, which is why we're using NATIVE30 and index string (they end up in Lucene)
-        db = (GraphDatabaseAPI) dbFactory.newImpermanentDatabaseBuilder( pathToDb )
-                .setConfig( default_schema_provider, NATIVE30.providerName() )
-                .newGraphDatabase();
+        // after index has been populated, which is why we're using NATIVE20 and index booleans (they end up in Lucene)
+        DatabaseManagementService managementService = dbFactory.newImpermanentDatabaseBuilder( pathToDb )
+                .setConfig( default_schema_provider, NATIVE30.providerName() ).newDatabaseManagementService();
+        db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -120,8 +120,8 @@ class ConstraintRecoveryIT
         // when
         dbFactory = new TestGraphDatabaseFactory();
         dbFactory.setFileSystem( storeInNeedOfRecovery[0] );
-        DatabaseManagementService managementService = dbFactory.newImpermanentService( pathToDb );
-        db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        DatabaseManagementService secondManagementService = dbFactory.newImpermanentService( pathToDb );
+        db = (GraphDatabaseAPI) secondManagementService.database( DEFAULT_DATABASE_NAME );
 
         // then
         try ( Transaction ignore = db.beginTx() )

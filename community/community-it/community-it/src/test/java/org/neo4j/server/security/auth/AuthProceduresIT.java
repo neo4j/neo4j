@@ -20,7 +20,6 @@
 package org.neo4j.server.security.auth;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,6 +35,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
@@ -55,7 +55,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -250,7 +249,8 @@ public class AuthProceduresIT
             .newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.auth_enabled, "true" );
 
-        return graphDatabaseFactory.newGraphDatabase();
+        DatabaseManagementService managementService = graphDatabaseFactory.newDatabaseManagementService();
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private void removePreviousAuthFile() throws IOException

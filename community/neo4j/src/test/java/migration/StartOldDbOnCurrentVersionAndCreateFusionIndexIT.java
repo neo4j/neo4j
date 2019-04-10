@@ -33,6 +33,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -72,6 +73,7 @@ import org.neo4j.values.storable.Values;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.helpers.ArrayUtil.concat;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.test.Unzip.unzip;
@@ -119,19 +121,23 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
 
         builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.LUCENE10.providerName() );
-        GraphDatabaseService db = builder.newGraphDatabase();
+        DatabaseManagementService managementService3 = builder.newDatabaseManagementService();
+        GraphDatabaseService db = managementService3.database( DEFAULT_DATABASE_NAME );
         createIndexDataAndShutdown( db, Provider.LUCENE_10.label );
 
         builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE10.providerName() );
-        db = builder.newGraphDatabase();
+        DatabaseManagementService managementService2 = builder.newDatabaseManagementService();
+        db = managementService2.database( DEFAULT_DATABASE_NAME );
         createIndexDataAndShutdown( db, Provider.FUSION_10.label );
 
         builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() );
-        db = builder.newGraphDatabase();
+        DatabaseManagementService managementService1 = builder.newDatabaseManagementService();
+        db = managementService1.database( DEFAULT_DATABASE_NAME );
         createIndexDataAndShutdown( db, Provider.FUSION_20.label );
 
         builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName() );
-        db = builder.newGraphDatabase();
+        DatabaseManagementService managementService = builder.newDatabaseManagementService();
+        db = managementService.database( DEFAULT_DATABASE_NAME );
         createIndexDataAndShutdown( db, Provider.BTREE_10.label );
         System.out.println( "Db created in " + storeDir.getAbsolutePath() );
     }
@@ -214,11 +220,11 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     {
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( indexRecoveryTracker );
-        return (GraphDatabaseAPI) new GraphDatabaseFactory()
+        DatabaseManagementService managementService = new GraphDatabaseFactory()
                 .setMonitors( monitors )
                 .newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
-                .newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE ).newDatabaseManagementService();
+        return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private void verifyInitialState( IndexRecoveryTracker indexRecoveryTracker, int expectedNumberOfIndexes, InternalIndexState expectedInitialState )

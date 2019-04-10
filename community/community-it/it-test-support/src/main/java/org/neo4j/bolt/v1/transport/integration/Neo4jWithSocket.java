@@ -34,6 +34,7 @@ import java.util.function.Supplier;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 
 public class Neo4jWithSocket extends ExternalResource
@@ -167,8 +169,9 @@ public class Neo4jWithSocket extends ExternalResource
         Map<String,String> settings = configure( overrideSettingsFunction );
         File storeDir = new File( workingDirectory, "storeDir" );
         graphDatabaseFactory.setFileSystem( fileSystemProvider.get() );
-        gdb = graphDatabaseFactory.newImpermanentDatabaseBuilder( storeDir ).
-                setConfig( settings ).newGraphDatabase();
+        DatabaseManagementService managementService = graphDatabaseFactory.newImpermanentDatabaseBuilder( storeDir ).
+                setConfig( settings ).newDatabaseManagementService();
+        gdb = managementService.database( DEFAULT_DATABASE_NAME );
         connectorRegister =
                 ((GraphDatabaseAPI) gdb).getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
     }

@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -34,6 +35,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class StoreLockerLifecycleAdapterTest
@@ -66,8 +68,9 @@ public class StoreLockerLifecycleAdapterTest
         GraphDatabaseService db = newDb();
         try
         {
-            new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.databaseDir() )
-                    .setConfig( config ).newGraphDatabase();
+            DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.databaseDir() )
+                        .setConfig( config ).newDatabaseManagementService();
+            managementService.database( DEFAULT_DATABASE_NAME );
 
             fail();
         }

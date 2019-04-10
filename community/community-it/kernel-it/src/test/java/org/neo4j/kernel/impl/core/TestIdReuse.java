@@ -76,9 +76,9 @@ class TestIdReuse
 
     private void makeSureIdsGetsReused( File storeFile, Object value, int iterations )
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).
-            newImpermanentDatabaseBuilder( testDirectory.databaseDir() ).
-            newGraphDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).
+            newImpermanentDatabaseBuilder( testDirectory.databaseDir() ).newDatabaseManagementService();
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         for ( int i = 0; i < 5; i++ )
         {
             setAndRemoveSomeProperties( db, value );
@@ -86,8 +86,8 @@ class TestIdReuse
         db.shutdown();
         long sizeBefore = storeFile.length();
         DatabaseManagementService
-                managementService = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentService( testDirectory.databaseDir() );
-        db = managementService.database( DEFAULT_DATABASE_NAME );
+                impermanentManagement = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentService( testDirectory.databaseDir() );
+        db = impermanentManagement.database( DEFAULT_DATABASE_NAME );
         for ( int i = 0; i < iterations; i++ )
         {
             setAndRemoveSomeProperties( db, value );

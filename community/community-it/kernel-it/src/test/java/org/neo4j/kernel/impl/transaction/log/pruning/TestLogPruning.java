@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -48,6 +49,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 
 class TestLogPruning
@@ -176,7 +178,8 @@ class TestLogPruning
         gdf.setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) );
         GraphDatabaseBuilder builder = gdf.newImpermanentDatabaseBuilder();
         builder.setConfig( keep_logical_logs, logPruning );
-        this.db = (GraphDatabaseAPI) builder.newGraphDatabase();
+        DatabaseManagementService managementService = builder.newDatabaseManagementService();
+        this.db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         files = db.getDependencyResolver().resolveDependency( LogFiles.class );
         return db;
     }

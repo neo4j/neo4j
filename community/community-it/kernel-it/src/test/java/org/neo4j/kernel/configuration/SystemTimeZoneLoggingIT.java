@@ -31,12 +31,14 @@ import java.time.ZoneOffset;
 import java.util.TimeZone;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.logging.LogTimeZone;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 public class SystemTimeZoneLoggingIT
 {
@@ -63,8 +65,9 @@ public class SystemTimeZoneLoggingIT
         TimeZone.setDefault( TimeZone.getTimeZone( ZoneOffset.ofHours( hoursShift ) ) );
         File storeDir = testDirectory.storeDir( String.valueOf( hoursShift ) );
         File databaseDirectory = testDirectory.databaseLayout( storeDir ).databaseDirectory();
-        GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory )
-                .setConfig( GraphDatabaseSettings.db_timezone, LogTimeZone.SYSTEM.name() ).newGraphDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory )
+                .setConfig( GraphDatabaseSettings.db_timezone, LogTimeZone.SYSTEM.name() ).newDatabaseManagementService();
+        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         database.shutdown();
         Path databasePath = storeDir.toPath();
         Path debugLog = Paths.get( "logs", "debug.log" );

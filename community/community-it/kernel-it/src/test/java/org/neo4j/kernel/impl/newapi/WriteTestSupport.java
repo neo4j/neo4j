@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import java.io.File;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
@@ -30,6 +31,8 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 public class WriteTestSupport implements KernelAPIWriteTestSupport
 {
@@ -43,7 +46,8 @@ public class WriteTestSupport implements KernelAPIWriteTestSupport
 
     protected GraphDatabaseService newDb( File storeDir )
     {
-        return new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( storeDir ).newGraphDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( storeDir ).newDatabaseManagementService();
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @Override

@@ -39,6 +39,7 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -69,6 +70,7 @@ import static org.neo4j.configuration.Config.DEFAULT_CONFIG_FILE_NAME;
 import static org.neo4j.configuration.Config.fromFile;
 import static org.neo4j.configuration.ExternalSettings.initialHeapSize;
 import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
@@ -309,10 +311,9 @@ class MemoryRecommendationsCommandTest
         // Create one index for every provider that we have
         for ( SchemaIndex schemaIndex : SchemaIndex.values() )
         {
-            GraphDatabaseService db =
-                    new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseLayout.databaseDirectory() )
-                            .setConfig( default_schema_provider, schemaIndex.providerName() )
-                            .newGraphDatabase();
+            DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseLayout.databaseDirectory() )
+                                .setConfig( default_schema_provider, schemaIndex.providerName() ).newDatabaseManagementService();
+            GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             String key = "key-" + schemaIndex.name();
             try
             {

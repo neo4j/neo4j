@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -53,6 +54,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
@@ -85,11 +87,11 @@ public class IndexingServiceIntegrationTest
     public void setUp()
     {
         EphemeralFileSystemAbstraction fileSystem = fileSystemRule.get();
-        database = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( fileSystem )
                 .newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() )
-                .newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() ).newDatabaseManagementService();
+        database = managementService.database( DEFAULT_DATABASE_NAME );
         createData( database, 100 );
     }
 

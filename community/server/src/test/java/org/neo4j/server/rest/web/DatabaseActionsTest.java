@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -71,6 +72,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.helpers.collection.Iterables.single;
@@ -93,9 +95,9 @@ public class DatabaseActionsTest
     @BeforeClass
     public static void createDb()
     {
-        graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
-                .newGraphDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+                .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" ).newDatabaseManagementService();
+        graph = (GraphDatabaseFacade) managementService.database( DEFAULT_DATABASE_NAME );
         database = new WrappedDatabase( graph );
         graphdbHelper = new GraphDbHelper( database );
         actions = new TransactionWrappedDatabaseActions( database.getGraph() );

@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -46,6 +47,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.configuration.LayoutConfig.of;
@@ -174,11 +176,11 @@ class RecoveryRequiredCheckerTest
 
             assertThat( recoveryChecker.isRecoveryRequiredAt( testDirectory.databaseLayout( of( config ) ) ), is( true ) );
 
-            new TestGraphDatabaseFactory()
-                    .setFileSystem( ephemeralFs )
-                    .newEmbeddedDatabaseBuilder( storeDir )
-                    .setConfig( config.getRaw() )
-                    .newGraphDatabase()
+            DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+                        .setFileSystem( ephemeralFs )
+                        .newEmbeddedDatabaseBuilder( storeDir )
+                        .setConfig( config.getRaw() ).newDatabaseManagementService();
+            managementService.database( DEFAULT_DATABASE_NAME )
                     .shutdown();
 
             assertThat( recoveryChecker.isRecoveryRequiredAt( databaseLayout ), is( false ) );
@@ -214,11 +216,11 @@ class RecoveryRequiredCheckerTest
     {
         try ( EphemeralFileSystemAbstraction ephemeralFs = new EphemeralFileSystemAbstraction() )
         {
-            final GraphDatabaseService db = new TestGraphDatabaseFactory()
-                    .setFileSystem( ephemeralFs )
-                    .newEmbeddedDatabaseBuilder( store )
-                    .setConfig( config.getRaw() )
-                    .newGraphDatabase();
+            DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+                        .setFileSystem( ephemeralFs )
+                        .newEmbeddedDatabaseBuilder( store )
+                        .setConfig( config.getRaw() ).newDatabaseManagementService();
+            final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
             try ( Transaction tx = db.beginTx() )
             {

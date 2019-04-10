@@ -31,6 +31,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -55,6 +56,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 public class QueryRestartIT
 {
@@ -148,10 +150,10 @@ public class QueryRestartIT
 
     private GraphDatabaseService startSnapshotQueryDb()
     {
-        return new CustomGraphDatabaseFactory( new CustomFacadeFactory() )
+        DatabaseManagementService managementService = new CustomGraphDatabaseFactory( new CustomFacadeFactory() )
                 .newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( GraphDatabaseSettings.snapshot_query, Settings.TRUE )
-                .newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.snapshot_query, Settings.TRUE ).newDatabaseManagementService();
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private void createData()

@@ -32,6 +32,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -50,6 +51,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.ByteUnit.bytesToString;
 
 public class KernelDiagnosticsIT
@@ -85,10 +87,10 @@ public class KernelDiagnosticsIT
 
     private void createIndexInIsolatedDbInstance( File storeDir, GraphDatabaseSettings.SchemaIndex index )
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( GraphDatabaseSettings.default_schema_provider, index.providerName() )
-                .newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.default_schema_provider, index.providerName() ).newDatabaseManagementService();
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             Label label = Label.label( "Label-" + index.providerName() );

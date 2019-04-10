@@ -115,10 +115,10 @@ class ManyPropertyKeysIT
 
     private GraphDatabaseAPI database()
     {
-        return (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( testDirectory.databaseDir() )
-                .setConfig( GraphDatabaseSettings.fail_on_missing_files, Settings.FALSE )
-                .newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.fail_on_missing_files, Settings.FALSE ).newDatabaseManagementService();
+        return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount )

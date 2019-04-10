@@ -264,8 +264,9 @@ class DatabaseRecoveryIT
             adversary.disable();
 
             File databaseDir = directory.databaseDir();
-            GraphDatabaseService db =
-                    AdversarialPageCacheGraphDatabaseFactory.create( fileSystem, adversary ).newEmbeddedDatabaseBuilder( databaseDir ).newGraphDatabase();
+            DatabaseManagementService managementService = AdversarialPageCacheGraphDatabaseFactory.create( fileSystem, adversary )
+                    .newEmbeddedDatabaseBuilder( databaseDir ).newDatabaseManagementService();
+            GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             try
             {
                 try ( Transaction tx = db.beginTx() )
@@ -816,12 +817,12 @@ class DatabaseRecoveryIT
 
     private static GraphDatabaseAPI startDatabase( File storeDir, EphemeralFileSystemAbstraction fs, UpdateCapturingIndexProvider indexProvider )
     {
-        return (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( fs )
                 .setExtensions( singletonList( new IndexExtensionFactory( indexProvider ) ) )
                 .newImpermanentDatabaseBuilder( storeDir )
-                .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() )
-                .newGraphDatabase();
+                .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() ).newDatabaseManagementService();
+        return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private GraphDatabaseService startDatabase( File storeDir )

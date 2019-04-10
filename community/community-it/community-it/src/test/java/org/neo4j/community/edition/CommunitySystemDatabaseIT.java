@@ -30,6 +30,7 @@ import java.io.IOException;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -76,7 +77,9 @@ class CommunitySystemDatabaseIT
     @BeforeEach
     void setUp()
     {
-        database = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.databaseDir() ).newGraphDatabase();
+        DatabaseManagementService
+                managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.databaseDir() ).newDatabaseManagementService();
+        database = managementService.database( DEFAULT_DATABASE_NAME );
         databaseManager = getDatabaseManager( database );
         defaultDb = getDatabaseByName( databaseManager, new DatabaseId( DEFAULT_DATABASE_NAME ) );
         systemDb = getDatabaseByName( databaseManager, new DatabaseId( SYSTEM_DATABASE_NAME ) );

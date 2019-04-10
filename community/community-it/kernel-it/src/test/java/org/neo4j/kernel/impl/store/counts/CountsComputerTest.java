@@ -27,6 +27,7 @@ import java.io.File;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -60,6 +61,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
@@ -89,7 +91,8 @@ class CountsComputerTest
     @Test
     void skipPopulationWhenNodeAndRelationshipStoresAreEmpty()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+        DatabaseManagementService managementService = dbBuilder.newDatabaseManagementService();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         long lastCommittedTransactionId = getLastTxId( db );
         db.shutdown();
 
@@ -104,7 +107,8 @@ class CountsComputerTest
     @Test
     void shouldCreateAnEmptyCountsStoreFromAnEmptyDatabase()
     {
-        final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+        DatabaseManagementService managementService = dbBuilder.newDatabaseManagementService();
+        final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         long lastCommittedTransactionId = getLastTxId( db );
         db.shutdown();
 
@@ -116,7 +120,8 @@ class CountsComputerTest
     @Test
     void shouldCreateACountsStoreWhenThereAreNodesInTheDB()
     {
-        final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+        DatabaseManagementService managementService = dbBuilder.newDatabaseManagementService();
+        final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode( Label.label( "A" ) );
@@ -146,7 +151,8 @@ class CountsComputerTest
     @Test
     void shouldCreateACountsStoreWhenThereAreUnusedNodeRecordsInTheDB()
     {
-        final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+        DatabaseManagementService managementService = dbBuilder.newDatabaseManagementService();
+        final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode( Label.label( "A" ) );
@@ -177,7 +183,8 @@ class CountsComputerTest
     @Test
     void shouldCreateACountsStoreWhenThereAreUnusedRelationshipRecordsInTheDB()
     {
-        final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+        DatabaseManagementService managementService = dbBuilder.newDatabaseManagementService();
+        final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
             Node nodeA = db.createNode( Label.label( "A" ) );
@@ -210,7 +217,8 @@ class CountsComputerTest
     @Test
     void shouldCreateACountsStoreWhenThereAreNodesAndRelationshipsInTheDB()
     {
-        final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+        DatabaseManagementService managementService = dbBuilder.newDatabaseManagementService();
+        final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
             Node nodeA = db.createNode( Label.label( "A" ) );
@@ -248,8 +256,9 @@ class CountsComputerTest
     @Test
     void shouldCreateACountStoreWhenDBContainsDenseNodes()
     {
-        final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.
-                setConfig( GraphDatabaseSettings.dense_node_threshold, "2" ).newGraphDatabase();
+        DatabaseManagementService managementService = dbBuilder.
+                setConfig( GraphDatabaseSettings.dense_node_threshold, "2" ).newDatabaseManagementService();
+        final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
             Node nodeA = db.createNode( Label.label( "A" ) );

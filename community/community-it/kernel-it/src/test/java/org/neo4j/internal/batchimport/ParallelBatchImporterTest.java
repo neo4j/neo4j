@@ -42,6 +42,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -83,6 +84,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
@@ -186,10 +188,10 @@ public class ParallelBatchImporterTest
                             NODE_COUNT * TOKENS.length / 2 ), groups ) );
 
             // THEN
-            GraphDatabaseService db = new TestGraphDatabaseFactory()
-                    .newEmbeddedDatabaseBuilder( databaseLayout.databaseDirectory() )
-                    .setConfig( "dbms.backup.enabled", "false" )
-                    .newGraphDatabase();
+            DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+                        .newEmbeddedDatabaseBuilder( databaseLayout.databaseDirectory() )
+                        .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
+            GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             try ( Transaction tx = db.beginTx() )
             {
                 inputIdGenerator.reset();

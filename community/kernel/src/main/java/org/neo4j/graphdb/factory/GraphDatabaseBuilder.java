@@ -200,18 +200,6 @@ public class GraphDatabaseBuilder
         return this;
     }
 
-    /**
-     * Create a new database with the configuration registered
-     * through the builder.
-     *
-     * @return an instance of GraphDatabaseService
-     */
-    public GraphDatabaseService newGraphDatabase()
-    {
-        DatabaseManagementService managementService = newDatabaseManagementService();
-        return managementService.database( getDefaultDatabaseName( managementService ) );
-    }
-
     private static String getDefaultDatabaseName( DatabaseManagementService managementService )
     {
         List<String> databases = managementService.listDatabases();

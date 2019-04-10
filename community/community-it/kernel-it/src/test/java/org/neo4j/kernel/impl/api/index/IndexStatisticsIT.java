@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -51,6 +52,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.token.TokenHolders;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.ArrayUtil.single;
@@ -219,11 +221,11 @@ public class IndexStatisticsIT
 
     private void startDb()
     {
-        db = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
                                            .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
                                            .newImpermanentDatabaseBuilder()
-                                           .setConfig( index_background_sampling_enabled, "false" )
-                                           .newGraphDatabase();
+                                           .setConfig( index_background_sampling_enabled, "false" ).newDatabaseManagementService();
+        db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     void restart()

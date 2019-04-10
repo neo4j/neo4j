@@ -58,6 +58,7 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.Settings.TRUE;
 import static org.neo4j.helpers.Exceptions.findCauseOrSuppressed;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
@@ -133,8 +134,9 @@ class DatabaseStartupTest
                     MetaDataStore.versionStringToLong( badStoreVersion ) );
         }
 
-        GraphDatabaseService databaseService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory )
-                .setConfig( GraphDatabaseSettings.allow_upgrade, TRUE ).newGraphDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, TRUE ).newDatabaseManagementService();
+        GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             assertThrows( TransactionFailureException.class, databaseService::beginTx );

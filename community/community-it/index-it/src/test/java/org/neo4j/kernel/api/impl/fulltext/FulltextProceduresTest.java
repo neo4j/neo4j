@@ -55,6 +55,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -95,6 +96,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.helpers.collection.Iterables.single;
 
 public class FulltextProceduresTest
@@ -2265,7 +2267,8 @@ public class FulltextProceduresTest
 
     private GraphDatabaseAPI createDatabase()
     {
-        return (GraphDatabaseAPI) cleanup.add( builder.newGraphDatabase() );
+        DatabaseManagementService managementService = builder.newDatabaseManagementService();
+        return (GraphDatabaseAPI) cleanup.add( managementService.database( DEFAULT_DATABASE_NAME ) );
     }
 
     private void awaitIndexesOnline()

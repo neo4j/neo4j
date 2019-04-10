@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.File;
 
 import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -47,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
 import static org.neo4j.configuration.Settings.TRUE;
@@ -101,10 +103,10 @@ class RecordFormatMigrationIT
         }
         database.shutdown();
 
-        GraphDatabaseService databaseService = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory )
+        DatabaseManagementService managementService = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory )
                 .setConfig( record_format, StandardV3_4.NAME )
-                .setConfig( allow_upgrade, TRUE )
-                .newGraphDatabase();
+                .setConfig( allow_upgrade, TRUE ).newDatabaseManagementService();
+        GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             DatabaseContext databaseContext = assertDefaultDatabaseFailed( databaseService );
@@ -185,8 +187,9 @@ class RecordFormatMigrationIT
 
     private static GraphDatabaseService startDatabaseWithFormatUnspecifiedUpgrade( File storeDir, String formatName )
     {
-        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( record_format, formatName ).newGraphDatabase();
+        DatabaseManagementService managementService = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
+                .setConfig( record_format, formatName ).newDatabaseManagementService();
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private DatabaseContext assertDefaultDatabaseFailed( GraphDatabaseService databaseService )
@@ -205,8 +208,9 @@ class RecordFormatMigrationIT
 
     static GraphDatabaseService startDatabaseWithFormat( File storeDir, String formatName )
     {
-        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
+        DatabaseManagementService managementService = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( record_format, formatName )
-                .setConfig( allow_upgrade, TRUE ).newGraphDatabase();
+                .setConfig( allow_upgrade, TRUE ).newDatabaseManagementService();
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

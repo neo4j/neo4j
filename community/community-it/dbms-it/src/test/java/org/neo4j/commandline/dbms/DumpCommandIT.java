@@ -47,6 +47,7 @@ import org.neo4j.commandline.admin.Usage;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.dbms.archive.Dumper;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -391,10 +392,10 @@ class DumpCommandIT
 
     private void putStoreInDirectory( Config config, Path databaseDirectory )
     {
-        new GraphDatabaseFactory()
+        DatabaseManagementService managementService = new GraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( databaseDirectory.toFile() )
-                .setConfig( config.getRaw() )
-                .newGraphDatabase()
+                .setConfig( config.getRaw() ).newDatabaseManagementService();
+        managementService.database( DEFAULT_DATABASE_NAME )
                 .shutdown();
     }
 

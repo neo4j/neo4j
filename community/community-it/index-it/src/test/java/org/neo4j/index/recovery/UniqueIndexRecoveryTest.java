@@ -30,7 +30,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -51,6 +50,8 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertFalse;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
 
 @RunWith( Parameterized.class )
@@ -140,8 +141,9 @@ public class UniqueIndexRecoveryTest
 
     private GraphDatabaseService newDb()
     {
-        return factory.newEmbeddedDatabaseBuilder( storeDir.absolutePath() ).setConfig( GraphDatabaseSettings.default_schema_provider,
-                schemaIndex.providerName() ).newGraphDatabase();
+        DatabaseManagementService managementService = factory.newEmbeddedDatabaseBuilder( storeDir.absolutePath() )
+                .setConfig( default_schema_provider, schemaIndex.providerName() ).newDatabaseManagementService();
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private static File snapshot( final File path ) throws IOException

@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -66,6 +67,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -180,7 +182,9 @@ public class IndexCRUDIT
         factory.setFileSystem( fs.get() );
         factory.setExtensions(
                 Collections.singletonList( mockedIndexProviderFactory ) );
-        db = (GraphDatabaseAPI) factory.newImpermanentDatabaseBuilder().setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).newGraphDatabase();
+        DatabaseManagementService managementService = factory.newImpermanentDatabaseBuilder()
+                .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).newDatabaseManagementService();
+        db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         ctxSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 

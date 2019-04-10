@@ -43,6 +43,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsVisitor;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -82,6 +83,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.impl.store.counts.FileVersion.INITIAL_MINOR_VERSION;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
@@ -120,7 +122,8 @@ public class CountsRotationTest
     public void shouldCreateEmptyCountsTrackerStoreWhenCreatingDatabase()
     {
         // GIVEN
-        GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+        DatabaseManagementService managementService = dbBuilder.newDatabaseManagementService();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
         // WHEN
         db.shutdown();
@@ -154,7 +157,8 @@ public class CountsRotationTest
             throws Throwable
     {
         // Given
-        dbBuilder.newGraphDatabase().shutdown();
+        DatabaseManagementService managementService = dbBuilder.newDatabaseManagementService();
+        managementService.database( DEFAULT_DATABASE_NAME ).shutdown();
         CountsTracker store = createCountsTracker( pageCache,
                 Config.defaults( GraphDatabaseSettings.counts_store_rotation_timeout, "100ms" ) );
         try ( Lifespan lifespan = new Lifespan( store ) )
@@ -184,7 +188,8 @@ public class CountsRotationTest
     public void rotationShouldNotCauseUnmappedFileProblem() throws IOException
     {
         // GIVEN
-        GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+        DatabaseManagementService managementService = dbBuilder.newDatabaseManagementService();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
         DependencyResolver resolver = db.getDependencyResolver();
         RecordStorageEngine storageEngine = resolver.resolveDependency( RecordStorageEngine.class );
@@ -235,7 +240,8 @@ public class CountsRotationTest
     public void shouldRotateCountsStoreWhenClosingTheDatabase()
     {
         // GIVEN
-        GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+        DatabaseManagementService managementService = dbBuilder.newDatabaseManagementService();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode( A );
@@ -265,7 +271,8 @@ public class CountsRotationTest
     public void shouldRotateCountsStoreWhenRotatingLog() throws IOException
     {
         // GIVEN
-        GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+        DatabaseManagementService managementService = dbBuilder.newDatabaseManagementService();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
         // WHEN doing a transaction (actually two, the label-mini-tx also counts)
         try ( Transaction tx = db.beginTx() )
@@ -325,9 +332,9 @@ public class CountsRotationTest
                 NodeStore.class );
         adversary.disable();
 
-        GraphDatabaseService db = AdversarialPageCacheGraphDatabaseFactory.create( fs, adversary )
-                .newEmbeddedDatabaseBuilder( testDir.databaseDir() )
-                .newGraphDatabase();
+        DatabaseManagementService managementService = AdversarialPageCacheGraphDatabaseFactory.create( fs, adversary )
+                .newEmbeddedDatabaseBuilder( testDir.databaseDir() ).newDatabaseManagementService();
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         CountDownLatch txStartLatch = new CountDownLatch( 1 );
         CountDownLatch txCommitLatch = new CountDownLatch( 1 );

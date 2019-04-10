@@ -28,6 +28,7 @@ import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.ObjectName;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.jmx.impl.JmxExtension;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -35,6 +36,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 public class DescriptionTest
 {
@@ -43,7 +45,8 @@ public class DescriptionTest
     @BeforeClass
     public static void startDb()
     {
-        graphdb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newDatabaseManagementService();
+        graphdb = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @AfterClass

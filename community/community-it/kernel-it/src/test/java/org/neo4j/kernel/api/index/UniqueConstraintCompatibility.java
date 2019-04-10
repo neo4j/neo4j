@@ -37,6 +37,7 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -58,6 +59,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.lock.LockService.LockType;
 
@@ -135,9 +137,9 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     {
         TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
         dbFactory.setExtensions( Collections.singletonList( new PredefinedIndexProviderFactory( indexProvider ) ) );
-        db = dbFactory.newImpermanentDatabaseBuilder( graphDbDir )
-                      .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() )
-                      .newGraphDatabase();
+        DatabaseManagementService managementService = dbFactory.newImpermanentDatabaseBuilder( graphDbDir )
+                      .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() ).newDatabaseManagementService();
+        db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @After

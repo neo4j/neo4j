@@ -26,6 +26,7 @@ import java.io.File;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -79,10 +80,10 @@ class GraphDatabaseFactoryIT
         File factoryDir = testDirectory.databaseDir();
         File databasesDir = testDirectory.directory( "my_databases" );
 
-        GraphDatabaseService db = new GraphDatabaseFactory()
+        DatabaseManagementService managementService = new GraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( factoryDir )
-                .setConfig( databases_root_path, databasesDir.toString() )
-                .newGraphDatabase();
+                .setConfig( databases_root_path, databasesDir.toString() ).newDatabaseManagementService();
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             assertTrue( isEmptyOrNonExistingDirectory( fs, new File( factoryDir.getParent(), DEFAULT_DATABASE_NAME ) ) );

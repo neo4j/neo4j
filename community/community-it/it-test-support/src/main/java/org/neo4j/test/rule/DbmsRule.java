@@ -29,6 +29,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -61,6 +62,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StoreId;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public abstract class DbmsRule extends ExternalResource implements GraphDatabaseAPI
@@ -321,7 +323,8 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     {
         if ( database == null )
         {
-            database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
+            DatabaseManagementService managementService = databaseBuilder.newDatabaseManagementService();
+            database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
             databaseLayout = database.databaseLayout();
             statementSupplier = resolveDependency( ThreadToStatementContextBridge.class );
         }

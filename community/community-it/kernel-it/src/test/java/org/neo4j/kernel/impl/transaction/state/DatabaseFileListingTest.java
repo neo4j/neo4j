@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
@@ -55,6 +56,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 
 public class DatabaseFileListingTest
@@ -208,10 +210,10 @@ public class DatabaseFileListingTest
 
     private void verifyLogFilesWithCustomPathListing( String path ) throws IOException
     {
-        GraphDatabaseAPI graphDatabase = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( testDirectory.databaseDir( "customDb" ) )
-                .setConfig( GraphDatabaseSettings.transaction_logs_root_path, path )
-                .newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.transaction_logs_root_path, path ).newDatabaseManagementService();
+        GraphDatabaseAPI graphDatabase = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         Database database = graphDatabase.getDependencyResolver().resolveDependency( Database.class );
         LogFiles logFiles = graphDatabase.getDependencyResolver().resolveDependency( LogFiles.class );
         assertTrue( database.listStoreFiles( true ).stream()

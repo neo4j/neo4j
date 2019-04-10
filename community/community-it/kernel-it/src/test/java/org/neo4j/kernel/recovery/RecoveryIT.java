@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -340,10 +341,10 @@ class RecoveryIT
     @Test
     void startDatabaseWithRemovedMultipleTransactionLogFiles() throws Exception
     {
-        GraphDatabaseService database = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( directory.databaseDir() )
-                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" )
-                .newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" ).newDatabaseManagementService();
+        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         while ( countTransactionLogFiles() < 5 )
         {
             generateSomeData( database );
@@ -362,10 +363,10 @@ class RecoveryIT
     @Test
     void killAndStartDatabaseAfterTransactionLogsRemoval() throws Exception
     {
-        GraphDatabaseService database = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( directory.databaseDir() )
-                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" )
-                .newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" ).newDatabaseManagementService();
+        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         while ( countTransactionLogFiles() < 5 )
         {
             generateSomeData( database );
@@ -394,10 +395,10 @@ class RecoveryIT
     @Test
     void killAndStartDatabaseAfterTransactionLogsRemovalWithSeveralFilesWithoutCheckpoint() throws Exception
     {
-        GraphDatabaseService database = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( directory.databaseDir() )
-                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" )
-                .newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" ).newDatabaseManagementService();
+        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         while ( countTransactionLogFiles() < 5 )
         {
             generateSomeData( database );
@@ -425,10 +426,10 @@ class RecoveryIT
     @Test
     void startDatabaseAfterTransactionLogsRemovalAndKillAfterRecovery() throws Exception
     {
-        GraphDatabaseService database = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( directory.databaseDir() )
-                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" )
-                .newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" ).newDatabaseManagementService();
+        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         while ( countTransactionLogFiles() < 5 )
         {
             generateSomeData( database );
@@ -641,8 +642,9 @@ class RecoveryIT
 
     private GraphDatabaseService startDatabaseWithForcedRecovery()
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.databaseDir() )
-                .setConfig( fail_on_missing_files, FALSE ).newGraphDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.databaseDir() )
+                .setConfig( fail_on_missing_files, FALSE ).newDatabaseManagementService();
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private PageCache getDatabasePageCache( GraphDatabaseAPI databaseAPI )

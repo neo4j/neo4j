@@ -35,6 +35,7 @@ import java.util.Set;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -52,6 +53,7 @@ import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @RunWith( Parameterized.class )
 public class TestRelationshipCount
@@ -87,9 +89,9 @@ public class TestRelationshipCount
             {
                 db.shutdown();
             }
-            db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                    .setConfig( GraphDatabaseSettings.dense_node_threshold, String.valueOf( denseNodeThreshold ) )
-                    .newGraphDatabase();
+            DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+                        .setConfig( GraphDatabaseSettings.dense_node_threshold, String.valueOf( denseNodeThreshold ) ).newDatabaseManagementService();
+            db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         }
     }
 

@@ -96,16 +96,6 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return builder.newDatabaseManagementService();
     }
 
-    private void setConfig( Map<Setting<?>,String> config, GraphDatabaseBuilder builder )
-    {
-        for ( Map.Entry<Setting<?>,String> entry : config.entrySet() )
-        {
-            Setting<?> key = entry.getKey();
-            String value = entry.getValue();
-            builder.setConfig( key, value );
-        }
-    }
-
     public GraphDatabaseBuilder newImpermanentDatabaseBuilder()
     {
         return newImpermanentDatabaseBuilder( EPHEMERAL_PATH );
@@ -226,5 +216,15 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
     {
         return config -> new TestGraphDatabaseFacadeFactory( state, true ).newFacade( storeDir, config,
                 GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
+    }
+
+    private static void setConfig( Map<Setting<?>,String> config, GraphDatabaseBuilder builder )
+    {
+        for ( Map.Entry<Setting<?>,String> entry : config.entrySet() )
+        {
+            Setting<?> key = entry.getKey();
+            String value = entry.getValue();
+            builder.setConfig( key, value );
+        }
     }
 }

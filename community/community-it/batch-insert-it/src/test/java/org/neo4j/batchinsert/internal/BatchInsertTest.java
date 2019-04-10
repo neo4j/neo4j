@@ -47,6 +47,7 @@ import org.neo4j.batchinsert.BatchInserters;
 import org.neo4j.batchinsert.BatchRelationship;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -122,6 +123,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.hamcrest.MockitoHamcrest.argThat;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterables.single;
@@ -1414,10 +1416,10 @@ public class BatchInsertTest
         inserter.shutdown();
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fileSystemRule.get() );
-        return factory.newImpermanentDatabaseBuilder( localTestDirectory.databaseDir() )
+        DatabaseManagementService managementService = factory.newImpermanentDatabaseBuilder( localTestDirectory.databaseDir() )
                 // Shouldn't be necessary to set dense node threshold since it's a stick config
-                .setConfig( configuration() )
-                .newGraphDatabase();
+                .setConfig( configuration() ).newDatabaseManagementService();
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private LabelScanStore getLabelScanStore()

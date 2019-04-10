@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -70,11 +71,11 @@ class LogVersionUpgradeCheckerIT
         createGraphDbAndKillIt();
 
         // Try to start with upgrading disabled
-        final GraphDatabaseService db = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( fileSystem )
                 .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
-                .setConfig( allow_upgrade, FALSE )
-                .newGraphDatabase();
+                .setConfig( allow_upgrade, FALSE ).newDatabaseManagementService();
+        final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         db.shutdown();
     }
 
@@ -84,10 +85,10 @@ class LogVersionUpgradeCheckerIT
         createStoreWithLogEntryVersion( LogEntryVersion.V3_0_10 );
 
         // Try to start with upgrading disabled
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem )
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( fileSystem )
                                     .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
-                                    .setConfig( allow_upgrade, FALSE )
-                                    .newGraphDatabase();
+                                    .setConfig( allow_upgrade, FALSE ).newDatabaseManagementService();
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             DatabaseManager<?> databaseManager = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( DatabaseManager.class );
@@ -107,20 +108,20 @@ class LogVersionUpgradeCheckerIT
         createStoreWithLogEntryVersion( LogEntryVersion.V3_0_10 );
 
         // Try to start with upgrading enabled
-        final GraphDatabaseService db = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( fileSystem )
                 .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
-                .setConfig( allow_upgrade, TRUE )
-                .newGraphDatabase();
+                .setConfig( allow_upgrade, TRUE ).newDatabaseManagementService();
+        final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         db.shutdown();
     }
 
     private void createGraphDbAndKillIt()
     {
-        final GraphDatabaseService db = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( fileSystem )
-                .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
-                .newGraphDatabase();
+                .newImpermanentDatabaseBuilder( testDirectory.databaseDir() ).newDatabaseManagementService();
+        final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         try ( Transaction tx = db.beginTx() )
         {

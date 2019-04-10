@@ -25,12 +25,15 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 public class ReadTestSupport implements KernelAPIReadTestSupport
 {
@@ -47,7 +50,8 @@ public class ReadTestSupport implements KernelAPIReadTestSupport
     {
         GraphDatabaseBuilder graphDatabaseBuilder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( storeDir );
         settings.forEach( graphDatabaseBuilder::setConfig );
-        db = graphDatabaseBuilder.newGraphDatabase();
+        DatabaseManagementService managementService = graphDatabaseBuilder.newDatabaseManagementService();
+        db = managementService.database( DEFAULT_DATABASE_NAME );
         create.accept( db );
     }
 

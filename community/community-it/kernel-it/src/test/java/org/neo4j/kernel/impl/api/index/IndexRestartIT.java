@@ -27,6 +27,7 @@ import org.junit.Test;
 
 import java.util.Collections;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
@@ -42,6 +43,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
@@ -174,8 +176,9 @@ public class IndexRestartIT
             db.shutdown();
         }
 
-        db = factory.newImpermanentDatabaseBuilder()
-                    .setConfig( default_schema_provider, provider.getProviderDescriptor().name() ).newGraphDatabase();
+        DatabaseManagementService managementService = factory.newImpermanentDatabaseBuilder()
+                    .setConfig( default_schema_provider, provider.getProviderDescriptor().name() ).newDatabaseManagementService();
+        db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private void stopDb()

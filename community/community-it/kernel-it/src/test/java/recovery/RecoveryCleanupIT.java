@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -53,8 +54,8 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
@@ -68,6 +69,7 @@ import org.neo4j.values.storable.Values;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 
 @ExtendWith( TestDirectoryExtension.class )
@@ -302,7 +304,8 @@ class RecoveryCleanupIT
     {
         GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
         testSpecificConfig.forEach( builder::setConfig );
-        return builder.newGraphDatabase();
+        DatabaseManagementService managementService = builder.newDatabaseManagementService();
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private static Health databaseHealth( GraphDatabaseService db )
