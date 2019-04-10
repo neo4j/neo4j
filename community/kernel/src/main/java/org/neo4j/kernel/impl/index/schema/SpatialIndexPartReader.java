@@ -143,6 +143,13 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
                                 return null;
                             }
                         }
+
+                        @Override
+                        public void close()
+                        {
+                            super.close();
+                            propertyAccessor.close();
+                        }
                     };
             client.initialize( descriptor, progressor, new IndexQuery[0], IndexOrder.NONE, false, false );
         }
