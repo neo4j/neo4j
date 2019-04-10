@@ -215,8 +215,10 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       // Should only be allowed as part of an composite index:
       // "MATCH (n:User) WHERE n.foo = 'foo' AND exists(n.bar) RETURN n" with index on User(foo, bar)
       case predicate@AsPropertyScannable(scannable) if !arguments(scannable.ident) =>
-        IndexCompatiblePredicate(scannable.name, scannable.propertyKey, predicate, ExistenceQueryExpression(), CTAny,
-          exactPredicate = false, hints, argumentIds, solvesPredicate = scannable.solvesPredicate)
+        // scannable.expr is partialPredicate saying it solves exists() but not the predicate
+        val solvedPredicate = if (scannable.solvesPredicate) predicate else scannable.expr
+        IndexCompatiblePredicate(scannable.name, scannable.propertyKey, solvedPredicate, ExistenceQueryExpression(), CTAny,
+          exactPredicate = false, hints, argumentIds, solvesPredicate = true)
     }
   }
 
