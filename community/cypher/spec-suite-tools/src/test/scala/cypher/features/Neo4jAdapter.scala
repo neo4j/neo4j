@@ -20,7 +20,7 @@
 package cypher.features
 
 import cypher.features.Neo4jExceptionToExecutionFailed._
-import org.neo4j.configuration.GraphDatabaseSettings.cypher_hints_error
+import org.neo4j.configuration.GraphDatabaseSettings.{DEFAULT_DATABASE_NAME, cypher_hints_error}
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.config.Setting
@@ -42,7 +42,7 @@ object Neo4jAdapter {
   }
 
   private def createGraphDatabase(config: collection.Map[Setting[_], String], graphDatabaseFactory: TestGraphDatabaseFactory): GraphDatabaseCypherService = {
-    new GraphDatabaseCypherService(graphDatabaseFactory.newImpermanentDatabase(config.asJava))
+    new GraphDatabaseCypherService(graphDatabaseFactory.newImpermanentService(config.asJava).database(DEFAULT_DATABASE_NAME))
   }
 }
 

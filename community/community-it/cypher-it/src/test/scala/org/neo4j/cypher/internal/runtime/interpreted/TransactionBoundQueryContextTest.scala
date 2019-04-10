@@ -293,7 +293,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   private def startGraph(config:(Setting[_], String)) = {
     val configs = Map[Setting[_], String](config)
-    graphOps = new TestGraphDatabaseFactory().newImpermanentDatabase(configs.asJava)
+    graphOps = new TestGraphDatabaseFactory().newImpermanentService(configs.asJava).database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
   }
 

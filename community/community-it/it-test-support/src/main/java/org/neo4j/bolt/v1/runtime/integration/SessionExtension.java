@@ -37,7 +37,7 @@ import org.neo4j.bolt.security.auth.BasicAuthentication;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.IOUtils;
@@ -93,7 +93,8 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
     {
         Map<Setting<?>,String> configMap = new HashMap<>();
         configMap.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
-        gdb = (GraphDatabaseAPI) graphDatabaseFactory.newImpermanentDatabase( configMap );
+        DatabaseManagementService managementService = graphDatabaseFactory.newImpermanentService( configMap );
+        gdb = (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         DependencyResolver resolver = gdb.getDependencyResolver();
         Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),
                 resolver.resolveDependency( UserManagerSupplier.class ) );

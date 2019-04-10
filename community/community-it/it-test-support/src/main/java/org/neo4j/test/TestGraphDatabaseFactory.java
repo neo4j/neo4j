@@ -28,7 +28,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.dbms.database.DatabaseManagementService;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
@@ -82,11 +81,11 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return databaseBuilder.newDatabaseManagementService();
     }
 
-    public GraphDatabaseService newImpermanentDatabase( Map<Setting<?>,String> config )
+    public DatabaseManagementService newImpermanentService( Map<Setting<?>,String> config )
     {
         GraphDatabaseBuilder builder = newImpermanentDatabaseBuilder();
         setConfig( config, builder );
-        return builder.newGraphDatabase();
+        return builder.newDatabaseManagementService();
     }
 
     public DatabaseManagementService newImpermanentService( File storeDir , Map<Setting<?>,String> config )
