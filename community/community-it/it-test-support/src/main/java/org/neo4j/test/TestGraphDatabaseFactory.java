@@ -66,9 +66,10 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         setUserLogProvider( logProvider );
     }
 
-    public GraphDatabaseService newImpermanentDatabase()
+    public DatabaseManagementService newImpermanentService()
     {
-        return newImpermanentDatabaseBuilder().newGraphDatabase();
+        GraphDatabaseBuilder databaseBuilder = newImpermanentDatabaseBuilder();
+        return databaseBuilder.newDatabaseManagementService();
     }
 
     public DatabaseManagementService newImpermanentService( File storeDir )

@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.Kernel;
@@ -40,6 +41,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
@@ -54,7 +56,8 @@ public class CountsStoreRecoveryTest
     @Before
     public void before()
     {
-        db = databaseFactory( fsRule.get() ).newImpermanentDatabase();
+        DatabaseManagementService managementService = databaseFactory( fsRule.get() ).newImpermanentService();
+        db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @After
@@ -105,7 +108,8 @@ public class CountsStoreRecoveryTest
     {
         final GraphDatabaseService db1 = db;
         FileSystemAbstraction uncleanFs = fsRule.snapshot( db1::shutdown );
-        db = databaseFactory( uncleanFs ).newImpermanentDatabase();
+        DatabaseManagementService managementService = databaseFactory( uncleanFs ).newImpermanentService();
+        db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private void createNode( String label )

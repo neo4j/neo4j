@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -45,6 +46,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
@@ -58,7 +60,8 @@ class DefaultValueMapperTest
     @BeforeEach
     void setup()
     {
-        db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        db = managementService.database( DEFAULT_DATABASE_NAME );
         mapper = new DefaultValueMapper( (EmbeddedProxySPI) db );
     }
 

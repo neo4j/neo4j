@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -38,6 +39,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class PropertySettingStrategyTest
@@ -49,7 +51,8 @@ public class PropertySettingStrategyTest
     @BeforeClass
     public static void createDb()
     {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         propSetter = new PropertySettingStrategy( db );
     }
 

@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -33,6 +34,7 @@ import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
@@ -65,7 +67,8 @@ class LabelRecoveryTest
     void shouldRecoverNodeWithDynamicLabelRecords()
     {
         // GIVEN
-        database = new TestGraphDatabaseFactory().setFileSystem( filesystem ).newImpermanentDatabase();
+        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().setFileSystem( filesystem ).newImpermanentService();
+        database = managementService1.database( DEFAULT_DATABASE_NAME );
         Node node;
         Label[] labels = new Label[] { label( "a" ),
                 label( "b" ),
@@ -92,7 +95,8 @@ class LabelRecoveryTest
         }
         EphemeralFileSystemAbstraction snapshot = filesystem.snapshot();
         database.shutdown();
-        database = new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentService();
+        database = managementService.database( DEFAULT_DATABASE_NAME );
 
         // THEN
         try ( Transaction ignored = database.beginTx() )

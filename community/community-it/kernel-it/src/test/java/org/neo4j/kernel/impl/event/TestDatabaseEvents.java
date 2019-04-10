@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.event;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.DatabaseEventHandlerAdapter;
@@ -34,6 +35,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( TestDirectoryExtension.class )
 class TestDatabaseEvents
@@ -46,7 +48,8 @@ class TestDatabaseEvents
     @Test
     void testRegisterUnregisterHandlers()
     {
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        GraphDatabaseService graphDb = managementService.database( DEFAULT_DATABASE_NAME );
         DatabaseEventHandler handler1 = new DummyDatabaseEventHandler( RESOURCE1 )
         {
             @Override
@@ -83,7 +86,8 @@ class TestDatabaseEvents
     @Test
     void testShutdownEvents()
     {
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        GraphDatabaseService graphDb = managementService.database( DEFAULT_DATABASE_NAME );
         DummyDatabaseEventHandler handler1 = new DummyDatabaseEventHandler( RESOURCE1 )
         {
             @Override

@@ -33,6 +33,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdGenerator;
@@ -46,6 +47,8 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @AbstractNeo4jTestCase.RequiresPersistentGraphDatabase( false )
 public abstract class AbstractNeo4jTestCase
@@ -103,10 +106,10 @@ public abstract class AbstractNeo4jTestCase
             }
         }
 
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
         threadLocalGraphDb.set( (GraphDatabaseAPI) (requiresPersistentGraphDatabase ?
                                                     new TestGraphDatabaseFactory().newEmbeddedDatabase( getStorePath(
-                                                            "neo-test" ) ) :
-                                                    new TestGraphDatabaseFactory().newImpermanentDatabase()) );
+                                                            "neo-test" ) ) : managementService.database( DEFAULT_DATABASE_NAME )) );
     }
 
     public GraphDatabaseAPI getGraphDbAPI()

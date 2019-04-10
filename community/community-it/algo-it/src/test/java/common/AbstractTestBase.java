@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -34,6 +35,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 public abstract class AbstractTestBase
 {
@@ -42,7 +44,8 @@ public abstract class AbstractTestBase
     @BeforeClass
     public static void beforeSuite()
     {
-        graphdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        graphdb = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @AfterClass

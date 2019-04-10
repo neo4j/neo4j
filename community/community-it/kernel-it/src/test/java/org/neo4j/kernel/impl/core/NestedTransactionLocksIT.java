@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
@@ -39,6 +40,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 /**
  * Confirms that a nested {@link Transaction} can grab locks with its
@@ -52,7 +54,8 @@ public class NestedTransactionLocksIT
     @Before
     public void before()
     {
-        db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @After

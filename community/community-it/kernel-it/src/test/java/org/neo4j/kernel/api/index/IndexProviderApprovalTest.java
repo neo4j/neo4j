@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
@@ -46,6 +47,7 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.createIndex;
@@ -135,7 +137,8 @@ public abstract class IndexProviderApprovalTest
     @BeforeClass
     public static void init()
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         for ( TestValue value : TestValue.values() )
         {
             createNode( db, PROPERTY_KEY, value.value );

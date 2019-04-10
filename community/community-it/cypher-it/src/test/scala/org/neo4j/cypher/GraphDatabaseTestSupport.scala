@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import java.io.File
 
+import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.graphdb._
@@ -60,7 +61,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   protected def startGraphDatabase(storeDir: File): Unit = {
-    graphOps = graphDatabaseFactory().newImpermanentDatabase(storeDir)
+    graphOps = graphDatabaseFactory().newImpermanentService(storeDir).database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
   }
 

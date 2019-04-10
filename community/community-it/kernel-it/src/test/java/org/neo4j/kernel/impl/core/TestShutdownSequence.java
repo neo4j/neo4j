@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.DatabaseEventHandlerAdapter;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -32,6 +33,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 public class TestShutdownSequence
 {
@@ -40,7 +42,8 @@ public class TestShutdownSequence
     @Before
     public void createGraphDb()
     {
-        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        graphDb = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @Test

@@ -21,9 +21,13 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import java.util.concurrent.TimeUnit.SECONDS
 
+import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.spi.{IndexDescriptor, IndexLimitation, SlowContains}
 import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
+import org.neo4j.cypher.internal.v4_0.frontend.phases.devNullLogger
+import org.neo4j.cypher.internal.v4_0.util._
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{GraphDatabaseService, Label, RelationshipType}
 import org.neo4j.internal.kernel.api.Transaction.Type._
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
@@ -31,9 +35,6 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
-import org.neo4j.cypher.internal.v4_0.frontend.phases.devNullLogger
-import org.neo4j.cypher.internal.v4_0.util._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class TransactionBoundPlanContextTest extends CypherFunSuite {
 
@@ -46,7 +47,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
   }
 
   override protected def initTest(): Unit = {
-    database = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    database = new TestGraphDatabaseFactory().newImpermanentService().database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(database)
   }
 

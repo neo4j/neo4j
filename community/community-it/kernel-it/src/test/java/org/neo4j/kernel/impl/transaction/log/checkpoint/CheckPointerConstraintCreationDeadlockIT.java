@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -50,6 +51,7 @@ import org.neo4j.test.rule.VerboseTimeout;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
@@ -95,8 +97,9 @@ public class CheckPointerConstraintCreationDeadlockIT
     {
         List<TransactionRepresentation> transactions = createConstraintCreatingTransactions();
         Monitors monitors = new Monitors();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .setMonitors( monitors ).newImpermanentDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+                .setMonitors( monitors ).newImpermanentService();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         Barrier.Control controller = new Barrier.Control();
         boolean success = false;
         try
@@ -203,7 +206,8 @@ public class CheckPointerConstraintCreationDeadlockIT
 
     private static List<TransactionRepresentation> createConstraintCreatingTransactions() throws Exception
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             try ( Transaction tx = db.beginTx() )

@@ -19,14 +19,15 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
 
-import org.junit.Before;
-import org.junit.Test;
-
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -41,6 +42,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 public class StreamingJsonFormatTest
 {
@@ -57,7 +59,8 @@ public class StreamingJsonFormatTest
     @Test
     public void canFormatNode()
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction transaction = db.beginTx() )
         {
             final Node n = db.createNode();

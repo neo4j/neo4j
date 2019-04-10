@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.database.Database
 import org.neo4j.test.TestGraphDatabaseFactory
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.scalatest.BeforeAndAfterAll
 
 class LastCommittedTxIdProviderTest extends CypherFunSuite with BeforeAndAfterAll {
@@ -36,7 +37,7 @@ class LastCommittedTxIdProviderTest extends CypherFunSuite with BeforeAndAfterAl
   var lastCommittedTxIdProvider: LastCommittedTxIdProvider = _
 
   override protected def beforeAll(): Unit = {
-    graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    graph = new TestGraphDatabaseFactory().newImpermanentService().database(DEFAULT_DATABASE_NAME)
     db = new GraphDatabaseCypherService(graph)
     lastCommittedTxIdProvider = LastCommittedTxIdProvider(db)
   }

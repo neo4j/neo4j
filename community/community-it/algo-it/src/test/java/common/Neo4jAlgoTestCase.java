@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -43,6 +44,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 /**
  * Base class for test cases working on a NeoService. It sets up a NeoService
@@ -63,7 +65,8 @@ public abstract class Neo4jAlgoTestCase
     @BeforeClass
     public static void setUpGraphDb()
     {
-        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        graphDb = managementService.database( DEFAULT_DATABASE_NAME );
         graph = new SimpleGraphBuilder( graphDb, MyRelTypes.R1 );
     }
 

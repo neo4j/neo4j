@@ -78,7 +78,8 @@ class TestGraphProperties
     @Test
     void basicProperties()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
+        DatabaseManagementService managementService = factory.newImpermanentService();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         PropertyContainer graphProperties = properties( db );
         assertThat( graphProperties, inTx( db, not( hasProperty( "test" ) ) ) );
 
@@ -112,7 +113,8 @@ class TestGraphProperties
     @Test
     void getNonExistentGraphPropertyWithDefaultValue()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
+        DatabaseManagementService managementService = factory.newImpermanentService();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         PropertyContainer graphProperties = properties( db );
         Transaction tx = db.beginTx();
         assertEquals( "default", graphProperties.getProperty( "test", "default" ) );
@@ -124,7 +126,8 @@ class TestGraphProperties
     @Test
     void setManyGraphProperties()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
+        DatabaseManagementService managementService = factory.newImpermanentService();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
         Transaction tx = db.beginTx();
         Object[] values = new Object[]{10, "A string value", new float[]{1234.567F, 7654.321F},
@@ -151,7 +154,8 @@ class TestGraphProperties
     @Test
     void setBigArrayGraphProperty()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
+        DatabaseManagementService managementService = factory.newImpermanentService();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         long[] array = new long[1000];
         for ( int i = 0; i < 10; i++ )
         {
@@ -207,7 +211,8 @@ class TestGraphProperties
     @Test
     void graphPropertiesAreLockedPerTx() throws Exception
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
+        DatabaseManagementService managementService = factory.newImpermanentService();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
         Worker worker1 = new Worker( "W1", new State( db ) );
         Worker worker2 = new Worker( "W2", new State( db ) );
@@ -269,7 +274,8 @@ class TestGraphProperties
     @Test
     void testEquals()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
+        DatabaseManagementService managementService1 = factory.newImpermanentService();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
         PropertyContainer graphProperties = properties( db );
         try ( Transaction tx = db.beginTx() )
         {
@@ -279,7 +285,8 @@ class TestGraphProperties
 
         assertEquals( graphProperties, properties( db ) );
         db.shutdown();
-        db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
+        DatabaseManagementService managementService = factory.newImpermanentService();
+        db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         assertNotEquals( graphProperties, properties( db ) );
         db.shutdown();
     }
@@ -287,7 +294,8 @@ class TestGraphProperties
     @Test
     void shouldBeAbleToCreateLongGraphPropertyChainsAndReadTheCorrectNextPointerFromTheStore()
     {
-        GraphDatabaseService database = factory.newImpermanentDatabase();
+        DatabaseManagementService managementService = factory.newImpermanentService();
+        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
 
         PropertyContainer graphProperties = properties( (GraphDatabaseAPI) database );
 

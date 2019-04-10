@@ -27,6 +27,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -38,6 +39,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertThat;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterators.loop;
@@ -175,9 +177,9 @@ public class SchemaIndexAcceptanceTest
 
     private GraphDatabaseService newDb()
     {
-        return new TestGraphDatabaseFactory()
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fsRule.get() ) )
-                .newImpermanentDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fsRule.get() ) ).newImpermanentService();
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private void crashAndRestart() throws Exception

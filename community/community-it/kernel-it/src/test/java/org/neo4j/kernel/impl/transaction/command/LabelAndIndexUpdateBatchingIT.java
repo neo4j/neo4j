@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Visitor;
@@ -43,6 +44,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertNotNull;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
@@ -70,7 +72,8 @@ public class LabelAndIndexUpdateBatchingIT
 
         // a bunch of nodes (to have the index population later on to decide to use label scan for population)
         List<TransactionRepresentation> transactions;
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().newImpermanentService();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
         String nodeN = "our guy";
         String otherNode = "just to create the tokens";
         try
@@ -103,7 +106,8 @@ public class LabelAndIndexUpdateBatchingIT
             db.shutdown();
         }
 
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         TransactionCommitProcess commitProcess =
                 db.getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
         try

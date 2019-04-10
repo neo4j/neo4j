@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.cypher.internal.javacompat.ExecutionResult;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphalgo.impl.util.PathImpl;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -45,6 +46,7 @@ import static java.lang.System.lineSeparator;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 public class ExportTest
 {
@@ -55,7 +57,8 @@ public class ExportTest
     @Before
     public void setUp()
     {
-        gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        gdb = managementService.database( DEFAULT_DATABASE_NAME );
         tx = gdb.beginTx();
     }
 

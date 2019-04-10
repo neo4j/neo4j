@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -35,6 +36,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 class TestNeo4jApiExceptions
 {
@@ -44,7 +46,8 @@ class TestNeo4jApiExceptions
     @BeforeEach
     void init()
     {
-        graph = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        graph = managementService.database( DEFAULT_DATABASE_NAME );
         newTransaction();
     }
 

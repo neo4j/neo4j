@@ -33,6 +33,7 @@ import java.util.function.LongSupplier;
 import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -66,6 +67,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.helpers.collection.Iterables.asList;
@@ -204,7 +206,8 @@ public class LabelsAcceptanceTest
     public void oversteppingMaxNumberOfLabelsShouldFailGracefully()
     {
         // Given
-        GraphDatabaseService graphDatabase = new CustomLabelTestGraphDatabaseFactory().newImpermanentDatabase();
+        DatabaseManagementService managementService = ((TestGraphDatabaseFactory) new CustomLabelTestGraphDatabaseFactory()).newImpermanentService();
+        GraphDatabaseService graphDatabase = managementService.database( DEFAULT_DATABASE_NAME );
 
         // When
         try ( Transaction tx = graphDatabase.beginTx() )

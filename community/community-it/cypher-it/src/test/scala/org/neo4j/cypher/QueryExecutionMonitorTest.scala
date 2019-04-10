@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
+import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
@@ -193,7 +194,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
   var engine: ExecutionEngine = _
 
   override protected def beforeEach(): Unit = {
-    db = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
+    db = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentService().database(DEFAULT_DATABASE_NAME))
     monitor = mock[QueryExecutionMonitor]
     val monitors = db.getDependencyResolver.resolveDependency(classOf[Monitors])
     monitors.addMonitorListener(monitor)

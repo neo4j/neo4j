@@ -25,6 +25,7 @@ import org.hamcrest.Matchers.greaterThan
 import org.junit.Assert.assertThat
 import org.mockito.Mockito._
 import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
@@ -66,7 +67,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   override def beforeEach() {
     super.beforeEach()
-    graphOps = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    graphOps = new TestGraphDatabaseFactory().newImpermanentService().database(DEFAULT_DATABASE_NAME)
     graph = new javacompat.GraphDatabaseCypherService(graphOps)
     valueMapper = new DefaultValueMapper(mock[GraphDatabaseFacade])
     outerTx = mock[InternalTransaction]

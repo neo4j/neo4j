@@ -23,10 +23,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class CypherLoggingTest
@@ -38,7 +40,8 @@ public class CypherLoggingTest
     @Before
     public void setUp()
     {
-        database = new TestGraphDatabaseFactory().setUserLogProvider( logProvider ).newImpermanentDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setUserLogProvider( logProvider ).newImpermanentService();
+        database = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @After
