@@ -187,8 +187,13 @@ public class ThreadingRule extends ExternalResource
             {
                 if ( thread.getState() == Thread.State.WAITING || thread.getState() == Thread.State.TIMED_WAITING )
                 {
-                    return StackWalker.getInstance().walk( s -> s.filter(
-                            frame -> frame.getClassName().equals( owner.getName() ) && frame.getMethodName().equals( method ) ).findAny() ).isPresent();
+                    for ( StackTraceElement element : thread.getStackTrace() )
+                    {
+                        if ( element.getClassName().equals( owner.getName() ) && element.getMethodName().equals( method ) )
+                        {
+                            return true;
+                        }
+                    }
                 }
                 return false;
             }
