@@ -73,6 +73,7 @@ object QueryStateHelper extends MockitoSugar {
     try {
       f(queryState)
     } finally {
+      queryState.close()
       queryState.query.transactionalContext.close(true)
     }
 
