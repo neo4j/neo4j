@@ -45,23 +45,15 @@ public abstract class AbstractAdversary implements Adversary
     {
         int choice = rng.nextInt( types.length );
         Class<? extends Throwable> type = types[choice];
-        Throwable throwable;
         try
         {
-            throwable = type.getDeclaredConstructor().newInstance();
+            adversaryException = type.getDeclaredConstructor().newInstance();
         }
         catch ( Exception e )
         {
             throw new AssertionError( new Exception( "Failed to instantiate failure", e ) );
         }
-        try
-        {
-            rethrow( throwable );
-        }
-        finally
-        {
-            adversaryException = throwable;
-        }
+        rethrow( adversaryException );
     }
 
     @Override
