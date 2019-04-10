@@ -28,11 +28,14 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.arguments.Arguments;
+import org.neo4j.commandline.arguments.OptionalBooleanArg;
+import org.neo4j.dbms.archive.CompressionFormat;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -57,9 +60,11 @@ import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitiali
 
 public class DumpCommand implements AdminCommand
 {
+    private static final String ARG_ZSTD = "zstd";
 
     private static final Arguments arguments = new Arguments()
             .withDatabase()
+            .withArgument( new OptionalBooleanArg( ARG_ZSTD, false, "Use Zstandard compression (might not be loadable by older versions of Neo4j)." ) )
             .withTo( "Destination (file or folder) of database dump." );
 
     private final Path homeDir;
@@ -144,7 +149,9 @@ public class DumpCommand implements AdminCommand
         try
         {
             File storeLockFile = databaseLayout.getStoreLayout().storeLockFile();
-            dumper.dump( databasePath, transactionalLogsDirectory, archive, path -> Objects.equals( path.getFileName().toString(), storeLockFile.getName() ) );
+            CompressionFormat format = arguments.getBoolean( ARG_ZSTD ) ? CompressionFormat.ZSTD : CompressionFormat.GZIP;
+            Predicate<Path> pathPredicate = path -> Objects.equals( path.getFileName().toString(), storeLockFile.getName() );
+            dumper.dump( databasePath, transactionalLogsDirectory, archive, format, pathPredicate );
         }
         catch ( FileAlreadyExistsException e )
         {

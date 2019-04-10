@@ -22,7 +22,6 @@ package org.neo4j.dbms.archive;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -121,15 +120,24 @@ public class Loader
     private static ArchiveInputStream openArchiveIn( Path archive ) throws IOException, IncorrectFormat
     {
         InputStream input = Files.newInputStream( archive );
-        GzipCompressorInputStream compressor;
+        InputStream compressor;
         try
         {
-            compressor = new GzipCompressorInputStream( input );
+            compressor = CompressionFormat.GZIP.decompress( input );
         }
         catch ( IOException e )
         {
-            input.close();
-            throw new IncorrectFormat( archive, e );
+            input.close(); // Reopen to reset file position.
+            input = Files.newInputStream( archive );
+            try
+            {
+                compressor = CompressionFormat.ZSTD.decompress( input );
+            }
+            catch ( IOException ex )
+            {
+                input.close();
+                throw new IncorrectFormat( archive, ex );
+            }
         }
         return new TarArchiveInputStream( compressor );
     }

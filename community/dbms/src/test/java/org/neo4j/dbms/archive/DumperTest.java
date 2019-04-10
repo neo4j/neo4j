@@ -41,6 +41,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.util.Collections.emptySet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.dbms.archive.CompressionFormat.GZIP;
 
 @ExtendWith( TestDirectoryExtension.class )
 class DumperTest
@@ -55,7 +56,7 @@ class DumperTest
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         Files.write( archive, new byte[0] );
         FileAlreadyExistsException exception =
-                assertThrows( FileAlreadyExistsException.class, () -> new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() ) );
+                assertThrows( FileAlreadyExistsException.class, () -> new Dumper().dump( directory, directory, archive, GZIP, Predicates.alwaysFalse() ) );
         assertEquals( archive.toString(), exception.getMessage() );
     }
 
@@ -65,7 +66,7 @@ class DumperTest
         Path directory = testDirectory.file( "a-directory" ).toPath();
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         NoSuchFileException exception =
-                assertThrows( NoSuchFileException.class, () -> new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() ) );
+                assertThrows( NoSuchFileException.class, () -> new Dumper().dump( directory, directory, archive, GZIP, Predicates.alwaysFalse() ) );
         assertEquals( directory.toString(), exception.getMessage() );
     }
 
@@ -75,7 +76,7 @@ class DumperTest
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Path archive = testDirectory.file( "subdir/the-archive.dump" ).toPath();
         NoSuchFileException exception =
-                assertThrows( NoSuchFileException.class, () -> new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() ) );
+                assertThrows( NoSuchFileException.class, () -> new Dumper().dump( directory, directory, archive, GZIP, Predicates.alwaysFalse() ) );
         assertEquals( archive.getParent().toString(), exception.getMessage() );
     }
 
@@ -86,7 +87,7 @@ class DumperTest
         Path archive = testDirectory.file( "subdir/the-archive.dump" ).toPath();
         Files.write( archive.getParent(), new byte[0] );
         FileSystemException exception =
-                assertThrows( FileSystemException.class, () -> new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() ) );
+                assertThrows( FileSystemException.class, () -> new Dumper().dump( directory, directory, archive, GZIP, Predicates.alwaysFalse() ) );
         assertEquals( archive.getParent().toString() + ": Not a directory", exception.getMessage() );
     }
 
@@ -100,7 +101,7 @@ class DumperTest
         try ( Closeable ignored = TestUtils.withPermissions( archive.getParent(), emptySet() ) )
         {
             AccessDeniedException exception =
-                    assertThrows( AccessDeniedException.class, () -> new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() ) );
+                    assertThrows( AccessDeniedException.class, () -> new Dumper().dump( directory, directory, archive, GZIP, Predicates.alwaysFalse() ) );
             assertEquals( archive.getParent().toString(), exception.getMessage() );
         }
     }

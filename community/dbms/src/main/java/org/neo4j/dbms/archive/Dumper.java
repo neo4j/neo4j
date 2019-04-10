@@ -22,10 +22,10 @@ package org.neo4j.dbms.archive;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -46,11 +46,11 @@ import static org.neo4j.io.fs.FileVisitors.throwExceptions;
 
 public class Dumper
 {
-    public void dump( Path dbPath, Path transactionalLogsPath, Path archive, Predicate<Path> exclude )
+    public void dump( Path dbPath, Path transactionalLogsPath, Path archive, CompressionFormat format, Predicate<Path> exclude )
             throws IOException
     {
         checkWritableDirectory( archive.getParent() );
-        try ( ArchiveOutputStream stream = openArchiveOut( archive ) )
+        try ( ArchiveOutputStream stream = openArchiveOut( archive, format ) )
         {
             visitPath( dbPath, exclude, stream );
             if ( !Util.isSameOrChildPath( dbPath, transactionalLogsPath ) )
@@ -71,15 +71,14 @@ public class Dumper
                                                 justContinue() ) ) ) ) );
     }
 
-    private static ArchiveOutputStream openArchiveOut( Path archive ) throws IOException
+    private static ArchiveOutputStream openArchiveOut( Path archive, CompressionFormat format ) throws IOException
     {
         // StandardOpenOption.CREATE_NEW is important here because it atomically asserts that the file doesn't
         // exist as it is opened, avoiding a TOCTOU race condition which results in a security vulnerability. I
         // can't see a way to write a test to verify that we are using this option rather than just implementing
         // the check ourselves non-atomically.
-        TarArchiveOutputStream tarball =
-                new TarArchiveOutputStream( new GzipCompressorOutputStream(
-                        Files.newOutputStream( archive, StandardOpenOption.CREATE_NEW ) ) );
+        OutputStream out = Files.newOutputStream( archive, StandardOpenOption.CREATE_NEW );
+        TarArchiveOutputStream tarball = new TarArchiveOutputStream( format.compress( out ) ) ;
         tarball.setLongFileMode( TarArchiveOutputStream.LONGFILE_POSIX );
         tarball.setBigNumberMode( TarArchiveOutputStream.BIGNUMBER_POSIX );
         return tarball;
