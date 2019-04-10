@@ -108,24 +108,31 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         val label = config.labelsById(labelId)
-        config.indexes.filter(p => p._1 == label).map(p => newIndexDescriptor(p._1, p._2)).iterator
+        config.indexes.collect {
+          case (indexDef, indexType) if indexDef.label == label =>
+            newIndexDescriptor(indexDef, config.indexes(indexDef))
+        }.iterator
       }
 
       override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         val label = config.labelsById(labelId)
-        config.uniqueIndexes.filter(p => p._1 == label).map(p => newIndexDescriptor(p._1, p._2)).iterator
+        config.indexes.collect {
+          case (indexDef, indexType) if indexType.isUnique && indexDef.label == label =>
+            newIndexDescriptor(indexDef, config.indexes(indexDef))
+        }.iterator
       }
 
-      private def newIndexDescriptor(labelName: String, propertyKeys: Seq[String]) = {
+      private def newIndexDescriptor(indexDef: IndexDef, indexType: IndexType) = {
         // Our fake index either can always or never return property values
-        val canGetValue = if (config.indexesWithValues((labelName, propertyKeys))) CanGetValue else DoNotGetValue
-        val valueCapability: ValueCapability = _ => propertyKeys.map(_ => canGetValue)
-        val orderCapability: OrderCapability = _ => config.indexesWithOrdering.getOrElse((labelName, propertyKeys), IndexOrderCapability.NONE)
+        val canGetValue = if (indexType.withValues) CanGetValue else DoNotGetValue
+        val valueCapability: ValueCapability = _ => indexDef.propertyKeys.map(_ => canGetValue)
+        val orderCapability: OrderCapability = _ => indexType.withOrdering
         IndexDescriptor(
-          semanticTable.resolvedLabelNames(labelName),
-          propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_)),
+          semanticTable.resolvedLabelNames(indexDef.label),
+          indexDef.propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_)),
           valueCapability = valueCapability,
-          orderCapability = orderCapability
+          orderCapability = orderCapability,
+          isUnique = indexType.isUnique
         )
       }
 
@@ -135,18 +142,16 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       override def indexExistsForLabel(labelId: Int): Boolean = {
         val labelName = config.labelsById(labelId)
-        config.indexes.exists(_._1 == labelName) || config.uniqueIndexes.exists(_._1 == labelName)
+        config.indexes.keys.exists(_.label == labelName)
       }
 
       override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
-        config.indexes((labelName, propertyKey)) || config.uniqueIndexes((labelName, propertyKey))
+        config.indexes.contains(IndexDef(labelName, propertyKey))
 
-
-      override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
-        if (config.indexes((labelName, propertyKeys)) || config.uniqueIndexes((labelName, propertyKeys))) {
-          Some(newIndexDescriptor(labelName, propertyKeys))
-        } else
-          None
+      override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+        val indexDef = IndexDef(labelName, propertyKeys)
+        config.indexes.get(indexDef).map(indexType => newIndexDescriptor(indexDef, indexType))
+      }
 
       override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] =
         semanticTable.resolvedPropertyKeyNames.get(propertyKeyName).map(_.id)

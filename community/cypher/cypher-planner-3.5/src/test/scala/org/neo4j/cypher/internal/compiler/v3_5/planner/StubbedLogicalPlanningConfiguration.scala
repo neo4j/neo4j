@@ -48,36 +48,33 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
     override def hasParameters(expr: Expression): Boolean = ???
   }
 
-  var indexes: Set[(String, Seq[String])] = Set.empty
-  var uniqueIndexes: Set[(String, Seq[String])] = Set.empty
-  // A subset of indexes and uniqueIndexes
-  var indexesWithValues: Set[(String, Seq[String])] = Set.empty
-
-  var indexesWithOrdering: Map[(String, Seq[String]), IndexOrderCapability] = Map.empty
+  var indexes: Map[IndexDef, IndexType] = Map.empty
 
   var procedureSignatures: Set[ProcedureSignature] = Set.empty
 
-  lazy val labelsById: Map[Int, String] = (indexes ++ uniqueIndexes).map(_._1).zipWithIndex.map(_.swap).toMap
+  lazy val labelsById: Map[Int, String] = indexes.keys.map(_.label).zipWithIndex.map(_.swap).toMap
 
-  case class IndexModifier(label: String, properties: Seq[String]) {
+  case class IndexModifier(indexType: IndexType) {
     def providesValues(): IndexModifier = {
-      indexesWithValues = indexesWithValues + (label -> properties)
+      indexType.withValues = true
       this
     }
     def providesOrder(order: IndexOrderCapability): IndexModifier = {
-      indexesWithOrdering = indexesWithOrdering + ((label, properties) -> order)
+      indexType.withOrdering = order
       this
     }
   }
 
   def indexOn(label: String, properties: String*): IndexModifier = {
-    indexes = indexes + (label -> properties)
-    IndexModifier(label, properties)
+    val indexType = new IndexType()
+    indexes += IndexDef(label, properties) -> indexType
+    IndexModifier(indexType)
   }
 
   def uniqueIndexOn(label: String, properties: String*): IndexModifier = {
-    uniqueIndexes = uniqueIndexes + (label -> properties)
-    IndexModifier(label, properties)
+    val indexType = new IndexType(isUnique = true)
+    indexes += IndexDef(label, properties) -> indexType
+    IndexModifier(indexType)
   }
 
   def procedure(signature: ProcedureSignature): Unit = {

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{indexSeekLeafPlanner, mergeUniqueIndexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{indexSeekLeafPlanner, mergeUniqueIndexSeekLeafPlanner}
 import org.neo4j.cypher.internal.ir.v3_5.{Predicate, QueryGraph, InterestingOrder, Selections}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal.v3_5.ast._
@@ -60,7 +60,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     }
   }
 
-  test("does not plan index seek when there is a matching unique index") {
+  test("does plan unique index seek when the index is unique") {
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       addTypeToSemanticTable(lit42, CTInteger.invariant)
@@ -71,20 +71,9 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
 
       // then
-      resultPlans shouldBe empty
-    }
-  }
-
-  test("does not plan index seek when no unique index exist") {
-    new given {
-      addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(inPredicate, hasLabels)
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      // when
-      val resultPlans = uniqueIndexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
-
-      // then
-      resultPlans shouldBe empty
+      resultPlans.head should beLike {
+        case _: NodeUniqueIndexSeek => ()
+      }
     }
   }
 
@@ -292,7 +281,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = uniqueIndexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
 
       // then
       resultPlans should beLike {
@@ -309,7 +298,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = uniqueIndexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
 
       // then
       resultPlans should beLike {
@@ -326,7 +315,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       uniqueIndexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = uniqueIndexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
 
       // then
       resultPlans should beLike {
@@ -368,7 +357,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = uniqueIndexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
+      val resultPlans = indexSeekLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
 
       // then
       resultPlans should beLike {
