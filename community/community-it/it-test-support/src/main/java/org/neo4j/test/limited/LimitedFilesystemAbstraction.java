@@ -42,7 +42,7 @@ public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstractio
 {
     private volatile boolean outOfSpace;
 
-    LimitedFilesystemAbstraction( FileSystemAbstraction delegate )
+    public LimitedFilesystemAbstraction( FileSystemAbstraction delegate )
     {
         super( delegate );
     }
@@ -98,12 +98,12 @@ public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstractio
         super.renameFile( from, to, copyOptions );
     }
 
-    void runOutOfDiskSpace( boolean outOfSpace )
+    public void runOutOfDiskSpace( boolean outOfSpace )
     {
         this.outOfSpace = outOfSpace;
     }
 
-    void ensureHasSpace() throws IOException
+    public void ensureHasSpace() throws IOException
     {
         if ( outOfSpace )
         {

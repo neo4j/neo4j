@@ -25,9 +25,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -39,6 +38,6 @@ public class InMemoryGraphFactory implements GraphFactory
         File storeDir = new File( config.get( GraphDatabaseSettings.databases_root_path ), GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         config.augment( stringMap( GraphDatabaseSettings.ephemeral.name(), "true",
                 new BoltConnector( "bolt" ).listen_address.name(), "localhost:0" ) );
-        return new ImpermanentGraphDatabase( storeDir, config, GraphDatabaseDependencies.newDependencies( dependencies ) );
+        return (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( storeDir ).setConfig( "", "" ).newGraphDatabase();
     }
 }

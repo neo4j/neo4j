@@ -96,6 +96,17 @@ public class GraphDatabaseBuilder
     }
 
     /**
+     * Set database settings from provided config. All previously configured config options will be cleaned.
+     * @param config provided config
+     * @return the builder
+     */
+    public GraphDatabaseBuilder setConfig( Config config )
+    {
+        this.config = config.getRaw();
+        return this;
+    }
+
+    /**
      * Set an unvalidated configuration option.
      *
      * @param name Name of the setting

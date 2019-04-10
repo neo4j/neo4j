@@ -37,7 +37,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -47,8 +46,9 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -73,7 +73,7 @@ class RelationshipGroupStoreTest
     @Inject
     private TestDirectory testDirectory;
     private int defaultThreshold;
-    private ImpermanentGraphDatabase db;
+    private GraphDatabaseAPI db;
 
     @BeforeEach
     void before()
@@ -131,7 +131,9 @@ class RelationshipGroupStoreTest
 
     private void newDb( int denseNodeThreshold )
     {
-        db = new ImpermanentGraphDatabase( MapUtil.stringMap( "dbms.relationship_grouping_threshold", "" + denseNodeThreshold ) );
+        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+                .setConfig( GraphDatabaseSettings.dense_node_threshold, "" + denseNodeThreshold )
+                .newGraphDatabase();
         fs = db.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
     }
 

@@ -19,135 +19,123 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.LogVersionRepository;
-import org.neo4j.test.limited.LimitedFileSystemGraphDatabase;
-import org.neo4j.test.rule.CleanupRule;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
+import org.neo4j.test.limited.LimitedFilesystemAbstraction;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class RunOutOfDiskSpaceIT
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class RunOutOfDiskSpaceIT
 {
-    @Rule
-    public final CleanupRule cleanup = new CleanupRule();
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
+    @RegisterExtension
+    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    private LimitedFilesystemAbstraction limitedFs;
+    private GraphDatabaseAPI database;
+
+    @BeforeEach
+    void setUp()
+    {
+        limitedFs = new LimitedFilesystemAbstraction( new UncloseableDelegatingFileSystemAbstraction( testDirectory.getFileSystem() ) );
+        database = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( limitedFs ).newEmbeddedDatabase( testDirectory.storeDir() );
+    }
 
     @Test
-    public void shouldPropagateIOExceptions() throws Exception
+    void shouldPropagateIOExceptions() throws Exception
     {
-        // Given
-        TransactionFailureException exceptionThrown = null;
-
-        File storeDir = testDirectory.storeDir();
-        LimitedFileSystemGraphDatabase db = new LimitedFileSystemGraphDatabase( storeDir );
-
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = database.beginTx() )
         {
-            db.createNode();
+            database.createNode();
             tx.success();
         }
 
-        long logVersion = db.getDependencyResolver().resolveDependency( LogVersionRepository.class )
+        long logVersion = database.getDependencyResolver().resolveDependency( LogVersionRepository.class )
                             .getCurrentLogVersion();
 
-        db.runOutOfDiskSpaceNao();
+        limitedFs.runOutOfDiskSpace( true );
 
         // When
-        try ( Transaction tx = db.beginTx() )
+        TransactionFailureException exception = assertThrows( TransactionFailureException.class, () ->
         {
-            db.createNode();
-            tx.success();
-        }
-        catch ( TransactionFailureException e )
-        {
-            exceptionThrown = e;
-        }
-        finally
-        {
-            assertNotNull( "Expected tx finish to throw TransactionFailureException when filesystem is full.",
-                    exceptionThrown );
-            assertTrue( Exceptions.contains( exceptionThrown, IOException.class ) );
-        }
+            try ( Transaction tx = database.beginTx() )
+            {
+                database.createNode();
+                tx.success();
+            }
+        } );
+        assertTrue( Exceptions.contains( exception, IOException.class ) );
 
-        db.somehowGainMoreDiskSpace(); // to help shutting down the db
-        db.shutdown();
+        limitedFs.runOutOfDiskSpace( false ); // to help shutting down the db
+        database.shutdown();
 
-        PageCache pageCache = pageCacheRule.getPageCache( db.getFileSystem() );
+        PageCache pageCache = pageCacheExtension.getPageCache( limitedFs );
         File neoStore = testDirectory.databaseLayout().metadataStore();
         assertEquals( logVersion, MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION ) );
     }
 
     @Test
-    public void shouldStopDatabaseWhenOutOfDiskSpace() throws Exception
+    void shouldStopDatabaseWhenOutOfDiskSpace() throws Exception
     {
-        // Given
-        TransactionFailureException expectedCommitException = null;
-        TransactionFailureException expectedStartException = null;
-        File storeDir = testDirectory.absolutePath();
-        LimitedFileSystemGraphDatabase db = cleanup.add( new LimitedFileSystemGraphDatabase( storeDir ) );
-
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = database.beginTx() )
         {
-            db.createNode();
+            database.createNode();
             tx.success();
         }
 
-        long logVersion = db.getDependencyResolver().resolveDependency( LogVersionRepository.class )
+        long logVersion = database.getDependencyResolver().resolveDependency( LogVersionRepository.class )
                 .getCurrentLogVersion();
 
-        db.runOutOfDiskSpaceNao();
+        limitedFs.runOutOfDiskSpace( true );
 
-        try ( Transaction tx = db.beginTx() )
+        assertThrows( TransactionFailureException.class, () ->
         {
-            db.createNode();
-            tx.success();
-        }
-        catch ( TransactionFailureException e )
-        {
-            expectedCommitException = e;
-        }
-        finally
-        {
-            assertNotNull( "Expected tx finish to throw TransactionFailureException when filesystem is full.",
-                    expectedCommitException );
-        }
+            try ( Transaction tx = database.beginTx() )
+            {
+                database.createNode();
+                tx.success();
+            }
+        } );
 
         // When
-        try ( Transaction transaction = db.beginTx() )
+        assertThrows( TransactionFailureException.class, () ->
         {
-            fail( "Expected tx begin to throw TransactionFailureException when tx manager breaks." );
-        }
-        catch ( TransactionFailureException e )
-        {
-            expectedStartException = e;
-        }
-        finally
-        {
-            assertNotNull( "Expected tx begin to throw TransactionFailureException when tx manager breaks.",
-                    expectedStartException );
-        }
+            try ( Transaction transaction = database.beginTx() )
+            {
+                fail( "Expected tx begin to throw TransactionFailureException when tx manager breaks." );
+            }
+        } );
 
         // Then
-        db.somehowGainMoreDiskSpace(); // to help shutting down the db
-        db.shutdown();
+        limitedFs.runOutOfDiskSpace( false ); // to help shutting down the database
+        database.shutdown();
 
-        PageCache pageCache = pageCacheRule.getPageCache( db.getFileSystem() );
+        PageCache pageCache = pageCacheExtension.getPageCache( limitedFs );
         File neoStore = testDirectory.databaseLayout().metadataStore();
         assertEquals( logVersion, MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION ) );
     }
