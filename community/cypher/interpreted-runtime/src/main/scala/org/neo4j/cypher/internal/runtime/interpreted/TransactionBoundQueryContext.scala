@@ -190,7 +190,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
           case INCOMING => incomingCursor(cursors, cursor, types.orNull)
           case BOTH => allCursor(cursors, cursor, types.orNull)
         }
-        new RelationshipCursorIterator(selectionCursor)
+        resources.trace(selectionCursor)
+        val iterator = new RelationshipCursorIterator(selectionCursor)
+        resources.trace(iterator)
+        iterator
       }
     } finally {
       cursor.close()
@@ -968,7 +971,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  class RelationshipCursorIterator(selectionCursor: RelationshipSelectionCursor) extends RelationshipIterator {
+  class RelationshipCursorIterator(selectionCursor: RelationshipSelectionCursor) extends RelationshipIterator with AutoCloseable {
 
     import RelationshipCursorIterator.{NOT_INITIALIZED, NO_ID}
 
@@ -1015,6 +1018,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
       current
     }
+
+    override def close(): Unit = selectionCursor.close()
   }
 
   object RelationshipCursorIterator {
