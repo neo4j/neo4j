@@ -123,7 +123,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     public abstract boolean hasFullValuePrecision( IndexQuery... predicates );
 
     @Override
-    public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues )
+    public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor ignore, boolean needsValues )
     {
         KEY lowest = layout.newKey();
         lowest.initialize( Long.MIN_VALUE );
