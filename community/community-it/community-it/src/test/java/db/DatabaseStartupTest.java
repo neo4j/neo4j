@@ -28,6 +28,7 @@ import java.util.Optional;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -154,7 +155,8 @@ class DatabaseStartupTest
     void startTestDatabaseOnProvidedNonAbsoluteFile()
     {
         File directory = new File( "notAbsoluteDirectory" );
-        new TestGraphDatabaseFactory().newImpermanentDatabase( directory ).shutdown();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService( directory );
+        managementService.database( "notAbsoluteDirectory" ).shutdown();
     }
 
     @Test

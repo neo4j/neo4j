@@ -51,7 +51,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder.DatabaseCreator;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -130,6 +129,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
@@ -391,7 +391,8 @@ class DatabaseRecoveryIT
     {
         // given
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( directory.databaseDir() );
+        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentService( directory.databaseDir() );
+        GraphDatabaseService db = managementService1.database( DEFAULT_DATABASE_NAME );
         produceRandomGraphUpdates( db, 100 );
         checkPoint( db );
         EphemeralFileSystemAbstraction checkPointFs = fs.snapshot();
@@ -426,15 +427,15 @@ class DatabaseRecoveryIT
                 reversedFs.set( crashedFs.snapshot() );
             }
         } );
-        new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 {
                     // This nested constructing is done purely to be able to fish out GlobalModule
                     // (and its PageCache inside it). It would be great if this could be done in a prettier way.
 
                     @Override
-                    protected DatabaseCreator createImpermanentDatabaseCreator( File storeDir, TestGraphDatabaseFactoryState state )
+                    protected DatabaseCreator createImpermanentDatabaseCreator( File storeDir1, TestGraphDatabaseFactoryState state )
                     {
-                        return new GraphDatabaseBuilder.DatabaseCreator()
+                        return new DatabaseCreator()
                         {
 
                             @Override
@@ -443,22 +444,23 @@ class DatabaseRecoveryIT
                                 TestGraphDatabaseFacadeFactory factory = new TestGraphDatabaseFacadeFactory( state, true )
                                 {
                                     @Override
-                                    protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
+                                    protected GlobalModule createGlobalModule( File storeDir11, Config config, ExternalDependencies dependencies )
                                     {
-                                        GlobalModule globalModule = super.createGlobalModule( storeDir, config, dependencies );
+                                        GlobalModule globalModule = super.createGlobalModule( storeDir11, config, dependencies );
                                         // nice way of getting the page cache dependency before db is created, huh?
                                         pageCache.set( globalModule.getPageCache() );
                                         return globalModule;
                                     }
                                 };
-                                return factory.newFacade( storeDir, config, newDependencies( state.databaseDependencies() ) );
+                                return factory.newFacade( storeDir1, config, newDependencies( state.databaseDependencies() ) );
                             }
                         };
                     }
                 }
                 .setFileSystem( crashedFs )
-                .setMonitors( monitors )
-                .newImpermanentDatabase( directory.databaseDir() )
+                .setMonitors( monitors ).newImpermanentService( directory.databaseDir() );
+
+        managementService.database( DEFAULT_DATABASE_NAME )
                 .shutdown();
 
         // then

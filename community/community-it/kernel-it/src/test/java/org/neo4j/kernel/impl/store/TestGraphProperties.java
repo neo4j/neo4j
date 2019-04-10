@@ -26,6 +26,7 @@ import java.io.File;
 import java.util.concurrent.Future;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -51,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getPropertyKeys;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
@@ -176,7 +178,8 @@ class TestGraphProperties
     void firstRecordOtherThanZeroIfNotFirst()
     {
         File storeDir = testDirectory.databaseDir();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase( storeDir );
+        DatabaseManagementService managementService1 = factory.newImpermanentService( storeDir );
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         node.setProperty( "name", "Yo" );
@@ -184,7 +187,8 @@ class TestGraphProperties
         tx.close();
         db.shutdown();
 
-        db = (GraphDatabaseAPI) factory.newImpermanentDatabase( storeDir );
+        DatabaseManagementService managementService = factory.newImpermanentService( storeDir );
+        db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         tx = db.beginTx();
         properties( db ).setProperty( "test", "something" );
         tx.success();
@@ -253,9 +257,9 @@ class TestGraphProperties
         {
             try ( EphemeralFileSystemAbstraction snapshot2 = produceUncleanStore( snapshot, databaseDir ) )
             {
-                GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                        .setFileSystem( produceUncleanStore( snapshot2, databaseDir ) )
-                        .newImpermanentDatabase( databaseDir );
+                DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+                                .setFileSystem( produceUncleanStore( snapshot2, databaseDir ) ).newImpermanentService( databaseDir );
+                GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
                 assertThat( properties( db ), inTx( db, hasProperty( "prop" ).withValue( "Some value" ) ) );
                 db.shutdown();
             }
@@ -385,7 +389,8 @@ class TestGraphProperties
 
     private static EphemeralFileSystemAbstraction produceUncleanStore( EphemeralFileSystemAbstraction fileSystem, File storeDir )
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentService( storeDir );
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         node.setProperty( "name", "Something" );

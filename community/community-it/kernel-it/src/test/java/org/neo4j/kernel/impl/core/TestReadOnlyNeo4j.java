@@ -25,6 +25,7 @@ import org.junit.rules.RuleChain;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -42,6 +43,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
@@ -80,9 +82,9 @@ public class TestReadOnlyNeo4j
     private DbRepresentation createSomeData()
     {
         RelationshipType type = withName( "KNOWS" );
-        GraphDatabaseService db = new TestGraphDatabaseFactory()
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) )
-                .newImpermanentDatabase( testDirectory.databaseDir() );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) ).newImpermanentService( testDirectory.databaseDir() );
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
             Node prevNode = db.createNode();
@@ -103,7 +105,9 @@ public class TestReadOnlyNeo4j
     @Test
     public void testReadOnlyOperationsAndNoTransaction()
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( testDirectory.databaseDir() );
+        DatabaseManagementService
+                managementService = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentService( testDirectory.databaseDir() );
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         Transaction tx = db.beginTx();
         Node node1 = db.createNode();

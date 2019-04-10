@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -37,6 +38,7 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 class TestTxEntries
@@ -50,12 +52,14 @@ class TestTxEntries
     void testStartEntryWrittenOnceOnRollback()
     {
         File storeDir = testDirectory.databaseDir();
-        final GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( storeDir );
+        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentService( storeDir );
+        final GraphDatabaseService db = managementService1.database( DEFAULT_DATABASE_NAME );
         createSomeTransactions( db );
         EphemeralFileSystemAbstraction snapshot = fs.snapshot();
         db.shutdown();
 
-        new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase( storeDir ).shutdown();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentService( storeDir );
+        managementService.database( DEFAULT_DATABASE_NAME ).shutdown();
     }
 
     private void createSomeTransactions( GraphDatabaseService db )

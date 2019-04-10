@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -48,6 +49,7 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 class KernelRecoveryTest
@@ -107,9 +109,9 @@ class KernelRecoveryTest
 
     private GraphDatabaseService newDB( FileSystemAbstraction fs, String name )
     {
-        return new TestGraphDatabaseFactory()
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
-                .newImpermanentDatabase( testDirectory.directory( name ) );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) ).newImpermanentService( testDirectory.directory( name ) );
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private static long createNode( GraphDatabaseService db, String key, Object value )

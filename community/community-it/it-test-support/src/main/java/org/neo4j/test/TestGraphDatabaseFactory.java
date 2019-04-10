@@ -71,14 +71,14 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return newImpermanentDatabaseBuilder().newGraphDatabase();
     }
 
-    public GraphDatabaseService newImpermanentDatabase( File storeDir )
+    public DatabaseManagementService newImpermanentService( File storeDir )
     {
         File absoluteDirectory = storeDir.getAbsoluteFile();
         String parentAbsolutePath = absoluteDirectory.getParentFile().getAbsolutePath();
         GraphDatabaseBuilder databaseBuilder = newImpermanentDatabaseBuilder( absoluteDirectory );
         databaseBuilder.setConfig( GraphDatabaseSettings.default_database, absoluteDirectory.getName() );
         databaseBuilder.setConfig( GraphDatabaseSettings.databases_root_path, parentAbsolutePath );
-        return databaseBuilder.newGraphDatabase();
+        return databaseBuilder.newDatabaseManagementService();
     }
 
     public GraphDatabaseService newImpermanentDatabase( Map<Setting<?>,String> config )

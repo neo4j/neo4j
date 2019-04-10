@@ -26,6 +26,7 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -45,6 +46,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE20;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.helpers.collection.Iterables.single;
@@ -118,7 +120,8 @@ class ConstraintRecoveryIT
         // when
         dbFactory = new TestGraphDatabaseFactory();
         dbFactory.setFileSystem( storeInNeedOfRecovery[0] );
-        db = (GraphDatabaseAPI) dbFactory.newImpermanentDatabase( pathToDb );
+        DatabaseManagementService managementService = dbFactory.newImpermanentService( pathToDb );
+        db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
         // then
         try ( Transaction ignore = db.beginTx() )

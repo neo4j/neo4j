@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.exceptions.StoreFailureException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -65,8 +66,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 @PageCacheExtension
 class IdGeneratorTest
@@ -679,8 +680,8 @@ class IdGeneratorTest
 
     private GraphDatabaseService createTestDatabase( File storeDir )
     {
-        return new TestGraphDatabaseFactory()
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
-                .newImpermanentDatabase( storeDir );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) ).newImpermanentService( storeDir );
+        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

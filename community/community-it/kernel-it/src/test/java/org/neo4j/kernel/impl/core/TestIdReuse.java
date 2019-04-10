@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -36,6 +36,7 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 class TestIdReuse
@@ -84,7 +85,9 @@ class TestIdReuse
         }
         db.shutdown();
         long sizeBefore = storeFile.length();
-        db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( testDirectory.databaseDir() );
+        DatabaseManagementService
+                managementService = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentService( testDirectory.databaseDir() );
+        db = managementService.database( DEFAULT_DATABASE_NAME );
         for ( int i = 0; i < iterations; i++ )
         {
             setAndRemoveSomeProperties( db, value );
