@@ -37,11 +37,7 @@ trait LogicalPlanningConfiguration {
   def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel
   def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost]
   def graphStatistics: GraphStatistics
-  def indexes: Set[(String, Seq[String])]
-  def uniqueIndexes: Set[(String, Seq[String])]
-  // A subset of indexes and uniqueIndexes
-  def indexesWithValues: Set[(String, Seq[String])]
-  def indexesWithOrdering: Map[(String, Seq[String]), IndexOrderCapability]
+  def indexes: Map[IndexDef, IndexType]
   def constraints: Set[(String, Set[String])]
   def procedureSignatures: Set[ProcedureSignature]
   def labelCardinality: Map[String, Cardinality]
@@ -52,6 +48,11 @@ trait LogicalPlanningConfiguration {
   protected def mapCardinality(pf: PartialFunction[PlannerQuery, Double]): PartialFunction[PlannerQuery, Cardinality] = pf.andThen(Cardinality.apply)
 }
 
+case class IndexDef(label: String, propertyKeys: Seq[String])
+class IndexType(var isUnique: Boolean = false,
+                var withValues: Boolean = false,
+                var withOrdering: IndexOrderCapability = IndexOrderCapability.NONE)
+
 class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfiguration) extends LogicalPlanningConfiguration {
   override def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable = parent.updateSemanticTableWithTokens(in)
   override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel =
@@ -59,9 +60,6 @@ class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfigur
   override def costModel() = parent.costModel()
   override def graphStatistics = parent.graphStatistics
   override def indexes = parent.indexes
-  override def uniqueIndexes = parent.uniqueIndexes
-  override def indexesWithValues = parent.indexesWithValues
-  override def indexesWithOrdering: Map[(String, Seq[String]), IndexOrderCapability] = parent.indexesWithOrdering
   override def constraints: Set[(String, Set[String])] = parent.constraints
   override def labelCardinality = parent.labelCardinality
   override def knownLabels = parent.knownLabels
@@ -87,14 +85,11 @@ trait LogicalPlanningConfigurationAdHocSemanticTable {
       if (!table.resolvedPropertyKeyNames.contains(property))
         table.resolvedPropertyKeyNames.put(property, PropertyKeyId(table.resolvedPropertyKeyNames.size))
 
-    indexes.foreach { case (label, properties) =>
+    indexes.keys.foreach { case IndexDef(label, properties) =>
       addLabelIfUnknown(label)
-      properties.foreach(addPropertyKeyIfUnknown(_))
+      properties.foreach(addPropertyKeyIfUnknown)
     }
-    uniqueIndexes.foreach { case (label, properties) =>
-      addLabelIfUnknown(label)
-      properties.foreach(addPropertyKeyIfUnknown(_))
-    }
+
     labelCardinality.keys.foreach(addLabelIfUnknown)
     knownLabels.foreach(addLabelIfUnknown)
 

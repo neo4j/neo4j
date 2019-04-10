@@ -89,6 +89,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       case InternalIndexState.ONLINE =>
         val label = LabelId(reference.schema().getEntityTokenIds()(0))
         val properties = reference.properties().map(PropertyKeyId)
+        val isUnique = reference.isUnique
         val limitations = reference.limitations().map(kernelToCypher).toSet
         val orderCapability: OrderCapability = tps => {
            reference.orderCapability(tps.map(typeToValueCategory): _*) match {
@@ -113,7 +114,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
           // Also, ignore eventually consistent indexes. Those are for explicit querying via procesures.
           None
         } else {
-          Some(IndexDescriptor(label, properties, limitations, orderCapability, valueCapability))
+          Some(IndexDescriptor(label, properties, limitations, orderCapability, valueCapability, isUnique))
         }
       case _ => None
     }

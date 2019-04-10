@@ -56,6 +56,7 @@ object mergeUniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
   override def constructPlan(idName: String,
                              label: LabelToken,
                              properties: Seq[IndexedProperty],
+                             isUnique: Boolean,
                              valueExpr: QueryExpression[Expression],
                              hint: Option[UsingIndexHint],
                              argumentIds: Set[String],

@@ -31,9 +31,6 @@ object QueryPlannerConfiguration {
     idSeekLeafPlanner,
 
     // MATCH (n) WHERE n.prop IN ... RETURN n
-    uniqueIndexSeekLeafPlanner,
-
-    // MATCH (n) WHERE n.prop IN ... RETURN n
     indexSeekLeafPlanner,
 
     // MATCH (n) WHERE has(n.prop) RETURN n

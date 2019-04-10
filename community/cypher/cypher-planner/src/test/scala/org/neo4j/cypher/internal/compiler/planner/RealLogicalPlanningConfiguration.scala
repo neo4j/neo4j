@@ -35,6 +35,7 @@ case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerC
     new StatisticsBackedCardinalityModel(queryGraphCardinalityModel, evaluator)
   }
 
+  //noinspection ScalaUnnecessaryParentheses
   override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost] = {
     val model: Metrics.CostModel = CardinalityCostModel(cypherCompilerConfig)
     ({
@@ -43,10 +44,7 @@ case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerC
   }
 
   override def graphStatistics: GraphStatistics = HardcodedGraphStatistics
-  override def indexes: Set[(String, Seq[String])] = Set.empty
-  override def uniqueIndexes: Set[(String, Seq[String])] = Set.empty
-  override def indexesWithValues: Set[(String, Seq[String])] = Set.empty
-  override def indexesWithOrdering: Map[(String, Seq[String]), IndexOrderCapability] = Map.empty
+  override def indexes: Map[IndexDef, IndexType] = Map.empty
   override def constraints: Set[(String, Set[String])] = Set.empty
   override def procedureSignatures: Set[ProcedureSignature] = Set.empty
   override def labelCardinality: Map[String, Cardinality] = Map.empty
