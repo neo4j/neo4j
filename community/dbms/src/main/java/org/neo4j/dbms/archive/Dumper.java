@@ -26,13 +26,21 @@ import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import org.neo4j.commandline.Util;
 import org.neo4j.function.ThrowingAction;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.dbms.archive.Utils.checkWritableDirectory;
 import static org.neo4j.dbms.archive.Utils.copy;
@@ -46,17 +54,66 @@ import static org.neo4j.io.fs.FileVisitors.throwExceptions;
 
 public class Dumper
 {
+    private final List<ArchiveOperation> operations;
+    private final ProgressPrinter progressPrinter;
+
+    @VisibleForTesting
+    Dumper()
+    {
+        operations = new ArrayList<>();
+        progressPrinter = new ProgressPrinter( null );
+    }
+
+    public Dumper( PrintStream output )
+    {
+        operations = new ArrayList<>();
+        progressPrinter = new ProgressPrinter( output );
+    }
+
     public void dump( Path dbPath, Path transactionalLogsPath, Path archive, CompressionFormat format, Predicate<Path> exclude )
             throws IOException
     {
         checkWritableDirectory( archive.getParent() );
         try ( ArchiveOutputStream stream = openArchiveOut( archive, format ) )
         {
+            operations.clear();
+
             visitPath( dbPath, exclude, stream );
             if ( !Util.isSameOrChildPath( dbPath, transactionalLogsPath ) )
             {
                 visitPath( transactionalLogsPath, exclude, stream );
             }
+
+            progressPrinter.reset();
+            for ( ArchiveOperation operation : operations )
+            {
+                progressPrinter.maxBytes += operation.size;
+                progressPrinter.maxFiles += operation.isFile ? 1 : 0;
+            }
+
+            ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
+            ScheduledFuture<?> timerFuture = timer.scheduleAtFixedRate( progressPrinter::printOnNextUpdate, 0, 100, TimeUnit.MILLISECONDS );
+            try
+            {
+                for ( ArchiveOperation operation : operations )
+                {
+                    operation.addToArchive();
+                }
+            }
+            finally
+            {
+                timerFuture.cancel( false );
+                timer.shutdown();
+                try
+                {
+                    timer.awaitTermination( 10, TimeUnit.SECONDS );
+                }
+                catch ( InterruptedException ignore )
+                {
+                }
+            }
+            progressPrinter.done();
+            progressPrinter.printProgress();
         }
     }
 
@@ -97,22 +154,47 @@ public class Dumper
     private void withEntry( ThrowingAction<IOException> operation, Path root, ArchiveOutputStream stream, Path file )
             throws IOException
     {
-        ArchiveEntry entry = createEntry( file, root, stream );
-        stream.putArchiveEntry( entry );
-        operation.apply();
-        stream.closeArchiveEntry();
-    }
-
-    private ArchiveEntry createEntry( Path file, Path root, ArchiveOutputStream archive ) throws IOException
-    {
-        return archive.createArchiveEntry( file.toFile(), "./" + root.relativize( file ).toString() );
+        operations.add( new ArchiveOperation( operation, root, stream, file ) );
     }
 
     private void writeFile( Path file, ArchiveOutputStream archiveStream ) throws IOException
     {
         try ( InputStream in = Files.newInputStream( file ) )
         {
-            copy( in, archiveStream );
+            copy( in, archiveStream, progressPrinter );
+        }
+    }
+
+    private static class ArchiveOperation
+    {
+        final ThrowingAction<IOException> operation;
+        final long size;
+        final boolean isFile;
+        final Path root;
+        final ArchiveOutputStream stream;
+        final Path file;
+
+        private ArchiveOperation( ThrowingAction<IOException> operation, Path root, ArchiveOutputStream stream, Path file ) throws IOException
+        {
+            this.operation = operation;
+            this.isFile = Files.isRegularFile( file );
+            this.size = isFile ? Files.size( file ) : 0;
+            this.root = root;
+            this.stream = stream;
+            this.file = file;
+        }
+
+        void addToArchive() throws IOException
+        {
+            ArchiveEntry entry = createEntry( file, root, stream );
+            stream.putArchiveEntry( entry );
+            operation.apply();
+            stream.closeArchiveEntry();
+        }
+
+        private ArchiveEntry createEntry( Path file, Path root, ArchiveOutputStream archive ) throws IOException
+        {
+            return archive.createArchiveEntry( file.toFile(), "./" + root.relativize( file ).toString() );
         }
     }
 }

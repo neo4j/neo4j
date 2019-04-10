@@ -363,9 +363,8 @@ class DumpCommandTest
                             "%n" +
                             "options:%n" +
                             "  --database=<name>         Name of database. [default:" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME + "]%n" +
-                            "  --zstd=<true|false>       Use Zstandard compression (the dump file will not be%n" +
-                            "                            loadable by older versions of Neo4j).%n" +
-                            "                            [default:false]%n" +
+                            "  --zstd=<true|false>       Use Zstandard compression (might not be loadable by%n" +
+                            "                            older versions of Neo4j). [default:false]%n" +
                             "  --to=<destination-path>   Destination (file or folder) of database dump.%n" ),
                     baos.toString() );
         }

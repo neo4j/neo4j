@@ -112,7 +112,7 @@ public class Loader
         {
             try ( OutputStream output = Files.newOutputStream( file ) )
             {
-                Utils.copy( stream, output );
+                Utils.copy( stream, output, new ProgressPrinter( null ) );
             }
         }
     }
