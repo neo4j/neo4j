@@ -153,6 +153,7 @@ final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> 
     {
         if ( !isClosed() )
         {
+            super.close();
             this.relationship = NO_ID;
             this.score = Float.NaN;
             pool.accept( this );
