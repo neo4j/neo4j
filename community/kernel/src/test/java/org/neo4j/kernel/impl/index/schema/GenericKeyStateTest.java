@@ -26,7 +26,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -52,25 +51,35 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.AnyValues;
+import org.neo4j.values.storable.ByteValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.FloatValue;
+import org.neo4j.values.storable.IntValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.PointArray;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.RandomValues;
+import org.neo4j.values.storable.ShortValue;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
+import static org.neo4j.values.storable.ValueGroup.NUMBER;
+import static org.neo4j.values.storable.ValueGroup.TEXT;
 import static org.neo4j.values.storable.Values.COMPARATOR;
 import static org.neo4j.values.storable.Values.booleanArray;
 import static org.neo4j.values.storable.Values.byteArray;
@@ -463,7 +472,7 @@ class GenericKeyStateTest
     void shouldNeverOverwriteDereferencedTextValues()
     {
         // Given a value that we dereference
-        Value srcValue = Values.utf8Value( "First string".getBytes( StandardCharsets.UTF_8 ) );
+        Value srcValue = Values.utf8Value( "First string".getBytes( UTF_8 ) );
         GenericKey genericKeyState = newKeyState();
         genericKeyState.writeValue( srcValue, NEUTRAL );
         Value dereferencedValue = genericKeyState.asValue();
@@ -478,7 +487,7 @@ class GenericKeyStateTest
 
         // we should not overwrite the first dereferenced value when initializing from a new value
         genericKeyState.clear();
-        Value srcValue2 = Values.utf8Value( "Secondstring".getBytes( StandardCharsets.UTF_8 ) ); // <- Same length as first string
+        Value srcValue2 = Values.utf8Value( "Secondstring".getBytes( UTF_8 ) ); // <- Same length as first string
         genericKeyState.writeValue( srcValue2, NEUTRAL );
         Value dereferencedValue2 = genericKeyState.asValue();
         assertEquals( srcValue2, dereferencedValue2 );
@@ -503,6 +512,122 @@ class GenericKeyStateTest
     void indexedCharArrayShouldComeBackAsCharArrayValue()
     {
         shouldReadBackToExactOriginalValue( random.randomValues().nextCharArray() );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "singleValueGeneratorsStream" )
+    void testDocumentedKeySizes( ValueGenerator generator )
+    {
+        Value value = generator.next();
+        GenericKey key = newKeyState();
+        key.initFromValue( 0, value, NEUTRAL );
+        int keySize = key.size();
+        int keyOverhead = GenericKey.ENTITY_ID_SIZE;
+        int actualSizeOfData = keySize - keyOverhead;
+
+        int expectedSizeOfData;
+        String typeName = value.getTypeName();
+        switch ( value.valueGroup() )
+        {
+        case NUMBER:
+            if ( value instanceof ByteValue )
+            {
+                expectedSizeOfData = 3;
+            }
+            else if ( value instanceof ShortValue )
+            {
+                expectedSizeOfData = 4;
+            }
+            else if ( value instanceof IntValue )
+            {
+                expectedSizeOfData = 6;
+            }
+            else if ( value instanceof LongValue )
+            {
+                expectedSizeOfData = 10;
+            }
+            else if ( value instanceof FloatValue )
+            {
+                expectedSizeOfData = 6;
+            }
+            else if ( value instanceof DoubleValue )
+            {
+                expectedSizeOfData = 10;
+            }
+            else
+            {
+                throw new RuntimeException( "Unexpected class for value in value group " + NUMBER + ", was " + value.getClass() );
+            }
+            break;
+        case BOOLEAN:
+            expectedSizeOfData = 2;
+            break;
+        case DATE:
+            // typeName: Date
+            expectedSizeOfData = 9;
+            break;
+        case ZONED_TIME:
+            // typeName: Time
+            expectedSizeOfData = 13;
+            break;
+        case LOCAL_TIME:
+            // typeName: LocalTime
+            expectedSizeOfData = 9;
+            break;
+        case ZONED_DATE_TIME:
+            // typeName: DateTime
+            expectedSizeOfData = 17;
+            break;
+        case LOCAL_DATE_TIME:
+            // typeName: LocalDateTime
+            expectedSizeOfData = 13;
+            break;
+        case DURATION:
+            // typeName: Duration or Period
+            expectedSizeOfData = 29;
+            break;
+        case GEOMETRY:
+            int dimensions;
+            if ( value instanceof PointValue )
+            {
+                dimensions = ((PointValue) value).coordinate().length;
+            }
+            else
+            {
+                throw new RuntimeException( "Unexpected class for value in value group " + GEOMETRY + ", was " + value.getClass() );
+            }
+            if ( dimensions == 2 )
+            {
+                expectedSizeOfData = 28;
+            }
+            else if ( dimensions == 3)
+            {
+                expectedSizeOfData = 36;
+            }
+            else
+            {
+                throw new RuntimeException( "Did not expect spatial value with " + dimensions + " dimensions." );
+            }
+            break;
+        case TEXT:
+            if ( value instanceof TextValue )
+            {
+                expectedSizeOfData = 3 + ((TextValue) value).stringValue().getBytes( UTF_8 ).length;
+            }
+            else
+            {
+                throw new RuntimeException( "Unexpected class for value in value group " + TEXT + ", was " + value.getClass() );
+            }
+            break;
+        default:
+            throw new RuntimeException( "Did not expect this type to be tested in this test. Value was " + value );
+        }
+        assertKeySize( expectedSizeOfData, actualSizeOfData, typeName );
+    }
+
+    private void assertKeySize( int expectedKeySize, int actualKeySize, String type )
+    {
+        assertEquals( expectedKeySize, actualKeySize, "Expected keySize for type " + type + " to be " + expectedKeySize + " but was " + actualKeySize );
     }
 
     private void shouldReadBackToExactOriginalValue( Value srcValue )
@@ -630,8 +755,19 @@ class GenericKeyStateTest
 
     private static ValueGenerator[] listValueGenerators( boolean includeIncomparable )
     {
+        List<ValueGenerator> generators = new ArrayList<>();
+        // single
+        generators.addAll( singleValueGenerators( includeIncomparable ) );
+        // array
+        generators.addAll( arrayValueGenerators( includeIncomparable ) );
+        // and a random
+        generators.add( () -> nextValidValue( includeIncomparable ) );
+        return generators.toArray( new ValueGenerator[0] );
+    }
+
+    private static List<ValueGenerator> singleValueGenerators( boolean includeIncomparable )
+    {
         List<ValueGenerator> generators = new ArrayList<>( asList(
-                // single
                 () -> random.randomValues().nextDateTimeValue(),
                 () -> random.randomValues().nextLocalDateTimeValue(),
                 () -> random.randomValues().nextDateValue(),
@@ -643,8 +779,26 @@ class GenericKeyStateTest
                 () -> random.randomValues().nextTextValue(),
                 () -> random.randomValues().nextAlphaNumericTextValue(),
                 () -> random.randomValues().nextBooleanValue(),
-                () -> random.randomValues().nextNumberValue(),
-                // array
+                () -> random.randomValues().nextNumberValue()
+        ) );
+
+        if ( includeIncomparable )
+        {
+            generators.addAll( asList(
+                    () -> random.randomValues().nextPointValue(),
+                    () -> random.randomValues().nextGeographicPoint(),
+                    () -> random.randomValues().nextGeographic3DPoint(),
+                    () -> random.randomValues().nextCartesianPoint(),
+                    () -> random.randomValues().nextCartesian3DPoint()
+            ) );
+        }
+
+        return generators;
+    }
+
+    private static List<ValueGenerator> arrayValueGenerators( boolean includeIncomparable )
+    {
+        List<ValueGenerator> generators = new ArrayList<>( asList(
                 () -> random.randomValues().nextDateTimeArray(),
                 () -> random.randomValues().nextLocalDateTimeArray(),
                 () -> random.randomValues().nextDateArray(),
@@ -661,34 +815,30 @@ class GenericKeyStateTest
                 () -> random.randomValues().nextIntArray(),
                 () -> random.randomValues().nextLongArray(),
                 () -> random.randomValues().nextFloatArray(),
-                () -> random.randomValues().nextDoubleArray(),
-                // and a random
-                () -> nextValidValue( includeIncomparable )
+                () -> random.randomValues().nextDoubleArray()
         ) );
 
         if ( includeIncomparable )
         {
             generators.addAll( asList(
-                    // single
-                    () -> random.randomValues().nextPointValue(),
-                    () -> random.randomValues().nextGeographicPoint(),
-                    () -> random.randomValues().nextGeographic3DPoint(),
-                    () -> random.randomValues().nextCartesianPoint(),
-                    () -> random.randomValues().nextCartesian3DPoint(),
-                    // array
+                    () -> random.randomValues().nextPointArray(),
                     () -> random.randomValues().nextGeographicPointArray(),
-                    () -> random.randomValues().nextGeographic3DPoint(),
+                    () -> random.randomValues().nextGeographic3DPointArray(),
                     () -> random.randomValues().nextCartesianPointArray(),
                     () -> random.randomValues().nextCartesian3DPointArray()
             ) );
         }
-
-        return generators.toArray( new ValueGenerator[0] );
+        return generators;
     }
 
     private static Stream<ValueGenerator> validValueGenerators()
     {
         return Stream.of( listValueGenerators( true ) );
+    }
+
+    private static Stream<ValueGenerator> singleValueGeneratorsStream()
+    {
+        return singleValueGenerators( true ).stream();
     }
 
     private static Stream<ValueGenerator> validComparableValueGenerators()
