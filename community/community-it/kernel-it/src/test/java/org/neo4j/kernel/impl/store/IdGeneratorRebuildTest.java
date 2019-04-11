@@ -30,6 +30,7 @@ import java.util.Map;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -49,6 +50,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @EphemeralPageCacheExtension
 class IdGeneratorRebuildTest
@@ -69,8 +71,9 @@ class IdGeneratorRebuildTest
     {
         databaseLayout = testDirectory.databaseLayout();
         uncloseableFs = new UncloseableDelegatingFileSystemAbstraction( fs );
-        GraphDatabaseService graphdb = new TestGraphDatabaseFactory().setFileSystem( uncloseableFs )
-                .newImpermanentDatabase( databaseLayout.databaseDirectory() );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( uncloseableFs )
+                .newImpermanentService( databaseLayout.databaseDirectory() );
+        GraphDatabaseService graphdb = managementService.database( DEFAULT_DATABASE_NAME );
         createInitialData( graphdb );
         graphdb.shutdown();
         Map<String, String> params = new HashMap<>();
@@ -85,7 +88,9 @@ class IdGeneratorRebuildTest
         GraphDatabaseService graphdb = null;
         try
         {
-            graphdb = new TestGraphDatabaseFactory().setFileSystem( uncloseableFs ).newImpermanentDatabase( databaseLayout.databaseDirectory() );
+            DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( uncloseableFs )
+                    .newImpermanentService( databaseLayout.databaseDirectory() );
+            graphdb = managementService.database( DEFAULT_DATABASE_NAME );
             verifyData( graphdb );
         }
         finally
