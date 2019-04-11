@@ -51,21 +51,29 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.AnyValues;
+import org.neo4j.values.storable.ArrayValue;
+import org.neo4j.values.storable.ByteArray;
 import org.neo4j.values.storable.ByteValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DoubleArray;
 import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.FloatArray;
 import org.neo4j.values.storable.FloatValue;
+import org.neo4j.values.storable.IntArray;
 import org.neo4j.values.storable.IntValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.LongArray;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.PointArray;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.RandomValues;
+import org.neo4j.values.storable.ShortArray;
 import org.neo4j.values.storable.ShortValue;
+import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
@@ -78,8 +86,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
+import static org.neo4j.values.storable.ValueGroup.GEOMETRY;
+import static org.neo4j.values.storable.ValueGroup.GEOMETRY_ARRAY;
 import static org.neo4j.values.storable.ValueGroup.NUMBER;
+import static org.neo4j.values.storable.ValueGroup.NUMBER_ARRAY;
 import static org.neo4j.values.storable.ValueGroup.TEXT;
+import static org.neo4j.values.storable.ValueGroup.TEXT_ARRAY;
 import static org.neo4j.values.storable.Values.COMPARATOR;
 import static org.neo4j.values.storable.Values.booleanArray;
 import static org.neo4j.values.storable.Values.byteArray;
@@ -514,9 +526,12 @@ class GenericKeyStateTest
         shouldReadBackToExactOriginalValue( random.randomValues().nextCharArray() );
     }
 
+    /**
+     * If this test fails because size of index key has changed, documentation needs to be updated accordingly.
+     */
     @ParameterizedTest
     @MethodSource( "singleValueGeneratorsStream" )
-    void testDocumentedKeySizes( ValueGenerator generator )
+    void testDocumentedKeySizesNonArrays( ValueGenerator generator )
     {
         Value value = generator.next();
         GenericKey key = newKeyState();
@@ -600,7 +615,7 @@ class GenericKeyStateTest
             {
                 expectedSizeOfData = 28;
             }
-            else if ( dimensions == 3)
+            else if ( dimensions == 3 )
             {
                 expectedSizeOfData = 36;
             }
@@ -622,6 +637,148 @@ class GenericKeyStateTest
         default:
             throw new RuntimeException( "Did not expect this type to be tested in this test. Value was " + value );
         }
+        assertKeySize( expectedSizeOfData, actualSizeOfData, typeName );
+    }
+
+    /**
+     * If this test fails because size of index key has changed, documentation needs to be updated accordingly.
+     */
+    @ParameterizedTest
+    @MethodSource( "arrayValueGeneratorsStream" )
+    void testDocumentedKeySizesArrays( ValueGenerator generator )
+    {
+        Value value = generator.next();
+        GenericKey key = newKeyState();
+        key.initFromValue( 0, value, NEUTRAL );
+        int keySize = key.size();
+        int keyOverhead = GenericKey.ENTITY_ID_SIZE;
+        int actualSizeOfData = keySize - keyOverhead;
+
+        int arrayLength = 0;
+        if ( value instanceof ArrayValue )
+        {
+            arrayLength = ((ArrayValue) value).length();
+        }
+
+        int normalArrayOverhead = 3;
+        int numberArrayOverhead = 4;
+        int geometryArrayOverhead = 6;
+
+        int arrayOverhead;
+        int arrayElementSize;
+        String typeName = value.getTypeName();
+        switch ( value.valueGroup() )
+        {
+        case NUMBER_ARRAY:
+            arrayOverhead = numberArrayOverhead;
+            if ( value instanceof ByteArray )
+            {
+                arrayElementSize = 1;
+            }
+            else if ( value instanceof ShortArray )
+            {
+                arrayElementSize = 2;
+            }
+            else if ( value instanceof IntArray )
+            {
+                arrayElementSize = 4;
+            }
+            else if ( value instanceof LongArray )
+            {
+                arrayElementSize = 8;
+            }
+            else if ( value instanceof FloatArray )
+            {
+                arrayElementSize = 4;
+            }
+            else if ( value instanceof DoubleArray )
+            {
+                arrayElementSize = 8;
+            }
+            else
+            {
+                throw new RuntimeException( "Unexpected class for value in value group " + NUMBER_ARRAY + ", was " + value.getClass() );
+            }
+            break;
+        case BOOLEAN_ARRAY:
+            arrayOverhead = normalArrayOverhead;
+            arrayElementSize = 1;
+            break;
+        case DATE_ARRAY:
+            // typeName: Date
+            arrayOverhead = normalArrayOverhead;
+            arrayElementSize = 8;
+            break;
+        case ZONED_TIME_ARRAY:
+            // typeName: Time
+            arrayOverhead = normalArrayOverhead;
+            arrayElementSize = 12;
+            break;
+        case LOCAL_TIME_ARRAY:
+            // typeName: LocalTime
+            arrayOverhead = normalArrayOverhead;
+            arrayElementSize = 8;
+            break;
+        case ZONED_DATE_TIME_ARRAY:
+            // typeName: DateTime
+            arrayOverhead = normalArrayOverhead;
+            arrayElementSize = 16;
+            break;
+        case LOCAL_DATE_TIME_ARRAY:
+            // typeName: LocalDateTime
+            arrayOverhead = normalArrayOverhead;
+            arrayElementSize = 12;
+            break;
+        case DURATION_ARRAY:
+            // typeName: Duration or Period
+            arrayOverhead = normalArrayOverhead;
+            arrayElementSize = 28;
+            break;
+        case GEOMETRY_ARRAY:
+            arrayOverhead = geometryArrayOverhead;
+            int dimensions;
+            if ( value instanceof PointArray )
+            {
+                dimensions = ((PointArray) value).pointValue( 0 ).coordinate().length;
+            }
+            else
+            {
+                throw new RuntimeException( "Unexpected class for value in value group " + GEOMETRY_ARRAY + ", was " + value.getClass() );
+            }
+            if ( dimensions == 2 )
+            {
+                arrayElementSize = 24;
+            }
+            else if ( dimensions == 3 )
+            {
+                arrayElementSize = 32;
+            }
+            else
+            {
+                throw new RuntimeException( "Did not expect spatial value with " + dimensions + " dimensions." );
+            }
+            break;
+        case TEXT_ARRAY:
+            if ( value instanceof TextArray )
+            {
+                int sumOfStrings = 0;
+                TextArray stringArray = (TextArray) value;
+                for ( int i = 0; i < stringArray.length(); i++ )
+                {
+                    sumOfStrings += 2 + stringArray.stringValue( i ).getBytes( UTF_8 ).length;
+                }
+                int totalTextArraySize = normalArrayOverhead + sumOfStrings;
+                assertKeySize( totalTextArraySize, actualSizeOfData, typeName );
+                return;
+            }
+            else
+            {
+                throw new RuntimeException( "Unexpected class for value in value group " + TEXT_ARRAY + ", was " + value.getClass() );
+            }
+        default:
+            throw new RuntimeException( "Did not expect this type to be tested in this test. Value was " + value + " is value group " + value.valueGroup() );
+        }
+        int expectedSizeOfData = arrayOverhead + arrayLength * arrayElementSize;
         assertKeySize( expectedSizeOfData, actualSizeOfData, typeName );
     }
 
@@ -839,6 +996,11 @@ class GenericKeyStateTest
     private static Stream<ValueGenerator> singleValueGeneratorsStream()
     {
         return singleValueGenerators( true ).stream();
+    }
+
+    private static Stream<ValueGenerator> arrayValueGeneratorsStream()
+    {
+        return arrayValueGenerators( true ).stream();
     }
 
     private static Stream<ValueGenerator> validComparableValueGenerators()
