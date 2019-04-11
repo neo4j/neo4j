@@ -53,6 +53,8 @@ case class OptionalExpandIntoSlottedPipe(source: Pipe,
   private val getFromNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(fromSlot)
   private val getToNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(toSlot)
 
+  predicate.registerOwningPipe(this)
+
   //===========================================================================
   // Runtime code
   //===========================================================================

@@ -67,6 +67,9 @@ case class VarLengthExpandSlottedPipe(source: Pipe,
     else makeGetPrimitiveNodeFromSlotFunctionFor(toSlot)
   private val toOffset = toSlot.offset
 
+  nodePredicate.registerOwningPipe(this)
+  edgePredicate.registerOwningPipe(this)
+
   //===========================================================================
   // Runtime code
   //===========================================================================

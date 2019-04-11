@@ -30,6 +30,8 @@ case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: 
                       (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) with ListSupport {
 
+  expression.registerOwningPipe(this)
+
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map {
       (outerContext) =>
