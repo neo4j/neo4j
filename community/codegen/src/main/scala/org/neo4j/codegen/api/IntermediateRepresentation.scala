@@ -382,6 +382,7 @@ case class ClassDeclaration(packageName: String,
                             initializationCode: IntermediateRepresentation,
                             genFields: () => Seq[Field],
                             methods: Seq[MethodDeclaration]) {
+
   def fields: Seq[Field] = genFields()
 }
 

@@ -378,6 +378,9 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<String> cypher_morsel_runtime_scheduler =
             setting( "unsupported.cypher.morsel_runtime_scheduler", STRING, "simple" );
 
+    @Description( "Operator fusing means that multiple operators such as for example " +
+                  "AllNodesScan -> Filter -> ProduceResult can be fused into a single specialized operator. " +
+                  "Disabling this option might cause performance degradations." )
     @Internal
     public static final Setting<Boolean> cypher_morsel_fuse_operators =
             setting( "unsupported.cypher.morsel_fuse_operators", BOOLEAN, "true" );
