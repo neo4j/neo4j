@@ -480,7 +480,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       ("n.prop1 DESC, n.prop2 ASC", BOTH, IndexOrderDescending, false, false, Seq(Ascending("n.prop2")), true, Seq(Descending("n.prop1"))),
       ("n.prop1 DESC, n.prop2 DESC", BOTH, IndexOrderDescending, false, false, Seq.empty, false, Seq.empty)
     ).foreach {
-      case (orderByString, orderCapability, indexOrder, shouldFullSort, sortOnOnyOne, sortItems, shouldPartialSort, alreadySorted) =>
+      case (orderByString, orderCapability, indexOrder, shouldFullSort, sortOnOnlyOne, sortItems, shouldPartialSort, alreadySorted) =>
         // When
         val query =
           s"""MATCH (n:Label)
@@ -496,9 +496,9 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         plan._2 should equal {
           if (shouldPartialSort)
             PartialSort(Projection(Selection(expr, leafPlan), projectionBoth), alreadySorted, sortItems)
-          else if (shouldFullSort && sortOnOnyOne)
+          else if (shouldFullSort && sortOnOnlyOne)
             Projection(Sort(Projection(Selection(expr, leafPlan), projectionProp1), sortItems), projectionProp2)
-          else if (shouldFullSort && !sortOnOnyOne)
+          else if (shouldFullSort && !sortOnOnlyOne)
             Sort(Projection(Selection(expr, leafPlan), projectionBoth), sortItems)
           else
             Projection(Selection(expr, leafPlan), projectionBoth)
