@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
-import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.result.InternalExecutionResult
+import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
@@ -94,6 +94,7 @@ object RewindableExecutionResult {
       }
     })
 
+    runtimeResult.close()
     new RewindableExecutionResultImplementation(columns, result, NormalMode, null, runtimeResult.queryStatistics(), Seq.empty)
   }
 
