@@ -23,12 +23,11 @@ import java.io.File;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.Settings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class InMemoryGraphFactory implements GraphFactory
 {
@@ -36,8 +35,13 @@ public class InMemoryGraphFactory implements GraphFactory
     public GraphDatabaseFacade newGraphDatabase( Config config, ExternalDependencies dependencies )
     {
         File storeDir = new File( config.get( GraphDatabaseSettings.databases_root_path ), GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
-        config.augment( stringMap( GraphDatabaseSettings.ephemeral.name(), "true",
-                new BoltConnector( "bolt" ).listen_address.name(), "localhost:0" ) );
-        return (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( storeDir ).setConfig( "", "" ).newGraphDatabase();
+        return (GraphDatabaseFacade) new TestGraphDatabaseFactory()
+                .setExtensions( dependencies.extensions() )
+                .setMonitors( dependencies.monitors() )
+                .newImpermanentDatabaseBuilder( storeDir )
+                .setConfig( new BoltConnector( "bolt" ).listen_address, "localhost:0" )
+                .setConfig( new BoltConnector( "bolt" ).enabled, Settings.TRUE )
+                .setConfig( config )
+                .newGraphDatabase();
     }
 }
