@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.common.CopyOnWriteHashMap
+import java.util.concurrent.ConcurrentHashMap
+
 import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy, CypherVersion}
 
 import scala.collection.JavaConversions._
@@ -31,18 +32,14 @@ import scala.collection.JavaConversions._
   */
 class CompilerLibrary(factory: CompilerFactory) {
 
-  private val compilers = new CopyOnWriteHashMap[CompilerKey, Compiler]
+  private val compilers = new ConcurrentHashMap[CompilerKey, Compiler]
 
   def selectCompiler(cypherVersion: CypherVersion,
                      cypherPlanner: CypherPlannerOption,
                      cypherRuntime: CypherRuntimeOption,
                      cypherUpdateStrategy: CypherUpdateStrategy): Compiler = {
     val key = CompilerKey(cypherPlanner, cypherRuntime, cypherUpdateStrategy)
-    val compiler = compilers.get(key)
-    if (compiler == null) {
-      compilers.put(key, factory.createCompiler(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy))
-      compilers.get(key)
-    } else compiler
+    compilers.computeIfAbsent(key, ignore => factory.createCompiler(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy))
   }
 
   def clearCaches(): Long = {

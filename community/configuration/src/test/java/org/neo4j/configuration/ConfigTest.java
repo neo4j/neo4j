@@ -30,7 +30,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -81,7 +83,7 @@ class ConfigTest
     @Test
     void shouldApplyDefaults()
     {
-        Config config = Config();
+        Config config = newConfig();
 
         assertThat( config.get( MySettingsWithDefaults.hello ), is( "Hello, World!" ) );
     }
@@ -106,7 +108,7 @@ class ConfigTest
     void shouldBeAbleToAugmentConfig()
     {
         // Given
-        Config config = Config();
+        Config config = newConfig();
 
         assertTrue( config.get( MySettingsWithDefaults.boolSetting ) );
         assertEquals( "Hello, World!",  config.get( MySettingsWithDefaults.hello ) );
@@ -123,10 +125,10 @@ class ConfigTest
     @Test
     void augmentAnotherConfig()
     {
-        Config config = Config();
+        Config config = newConfig();
         config.augment( MySettingsWithDefaults.hello, "Hi" );
 
-        Config anotherConfig = Config();
+        Config anotherConfig = newConfig();
         anotherConfig.augment( stringMap( MySettingsWithDefaults.boolSetting.name(),
                 Settings.FALSE, MySettingsWithDefaults.hello.name(), "Bye" ) );
 
@@ -370,7 +372,7 @@ class ConfigTest
     @Test
     void isConfigured()
     {
-        Config config = Config();
+        Config config = newConfig();
         assertFalse( config.isConfigured( MySettingsWithDefaults.hello ) );
         config.augment( MySettingsWithDefaults.hello, "Hi" );
         assertTrue( config.isConfigured( MySettingsWithDefaults.hello ) );
@@ -379,7 +381,7 @@ class ConfigTest
     @Test
     void isConfiguredShouldNotReturnTrueEvenThoughDefaultValueExists()
     {
-        Config config = Config();
+        Config config = newConfig();
         assertFalse( config.isConfigured( MySettingsWithDefaults.hello ) );
         assertEquals( "Hello, World!", config.get( MySettingsWithDefaults.hello ) );
     }
@@ -402,7 +404,7 @@ class ConfigTest
     @Test
     void augmentDefaults()
     {
-        Config config = Config();
+        Config config = newConfig();
         assertEquals( "Hello, World!", config.get( MySettingsWithDefaults.hello ) );
         config.augmentDefaults( MySettingsWithDefaults.hello, "new default" );
         assertEquals( "new default", config.get( MySettingsWithDefaults.hello ) );
@@ -564,7 +566,51 @@ class ConfigTest
         assertThat( updateCounter.get(), is( 1 ) );
     }
 
-    private static Config Config()
+    @Test
+    void buildWithNullValues()
+    {
+        var config1 = Config.builder()
+                .withSetting( MySettingsWithDefaults.hello, "Hi" )
+                .withSetting( MySettingsWithDefaults.hello, null )
+                .build();
+
+        assertEquals( MySettingsWithDefaults.hello.getDefaultValue(), config1.get( MySettingsWithDefaults.hello ) );
+
+        var initialSettings = new HashMap<String,String>();
+        initialSettings.put( MySettingsWithDefaults.hello.name(), null );
+        var config2 = Config.builder()
+                .withSettings( Map.of( MySettingsWithDefaults.hello.name(), "Hi" ) )
+                .withSettings( initialSettings )
+                .build();
+
+        assertEquals( MySettingsWithDefaults.hello.getDefaultValue(), config2.get( MySettingsWithDefaults.hello ) );
+    }
+
+    @Test
+    void augmentWithNullValues()
+    {
+        var config = Config.builder()
+                .withConfigClasses( List.of( mySettingsWithDefaults ) )
+                .build();
+
+        config.augmentDefaults( MySettingsWithDefaults.hello, null );
+
+        assertEquals( MySettingsWithDefaults.hello.getDefaultValue(), config.get( MySettingsWithDefaults.hello ) );
+    }
+
+    @Test
+    void updateDynamicSettingWithNullValue()
+    {
+        var config = Config.builder()
+                .withConfigClasses( List.of( new MyDynamicSettings() ) )
+                .build();
+
+        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), null, "test" );
+
+        assertEquals( Boolean.valueOf( MyDynamicSettings.boolSetting.getDefaultValue() ), config.get( MyDynamicSettings.boolSetting ) );
+    }
+
+    private static Config newConfig()
     {
         return Config( Collections.emptyMap() );
     }
