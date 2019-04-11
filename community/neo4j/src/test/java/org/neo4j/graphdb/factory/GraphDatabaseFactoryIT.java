@@ -87,8 +87,8 @@ class GraphDatabaseFactoryIT
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
-            assertTrue( isEmptyOrNonExistingDirectory( fs, new File( factoryDir.getParent(), DEFAULT_DATABASE_NAME ) ) );
-            assertTrue( isEmptyOrNonExistingDirectory( fs, new File( factoryDir.getParent(), SYSTEM_DATABASE_NAME ) ) );
+            assertTrue( isEmptyOrNonExistingDirectory( fs, new File( factoryDir, DEFAULT_DATABASE_NAME ) ) );
+            assertTrue( isEmptyOrNonExistingDirectory( fs, new File( factoryDir, SYSTEM_DATABASE_NAME ) ) );
 
             assertFalse( isEmptyOrNonExistingDirectory( fs, new File( databasesDir, DEFAULT_DATABASE_NAME ) ) );
             assertFalse( isEmptyOrNonExistingDirectory( fs, new File( databasesDir, SYSTEM_DATABASE_NAME ) ) );
@@ -108,8 +108,8 @@ class GraphDatabaseFactoryIT
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
-            assertFalse( isEmptyOrNonExistingDirectory( fs, new File( factoryDir.getParent(), DEFAULT_DATABASE_NAME ) ) );
-            assertFalse( isEmptyOrNonExistingDirectory( fs, new File( factoryDir.getParent(), SYSTEM_DATABASE_NAME ) ) );
+            assertFalse( isEmptyOrNonExistingDirectory( fs, new File( factoryDir, DEFAULT_DATABASE_NAME ) ) );
+            assertFalse( isEmptyOrNonExistingDirectory( fs, new File( factoryDir, SYSTEM_DATABASE_NAME ) ) );
         }
         finally
         {

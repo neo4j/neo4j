@@ -84,7 +84,7 @@ class RecoverIndexDropIT
         // given a transaction stream ending in an INDEX DROP command.
         CommittedTransactionRepresentation dropTransaction = prepareDropTransaction();
         var databaseLayout = directory.databaseLayout();
-        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().newDatabaseManagementService( databaseLayout.databaseDirectory() );
+        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().newDatabaseManagementService( directory.storeDir() );
         GraphDatabaseService db = managementService1.database( DEFAULT_DATABASE_NAME );
         createIndex( db );
         db.shutdown();
@@ -94,8 +94,8 @@ class RecoverIndexDropIT
         Monitors monitors = new Monitors();
         AssertRecoveryIsPerformed recoveryMonitor = new AssertRecoveryIsPerformed();
         monitors.addMonitorListener( recoveryMonitor );
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setMonitors( monitors ).newDatabaseManagementService(
-                databaseLayout.databaseDirectory() );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setMonitors( monitors )
+                .newDatabaseManagementService( directory.storeDir() );
         db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

@@ -75,8 +75,8 @@ class DatabaseStartupTest
         // given
         // create a store
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        File databaseDir = databaseLayout.databaseDirectory();
-        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().newDatabaseManagementService( databaseDir );
+        File storeDirectory = testDirectory.storeDir();
+        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDirectory );
         GraphDatabaseService db = managementService1.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
@@ -94,7 +94,7 @@ class DatabaseStartupTest
                     MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ));
         }
 
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( databaseDir );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDirectory );
         GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -117,8 +117,8 @@ class DatabaseStartupTest
         // given
         // create a store
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        File databaseDirectory = databaseLayout.databaseDirectory();
-        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().newDatabaseManagementService( databaseDirectory );
+        File storeDirectory = testDirectory.storeDir();
+        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDirectory );
         GraphDatabaseService db = managementService1.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
@@ -137,7 +137,7 @@ class DatabaseStartupTest
                     MetaDataStore.versionStringToLong( badStoreVersion ) );
         }
 
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory )
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDirectory )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, TRUE ).newDatabaseManagementService();
         GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
         try
@@ -161,7 +161,7 @@ class DatabaseStartupTest
     {
         File directory = new File( "notAbsoluteDirectory" );
         DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService( directory );
-        managementService.database( "notAbsoluteDirectory" ).shutdown();
+        managementService.database( DEFAULT_DATABASE_NAME ).shutdown();
     }
 
     @Test

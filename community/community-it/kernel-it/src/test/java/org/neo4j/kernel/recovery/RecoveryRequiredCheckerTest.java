@@ -70,7 +70,7 @@ class RecoveryRequiredCheckerTest
     void setup()
     {
         databaseLayout = testDirectory.databaseLayout();
-        storeDir = databaseLayout.databaseDirectory();
+        storeDir = testDirectory.storeDir();
     }
 
     @Test

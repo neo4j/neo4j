@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -46,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class RunOutOfDiskSpaceIT
@@ -63,7 +65,9 @@ class RunOutOfDiskSpaceIT
     void setUp()
     {
         limitedFs = new LimitedFilesystemAbstraction( new UncloseableDelegatingFileSystemAbstraction( testDirectory.getFileSystem() ) );
-        database = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( limitedFs ).newEmbeddedDatabase( testDirectory.databaseDir() );
+        TestGraphDatabaseFactory testGraphDatabaseFactory = new TestGraphDatabaseFactory().setFileSystem( limitedFs );
+        DatabaseManagementService managementService = testGraphDatabaseFactory.newDatabaseManagementService( testDirectory.storeDir() );
+        database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @Test

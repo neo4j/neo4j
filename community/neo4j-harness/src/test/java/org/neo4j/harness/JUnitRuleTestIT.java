@@ -32,7 +32,6 @@ import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,7 +41,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.harness.junit.rule.Neo4jRule;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogTimeZone;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -132,8 +130,7 @@ public class JUnitRuleTestIT
         File oldDir = testDirectory.directory( "old" );
         Config config = Config.defaults( data_directory, oldDir.toPath().toString() );
         File rootDirectory = config.get( databases_root_path );
-        DatabaseLayout databaseLayout = DatabaseLayout.of( rootDirectory, LayoutConfig.of( config ), DEFAULT_DATABASE_NAME );
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseLayout.databaseDirectory() )
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( rootDirectory )
                 .setConfig( transaction_logs_root_path, new File( oldDir, DEFAULT_TX_LOGS_ROOT_DIR_NAME ).getAbsolutePath() ).newDatabaseManagementService();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 

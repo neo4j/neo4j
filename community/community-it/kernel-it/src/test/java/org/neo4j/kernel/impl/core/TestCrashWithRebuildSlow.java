@@ -23,7 +23,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -44,6 +43,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
@@ -110,7 +110,7 @@ class TestCrashWithRebuildSlow
         assertThat( snapshotChecksum, equalTo( checksumBefore ) );
 
         // Recover with unsupported.dbms.id_generator_fast_rebuild_enabled=false
-        assertNumberOfFreeIdsEquals( testDir.storeDir(), snapshot, 0 );
+        assertNumberOfFreeIdsEquals( testDir.databaseLayout(), snapshot, 0 );
         DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( snapshot )
                 .newImpermanentDatabaseBuilder( testDir.storeDir() )
@@ -213,9 +213,9 @@ class TestCrashWithRebuildSlow
         return highIds;
     }
 
-    private static void assertNumberOfFreeIdsEquals( File databaseDirectory, FileSystemAbstraction fs, long numberOfFreeIds )
+    private static void assertNumberOfFreeIdsEquals( DatabaseLayout databaseLayout, FileSystemAbstraction fs, long numberOfFreeIds )
     {
-        long fileSize = fs.getFileSize( new File( databaseDirectory, "neostore.propertystore.db.strings.id" ) );
+        long fileSize = fs.getFileSize( databaseLayout.idPropertyStringStore() );
         long fileSizeWithoutHeader = fileSize - 9;
         long actualFreeIds = fileSizeWithoutHeader / 8;
 

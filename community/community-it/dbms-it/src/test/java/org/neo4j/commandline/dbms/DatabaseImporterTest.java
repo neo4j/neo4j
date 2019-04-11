@@ -29,11 +29,11 @@ import java.io.File;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.dbms.database.DatabaseManagementService;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -89,12 +89,14 @@ class DatabaseImporterTest
 
     private File provideStoreDirectory()
     {
-        GraphDatabaseService db = null;
-        File homeStoreDir = testDir.databaseDir( "home" );
+        GraphDatabaseAPI db = null;
+        File storeDir = testDir.databaseDir( "home" );
+        File databaseDirectory;
         try
         {
-            DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( homeStoreDir );
-            db = managementService.database( DEFAULT_DATABASE_NAME );
+            DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
+            db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+            databaseDirectory = db.databaseLayout().databaseDirectory();
             try ( Transaction transaction = db.beginTx() )
             {
                 db.createNode();
@@ -109,7 +111,7 @@ class DatabaseImporterTest
             }
         }
 
-        return homeStoreDir;
+        return databaseDirectory;
     }
 
     private static Matcher<File> isExistingDatabase()

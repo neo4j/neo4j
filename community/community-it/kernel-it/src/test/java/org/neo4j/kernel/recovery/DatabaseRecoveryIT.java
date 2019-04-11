@@ -166,7 +166,7 @@ class DatabaseRecoveryIT
 
         var restoreDbLayout = copyStore();
 
-        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbLayout.databaseDirectory() );
+        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbLayout.getStoreLayout().storeDirectory() );
         try ( Transaction tx = recoveredDatabase.beginTx() )
         {
             assertEquals( numberOfNodes, count( recoveredDatabase.getAllNodes() ) );
@@ -193,7 +193,7 @@ class DatabaseRecoveryIT
         }
 
         var restoreDbLayout = copyStore();
-        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbLayout.databaseDirectory() );
+        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbLayout.getStoreLayout().storeDirectory() );
         try ( Transaction transaction = recoveredDatabase.beginTx() )
         {
             assertEquals( 10, count( recoveredDatabase.getAllNodes() ) );
@@ -239,7 +239,7 @@ class DatabaseRecoveryIT
         var restoreDbLayout = copyStore();
 
         // database should be restored and node should have expected properties
-        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbLayout.databaseDirectory() );
+        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbLayout.getStoreLayout().storeDirectory() );
         try ( Transaction ignored = recoveredDatabase.beginTx() )
         {
             Node node = findNodeByLabel( recoveredDatabase, testLabel );
@@ -263,9 +263,9 @@ class DatabaseRecoveryIT
             ClassGuardedAdversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, true ), Command.RelationshipCommand.class );
             adversary.disable();
 
-            File databaseDir = directory.storeDir();
+            File storeDir = directory.storeDir();
             DatabaseManagementService managementService = AdversarialPageCacheGraphDatabaseFactory.create( fileSystem, adversary )
-                    .newEmbeddedDatabaseBuilder( databaseDir ).newDatabaseManagementService();
+                    .newEmbeddedDatabaseBuilder( storeDir ).newDatabaseManagementService();
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             try
             {
@@ -306,9 +306,8 @@ class DatabaseRecoveryIT
                 healthOf( db ).panic( txFailure.getCause() ); // panic the db again to force recovery on the next startup
 
                 // restart the database, now with regular page cache
-                File databaseDirectory = ((GraphDatabaseAPI) db).databaseLayout().databaseDirectory();
                 db.shutdown();
-                db = startDatabase( databaseDirectory );
+                db = startDatabase( storeDir );
 
                 // now we observe correct state: node is in the index and relationship is removed
                 try ( Transaction tx = db.beginTx() )
@@ -827,8 +826,8 @@ class DatabaseRecoveryIT
 
     private GraphDatabaseService startDatabase( File storeDir )
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).newDatabaseManagementService(
-                storeDir );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
+                .newDatabaseManagementService( storeDir );
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 

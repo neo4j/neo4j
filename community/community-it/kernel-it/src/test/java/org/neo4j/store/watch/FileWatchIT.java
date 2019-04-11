@@ -83,8 +83,8 @@ class FileWatchIT
         File customStoreRoot = testDirectory.storeDir( "customStore" );
         databaseLayout = testDirectory.databaseLayout( customStoreRoot );
         logProvider = new AssertableLogProvider();
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).newDatabaseManagementService(
-                databaseLayout.databaseDirectory() );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
+                .newDatabaseManagementService( customStoreRoot );
         database = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

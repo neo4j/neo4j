@@ -33,7 +33,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
@@ -60,6 +60,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
@@ -78,7 +80,7 @@ class RelationshipGroupStoreTest
     @BeforeEach
     void before()
     {
-        defaultThreshold = parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
+        defaultThreshold = parseInt( dense_node_threshold.getDefaultValue() );
     }
 
     @AfterEach
@@ -131,9 +133,9 @@ class RelationshipGroupStoreTest
 
     private void newDb( int denseNodeThreshold )
     {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.dense_node_threshold, "" + denseNodeThreshold )
-                .newGraphDatabase();
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+                .setConfig( dense_node_threshold, "" + denseNodeThreshold ).newDatabaseManagementService();
+        db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         fs = db.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
     }
 
@@ -167,7 +169,7 @@ class RelationshipGroupStoreTest
         Map<String, String> customConfig = new HashMap<>();
         if ( customThreshold != null )
         {
-            customConfig.put( GraphDatabaseSettings.dense_node_threshold.name(), "" + customThreshold );
+            customConfig.put( dense_node_threshold.name(), "" + customThreshold );
         }
         return new StoreFactory( testDirectory.databaseLayout(), Config.defaults( customConfig ), new DefaultIdGeneratorFactory( fs ), pageCache,
                 fs, NullLogProvider.getInstance() );

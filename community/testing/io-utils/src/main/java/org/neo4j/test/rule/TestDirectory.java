@@ -202,6 +202,13 @@ public class TestDirectory extends ExternalResource
         return storeLayout;
     }
 
+    public StoreLayout storeLayout( String name )
+    {
+        File storeDirectory = new File( testDirectory, name );
+        createDirectory( storeDirectory );
+        return StoreLayout.of( storeDirectory, createTestStoreLayout( storeDirectory ) );
+    }
+
     public DatabaseLayout databaseLayout()
     {
         createDirectory( defaultDatabaseLayout );

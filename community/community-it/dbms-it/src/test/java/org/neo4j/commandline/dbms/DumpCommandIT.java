@@ -79,6 +79,7 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 
 @ExtendWith( TestDirectoryExtension.class )
@@ -390,13 +391,14 @@ class DumpCommandIT
         }
     }
 
-    private void putStoreInDirectory( Config config, Path databaseDirectory )
+    private static void putStoreInDirectory( Config config, Path databaseDirectory )
     {
+        String databaseName = databaseDirectory.toFile().getName();
         DatabaseManagementService managementService = new GraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( databaseDirectory.toFile() )
-                .setConfig( config.getRaw() ).newDatabaseManagementService();
-        managementService.database( DEFAULT_DATABASE_NAME )
-                .shutdown();
+                .newEmbeddedDatabaseBuilder( databaseDirectory.getParent().toFile() )
+                .setConfig( config.getRaw() )
+                .setConfig( default_database, databaseName ).newDatabaseManagementService();
+        managementService.database( databaseName ).shutdown();
     }
 
     private static Closeable withPermissions( Path file, Set<PosixFilePermission> permissions ) throws IOException

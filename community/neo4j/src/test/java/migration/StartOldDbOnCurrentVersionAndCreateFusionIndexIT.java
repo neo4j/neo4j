@@ -152,11 +152,12 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     private void shouldOpenOldDbAndCreateAndWorkWithSomeFusionIndexes( String zippedDbName, Provider highestProviderInOldVersion ) throws Exception
     {
         // given
-        File targetDirectory = directory.storeDir();
+        File targetDirectory = directory.databaseDir();
         unzip( getClass(), zippedDbName, targetDirectory );
         IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
         // when
-        GraphDatabaseAPI db = setupDb( targetDirectory, indexRecoveryTracker );
+        File storeDir = directory.storeDir();
+        GraphDatabaseAPI db = setupDb( storeDir, indexRecoveryTracker );
 
         // then
         Provider[] providers = providersUpToAndIncluding( highestProviderInOldVersion );
@@ -199,7 +200,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         }
 
         // when
-        db = setupDb( targetDirectory, indexRecoveryTracker );
+        db = setupDb( storeDir, indexRecoveryTracker );
         try
         {
             // then

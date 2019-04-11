@@ -90,10 +90,10 @@ class NativeLabelScanStoreMigratorTest
     void setUp() throws Exception
     {
         databaseLayout = testDirectory.databaseLayout();
-        storeDir = databaseLayout.databaseDirectory();
+        storeDir = testDirectory.storeDir();
         nativeLabelIndex = databaseLayout.labelScanStore();
         migrationLayout = testDirectory.databaseLayout( "migrationDir" );
-        luceneLabelScanStore = testDirectory.storeDir().toPath().resolve( Paths.get( "schema", "label", "lucene" ) ).toFile();
+        luceneLabelScanStore = testDirectory.databaseDir().toPath().resolve( Paths.get( "schema", "label", "lucene" ) ).toFile();
 
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
         indexMigrator = new NativeLabelScanStoreMigrator( fileSystem, pageCache, storageEngineFactory );

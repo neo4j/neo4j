@@ -159,7 +159,7 @@ public class ParallelBatchImporterTest
     {
         // GIVEN
         ExecutionMonitor processorAssigner = ProcessorAssignmentStrategies.eagerRandomSaturation( config.maxNumberOfProcessors() );
-        DatabaseLayout databaseLayout = directory.databaseLayout( "dir" + random.nextAlphaNumericString( 8, 8 ) );
+        DatabaseLayout databaseLayout = directory.databaseLayout();
 
         boolean successful = false;
         Groups groups = new Groups();
@@ -189,7 +189,7 @@ public class ParallelBatchImporterTest
 
             // THEN
             DatabaseManagementService managementService = new TestGraphDatabaseFactory()
-                        .newEmbeddedDatabaseBuilder( databaseLayout.databaseDirectory() )
+                        .newEmbeddedDatabaseBuilder( directory.storeDir() )
                         .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             try ( Transaction tx = db.beginTx() )

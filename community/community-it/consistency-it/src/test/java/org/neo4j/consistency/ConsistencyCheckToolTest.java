@@ -203,7 +203,7 @@ class ConsistencyCheckToolTest
     {
         assertThrows( ToolFailureException.class, () -> {
             createGraphDbAndKillIt( Config.defaults() );
-            runConsistencyCheckToolWith( fs, testDirectory.storeDir().getAbsolutePath() );
+            runConsistencyCheckToolWith( fs, testDirectory.databaseDir().getAbsolutePath() );
         } );
     }
 
@@ -213,11 +213,10 @@ class ConsistencyCheckToolTest
         assertThrows( ToolFailureException.class, () ->
         {
             File customConfigFile = testDirectory.file( "customConfig" );
-            File otherLocation = testDirectory.directory( "otherLocation" );
             Config customConfig = Config.defaults();
             createGraphDbAndKillIt( customConfig );
             MapUtil.store( customConfig.getRaw(), fs.openAsOutputStream( customConfigFile, false ) );
-            String[] args = {testDirectory.storeDir().getPath(), "-config", customConfigFile.getPath()};
+            String[] args = {testDirectory.databaseDir().getPath(), "-config", customConfigFile.getPath()};
 
             runConsistencyCheckToolWith( fs, args );
         } );
@@ -276,13 +275,13 @@ class ConsistencyCheckToolTest
     private void restoreStoreCopy( File logFilesDirectory, File tempLogsDirectory, File tempStoreDirectory ) throws IOException
     {
         fs.copyRecursively( tempLogsDirectory, logFilesDirectory );
-        fs.copyRecursively( tempStoreDirectory, testDirectory.storeDir() );
+        fs.copyRecursively( tempStoreDirectory, testDirectory.databaseDir() );
     }
 
     private void createStoreCopy( File logFilesDirectory, File tempLogsDirectory, File tempStoreDirectory ) throws IOException
     {
         fs.copyRecursively( logFilesDirectory, tempLogsDirectory );
-        fs.copyRecursively( testDirectory.storeDir(), tempStoreDirectory );
+        fs.copyRecursively( testDirectory.databaseDir(), tempStoreDirectory );
     }
 
     private static void runConsistencyCheckToolWith( FileSystemAbstraction fileSystem, String... args )

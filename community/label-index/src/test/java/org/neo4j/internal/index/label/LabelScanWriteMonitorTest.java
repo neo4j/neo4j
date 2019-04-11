@@ -75,7 +75,7 @@ public class LabelScanWriteMonitorTest
         secondWriteMonitor.close();
 
         // then
-        assertEquals( 2, requireNonNull( directory.storeDir().listFiles( ( dir, name ) -> name.startsWith( baseName ) ) ).length );
+        assertEquals( 2, requireNonNull( directory.databaseDir().listFiles( ( dir, name ) -> name.startsWith( baseName ) ) ).length );
     }
 
     @Test
@@ -184,7 +184,7 @@ public class LabelScanWriteMonitorTest
     void shouldRotateAtConfiguredThreshold()
     {
         // given
-        File storeDir = this.directory.storeDir();
+        File storeDir = this.directory.databaseDir();
         int rotationThreshold = 1_000;
         LabelScanWriteMonitor writeMonitor = new LabelScanWriteMonitor( fs, directory.databaseLayout(), rotationThreshold, ByteUnit.Byte, 1, TimeUnit.DAYS );
 
@@ -210,7 +210,7 @@ public class LabelScanWriteMonitorTest
     void shouldPruneAtConfiguredThreshold()
     {
         // given
-        File storeDir = this.directory.storeDir();
+        File storeDir = this.directory.databaseDir();
         long pruneThreshold = 200;
         LabelScanWriteMonitor writeMonitor =
                 new LabelScanWriteMonitor( fs, directory.databaseLayout(), 1_000, ByteUnit.Byte, pruneThreshold, TimeUnit.MILLISECONDS );

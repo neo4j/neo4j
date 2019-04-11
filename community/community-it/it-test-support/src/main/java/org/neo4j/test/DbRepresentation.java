@@ -46,7 +46,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.io.fs.IoPrimitiveUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 
 public class DbRepresentation
@@ -99,11 +99,11 @@ public class DbRepresentation
 
     public static DbRepresentation of( File databaseDirectory, Config config )
     {
-        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory );
+        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory.getParentFile() );
         builder.setConfig( config.getRaw() );
 
         DatabaseManagementService managementService = builder.newDatabaseManagementService();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
+        GraphDatabaseService db = managementService.database( config.get( default_database ) );
         try
         {
             return of( db );
@@ -116,13 +116,16 @@ public class DbRepresentation
 
     public static DbRepresentation of( DatabaseLayout databaseLayout )
     {
-        return of( databaseLayout.databaseDirectory(), Config.defaults( transaction_logs_root_path,
-                databaseLayout.getTransactionLogsDirectory().getParentFile().getAbsolutePath() ) );
+        return of( databaseLayout.databaseDirectory(),
+                Config.builder().withSetting( transaction_logs_root_path, databaseLayout.getTransactionLogsDirectory().getParentFile().getAbsolutePath() )
+                                .withSetting( default_database, databaseLayout.getDatabaseName() )
+                        .build());
     }
 
     public static DbRepresentation of( DatabaseLayout databaseLayout, Config config )
     {
         config.augment( transaction_logs_root_path, databaseLayout.getTransactionLogsDirectory().getParentFile().getAbsolutePath() );
+        config.augment( default_database, databaseLayout.getDatabaseName() );
         return of( databaseLayout.databaseDirectory(), config );
     }
 

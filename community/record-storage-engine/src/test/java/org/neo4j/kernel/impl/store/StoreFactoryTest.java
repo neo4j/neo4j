@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.nio.file.OpenOption;
@@ -37,49 +35,48 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 
-public class StoreFactoryTest
+@EphemeralPageCacheExtension
+class StoreFactoryTest
 {
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory( fsRule );
-
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( testDirectory ).around( pageCacheRule );
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private PageCache pageCache;
 
     private NeoStores neoStores;
     private IdGeneratorFactory idGeneratorFactory;
-    private PageCache pageCache;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
-        FileSystemAbstraction fs = fsRule.get();
-        pageCache = pageCacheRule.getPageCache( fs );
-        idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
+        idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
     }
 
     private StoreFactory storeFactory( Config config, OpenOption... openOptions )
     {
         LogProvider logProvider = NullLogProvider.getInstance();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        RecordFormats recordFormats = selectForStoreOrConfig( config, databaseLayout, fsRule, pageCache, logProvider );
-        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fsRule.get(),
+        RecordFormats recordFormats = selectForStoreOrConfig( config, databaseLayout, fileSystem, pageCache, logProvider );
+        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem,
                 recordFormats, logProvider, openOptions );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         if ( neoStores != null )
         {
@@ -88,7 +85,7 @@ public class StoreFactoryTest
     }
 
     @Test
-    public void shouldHaveSameCreationTimeAndUpgradeTimeOnStartup()
+    void shouldHaveSameCreationTimeAndUpgradeTimeOnStartup()
     {
         // When
         neoStores = storeFactory( Config.defaults() ).openAllNeoStores( true );
@@ -99,7 +96,7 @@ public class StoreFactoryTest
     }
 
     @Test
-    public void shouldHaveSameCommittedTransactionAndUpgradeTransactionOnStartup()
+    void shouldHaveSameCommittedTransactionAndUpgradeTransactionOnStartup()
     {
         // When
         neoStores = storeFactory( Config.defaults() ).openAllNeoStores( true );
@@ -109,48 +106,49 @@ public class StoreFactoryTest
         assertEquals( metaDataStore.getUpgradeTransaction(), metaDataStore.getLastCommittedTransaction() );
     }
 
-    @Test( expected = StoreNotFoundException.class )
-    public void shouldThrowWhenOpeningNonExistingNeoStores()
+    @Test
+    void shouldThrowWhenOpeningNonExistingNeoStores()
     {
-        try ( NeoStores neoStores = storeFactory( Config.defaults() ).openAllNeoStores() )
+        assertThrows( StoreNotFoundException.class, () ->
         {
-            neoStores.getMetaDataStore();
-        }
+            try ( NeoStores neoStores = storeFactory( Config.defaults() ).openAllNeoStores() )
+            {
+                neoStores.getMetaDataStore();
+            }
+        } );
     }
 
     @Test
-    public void shouldDelegateDeletionOptionToStores()
+    void shouldDelegateDeletionOptionToStores()
     {
         // GIVEN
         StoreFactory storeFactory = storeFactory( Config.defaults(), DELETE_ON_CLOSE );
 
         // WHEN
         neoStores = storeFactory.openAllNeoStores( true );
-        assertTrue( fsRule.get().listFiles( testDirectory.storeDir() ).length >= StoreType.values().length );
+        assertTrue( fileSystem.listFiles( testDirectory.databaseDir() ).length >= StoreType.values().length );
 
         // THEN
         neoStores.close();
-        assertEquals( 0, fsRule.get().listFiles( testDirectory.storeDir() ).length );
+        assertEquals( 0, fileSystem.listFiles( testDirectory.databaseDir() ).length );
     }
 
     @Test
-    public void shouldHandleStoreConsistingOfOneEmptyFile() throws Exception
+    void shouldHandleStoreConsistingOfOneEmptyFile() throws Exception
     {
         StoreFactory storeFactory = storeFactory( Config.defaults() );
-        FileSystemAbstraction fs = fsRule.get();
-        fs.write( testDirectory.databaseLayout().file( "neostore.nodestore.db.labels" ) );
+        fileSystem.write( testDirectory.databaseLayout().file( "neostore.nodestore.db.labels" ) );
         storeFactory.openAllNeoStores( true ).close();
     }
 
     @Test
-    public void shouldCompleteInitializationOfStoresWithIncompleteHeaders() throws Exception
+    void shouldCompleteInitializationOfStoresWithIncompleteHeaders() throws Exception
     {
         StoreFactory storeFactory = storeFactory( Config.defaults() );
         storeFactory.openAllNeoStores( true ).close();
-        FileSystemAbstraction fs = fsRule.get();
-        for ( File f : fs.listFiles( testDirectory.storeDir() ) )
+        for ( File f : fileSystem.listFiles( testDirectory.databaseDir() ) )
         {
-            fs.truncate( f, 0 );
+            fileSystem.truncate( f, 0 );
         }
         storeFactory.openAllNeoStores( true ).close();
     }

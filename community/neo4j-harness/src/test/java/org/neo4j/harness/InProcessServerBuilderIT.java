@@ -40,7 +40,6 @@ import javax.net.ssl.X509TrustManager;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpConnector.Encryption;
 import org.neo4j.configuration.ssl.ClientAuth;
@@ -57,7 +56,6 @@ import org.neo4j.harness.internal.Neo4jBuilder;
 import org.neo4j.harness.junit.Neo4j;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -241,8 +239,7 @@ class InProcessServerBuilderIT
         File existingStoreDir = directory.directory( "existingStore" );
         Config config = Config.defaults( data_directory, existingStoreDir.toPath().toString() );
         File rootDirectory = config.get( databases_root_path );
-        DatabaseLayout databaseLayout = DatabaseLayout.of( rootDirectory, LayoutConfig.of( config ), DEFAULT_DATABASE_NAME );
-        GraphDatabaseBuilder databaseBuilder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseLayout.databaseDirectory() )
+        GraphDatabaseBuilder databaseBuilder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( rootDirectory )
                 .setConfig( transaction_logs_root_path, new File( existingStoreDir, DEFAULT_TX_LOGS_ROOT_DIR_NAME ).getAbsolutePath() );
         DatabaseManagementService managementService1 = databaseBuilder.newDatabaseManagementService();
         GraphDatabaseService db = managementService1.database( DEFAULT_DATABASE_NAME );

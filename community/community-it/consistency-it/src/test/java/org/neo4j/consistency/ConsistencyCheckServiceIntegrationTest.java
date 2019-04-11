@@ -254,7 +254,7 @@ public class ConsistencyCheckServiceIntegrationTest
     {
         // given
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        GraphDatabaseService gds = getGraphDatabaseService( databaseLayout.databaseDirectory() );
+        GraphDatabaseService gds = getGraphDatabaseService( testDirectory.storeDir() );
 
         Label label = Label.label( "label" );
         String propKey = "propKey";
@@ -397,7 +397,7 @@ public class ConsistencyCheckServiceIntegrationTest
         fs.mkdir( tmpLogDir );
         var databaseLayout = testDirectory.databaseLayout();
         DatabaseManagementService managementService = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( databaseLayout.databaseDirectory() )
+                .newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
                 .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );

@@ -86,6 +86,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
@@ -136,7 +137,9 @@ public class GlobalModule
         globalClock = globalDependencies.satisfyDependency( createClock() );
         globalLife = createLife();
 
-        this.storeLayout = StoreLayout.of( providedStoreDir, of( globalConfig ) );
+        File storeDirectory = globalConfig.isConfigured( databases_root_path ) ? globalConfig.get( databases_root_path )
+                                                                               : providedStoreDir;
+        this.storeLayout = StoreLayout.of( storeDirectory, of( globalConfig ) );
 
         globalConfig.augmentDefaults( GraphDatabaseSettings.neo4j_home, storeLayout.storeDirectory().getPath() );
         this.globalConfig = globalDependencies.satisfyDependency( globalConfig );
