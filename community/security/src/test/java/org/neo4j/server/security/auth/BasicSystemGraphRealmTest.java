@@ -20,7 +20,6 @@
 package org.neo4j.server.security.auth;
 
 import org.hamcrest.core.IsEqual;
-import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,13 +39,13 @@ import org.neo4j.server.security.systemgraph.BasicInMemorySystemGraphOperations;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -61,7 +60,6 @@ import static org.neo4j.test.assertion.Assert.assertException;
 
 public class BasicSystemGraphRealmTest
 {
-    @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
 
     protected Config config;
