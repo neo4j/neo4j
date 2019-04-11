@@ -286,49 +286,50 @@ class ByteCodeUtilsTest
         assertThat( byteCodeName, equalTo( expected ) );
     }
 
+    @SuppressWarnings( "unused" )
     static class Tester
     {
-        byte byteMethod( byte b )
+        public byte byteMethod( byte b )
         {
             return b;
         }
 
-        char charMethod( char c )
+        public char charMethod( char c )
         {
             return c;
         }
 
-        short shortMethod( short s )
+        public short shortMethod( short s )
         {
             return s;
         }
 
-        int intMethod( int i )
+        public int intMethod( int i )
         {
             return i;
         }
 
-        long longMethod( long l )
+        public long longMethod( long l )
         {
             return l;
         }
 
-        float floatMethod( float f )
+        public float floatMethod( float f )
         {
             return f;
         }
 
-        double doubleMethod( double d )
+        public double doubleMethod( double d )
         {
             return d;
         }
 
-        boolean booleanMethod( boolean b )
+        public boolean booleanMethod( boolean b )
         {
             return b;
         }
 
-        String stringMethod( String s )
+        public String stringMethod( String s )
         {
             return s;
         }
