@@ -27,11 +27,8 @@ trait ExternalCSVResource {
 }
 
 object ExternalCSVResource {
-  def empty: ExternalCSVResource = new ExternalCSVResource {
-    override def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean, bufferSize: Int,
-                                headers: Boolean = false): LoadCsvIterator =
-      LoadCsvIterator.empty
-  }
+  def empty: ExternalCSVResource = (_: URL, _: Option[String], _: Boolean,
+                                    _: Int, _: Boolean) => LoadCsvIterator.empty
 }
 
 trait LoadCsvIterator extends Iterator[Array[String]] {

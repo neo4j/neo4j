@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.load_csv
 import java.net.URL
 
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.CSVResource
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, LoadCsvIterator}
 
 class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVResource, queryContext: QueryContext)
@@ -50,6 +51,12 @@ class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVR
   }
 
   private def commitAndRestartTx() {
+    //This is a little horrible, we need to close things such as expression cursors but we don't want to close
+    //the URL that we are reading the CSV from until we are all done
+    queryContext.resources.allResources.foreach {
+      case _: CSVResource => //ignore we should just close the csv resource when done
+      case e => e.close()
+    }
     queryContext.transactionalContext.commitAndRestartTx()
     outerLoadCSVIterator.foreach(_.notifyCommit())
   }

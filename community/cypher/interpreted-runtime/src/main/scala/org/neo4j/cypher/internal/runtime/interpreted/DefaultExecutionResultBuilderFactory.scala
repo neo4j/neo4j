@@ -91,7 +91,7 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
   case class InterpretedExecutionResultBuilder(queryContext: QueryContext) extends BaseExecutionResultBuilder {
     override def createQueryState(params: MapValue, prePopulateResults: Boolean, input: InputDataStream): QueryState = {
       val cursors = new ExpressionCursors(queryContext.transactionalContext.cursors)
-
+      queryContext.resources.trace(cursors)
       new QueryState(queryContext,
                      externalResource,
                      createParameterArray(params, parameterMapping),
