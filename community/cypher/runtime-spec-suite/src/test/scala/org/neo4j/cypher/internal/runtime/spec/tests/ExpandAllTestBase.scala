@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
-import org.neo4j.graphdb.RelationshipType
+import org.neo4j.graphdb.{Label, RelationshipType}
 
 abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
@@ -162,6 +162,175 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y", "r").withNoRows()
+  }
+
+  test("should handle expand outgoing") {
+    // given
+    val (_, rels) = circleGraph(10000)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expandAll("(x)-->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      for {
+        r <- rels
+        row <- List(Array(r.getStartNode, r.getEndNode))
+      } yield row
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should handle expand incoming") {
+    // given
+    val (_, rels) = circleGraph(10000)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expandAll("(x)<--(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      for {
+        r <- rels
+        row <- List(Array(r.getEndNode, r.getStartNode))
+      } yield row
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should handle existing types") {
+    // given
+    val (r1, r2, r3) = inTx {
+      val node = graphDb.createNode(Label.label("L"))
+      val other = graphDb.createNode(Label.label("L"))
+      (node.createRelationshipTo(other, RelationshipType.withName("R")),
+        node.createRelationshipTo(other, RelationshipType.withName("S")),
+        node.createRelationshipTo(other, RelationshipType.withName("T")))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expandAll("(x)-[:R|S|T]->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = List(
+      Array(r1.getStartNode, r1.getEndNode),
+      Array(r2.getStartNode, r2.getEndNode),
+      Array(r3.getStartNode, r3.getEndNode)
+      )
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should handle types missing on compile") {
+    // given
+    inTx(
+      1 to 1000 foreach { _ =>
+        graphDb.createNode().createRelationshipTo(graphDb.createNode(), RelationshipType.withName("BASE"))
+      })
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expandAll("(x)-[:R|S|T]->(y)")
+      .allNodeScan("x")
+      .build()
+
+    execute(logicalQuery, runtime) should beColumns("x", "y").withRows(List.empty)
+
+    //CREATE S
+    inTx(
+      graphDb.createNode().createRelationshipTo(graphDb.createNode(), RelationshipType.withName("S"))
+      )
+    execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(1))
+
+    //CREATE R
+    inTx(
+      graphDb.createNode().createRelationshipTo(graphDb.createNode(), RelationshipType.withName("R"))
+      )
+    execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(2))
+
+    //CREATE T
+    inTx(
+      graphDb.createNode().createRelationshipTo(graphDb.createNode(), RelationshipType.withName("T"))
+      )
+    execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(3))
+  }
+
+  test("cached plan should adapt to new relationship types") {
+    // given
+    inTx(
+      1 to 1000 foreach { _ =>
+        graphDb.createNode().createRelationshipTo(graphDb.createNode(), RelationshipType.withName("BASE"))
+      })
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expandAll("(x)-[:R|S|T]->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val executablePlan = buildPlan(logicalQuery, runtime)
+
+    execute(executablePlan) should beColumns("x", "y").withRows(List.empty)
+
+    //CREATE S
+    inTx(
+      graphDb.createNode().createRelationshipTo(graphDb.createNode(), RelationshipType.withName("S"))
+      )
+    execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(1))
+
+    //CREATE R
+    inTx(
+      graphDb.createNode().createRelationshipTo(graphDb.createNode(), RelationshipType.withName("R"))
+      )
+    execute(executablePlan) should beColumns("x", "y").withRows(RowCount(2))
+
+    //CREATE T
+    inTx(
+      graphDb.createNode().createRelationshipTo(graphDb.createNode(), RelationshipType.withName("T"))
+      )
+    execute(executablePlan) should beColumns("x", "y").withRows(RowCount(3))
+  }
+
+  test("should handle expand + filter") {
+    // given
+    val size = 10
+    val (_, rels) = circleGraph(size)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .filter(Seq(
+        greaterThanOrEqual(function("id", varFor("y")), literalInt(size / 2))))
+      .expandAll("(x)-->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      for {
+        r <- rels
+        if r.getEndNode.getId >= size /2
+        row <- List(Array(r.getStartNode, r.getEndNode))
+      } yield row
+    runtimeResult should beColumns("x", "y").withRows(expected)
   }
 }
 
