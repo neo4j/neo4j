@@ -1288,6 +1288,11 @@
         <artifactId>commons-compress</artifactId>
         <version>1.18</version>
       </dependency>
+      <dependency>
+        <groupId>com.github.luben</groupId>
+        <artifactId>zstd-jni</artifactId>
+        <version>1.3.8-6</version>
+      </dependency>
 
       <!-- Netty is used by three components: Com, Cluster and Bolt Socket Transport.
            Netty 4 is a significant improvement over Netty 3, in that it introduces
