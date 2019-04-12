@@ -26,6 +26,7 @@ import org.junit.rules.ExpectedException;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.kernel.api.security.AnonymousContext;
 
@@ -142,16 +143,16 @@ public class KernelTransactionSecurityContextTest extends KernelTransactionTestB
     }
 
     @Test
-    public void shouldNotAllowTokenReadAccessInWriteOnlyMode()
+    public void shouldAllowTokenReadAccessInWriteOnlyMode()
     {
         // Given
         KernelTransactionImplementation tx = newTransaction( AnonymousContext.writeOnly() );
 
-        // Expect
-        exception.expect( AuthorizationViolationException.class );
-
         // When
-        tx.tokenRead();
+        TokenRead tokenRead = tx.tokenRead();
+
+        // Then
+        assertNotNull( tokenRead );
     }
 
     @Test
