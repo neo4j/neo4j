@@ -306,32 +306,6 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(3))
   }
-
-  test("should handle expand + filter") {
-    // given
-    val size = 10
-    val (_, rels) = circleGraph(size)
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "y")
-      .filter(Seq(
-        greaterThanOrEqual(function("id", varFor("y")), literalInt(size / 2))))
-      .expandAll("(x)-->(y)")
-      .allNodeScan("x")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected =
-      for {
-        r <- rels
-        if r.getEndNode.getId >= size /2
-        row <- List(Array(r.getStartNode, r.getEndNode))
-      } yield row
-    runtimeResult should beColumns("x", "y").withRows(expected)
-  }
 }
 
 // Supported by interpreted, slotted
