@@ -101,8 +101,7 @@ public class LuceneDocumentStructure
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         for ( int i = 0; i < values.length; i++ )
         {
-            ValueEncoding encoding = ValueEncoding.forValue( values[i] );
-            builder.add( encoding.encodeQuery( values[i], i ), BooleanClause.Occur.MUST );
+            builder.add( ValueEncoding.String.encodeQuery( values[i], i ), BooleanClause.Occur.MUST );
         }
         return builder.build();
     }
@@ -113,9 +112,7 @@ public class LuceneDocumentStructure
      */
     public static Query newInclusiveNumericRangeSeekQuery( Number lower, Number upper )
     {
-        double min = lower != null ? lower.doubleValue() : Double.NEGATIVE_INFINITY;
-        double max = upper != null ? upper.doubleValue() : Double.POSITIVE_INFINITY;
-        return NumberField.newRangeQuery( ValueEncoding.Number.key( 0 ), min, max );
+        return null; //  TODO delete this method
     }
 
     public static Query newRangeSeekByStringQuery( String lower, boolean includeLower, String upper, boolean includeUpper )
@@ -274,18 +271,17 @@ public class LuceneDocumentStructure
 
         private Field getFieldWithValue( int propertyNumber, Value value )
         {
-            ValueEncoding encoding = ValueEncoding.forValue( value );
-            int reuseId = propertyNumber * ValueEncoding.values().length + encoding.ordinal();
-            String key = encoding.key( propertyNumber );
+            int reuseId = propertyNumber * ValueEncoding.values().length + ValueEncoding.String.ordinal();
+            String key = ValueEncoding.String.key( propertyNumber );
             Field reusableField = reusableValueFields[reuseId];
             if ( reusableField == null )
             {
-                reusableField = encoding.encodeField( key, value );
+                reusableField = ValueEncoding.String.encodeField( key, value );
                 reusableValueFields[reuseId] = reusableField;
             }
             else
             {
-                encoding.setFieldValue( value, reusableField );
+                ValueEncoding.String.setFieldValue( value, reusableField );
             }
             return reusableField;
         }

@@ -58,7 +58,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR;
+import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR;
 import static org.neo4j.kernel.impl.index.schema.tracking.TrackingReadersIndexAccessor.numberOfClosedReaders;
 import static org.neo4j.kernel.impl.index.schema.tracking.TrackingReadersIndexAccessor.numberOfOpenReaders;
 
@@ -85,7 +85,7 @@ class UniqueIndexSeekIT
 
             generateRandomData( database, label, nameProperty );
 
-            assertNotNull( indexExtensionFactory.getIndexProvider(config.get( default_database )) );
+            assertNotNull( indexExtensionFactory.getIndexProvider( config.get( default_database ) ) );
             assertThat( numberOfClosedReaders(), greaterThan( 0L ) );
             assertThat( numberOfOpenReaders(), greaterThan( 0L ) );
             assertThat( numberOfClosedReaders(), closeTo( numberOfOpenReaders(), 1 ) );

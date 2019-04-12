@@ -25,7 +25,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
@@ -42,9 +41,6 @@ import static org.neo4j.kernel.api.impl.LuceneTestUtil.documentRepresentingPrope
 import static org.neo4j.kernel.api.impl.LuceneTestUtil.newSeekQuery;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.useFieldForUniquenessVerification;
-import static org.neo4j.kernel.api.impl.schema.ValueEncoding.Array;
-import static org.neo4j.kernel.api.impl.schema.ValueEncoding.Bool;
-import static org.neo4j.kernel.api.impl.schema.ValueEncoding.Number;
 import static org.neo4j.kernel.api.impl.schema.ValueEncoding.String;
 
 class LuceneDocumentStructureTest
@@ -82,64 +78,6 @@ class LuceneDocumentStructureTest
     }
 
     @Test
-    void shouldBuildDocumentRepresentingMultiplePropertiesOfDifferentTypes()
-    {
-        // given
-        Object[] values = new Object[]{"hello", 789};
-        Document document = documentRepresentingProperties( 123, values );
-
-        // then
-        assertEquals( "123", document.get( NODE_ID_KEY ) );
-        assertThat( document.get( String.key( 0 ) ), equalTo( "hello" ) );
-        assertThat( document.get( Number.key( 1 ) ), equalTo( "789.0" ) );
-    }
-
-    @Test
-    void shouldBuildDocumentRepresentingBoolProperty()
-    {
-        // given
-        Document document = documentRepresentingProperties( (long) 123, true );
-
-        // then
-        assertEquals( "123", document.get( NODE_ID_KEY ) );
-        assertEquals( "true", document.get( Bool.key( 0 ) ) );
-    }
-
-    @Test
-    void shouldBuildDocumentRepresentingNumberProperty()
-    {
-        // given
-        Document document = documentRepresentingProperties( (long) 123, 12 );
-
-        // then
-        assertEquals( "123", document.get( NODE_ID_KEY ) );
-        assertEquals( 12.0, document.getField( Number.key( 0 ) ).numericValue().doubleValue(), 0.001 );
-    }
-
-    @Test
-    void shouldBuildDocumentRepresentingArrayProperty()
-    {
-        // given
-        Document document = documentRepresentingProperties( (long) 123, new Object[]{new Integer[]{1, 2, 3}} );
-
-        // then
-        assertEquals( "123", document.get( NODE_ID_KEY ) );
-        assertEquals( "D1.0|2.0|3.0|", document.get( Array.key( 0 ) ) );
-    }
-
-    @Test
-    void shouldBuildQueryRepresentingBoolProperty()
-    {
-        // given
-        BooleanQuery booleanQuery = (BooleanQuery) newSeekQuery( true );
-        ConstantScoreQuery constantScoreQuery = (ConstantScoreQuery) booleanQuery.clauses().get( 0 ).getQuery();
-        TermQuery query = (TermQuery) constantScoreQuery.getQuery();
-
-        // then
-        assertEquals( "true", query.getTerm().text() );
-    }
-
-    @Test
     void shouldBuildQueryRepresentingStringProperty()
     {
         // given
@@ -151,67 +89,20 @@ class LuceneDocumentStructureTest
     }
 
     @Test
-    void shouldBuildQueryRepresentingNumberProperty()
-    {
-        // given
-        BooleanQuery booleanQuery = (BooleanQuery) newSeekQuery( 12 );
-        ConstantScoreQuery constantScoreQuery = (ConstantScoreQuery) booleanQuery.clauses().get( 0 ).getQuery();
-        PointRangeQuery query = (PointRangeQuery) constantScoreQuery.getQuery();
-
-        // then
-        assertEquals( 12.0, NumberField.decode( query.getLowerPoint() ), 0.001 );
-        assertEquals( 12.0, NumberField.decode( query.getUpperPoint() ), 0.001 );
-    }
-
-    @Test
-    void shouldBuildQueryRepresentingArrayProperty()
-    {
-        // given
-        BooleanQuery booleanQuery = (BooleanQuery) newSeekQuery( new Object[]{new Integer[]{1, 2, 3}} );
-        ConstantScoreQuery constantScoreQuery = (ConstantScoreQuery) booleanQuery.clauses().get( 0 ).getQuery();
-        TermQuery query = (TermQuery) constantScoreQuery.getQuery();
-
-        // then
-        assertEquals( "D1.0|2.0|3.0|", query.getTerm().text() );
-    }
-
-    @Test
     void shouldBuildQueryRepresentingMultipleProperties()
     {
         // given
-        BooleanQuery booleanQuery = (BooleanQuery) newSeekQuery( true, "Characters", 12, new Integer[]{1, 2, 3} );
+        BooleanQuery booleanQuery = (BooleanQuery) newSeekQuery( "foo", "bar" );
 
-        ConstantScoreQuery boolScoreQuery = (ConstantScoreQuery) booleanQuery.clauses().get( 0 ).getQuery();
-        TermQuery boolTermQuery = (TermQuery) boolScoreQuery.getQuery();
+        ConstantScoreQuery fooScoreQuery = (ConstantScoreQuery) booleanQuery.clauses().get( 0 ).getQuery();
+        TermQuery fooTermQuery = (TermQuery) fooScoreQuery.getQuery();
 
-        ConstantScoreQuery stringScoreQuery = (ConstantScoreQuery) booleanQuery.clauses().get( 1 ).getQuery();
-        TermQuery stringTermQuery = (TermQuery) stringScoreQuery.getQuery();
-
-        ConstantScoreQuery numberScoreQuery = (ConstantScoreQuery) booleanQuery.clauses().get( 2 ).getQuery();
-        PointRangeQuery numericRangeQuery = (PointRangeQuery) numberScoreQuery.getQuery();
-
-        ConstantScoreQuery arrayScoreQuery = (ConstantScoreQuery) booleanQuery.clauses().get( 3 ).getQuery();
-        TermQuery arrayTermQuery = (TermQuery) arrayScoreQuery.getQuery();
+        ConstantScoreQuery barScoreQuery = (ConstantScoreQuery) booleanQuery.clauses().get( 1 ).getQuery();
+        TermQuery barTermQuery = (TermQuery) barScoreQuery.getQuery();
 
         // then
-        assertEquals( "true", boolTermQuery.getTerm().text() );
-        assertEquals( "Characters", stringTermQuery.getTerm().text() );
-        assertEquals( 12.0, NumberField.decode( numericRangeQuery.getLowerPoint() ), 0.001 );
-        assertEquals( 12.0, NumberField.decode( numericRangeQuery.getUpperPoint() ), 0.001 );
-        assertEquals( "D1.0|2.0|3.0|", arrayTermQuery.getTerm().text() );
-    }
-
-    @Test
-    void shouldBuildRangeSeekByNumberQueryForStrings()
-    {
-        // given
-        PointRangeQuery query = (PointRangeQuery) LuceneDocumentStructure.newInclusiveNumericRangeSeekQuery( 12.0d, null );
-
-        // then
-        assertEquals( "number", query.getField() );
-        assertEquals( 12.0, NumberField.decode( query.getLowerPoint() ), 0.001 );
-        double upperBound = NumberField.decode( query.getUpperPoint() );
-        assertTrue( Double.isInfinite( upperBound ) && upperBound > 0 );
+        assertEquals( "foo", fooTermQuery.getTerm().text() );
+        assertEquals( "bar", barTermQuery.getTerm().text() );
     }
 
     @Test

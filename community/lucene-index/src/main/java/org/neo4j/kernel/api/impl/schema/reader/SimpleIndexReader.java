@@ -64,6 +64,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -156,22 +157,12 @@ public class SimpleIndexReader extends AbstractIndexReader
             return LuceneDocumentStructure.newScanQuery();
         case range:
             assertNotComposite( predicates );
-            switch ( predicate.valueGroup() )
+            if ( predicate.valueGroup() == ValueGroup.TEXT )
             {
-            case NUMBER:
-                IndexQuery.NumberRangePredicate np = (IndexQuery.NumberRangePredicate) predicate;
-                return LuceneDocumentStructure.newInclusiveNumericRangeSeekQuery( np.from(),
-                                                                                  np.to() );
-
-            case TEXT:
                 IndexQuery.TextRangePredicate sp = (IndexQuery.TextRangePredicate) predicate;
-                return LuceneDocumentStructure.newRangeSeekByStringQuery( sp.from(), sp.fromInclusive(),
-                                                                          sp.to(), sp.toInclusive() );
-
-            default:
-                throw new UnsupportedOperationException(
-                        format( "Range scans of value group %s are not supported", predicate.valueGroup() ) );
+                return LuceneDocumentStructure.newRangeSeekByStringQuery( sp.from(), sp.fromInclusive(), sp.to(), sp.toInclusive() );
             }
+            throw new UnsupportedOperationException( format( "Range scans of value group %s are not supported", predicate.valueGroup() ) );
 
         case stringPrefix:
             assertNotComposite( predicates );

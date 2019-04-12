@@ -26,7 +26,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
 import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
@@ -43,7 +43,7 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByPr
 
 public class NativeIndexFileFilterTest
 {
-    private static final IndexProviderDescriptor LUCENE_DESCRTIPTOR = LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR;
+    private static final IndexProviderDescriptor LUCENE_DESCRTIPTOR = LuceneIndexProvider.DESCRIPTOR;
 
     @Rule
     public DefaultFileSystemRule fs = new DefaultFileSystemRule();

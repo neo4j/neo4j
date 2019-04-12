@@ -97,6 +97,7 @@ import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore35;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.RangeLogVersionVisitor;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
@@ -508,17 +509,23 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private StoreFactory createStoreFactory( DatabaseLayout databaseLayout, RecordFormats formats, boolean readOnlyIds )
     {
+        NullLogProvider logProvider = NullLogProvider.getInstance();
+        return createStoreFactory( databaseLayout, formats, readOnlyIds, config, pageCache, fileSystem, logProvider );
+    }
+
+    static StoreFactory createStoreFactory( DatabaseLayout databaseLayout, RecordFormats formats, boolean readOnlyIds, Config config,
+            PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider )
+    {
         IdGeneratorFactory idGeneratorFactory;
         if ( readOnlyIds )
         {
-            idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fileSystem );
+            idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fs );
         }
         else
         {
-            idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
+            idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         }
-        NullLogProvider logProvider = NullLogProvider.getInstance();
-        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, formats, logProvider );
+        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, formats, logProvider );
     }
 
     private static AdditionalInitialIds readAdditionalIds( final long lastTxId, final long lastTxChecksum, final long lastTxLogVersion,
@@ -561,7 +568,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private static InputIterator legacyRelationshipsAsInput( NeoStores legacyStore, boolean requiresPropertyMigration )
     {
-        return new StoreScanAsInputIterator<RelationshipRecord>( legacyStore.getRelationshipStore() )
+        return new StoreScanAsInputIterator<>( legacyStore.getRelationshipStore() )
         {
             @Override
             public InputChunk newChunk()
@@ -573,7 +580,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private static InputIterator legacyNodesAsInput( NeoStores legacyStore, boolean requiresPropertyMigration )
     {
-        return new StoreScanAsInputIterator<NodeRecord>( legacyStore.getNodeStore() )
+        return new StoreScanAsInputIterator<>( legacyStore.getNodeStore() )
         {
             @Override
             public InputChunk newChunk()
@@ -678,33 +685,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 srcSchema.checkAndLoadStorage( true );
                 SchemaStorage35 srcAccess = new SchemaStorage35( srcSchema );
 
-                SchemaStore dstSchema = dstStore.getSchemaStore();
-                TokenCreator propertyKeyTokenCreator = ( name, internal ) ->
-                {
-                    PropertyKeyTokenStore keyTokenStore = dstStore.getPropertyKeyTokenStore();
-                    DynamicStringStore nameStore = keyTokenStore.getNameStore();
-                    byte[] bytes = PropertyStore.encodeString( name );
-                    List<DynamicRecord> nameRecords = new ArrayList<>();
-                    AbstractDynamicStore.allocateRecordsFromBytes( nameRecords, bytes, nameStore );
-                    nameRecords.forEach( nameStore::prepareForCommit );
-                    nameRecords.forEach( nameStore::updateRecord );
-                    nameRecords.forEach( record -> nameStore.setHighestPossibleIdInUse( record.getId() ) );
-                    int nameId = Iterables.first( nameRecords ).getIntId();
-                    PropertyKeyTokenRecord keyTokenRecord = keyTokenStore.newRecord();
-                    long tokenId = keyTokenStore.nextId();
-                    keyTokenRecord.setId( tokenId );
-                    keyTokenRecord.initialize( true, nameId );
-                    keyTokenRecord.setInternal( internal );
-                    keyTokenStore.prepareForCommit( keyTokenRecord );
-                    keyTokenStore.updateRecord( keyTokenRecord );
-                    keyTokenStore.setHighestPossibleIdInUse( keyTokenRecord.getId() );
-                    return Math.toIntExact( tokenId );
-                };
-                TokenHolder propertyKeyTokens = new DelegatingTokenHolder( propertyKeyTokenCreator, TokenHolder.TYPE_PROPERTY_KEY );
-                TokenHolders dstTokenHolders = new TokenHolders( propertyKeyTokens, StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
-                        StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-                dstTokenHolders.propertyKeyTokens().setInitialTokens( dstStore.getPropertyKeyTokenStore().getTokens() );
-                SchemaRuleAccess dstAccess = SchemaRuleAccess.getSchemaRuleAccess( dstSchema, dstTokenHolders );
+                SchemaRuleAccess dstAccess = createMigrationTargetSchemaRuleAccess( dstStore );
 
                 Iterable<SchemaRule> rules = srcAccess.getAll();
                 for ( SchemaRule rule : rules )
@@ -715,6 +696,37 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 dstStore.flush( IOLimiter.UNLIMITED );
             }
         }
+    }
+
+    static SchemaRuleAccess createMigrationTargetSchemaRuleAccess( NeoStores stores )
+    {
+        SchemaStore dstSchema = stores.getSchemaStore();
+        TokenCreator propertyKeyTokenCreator = ( name, internal ) ->
+        {
+            PropertyKeyTokenStore keyTokenStore = stores.getPropertyKeyTokenStore();
+            DynamicStringStore nameStore = keyTokenStore.getNameStore();
+            byte[] bytes = PropertyStore.encodeString( name );
+            List<DynamicRecord> nameRecords = new ArrayList<>();
+            AbstractDynamicStore.allocateRecordsFromBytes( nameRecords, bytes, nameStore );
+            nameRecords.forEach( nameStore::prepareForCommit );
+            nameRecords.forEach( nameStore::updateRecord );
+            nameRecords.forEach( record -> nameStore.setHighestPossibleIdInUse( record.getId() ) );
+            int nameId = Iterables.first( nameRecords ).getIntId();
+            PropertyKeyTokenRecord keyTokenRecord = keyTokenStore.newRecord();
+            long tokenId = keyTokenStore.nextId();
+            keyTokenRecord.setId( tokenId );
+            keyTokenRecord.initialize( true, nameId );
+            keyTokenRecord.setInternal( internal );
+            keyTokenStore.prepareForCommit( keyTokenRecord );
+            keyTokenStore.updateRecord( keyTokenRecord );
+            keyTokenStore.setHighestPossibleIdInUse( keyTokenRecord.getId() );
+            return Math.toIntExact( tokenId );
+        };
+        TokenHolder propertyKeyTokens = new DelegatingTokenHolder( propertyKeyTokenCreator, TokenHolder.TYPE_PROPERTY_KEY );
+        TokenHolders dstTokenHolders = new TokenHolders( propertyKeyTokens, StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
+                StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+        dstTokenHolders.propertyKeyTokens().setInitialTokens( stores.getPropertyKeyTokenStore().getTokens() );
+        return SchemaRuleAccess.getSchemaRuleAccess( dstSchema, dstTokenHolders );
     }
 
     @Override

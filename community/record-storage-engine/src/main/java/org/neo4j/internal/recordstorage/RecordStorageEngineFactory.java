@@ -22,6 +22,7 @@ package org.neo4j.internal.recordstorage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.annotations.service.ServiceProvider;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.storemigration.IndexProviderMigrator;
 import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersion;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
@@ -82,10 +84,13 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public StoreMigrationParticipant migrationParticipant( FileSystemAbstraction fs, Config config, PageCache pageCache,
+    public List<StoreMigrationParticipant> migrationParticipants( FileSystemAbstraction fs, Config config, PageCache pageCache,
             JobScheduler jobScheduler, LogService logService )
     {
-        return new RecordStorageMigrator( fs, pageCache, config, logService, jobScheduler );
+        RecordStorageMigrator recordStorageMigrator = new RecordStorageMigrator( fs, pageCache, config, logService, jobScheduler );
+        IndexProviderMigrator indexProviderMigrator = new IndexProviderMigrator( fs, config, pageCache, logService );
+        // Make sure that we migrate the store before we update the schema store with index providers.
+        return Arrays.asList( recordStorageMigrator, indexProviderMigrator );
     }
 
     @Override

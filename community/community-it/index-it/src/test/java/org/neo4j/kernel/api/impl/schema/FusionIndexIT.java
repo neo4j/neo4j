@@ -90,7 +90,7 @@ public class FusionIndexIT
         initializeIndexWithDataAndShutdown();
 
         // when
-        IndexProviderDescriptor descriptor = LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR;
+        IndexProviderDescriptor descriptor = LuceneIndexProvider.DESCRIPTOR;
         deleteIndexFilesFor( descriptor );
 
         // then
@@ -105,7 +105,7 @@ public class FusionIndexIT
         initializeIndexWithDataAndShutdown();
 
         // when
-        IndexProviderDescriptor luceneDescriptor = LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR;
+        IndexProviderDescriptor luceneDescriptor = LuceneIndexProvider.DESCRIPTOR;
         IndexProviderDescriptor nativeDescriptor = GenericNativeIndexProvider.DESCRIPTOR;
         deleteIndexFilesFor( luceneDescriptor );
         deleteIndexFilesFor( nativeDescriptor );

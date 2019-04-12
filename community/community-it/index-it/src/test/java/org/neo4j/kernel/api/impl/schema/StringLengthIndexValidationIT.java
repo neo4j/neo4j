@@ -47,7 +47,7 @@ public class StringLengthIndexValidationIT
 {
     @Rule
     public DbmsRule db = new EmbeddedDbmsRule()
-            .withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() );
+            .withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName() );
 
     private static final String propKey = "largeString";
     private static final int sizeOfEntityId = Long.BYTES;

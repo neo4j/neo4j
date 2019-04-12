@@ -63,7 +63,7 @@ public interface StorageEngineFactory
      * Returns a {@link StoreMigrationParticipant} which will be able to participate in a store migration.
      * @return StoreMigrationParticipant for migration.
      */
-    StoreMigrationParticipant migrationParticipant( FileSystemAbstraction fs, Config config, PageCache pageCache,
+    List<StoreMigrationParticipant> migrationParticipants( FileSystemAbstraction fs, Config config, PageCache pageCache,
             JobScheduler jobScheduler, LogService logService );
 
     /**

@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -46,9 +47,11 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
+import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 class AccessUniqueDatabaseIndexTest
@@ -69,11 +72,11 @@ class AccessUniqueDatabaseIndexTest
 
         // when
         updateAndCommit( accessor, asList( add( 1L, "value1" ), add( 2L, "value2" ) ) );
-        updateAndCommit( accessor, asList( add( 3L, "value3" ) ) );
+        updateAndCommit( accessor, singletonList( add( 3L, "value3" ) ) );
         accessor.close();
 
         // then
-        assertEquals( asList( 1L ), getAllNodes( indexStorage, "value1" ) );
+        assertEquals( singletonList( 1L ), getAllNodes( indexStorage, "value1" ) );
     }
 
     @Test
@@ -85,12 +88,12 @@ class AccessUniqueDatabaseIndexTest
         LuceneIndexAccessor accessor = createAccessor( indexStorage );
 
         // when
-        updateAndCommit( accessor, asList( add( 1L, "value1" ) ) );
-        updateAndCommit( accessor, asList( change( 1L, "value1", "value2" ) ) );
+        updateAndCommit( accessor, singletonList( add( 1L, "value1" ) ) );
+        updateAndCommit( accessor, singletonList( change( 1L, "value1", "value2" ) ) );
         accessor.close();
 
         // then
-        assertEquals( asList( 1L ), getAllNodes( indexStorage, "value2" ) );
+        assertEquals( singletonList( 1L ), getAllNodes( indexStorage, "value2" ) );
         assertEquals( emptyList(), getAllNodes( indexStorage, "value1" ) );
     }
 
@@ -103,23 +106,23 @@ class AccessUniqueDatabaseIndexTest
         LuceneIndexAccessor accessor = createAccessor( indexStorage );
 
         // when
-        updateAndCommit( accessor, asList( add( 1L, "value1" ) ) );
-        updateAndCommit( accessor, asList( add( 2L, "value2" ) ) );
-        updateAndCommit( accessor, asList( add( 3L, "value3" ) ) );
-        updateAndCommit( accessor, asList( add( 4L, "value4" ) ) );
-        updateAndCommit( accessor, asList( remove( 1L, "value1" ) ) );
-        updateAndCommit( accessor, asList( remove( 2L, "value2" ) ) );
-        updateAndCommit( accessor, asList( remove( 3L, "value3" ) ) );
-        updateAndCommit( accessor, asList( add( 1L, "value1" ) ) );
-        updateAndCommit( accessor, asList( add( 3L, "value3b" ) ) );
+        updateAndCommit( accessor, singletonList( add( 1L, "value1" ) ) );
+        updateAndCommit( accessor, singletonList( add( 2L, "value2" ) ) );
+        updateAndCommit( accessor, singletonList( add( 3L, "value3" ) ) );
+        updateAndCommit( accessor, singletonList( add( 4L, "value4" ) ) );
+        updateAndCommit( accessor, singletonList( remove( 1L, "value1" ) ) );
+        updateAndCommit( accessor, singletonList( remove( 2L, "value2" ) ) );
+        updateAndCommit( accessor, singletonList( remove( 3L, "value3" ) ) );
+        updateAndCommit( accessor, singletonList( add( 1L, "value1" ) ) );
+        updateAndCommit( accessor, singletonList( add( 3L, "value3b" ) ) );
         accessor.close();
 
         // then
-        assertEquals( asList( 1L ), getAllNodes( indexStorage, "value1" ) );
+        assertEquals( singletonList( 1L ), getAllNodes( indexStorage, "value1" ) );
         assertEquals( emptyList(), getAllNodes( indexStorage, "value2" ) );
         assertEquals( emptyList(), getAllNodes( indexStorage, "value3" ) );
-        assertEquals( asList( 3L ), getAllNodes( indexStorage, "value3b" ) );
-        assertEquals( asList( 4L ), getAllNodes( indexStorage, "value4" ) );
+        assertEquals( singletonList( 3L ), getAllNodes( indexStorage, "value3b" ) );
+        assertEquals( singletonList( 4L ), getAllNodes( indexStorage, "value4" ) );
     }
 
     @Test
@@ -131,14 +134,14 @@ class AccessUniqueDatabaseIndexTest
         LuceneIndexAccessor accessor = createAccessor( indexStorage );
 
         // when
-        updateAndCommit( accessor, asList( add( 1L, "value1" ) ) );
-        updateAndCommit( accessor, asList( add( 2L, "value2" ) ) );
+        updateAndCommit( accessor, singletonList( add( 1L, "value1" ) ) );
+        updateAndCommit( accessor, singletonList( add( 2L, "value2" ) ) );
         updateAndCommit( accessor, asList( change( 1L, "value1", "value2" ), change( 2L, "value2", "value1" ) ) );
         accessor.close();
 
         // then
-        assertEquals( asList( 2L ), getAllNodes( indexStorage, "value1" ) );
-        assertEquals( asList( 1L ), getAllNodes( indexStorage, "value2" ) );
+        assertEquals( singletonList( 2L ), getAllNodes( indexStorage, "value1" ) );
+        assertEquals( singletonList( 1L ), getAllNodes( indexStorage, "value2" ) );
     }
 
     private LuceneIndexAccessor createAccessor( PartitionedIndexStorage indexStorage ) throws IOException
@@ -152,8 +155,9 @@ class AccessUniqueDatabaseIndexTest
 
     private PartitionedIndexStorage getIndexStorage()
     {
+        IndexDirectoryStructure parent = directoriesByProvider( testDirectory.databaseDir() ).forProvider( DESCRIPTOR );
         IndexStorageFactory storageFactory = new IndexStorageFactory( directoryFactory, fileSystem,
-                directoriesByProviderKey( testDirectory.storeDir() ).forProvider( PROVIDER_DESCRIPTOR ) );
+                directoriesBySubProvider( parent ).forProvider( LuceneIndexProvider.DESCRIPTOR ) );
         return storageFactory.indexStorageOf( 1 );
     }
 
@@ -178,8 +182,7 @@ class AccessUniqueDatabaseIndexTest
                 Values.stringValue( propertyValue ) );
     }
 
-    private void updateAndCommit( IndexAccessor accessor, Iterable<IndexEntryUpdate<?>> updates )
-            throws IOException, IndexEntryConflictException
+    private void updateAndCommit( IndexAccessor accessor, Iterable<IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {

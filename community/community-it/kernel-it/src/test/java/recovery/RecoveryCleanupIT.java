@@ -158,18 +158,6 @@ class RecoveryCleanupIT
     }
 
     @Test
-    void nativeIndexFusion10MustLogCrashPointerCleanupDuringRecovery() throws Exception
-    {
-        nativeIndexMustLogCrashPointerCleanupDuringRecovery( GraphDatabaseSettings.SchemaIndex.NATIVE10, "native", "spatial", "temporal" );
-    }
-
-    @Test
-    void nativeIndexFusion20MustLogCrashPointerCleanupDuringRecovery() throws Exception
-    {
-        nativeIndexMustLogCrashPointerCleanupDuringRecovery( GraphDatabaseSettings.SchemaIndex.NATIVE20, "string", "native", "spatial", "temporal" );
-    }
-
-    @Test
     void nativeIndexFusion30MustLogCrashPointerCleanupDuringRecovery() throws Exception
     {
         nativeIndexMustLogCrashPointerCleanupDuringRecovery( GraphDatabaseSettings.SchemaIndex.NATIVE30, "native-btree-1.0" );

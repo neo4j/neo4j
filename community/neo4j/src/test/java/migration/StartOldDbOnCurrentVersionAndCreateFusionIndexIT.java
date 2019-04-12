@@ -52,14 +52,11 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
@@ -90,25 +87,26 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     private enum Provider
     {
         // in order of appearance
-        LUCENE_10( "Label1", GraphDatabaseSettings.SchemaIndex.LUCENE10, LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR ),
-        FUSION_10( "Label2", GraphDatabaseSettings.SchemaIndex.NATIVE10, NativeLuceneFusionIndexProviderFactory10.DESCRIPTOR ),
-        FUSION_20( "Label3", GraphDatabaseSettings.SchemaIndex.NATIVE20, NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR ),
-        BTREE_10( "Label4", GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10, GenericNativeIndexProvider.DESCRIPTOR ),
-        BTREE_10_35( "Label5", GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10, GenericNativeIndexProvider.DESCRIPTOR );
+        LUCENE_10( "Label1", "lucene-1.0", NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR ),
+        FUSION_10( "Label2", "lucene+native-1.0", NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR ),
+        FUSION_20( "Label3", "lucene+native-2.0", GenericNativeIndexProvider.DESCRIPTOR ),
+        BTREE_10( "Label4", "native-btree-1.0", GenericNativeIndexProvider.DESCRIPTOR ),
+        BTREE_10_40( "Label5", "native-btree-1.0", GenericNativeIndexProvider.DESCRIPTOR );
 
         private final Label label;
-        private final GraphDatabaseSettings.SchemaIndex setting;
+        @SuppressWarnings( {"unused", "FieldCanBeLocal"} )
+        private final String originallyCreatedWithProvider;
         private final IndexProviderDescriptor descriptor;
 
-        Provider( String labelName, GraphDatabaseSettings.SchemaIndex setting, IndexProviderDescriptor descriptor )
+        Provider( String labelName, String originallyCreatedWithProvider, IndexProviderDescriptor descriptor )
         {
             this.label = Label.label( labelName );
-            this.setting = setting;
+            this.originallyCreatedWithProvider = originallyCreatedWithProvider;
             this.descriptor = descriptor;
         }
     }
 
-    private static final Provider DEFAULT_PROVIDER = Provider.BTREE_10_35;
+    private static final Provider DEFAULT_PROVIDER = Provider.BTREE_10_40;
 
     @Inject
     private TestDirectory directory;
@@ -120,17 +118,19 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         File storeDir = tempStoreDirectory();
         DatabaseManagementServiceBuilder factory = new DatabaseManagementServiceBuilder();
         DatabaseManagementServiceInternalBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
+        DatabaseManagementService managementService;
+        GraphDatabaseService db;
 
-        builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.LUCENE10.providerName() );
-        DatabaseManagementService managementService = builder.newDatabaseManagementService();
+        builder.setConfig( GraphDatabaseSettings.default_schema_provider, "lucene-1.0" );
+        managementService = builder.newDatabaseManagementService();
         createIndexData( managementService.database( DEFAULT_DATABASE_NAME ), Provider.LUCENE_10.label );
         managementService.shutdown();
 
-        builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE10.providerName() );
+        builder.setConfig( GraphDatabaseSettings.default_schema_provider, "lucene+native-1.0" );
         managementService = builder.newDatabaseManagementService();
         createIndexData( managementService.database( DEFAULT_DATABASE_NAME ), Provider.FUSION_10.label );
 
-        builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() );
+        builder.setConfig( GraphDatabaseSettings.default_schema_provider, "lucene+native-2.0" );
         managementService = builder.newDatabaseManagementService();
         createIndexData( managementService.database( DEFAULT_DATABASE_NAME ), Provider.FUSION_20.label );
 

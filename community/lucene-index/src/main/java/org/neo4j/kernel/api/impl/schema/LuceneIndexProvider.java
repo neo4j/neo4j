@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
@@ -46,6 +47,7 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
 public class LuceneIndexProvider extends IndexProvider
 {
+    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "lucene", "2.0" );
     private final IndexStorageFactory indexStorageFactory;
     private final Config config;
     private final OperationalMode operationalMode;
@@ -56,7 +58,7 @@ public class LuceneIndexProvider extends IndexProvider
                                 IndexDirectoryStructure.Factory directoryStructureFactory, Monitor monitor, Config config,
                                 OperationalMode operationalMode )
     {
-        super( LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR, directoryStructureFactory );
+        super( DESCRIPTOR, directoryStructureFactory );
         this.monitor = monitor;
         this.indexStorageFactory = buildIndexStorageFactory( fileSystem, directoryFactory );
         this.fileSystem = fileSystem;

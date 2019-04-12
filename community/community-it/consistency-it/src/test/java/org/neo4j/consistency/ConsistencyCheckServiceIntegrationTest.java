@@ -74,8 +74,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.LUCENE10;
-import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE20;
+import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
+import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -291,7 +291,7 @@ public class ConsistencyCheckServiceIntegrationTest
         String propKey = "propKey";
 
         // Given a lucene index
-        GraphDatabaseService db = getGraphDatabaseService( databaseLayout.databaseDirectory(), defaultSchemaProvider, LUCENE10.providerName() );
+        GraphDatabaseService db = getGraphDatabaseService( databaseLayout.databaseDirectory(), defaultSchemaProvider, NATIVE30.providerName() );
         createIndex( db, label, propKey );
         try ( Transaction tx = db.beginTx() )
         {
@@ -303,7 +303,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration =
-                Config.defaults( settings( defaultSchemaProvider, NATIVE20.providerName() ) );
+                Config.defaults( settings( defaultSchemaProvider, NATIVE_BTREE10.providerName() ) );
         Result result = runFullConsistencyCheck( service, configuration, databaseLayout );
         assertTrue( result.isSuccessful() );
     }

@@ -31,6 +31,7 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersionCheck;
+import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
 /**
  * DatabaseMigrator collects all dependencies required for store migration,
@@ -80,7 +81,13 @@ public class DatabaseMigrator
                 tailScanner, legacyLogsLocator );
 
         this.indexProviderMap.accept( provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache, storageEngineFactory ) ) );
-        storeUpgrader.addParticipant( storageEngineFactory.migrationParticipant( fs, config, pageCache, jobScheduler, logService ) );
+
+        var storeParticipants = storageEngineFactory.migrationParticipants( fs, config, pageCache, jobScheduler, logService );
+        for ( StoreMigrationParticipant participant : storeParticipants )
+        {
+            storeUpgrader.addParticipant( participant );
+        }
+
         storeUpgrader.migrateIfNeeded( databaseLayout );
     }
 }
