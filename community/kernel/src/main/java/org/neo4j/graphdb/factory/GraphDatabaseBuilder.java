@@ -96,13 +96,13 @@ public class GraphDatabaseBuilder
     }
 
     /**
-     * Set database settings from provided config. All previously configured config options will be cleaned.
+     * Set database settings from provided config. All previously configured overlapped config options will be overwritten.
      * @param config provided config
      * @return the builder
      */
     public GraphDatabaseBuilder setConfig( Config config )
     {
-        this.config = config.getRaw();
+        this.config.putAll( config.getRaw() );
         return this;
     }
 
