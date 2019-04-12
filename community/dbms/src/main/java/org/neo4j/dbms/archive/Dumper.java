@@ -91,8 +91,9 @@ public class Dumper
                 progressPrinter.maxFiles += operation.isFile ? 1 : 0;
             }
 
+
             ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
-            ScheduledFuture<?> timerFuture = timer.scheduleAtFixedRate( progressPrinter::printOnNextUpdate, 0, 100, TimeUnit.MILLISECONDS );
+            ScheduledFuture<?> timerFuture = progressPrinter.scheduleUpdates( timer );
             try
             {
                 for ( ArchiveOperation operation : operations )

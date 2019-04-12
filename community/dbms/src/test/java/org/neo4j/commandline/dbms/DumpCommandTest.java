@@ -106,15 +106,6 @@ class DumpCommandTest
     {
         execute( "foo.db" );
         verify( dumper ).dump( eq( homeDir.resolve( "data/databases/foo.db" ) ),
-                eq( homeDir.resolve( "data/databases/foo.db" ) ), eq( archive ), eq( GZIP ), any() );
-    }
-
-    @Test
-    void shouldCompressTheArchiveWithZstdWhenAsked() throws Exception
-    {
-        new DumpCommand( homeDir, configDir, dumper )
-                .execute( new String[]{"--database=foo.db", "--to=" + archive, "--zstd"} );
-        verify( dumper ).dump( eq( homeDir.resolve( "data/databases/foo.db" ) ),
                 eq( homeDir.resolve( "data/databases/foo.db" ) ), eq( archive ), eq( ZSTD ), any() );
     }
 
@@ -346,8 +337,7 @@ class DumpCommandTest
             Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
             usage.printUsageForCommand( new DumpCommandProvider(), ps::println );
 
-            assertEquals( String.format( "usage: neo4j-admin dump [--database=<name>] [--zstd[=<true|false>]]%n" +
-                            "                        --to=<destination-path>%n" +
+            assertEquals( String.format( "usage: neo4j-admin dump [--database=<name>] --to=<destination-path>%n" +
                             "%n" +
                             "environment variables:%n" +
                             "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
@@ -363,8 +353,6 @@ class DumpCommandTest
                             "%n" +
                             "options:%n" +
                             "  --database=<name>         Name of database. [default:" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME + "]%n" +
-                            "  --zstd=<true|false>       Use Zstandard compression (might not be loadable by%n" +
-                            "                            older versions of Neo4j). [default:false]%n" +
                             "  --to=<destination-path>   Destination (file or folder) of database dump.%n" ),
                     baos.toString() );
         }

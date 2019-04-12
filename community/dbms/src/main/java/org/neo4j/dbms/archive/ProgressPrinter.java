@@ -20,6 +20,9 @@
 package org.neo4j.dbms.archive;
 
 import java.io.PrintStream;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.io.ByteUnit;
@@ -28,16 +31,23 @@ class ProgressPrinter
 {
     private final AtomicBoolean printUpdate;
     private final PrintStream output;
+    private final boolean interactive;
+    private long currentBytes;
+    private long currentFiles;
+    private boolean done;
     long maxBytes;
     long maxFiles;
-    long currentBytes;
-    long currentFiles;
-    boolean done;
 
     ProgressPrinter( PrintStream output )
     {
         this.output = output;
         printUpdate = new AtomicBoolean();
+        interactive = System.console() != null;
+    }
+
+    ScheduledFuture<?> scheduleUpdates( ScheduledExecutorService timer )
+    {
+        return timer.scheduleAtFixedRate( this::printOnNextUpdate, 0, interactive ? 100 : 5_000, TimeUnit.MILLISECONDS );
     }
 
     void printOnNextUpdate()
@@ -82,14 +92,15 @@ class ProgressPrinter
     {
         if ( output != null )
         {
+            char line_sep = interactive ? '\r' : '\n';
             if ( done )
             {
-                output.println( "\rDone: " + currentFiles + " files, " + ByteUnit.bytesToString( currentBytes ) + " processed." );
+                output.println( line_sep + "Done: " + currentFiles + " files, " + ByteUnit.bytesToString( currentBytes ) + " processed." );
             }
             else
             {
                 double progress = (currentBytes / (double) maxBytes) * 100;
-                output.print( "\rFiles: " + currentFiles + '/' + maxFiles + ", data: " + String.format( "%4.1f%%", progress ));
+                output.print( line_sep + "Files: " + currentFiles + '/' + maxFiles + ", data: " + String.format( "%4.1f%%", progress ));
             }
         }
     }
