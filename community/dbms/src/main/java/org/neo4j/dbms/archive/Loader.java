@@ -23,22 +23,39 @@ import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.nio.file.Files.exists;
 import static org.neo4j.dbms.archive.Utils.checkWritableDirectory;
 
 public class Loader
 {
+    private final ArchiveProgressPrinter progressPrinter;
+
+    @VisibleForTesting
+    Loader()
+    {
+        progressPrinter = new ArchiveProgressPrinter( null );
+    }
+
+    public Loader( PrintStream output )
+    {
+        progressPrinter = new ArchiveProgressPrinter( output );
+    }
+
     public void load( Path archive, Path databaseDestination, Path transactionLogsDirectory ) throws IOException, IncorrectFormat
     {
         validatePath( databaseDestination );
@@ -47,7 +64,8 @@ public class Loader
         createDestination( databaseDestination );
         createDestination( transactionLogsDirectory );
 
-        try ( ArchiveInputStream stream = openArchiveIn( archive ) )
+        try ( ArchiveInputStream stream = openArchiveIn( archive );
+              Resource ignore = progressPrinter.startPrinting() )
         {
             ArchiveEntry entry;
             while ( (entry = nextEntry( stream, archive )) != null )
@@ -112,18 +130,18 @@ public class Loader
         {
             try ( OutputStream output = Files.newOutputStream( file ) )
             {
-                Utils.copy( stream, output, new ProgressPrinter( null ) );
+                Utils.copy( stream, output, progressPrinter );
             }
         }
     }
 
-    private static ArchiveInputStream openArchiveIn( Path archive ) throws IOException, IncorrectFormat
+    private ArchiveInputStream openArchiveIn( Path archive ) throws IOException, IncorrectFormat
     {
         InputStream input = Files.newInputStream( archive );
-        InputStream compressor;
+        InputStream decompressor;
         try
         {
-            compressor = CompressionFormat.GZIP.decompress( input );
+            decompressor = CompressionFormat.GZIP.decompress( input );
         }
         catch ( IOException e )
         {
@@ -131,7 +149,9 @@ public class Loader
             input = Files.newInputStream( archive );
             try
             {
-                compressor = CompressionFormat.ZSTD.decompress( input );
+                decompressor = CompressionFormat.ZSTD.decompress( input );
+                // Important: Only the ZSTD compressed archives have any archive metadata.
+                readArchiveMetadata( decompressor );
             }
             catch ( IOException ex )
             {
@@ -140,6 +160,35 @@ public class Loader
                 throw new IncorrectFormat( archive, ex );
             }
         }
-        return new TarArchiveInputStream( compressor );
+
+        return new TarArchiveInputStream( decompressor );
+    }
+
+    /**
+     * @see Dumper#writeArchiveMetadata(OutputStream)
+     */
+    void readArchiveMetadata( InputStream stream ) throws IOException
+    {
+        DataInputStream metadata = new DataInputStream( stream ); // Unbuffered. Will not play naughty tricks with the file position.
+        int version = metadata.readInt();
+        if ( version == 1 )
+        {
+            progressPrinter.maxFiles = metadata.readLong();
+            progressPrinter.maxBytes = metadata.readLong();
+        }
+        else
+        {
+            String reason;
+            // We might reasonably anticipate 10-ish more versions in the future.
+            if ( version > 0 && version < 10 )
+            {
+                reason = "Archive version " + version + " looks like it's from a Neo4j version newer than mine.";
+            }
+            else
+            {
+                reason = "Archive version looks corrupt: " + version + ".";
+            }
+            throw new IOException( "Cannot archive meta-data. " + reason );
+        }
     }
 }

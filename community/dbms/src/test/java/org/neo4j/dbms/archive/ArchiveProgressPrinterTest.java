@@ -26,14 +26,14 @@ import java.io.PrintStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class ProgressPrinterTest
+class ArchiveProgressPrinterTest
 {
     @Test
     void progressOutput()
     {
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream( bout );
-        ProgressPrinter progressPrinter = new ProgressPrinter( printStream );
+        ArchiveProgressPrinter progressPrinter = new ArchiveProgressPrinter( printStream );
         progressPrinter.maxBytes = 1000;
         progressPrinter.maxFiles = 10;
 
@@ -56,12 +56,12 @@ class ProgressPrinterTest
         printStream.flush();
         String output = bout.toString();
         assertEquals( output,
-                "\rFiles: 1/10, data:  0.5%" +
-                "\rFiles: 2/10, data: 20.5%" +
-                "\rFiles: 2/10, data: 20.5%" +
-                "\rFiles: 3/10, data: 30.5%" +
-                "\rFiles: 3/10, data: 30.5%" +
-                "\rDone: 3 files, 305B processed." +
+                "\nFiles: 1/10, data:  0.5%" +
+                "\nFiles: 2/10, data: 20.5%" +
+                "\nFiles: 2/10, data: 20.5%" +
+                "\nFiles: 3/10, data: 30.5%" +
+                "\nFiles: 3/10, data: 30.5%" +
+                "\nDone: 3 files, 305B processed." +
                         System.lineSeparator()
         );
     }

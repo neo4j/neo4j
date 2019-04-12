@@ -72,7 +72,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.dbms.archive.CompressionFormat.GZIP;
 import static org.neo4j.dbms.archive.CompressionFormat.ZSTD;
 import static org.neo4j.dbms.archive.TestUtils.withPermissions;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;

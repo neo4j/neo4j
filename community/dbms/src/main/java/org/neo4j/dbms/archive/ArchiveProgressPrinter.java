@@ -20,14 +20,16 @@
 package org.neo4j.dbms.archive;
 
 import java.io.PrintStream;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.graphdb.Resource;
 import org.neo4j.io.ByteUnit;
 
-class ProgressPrinter
+class ArchiveProgressPrinter
 {
     private final AtomicBoolean printUpdate;
     private final PrintStream output;
@@ -38,16 +40,31 @@ class ProgressPrinter
     long maxBytes;
     long maxFiles;
 
-    ProgressPrinter( PrintStream output )
+    ArchiveProgressPrinter( PrintStream output )
     {
         this.output = output;
         printUpdate = new AtomicBoolean();
         interactive = System.console() != null;
     }
 
-    ScheduledFuture<?> scheduleUpdates( ScheduledExecutorService timer )
+    Resource startPrinting()
     {
-        return timer.scheduleAtFixedRate( this::printOnNextUpdate, 0, interactive ? 100 : 5_000, TimeUnit.MILLISECONDS );
+        ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
+        ScheduledFuture<?> timerFuture = timer.scheduleAtFixedRate( this::printOnNextUpdate, 0, interactive ? 100 : 5_000, TimeUnit.MILLISECONDS );
+        return () ->
+        {
+            timerFuture.cancel( false );
+            timer.shutdown();
+            try
+            {
+                timer.awaitTermination( 10, TimeUnit.SECONDS );
+            }
+            catch ( InterruptedException ignore )
+            {
+            }
+            done();
+            printProgress();
+        };
     }
 
     void printOnNextUpdate()
@@ -92,15 +109,19 @@ class ProgressPrinter
     {
         if ( output != null )
         {
-            char line_sep = interactive ? '\r' : '\n';
+            char lineSep = interactive ? '\r' : '\n';
             if ( done )
             {
-                output.println( line_sep + "Done: " + currentFiles + " files, " + ByteUnit.bytesToString( currentBytes ) + " processed." );
+                output.println( lineSep + "Done: " + currentFiles + " files, " + ByteUnit.bytesToString( currentBytes ) + " processed." );
+            }
+            else if ( maxFiles > 0 && maxBytes > 0 )
+            {
+                double progress = (currentBytes / (double) maxBytes) * 100;
+                output.print( lineSep + "Files: " + currentFiles + '/' + maxFiles + ", data: " + String.format( "%4.1f%%", progress ) );
             }
             else
             {
-                double progress = (currentBytes / (double) maxBytes) * 100;
-                output.print( line_sep + "Files: " + currentFiles + '/' + maxFiles + ", data: " + String.format( "%4.1f%%", progress ));
+                output.print( lineSep + "Files: " + currentFiles + "/?" + ", data: ??.?%" );
             }
         }
     }
