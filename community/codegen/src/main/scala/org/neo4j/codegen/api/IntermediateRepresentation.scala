@@ -374,7 +374,7 @@ case class Parameter(typ: codegen.TypeReference, name: String) {
   def asCodeGen: codegen.Parameter = codegen.Parameter.param(typ, name)
 }
 
-case class ClassDeclaration(packageName: String,
+case class ClassDeclaration[T](packageName: String,
                             className: String,
                             extendsClass: Option[codegen.TypeReference],
                             implementsInterfaces: Seq[codegen.TypeReference],

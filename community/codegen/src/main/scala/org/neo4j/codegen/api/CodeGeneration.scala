@@ -36,11 +36,11 @@ object CodeGeneration {
 
   private val DEBUG = false
 
-  def compileClass(c: ClassDeclaration): Class[_] = {
+  def compileClass[T](c: ClassDeclaration[T]): Class[T] = {
     val handle = compileClassDeclaration(c)
     val clazz = handle.loadAnonymousClass()
     setConstants(clazz, c.fields)
-    clazz
+    clazz.asInstanceOf[Class[T]]
   }
 
   private def setConstants(clazz: Class[_], fields: Seq[Field]): Unit = {
@@ -242,7 +242,7 @@ object CodeGeneration {
       codegen.Expression.EMPTY
   }
 
-  private def compileClassDeclaration(c: ClassDeclaration): codegen.ClassHandle = {
+  private def compileClassDeclaration(c: ClassDeclaration[_]): codegen.ClassHandle = {
     val handle = beginBlock(generator.generateClass(c.extendsClass.getOrElse(codegen.TypeReference.OBJECT), c.packageName, c.className, c.implementsInterfaces: _*)) { clazz: codegen.ClassGenerator =>
       //clazz.generateConstructor(generateParametersWithNames(c.constructor.constructor.params): _*)
       generateConstructor(clazz,
