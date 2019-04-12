@@ -166,7 +166,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle expand outgoing") {
     // given
-    val (_, rels) = circleGraph(10000)
+    val (_, rels) = circleGraph(sizeHint)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -188,7 +188,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle expand incoming") {
     // given
-    val (_, rels) = circleGraph(10000)
+    val (_, rels) = circleGraph(sizeHint)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -240,7 +240,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should handle types missing on compile") {
     // given
     inTx(
-      1 to 1000 foreach { _ =>
+      1 to sizeHint foreach { _ =>
         graphDb.createNode().createRelationshipTo(graphDb.createNode(), RelationshipType.withName("BASE"))
       })
 
@@ -274,7 +274,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("cached plan should adapt to new relationship types") {
     // given
     inTx(
-      1 to 1000 foreach { _ =>
+      1 to sizeHint foreach { _ =>
         graphDb.createNode().createRelationshipTo(graphDb.createNode(), RelationshipType.withName("BASE"))
       })
 
