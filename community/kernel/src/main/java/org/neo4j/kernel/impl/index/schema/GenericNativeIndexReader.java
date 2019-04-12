@@ -74,7 +74,8 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
     @Override
     void validateQuery( IndexOrder indexOrder, IndexQuery[] predicates )
     {
-        CapabilityValidator.validateQuery( GenericNativeIndexProvider.CAPABILITY, indexOrder, predicates );
+        QueryValidator.validateOrder( GenericNativeIndexProvider.CAPABILITY, indexOrder, predicates );
+        QueryValidator.validateCompositeQuery( predicates );
     }
 
     @Override

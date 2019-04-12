@@ -34,11 +34,13 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -55,6 +57,7 @@ import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.PointArray;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -69,9 +72,15 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.Pair.of;
 import static org.neo4j.internal.kernel.api.IndexQuery.exists;
 import static org.neo4j.internal.kernel.api.IndexQuery.range;
+import static org.neo4j.internal.kernel.api.IndexQuery.stringContains;
+import static org.neo4j.internal.kernel.api.IndexQuery.stringPrefix;
+import static org.neo4j.internal.kernel.api.IndexQuery.stringSuffix;
+import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.exact;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
@@ -1125,6 +1134,128 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         {
             List<Long> seenIds = assertClientReturnValuesInOrder( client, order );
             assertThat( seenIds.size(), equalTo( 6 ) );
+        }
+    }
+
+    /* Composite query validity */
+
+    /**
+     * This test verify behavior for all different index patterns on a two column composite index.
+     * A composite query need to have decreasing precision among the queries.
+     * This means a range or exists query can only be followed by and exists query.
+     * Prefix query is also included under "range".
+     * Contains or suffix queries are not allowed in a composite query at all.
+     *
+     * Those are all the different combinations:
+     * x = exact
+     * < = range (also include stringPrefix)
+     * - = exists
+     * ! = stringContains or stringSuffix
+     * ? = any predicate
+     * Index patterns
+     * x x ok
+     * x < ok
+     * x - ok
+     * < x not ok
+     * < < not ok
+     * < - ok
+     * - x not ok
+     * - < not ok
+     * - - ok
+     * ! ? not ok
+     */
+    @Test
+    public void mustThrowOnIllegalCompositeQueriesAndMustNotThrowOnLegalQueries() throws Exception
+    {
+        // given
+        Value someValue = Values.of( true );
+        TextValue someString = stringValue( "" );
+        IndexQuery firstExact = exact( 100, someValue );
+        IndexQuery firstRange = range( 100, someValue, true, someValue, true );
+        IndexQuery firstPrefix = stringPrefix( 100, someString );
+        IndexQuery firstExist = exists( 100 );
+        IndexQuery firstSuffix = stringSuffix( 100, someString );
+        IndexQuery firstContains = stringContains( 100, someString );
+        IndexQuery secondExact = exact( 200, someValue );
+        IndexQuery secondRange = range( 200, someValue, true, someValue, true );
+        IndexQuery secondExist = exists( 200 );
+        IndexQuery secondPrefix = stringPrefix( 100, someString );
+        IndexQuery secondSuffix = stringSuffix( 100, someString );
+        IndexQuery secondContains = stringContains( 100, someString );
+
+        // Illegal queries
+        List<Pair<IndexQuery[],Boolean>> queries = Arrays.asList(
+                of( new IndexQuery[]{firstExact, secondExact}, true ),
+                of( new IndexQuery[]{firstExact, secondRange}, true ),
+                of( new IndexQuery[]{firstExact, secondExist}, true ),
+                of( new IndexQuery[]{firstExact, secondPrefix}, true ),
+                of( new IndexQuery[]{firstExact, secondSuffix}, false ),
+                of( new IndexQuery[]{firstExact, secondContains}, false ),
+
+                of( new IndexQuery[]{firstRange, secondExact}, false ),
+                of( new IndexQuery[]{firstRange, secondRange}, false ),
+                of( new IndexQuery[]{firstRange, secondExist}, true ),
+                of( new IndexQuery[]{firstRange, secondPrefix}, false ),
+                of( new IndexQuery[]{firstRange, secondSuffix}, false ),
+                of( new IndexQuery[]{firstRange, secondContains}, false ),
+
+                of( new IndexQuery[]{firstPrefix,secondExact}, false ),
+                of( new IndexQuery[]{firstPrefix,secondRange}, false ),
+                of( new IndexQuery[]{firstPrefix,secondExist}, true ),
+                of( new IndexQuery[]{firstPrefix,secondPrefix}, false ),
+                of( new IndexQuery[]{firstPrefix,secondSuffix}, false ),
+                of( new IndexQuery[]{firstPrefix,secondContains}, false ),
+
+                of( new IndexQuery[]{firstExist,secondExact}, false ),
+                of( new IndexQuery[]{firstExist,secondRange}, false ),
+                of( new IndexQuery[]{firstExist,secondExist}, true ),
+                of( new IndexQuery[]{firstExist,secondPrefix}, false ),
+                of( new IndexQuery[]{firstExist,secondSuffix}, false ),
+                of( new IndexQuery[]{firstExist,secondContains}, false ),
+
+                of( new IndexQuery[]{firstSuffix,secondExact}, false ),
+                of( new IndexQuery[]{firstSuffix,secondRange}, false ),
+                of( new IndexQuery[]{firstSuffix,secondExist}, false ),
+                of( new IndexQuery[]{firstSuffix,secondPrefix}, false ),
+                of( new IndexQuery[]{firstSuffix,secondSuffix}, false ),
+                of( new IndexQuery[]{firstSuffix,secondContains}, false ),
+
+                of( new IndexQuery[]{firstContains,secondExact}, false ),
+                of( new IndexQuery[]{firstContains,secondRange}, false ),
+                of( new IndexQuery[]{firstContains,secondExist}, false ),
+                of( new IndexQuery[]{firstContains,secondPrefix}, false ),
+                of( new IndexQuery[]{firstContains,secondSuffix}, false ),
+                of( new IndexQuery[]{firstContains,secondContains}, false )
+        );
+
+        SimpleNodeValueClient client = new SimpleNodeValueClient();
+        try ( IndexReader reader = accessor.newReader() )
+        {
+            for ( Pair<IndexQuery[],Boolean> pair : queries )
+            {
+                IndexQuery[] theQuery = pair.first();
+                Boolean legal = pair.other();
+                if ( legal )
+                {
+                    // when
+                    reader.query( NULL_CONTEXT, client, IndexOrder.NONE, false, theQuery );
+
+                    // then should not throw
+                }
+                else
+                {
+                    try
+                    {
+                        // when
+                        reader.query( NULL_CONTEXT, client, IndexOrder.NONE, false, theQuery );
+                        fail( "Expected index reader to throw for illegal composite query. Query was, " + Arrays.toString( theQuery ) );
+                    }
+                    catch ( IllegalArgumentException e )
+                    {
+                        // Then verify message
+                    }
+                }
+            }
         }
     }
 

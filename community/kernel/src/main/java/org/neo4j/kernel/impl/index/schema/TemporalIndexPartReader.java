@@ -44,7 +44,7 @@ class TemporalIndexPartReader<KEY extends NativeIndexSingleValueKey<KEY>> extend
             throw new UnsupportedOperationException();
         }
 
-        CapabilityValidator.validateQuery( TemporalIndexProvider.CAPABILITY, indexOrder, predicates );
+        QueryValidator.validateOrder( TemporalIndexProvider.CAPABILITY, indexOrder, predicates );
     }
 
     @Override

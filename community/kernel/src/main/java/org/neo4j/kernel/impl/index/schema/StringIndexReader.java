@@ -46,7 +46,7 @@ class StringIndexReader extends NativeIndexReader<StringIndexKey,NativeIndexValu
             throw new UnsupportedOperationException();
         }
 
-        CapabilityValidator.validateQuery( StringIndexProvider.CAPABILITY, indexOrder, predicates );
+        QueryValidator.validateOrder( StringIndexProvider.CAPABILITY, indexOrder, predicates );
     }
 
     @Override

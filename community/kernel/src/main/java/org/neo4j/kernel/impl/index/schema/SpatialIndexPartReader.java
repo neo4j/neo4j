@@ -64,7 +64,7 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
             throw new UnsupportedOperationException( "Spatial index doesn't handle composite queries" );
         }
 
-        CapabilityValidator.validateQuery( SpatialIndexProvider.CAPABILITY, indexOrder, predicates );
+        QueryValidator.validateOrder( SpatialIndexProvider.CAPABILITY, indexOrder, predicates );
     }
 
     @Override

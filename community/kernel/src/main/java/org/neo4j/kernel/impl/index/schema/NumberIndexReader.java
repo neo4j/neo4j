@@ -44,7 +44,7 @@ class NumberIndexReader<VALUE extends NativeIndexValue> extends NativeIndexReade
             throw new UnsupportedOperationException();
         }
 
-        CapabilityValidator.validateQuery( NumberIndexProvider.CAPABILITY, indexOrder, predicates );
+        QueryValidator.validateOrder( NumberIndexProvider.CAPABILITY, indexOrder, predicates );
     }
 
     @Override
