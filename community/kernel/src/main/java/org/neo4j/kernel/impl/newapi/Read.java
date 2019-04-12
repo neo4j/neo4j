@@ -298,28 +298,26 @@ abstract class Read implements TxStateHolder,
     public final void nodeLabelScan( int label, NodeLabelIndexCursor cursor )
     {
         ktx.assertOpen();
-        if ( !ktx.securityContext().mode().allowsTraverseLabels( IntStream.of( label ) ) )
-        {
-            cursor.close();
-            return;
-        }
 
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
-        LabelScan labelScan = labelScanReader().nodeLabelScan( label );
-        indexCursor.scan( labelScan.initialize( indexCursor ), label );
+        IndexProgressor indexProgressor;
+        if ( ktx.securityContext().mode().allowsReadLabels( IntStream.of( label ) ) )
+        {
+            LabelScan labelScan = labelScanReader().nodeLabelScan( label );
+            indexProgressor = labelScan.initialize( indexCursor );
+        }
+        else
+        {
+            indexProgressor = IndexProgressor.EMPTY;
+        }
+        indexCursor.scan( indexProgressor, label );
     }
 
     @Override
     public final Scan<NodeLabelIndexCursor> nodeLabelScan( int label )
     {
         ktx.assertOpen();
-        if ( !ktx.securityContext().mode().allowsReadLabels( IntStream.of( label ) ) )
-        {
-            // TODO should return empty cursor...
-            return null;
-        }
-
         return new NodeLabelIndexCursorScan( this, label, labelScanReader().nodeLabelScan( label ) );
     }
 

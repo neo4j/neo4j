@@ -114,7 +114,6 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     @Override
     public long neighbourNodeReference()
     {
-        // TODO this
         if ( currentAddedInTx != NO_ID )
         {
             // Here we compare the source/target nodes from tx-state to the origin node and decide the neighbour node from it
@@ -151,7 +150,6 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
 
         if ( !filterInitialized )
         {
-            // TODO hmm?
             hasChanges = hasChanges(); // <- may setup filter state if needed, for getting the correct relationships from tx-state
             setupFilterStateIfNeeded();
             if ( filterInitialized && !(hasChanges && read.txState().relationshipIsDeletedInThisTx( relationshipReference() )) )

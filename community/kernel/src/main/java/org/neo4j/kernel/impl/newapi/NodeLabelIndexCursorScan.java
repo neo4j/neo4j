@@ -23,8 +23,11 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 
+import java.util.stream.IntStream;
+
 import org.neo4j.internal.index.label.LabelScan;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 
@@ -62,7 +65,17 @@ class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,Label
     {
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( read );
-        IndexProgressor indexProgressor = storageScan.initializeBatch( indexCursor, sizeHint );
+        IndexProgressor indexProgressor;
+
+        AccessMode mode = read.ktx.securityContext().mode();
+        if ( mode.allowsReadLabels( IntStream.of( label ) ) )
+        {
+            indexProgressor = storageScan.initializeBatch( indexCursor, sizeHint );
+        }
+        else
+        {
+            indexProgressor = IndexProgressor.EMPTY;
+        }
 
         if ( indexProgressor == IndexProgressor.EMPTY && !addedItems.hasNext() )
         {
