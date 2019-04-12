@@ -136,6 +136,7 @@ public class Loader
             catch ( IOException ex )
             {
                 input.close();
+                ex.addSuppressed( e );
                 throw new IncorrectFormat( archive, ex );
             }
         }
