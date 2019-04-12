@@ -32,7 +32,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.server.security.systemgraph.BasicInMemorySystemGraphOperations;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 
 import static java.util.Collections.singletonList;
@@ -41,6 +40,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.security.auth.SecurityTestUtils.password;
+import static org.neo4j.server.security.auth.SecurityTestUtils.simpleBasicSystemGraphRealm;
 
 public class BasicAuthenticationTest
 {
@@ -212,7 +212,7 @@ public class BasicAuthenticationTest
     private static Authentication createAuthentication( int maxFailedAttempts ) throws Exception
     {
         Config config = Config.defaults( GraphDatabaseSettings.auth_max_failed_attempts, String.valueOf( maxFailedAttempts ) );
-        BasicSystemGraphRealm manager = new BasicSystemGraphRealm( new BasicInMemorySystemGraphOperations(), config );
+        BasicSystemGraphRealm manager = simpleBasicSystemGraphRealm( config );
         Authentication authentication = new BasicAuthentication( manager, manager );
         manager.newUser( "bob", password( "secret" ), true );
         manager.newUser( "mike", password( "secret2" ), false );
@@ -255,7 +255,7 @@ public class BasicAuthenticationTest
         }
     }
 
-    static CredentialsClearedMatcher isCleared()
+    private static CredentialsClearedMatcher isCleared()
     {
         return new CredentialsClearedMatcher();
     }

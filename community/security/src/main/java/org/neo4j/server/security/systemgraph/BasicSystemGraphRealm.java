@@ -103,22 +103,6 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
         setCredentialsMatcher( this );
     }
 
-    /**
-     * Simplified constructor used for testing
-     */
-    public BasicSystemGraphRealm( BasicSystemGraphOperations basicSystemGraphOperations, Config config )
-    {
-        this (
-                basicSystemGraphOperations,
-                null,
-                false,
-                new SecureHasher(),
-                new BasicPasswordPolicy(),
-                new RateLimitedAuthenticationStrategy( Clocks.systemClock(), config ),
-                true
-        );
-    }
-
     @Override
     public void start() throws Exception
     {

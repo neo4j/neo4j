@@ -38,7 +38,6 @@ import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.security.auth.BasicLoginContext;
-import org.neo4j.server.security.systemgraph.BasicInMemorySystemGraphOperations;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.test.server.EntityOutputFormat;
 
@@ -50,6 +49,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.server.security.auth.SecurityTestUtils.password;
+import static org.neo4j.server.security.auth.SecurityTestUtils.simpleBasicSystemGraphRealm;
 
 public class UserServiceTest
 {
@@ -61,7 +61,7 @@ public class UserServiceTest
 
     protected UserManagerSupplier setupUserManagerSupplier()
     {
-        return new BasicSystemGraphRealm( new BasicInMemorySystemGraphOperations(), Config.defaults() );
+        return simpleBasicSystemGraphRealm( Config.defaults() );
     }
 
     protected LoginContext setupSubject() throws InvalidArgumentsException
