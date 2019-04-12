@@ -272,8 +272,8 @@ public final class ByteCodeUtils
                 TypeReference returnType = typeReference( method.getReturnType() );
                 if ( !methodReference.returns().name().equals( returnType.name() ) )
                 {
-                    throw new AssertionError( format( "Wrong return type, expected %s got %s",
-                            methodReference.returns(), returnType ) );
+                    throw new AssertionError( format( "Wrong return type of `%s::%s`, expected %s got %s",
+                            clazz.getSimpleName(), methodReference.name(), methodReference.returns(), returnType ) );
                 }
             }
         }
