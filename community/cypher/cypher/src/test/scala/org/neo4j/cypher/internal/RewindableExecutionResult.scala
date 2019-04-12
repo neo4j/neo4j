@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{Notification, Result}
@@ -80,10 +79,10 @@ object RewindableExecutionResult {
 
   def apply(runtimeResult: RuntimeResult, queryContext: QueryContext): RewindableExecutionResult = {
     val result = new ArrayBuffer[Map[String, AnyRef]]()
-    val columns = runtimeResult.fieldNames()
+    try {
+      val columns = runtimeResult.fieldNames()
 
-    runtimeResult.accept(new QueryResultVisitor[Exception] {
-      override def visit(row: QueryResult.Record): Boolean = {
+      runtimeResult.accept((row: QueryResult.Record) => {
         val map = new java.util.HashMap[String, AnyRef]()
         val values = row.fields()
         for (i <- columns.indices) {
@@ -91,35 +90,37 @@ object RewindableExecutionResult {
         }
         result += scalaValues.asDeepScalaMap(map).asInstanceOf[Map[String, AnyRef]]
         true
-      }
-    })
+      })
 
-    runtimeResult.close()
-    new RewindableExecutionResultImplementation(columns, result, NormalMode, null, runtimeResult.queryStatistics(), Seq.empty)
+      new RewindableExecutionResultImplementation(columns, result, NormalMode, null, runtimeResult.queryStatistics(),
+                                                  Seq.empty)
+    } finally runtimeResult.close()
   }
 
   def apply(internal: InternalExecutionResult) : RewindableExecutionResult = {
-    val result = new ArrayBuffer[Map[String, AnyRef]]()
-    val columns = internal.fieldNames()
+    try {
+      val result = new ArrayBuffer[Map[String, AnyRef]]()
+      val columns = internal.fieldNames()
 
-    internal.accept(new ResultVisitor[Exception] {
-      override def visit(row: ResultRow): Boolean = {
-        val map = new java.util.HashMap[String, AnyRef]()
-        for (c <- columns) {
-          map.put(c, row.get(c))
+      internal.accept(new ResultVisitor[Exception] {
+        override def visit(row: ResultRow): Boolean = {
+          val map = new java.util.HashMap[String, AnyRef]()
+          for (c <- columns) {
+            map.put(c, row.get(c))
+          }
+          result += scalaValues.asDeepScalaMap(map).asInstanceOf[Map[String, AnyRef]]
+          true
         }
-        result += scalaValues.asDeepScalaMap(map).asInstanceOf[Map[String, AnyRef]]
-        true
-      }
-    })
+      })
 
-    new RewindableExecutionResultImplementation(
-      columns,
-      result.toList,
-      internal.executionMode,
-      internal.executionPlanDescription(),
-      internal.queryStatistics(),
-      internal.notifications
-    )
+      new RewindableExecutionResultImplementation(
+        columns,
+        result.toList,
+        internal.executionMode,
+        internal.executionPlanDescription(),
+        internal.queryStatistics(),
+        internal.notifications
+        )
+    } finally internal.close()
   }
 }
