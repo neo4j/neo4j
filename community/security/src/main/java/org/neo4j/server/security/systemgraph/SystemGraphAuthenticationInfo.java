@@ -28,11 +28,11 @@ import org.neo4j.kernel.impl.security.User;
  * This is used by SystemGraphRealm to cache a user record in the authentication caches
  * and update the authentication result based on the outcome of its CredentialsMatcher
  */
-class SystemGraphShiroAuthenticationInfo extends ShiroAuthenticationInfo
+class SystemGraphAuthenticationInfo extends ShiroAuthenticationInfo
 {
     private final User userRecord;
 
-    SystemGraphShiroAuthenticationInfo( User userRecord, String realmName )
+    SystemGraphAuthenticationInfo( User userRecord, String realmName )
     {
         super( userRecord.name(), realmName, AuthenticationResult.FAILURE );
         this.userRecord = userRecord;

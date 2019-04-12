@@ -55,7 +55,6 @@ import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicLoginContext;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
-import org.neo4j.server.security.auth.RealmLifecycle;
 import org.neo4j.server.security.auth.SecureHasher;
 import org.neo4j.server.security.auth.ShiroAuthToken;
 import org.neo4j.time.Clocks;
@@ -65,7 +64,7 @@ import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
 /**
  * Shiro realm using a Neo4j graph to store users
  */
-public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManager, UserManager, UserManagerSupplier, RealmLifecycle, CredentialsMatcher
+public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManager, UserManager, UserManagerSupplier, CredentialsMatcher
 {
     private boolean initOnStart;
     private final BasicSystemGraphInitializer systemGraphInitializer;
@@ -91,8 +90,6 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
             boolean authenticationEnabled )
     {
         super();
-        // TODO: should be SecuritySettings.NATIVE_REALM_NAME
-        setName( "native" );
 
         this.basicSystemGraphOperations = basicSystemGraphOperations;
         this.systemGraphInitializer = systemGraphInitializer;
@@ -120,11 +117,6 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
                 new RateLimitedAuthenticationStrategy( Clocks.systemClock(), config ),
                 true
         );
-    }
-
-    @Override
-    public void initialize()
-    {
     }
 
     @Override
@@ -199,14 +191,14 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
 
         // Stash the user record in the AuthenticationInfo that will be cached.
         // The credentials will then be checked when Shiro calls doCredentialsMatch()
-        return new SystemGraphShiroAuthenticationInfo( user, getName() /* Realm name */ );
+        return new SystemGraphAuthenticationInfo( user, getName() /* Realm name */ );
     }
 
     @Override
     public boolean doCredentialsMatch( AuthenticationToken token, AuthenticationInfo info )
     {
         // We assume that the given info originated from this class, so we can get the user record from it
-        SystemGraphShiroAuthenticationInfo ourInfo = (SystemGraphShiroAuthenticationInfo) info;
+        SystemGraphAuthenticationInfo ourInfo = (SystemGraphAuthenticationInfo) info;
         User user = ourInfo.getUserRecord();
 
         // Get the password from the token
