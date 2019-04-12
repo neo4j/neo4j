@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.RawIterator;
@@ -36,6 +37,7 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -168,7 +170,6 @@ public class AllStoreHolder extends Read
     @Override
     public long countsForNode( int labelId )
     {
-        // TODO expand * to all whitelisted labels?
         long count = countsForNodeWithoutTxState( labelId );
         if ( ktx.hasTxStateWithChanges() )
         {
@@ -193,8 +194,15 @@ public class AllStoreHolder extends Read
     @Override
     public long countsForNodeWithoutTxState( int labelId )
     {
-        // TODO expand * to all whitelisted labels? MATCH (n) RETURN count(n) calls this with labelId == -1
-        return storageReader.countsForNode( labelId );
+        AccessMode mode = ktx.securityContext().mode();
+        if ( labelId == TokenRead.ANY_LABEL || mode.allowsReadLabels( IntStream.of( labelId ) ) )
+        {
+            return storageReader.countsForNode( labelId );
+        }
+        else
+        {
+            return 0;
+        }
     }
 
     @Override
