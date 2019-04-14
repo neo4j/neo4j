@@ -344,6 +344,7 @@ BSD License
   Scala Compiler
   sntp
   tough-cookie
+  zstd
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>

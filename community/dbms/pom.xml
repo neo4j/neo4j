@@ -139,6 +139,12 @@
             <groupId>com.github.luben</groupId>
             <artifactId>zstd-jni</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.neo4j.licensing-proxy</groupId>
+            <artifactId>zstd</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+        </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>

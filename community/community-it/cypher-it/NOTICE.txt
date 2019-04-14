@@ -48,6 +48,7 @@ BSD License
   asm-analysis
   asm-tree
   asm-util
+  zstd
 
 BSD License 2-clause
   zstd-jni
