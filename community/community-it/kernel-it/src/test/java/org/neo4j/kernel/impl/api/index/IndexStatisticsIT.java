@@ -69,6 +69,7 @@ public class IndexStatisticsIT
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private GraphDatabaseService db;
     private EphemeralFileSystemAbstraction fileSystem;
+    private DatabaseManagementService managementService;
 
     @Before
     public void before()
@@ -82,7 +83,7 @@ public class IndexStatisticsIT
     {
         try
         {
-            db.shutdown();
+            managementService.shutdown();
         }
         finally
         {
@@ -221,7 +222,7 @@ public class IndexStatisticsIT
 
     private void startDb()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
+        managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
                                            .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
                                            .newImpermanentDatabaseBuilder()
                                            .setConfig( index_background_sampling_enabled, "false" ).newDatabaseManagementService();
@@ -230,7 +231,7 @@ public class IndexStatisticsIT
 
     void restart()
     {
-        db.shutdown();
+        managementService.shutdown();
         startDb();
     }
 }

@@ -60,18 +60,19 @@ class SchemaImplTest
     private TestDirectory testDirectory;
 
     private GraphDatabaseService db;
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void createDb()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentService( testDirectory.storeDir() );
+        managementService = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentService( testDirectory.storeDir() );
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @AfterEach
     void shutdownDb()
     {
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test

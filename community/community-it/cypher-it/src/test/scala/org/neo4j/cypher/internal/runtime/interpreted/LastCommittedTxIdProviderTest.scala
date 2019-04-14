@@ -23,6 +23,7 @@ import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.dbms.database.DatabaseManagementService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.kernel.api.security.AnonymousContext
@@ -32,17 +33,19 @@ import org.scalatest.BeforeAndAfterAll
 
 class LastCommittedTxIdProviderTest extends CypherFunSuite with BeforeAndAfterAll {
 
+  var managementService: DatabaseManagementService = _
   var graph: GraphDatabaseService = _
   var db: GraphDatabaseCypherService = _
   var lastCommittedTxIdProvider: LastCommittedTxIdProvider = _
 
   override protected def beforeAll(): Unit = {
-    graph = new TestGraphDatabaseFactory().newImpermanentService().database(DEFAULT_DATABASE_NAME)
+    managementService = new TestGraphDatabaseFactory().newImpermanentService()
+    graph = managementService.database(DEFAULT_DATABASE_NAME)
     db = new GraphDatabaseCypherService(graph)
     lastCommittedTxIdProvider = LastCommittedTxIdProvider(db)
   }
 
-  override protected def afterAll(): Unit = db.getGraphDatabaseService.shutdown()
+  override protected def afterAll(): Unit = managementService.shutdown()
 
   test("should return correct last committed tx id") {
     val startingTxId = lastCommittedTxIdProvider()

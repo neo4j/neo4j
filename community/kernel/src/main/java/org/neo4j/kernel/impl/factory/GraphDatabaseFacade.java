@@ -149,8 +149,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         /** Eg. Neo4j Enterprise HA, Neo4j Community Standalone.. */
         String name();
 
-        void shutdown();
-
         /**
          * Begin a new kernel transaction with specified timeout in milliseconds.
          *
@@ -294,12 +292,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     public boolean isAvailable( long timeoutMillis )
     {
         return spi.databaseIsAvailable( timeoutMillis );
-    }
-
-    @Override
-    public void shutdown()
-    {
-        spi.shutdown();
     }
 
     @Override

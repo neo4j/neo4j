@@ -61,11 +61,12 @@ public class PageCacheCountersIT
     private GraphDatabaseService db;
     private ExecutorService executors;
     private int numberOfWorkers;
+    private DatabaseManagementService managementService;
 
     @Before
     public void setUp()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
+        managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
         db = managementService.database( DEFAULT_DATABASE_NAME );
         numberOfWorkers = Runtime.getRuntime().availableProcessors();
         executors = Executors.newFixedThreadPool( numberOfWorkers );
@@ -76,7 +77,7 @@ public class PageCacheCountersIT
     {
         executors.shutdown();
         executors.awaitTermination( 5, TimeUnit.SECONDS );
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test( timeout = 60_000 )

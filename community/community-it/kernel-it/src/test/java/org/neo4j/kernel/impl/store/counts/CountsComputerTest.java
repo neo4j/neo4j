@@ -94,7 +94,7 @@ class CountsComputerTest
         DatabaseManagementService managementService = dbBuilder.newDatabaseManagementService();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         long lastCommittedTransactionId = getLastTxId( db );
-        db.shutdown();
+        managementService.shutdown();
 
         InvocationTrackingProgressReporter progressReporter = new InvocationTrackingProgressReporter();
         rebuildCounts( lastCommittedTransactionId, progressReporter );
@@ -110,7 +110,7 @@ class CountsComputerTest
         DatabaseManagementService managementService = dbBuilder.newDatabaseManagementService();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         long lastCommittedTransactionId = getLastTxId( db );
-        db.shutdown();
+        managementService.shutdown();
 
         rebuildCounts( lastCommittedTransactionId );
 
@@ -131,7 +131,7 @@ class CountsComputerTest
             tx.success();
         }
         long lastCommittedTransactionId = getLastTxId( db );
-        db.shutdown();
+        managementService.shutdown();
 
         rebuildCounts( lastCommittedTransactionId );
 
@@ -163,7 +163,7 @@ class CountsComputerTest
             tx.success();
         }
         long lastCommittedTransactionId = getLastTxId( db );
-        db.shutdown();
+        managementService.shutdown();
 
         rebuildCounts( lastCommittedTransactionId );
 
@@ -195,7 +195,7 @@ class CountsComputerTest
             tx.success();
         }
         long lastCommittedTransactionId = getLastTxId( db );
-        db.shutdown();
+        managementService.shutdown();
 
         rebuildCounts( lastCommittedTransactionId );
 
@@ -230,7 +230,7 @@ class CountsComputerTest
             tx.success();
         }
         long lastCommittedTransactionId = getLastTxId( db );
-        db.shutdown();
+        managementService.shutdown();
 
         rebuildCounts( lastCommittedTransactionId );
 
@@ -271,7 +271,7 @@ class CountsComputerTest
             tx.success();
         }
         long lastCommittedTransactionId = getLastTxId( db );
-        db.shutdown();
+        managementService.shutdown();
 
         rebuildCounts( lastCommittedTransactionId );
 

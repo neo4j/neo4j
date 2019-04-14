@@ -85,6 +85,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
 
     private static final String KEY1 = "key1";
     private static final String KEY2 = "key2";
+    private DatabaseManagementService managementService;
 
     private enum Provider
     {
@@ -121,24 +122,22 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
 
         builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.LUCENE10.providerName() );
-        DatabaseManagementService managementService3 = builder.newDatabaseManagementService();
-        GraphDatabaseService db = managementService3.database( DEFAULT_DATABASE_NAME );
-        createIndexDataAndShutdown( db, Provider.LUCENE_10.label );
+        DatabaseManagementService managementService = builder.newDatabaseManagementService();
+        createIndexData( managementService.database( DEFAULT_DATABASE_NAME ), Provider.LUCENE_10.label );
+        managementService.shutdown();
 
         builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE10.providerName() );
-        DatabaseManagementService managementService2 = builder.newDatabaseManagementService();
-        db = managementService2.database( DEFAULT_DATABASE_NAME );
-        createIndexDataAndShutdown( db, Provider.FUSION_10.label );
+        managementService = builder.newDatabaseManagementService();
+        createIndexData( managementService.database( DEFAULT_DATABASE_NAME ), Provider.FUSION_10.label );
 
         builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() );
-        DatabaseManagementService managementService1 = builder.newDatabaseManagementService();
-        db = managementService1.database( DEFAULT_DATABASE_NAME );
-        createIndexDataAndShutdown( db, Provider.FUSION_20.label );
+        managementService = builder.newDatabaseManagementService();
+        createIndexData( managementService.database( DEFAULT_DATABASE_NAME ), Provider.FUSION_20.label );
 
         builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName() );
-        DatabaseManagementService managementService = builder.newDatabaseManagementService();
-        db = managementService.database( DEFAULT_DATABASE_NAME );
-        createIndexDataAndShutdown( db, Provider.BTREE_10.label );
+        managementService = builder.newDatabaseManagementService();
+        createIndexData( managementService.database( DEFAULT_DATABASE_NAME ), Provider.BTREE_10.label );
+        managementService.shutdown();
         System.out.println( "Db created in " + storeDir.getAbsolutePath() );
     }
 
@@ -157,8 +156,8 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
         // when
         File storeDir = directory.storeDir();
-        GraphDatabaseAPI db = setupDb( storeDir, indexRecoveryTracker );
-
+        managementService = setupDb( storeDir, indexRecoveryTracker );
+        GraphDatabaseAPI db = getDefaultDatabase();
         // then
         Provider[] providers = providersUpToAndIncluding( highestProviderInOldVersion );
         Provider[] providersIncludingSubject = concat( providers, DEFAULT_PROVIDER );
@@ -196,11 +195,11 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
 
         // when
-        db = setupDb( storeDir, indexRecoveryTracker );
+        managementService = setupDb( storeDir, indexRecoveryTracker );
         try
         {
             // then
@@ -208,7 +207,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -217,14 +216,18 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         return Stream.of( Provider.values() ).filter( p -> p.ordinal() <= provider.ordinal() ).toArray( Provider[]::new );
     }
 
-    private GraphDatabaseAPI setupDb( File storeDir, IndexRecoveryTracker indexRecoveryTracker )
+    private DatabaseManagementService setupDb( File storeDir, IndexRecoveryTracker indexRecoveryTracker )
     {
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( indexRecoveryTracker );
-        DatabaseManagementService managementService = new GraphDatabaseFactory()
+        return new GraphDatabaseFactory()
                 .setMonitors( monitors )
                 .newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE ).newDatabaseManagementService();
+    }
+
+    private GraphDatabaseAPI getDefaultDatabase()
+    {
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -265,16 +268,9 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         assertEquals( expectedDescriptor.getVersion(), index.providerVersion(), "same version" );
     }
 
-    private static void createIndexDataAndShutdown( GraphDatabaseService db, Label label )
+    private static void createIndexData( GraphDatabaseService db, Label label )
     {
-        try
-        {
-            createIndexesAndData( db, label );
-        }
-        finally
-        {
-            db.shutdown();
-        }
+        createIndexesAndData( db, label );
     }
 
     private static File tempStoreDirectory() throws IOException

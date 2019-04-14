@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.{CypherRuntime, LogicalQuery, MasterCompiler, RuntimeContext}
 import org.neo4j.cypher.result.RuntimeResult
+import org.neo4j.dbms.database.DatabaseManagementService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.internal.kernel.api.security.LoginContext
@@ -43,7 +44,8 @@ import org.scalatest.BeforeAndAfterAll
   * This class contains various ugliness needed to perform physical compilation
   * and then execute a query.
   */
-class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseService,
+class RuntimeTestSupport[CONTEXT <: RuntimeContext](val managementService: DatabaseManagementService,
+                                                    val graphDb: GraphDatabaseService,
                                                     val edition: Edition[CONTEXT]
                                                    ) extends CypherFunSuite with BeforeAndAfterAll
 {
@@ -57,7 +59,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
   val valueMapper = new DefaultValueMapper(spi)
 
   override def afterAll(): Unit = {
-    graphDb.shutdown()
+    managementService.shutdown()
     super.afterAll()
   }
 

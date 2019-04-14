@@ -51,11 +51,12 @@ public class GraphDatabaseFactoryOnEphemeralFileSystemTest
     private TestDirectory dir;
 
     private GraphDatabaseService db;
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void createDb()
     {
-        DatabaseManagementService managementService = createGraphDatabaseFactory().setFileSystem( fs )
+        managementService = createGraphDatabaseFactory().setFileSystem( fs )
                 .newEmbeddedDatabaseBuilder( dir.storeDir() ).newDatabaseManagementService();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
@@ -68,7 +69,7 @@ public class GraphDatabaseFactoryOnEphemeralFileSystemTest
     @AfterEach
     void tearDown()
     {
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -83,7 +84,7 @@ public class GraphDatabaseFactoryOnEphemeralFileSystemTest
     void dataShouldNotSurviveRestartOnSameFileSystem()
     {
         createNode();
-        db.shutdown(); // Closing the ephemeral file system deletes all of its data.
+        managementService.shutdown(); // Closing the ephemeral file system deletes all of its data.
 
         createDb();
 
@@ -96,7 +97,7 @@ public class GraphDatabaseFactoryOnEphemeralFileSystemTest
         fs = fs.snapshot(); // Crash before we create any data.
 
         createNode(); // Pretend to create data, but we are post-crash, so the database should never see this.
-        db.shutdown();
+        managementService.shutdown();
         createDb(); // Start database up on the crash snapshot.
 
         assertEquals( 0, nodeCount(), "Should not see anything." );
@@ -125,7 +126,7 @@ public class GraphDatabaseFactoryOnEphemeralFileSystemTest
         assertThat( nodeCount(), is( 0L ) );
     }
 
-    private void cleanDatabaseContent( GraphDatabaseService db )
+    private static void cleanDatabaseContent( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {

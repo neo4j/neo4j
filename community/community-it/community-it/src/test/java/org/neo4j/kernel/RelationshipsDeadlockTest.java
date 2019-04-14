@@ -74,18 +74,19 @@ class RelationshipsDeadlockTest
     @Inject
     private TestDirectory testDirectory;
     private GraphDatabaseService db;
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void setUp()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
+        managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @AfterEach
     void tearDown()
     {
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test

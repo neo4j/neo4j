@@ -20,6 +20,8 @@
 package org.neo4j.server.database;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -40,6 +42,7 @@ public class LifecycleManagingDatabase implements Database
     private final Log log;
 
     private boolean isRunning;
+    private DatabaseManagementService managementService;
     private GraphDatabaseFacade graph;
 
     public LifecycleManagingDatabase( Config config, GraphFactory dbFactory,
@@ -66,7 +69,8 @@ public class LifecycleManagingDatabase implements Database
     public void start()
     {
         log.info( "Starting..." );
-        this.graph = dbFactory.newGraphDatabase( config, dependencies );
+        managementService = dbFactory.newDatabaseManagementService( config, dependencies );
+        this.graph = (GraphDatabaseFacade) managementService.database( config.get( GraphDatabaseSettings.default_database ) );
         // in order to speed up testing, they should not run the preload, but in production it pays to do it.
         if ( !isInTestMode() )
         {
@@ -83,7 +87,7 @@ public class LifecycleManagingDatabase implements Database
         if ( graph != null )
         {
             log.info( "Stopping..." );
-            graph.shutdown();
+            managementService.shutdown();
             isRunning = false;
             graph = null;
             log.info( "Stopped." );

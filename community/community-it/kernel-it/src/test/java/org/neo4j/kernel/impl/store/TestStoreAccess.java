@@ -78,7 +78,7 @@ class TestStoreAccess
             tx.success();
         }
         EphemeralFileSystemAbstraction snapshot = fs.snapshot();
-        db.shutdown();
+        managementService.shutdown();
         return snapshot;
     }
 

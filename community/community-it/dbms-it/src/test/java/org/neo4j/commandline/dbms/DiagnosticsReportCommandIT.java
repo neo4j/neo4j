@@ -59,19 +59,19 @@ class DiagnosticsReportCommandIT
     private TestDirectory testDirectory;
 
     private GraphDatabaseService database;
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void setUp()
     {
-        DatabaseManagementService
-                managementService = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() ).newDatabaseManagementService();
+        managementService = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() ).newDatabaseManagementService();
         database = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @AfterEach
     void tearDown()
     {
-        database.shutdown();
+        managementService.shutdown();
     }
 
     @Test

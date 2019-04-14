@@ -77,7 +77,7 @@ public class TransactionMonitorTest
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -99,7 +99,7 @@ public class TransactionMonitorTest
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -121,7 +121,7 @@ public class TransactionMonitorTest
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 }

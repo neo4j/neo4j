@@ -112,6 +112,7 @@ class IndexRecoveryIT
     private final String key = "number_of_bananas_owned";
     private final Label myLabel = label( "MyLabel" );
     private final Monitors monitors = new Monitors();
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void setUp() throws MisconfiguredIndexException
@@ -128,7 +129,7 @@ class IndexRecoveryIT
     {
         if ( db != null )
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -295,14 +296,14 @@ class IndexRecoveryIT
     {
         if ( db != null )
         {
-            db.shutdown();
+            managementService.shutdown();
         }
 
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs );
         factory.setExtensions( singletonList( mockedIndexProviderFactory ) );
         factory.setMonitors( monitors );
-        DatabaseManagementService managementService = factory.newImpermanentDatabaseBuilder( testDirectory.storeDir() )
+        managementService = factory.newImpermanentDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).newDatabaseManagementService();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
@@ -312,7 +313,7 @@ class IndexRecoveryIT
         if ( db != null )
         {
             fs = fs.snapshot();
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 

@@ -54,7 +54,7 @@ class TestGraphDatabaseFactoryTest
         }
         finally
         {
-            database.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -69,11 +69,11 @@ class TestGraphDatabaseFactoryTest
         }
         finally
         {
-            database.shutdown();
+            managementService.shutdown();
         }
     }
 
-    private void checkAvailableDatabases( GraphDatabaseAPI database )
+    private static void checkAvailableDatabases( GraphDatabaseAPI database )
     {
         DependencyResolver resolver = database.getDependencyResolver();
         DatabaseManager<?> databaseManager = resolver.resolveDependency( DatabaseManager.class );

@@ -53,11 +53,12 @@ public class ExportTest
 
     private GraphDatabaseService gdb;
     private Transaction tx;
+    private DatabaseManagementService managementService;
 
     @Before
     public void setUp()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        managementService = new TestGraphDatabaseFactory().newImpermanentService();
         gdb = managementService.database( DEFAULT_DATABASE_NAME );
         tx = gdb.beginTx();
     }
@@ -66,7 +67,7 @@ public class ExportTest
     public void tearDown()
     {
         tx.close();
-        gdb.shutdown();
+        managementService.shutdown();
     }
 
     @Test

@@ -38,11 +38,12 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 public class ConfigurationBeanIT
 {
     private static GraphDatabaseService graphdb;
+    private static DatabaseManagementService managementService;
 
     @BeforeClass
     public static void startDb()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newDatabaseManagementService();
+        managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newDatabaseManagementService();
         graphdb = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -51,7 +52,7 @@ public class ConfigurationBeanIT
     {
         if ( graphdb != null )
         {
-            graphdb.shutdown();
+            managementService.shutdown();
         }
         graphdb = null;
     }

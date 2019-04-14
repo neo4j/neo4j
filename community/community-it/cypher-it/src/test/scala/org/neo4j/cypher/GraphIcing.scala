@@ -32,7 +32,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query._
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
@@ -61,8 +61,6 @@ trait GraphIcing {
     def getAllRelationshipTypes() = graph.getAllRelationshipTypes
 
     def schema() = graph.schema
-
-    def shutdown() = graph.shutdown()
 
     def createNode() = graph.createNode()
 

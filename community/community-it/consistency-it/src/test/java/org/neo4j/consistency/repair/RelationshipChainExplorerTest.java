@@ -154,7 +154,7 @@ public class RelationshipChainExplorerTest
             }
             transaction.success();
         }
-        database.shutdown();
+        managementService.shutdown();
         StoreAccess storeAccess = new StoreAccess( fileSystem, pageCache, testDirectory.databaseLayout(), Config.defaults() );
         return storeAccess.initialize();
     }

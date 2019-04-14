@@ -625,10 +625,11 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         private final TransactionRepresentationCommitProcess commitProcess;
         private final TransactionIdStore transactionIdStore;
         private final NeoStores neoStores;
+        private final DatabaseManagementService managementService;
 
         Applier()
         {
-            DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+            managementService = new TestGraphDatabaseFactory()
                         .newEmbeddedDatabaseBuilder( directory.storeDir() )
                         .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
             database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -655,7 +656,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         @Override
         public void close()
         {
-            database.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -709,7 +710,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         }
         finally
         {
-            graphDb.shutdown();
+            managementService.shutdown();
         }
     }
 

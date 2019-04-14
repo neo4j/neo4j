@@ -53,7 +53,7 @@ public class GraphDatabaseInternalLogIT
         // Given
         DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.storeDir() )
                 .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() ).newDatabaseManagementService();
-        managementService.database( DEFAULT_DATABASE_NAME ).shutdown();
+        managementService.shutdown();
         File internalLog = new File( testDir.directory( "logs" ), INTERNAL_LOG_FILE );
 
         // Then
@@ -76,7 +76,7 @@ public class GraphDatabaseInternalLogIT
         LogService logService = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( LogService.class );
         logService.getInternalLog( getClass() ).debug( "A debug entry" );
 
-        db.shutdown();
+        managementService.shutdown();
         File internalLog = new File( testDir.directory( "logs" ), INTERNAL_LOG_FILE );
 
         // Then
@@ -101,7 +101,7 @@ public class GraphDatabaseInternalLogIT
         logService.getInternalLog( GraphDatabaseService.class ).debug( "A GDS debug entry" );
         logService.getInternalLog( StringWriter.class ).debug( "A SW debug entry" );
 
-        db.shutdown();
+        managementService.shutdown();
         File internalLog = new File( testDir.directory( "logs" ), INTERNAL_LOG_FILE );
 
         // Then

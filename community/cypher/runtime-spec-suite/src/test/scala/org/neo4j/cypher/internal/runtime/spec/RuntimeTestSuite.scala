@@ -23,12 +23,14 @@ import java.util
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
+import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.runtime.{InputCursor, InputDataStream, NoInput, QueryStatistics}
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.{CypherRuntime, LogicalQuery, RuntimeContext}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
+import org.neo4j.dbms.database.DatabaseManagementService
 import org.neo4j.graphdb._
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.util.ValueUtils
@@ -60,18 +62,20 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   with BeforeAndAfterEach
   with TokenResolver {
 
+  var managementService: DatabaseManagementService = _
   var graphDb: GraphDatabaseService = _
   var runtimeTestSupport: RuntimeTestSupport[CONTEXT] = _
   val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
 
   final override def beforeEach(): Unit = {
-    graphDb = edition.newGraphDb()
-    runtimeTestSupport = new RuntimeTestSupport[CONTEXT](graphDb, edition)
+    managementService = edition.newGraphManagementService()
+    graphDb = managementService.database(DEFAULT_DATABASE_NAME)
+    runtimeTestSupport = new RuntimeTestSupport[CONTEXT](managementService, graphDb, edition)
     super.beforeEach()
   }
 
   final override def afterEach(): Unit = {
-    graphDb.shutdown()
+    managementService.shutdown()
     afterShutdown()
   }
 

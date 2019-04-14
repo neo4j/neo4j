@@ -60,6 +60,7 @@ public class SchemaIndexAcceptanceTest
     private GraphDatabaseService db;
     private final Label label = label( "PERSON" );
     private final String propertyKey = "key";
+    private DatabaseManagementService managementService;
 
     @Before
     public void before()
@@ -70,7 +71,7 @@ public class SchemaIndexAcceptanceTest
     @After
     public void after()
     {
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -177,20 +178,20 @@ public class SchemaIndexAcceptanceTest
 
     private GraphDatabaseService newDb()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fsRule.get() ) ).newImpermanentService();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private void crashAndRestart() throws Exception
     {
-        fsRule.snapshot( db::shutdown );
+        fsRule.snapshot( managementService::shutdown );
         db = newDb();
     }
 
     private void restart()
     {
-        db.shutdown();
+        managementService.shutdown();
         db = newDb();
     }
 

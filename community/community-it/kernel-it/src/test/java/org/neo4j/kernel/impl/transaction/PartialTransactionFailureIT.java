@@ -32,6 +32,7 @@ import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -66,6 +67,7 @@ class PartialTransactionFailureIT
 {
     @Inject
     private TestDirectory testDirectory;
+    private DatabaseManagementService managementService;
 
     @Test
     void concurrentlyCommittingTransactionsMustNotRotateOutLoggedCommandsOfFailingTransaction() throws Exception
@@ -82,7 +84,7 @@ class PartialTransactionFailureIT
             @Override
             protected void create( File storeDir, Map<String, String> params, ExternalDependencies dependencies )
             {
-                new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
+                managementService = new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 {
                     @Override
                     protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
@@ -127,7 +129,7 @@ class PartialTransactionFailureIT
         // Wait for the transactions to finish
         t1.join( 25000 );
         t2.join( 25000 );
-        db.shutdown();
+        managementService.shutdown();
 
         // We should observe the store in a consistent state
         EmbeddedGraphDatabase db2 = new TestEmbeddedGraphDatabase( storeDir, params );
@@ -168,7 +170,7 @@ class PartialTransactionFailureIT
         }
         finally
         {
-            db2.shutdown();
+            managementService.shutdown();
         }
     }
 

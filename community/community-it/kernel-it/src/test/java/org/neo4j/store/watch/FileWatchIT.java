@@ -76,6 +76,7 @@ class FileWatchIT
     private AssertableLogProvider logProvider;
     private GraphDatabaseService database;
     private DatabaseLayout databaseLayout;
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void setUp()
@@ -83,7 +84,7 @@ class FileWatchIT
         File customStoreRoot = testDirectory.storeDir( "customStore" );
         databaseLayout = testDirectory.databaseLayout( customStoreRoot );
         logProvider = new AssertableLogProvider();
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
+        managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
                 .newDatabaseManagementService( customStoreRoot );
         database = managementService.database( DEFAULT_DATABASE_NAME );
     }
@@ -91,7 +92,7 @@ class FileWatchIT
     @AfterEach
     void tearDown()
     {
-        shutdownDatabaseSilently( database );
+        shutdownDatabaseSilently( managementService );
     }
 
     @Test
@@ -128,9 +129,10 @@ class FileWatchIT
         {
             AssertableLogProvider logProvider = new AssertableLogProvider( true );
             GraphDatabaseService db = null;
+            DatabaseManagementService service = null;
             try
             {
-                DatabaseManagementService managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
+                service = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
                                 .setFileSystem( new NonWatchableFileSystemAbstraction() ).newDatabaseManagementService(
                                 testDirectory.storeDir( "failed-start-db" ) );
                 db = managementService.database( DEFAULT_DATABASE_NAME );
@@ -140,7 +142,7 @@ class FileWatchIT
             }
             finally
             {
-                shutdownDatabaseSilently( db );
+                shutdownDatabaseSilently( service );
             }
         } );
     }
@@ -257,9 +259,10 @@ class FileWatchIT
         {
             AssertableLogProvider logProvider = new AssertableLogProvider( true );
             GraphDatabaseService db = null;
+            DatabaseManagementService service = null;
             try
             {
-                DatabaseManagementService managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
+                service = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
                                 .setFileSystem( new NonWatchableFileSystemAbstraction() )
                                 .newEmbeddedDatabaseBuilder( testDirectory.databaseLayout( "failed-start-db" ).databaseDirectory() )
                                 .setConfig( GraphDatabaseSettings.filewatcher_enabled, Settings.FALSE ).newDatabaseManagementService();
@@ -269,18 +272,18 @@ class FileWatchIT
             }
             finally
             {
-                shutdownDatabaseSilently( db );
+                shutdownDatabaseSilently( service );
             }
         } );
     }
 
-    private static void shutdownDatabaseSilently( GraphDatabaseService databaseService )
+    private static void shutdownDatabaseSilently( DatabaseManagementService managementService )
     {
-        if ( databaseService != null )
+        if ( managementService != null )
         {
             try
             {
-                databaseService.shutdown();
+                managementService.shutdown();
             }
             catch ( Exception expected )
             {

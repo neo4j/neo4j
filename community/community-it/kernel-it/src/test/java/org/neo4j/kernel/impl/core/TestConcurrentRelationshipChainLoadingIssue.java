@@ -75,7 +75,7 @@ public class TestConcurrentRelationshipChainLoadingIssue
             iterations++;
         }
 
-        db.shutdown();
+        managementService.shutdown();
     }
 
     private void checkStateToHelpDiagnoseFlakyTest( GraphDatabaseAPI db, Node node )

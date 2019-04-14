@@ -52,11 +52,12 @@ class DatabaseAvailabilityIT
     @Inject
     private TestDirectory testDirectory;
     private GraphDatabaseAPI database;
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void setUp()
     {
-        DatabaseManagementService managementService = new GraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
+        managementService = new GraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
         database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -65,7 +66,7 @@ class DatabaseAvailabilityIT
     {
         if ( database != null )
         {
-            database.shutdown();
+            managementService.shutdown();
         }
     }
 

@@ -62,6 +62,7 @@ public class LabelAndIndexUpdateBatchingIT
 {
     private static final String PROPERTY_KEY = "key";
     private static final Label LABEL = Label.label( "label" );
+    private DatabaseManagementService managementService;
 
     @Test
     public void indexShouldIncludeNodesCreatedPreviouslyInBatch() throws Exception
@@ -72,8 +73,8 @@ public class LabelAndIndexUpdateBatchingIT
 
         // a bunch of nodes (to have the index population later on to decide to use label scan for population)
         List<TransactionRepresentation> transactions;
-        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().newImpermanentService();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
+        managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         String nodeN = "our guy";
         String otherNode = "just to create the tokens";
         try
@@ -103,10 +104,10 @@ public class LabelAndIndexUpdateBatchingIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
 
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        managementService = new TestGraphDatabaseFactory().newImpermanentService();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         TransactionCommitProcess commitProcess =
                 db.getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
@@ -130,7 +131,7 @@ public class LabelAndIndexUpdateBatchingIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
 
     }

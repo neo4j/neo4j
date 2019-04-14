@@ -57,10 +57,11 @@ class IndexValuesValidationTest
     private TestDirectory directory;
 
     private GraphDatabaseService database;
+    private DatabaseManagementService managementService;
 
     void setUp( String... settings )
     {
-        DatabaseManagementService managementService = new GraphDatabaseFactory()
+        managementService = new GraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( stringMap( settings ) ).newDatabaseManagementService();
         database = managementService.database( DEFAULT_DATABASE_NAME );
@@ -69,7 +70,7 @@ class IndexValuesValidationTest
     @AfterEach
     void tearDown()
     {
-        database.shutdown();
+        managementService.shutdown();
     }
 
     @Test

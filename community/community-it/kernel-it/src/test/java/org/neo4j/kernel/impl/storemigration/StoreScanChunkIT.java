@@ -61,7 +61,7 @@ class StoreScanChunkIT
         }
         finally
         {
-            database.shutdown();
+            managementService.shutdown();
         }
     }
 

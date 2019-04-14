@@ -140,7 +140,7 @@ public class JUnitRuleTestIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
 
         // When a rule with an pre-populated graph db directory is used

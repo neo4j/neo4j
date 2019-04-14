@@ -149,6 +149,7 @@ class DatabaseRecoveryIT
     @Inject
     private RandomRule random;
     private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
+    private DatabaseManagementService managementService;
 
     @Test
     void idGeneratorsRebuildAfterRecovery() throws IOException
@@ -175,8 +176,7 @@ class DatabaseRecoveryIT
             recoveredDatabase.createNode();
         }
 
-        database.shutdown();
-        recoveredDatabase.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -193,7 +193,8 @@ class DatabaseRecoveryIT
         }
 
         var restoreDbLayout = copyStore();
-        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbLayout.getStoreLayout().storeDirectory() );
+        DatabaseManagementService recoveredService = getManagementService( restoreDbLayout.getStoreLayout().storeDirectory() );
+        GraphDatabaseService recoveredDatabase = recoveredService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction transaction = recoveredDatabase.beginTx() )
         {
             assertEquals( 10, count( recoveredDatabase.getAllNodes() ) );
@@ -201,8 +202,8 @@ class DatabaseRecoveryIT
         logProvider.assertContainsMessageContaining( "10% completed" );
         logProvider.assertContainsMessageContaining( "100% completed" );
 
-        database.shutdown();
-        recoveredDatabase.shutdown();
+        managementService.shutdown();
+        recoveredService.shutdown();
     }
 
     @Test
@@ -239,7 +240,8 @@ class DatabaseRecoveryIT
         var restoreDbLayout = copyStore();
 
         // database should be restored and node should have expected properties
-        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbLayout.getStoreLayout().storeDirectory() );
+        DatabaseManagementService recoveredService = getManagementService( restoreDbLayout.getStoreLayout().storeDirectory() );
+        GraphDatabaseService recoveredDatabase = recoveredService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction ignored = recoveredDatabase.beginTx() )
         {
             Node node = findNodeByLabel( recoveredDatabase, testLabel );
@@ -247,8 +249,8 @@ class DatabaseRecoveryIT
             assertTrue( node.hasProperty( validPropertyName ) );
         }
 
-        database.shutdown();
-        recoveredDatabase.shutdown();
+        managementService.shutdown();
+        recoveredService.shutdown();
     }
 
     @Test
@@ -306,7 +308,7 @@ class DatabaseRecoveryIT
                 healthOf( db ).panic( txFailure.getCause() ); // panic the db again to force recovery on the next startup
 
                 // restart the database, now with regular page cache
-                db.shutdown();
+                managementService.shutdown();
                 db = startDatabase( storeDir );
 
                 // now we observe correct state: node is in the index and relationship is removed
@@ -319,7 +321,7 @@ class DatabaseRecoveryIT
             }
             finally
             {
-                db.shutdown();
+                managementService.shutdown();
             }
         } );
     }
@@ -372,7 +374,7 @@ class DatabaseRecoveryIT
         UpdateCapturingIndexProvider recoveredUpdateCapturingIndexProvider =
                 new UpdateCapturingIndexProvider( IndexProvider.EMPTY, updatesAtLastCheckPoint );
         long lastCommittedTxIdBeforeRecovered = lastCommittedTxId( db );
-        db.shutdown();
+        managementService.shutdown();
         fs.close();
 
         db = startDatabase( storeDir, crashedFs, recoveredUpdateCapturingIndexProvider );
@@ -382,7 +384,7 @@ class DatabaseRecoveryIT
         // then
         assertEquals( lastCommittedTxIdBeforeRecovered, lastCommittedTxIdAfterRecovered );
         assertSameUpdates( updatesAtCrash, updatesAfterRecovery );
-        db.shutdown();
+        managementService.shutdown();
         crashedFs.close();
     }
 
@@ -402,7 +404,7 @@ class DatabaseRecoveryIT
         flush( db );
         EphemeralFileSystemAbstraction crashedFs = fs.snapshot();
 
-        db.shutdown();
+        managementService.shutdown();
         fs.close();
         Monitors monitors = new Monitors();
         AtomicReference<PageCache> pageCache = new AtomicReference<>();
@@ -460,8 +462,7 @@ class DatabaseRecoveryIT
                 .setFileSystem( crashedFs )
                 .setMonitors( monitors ).newImpermanentService( directory.storeDir() );
 
-        managementService.database( DEFAULT_DATABASE_NAME )
-                .shutdown();
+        managementService.shutdown();
 
         // then
         fs.close();
@@ -814,9 +815,9 @@ class DatabaseRecoveryIT
         fs.copyRecursively( fromDirectory, toDirectory );
     }
 
-    private static GraphDatabaseAPI startDatabase( File storeDir, EphemeralFileSystemAbstraction fs, UpdateCapturingIndexProvider indexProvider )
+    private GraphDatabaseAPI startDatabase( File storeDir, EphemeralFileSystemAbstraction fs, UpdateCapturingIndexProvider indexProvider )
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( fs )
                 .setExtensions( singletonList( new IndexExtensionFactory( indexProvider ) ) )
                 .newImpermanentDatabaseBuilder( storeDir )
@@ -826,9 +827,14 @@ class DatabaseRecoveryIT
 
     private GraphDatabaseService startDatabase( File storeDir )
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
-                .newDatabaseManagementService( storeDir );
+        managementService = getManagementService( storeDir );
         return managementService.database( DEFAULT_DATABASE_NAME );
+    }
+
+    private DatabaseManagementService getManagementService( File storeDir )
+    {
+        return new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
+                .newDatabaseManagementService( storeDir );
     }
 
     public class UpdateCapturingIndexProvider extends IndexProvider

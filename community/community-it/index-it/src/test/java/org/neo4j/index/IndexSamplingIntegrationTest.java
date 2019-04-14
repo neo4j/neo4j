@@ -60,6 +60,7 @@ public class IndexSamplingIntegrationTest
     private final String property = "name";
     private final long nodes = 1000;
     private final String[] names = {"Neo4j", "Neo", "Graph", "Apa"};
+    private DatabaseManagementService managementService;
 
     @Test
     public void shouldSampleNotUniqueIndex() throws Throwable
@@ -69,7 +70,7 @@ public class IndexSamplingIntegrationTest
         try
         {
             // Given
-            DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
+            managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
             db = managementService.database( DEFAULT_DATABASE_NAME );
             IndexDefinition indexDefinition;
             try ( Transaction tx = db.beginTx() )
@@ -111,7 +112,7 @@ public class IndexSamplingIntegrationTest
         {
             if ( db != null )
             {
-                db.shutdown();
+                managementService.shutdown();
             }
         }
 
@@ -173,7 +174,7 @@ public class IndexSamplingIntegrationTest
         {
             if ( db != null )
             {
-                db.shutdown();
+                managementService.shutdown();
             }
         }
 
@@ -216,7 +217,7 @@ public class IndexSamplingIntegrationTest
         {
             if ( db != null )
             {
-                db.shutdown();
+                managementService.shutdown();
             }
         }
     }
@@ -240,7 +241,7 @@ public class IndexSamplingIntegrationTest
         {
             if ( db != null )
             {
-                db.shutdown();
+                managementService.shutdown();
             }
         }
     }

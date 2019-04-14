@@ -74,6 +74,7 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     private boolean startEagerly = true;
     private final Map<Setting<?>, String> globalConfig = new HashMap<>();
     private final Monitors monitors = new Monitors();
+    private DatabaseManagementService managementService;
 
     /**
      * Means the database will be started on first {@link #getGraphDatabaseAPI()}}
@@ -319,11 +320,16 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
         return database;
     }
 
+    public DatabaseManagementService getManagementService()
+    {
+        return managementService;
+    }
+
     public synchronized void ensureStarted()
     {
         if ( database == null )
         {
-            DatabaseManagementService managementService = databaseBuilder.newDatabaseManagementService();
+            managementService = databaseBuilder.newDatabaseManagementService();
             database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
             databaseLayout = database.databaseLayout();
             statementSupplier = resolveDependency( ThreadToStatementContextBridge.class );
@@ -391,7 +397,7 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     public GraphDatabaseAPI restartDatabase( RestartAction action, String... configChanges ) throws IOException
     {
         FileSystemAbstraction fs = resolveDependency( FileSystemAbstraction.class );
-        database.shutdown();
+        managementService.shutdown();
         action.run( fs, databaseLayout );
         database = null;
         // This DatabaseBuilder has already been configured with the global settings as well as any test-specific settings,
@@ -400,7 +406,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
         return getGraphDatabaseAPI();
     }
 
-    @Override
     public void shutdown()
     {
         shutdown( true );
@@ -411,9 +416,9 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
         statementSupplier = null;
         try
         {
-            if ( database != null )
+            if ( managementService != null )
             {
-                database.shutdown();
+                managementService.shutdown();
             }
         }
         finally
@@ -422,6 +427,7 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
             {
                 deleteResources();
             }
+            managementService = null;
             database = null;
         }
     }

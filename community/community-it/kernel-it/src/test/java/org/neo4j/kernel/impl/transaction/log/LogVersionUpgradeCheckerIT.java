@@ -76,7 +76,7 @@ class LogVersionUpgradeCheckerIT
                 .newImpermanentDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( allow_upgrade, FALSE ).newDatabaseManagementService();
         final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -98,7 +98,7 @@ class LogVersionUpgradeCheckerIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -113,7 +113,7 @@ class LogVersionUpgradeCheckerIT
                 .newImpermanentDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( allow_upgrade, TRUE ).newDatabaseManagementService();
         final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-        db.shutdown();
+        managementService.shutdown();
     }
 
     private void createGraphDbAndKillIt()
@@ -130,7 +130,7 @@ class LogVersionUpgradeCheckerIT
             tx.success();
         }
 
-        db.shutdown();
+        managementService.shutdown();
     }
 
     private void createStoreWithLogEntryVersion( LogEntryVersion logEntryVersion ) throws Exception

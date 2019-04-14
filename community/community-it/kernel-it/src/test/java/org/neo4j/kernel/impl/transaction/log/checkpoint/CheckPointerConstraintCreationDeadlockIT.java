@@ -168,7 +168,7 @@ public class CheckPointerConstraintCreationDeadlockIT
                 t3.interrupt();
                 // so that shutdown won't hang too
             }
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -229,7 +229,7 @@ public class CheckPointerConstraintCreationDeadlockIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 }

@@ -73,7 +73,7 @@ class TestRecoveryRelationshipTypes
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 

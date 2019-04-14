@@ -130,11 +130,12 @@ public class IndexPopulationJobTest
     private DatabaseSchemaState stateHolder;
     private int labelId;
     private IndexStatisticsStore indexStatisticsStore;
+    private DatabaseManagementService managementService;
 
     @Before
     public void before() throws Exception
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+        managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" ).newDatabaseManagementService();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
@@ -153,7 +154,7 @@ public class IndexPopulationJobTest
     @After
     public void after()
     {
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test

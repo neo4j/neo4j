@@ -38,18 +38,19 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 public class JavaValueCompatibilityTest
 {
     private GraphDatabaseService  db;
+    private DatabaseManagementService managementService;
 
     @Before
     public void setUp()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newDatabaseManagementService();
+        managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newDatabaseManagementService();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @After
     public void tearDown()
     {
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test

@@ -91,7 +91,6 @@ public class BigPropertyIndexValidationIT
             ResourceIterator<Node> nodes = db.getAllNodes().iterator();
             assertFalse( nodes.hasNext() );
         }
-        db.shutdown();
     }
 
     @Test
@@ -123,7 +122,6 @@ public class BigPropertyIndexValidationIT
             ResourceIterator<Node> nodes = db.getAllNodes().iterator();
             assertFalse( nodes.hasNext() );
         }
-        db.shutdown();
     }
 
     @Test
@@ -156,6 +154,5 @@ public class BigPropertyIndexValidationIT
             ResourceIterator<Node> nodes = db.getAllNodes().iterator();
             assertFalse( nodes.hasNext() );
         }
-        db.shutdown();
     }
 }

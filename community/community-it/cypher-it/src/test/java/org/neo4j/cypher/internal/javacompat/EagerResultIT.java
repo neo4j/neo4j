@@ -79,6 +79,7 @@ public class EagerResultIT
     private TestTransactionVersionContextSupplier testContextSupplier;
     private File storeDir;
     private TestVersionContext testCursorContext;
+    private DatabaseManagementService managementService;
 
     @Before
     public void setUp()
@@ -97,7 +98,7 @@ public class EagerResultIT
     {
         if ( database != null )
         {
-            database.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -249,7 +250,7 @@ public class EagerResultIT
 
     private GraphDatabaseService startRestartableDatabase()
     {
-        DatabaseManagementService managementService = new CustomGraphDatabaseFactory( new CustomFacadeFactory() )
+        managementService = new CustomGraphDatabaseFactory( new CustomFacadeFactory() )
                 .newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.snapshot_query, Settings.TRUE ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );

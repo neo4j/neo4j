@@ -84,17 +84,17 @@ class RecoverIndexDropIT
         // given a transaction stream ending in an INDEX DROP command.
         CommittedTransactionRepresentation dropTransaction = prepareDropTransaction();
         var databaseLayout = directory.databaseLayout();
-        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().newDatabaseManagementService( directory.storeDir() );
-        GraphDatabaseService db = managementService1.database( DEFAULT_DATABASE_NAME );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( directory.storeDir() );
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         createIndex( db );
-        db.shutdown();
+        managementService.shutdown();
         appendDropTransactionToTransactionLog( directory.databaseLayout().getTransactionLogsDirectory(), dropTransaction );
 
         // when recovering this (the drop transaction with the index file intact)
         Monitors monitors = new Monitors();
         AssertRecoveryIsPerformed recoveryMonitor = new AssertRecoveryIsPerformed();
         monitors.addMonitorListener( recoveryMonitor );
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setMonitors( monitors )
+        managementService = new TestGraphDatabaseFactory().setMonitors( monitors )
                 .newDatabaseManagementService( directory.storeDir() );
         db = managementService.database( DEFAULT_DATABASE_NAME );
         try
@@ -111,7 +111,7 @@ class RecoverIndexDropIT
         finally
         {
             // and the ability to shut down w/o failing on still open files
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -155,7 +155,7 @@ class RecoverIndexDropIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 

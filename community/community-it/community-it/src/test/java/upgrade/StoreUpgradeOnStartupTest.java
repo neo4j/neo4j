@@ -81,6 +81,7 @@ public class StoreUpgradeOnStartupTest
     private DatabaseLayout workingDatabaseLayout;
     private StoreVersionCheck check;
     private File workingStoreDir;
+    private DatabaseManagementService managementService;
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<String> versions()
@@ -105,7 +106,7 @@ public class StoreUpgradeOnStartupTest
     {
         // when
         GraphDatabaseService database = createGraphDatabaseService();
-        database.shutdown();
+        managementService.shutdown();
 
         // then
         assertTrue( "Some store files did not have the correct version",
@@ -129,13 +130,13 @@ public class StoreUpgradeOnStartupTest
         }
         finally
         {
-            database.shutdown();
+            managementService.shutdown();
         }
     }
 
     private GraphDatabaseService createGraphDatabaseService()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        managementService = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( workingStoreDir )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, "true" ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );

@@ -68,6 +68,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     private final String string1 = "1";
     private final String string2 = "2";
     private final int[] array = new int[] { 1, 2, 3, 4, 5, 6, 7 };
+    private DatabaseManagementService managementService;
 
     @Before
     public void createTestingGraph()
@@ -394,7 +395,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 
             tx.success();
         }
-        graphDb.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -529,12 +530,12 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 
         tx.success();
         tx.close();
-        graphDb.shutdown();
+        managementService.shutdown();
     }
 
     private GraphDatabaseService getImpermanentDatabase( Map<String,String> config )
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        managementService = new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( config ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );

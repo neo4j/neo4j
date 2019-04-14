@@ -38,19 +38,20 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 public class TestShutdownSequence
 {
     private GraphDatabaseService graphDb;
+    private DatabaseManagementService managementService;
 
     @Before
     public void createGraphDb()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        managementService = new TestGraphDatabaseFactory().newImpermanentService();
         graphDb = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @Test
     public void canInvokeShutdownMultipleTimes()
     {
-        graphDb.shutdown();
-        graphDb.shutdown();
+        managementService.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -65,8 +66,8 @@ public class TestShutdownSequence
                 counter.incrementAndGet();
             }
         } );
-        graphDb.shutdown();
-        graphDb.shutdown();
+        managementService.shutdown();
+        managementService.shutdown();
         assertEquals( 1, counter.get() );
     }
 
@@ -75,9 +76,9 @@ public class TestShutdownSequence
     {
         GraphDatabaseAPI databaseAPI = (GraphDatabaseAPI) this.graphDb;
         FileSystemAbstraction fileSystemAbstraction = getDatabaseFileSystem( databaseAPI );
-        graphDb.shutdown();
+        managementService.shutdown();
         fileSystemAbstraction.deleteRecursively( databaseAPI.databaseLayout().databaseDirectory() );
-        graphDb.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -88,10 +89,10 @@ public class TestShutdownSequence
             @Override
             public void beforeShutdown()
             {
-                graphDb.shutdown();
+                managementService.shutdown();
             }
         } );
-        graphDb.shutdown();
+        managementService.shutdown();
     }
 
     private static FileSystemAbstraction getDatabaseFileSystem( GraphDatabaseAPI databaseAPI )

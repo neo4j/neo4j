@@ -69,6 +69,7 @@ class ManyPropertyKeysIT
     private FileSystemAbstraction fileSystem;
     @Inject
     private PageCache pageCache;
+    private DatabaseManagementService managementService;
 
     @Test
     void creating_many_property_keys_should_have_all_loaded_the_next_restart() throws Exception
@@ -79,13 +80,13 @@ class ManyPropertyKeysIT
         int countBefore = propertyKeyCount( db );
 
         // WHEN
-        db.shutdown();
+        managementService.shutdown();
         db = database();
         createNodeWithProperty( db, key( 2800 ), true );
 
         // THEN
         assertEquals( countBefore, propertyKeyCount( db ) );
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -110,12 +111,12 @@ class ManyPropertyKeysIT
 
         // THEN
         assertEquals( 1, propertyKeyCount( db ) );
-        db.shutdown();
+        managementService.shutdown();
     }
 
     private GraphDatabaseAPI database()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        managementService = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( GraphDatabaseSettings.fail_on_missing_files, Settings.FALSE ).newDatabaseManagementService();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );

@@ -107,7 +107,7 @@ class TestGraphProperties
         assertEquals( true, graphProperties.getProperty( "rollback" ) );
         tx.close();
         assertThat( graphProperties, inTx( db, not( hasProperty( "rollback" ) ) ) );
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -120,7 +120,7 @@ class TestGraphProperties
         assertEquals( "default", graphProperties.getProperty( "test", "default" ) );
         tx.success();
         tx.close();
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -148,7 +148,7 @@ class TestGraphProperties
         {
             assertThat( properties( db ), inTx( db, hasProperty( "key" + i ).withValue( values[i % values.length] ) ) );
         }
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -170,7 +170,7 @@ class TestGraphProperties
 
         assertThat( properties( db ), inTx( db, hasProperty( key ).withValue( array ) ) );
         assertThat( properties( db ), inTx( db, hasProperty( key ).withValue( array ) ) );
-        db.shutdown();
+        managementService.shutdown();
     }
 
     private static PropertyContainer properties( GraphDatabaseAPI db )
@@ -182,22 +182,22 @@ class TestGraphProperties
     void firstRecordOtherThanZeroIfNotFirst()
     {
         File storeDir = testDirectory.storeDir();
-        DatabaseManagementService managementService1 = factory.newImpermanentService( storeDir );
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
+        DatabaseManagementService managementService = factory.newImpermanentService( storeDir );
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         node.setProperty( "name", "Yo" );
         tx.success();
         tx.close();
-        db.shutdown();
+        managementService.shutdown();
 
-        DatabaseManagementService managementService = factory.newImpermanentService( storeDir );
+        managementService = factory.newImpermanentService( storeDir );
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         tx = db.beginTx();
         properties( db ).setProperty( "test", "something" );
         tx.success();
         tx.close();
-        db.shutdown();
+        managementService.shutdown();
 
         Config config = Config.defaults();
         StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), config, new DefaultIdGeneratorFactory( fs ),
@@ -251,7 +251,7 @@ class TestGraphProperties
 
         worker1.close();
         worker2.close();
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -266,7 +266,7 @@ class TestGraphProperties
                                 .setFileSystem( produceUncleanStore( snapshot2, databaseDir ) ).newImpermanentService( databaseDir );
                 GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
                 assertThat( properties( db ), inTx( db, hasProperty( "prop" ).withValue( "Some value" ) ) );
-                db.shutdown();
+                managementService.shutdown();
             }
         }
     }
@@ -274,8 +274,8 @@ class TestGraphProperties
     @Test
     void testEquals()
     {
-        DatabaseManagementService managementService1 = factory.newImpermanentService();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
+        DatabaseManagementService managementService = factory.newImpermanentService();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         PropertyContainer graphProperties = properties( db );
         try ( Transaction tx = db.beginTx() )
         {
@@ -284,11 +284,11 @@ class TestGraphProperties
         }
 
         assertEquals( graphProperties, properties( db ) );
-        db.shutdown();
-        DatabaseManagementService managementService = factory.newImpermanentService();
+        managementService.shutdown();
+        managementService = factory.newImpermanentService();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         assertNotEquals( graphProperties, properties( db ) );
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -338,7 +338,7 @@ class TestGraphProperties
             assertEquals( "I", graphProperties.getProperty( "i" ) );
             tx.success();
         }
-        database.shutdown();
+        managementService.shutdown();
     }
 
     private static class State
@@ -406,7 +406,7 @@ class TestGraphProperties
         tx.success();
         tx.close();
         EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
-        db.shutdown();
+        managementService.shutdown();
         return snapshot;
     }
 }

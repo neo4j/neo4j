@@ -28,7 +28,6 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -71,7 +70,7 @@ class GraphDatabaseFactoryIT
         }
         finally
         {
-            database.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -84,7 +83,6 @@ class GraphDatabaseFactoryIT
         DatabaseManagementService managementService = new GraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( factoryDir )
                 .setConfig( databases_root_path, databasesDir.toString() ).newDatabaseManagementService();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             assertTrue( isEmptyOrNonExistingDirectory( fs, new File( factoryDir, DEFAULT_DATABASE_NAME ) ) );
@@ -95,7 +93,7 @@ class GraphDatabaseFactoryIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -105,7 +103,6 @@ class GraphDatabaseFactoryIT
         File factoryDir = testDirectory.storeDir();
 
         DatabaseManagementService managementService = new GraphDatabaseFactory().newDatabaseManagementService( factoryDir );
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             assertFalse( isEmptyOrNonExistingDirectory( fs, new File( factoryDir, DEFAULT_DATABASE_NAME ) ) );
@@ -113,7 +110,7 @@ class GraphDatabaseFactoryIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 }

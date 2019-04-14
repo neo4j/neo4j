@@ -54,6 +54,7 @@ public class GraphDatabaseShutdownTest
     public final OtherThreadRule<Void> t2 = new OtherThreadRule<>( "T2" );
     @Rule
     public final OtherThreadRule<Void> t3 = new OtherThreadRule<>( "T3" );
+    private DatabaseManagementService managementService;
 
     @Before
     public void setUp()
@@ -64,7 +65,7 @@ public class GraphDatabaseShutdownTest
     @After
     public void tearDown()
     {
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -82,7 +83,7 @@ public class GraphDatabaseShutdownTest
             tx.acquireWriteLock( node );
             assertThat( lockCount( locks ), greaterThanOrEqualTo( 1 ) );
 
-            db.shutdown();
+            managementService.shutdown();
 
             db.createNode();
             tx.success();
@@ -124,7 +125,7 @@ public class GraphDatabaseShutdownTest
                 // Wait for T3 to start waiting for this node write lock
                 t3.get().waitUntilWaiting( details -> details.isAt( CommunityLockClient.class, "acquireExclusive" ) );
 
-                db.shutdown();
+                managementService.shutdown();
 
                 shutdownCalled.countDown();
                 tx.success();
@@ -178,7 +179,7 @@ public class GraphDatabaseShutdownTest
 
     private GraphDatabaseAPI newDb()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        managementService = new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder().newDatabaseManagementService();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }

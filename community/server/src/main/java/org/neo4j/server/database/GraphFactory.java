@@ -20,11 +20,11 @@
 package org.neo4j.server.database;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 @FunctionalInterface
 public interface GraphFactory
 {
-    GraphDatabaseFacade newGraphDatabase( Config config, ExternalDependencies dependencies );
+    DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies );
 }

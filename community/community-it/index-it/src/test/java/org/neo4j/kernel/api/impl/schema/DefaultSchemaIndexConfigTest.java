@@ -83,7 +83,7 @@ public class DefaultSchemaIndexConfigTest
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 

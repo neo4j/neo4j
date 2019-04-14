@@ -24,23 +24,25 @@ import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.dbms.database.DatabaseManagementService
 import org.neo4j.graphdb.{ExecutionPlanDescription, GraphDatabaseService, QueryExecutionException}
 import org.neo4j.test.TestGraphDatabaseFactory
 
 class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   private var db : GraphDatabaseService = _
+  private var managementService: DatabaseManagementService = _
 
   override protected def stopTest(): Unit = {
     super.stopTest()
     if (db != null) {
-      db.shutdown()
+      managementService.shutdown()
     }
   }
 
   test("by default when using cypher 3.5 some queries should default to COST") {
     //given
-    val managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+    managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.5").newDatabaseManagementService()
     db = managementService.database(DEFAULT_DATABASE_NAME)
     val service = new GraphDatabaseCypherService(db)

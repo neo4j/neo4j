@@ -339,13 +339,6 @@ public interface GraphDatabaseService
     boolean isAvailable( long timeout );
 
     /**
-     * Shuts down Neo4j. After this method has been invoked, it's invalid to
-     * invoke any methods in the Neo4j API and all references to this instance
-     * of GraphDatabaseService should be discarded.
-     */
-    void shutdown();
-
-    /**
      * Starts a new {@link Transaction transaction} and associates it with the current thread.
      * <p>
      * <em>All database operations must be wrapped in a transaction.</em>

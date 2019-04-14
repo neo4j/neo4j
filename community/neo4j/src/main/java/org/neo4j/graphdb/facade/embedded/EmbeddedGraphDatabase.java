@@ -46,7 +46,7 @@ import static org.neo4j.helpers.collection.Iterables.asList;
  * <code>
  * GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( &quot;var/graphdb&quot; );
  * // ... use Neo4j
- * graphDb.shutdown();
+ * managementService.shutdown();
  * </code>
  * </pre>
  * <p>

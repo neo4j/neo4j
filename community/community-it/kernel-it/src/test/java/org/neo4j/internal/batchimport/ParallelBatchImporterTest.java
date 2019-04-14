@@ -200,7 +200,7 @@ public class ParallelBatchImporterTest
             }
             finally
             {
-                db.shutdown();
+                managementService.shutdown();
             }
             assertConsistent( databaseLayout );
             successful = true;

@@ -83,7 +83,7 @@ class TestIdReuse
         {
             setAndRemoveSomeProperties( db, value );
         }
-        db.shutdown();
+        managementService.shutdown();
         long sizeBefore = storeFile.length();
         DatabaseManagementService
                 impermanentManagement = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentService( testDirectory.storeDir() );
@@ -92,7 +92,7 @@ class TestIdReuse
         {
             setAndRemoveSomeProperties( db, value );
         }
-        db.shutdown();
+        managementService.shutdown();
         assertEquals( sizeBefore, storeFile.length() );
     }
 

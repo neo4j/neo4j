@@ -147,7 +147,7 @@ public abstract class IndexProviderApprovalTest
         noIndexRun = runFindByLabelAndProperty( db );
         createIndex( db, label( LABEL ), PROPERTY_KEY );
         indexRun = runFindByLabelAndProperty( db );
-        db.shutdown();
+        managementService.shutdown();
     }
 
     public static final String LABEL = "Person";

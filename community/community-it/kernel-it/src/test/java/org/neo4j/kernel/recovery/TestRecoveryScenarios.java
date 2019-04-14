@@ -68,11 +68,12 @@ public class TestRecoveryScenarios
     private GraphDatabaseAPI db;
 
     private final FlushStrategy flush;
+    private DatabaseManagementService managementService;
 
     @Before
     public void before()
     {
-        DatabaseManagementService managementService = databaseFactory( fsRule.get() ).newImpermanentService();
+        managementService = databaseFactory( fsRule.get() ).newImpermanentService();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -84,7 +85,7 @@ public class TestRecoveryScenarios
     @After
     public void after()
     {
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -331,7 +332,7 @@ public class TestRecoveryScenarios
     private void crashAndRestart() throws Exception
     {
         final GraphDatabaseService db1 = db;
-        FileSystemAbstraction uncleanFs = fsRule.snapshot( db1::shutdown );
+        FileSystemAbstraction uncleanFs = fsRule.snapshot( managementService::shutdown );
         DatabaseManagementService managementService = databaseFactory( uncleanFs ).newImpermanentService();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }

@@ -49,6 +49,7 @@ public abstract class ExtensionFactoryContractTest
 
     @Rule
     public final TestDirectory target = TestDirectory.testDirectory();
+    protected DatabaseManagementService managementService;
 
     public ExtensionFactoryContractTest( String key, Class<? extends ExtensionFactory<?>> extClass )
     {
@@ -59,8 +60,7 @@ public abstract class ExtensionFactoryContractTest
     protected GraphDatabaseAPI graphDb( int instance )
     {
         Map<String, String> config = configuration( instance );
-        DatabaseManagementService
-                managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( config ).newDatabaseManagementService();
+        managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( config ).newDatabaseManagementService();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 

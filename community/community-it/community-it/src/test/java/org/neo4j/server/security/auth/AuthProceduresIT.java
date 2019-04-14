@@ -70,6 +70,7 @@ public class AuthProceduresIT
     private EphemeralFileSystemAbstraction fs;
     private BasicSystemGraphRealm authManager;
     private LoginContext admin;
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void setup() throws InvalidAuthTokenException, IOException
@@ -84,7 +85,7 @@ public class AuthProceduresIT
     @AfterEach
     void cleanup() throws Exception
     {
-        db.shutdown();
+        managementService.shutdown();
         fs.close();
     }
 
@@ -249,7 +250,7 @@ public class AuthProceduresIT
             .newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.auth_enabled, "true" );
 
-        DatabaseManagementService managementService = graphDatabaseFactory.newDatabaseManagementService();
+        managementService = graphDatabaseFactory.newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 

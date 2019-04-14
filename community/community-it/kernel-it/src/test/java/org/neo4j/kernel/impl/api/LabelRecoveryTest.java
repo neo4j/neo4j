@@ -43,13 +43,14 @@ class LabelRecoveryTest
     @Inject
     private EphemeralFileSystemAbstraction filesystem;
     private GraphDatabaseService database;
+    private DatabaseManagementService managementService;
 
     @AfterEach
     void tearDown()
     {
-        if ( database != null )
+        if ( managementService != null )
         {
-            database.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -67,8 +68,8 @@ class LabelRecoveryTest
     void shouldRecoverNodeWithDynamicLabelRecords()
     {
         // GIVEN
-        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().setFileSystem( filesystem ).newImpermanentService();
-        database = managementService1.database( DEFAULT_DATABASE_NAME );
+        managementService = new TestGraphDatabaseFactory().setFileSystem( filesystem ).newImpermanentService();
+        database = managementService.database( DEFAULT_DATABASE_NAME );
         Node node;
         Label[] labels = new Label[] { label( "a" ),
                 label( "b" ),
@@ -94,8 +95,8 @@ class LabelRecoveryTest
             tx.success();
         }
         EphemeralFileSystemAbstraction snapshot = filesystem.snapshot();
-        database.shutdown();
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentService();
+        managementService.shutdown();
+        managementService = new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentService();
         database = managementService.database( DEFAULT_DATABASE_NAME );
 
         // THEN

@@ -63,6 +63,7 @@ public class GraphDatabaseServiceTest
 
     @Rule
     public RuleChain chain = RuleChain.outerRule( testDirectory ).around( exception ).around( t2 ).around( t3 );
+    private DatabaseManagementService managementService;
 
     @Test
     public void givenShutdownDatabaseWhenBeginTxThenExceptionIsThrown()
@@ -70,7 +71,7 @@ public class GraphDatabaseServiceTest
         // Given
         GraphDatabaseService db = getTemporaryDatabase();
 
-        db.shutdown();
+        managementService.shutdown();
 
         // Expect
         exception.expect( DatabaseShutdownException.class );
@@ -104,7 +105,7 @@ public class GraphDatabaseServiceTest
         // now there's a transaction open, blocked on continueTxSignal
         Future<Object> shutdownFuture = t3.execute( state ->
         {
-            db.shutdown();
+            managementService.shutdown();
             return null;
         } );
         t3.get().waitUntilWaiting( location -> location.isAt( DatabaseAvailability.class, "stop" ) );
@@ -223,7 +224,7 @@ public class GraphDatabaseServiceTest
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -270,7 +271,7 @@ public class GraphDatabaseServiceTest
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -286,7 +287,7 @@ public class GraphDatabaseServiceTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                barrier.reached(); // <-- this triggers t3 to start a db.shutdown()
+                barrier.reached(); // <-- this triggers t3 to start a managementService.shutdown()
             }
             return null;
         } );
@@ -294,7 +295,7 @@ public class GraphDatabaseServiceTest
         barrier.await();
         Future<Object> shutdownFuture = t3.execute( state ->
         {
-            db.shutdown();
+            managementService.shutdown();
             return null;
         } );
         t3.get().waitUntilWaiting( location -> location.isAt( DatabaseAvailability.class, "stop" ) );
@@ -436,7 +437,7 @@ public class GraphDatabaseServiceTest
 
     private GraphDatabaseService getTemporaryDatabase()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( testDirectory.directory( "impermanent" ) )
+        managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( testDirectory.directory( "impermanent" ) )
                 .setConfig( GraphDatabaseSettings.shutdown_transaction_end_timeout, "10s" ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }

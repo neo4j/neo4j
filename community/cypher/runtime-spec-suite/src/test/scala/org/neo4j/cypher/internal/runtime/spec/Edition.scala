@@ -22,10 +22,9 @@ package org.neo4j.cypher.internal.runtime.spec
 import java.util
 
 import org.neo4j.common.DependencyResolver
-import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.{Config, GraphDatabaseSettings}
 import org.neo4j.cypher.internal._
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.dbms.database.DatabaseManagementService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.test.TestGraphDatabaseFactory
 
@@ -35,12 +34,12 @@ class Edition[CONTEXT <: RuntimeContext](graphDatabaseFactory: TestGraphDatabase
 
   import scala.collection.JavaConverters._
 
-  def newGraphDb(): GraphDatabaseService = {
+  def newGraphManagementService(): DatabaseManagementService = {
     val graphBuilder = graphDatabaseFactory.newImpermanentDatabaseBuilder
     configs.foreach{
       case (setting, value) => graphBuilder.setConfig(setting, value)
     }
-    graphBuilder.newDatabaseManagementService().database(DEFAULT_DATABASE_NAME)
+    graphBuilder.newDatabaseManagementService()
   }
 
   def copyWith(additionalConfigs: (Setting[_], String)*): Edition[CONTEXT] = {

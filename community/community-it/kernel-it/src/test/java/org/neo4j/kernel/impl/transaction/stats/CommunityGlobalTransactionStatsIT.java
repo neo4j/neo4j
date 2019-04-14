@@ -52,11 +52,12 @@ class CommunityGlobalTransactionStatsIT
     @Inject
     private TestDirectory testDirectory;
     private GraphDatabaseService database;
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void setUp()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
+        managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
         database = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -65,7 +66,7 @@ class CommunityGlobalTransactionStatsIT
     {
         if ( database != null )
         {
-            database.shutdown();
+            managementService.shutdown();
         }
     }
 

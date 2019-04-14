@@ -45,18 +45,19 @@ import static org.neo4j.helpers.collection.Iterators.addToCollection;
 public class NodeManagerTest
 {
     private GraphDatabaseAPI db;
+    private DatabaseManagementService managementService;
 
     @Before
     public void init()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        managementService = new TestGraphDatabaseFactory().newImpermanentService();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @After
     public void stop()
     {
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test

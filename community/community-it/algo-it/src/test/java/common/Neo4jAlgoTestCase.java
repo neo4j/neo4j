@@ -56,6 +56,7 @@ public abstract class Neo4jAlgoTestCase
     protected static GraphDatabaseService graphDb;
     protected static SimpleGraphBuilder graph;
     protected Transaction tx;
+    private static DatabaseManagementService managementService;
 
     public enum MyRelTypes implements RelationshipType
     {
@@ -65,7 +66,7 @@ public abstract class Neo4jAlgoTestCase
     @BeforeClass
     public static void setUpGraphDb()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        managementService = new TestGraphDatabaseFactory().newImpermanentService();
         graphDb = managementService.database( DEFAULT_DATABASE_NAME );
         graph = new SimpleGraphBuilder( graphDb, MyRelTypes.R1 );
     }
@@ -79,7 +80,7 @@ public abstract class Neo4jAlgoTestCase
     @AfterClass
     public static void tearDownGraphDb()
     {
-        graphDb.shutdown();
+        managementService.shutdown();
     }
 
     @After

@@ -40,18 +40,19 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 public abstract class AbstractTestBase
 {
     private static GraphDatabaseService graphdb;
+    private static DatabaseManagementService managementService;
 
     @BeforeClass
     public static void beforeSuite()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        managementService = new TestGraphDatabaseFactory().newImpermanentService();
         graphdb = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @AfterClass
     public static void afterSuite()
     {
-        graphdb.shutdown();
+        managementService.shutdown();
         graphdb = null;
     }
 

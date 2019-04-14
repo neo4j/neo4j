@@ -41,7 +41,6 @@ import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -109,7 +108,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.counts_store_rotation_timeout;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
@@ -528,7 +526,7 @@ public class NeoStoresTest
     {
         FileSystemAbstraction fileSystem = fs.get();
         File storeDir = dir.storeDir();
-        createTestDatabase( fileSystem, storeDir ).shutdown();
+        createShutdownTestDatabase( fileSystem, storeDir );
         DatabaseLayout databaseLayout = dir.databaseLayout();
         assertEquals( 0, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 10 ) );
         assertEquals( 10, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 12 ) );
@@ -1424,11 +1422,11 @@ public class NeoStoresTest
         }
     }
 
-    private GraphDatabaseService createTestDatabase( FileSystemAbstraction fileSystem, File storeDir )
+    private static void createShutdownTestDatabase( FileSystemAbstraction fileSystem, File storeDir )
     {
         DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) ).newImpermanentService( storeDir );
-        return managementService.database( DEFAULT_DATABASE_NAME );
+        managementService.shutdown();
     }
 
     private <RECEIVER extends PropertyReceiver<PropertyKeyValue>> void nodeLoadProperties( long nodeId, RECEIVER receiver )

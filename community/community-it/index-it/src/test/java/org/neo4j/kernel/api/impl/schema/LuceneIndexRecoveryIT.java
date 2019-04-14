@@ -72,6 +72,7 @@ class LuceneIndexRecoveryIT
     private EphemeralFileSystemAbstraction fs;
     private GraphDatabaseAPI db;
     private DirectoryFactory directoryFactory;
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void before()
@@ -84,7 +85,7 @@ class LuceneIndexRecoveryIT
     {
         if ( db != null )
         {
-            db.shutdown();
+            managementService.shutdown();
         }
         directoryFactory.close();
     }
@@ -224,13 +225,13 @@ class LuceneIndexRecoveryIT
     {
         if ( db != null )
         {
-            db.shutdown();
+            managementService.shutdown();
         }
 
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs );
         factory.setExtensions( Collections.singletonList( indexProviderFactory ) );
-        DatabaseManagementService managementService = factory.newImpermanentDatabaseBuilder()
+        managementService = factory.newImpermanentDatabaseBuilder()
                 .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).newDatabaseManagementService();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
@@ -240,7 +241,7 @@ class LuceneIndexRecoveryIT
         if ( db != null )
         {
             fs = fs.snapshot();
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 

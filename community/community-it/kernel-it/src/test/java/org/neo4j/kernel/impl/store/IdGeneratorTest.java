@@ -78,6 +78,7 @@ class IdGeneratorTest
     private FileSystemAbstraction fileSystem;
     @Inject
     private PageCache pageCache;
+    private DatabaseManagementService managementService;
 
     @Test
     void cannotCreateIdGeneratorWithNullFileSystem()
@@ -542,7 +543,7 @@ class IdGeneratorTest
         }
         tx.success();
         tx.close();
-        db.shutdown();
+        managementService.shutdown();
 
         // After a clean shutdown, create new nodes and relationships and see so
         // that
@@ -573,7 +574,7 @@ class IdGeneratorTest
             Iterables.lastOrNull( node.getRelationships() );
         }
         tx.close();
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -680,7 +681,7 @@ class IdGeneratorTest
 
     private GraphDatabaseService createTestDatabase( File storeDir )
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) ).newImpermanentService( storeDir );
         return managementService.database( DEFAULT_DATABASE_NAME );
     }

@@ -80,7 +80,7 @@ class TestDatabaseEvents
         assertSame( handler1, graphDb.unregisterDatabaseEventHandler( handler1 ) );
         assertSame( handler2, graphDb.unregisterDatabaseEventHandler( handler2 ) );
 
-        graphDb.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -115,7 +115,7 @@ class TestDatabaseEvents
         graphDb.registerDatabaseEventHandler( handler1 );
         graphDb.registerDatabaseEventHandler( handler2 );
 
-        graphDb.shutdown();
+        managementService.shutdown();
 
         assertEquals( 0, handler2.beforeShutdown );
         assertEquals( 1, handler1.beforeShutdown );

@@ -60,13 +60,14 @@ class RunOutOfDiskSpaceIT
     private FileSystemAbstraction fileSystem;
     private LimitedFilesystemAbstraction limitedFs;
     private GraphDatabaseAPI database;
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void setUp()
     {
         limitedFs = new LimitedFilesystemAbstraction( new UncloseableDelegatingFileSystemAbstraction( testDirectory.getFileSystem() ) );
         TestGraphDatabaseFactory testGraphDatabaseFactory = new TestGraphDatabaseFactory().setFileSystem( limitedFs );
-        DatabaseManagementService managementService = testGraphDatabaseFactory.newDatabaseManagementService( testDirectory.storeDir() );
+        managementService = testGraphDatabaseFactory.newDatabaseManagementService( testDirectory.storeDir() );
         database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -96,7 +97,7 @@ class RunOutOfDiskSpaceIT
         assertTrue( Exceptions.contains( exception, IOException.class ) );
 
         limitedFs.runOutOfDiskSpace( false ); // to help shutting down the db
-        database.shutdown();
+        managementService.shutdown();
 
         PageCache pageCache = pageCacheExtension.getPageCache( limitedFs );
         File neoStore = testDirectory.databaseLayout().metadataStore();
@@ -137,7 +138,7 @@ class RunOutOfDiskSpaceIT
 
         // Then
         limitedFs.runOutOfDiskSpace( false ); // to help shutting down the database
-        database.shutdown();
+        managementService.shutdown();
 
         PageCache pageCache = pageCacheExtension.getPageCache( limitedFs );
         File neoStore = testDirectory.databaseLayout().metadataStore();

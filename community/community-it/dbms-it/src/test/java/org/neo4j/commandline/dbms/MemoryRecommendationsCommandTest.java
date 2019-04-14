@@ -336,7 +336,7 @@ class MemoryRecommendationsCommandTest
             }
             finally
             {
-                db.shutdown();
+                managementService.shutdown();
             }
         }
     }

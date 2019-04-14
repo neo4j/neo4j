@@ -24,6 +24,7 @@ import java.io.File
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.dbms.database.DatabaseManagementService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.helpers.Indexes
@@ -46,6 +47,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   var graphOps: GraphDatabaseService = _
   var graph: GraphDatabaseCypherService = _
+  var managementService: DatabaseManagementService = _
   var nodes: List[Node] = _
 
   def databaseConfig(): Map[Setting[_],String] = Map()
@@ -56,12 +58,14 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   protected def startGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): Unit = {
-    graphOps = graphDatabaseFactory().newImpermanentService(config.asJava).database(DEFAULT_DATABASE_NAME)
+    managementService = graphDatabaseFactory().newImpermanentService(config.asJava)
+    graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
   }
 
   protected def startGraphDatabase(storeDir: File): Unit = {
-    graphOps = graphDatabaseFactory().newImpermanentService(storeDir).database(DEFAULT_DATABASE_NAME)
+    managementService = graphDatabaseFactory().newImpermanentService(storeDir)
+    graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
   }
 
@@ -78,7 +82,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   protected def createDatabaseFactory(): TestGraphDatabaseFactory = new TestGraphDatabaseFactory
 
   protected def restartWithConfig(config: Map[Setting[_], String] = databaseConfig()): Unit = {
-    graph.shutdown()
+    managementService.shutdown()
     startGraphDatabase(config)
   }
 
@@ -87,7 +91,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
       super.stopTest()
     }
     finally {
-      if (graph != null) graph.shutdown()
+      if (managementService != null) managementService.shutdown()
     }
   }
 

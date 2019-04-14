@@ -93,7 +93,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       }
     }
     finally {
-      graph.shutdown()
+      managementService.shutdown()
     }
   }
 
@@ -120,7 +120,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       }
     }
     finally {
-      graph.shutdown()
+      managementService.shutdown()
     }
   }
 
@@ -158,7 +158,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       println(s"COST = LHS * ${params(0)} + RHS * ${params(1)}")
 
     } finally {
-      graph.shutdown()
+      managementService.shutdown()
     }
   }
 
@@ -360,8 +360,6 @@ class ActualCostCalculationTest extends CypherFunSuite {
         tx.close()
       }
     }
-
-    def shutdown(): Unit = gds.shutdown()
 
     def createNode(): Node = gds.createNode()
 

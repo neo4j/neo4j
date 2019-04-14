@@ -110,7 +110,7 @@ public class DbRepresentation
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 

@@ -77,7 +77,7 @@ class TransactionLogsInSeparateLocationIT
                 transaction.success();
             }
         }
-        database.shutdown();
+        managementService.shutdown();
     }
 
     private void verifyTransactionLogs( File txDirectory, File storeDir ) throws IOException

@@ -224,7 +224,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     public void testMultipleShutdown()
     {
         commit();
-        getGraphDb().shutdown();
-        getGraphDb().shutdown();
+        getManagementService().shutdown();
+        getManagementService().shutdown();
     }
 }

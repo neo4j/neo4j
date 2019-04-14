@@ -33,11 +33,12 @@ trait RunWithConfigTestSupport {
   def runWithConfig(m: (Setting[_], String)*)(run: GraphDatabaseCypherService => Unit) = {
     val config: util.Map[Setting[_], String] = m.toMap.asJava
     val storeDir = new File("target/test-data/neo4j")
-    val graph = new TestGraphDatabaseFactory().newImpermanentService(storeDir, config).database(DEFAULT_DATABASE_NAME)
+    val managementService = new TestGraphDatabaseFactory().newImpermanentService(storeDir, config)
+    val graph = managementService.database(DEFAULT_DATABASE_NAME)
     try {
       run(new GraphDatabaseCypherService(graph))
     } finally {
-      graph.shutdown()
+      managementService.shutdown()
     }
   }
 }

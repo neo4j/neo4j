@@ -56,27 +56,29 @@ public class TestExceptionTypeOnInvalidIds
 
     @ClassRule
     public static final TestDirectory testDirectory = TestDirectory.testDirectory();
+    private static DatabaseManagementService readOnlyService;
+    private static DatabaseManagementService managementService;
 
     @BeforeClass
     public static void createDatabase()
     {
         var writableLayout = testDirectory.databaseLayout( testDirectory.storeDir( "writable" ) );
         var readOnlyLayout = testDirectory.databaseLayout( testDirectory.storeDir( "readOnly" ) );
-        DatabaseManagementService managementService2 = new TestGraphDatabaseFactory().newDatabaseManagementService( writableLayout.databaseDirectory() );
-        graphdb = managementService2.database( DEFAULT_DATABASE_NAME );
+        managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( writableLayout.databaseDirectory() );
+        graphdb = managementService.database( DEFAULT_DATABASE_NAME );
         DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().newDatabaseManagementService( readOnlyLayout.databaseDirectory() );
-        managementService1.database( DEFAULT_DATABASE_NAME ).shutdown();
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( readOnlyLayout.databaseDirectory() ).
+        managementService1.shutdown();
+        readOnlyService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( readOnlyLayout.databaseDirectory() ).
             setConfig( GraphDatabaseSettings.read_only, TRUE ).newDatabaseManagementService();
-        graphDbReadOnly = managementService.database( DEFAULT_DATABASE_NAME );
+        graphDbReadOnly = readOnlyService.database( DEFAULT_DATABASE_NAME );
     }
 
     @AfterClass
     public static void destroyDatabase()
     {
-        graphDbReadOnly.shutdown();
+        readOnlyService.shutdown();
         graphDbReadOnly = null;
-        graphdb.shutdown();
+        managementService.shutdown();
         graphdb = null;
     }
 

@@ -50,18 +50,19 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 public class NestedTransactionLocksIT
 {
     private GraphDatabaseService db;
+    private DatabaseManagementService managementService;
 
     @Before
     public void before()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        managementService = new TestGraphDatabaseFactory().newImpermanentService();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @After
     public void after()
     {
-        db.shutdown();
+        managementService.shutdown();
     }
 
     private WorkerCommand<Void, Lock> acquireWriteLock( final Node resource )

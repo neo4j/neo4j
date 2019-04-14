@@ -84,13 +84,14 @@ class RecoveryIT
     private TestDirectory directory;
     @Inject
     private PageCache pageCache;
+    private DatabaseManagementService managementService;
 
     @Test
     void recoveryRequiredOnDatabaseWithoutCorrectCheckpoints() throws Exception
     {
         GraphDatabaseService database = createDatabase();
         generateSomeData( database );
-        database.shutdown();
+        managementService.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
 
         assertTrue( isRecoveryRequired( fileSystem, directory.databaseLayout(), defaults() ) );
@@ -107,7 +108,7 @@ class RecoveryIT
     void recoverEmptyDatabase() throws Exception
     {
         GraphDatabaseService database = createDatabase();
-        database.shutdown();
+        managementService.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
 
         recoverDatabase();
@@ -123,7 +124,7 @@ class RecoveryIT
         {
             createSingleNode( database );
         }
-        database.shutdown();
+        managementService.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
 
         recoverDatabase();
@@ -135,7 +136,7 @@ class RecoveryIT
         }
         finally
         {
-            recoveredDatabase.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -156,7 +157,7 @@ class RecoveryIT
                 transaction.success();
             }
         }
-        database.shutdown();
+        managementService.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
 
         recoverDatabase();
@@ -170,7 +171,7 @@ class RecoveryIT
         }
         finally
         {
-            recoveredDatabase.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -193,7 +194,7 @@ class RecoveryIT
                 transaction.success();
             }
         }
-        database.shutdown();
+        managementService.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
 
         recoverDatabase();
@@ -208,7 +209,7 @@ class RecoveryIT
         }
         finally
         {
-            recoveredDatabase.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -254,7 +255,7 @@ class RecoveryIT
         {
             numberOfPropertyKeys = count( database.getAllPropertyKeys() );
         }
-        database.shutdown();
+        managementService.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
 
         recoverDatabase();
@@ -269,7 +270,7 @@ class RecoveryIT
         }
         finally
         {
-            recoveredDatabase.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -278,7 +279,7 @@ class RecoveryIT
     {
         GraphDatabaseService database = createDatabase();
         generateSomeData( database );
-        database.shutdown();
+        managementService.shutdown();
         assertEquals( 1, countCheckPointsInTransactionLogs() );
         removeLastCheckpointRecordFromLastLogFile();
 
@@ -297,7 +298,7 @@ class RecoveryIT
     {
         GraphDatabaseService database = createDatabase();
         generateSomeData( database );
-        database.shutdown();
+        managementService.shutdown();
 
         removeTransactionLogs();
 
@@ -312,7 +313,7 @@ class RecoveryIT
         }
         finally
         {
-            restartedDb.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -326,7 +327,7 @@ class RecoveryIT
 
         assertEquals( -1, getRecord( pageCache, databaseAPI.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP ) );
 
-        database.shutdown();
+        managementService.shutdown();
 
         removeTransactionLogs();
 
@@ -349,7 +350,7 @@ class RecoveryIT
         {
             generateSomeData( database );
         }
-        database.shutdown();
+        managementService.shutdown();
 
         removeTransactionLogs();
 
@@ -371,15 +372,16 @@ class RecoveryIT
         {
             generateSomeData( database );
         }
-        database.shutdown();
+        managementService.shutdown();
 
         removeTransactionLogs();
         assertTrue( isRecoveryRequired( fileSystem, directory.databaseLayout(), defaults() ) );
         assertEquals( 0, countTransactionLogFiles() );
 
-        GraphDatabaseService service = startDatabaseWithForcedRecovery();
+        DatabaseManagementService forcedRecoveryManagementService = forcedRecoveryManagement();
+        GraphDatabaseService service = forcedRecoveryManagementService.database( DEFAULT_DATABASE_NAME );
         createSingleNode( service );
-        service.shutdown();
+        forcedRecoveryManagementService.shutdown();
 
         assertEquals( 1, countTransactionLogFiles() );
         assertEquals( 2, countCheckPointsInTransactionLogs() );
@@ -403,7 +405,7 @@ class RecoveryIT
         {
             generateSomeData( database );
         }
-        database.shutdown();
+        managementService.shutdown();
 
         removeHighestLogFile();
 
@@ -434,7 +436,7 @@ class RecoveryIT
         {
             generateSomeData( database );
         }
-        database.shutdown();
+        managementService.shutdown();
 
         removeHighestLogFile();
 
@@ -456,7 +458,7 @@ class RecoveryIT
 
         GraphDatabaseService service = createDatabase();
         createSingleNode( service );
-        service.shutdown();
+        managementService.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
         startStopDatabase();
 
@@ -470,7 +472,7 @@ class RecoveryIT
         GraphDatabaseAPI db = createDatabase();
         generateSomeData( db );
         DatabaseLayout layout = db.databaseLayout();
-        db.shutdown();
+        managementService.shutdown();
 
         fileSystem.deleteFileOrThrow( layout.idRelationshipStore() );
         assertTrue( isRecoveryRequired( fileSystem, layout, defaults() ) );
@@ -487,7 +489,7 @@ class RecoveryIT
         GraphDatabaseAPI db = createDatabase();
         generateSomeData( db );
         DatabaseLayout layout = db.databaseLayout();
-        db.shutdown();
+        managementService.shutdown();
 
         for ( File idFile : layout.idFiles() )
         {
@@ -515,7 +517,8 @@ class RecoveryIT
 
     private void startStopDatabase()
     {
-        createDatabase().shutdown();
+        createDatabase();
+        managementService.shutdown();
     }
 
     private void recoverDatabase() throws Exception
@@ -632,20 +635,20 @@ class RecoveryIT
 
     private GraphDatabaseAPI createDatabase()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( directory.storeDir() );
+        managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( directory.storeDir() );
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private void startStopDatabaseWithForcedRecovery()
     {
-        startDatabaseWithForcedRecovery().shutdown();
+        DatabaseManagementService forcedRecoveryManagementService = forcedRecoveryManagement();
+        forcedRecoveryManagementService.shutdown();
     }
 
-    private GraphDatabaseService startDatabaseWithForcedRecovery()
+    private DatabaseManagementService forcedRecoveryManagement()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.storeDir() )
+        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( fail_on_missing_files, FALSE ).newDatabaseManagementService();
-        return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private PageCache getDatabasePageCache( GraphDatabaseAPI databaseAPI )
@@ -664,7 +667,7 @@ class RecoveryIT
         }
         finally
         {
-            restartedDatabase.shutdown();
+            managementService.shutdown();
         }
     }
 }

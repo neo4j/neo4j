@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.dbms.database.DatabaseManagementService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.Transaction.Type
@@ -58,6 +59,7 @@ import scala.collection.JavaConverters._
 
 class TransactionBoundQueryContextTest extends CypherFunSuite {
 
+  var managementService: DatabaseManagementService = _
   var graphOps: GraphDatabaseService = null
   var graph: GraphDatabaseQueryService = null
   var outerTx: InternalTransaction = null
@@ -67,7 +69,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   override def beforeEach() {
     super.beforeEach()
-    graphOps = new TestGraphDatabaseFactory().newImpermanentService().database(DEFAULT_DATABASE_NAME)
+    managementService = new TestGraphDatabaseFactory().newImpermanentService()
+    graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new javacompat.GraphDatabaseCypherService(graphOps)
     valueMapper = new DefaultValueMapper(mock[GraphDatabaseFacade])
     outerTx = mock[InternalTransaction]
@@ -81,7 +84,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   }
 
   override def afterEach() {
-    graphOps.shutdown()
+    managementService.shutdown()
   }
 
   test("should mark transaction successful if successful") {
@@ -179,7 +182,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   test("should deny file URLs when not allowed by config") {
     // GIVEN
-    graphOps.shutdown()
+    managementService.shutdown()
     startGraph(GraphDatabaseSettings.allow_file_urls -> "false")
     val tx = graph.beginTransaction(Type.explicit, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
@@ -293,7 +296,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   private def startGraph(config:(Setting[_], String)) = {
     val configs = Map[Setting[_], String](config)
-    graphOps = new TestGraphDatabaseFactory().newImpermanentService(configs.asJava).database(DEFAULT_DATABASE_NAME)
+    managementService = new TestGraphDatabaseFactory().newImpermanentService(configs.asJava)
+    graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
   }
 

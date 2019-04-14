@@ -42,12 +42,15 @@ public class StoreLockerLifecycleAdapterTest
 {
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory();
+    private DatabaseManagementService managementService;
 
     @Test
     public void shouldAllowDatabasesToUseFilesetsSequentially()
     {
-        newDb().shutdown();
-        newDb().shutdown();
+        newDb();
+        managementService.shutdown();
+        newDb();
+        managementService.shutdown();
     }
 
     @Test
@@ -66,11 +69,12 @@ public class StoreLockerLifecycleAdapterTest
     private void shouldNotAllowDatabasesToUseFilesetsConcurrently( Map<String,String> config )
     {
         GraphDatabaseService db = newDb();
+        DatabaseManagementService managementService2 = null;
         try
         {
-            DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.storeDir() )
+            managementService2 = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.storeDir() )
                         .setConfig( config ).newDatabaseManagementService();
-            managementService.database( DEFAULT_DATABASE_NAME );
+            managementService2.database( DEFAULT_DATABASE_NAME );
 
             fail();
         }
@@ -80,13 +84,16 @@ public class StoreLockerLifecycleAdapterTest
         }
         finally
         {
-            db.shutdown();
+            if ( managementService2 != null )
+            {
+                managementService2.shutdown();
+            }
         }
     }
 
     private GraphDatabaseService newDb()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( directory.storeDir() );
+        managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( directory.storeDir() );
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

@@ -98,6 +98,7 @@ class FulltextIndexConsistencyCheckIT
 
     private GraphDatabaseBuilder builder;
     private GraphDatabaseService database;
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void before()
@@ -111,14 +112,15 @@ class FulltextIndexConsistencyCheckIT
     {
         if ( database != null )
         {
-            database.shutdown();
+            managementService.shutdown();
         }
     }
 
     @Test
     void mustBeAbleToConsistencyCheckEmptyDatabaseWithFulltextIndexingEnabled() throws Exception
     {
-        createDatabase().shutdown();
+        createDatabase();
+        managementService.shutdown();
         assertIsConsistent( checkConsistency() );
     }
 
@@ -137,7 +139,7 @@ class FulltextIndexConsistencyCheckIT
             db.createNode( Label.label( "Label" ) ).setProperty( "prop", "value" );
             tx.success();
         }
-        db.shutdown();
+        managementService.shutdown();
         assertIsConsistent( checkConsistency() );
     }
 
@@ -160,7 +162,7 @@ class FulltextIndexConsistencyCheckIT
             db.createNode( Label.label( "Label" ) ).setProperty( "p2", "value" );
             tx.success();
         }
-        db.shutdown();
+        managementService.shutdown();
         assertIsConsistent( checkConsistency() );
     }
 
@@ -181,7 +183,7 @@ class FulltextIndexConsistencyCheckIT
             db.createNode( Label.label( "L1" ) ).setProperty( "prop", "value" );
             tx.success();
         }
-        db.shutdown();
+        managementService.shutdown();
         assertIsConsistent( checkConsistency() );
     }
 
@@ -202,7 +204,7 @@ class FulltextIndexConsistencyCheckIT
             db.createNode( Stream.of( labels ).map( Label::label ).toArray( Label[]::new ) ).setProperty( "prop", "value" );
             tx.success();
         }
-        db.shutdown();
+        managementService.shutdown();
         assertIsConsistent( checkConsistency() );
     }
 
@@ -245,7 +247,7 @@ class FulltextIndexConsistencyCheckIT
             db.createNode( Label.label( "L1" ) ).setProperty( "p2", "value" );
             tx.success();
         }
-        db.shutdown();
+        managementService.shutdown();
         assertIsConsistent( checkConsistency() );
     }
 
@@ -267,7 +269,7 @@ class FulltextIndexConsistencyCheckIT
             node.createRelationshipTo( node, relationshipType ).setProperty( "p1", "value" ); // This relationship will have a different id value than the node.
             tx.success();
         }
-        db.shutdown();
+        managementService.shutdown();
         assertIsConsistent( checkConsistency() );
     }
 
@@ -295,7 +297,7 @@ class FulltextIndexConsistencyCheckIT
             node.createRelationshipTo( node, relationshipType ).setProperty( "p2", "value" );
             tx.success();
         }
-        db.shutdown();
+        managementService.shutdown();
         assertIsConsistent( checkConsistency() );
     }
 
@@ -321,7 +323,7 @@ class FulltextIndexConsistencyCheckIT
             n2.createRelationshipTo( n2, relType2 ).setProperty( "p1", "value" );
             tx.success();
         }
-        db.shutdown();
+        managementService.shutdown();
         assertIsConsistent( checkConsistency() );
     }
 
@@ -359,7 +361,7 @@ class FulltextIndexConsistencyCheckIT
             n1.createRelationshipTo( n2, relType2 ).setProperty( "p2", "value" );
             tx.success();
         }
-        db.shutdown();
+        managementService.shutdown();
         assertIsConsistent( checkConsistency() );
     }
 
@@ -387,7 +389,7 @@ class FulltextIndexConsistencyCheckIT
             r1.setProperty( "p2", "value" );
             tx.success();
         }
-        db.shutdown();
+        managementService.shutdown();
         assertIsConsistent( checkConsistency() );
     }
 
@@ -406,7 +408,7 @@ class FulltextIndexConsistencyCheckIT
             db.createNode( Label.label( "L1" ) ).setProperty( "p1", 1 );
             tx.success();
         }
-        db.shutdown();
+        managementService.shutdown();
         assertIsConsistent( checkConsistency() );
     }
 
@@ -426,7 +428,7 @@ class FulltextIndexConsistencyCheckIT
             node.createRelationshipTo( node, RelationshipType.withName( "R1" ) ).setProperty( "p1", 1 );
             tx.success();
         }
-        db.shutdown();
+        managementService.shutdown();
         assertIsConsistent( checkConsistency() );
     }
 
@@ -480,7 +482,7 @@ class FulltextIndexConsistencyCheckIT
             tx.success();
         }
 
-        db.shutdown();
+        managementService.shutdown();
 
         assertIsConsistent( checkConsistency() );
     }
@@ -512,7 +514,7 @@ class FulltextIndexConsistencyCheckIT
             updater.process( IndexEntryUpdate.remove( nodeId, indexDescriptor, Values.stringValue( "value" ) ) );
         }
 
-        db.shutdown();
+        managementService.shutdown();
 
         ConsistencyCheckService.Result result = checkConsistency();
         assertFalse( result.isSuccessful() );
@@ -540,7 +542,7 @@ class FulltextIndexConsistencyCheckIT
         }
 
         // Remove the property without updating the index
-        db.shutdown();
+        managementService.shutdown();
         DatabaseManagementService managementService = new TestGraphDatabaseFactory( NullLogProvider.getInstance() ).setFileSystem( fs )
                 .removeExtensions( INDEX_PROVIDERS_FILTER )
                 .addExtension( new FailingGenericNativeIndexProviderFactory( SKIP_ONLINE_UPDATES ) )
@@ -551,7 +553,7 @@ class FulltextIndexConsistencyCheckIT
             db.getNodeById( nodeId ).removeProperty( "prop" );
             tx.success();
         }
-        db.shutdown();
+        managementService.shutdown();
 
         ConsistencyCheckService.Result result = checkConsistency();
         assertFalse( result.isSuccessful() );
@@ -585,7 +587,7 @@ class FulltextIndexConsistencyCheckIT
             updater.process( IndexEntryUpdate.remove( relId, indexDescriptor, Values.stringValue( "value" ) ) );
         }
 
-        db.shutdown();
+        managementService.shutdown();
 
         ConsistencyCheckService.Result result = checkConsistency();
         assertFalse( result.isSuccessful() );
@@ -621,7 +623,7 @@ class FulltextIndexConsistencyCheckIT
         PropertyRecord propRecord = stores.getPropertyStore().getRecord( propId, stores.getPropertyStore().newRecord(), RecordLoad.NORMAL );
         propRecord.setInUse( false );
         stores.getPropertyStore().updateRecord( propRecord );
-        db.shutdown();
+        managementService.shutdown();
 
         ConsistencyCheckService.Result result = checkConsistency();
         assertFalse( result.isSuccessful() );
@@ -629,7 +631,7 @@ class FulltextIndexConsistencyCheckIT
 
     private GraphDatabaseService createDatabase()
     {
-        DatabaseManagementService managementService = builder.newDatabaseManagementService();
+        managementService = builder.newDatabaseManagementService();
         database = managementService.database( DEFAULT_DATABASE_NAME );
         return database;
     }

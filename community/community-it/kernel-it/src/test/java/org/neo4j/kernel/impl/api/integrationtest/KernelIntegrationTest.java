@@ -79,6 +79,7 @@ public abstract class KernelIntegrationTest
     private DbmsOperations dbmsOperations;
     protected DependencyResolver dependencyResolver;
     protected DefaultValueMapper valueMapper;
+    private DatabaseManagementService managementService;
 
     protected TokenWrite tokenWriteInNewTransaction() throws KernelException
     {
@@ -181,7 +182,7 @@ public abstract class KernelIntegrationTest
         GraphDatabaseBuilder graphDatabaseBuilder = configure( createGraphDatabaseFactory() )
                 .setFileSystem( testDir.getFileSystem() )
                 .newEmbeddedDatabaseBuilder( testDir.storeDir() );
-        DatabaseManagementService managementService = configure( graphDatabaseBuilder ).newDatabaseManagementService();
+        managementService = configure( graphDatabaseBuilder ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -212,7 +213,7 @@ public abstract class KernelIntegrationTest
         {
             transaction.close();
         }
-        db.shutdown();
+        managementService.shutdown();
     }
 
     public void restartDb() throws TransactionFailureException

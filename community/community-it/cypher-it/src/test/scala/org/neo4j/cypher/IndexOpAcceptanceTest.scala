@@ -62,7 +62,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
       val e = intercept[FailedIndexException](execute("CREATE INDEX ON :Person(name)"))
       e.getMessage should include (org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.POPULATION_FAILURE_MESSAGE)
     } finally {
-      graph.shutdown()
+      managementService.shutdown()
     }
   }
 
@@ -103,14 +103,14 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     val testDirectory = TestDirectory.testDirectory()
     testDirectory.prepareDirectory(getClass, "createDbWithFailedIndex")
     val storeDir = testDirectory.databaseDir()
-    graph.shutdown()
+    managementService.shutdown()
     val dbFactory = new TestGraphDatabaseFactory()
     // Build a properly failing index provider which is a wrapper around the default provider, but which throws exception
     // in its populator when trying to add updates to it
     val providerFactory = new FailingGenericNativeIndexProviderFactory(POPULATION)
     dbFactory.removeExtensions(TestGraphDatabaseFactory.INDEX_PROVIDERS_FILTER)
     dbFactory.addExtension(providerFactory)
-    val managementService = dbFactory.newDatabaseManagementService(storeDir)
+    managementService = dbFactory.newDatabaseManagementService(storeDir)
     graph = new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
     eengine = createEngine(graph)
     execute("create (:Person {name:42})")

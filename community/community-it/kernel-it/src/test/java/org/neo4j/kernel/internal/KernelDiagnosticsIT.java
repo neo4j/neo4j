@@ -121,7 +121,7 @@ class KernelDiagnosticsIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 

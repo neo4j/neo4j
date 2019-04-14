@@ -20,21 +20,21 @@
 package org.neo4j.server.database;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 public class SimpleGraphFactory implements GraphFactory
 {
-    private final GraphDatabaseFacade db;
+    private final DatabaseManagementService managementService;
 
-    public SimpleGraphFactory( GraphDatabaseFacade db )
+    public SimpleGraphFactory( DatabaseManagementService managementService )
     {
-        this.db = db;
+        this.managementService = managementService;
     }
 
     @Override
-    public GraphDatabaseFacade newGraphDatabase( Config config, ExternalDependencies dependencies )
+    public DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
     {
-        return db;
+        return managementService;
     }
 }

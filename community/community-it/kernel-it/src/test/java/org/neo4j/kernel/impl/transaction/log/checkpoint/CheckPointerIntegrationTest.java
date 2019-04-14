@@ -98,7 +98,7 @@ class CheckPointerIntegrationTest
             tx.success();
         }
         Thread.sleep( 10 );
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -128,7 +128,7 @@ class CheckPointerIntegrationTest
             assertTrue( currentTimeMillis() < endTime, "Took too long to produce a checkpoint" );
         }
 
-        db.shutdown();
+        managementService.shutdown();
 
         // then - 2 check points have been written in the log
         List<CheckPoint> checkPoints = new CheckPointCollector( logsDirectory(), fs ).find( 0 );
@@ -178,7 +178,7 @@ class CheckPointerIntegrationTest
 
         assertTrue( checkPointInTxLog( db ) );
 
-        db.shutdown();
+        managementService.shutdown();
 
         // then - 2 check points have been written in the log
         List<CheckPoint> checkPoints = new CheckPointCollector( logsDirectory(), fs ).find( 0 );
@@ -203,7 +203,7 @@ class CheckPointerIntegrationTest
         triggerCheckPointAttempt( db );
         assertFalse( checkPointInTxLog( db ) );
 
-        db.shutdown();
+        managementService.shutdown();
 
         // then - 1 check point has been written in the log
         List<CheckPoint> checkPoints = new CheckPointCollector( logsDirectory(), fs ).find( 0 );
@@ -222,9 +222,9 @@ class CheckPointerIntegrationTest
 
         // when
         DatabaseManagementService managementService1 = graphDatabaseBuilder.newDatabaseManagementService();
-        managementService1.database( DEFAULT_DATABASE_NAME ).shutdown();
+        managementService1.shutdown();
         DatabaseManagementService managementService = graphDatabaseBuilder.newDatabaseManagementService();
-        managementService.database( DEFAULT_DATABASE_NAME ).shutdown();
+        managementService.shutdown();
 
         // then - 2 check points have been written in the log
         List<CheckPoint> checkPoints = new CheckPointCollector( logsDirectory(), fs ).find( 0 );

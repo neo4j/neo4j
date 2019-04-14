@@ -60,11 +60,12 @@ public class ConcurrentChangesOnEntitiesTest
     private final CyclicBarrier barrier = new CyclicBarrier( 2 );
     private final AtomicReference<Exception> ex = new AtomicReference<>();
     private GraphDatabaseService db;
+    private DatabaseManagementService managementService;
 
     @Before
     public void setup()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        managementService = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( testDirectory.storeDir() ).newDatabaseManagementService();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
@@ -81,7 +82,7 @@ public class ConcurrentChangesOnEntitiesTest
 
         startAndWait( t1, t2 );
 
-        db.shutdown();
+        managementService.shutdown();
 
         assertDatabaseConsistent();
     }
@@ -97,7 +98,7 @@ public class ConcurrentChangesOnEntitiesTest
 
         startAndWait( t1, t2 );
 
-        db.shutdown();
+        managementService.shutdown();
 
         assertDatabaseConsistent();
     }
@@ -114,7 +115,7 @@ public class ConcurrentChangesOnEntitiesTest
 
         startAndWait( t1, t2 );
 
-        db.shutdown();
+        managementService.shutdown();
 
         assertDatabaseConsistent();
     }

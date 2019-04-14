@@ -70,6 +70,9 @@ import static org.neo4j.lock.LockService.LockType;
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
+
+    private DatabaseManagementService managementService;
+
     public UniqueConstraintCompatibility( IndexProviderCompatibilityTestSuite testSuite )
     {
         super( testSuite, TestIndexDescriptorFactory.uniqueForLabel( 1, 2 ) );
@@ -137,7 +140,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     {
         TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
         dbFactory.setExtensions( Collections.singletonList( new PredefinedIndexProviderFactory( indexProvider ) ) );
-        DatabaseManagementService managementService = dbFactory.newImpermanentDatabaseBuilder( graphDbDir )
+        managementService = dbFactory.newImpermanentDatabaseBuilder( graphDbDir )
                       .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() ).newDatabaseManagementService();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
@@ -145,7 +148,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     @After
     public void tearDown()
     {
-        db.shutdown();
+        managementService.shutdown();
     }
 
     // -- Tests:

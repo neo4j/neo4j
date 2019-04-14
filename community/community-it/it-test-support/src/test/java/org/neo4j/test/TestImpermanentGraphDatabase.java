@@ -39,18 +39,19 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 class TestImpermanentGraphDatabase
 {
     private GraphDatabaseService db;
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void createDb()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        managementService = new TestGraphDatabaseFactory().newImpermanentService();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @AfterEach
     void tearDown()
     {
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -65,7 +66,7 @@ class TestImpermanentGraphDatabase
     void dataShouldNotSurviveShutdown()
     {
         createNode();
-        db.shutdown();
+        managementService.shutdown();
 
         createDb();
 
@@ -95,7 +96,7 @@ class TestImpermanentGraphDatabase
         assertThat( nodeCount(), is( 0L ) );
     }
 
-    private void cleanDatabaseContent( GraphDatabaseService db )
+    private static void cleanDatabaseContent( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {

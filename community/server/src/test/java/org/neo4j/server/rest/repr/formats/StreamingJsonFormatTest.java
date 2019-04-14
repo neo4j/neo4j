@@ -68,7 +68,7 @@ public class StreamingJsonFormatTest
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
         assertTrue( stream.toString().contains( "\"self\" : \"http://localhost/node/0\"," ) );
     }

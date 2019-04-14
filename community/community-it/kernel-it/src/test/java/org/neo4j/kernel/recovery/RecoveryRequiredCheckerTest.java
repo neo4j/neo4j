@@ -180,8 +180,7 @@ class RecoveryRequiredCheckerTest
                         .setFileSystem( ephemeralFs )
                         .newEmbeddedDatabaseBuilder( storeDir )
                         .setConfig( config.getRaw() ).newDatabaseManagementService();
-            managementService.database( DEFAULT_DATABASE_NAME )
-                    .shutdown();
+            managementService.shutdown();
 
             assertThat( recoveryChecker.isRecoveryRequiredAt( databaseLayout ), is( false ) );
         }
@@ -229,7 +228,7 @@ class RecoveryRequiredCheckerTest
             }
 
             EphemeralFileSystemAbstraction snapshot = ephemeralFs.snapshot();
-            db.shutdown();
+            managementService.shutdown();
             return snapshot;
         }
     }
@@ -237,6 +236,6 @@ class RecoveryRequiredCheckerTest
     private static void startStopDatabase( FileSystemAbstraction fileSystem, File storeDir )
     {
         DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newDatabaseManagementService( storeDir );
-        managementService.database( DEFAULT_DATABASE_NAME ).shutdown();
+        managementService.shutdown();
     }
 }

@@ -76,14 +76,14 @@ class DatabaseStartupTest
         // create a store
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         File storeDirectory = testDirectory.storeDir();
-        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDirectory );
-        GraphDatabaseService db = managementService1.database( DEFAULT_DATABASE_NAME );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDirectory );
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
             tx.success();
         }
-        db.shutdown();
+        managementService.shutdown();
 
         // mess up the version in the metadatastore
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
@@ -94,7 +94,7 @@ class DatabaseStartupTest
                     MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ));
         }
 
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDirectory );
+        managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDirectory );
         GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -107,7 +107,7 @@ class DatabaseStartupTest
         }
         finally
         {
-            databaseService.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -118,14 +118,14 @@ class DatabaseStartupTest
         // create a store
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         File storeDirectory = testDirectory.storeDir();
-        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDirectory );
-        GraphDatabaseService db = managementService1.database( DEFAULT_DATABASE_NAME );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDirectory );
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
             tx.success();
         }
-        db.shutdown();
+        managementService.shutdown();
 
         // mess up the version in the metadatastore
         String badStoreVersion = "bad";
@@ -137,7 +137,7 @@ class DatabaseStartupTest
                     MetaDataStore.versionStringToLong( badStoreVersion ) );
         }
 
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDirectory )
+        managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDirectory )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, TRUE ).newDatabaseManagementService();
         GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
         try
@@ -152,7 +152,7 @@ class DatabaseStartupTest
         }
         finally
         {
-            databaseService.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -161,7 +161,7 @@ class DatabaseStartupTest
     {
         File directory = new File( "notAbsoluteDirectory" );
         DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService( directory );
-        managementService.database( DEFAULT_DATABASE_NAME ).shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -172,7 +172,7 @@ class DatabaseStartupTest
         GraphDatabaseFactory databaseFactory = new EphemeralGraphDatabaseFactory( factory );
         DatabaseManagementService managementService = databaseFactory.newDatabaseManagementService( directory );
         GraphDatabaseService service = managementService.database( DEFAULT_DATABASE_NAME );
-        service.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -198,7 +198,7 @@ class DatabaseStartupTest
         }
         finally
         {
-            database.shutdown();
+            managementService.shutdown();
         }
     }
 

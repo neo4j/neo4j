@@ -76,10 +76,10 @@ class TestCrashWithRebuildSlow
     @Test
     void crashAndRebuildSlowWithDynamicStringDeletions() throws Exception
     {
-        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( fs ).newImpermanentDatabaseBuilder( testDir.storeDir() )
                 .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" ).newDatabaseManagementService();
-        final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
+        final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         List<Long> deletedNodeIds = produceNonCleanDefraggedStringStore( db );
         Map<IdType,Long> highIdsBeforeCrash = getHighIds( db );
 
@@ -93,7 +93,7 @@ class TestCrashWithRebuildSlow
         assertThat( checksumBefore, Matchers.equalTo( checksumBefore2 ) );
 
         EphemeralFileSystemAbstraction snapshot = fs.snapshot();
-        db.shutdown();
+        managementService.shutdown();
 
         long snapshotChecksum = snapshot.checksum();
         if ( snapshotChecksum != checksumBefore )
@@ -111,7 +111,7 @@ class TestCrashWithRebuildSlow
 
         // Recover with unsupported.dbms.id_generator_fast_rebuild_enabled=false
         assertNumberOfFreeIdsEquals( testDir.databaseLayout(), snapshot, 0 );
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( snapshot )
                 .newImpermanentDatabaseBuilder( testDir.storeDir() )
                 .setConfig( GraphDatabaseSettings.rebuild_idgenerators_fast, FALSE ).newDatabaseManagementService();
@@ -145,7 +145,7 @@ class TestCrashWithRebuildSlow
         }
         finally
         {
-            newDb.shutdown();
+            managementService.shutdown();
             snapshot.close();
         }
     }

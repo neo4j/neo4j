@@ -91,11 +91,12 @@ public class DatabaseActionsTest
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
+    private static DatabaseManagementService managementService;
 
     @BeforeClass
     public static void createDb()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+        managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" ).newDatabaseManagementService();
         graph = (GraphDatabaseFacade) managementService.database( DEFAULT_DATABASE_NAME );
         database = new WrappedDatabase( graph );
@@ -106,7 +107,7 @@ public class DatabaseActionsTest
     @AfterClass
     public static void shutdownDatabase()
     {
-        graph.shutdown();
+        managementService.shutdown();
     }
 
     @After

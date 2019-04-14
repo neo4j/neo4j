@@ -147,12 +147,6 @@ public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public void shutdown()
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext ignored, ClientConnectionInfo connectionInfo, long timeout )
     {
         try

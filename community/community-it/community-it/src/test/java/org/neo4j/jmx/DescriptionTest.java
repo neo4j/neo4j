@@ -19,9 +19,10 @@
  */
 package org.neo4j.jmx;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.util.Hashtable;
 import javax.management.MBeanAttributeInfo;
@@ -35,50 +36,50 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
-import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-public class DescriptionTest
+class DescriptionTest
 {
     private static GraphDatabaseService graphdb;
+    private static DatabaseManagementService managementService;
 
-    @BeforeClass
-    public static void startDb()
+    @BeforeAll
+    static void startDb()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newDatabaseManagementService();
+        managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newDatabaseManagementService();
         graphdb = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    @AfterClass
-    public static void stopDb()
+    @AfterAll
+    static void stopDb()
     {
         if ( graphdb != null )
         {
-            graphdb.shutdown();
+            managementService.shutdown();
         }
         graphdb = null;
     }
 
     @Test
-    public void canGetBeanDescriptionFromMBeanInterface() throws Exception
+    void canGetBeanDescriptionFromMBeanInterface() throws Exception
     {
-        assertEquals( Kernel.class.getAnnotation( Description.class ).value(), kernelMBeanInfo().getDescription() );
+        Assertions.assertEquals( Kernel.class.getAnnotation( Description.class ).value(), kernelMBeanInfo().getDescription() );
     }
 
     @Test
-    public void canGetMethodDescriptionFromMBeanInterface() throws Exception
+    void canGetMethodDescriptionFromMBeanInterface() throws Exception
     {
         for ( MBeanAttributeInfo attr : kernelMBeanInfo().getAttributes() )
         {
             try
             {
-                assertEquals(
+                Assertions.assertEquals(
                         Kernel.class.getMethod( "get" + attr.getName() ).getAnnotation( Description.class ).value(),
                         attr.getDescription() );
             }
             catch ( NoSuchMethodException ignored )
             {
-                assertEquals(
+                Assertions.assertEquals(
                         Kernel.class.getMethod( "is" + attr.getName() ).getAnnotation( Description.class ).value(),
                         attr.getDescription() );
             }

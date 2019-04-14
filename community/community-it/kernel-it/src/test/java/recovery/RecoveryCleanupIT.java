@@ -85,6 +85,7 @@ class RecoveryCleanupIT
     private final Label label = Label.label( "label" );
     private final String propKey = "propKey";
     private Map<Setting,String> testSpecificConfig = new HashMap<>();
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void setup()
@@ -126,7 +127,7 @@ class RecoveryCleanupIT
             {
                 if ( db != null )
                 {
-                    db.shutdown();
+                    managementService.shutdown();
                 }
             }
         } );
@@ -142,7 +143,8 @@ class RecoveryCleanupIT
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
         factory.setUserLogProvider( logProvider );
         factory.setInternalLogProvider( logProvider );
-        startDatabase().shutdown();
+        startDatabase();
+        managementService.shutdown();
 
         // then
         logProvider.assertContainsLogCallContaining( "Label index cleanup job registered" );
@@ -188,7 +190,8 @@ class RecoveryCleanupIT
         // when
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
         factory.setInternalLogProvider( logProvider );
-        startDatabase().shutdown();
+        startDatabase();
+        managementService.shutdown();
 
         // then
         List<Matcher<String>> matchers = new ArrayList<>();
@@ -235,7 +238,7 @@ class RecoveryCleanupIT
         checkpoint( db );
         someData( db );
         databaseHealth.panic( new Throwable( "Trigger recovery on next startup" ) );
-        db.shutdown();
+        managementService.shutdown();
         db = null;
     }
 
@@ -304,7 +307,7 @@ class RecoveryCleanupIT
     {
         GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
         testSpecificConfig.forEach( builder::setConfig );
-        DatabaseManagementService managementService = builder.newDatabaseManagementService();
+        managementService = builder.newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 

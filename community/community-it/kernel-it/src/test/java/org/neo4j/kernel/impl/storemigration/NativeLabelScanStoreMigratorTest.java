@@ -85,6 +85,7 @@ class NativeLabelScanStoreMigratorTest
     private final ProgressReporter progressReporter = mock( ProgressReporter.class );
     private NativeLabelScanStoreMigrator indexMigrator;
     private DatabaseLayout databaseLayout;
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void setUp() throws Exception
@@ -256,15 +257,15 @@ class NativeLabelScanStoreMigratorTest
         }
         finally
         {
-            embeddedDatabase.shutdown();
+            managementService.shutdown();
         }
         fileSystem.deleteFile( nativeLabelIndex );
     }
 
     private void prepareEmpty34Database() throws IOException
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
-        managementService.database( DEFAULT_DATABASE_NAME ).shutdown();
+        managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
+        managementService.shutdown();
         fileSystem.deleteFile( nativeLabelIndex );
         MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(),
                 Position.STORE_VERSION, versionStringToLong( StandardV3_4.STORE_VERSION ) );

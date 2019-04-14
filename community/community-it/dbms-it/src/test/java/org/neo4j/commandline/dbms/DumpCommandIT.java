@@ -398,7 +398,7 @@ class DumpCommandIT
                 .newEmbeddedDatabaseBuilder( databaseDirectory.getParent().toFile() )
                 .setConfig( config.getRaw() )
                 .setConfig( default_database, databaseName ).newDatabaseManagementService();
-        managementService.database( databaseName ).shutdown();
+        managementService.shutdown();
     }
 
     private static Closeable withPermissions( Path file, Set<PosixFilePermission> permissions ) throws IOException

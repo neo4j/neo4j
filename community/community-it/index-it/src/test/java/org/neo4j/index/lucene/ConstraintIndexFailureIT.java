@@ -60,8 +60,8 @@ public class ConstraintIndexFailureIT
     {
         // given a perfectly normal constraint
         File dir = directory.storeDir();
-        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().newDatabaseManagementService( dir );
-        GraphDatabaseService db = managementService1.database( DEFAULT_DATABASE_NAME );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( dir );
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( label( "Label1" ) ).assertPropertyIsUnique( "key1" ).create();
@@ -69,12 +69,12 @@ public class ConstraintIndexFailureIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
 
         // Remove the indexes offline and start up with an index provider which reports FAILED as initial state. An ordeal, I know right...
         FileUtils.deleteRecursively( IndexDirectoryStructure.baseSchemaIndexFolder( dir ) );
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        managementService = new TestGraphDatabaseFactory()
                 .removeExtensions( INDEX_PROVIDERS_FILTER )
                 .addExtension( new FailingGenericNativeIndexProviderFactory( INITIAL_STATE ) ).newDatabaseManagementService( dir );
         db = managementService.database( DEFAULT_DATABASE_NAME );
@@ -94,7 +94,7 @@ public class ConstraintIndexFailureIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 }

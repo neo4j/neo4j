@@ -101,6 +101,7 @@ public class ConsistencyCheckServiceIntegrationTest
     private final TestDirectory testDirectory = TestDirectory.testDirectory( fs );
     @Rule
     public final RuleChain chain = RuleChain.outerRule( testDirectory ).around( fixture );
+    private DatabaseManagementService managementService;
 
     @Test
     public void reportNotUsedRelationshipReferencedInChain() throws Exception
@@ -216,7 +217,7 @@ public class ConsistencyCheckServiceIntegrationTest
             set( db.createNode( label ), property( propertyKey, 973305894188596864L ) );
             tx.success();
         }
-        db.shutdown();
+        managementService.shutdown();
 
         // when
         Result result = runFullConsistencyCheck( service, configuration );
@@ -236,7 +237,7 @@ public class ConsistencyCheckServiceIntegrationTest
             tx.success();
         }
 
-        gds.shutdown();
+        managementService.shutdown();
 
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration = Config.defaults(
@@ -260,7 +261,7 @@ public class ConsistencyCheckServiceIntegrationTest
         String propKey = "propKey";
         createIndex( gds, label, propKey );
 
-        gds.shutdown();
+        managementService.shutdown();
 
         // when
         File schemaDir = findFile( databaseLayout, "schema" );
@@ -298,7 +299,7 @@ public class ConsistencyCheckServiceIntegrationTest
             db.createNode( label ).setProperty( propKey, "string" );
             tx.success();
         }
-        db.shutdown();
+        managementService.shutdown();
 
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration =
@@ -349,7 +350,7 @@ public class ConsistencyCheckServiceIntegrationTest
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
         builder.setConfig( settings( settings ) );
 
-        DatabaseManagementService managementService = builder.newDatabaseManagementService();
+        managementService = builder.newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -387,7 +388,7 @@ public class ConsistencyCheckServiceIntegrationTest
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -415,7 +416,7 @@ public class ConsistencyCheckServiceIntegrationTest
         {
             fs.copyToDirectory( file, tmpLogDir );
         }
-        db.shutdown();
+        managementService.shutdown();
         for ( File txLog : txLogs )
         {
             fs.deleteFile( txLog );

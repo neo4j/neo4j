@@ -44,18 +44,19 @@ public abstract class Neo4jTestCase
 {
     private static GraphDatabaseService graphDb;
     private Transaction tx;
+    private static DatabaseManagementService managementService;
 
     @BeforeClass
     public static void setUpDb()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        managementService = new TestGraphDatabaseFactory().newImpermanentService();
         graphDb = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @AfterClass
     public static void tearDownDb()
     {
-        graphDb.shutdown();
+        managementService.shutdown();
     }
 
     @Before

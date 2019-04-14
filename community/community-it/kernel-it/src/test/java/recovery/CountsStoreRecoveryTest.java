@@ -52,18 +52,19 @@ public class CountsStoreRecoveryTest
     @Rule
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private GraphDatabaseService db;
+    private DatabaseManagementService managementService;
 
     @Before
     public void before()
     {
-        DatabaseManagementService managementService = databaseFactory( fsRule.get() ).newImpermanentService();
+        managementService = databaseFactory( fsRule.get() ).newImpermanentService();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @After
     public void after()
     {
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -107,8 +108,8 @@ public class CountsStoreRecoveryTest
     private void crashAndRestart() throws Exception
     {
         final GraphDatabaseService db1 = db;
-        FileSystemAbstraction uncleanFs = fsRule.snapshot( db1::shutdown );
-        DatabaseManagementService managementService = databaseFactory( uncleanFs ).newImpermanentService();
+        FileSystemAbstraction uncleanFs = fsRule.snapshot( managementService::shutdown );
+        managementService = databaseFactory( uncleanFs ).newImpermanentService();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

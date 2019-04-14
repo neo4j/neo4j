@@ -204,7 +204,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
   override protected def afterEach(): Unit = {
     super.afterEach()
     if (db != null) {
-      db.shutdown()
+      managementService.shutdown()
     }
   }
 }

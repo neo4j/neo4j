@@ -75,6 +75,7 @@ public class UniquenessRecoveryTest
             15/*SIGTERM - should run exit hooks*/,
             // none of these permit exit hooks to run:
             24, 26, 27, 30, 31};
+    private static DatabaseManagementService managementService;
 
     private static String param( String name )
     {
@@ -155,7 +156,7 @@ public class UniquenessRecoveryTest
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -201,7 +202,7 @@ public class UniquenessRecoveryTest
             System.out.println( "!! failed to add node" );
             e.printStackTrace( System.out );
             System.out.println( "... this is probably what we want :) -- [but let's let the parent process verify]" );
-            db.shutdown();
+            managementService.shutdown();
             System.exit( 0 );
         }
         catch ( Exception e )
@@ -291,7 +292,7 @@ public class UniquenessRecoveryTest
 
     private static GraphDatabaseService graphdb( File path )
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newDatabaseManagementService();
+        managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 

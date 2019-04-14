@@ -53,6 +53,7 @@ class DatabaseFailureIT
     @Inject
     private TestDirectory testDirectory;
     private GraphDatabaseAPI database;
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void setUp()
@@ -63,13 +64,13 @@ class DatabaseFailureIT
     @AfterEach
     void tearDown()
     {
-        database.shutdown();
+        managementService.shutdown();
     }
 
     @Test
     void startWhenDefaultDatabaseFailedToStart() throws IOException
     {
-        database.shutdown();
+        managementService.shutdown();
         deleteDirectory( testDirectory.databaseLayout().getTransactionLogsDirectory() );
 
         database = startDatabase();
@@ -81,7 +82,7 @@ class DatabaseFailureIT
     @Test
     void failToStartWhenSystemDatabaseFailedToStart() throws IOException
     {
-        database.shutdown();
+        managementService.shutdown();
         deleteDirectory( testDirectory.databaseLayout( SYSTEM_DATABASE_NAME ).getTransactionLogsDirectory() );
 
         Exception startException = assertThrows( Exception.class, this::startDatabase );
@@ -95,7 +96,12 @@ class DatabaseFailureIT
 
     private GraphDatabaseAPI startDatabase()
     {
-        DatabaseManagementService managementService = new GraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
+        startDatabaseServer();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+    }
+
+    private void startDatabaseServer()
+    {
+        managementService = new GraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
     }
 }

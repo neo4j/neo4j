@@ -23,8 +23,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.IOException;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.Transaction;
@@ -61,7 +59,7 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     public abstract WriteSupport newTestSupport();
 
     @BeforeEach
-    public void setupGraph() throws IOException
+    public void setupGraph()
     {
         if ( testSupport == null )
         {

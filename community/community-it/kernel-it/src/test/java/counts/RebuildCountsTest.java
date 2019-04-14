@@ -79,6 +79,7 @@ class RebuildCountsTest
 
     private GraphDatabaseService db;
     private File storeDir;
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void before() throws IOException
@@ -219,12 +220,12 @@ class RebuildCountsTest
     {
         if ( db != null )
         {
-            db.shutdown();
+            managementService.shutdown();
         }
 
         fs.mkdirs( storeDir );
         TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
-        DatabaseManagementService managementService = dbFactory.setUserLogProvider( userLogProvider )
+        managementService = dbFactory.setUserLogProvider( userLogProvider )
                       .setInternalLogProvider( internalLogProvider )
                       .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                       .newImpermanentDatabaseBuilder( storeDir )
@@ -236,7 +237,7 @@ class RebuildCountsTest
     {
         try
         {
-            db.shutdown();
+            managementService.shutdown();
         }
         finally
         {

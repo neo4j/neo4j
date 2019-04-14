@@ -36,18 +36,19 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 public class PropertyTransactionStateTest
 {
     private GraphDatabaseService db;
+    private DatabaseManagementService managementService;
 
     @Before
     public void setUp()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        managementService = new TestGraphDatabaseFactory().newImpermanentService();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @After
     public void shutDown()
     {
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test

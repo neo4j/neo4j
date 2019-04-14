@@ -26,6 +26,7 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -68,6 +69,7 @@ class NonUniqueIndexTest
 
     @Inject
     private TestDirectory testDirectory;
+    private DatabaseManagementService managementService;
 
     @Test
     void concurrentIndexPopulationAndInsertsShouldNotProduceDuplicates() throws Exception
@@ -114,7 +116,7 @@ class NonUniqueIndexTest
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -122,7 +124,7 @@ class NonUniqueIndexTest
     {
         GraphDatabaseFactoryState graphDatabaseFactoryState = new GraphDatabaseFactoryState();
         graphDatabaseFactoryState.setUserLogProvider( NullLogService.getInstance().getUserLogProvider() );
-        return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
+        managementService = new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
         {
             @Override
             protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
@@ -144,8 +146,8 @@ class NonUniqueIndexTest
                     }
                 };
             }
-        }.newFacade( testDirectory.storeDir(), config,
-                graphDatabaseFactoryState.databaseDependencies() ).database( config.get( GraphDatabaseSettings.default_database ) );
+        }.newFacade( testDirectory.storeDir(), config, graphDatabaseFactoryState.databaseDependencies() );
+        return managementService.database( config.get( GraphDatabaseSettings.default_database ) );
     }
 
     private static CentralJobScheduler newSlowJobScheduler()

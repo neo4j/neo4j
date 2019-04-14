@@ -55,6 +55,6 @@ public class FirstStartupIT
             assertEquals( 0, count( db.getAllPropertyKeys() ) );
         }
 
-        db.shutdown();
+        managementService.shutdown();
     }
 }

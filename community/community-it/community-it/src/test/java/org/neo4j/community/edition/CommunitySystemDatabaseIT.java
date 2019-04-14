@@ -73,12 +73,12 @@ class CommunitySystemDatabaseIT
     private DatabaseManager<?> databaseManager;
     private GraphDatabaseFacade defaultDb;
     private GraphDatabaseFacade systemDb;
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void setUp()
     {
-        DatabaseManagementService
-                managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() ).newDatabaseManagementService();
+        managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() ).newDatabaseManagementService();
         database = managementService.database( DEFAULT_DATABASE_NAME );
         databaseManager = getDatabaseManager( database );
         defaultDb = getDatabaseByName( databaseManager, new DatabaseId( DEFAULT_DATABASE_NAME ) );
@@ -88,7 +88,7 @@ class CommunitySystemDatabaseIT
     @AfterEach
     void tearDown()
     {
-        database.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -187,7 +187,7 @@ class CommunitySystemDatabaseIT
             }
         }
 
-        database.shutdown();
+        managementService.shutdown();
 
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
         assertTrue( runConsistencyCheck( systemDatabaseLayout, consistencyCheckService ).isSuccessful() );
@@ -198,11 +198,11 @@ class CommunitySystemDatabaseIT
     void systemDatabaseEnabledByDefault()
     {
         GraphDatabaseService databaseWithSystemDb = null;
-
+        DatabaseManagementService managementService = null;
         try
         {
             File disabledSystemDbDirectory = testDirectory.databaseDir( "withSystemDd" );
-            DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( disabledSystemDbDirectory );
+            managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( disabledSystemDbDirectory );
             databaseWithSystemDb = managementService.database( DEFAULT_DATABASE_NAME );
             DatabaseManager<?> databaseManager = getDatabaseManager( databaseWithSystemDb );
             assertTrue( databaseManager.getDatabaseContext( new DatabaseId( SYSTEM_DATABASE_NAME ) ).isPresent() );
@@ -211,7 +211,7 @@ class CommunitySystemDatabaseIT
         {
             if ( databaseWithSystemDb != null )
             {
-                databaseWithSystemDb.shutdown();
+                managementService.shutdown();
             }
         }
     }

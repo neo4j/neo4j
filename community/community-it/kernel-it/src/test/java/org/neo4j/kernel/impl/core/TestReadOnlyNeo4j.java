@@ -76,7 +76,7 @@ public class TestReadOnlyNeo4j
         {
             // good
         }
-        readGraphDb.shutdown();
+        managementService.shutdown();
     }
 
     private DbRepresentation createSomeData()
@@ -98,7 +98,7 @@ public class TestReadOnlyNeo4j
             tx.success();
         }
         DbRepresentation result = DbRepresentation.of( db );
-        db.shutdown();
+        managementService.shutdown();
         return result;
     }
 
@@ -163,6 +163,6 @@ public class TestReadOnlyNeo4j
         assertEquals( rel, loadedRel );
         assertThat(loadedRel, inTx(db, hasProperty( "key1" ).withValue( "value1" )));
         transaction.close();
-        db.shutdown();
+        managementService.shutdown();
     }
 }

@@ -58,6 +58,7 @@ class KernelRecoveryTest
     private EphemeralFileSystemAbstraction fileSystem;
     @Inject
     private TestDirectory testDirectory;
+    private DatabaseManagementService managementService;
 
     @Test
     void shouldHandleWritesProperlyAfterRecovery() throws Exception
@@ -71,11 +72,11 @@ class KernelRecoveryTest
         long node2;
         try ( EphemeralFileSystemAbstraction crashedFs = fileSystem.snapshot() )
         {
-            db.shutdown();
+            managementService.shutdown();
             db = newDB( crashedFs, "main" );
             node2 = createNode( db, "k", "v2" );
             extractTransactions( (GraphDatabaseAPI) db, transactions );
-            db.shutdown();
+            managementService.shutdown();
         }
 
         // Then both those nodes should be there, i.e. they are properly there in the log
@@ -109,7 +110,7 @@ class KernelRecoveryTest
 
     private GraphDatabaseService newDB( FileSystemAbstraction fs, String name )
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) ).newImpermanentService( testDirectory.directory( name ) );
         return managementService.database( DEFAULT_DATABASE_NAME );
     }

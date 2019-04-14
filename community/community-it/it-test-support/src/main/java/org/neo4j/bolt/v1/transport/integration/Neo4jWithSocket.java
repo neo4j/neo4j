@@ -58,6 +58,7 @@ public class Neo4jWithSocket extends ExternalResource
     private GraphDatabaseService gdb;
     private File workingDirectory;
     private ConnectorPortRegister connectorRegister;
+    private DatabaseManagementService managementService;
 
     public Neo4jWithSocket( Class<?> testClass )
     {
@@ -147,15 +148,16 @@ public class Neo4jWithSocket extends ExternalResource
     {
         try
         {
-            if ( gdb != null )
+            if ( managementService != null )
             {
-                gdb.shutdown();
+                managementService.shutdown();
             }
         }
         finally
         {
             connectorRegister = null;
             gdb = null;
+            managementService = null;
         }
     }
 
@@ -169,7 +171,7 @@ public class Neo4jWithSocket extends ExternalResource
         Map<String,String> settings = configure( overrideSettingsFunction );
         File storeDir = new File( workingDirectory, "storeDir" );
         graphDatabaseFactory.setFileSystem( fileSystemProvider.get() );
-        DatabaseManagementService managementService = graphDatabaseFactory.newImpermanentDatabaseBuilder( storeDir ).
+        managementService = graphDatabaseFactory.newImpermanentDatabaseBuilder( storeDir ).
                 setConfig( settings ).newDatabaseManagementService();
         gdb = managementService.database( DEFAULT_DATABASE_NAME );
         connectorRegister =

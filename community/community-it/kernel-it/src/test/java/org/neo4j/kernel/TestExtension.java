@@ -60,7 +60,7 @@ public final class TestExtension extends ExtensionFactoryContractTest
         }
         finally
         {
-            graphdb.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -80,7 +80,7 @@ public final class TestExtension extends ExtensionFactoryContractTest
         }
         finally
         {
-            graphdb.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -91,7 +91,7 @@ public final class TestExtension extends ExtensionFactoryContractTest
     public void shouldBeShutdown()
     {
         GraphDatabaseAPI graphdb = graphDb( 0 );
-        graphdb.shutdown();
+        managementService.shutdown();
 
         assertEquals( LifecycleStatus.SHUTDOWN, graphdb.getDependencyResolver().resolveDependency( GlobalExtensions
                 .class ).resolveDependency( DummyExtension.class ).getStatus() );

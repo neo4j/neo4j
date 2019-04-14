@@ -50,6 +50,7 @@ class DatabaseImporterTest
 {
     @Inject
     private TestDirectory testDir;
+    private DatabaseManagementService managementService;
 
     @Test
     void requiresFromArgument()
@@ -94,7 +95,7 @@ class DatabaseImporterTest
         File databaseDirectory;
         try
         {
-            DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
+            managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
             db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
             databaseDirectory = db.databaseLayout().databaseDirectory();
             try ( Transaction transaction = db.beginTx() )
@@ -107,7 +108,7 @@ class DatabaseImporterTest
         {
             if ( db != null )
             {
-                db.shutdown();
+                managementService.shutdown();
             }
         }
 

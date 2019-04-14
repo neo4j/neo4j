@@ -241,15 +241,15 @@ class InProcessServerBuilderIT
         File rootDirectory = config.get( databases_root_path );
         GraphDatabaseBuilder databaseBuilder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( rootDirectory )
                 .setConfig( transaction_logs_root_path, new File( existingStoreDir, DEFAULT_TX_LOGS_ROOT_DIR_NAME ).getAbsolutePath() );
-        DatabaseManagementService managementService1 = databaseBuilder.newDatabaseManagementService();
-        GraphDatabaseService db = managementService1.database( DEFAULT_DATABASE_NAME );
+        DatabaseManagementService managementService = databaseBuilder.newDatabaseManagementService();
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             db.execute( "create ()" );
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
 
         try ( InProcessNeo4j neo4j = getTestBuilder( directory.storeDir() ).copyFrom( existingStoreDir ).build() )
@@ -268,7 +268,7 @@ class InProcessServerBuilderIT
         }
 
         // Then: we still only have one node since the server is supposed to work on a copy
-        DatabaseManagementService managementService = databaseBuilder.newDatabaseManagementService();
+        managementService = databaseBuilder.newDatabaseManagementService();
         db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -280,7 +280,7 @@ class InProcessServerBuilderIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 

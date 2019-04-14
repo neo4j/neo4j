@@ -64,6 +64,7 @@ public class IndexRestartIT
     private TestGraphDatabaseFactory factory;
     private final ControlledPopulationIndexProvider provider = new ControlledPopulationIndexProvider();
     private final Label myLabel = label( "MyLabel" );
+    private DatabaseManagementService managementService;
 
     @Before
     public void before()
@@ -78,7 +79,7 @@ public class IndexRestartIT
     @After
     public void after()
     {
-        db.shutdown();
+        managementService.shutdown();
     }
 
     /* This is somewhat difficult to test since dropping an index while it's populating forces it to be cancelled
@@ -171,21 +172,21 @@ public class IndexRestartIT
 
     private void startDb()
     {
-        if ( db != null )
+        if ( managementService != null )
         {
-            db.shutdown();
+            managementService.shutdown();
         }
 
-        DatabaseManagementService managementService = factory.newImpermanentDatabaseBuilder()
+        managementService = factory.newImpermanentDatabaseBuilder()
                     .setConfig( default_schema_provider, provider.getProviderDescriptor().name() ).newDatabaseManagementService();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private void stopDb()
     {
-        if ( db != null )
+        if ( managementService != null )
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 }

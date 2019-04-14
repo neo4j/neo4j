@@ -66,6 +66,7 @@ public class QueryRestartIT
     private TestTransactionVersionContextSupplier testContextSupplier;
     private File storeDir;
     private TestVersionContext testCursorContext;
+    private DatabaseManagementService managementService;
 
     @Before
     public void setUp()
@@ -84,7 +85,7 @@ public class QueryRestartIT
     {
         if ( database != null )
         {
-            database.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -150,7 +151,7 @@ public class QueryRestartIT
 
     private GraphDatabaseService startSnapshotQueryDb()
     {
-        DatabaseManagementService managementService = new CustomGraphDatabaseFactory( new CustomFacadeFactory() )
+        managementService = new CustomGraphDatabaseFactory( new CustomFacadeFactory() )
                 .newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.snapshot_query, Settings.TRUE ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );

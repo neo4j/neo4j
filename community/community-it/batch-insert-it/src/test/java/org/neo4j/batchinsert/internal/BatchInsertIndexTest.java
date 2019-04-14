@@ -75,6 +75,7 @@ public class BatchInsertIndexTest
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( fileSystemRule ).around( pageCacheRule );
+    private DatabaseManagementService managementService;
 
     @Parameterized.Parameters( name = "{0}" )
     public static GraphDatabaseSettings.SchemaIndex[] data()
@@ -112,7 +113,7 @@ public class BatchInsertIndexTest
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -140,7 +141,7 @@ public class BatchInsertIndexTest
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -168,7 +169,7 @@ public class BatchInsertIndexTest
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -191,7 +192,7 @@ public class BatchInsertIndexTest
     {
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fileSystemRule.get() );
-        DatabaseManagementService managementService = factory.newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
+        managementService = factory.newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
                 // Shouldn't be necessary to set dense node threshold since it's a stick config
                 .setConfig( config.getRaw() ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );

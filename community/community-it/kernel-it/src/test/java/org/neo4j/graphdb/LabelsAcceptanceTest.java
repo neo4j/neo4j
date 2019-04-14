@@ -219,7 +219,7 @@ public class LabelsAcceptanceTest
         {   // Happy
         }
 
-        graphDatabase.shutdown();
+        managementService.shutdown();
     }
 
     @Test

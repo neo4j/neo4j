@@ -76,6 +76,7 @@ class RelationshipGroupStoreTest
     private TestDirectory testDirectory;
     private int defaultThreshold;
     private GraphDatabaseAPI db;
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void before()
@@ -88,7 +89,7 @@ class RelationshipGroupStoreTest
     {
         if ( db != null )
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -128,12 +129,12 @@ class RelationshipGroupStoreTest
             tx.success();
         }
 
-        db.shutdown();
+        managementService.shutdown();
     }
 
     private void newDb( int denseNodeThreshold )
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+        managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
                 .setConfig( dense_node_threshold, "" + denseNodeThreshold ).newDatabaseManagementService();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         fs = db.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
@@ -196,7 +197,7 @@ class RelationshipGroupStoreTest
             tx.success();
         }
 
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test

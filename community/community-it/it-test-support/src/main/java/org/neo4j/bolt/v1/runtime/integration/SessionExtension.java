@@ -54,6 +54,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
     private BoltStateMachineFactoryImpl boltFactory;
     private List<BoltStateMachine> runningMachines = new ArrayList<>();
     private boolean authEnabled;
+    private DatabaseManagementService managementService;
 
     public SessionExtension()
     {
@@ -93,7 +94,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
     {
         Map<Setting<?>,String> configMap = new HashMap<>();
         configMap.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
-        DatabaseManagementService managementService = graphDatabaseFactory.newImpermanentService( configMap );
+        managementService = graphDatabaseFactory.newImpermanentService( configMap );
         gdb = (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         DependencyResolver resolver = gdb.getDependencyResolver();
         Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),
@@ -124,7 +125,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
             e.printStackTrace();
         }
 
-        gdb.shutdown();
+        managementService.shutdown();
     }
 
     private void assertTestStarted()

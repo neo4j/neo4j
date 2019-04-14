@@ -219,7 +219,7 @@ public class DatabaseFileListingTest
         assertTrue( database.listStoreFiles( true ).stream()
                 .anyMatch( metadata -> metadata.isLogFile() && logFiles.isLogFile( metadata.file() ) ) );
         assertEquals( Paths.get( path ).getFileName().toString(), logFiles.logFilesDirectory().getParentFile().getName() );
-        graphDatabase.shutdown();
+        managementService.shutdown();
     }
 
     private static void filesInStoreDirAre( DatabaseLayout databaseLayout, String[] filenames, String[] dirs )

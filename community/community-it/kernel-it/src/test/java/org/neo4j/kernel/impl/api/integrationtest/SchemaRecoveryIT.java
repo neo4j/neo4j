@@ -54,13 +54,14 @@ class SchemaRecoveryIT
     @Inject
     private TestDirectory testDirectory;
     private GraphDatabaseAPI db;
+    private DatabaseManagementService managementService;
 
     @AfterEach
     void shutdownDatabase()
     {
         if ( db != null )
         {
-            db.shutdown();
+            managementService.shutdown();
             db = null;
         }
     }
@@ -128,12 +129,12 @@ class SchemaRecoveryIT
     {
         if ( db != null )
         {
-            db.shutdown();
+            managementService.shutdown();
         }
 
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs );
-        DatabaseManagementService managementService = factory.newImpermanentService( testDirectory.storeDir() );
+        managementService = factory.newImpermanentService( testDirectory.storeDir() );
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -142,7 +143,7 @@ class SchemaRecoveryIT
         if ( db != null )
         {
             fs = fs.snapshot();
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 

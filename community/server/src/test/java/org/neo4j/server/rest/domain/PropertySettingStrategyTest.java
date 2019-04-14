@@ -47,11 +47,12 @@ public class PropertySettingStrategyTest
     private static GraphDatabaseAPI db;
     private Transaction tx;
     private static PropertySettingStrategy propSetter;
+    private static DatabaseManagementService managementService;
 
     @BeforeClass
     public static void createDb()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        managementService = new TestGraphDatabaseFactory().newImpermanentService();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         propSetter = new PropertySettingStrategy( db );
     }
@@ -59,7 +60,7 @@ public class PropertySettingStrategyTest
     @AfterClass
     public static void closeDb()
     {
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Before

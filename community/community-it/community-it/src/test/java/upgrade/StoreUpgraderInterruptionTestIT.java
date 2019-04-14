@@ -236,6 +236,6 @@ public class StoreUpgraderInterruptionTestIT
         DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                         .setConfig( GraphDatabaseSettings.allow_upgrade, "true" ).newDatabaseManagementService();
         GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
-        databaseService.shutdown();
+        managementService.shutdown();
     }
 }

@@ -67,7 +67,7 @@ public class SystemTimeZoneLoggingIT
         DatabaseManagementService managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.db_timezone, LogTimeZone.SYSTEM.name() ).newDatabaseManagementService();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
-        database.shutdown();
+        managementService.shutdown();
         Path databasePath = storeDir.toPath();
         Path debugLog = Paths.get( "logs", "debug.log" );
         String debugLogLine = getLogLine( databasePath, debugLog );

@@ -36,18 +36,19 @@ public class CypherLoggingTest
 
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private GraphDatabaseService database;
+    private DatabaseManagementService managementService;
 
     @Before
     public void setUp()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setUserLogProvider( logProvider ).newImpermanentService();
+        managementService = new TestGraphDatabaseFactory().setUserLogProvider( logProvider ).newImpermanentService();
         database = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @After
     public void tearDown()
     {
-        database.shutdown();
+        managementService.shutdown();
     }
 
     @Test

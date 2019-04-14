@@ -66,7 +66,7 @@ class CommunityEditionModuleIntegrationTest
         }
         finally
         {
-            database.shutdown();
+            managementService.shutdown();
         }
     }
 

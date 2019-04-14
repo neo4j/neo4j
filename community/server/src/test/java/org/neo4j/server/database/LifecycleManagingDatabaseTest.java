@@ -19,30 +19,34 @@
  */
 package org.neo4j.server.database;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class LifecycleManagingDatabaseTest
+class LifecycleManagingDatabaseTest
 {
     @Test
-    public void mustIgnoreExceptionsFromPreLoadingCypherQuery()
+    void mustIgnoreExceptionsFromPreLoadingCypherQuery()
     {
         // Given a lifecycled database that'll try to warm up Cypher when it starts
+        final DatabaseManagementService managementService = mock( DatabaseManagementService.class );
         final GraphDatabaseFacade mockDb = mock( GraphDatabaseFacade.class );
+        when( managementService.database( anyString() ) ).thenReturn( mockDb );
         Config config = Config.defaults();
         ExternalDependencies deps =
                 GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() );
-        GraphFactory factory = new SimpleGraphFactory( mockDb );
+        GraphFactory factory = new SimpleGraphFactory( managementService );
         LifecycleManagingDatabase db = new LifecycleManagingDatabase( config, factory, deps )
         {
             @Override
@@ -60,8 +64,8 @@ public class LifecycleManagingDatabaseTest
         // Then the database should still start up as normal, without bubbling the exception up
         db.init();
         db.start();
-        assertTrue( "the database should be running", db.isRunning() );
+        Assertions.assertTrue( db.isRunning(), "the database should be running" );
         db.stop();
-        db.shutdown();
+        managementService.shutdown();
     }
 }

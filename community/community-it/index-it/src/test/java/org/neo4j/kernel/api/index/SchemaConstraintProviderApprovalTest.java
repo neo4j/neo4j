@@ -143,7 +143,7 @@ public abstract class SchemaConstraintProviderApprovalTest
         noIndexRun = runFindByLabelAndProperty( db );
         createConstraint( db, label( LABEL ), PROPERTY_KEY );
         constraintRun = runFindByLabelAndProperty( db );
-        db.shutdown();
+        managementService.shutdown();
     }
 
     public static final String LABEL = "Person";

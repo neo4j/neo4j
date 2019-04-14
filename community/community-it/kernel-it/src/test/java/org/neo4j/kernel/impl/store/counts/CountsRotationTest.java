@@ -126,7 +126,7 @@ public class CountsRotationTest
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
         // WHEN
-        db.shutdown();
+        managementService.shutdown();
 
         // THEN
         assertTrue( fs.fileExists( alphaStoreFile() ) );
@@ -158,7 +158,7 @@ public class CountsRotationTest
     {
         // Given
         DatabaseManagementService managementService = dbBuilder.newDatabaseManagementService();
-        managementService.database( DEFAULT_DATABASE_NAME ).shutdown();
+        managementService.shutdown();
         CountsTracker store = createCountsTracker( pageCache,
                 Config.defaults( GraphDatabaseSettings.counts_store_rotation_timeout, "100ms" ) );
         try ( Lifespan lifespan = new Lifespan( store ) )
@@ -218,7 +218,7 @@ public class CountsRotationTest
         assertEquals( "Should perform at least 100 rotations.", rotations, Math.min( rotations, countStore.txId() - startTxId) );
         assertTrue( "Should perform more then 0 lookups without exceptions.", lookupsCounter.get() > 0 );
 
-        db.shutdown();
+        managementService.shutdown();
     }
 
     private static ThrowingFunction<CountsTracker,Void,RuntimeException> countStoreLookup(
@@ -249,7 +249,7 @@ public class CountsRotationTest
         }
 
         // WHEN
-        db.shutdown();
+        managementService.shutdown();
 
         // THEN
         assertTrue( fs.fileExists( alphaStoreFile() ) );
@@ -321,7 +321,7 @@ public class CountsRotationTest
         }
         assertEquals( 1, tracker.nodeCount( labelId, newDoubleLongRegister() ).readSecond() );
 
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test( timeout = 60_000 )
@@ -369,7 +369,7 @@ public class CountsRotationTest
         adversary.disable();
 
         // shutdown should complete without any problems
-        db.shutdown();
+        managementService.shutdown();
     }
 
     private static void await( CountDownLatch latch )

@@ -61,7 +61,7 @@ public class KernelSchemaStateFlushingTest
     @After
     public void after()
     {
-        db.shutdown();
+        dbRule.shutdown();
     }
 
     @Test

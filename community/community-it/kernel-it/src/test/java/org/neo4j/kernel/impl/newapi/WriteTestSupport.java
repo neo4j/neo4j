@@ -37,6 +37,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 public class WriteTestSupport implements KernelAPIWriteTestSupport
 {
     private GraphDatabaseService db;
+    private DatabaseManagementService managementService;
 
     @Override
     public void setup( File storeDir )
@@ -46,7 +47,7 @@ public class WriteTestSupport implements KernelAPIWriteTestSupport
 
     protected GraphDatabaseService newDb( File storeDir )
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( storeDir ).newDatabaseManagementService();
+        managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( storeDir ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -90,7 +91,7 @@ public class WriteTestSupport implements KernelAPIWriteTestSupport
     @Override
     public void tearDown()
     {
-        db.shutdown();
+        managementService.shutdown();
         db = null;
     }
 }

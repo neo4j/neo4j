@@ -63,12 +63,15 @@ public class SessionRule implements TestRule
     {
         return new Statement()
         {
+
+            private DatabaseManagementService managementService;
+
             @Override
             public void evaluate() throws Throwable
             {
                 Map<Setting<?>,String> configMap = new HashMap<>();
                 configMap.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
-                DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService( configMap );
+                managementService = new TestGraphDatabaseFactory().newImpermanentService( configMap );
                 gdb = (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
                 DependencyResolver resolver = gdb.getDependencyResolver();
                 DatabaseManager<?> databaseManager = resolver.resolveDependency( DatabaseManager.class );
@@ -100,7 +103,7 @@ public class SessionRule implements TestRule
                         e.printStackTrace();
                     }
 
-                    gdb.shutdown();
+                    managementService.shutdown();
                 }
             }
         };

@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
@@ -53,6 +54,7 @@ class CommitContentionTest
     private final AtomicReference<Exception> reference = new AtomicReference<>();
 
     private GraphDatabaseService db;
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void before() throws Exception
@@ -65,7 +67,7 @@ class CommitContentionTest
     @AfterEach
     void after()
     {
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -121,14 +123,15 @@ class CommitContentionTest
     private GraphDatabaseService createDb()
     {
         GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
-        return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, globalModule -> new CommunityEditionModule( globalModule )
+        managementService = new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, globalModule -> new CommunityEditionModule( globalModule )
         {
             @Override
             public DatabaseTransactionStats createTransactionMonitor()
             {
                 return new SkipTransactionDatabaseStats();
             }
-        } ).newFacade( testDirectory.storeDir(), Config.defaults(), state.databaseDependencies() )
+        } ).newFacade( testDirectory.storeDir(), Config.defaults(), state.databaseDependencies() );
+        return managementService
                 .database( Config.defaults().get( GraphDatabaseSettings.default_database ));
     }
 

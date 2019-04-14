@@ -392,7 +392,7 @@ class CsvInputBatchImportIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 

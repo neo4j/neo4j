@@ -113,7 +113,7 @@ class ConstraintRecoveryIT
                 db.schema().constraintFor( LABEL ).assertPropertyIsUnique( KEY ).create();
             }
         } );
-        db.shutdown();
+        managementService.shutdown();
 
         assertTrue( monitorCalled.get() );
 
@@ -146,6 +146,6 @@ class ConstraintRecoveryIT
             assertEquals( KEY, single( orphanedConstraintIndex.getPropertyKeys() ) );
         }
 
-        db.shutdown();
+        managementService.shutdown();
     }
 }

@@ -131,6 +131,7 @@ public class FulltextProceduresTest
     private GraphDatabaseBuilder builder;
     private static final String PROP = "prop";
     private static final String EVENTUALLY_CONSISTENT = ", {eventually_consistent: 'true'}";
+    private DatabaseManagementService managementService;
 
     @Before
     public void before()
@@ -145,7 +146,7 @@ public class FulltextProceduresTest
     {
         if ( db != null )
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -177,7 +178,7 @@ public class FulltextProceduresTest
             assertNotNull( db.schema().getIndexByName( "test-index" ) );
             tx.success();
         }
-        db.shutdown();
+        managementService.shutdown();
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
@@ -222,7 +223,7 @@ public class FulltextProceduresTest
             assertNotNull( db.schema().getIndexByName( "test-index" ) );
             tx.success();
         }
-        db.shutdown();
+        managementService.shutdown();
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
@@ -2076,7 +2077,7 @@ public class FulltextProceduresTest
             createSimpleNodesIndex();
             tx.success();
         }
-        db.shutdown();
+        managementService.shutdown();
         db = createDatabase();
         String valueToQueryFor = "value to query for";
         try ( Transaction tx = db.beginTx() )
@@ -2267,7 +2268,7 @@ public class FulltextProceduresTest
 
     private GraphDatabaseAPI createDatabase()
     {
-        DatabaseManagementService managementService = builder.newDatabaseManagementService();
+        managementService = builder.newDatabaseManagementService();
         return (GraphDatabaseAPI) cleanup.add( managementService.database( DEFAULT_DATABASE_NAME ) );
     }
 

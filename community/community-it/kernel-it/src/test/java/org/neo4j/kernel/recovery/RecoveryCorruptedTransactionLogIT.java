@@ -40,7 +40,6 @@ import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -140,12 +139,11 @@ class RecoveryCorruptedTransactionLogIT
         }
         long numberOfClosedTransactions = getTransactionIdStore( database ).getLastClosedTransactionId() -
                 lastClosedTransactionBeforeStart;
-        database.shutdown();
+        managementService.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
         addRandomBytesToLastLogFile( this::randomBytes );
 
-        database = startDbNoRecoveryOfCorruptedLogs();
-        database.shutdown();
+        startStopDbNoRecoveryOfCorruptedLogs();
 
         assertEquals( numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
     }
@@ -159,7 +157,7 @@ class RecoveryCorruptedTransactionLogIT
         {
             generateTransaction( database );
         }
-        database.shutdown();
+        managementService1.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
         addRandomBytesToLastLogFile( this::randomPositiveBytes );
 
@@ -174,7 +172,7 @@ class RecoveryCorruptedTransactionLogIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -189,13 +187,12 @@ class RecoveryCorruptedTransactionLogIT
         }
         TransactionIdStore transactionIdStore = getTransactionIdStore( database );
         long numberOfClosedTransactions = transactionIdStore.getLastClosedTransactionId() - 1;
-        database.shutdown();
+        managementService.shutdown();
 
         removeLastCheckpointRecordFromLastLogFile();
         addRandomBytesToLastLogFile( this::randomBytes );
 
-        database = startDbNoRecoveryOfCorruptedLogs();
-        database.shutdown();
+        startStopDbNoRecoveryOfCorruptedLogs();
 
         logProvider.assertContainsMessageContaining( "Fail to read transaction log version 0." );
         logProvider.assertContainsMessageContaining( "Fail to read transaction log version 0. Last valid transaction start offset is: 5686." );
@@ -207,8 +204,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         addCorruptedCommandsToLastLogFile();
 
-        GraphDatabaseService recoveredDatabase = startDbNoRecoveryOfCorruptedLogs();
-        recoveredDatabase.shutdown();
+        startStopDbNoRecoveryOfCorruptedLogs();
 
         logProvider.assertContainsMessageContaining( "Fail to read transaction log version 0." );
         logProvider.assertContainsMessageContaining( "Fail to read first transaction of log version 0." );
@@ -239,7 +235,7 @@ class RecoveryCorruptedTransactionLogIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -255,7 +251,7 @@ class RecoveryCorruptedTransactionLogIT
             generateTransaction( database );
         }
         long numberOfTransactions = transactionIdStore.getLastClosedTransactionId() - lastClosedTransactionBeforeStart;
-        database.shutdown();
+        managementService.shutdown();
 
         File highestLogFile = logFiles.getHighestLogFile();
         long originalFileLength = highestLogFile.length();
@@ -266,8 +262,7 @@ class RecoveryCorruptedTransactionLogIT
 
         assertThat( modifiedFileLength, greaterThan( originalFileLength ) );
 
-        database = startDbNoRecoveryOfCorruptedLogs();
-        database.shutdown();
+        startStopDbNoRecoveryOfCorruptedLogs();
 
         logProvider.assertContainsMessageContaining( "Fail to read transaction log version 0." );
         logProvider.assertContainsMessageContaining(
@@ -298,7 +293,7 @@ class RecoveryCorruptedTransactionLogIT
             generateTransaction( database );
         }
         long numberOfTransactions = transactionIdStore.getLastClosedTransactionId() - lastClosedTransactionBeforeStart;
-        database.shutdown();
+        managementService.shutdown();
 
         LogFiles logFiles = buildDefaultLogFiles();
         File highestLogFile = logFiles.getHighestLogFile();
@@ -310,8 +305,7 @@ class RecoveryCorruptedTransactionLogIT
 
         assertThat( modifiedFileLength, greaterThan( originalFileLength ) );
 
-        database = startDbNoRecoveryOfCorruptedLogs();
-        database.shutdown();
+        startStopDbNoRecoveryOfCorruptedLogs();
 
         logProvider.assertContainsMessageContaining( "Fail to read transaction log version 3." );
         logProvider.assertContainsMessageContaining(
@@ -340,7 +334,7 @@ class RecoveryCorruptedTransactionLogIT
         {
             generateTransaction( database );
         }
-        database.shutdown();
+        managementService.shutdown();
 
         File highestLogFile = logFiles.getHighestLogFile();
         long originalFileLength = highestLogFile.length();
@@ -351,8 +345,7 @@ class RecoveryCorruptedTransactionLogIT
 
         assertThat( modifiedFileLength, greaterThan( originalFileLength ) );
 
-        database = startDbNoRecoveryOfCorruptedLogs();
-        database.shutdown();
+        startStopDbNoRecoveryOfCorruptedLogs();
 
         logProvider.assertContainsMessageContaining( "Fail to read transaction log version 3." );
         logProvider.assertContainsMessageContaining(
@@ -374,7 +367,7 @@ class RecoveryCorruptedTransactionLogIT
         DatabaseManagementService managementService = databaseFactory.newDatabaseManagementService( databaseDirectory );
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         generateTransactionsAndRotate( database, 5 );
-        database.shutdown();
+        managementService.shutdown();
 
         File highestLogFile = logFiles.getHighestLogFile();
         long originalFileLength = highestLogFile.length();
@@ -383,8 +376,7 @@ class RecoveryCorruptedTransactionLogIT
 
         assertThat( modifiedFileLength, greaterThan( originalFileLength ) );
 
-        database = startDbNoRecoveryOfCorruptedLogs();
-        database.shutdown();
+        startStopDbNoRecoveryOfCorruptedLogs();
 
         logProvider.assertContainsMessageContaining( "Fail to read transaction log version 5." );
         logProvider.assertContainsMessageContaining( "Fail to read first transaction of log version 5." );
@@ -408,7 +400,7 @@ class RecoveryCorruptedTransactionLogIT
         DatabaseManagementService managementService1 = databaseFactory.newDatabaseManagementService( databaseDirectory );
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
         generateTransactionsAndRotate( database, 4, false );
-        database.shutdown();
+        managementService1.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
 
         int expectedRecoveredTransactions = 7;
@@ -416,7 +408,7 @@ class RecoveryCorruptedTransactionLogIT
         {
             truncateBytesFromLastLogFile( 1 + random.nextInt( 10 ) );
             DatabaseManagementService managementService = databaseFactory.newDatabaseManagementService( databaseDirectory );
-            managementService.database( DEFAULT_DATABASE_NAME ).shutdown();
+            managementService.shutdown();
             int numberOfRecoveredTransactions = recoveryMonitor.getNumberOfRecoveredTransactions();
             assertEquals( expectedRecoveredTransactions, numberOfRecoveredTransactions );
             expectedRecoveredTransactions--;
@@ -430,14 +422,14 @@ class RecoveryCorruptedTransactionLogIT
         DatabaseManagementService managementService1 = databaseFactory.newDatabaseManagementService( databaseDirectory );
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
         generateTransactionsAndRotate( database, 4, true );
-        database.shutdown();
+        managementService1.shutdown();
 
         while ( logFiles.getHighestLogVersion() > 0 )
         {
             int bytesToTrim = 1 + CHECKPOINT_COMMAND_SIZE + random.nextInt( 100 );
             truncateBytesFromLastLogFile( bytesToTrim );
             DatabaseManagementService managementService = databaseFactory.newDatabaseManagementService( databaseDirectory );
-            managementService.database( DEFAULT_DATABASE_NAME ).shutdown();
+            managementService.shutdown();
             int numberOfRecoveredTransactions = recoveryMonitor.getNumberOfRecoveredTransactions();
             assertThat( numberOfRecoveredTransactions, Matchers.greaterThanOrEqualTo( 0 ) );
         }
@@ -452,7 +444,7 @@ class RecoveryCorruptedTransactionLogIT
         DatabaseManagementService managementService1 = databaseFactory.newDatabaseManagementService( databaseDirectory );
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
         generateTransactionsAndRotate( database, 4, true );
-        database.shutdown();
+        managementService1.shutdown();
 
         byte[] trimSizes = new byte[]{4, 22};
         int trimSize = 0;
@@ -461,7 +453,7 @@ class RecoveryCorruptedTransactionLogIT
             byte bytesToTrim = (byte) (trimSizes[trimSize++ % trimSizes.length] + CHECKPOINT_COMMAND_SIZE);
             truncateBytesFromLastLogFile( bytesToTrim );
             DatabaseManagementService managementService = databaseFactory.newDatabaseManagementService( databaseDirectory );
-            managementService.database( DEFAULT_DATABASE_NAME ).shutdown();
+            managementService.shutdown();
             int numberOfRecoveredTransactions = recoveryMonitor.getNumberOfRecoveredTransactions();
             assertThat( numberOfRecoveredTransactions, Matchers.greaterThanOrEqualTo( 0 ) );
         }
@@ -632,17 +624,17 @@ class RecoveryCorruptedTransactionLogIT
         }
     }
 
-    private GraphDatabaseAPI startDbNoRecoveryOfCorruptedLogs()
+    private void startStopDbNoRecoveryOfCorruptedLogs()
     {
         DatabaseManagementService managementService = databaseFactory.newEmbeddedDatabaseBuilder( databaseDirectory )
                 .setConfig( GraphDatabaseSettings.fail_on_corrupted_log_files, Settings.FALSE ).newDatabaseManagementService();
-        return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        managementService.shutdown();
     }
 
     private void createEmptyDatabase()
     {
         DatabaseManagementService managementService = databaseFactory.newDatabaseManagementService( databaseDirectory );
-        managementService.database( DEFAULT_DATABASE_NAME ).shutdown();
+        managementService.shutdown();
     }
 
     private static class CorruptedLogEntryWriter extends LogEntryWriter

@@ -44,18 +44,19 @@ public class IndexConstraintsTest
     private static final String PROPERTY_KEY = "x";
 
     private GraphDatabaseService graphDb;
+    private DatabaseManagementService managementService;
 
     @Before
     public void setup()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        managementService = new TestGraphDatabaseFactory().newImpermanentService();
         graphDb = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @After
     public void shutdown()
     {
-        graphDb.shutdown();
+        managementService.shutdown();
     }
 
     // The following tests verify that multiple interacting schema commands can be applied in the same transaction.

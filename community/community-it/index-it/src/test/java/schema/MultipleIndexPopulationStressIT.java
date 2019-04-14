@@ -208,7 +208,7 @@ public class MultipleIndexPopulationStressIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -228,7 +228,7 @@ public class MultipleIndexPopulationStressIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 

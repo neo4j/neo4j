@@ -261,7 +261,7 @@ class ConsistencyCheckToolTest
 
         createStoreCopy( logFilesDirectory, tempLogsDirectory, tempStoreDirectory );
 
-        db.shutdown();
+        managementService.shutdown();
 
         restoreStoreCopy( logFilesDirectory, tempLogsDirectory, tempStoreDirectory );
     }

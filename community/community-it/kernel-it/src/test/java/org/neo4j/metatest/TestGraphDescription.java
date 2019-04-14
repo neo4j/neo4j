@@ -56,6 +56,7 @@ public class TestGraphDescription implements GraphHolder
     private static GraphDatabaseService graphdb;
     @Rule
     public TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
+    private static DatabaseManagementService managementService;
 
     @Test
     public void havingNoGraphAnnotationCreatesAnEmptyDataCollection()
@@ -154,7 +155,7 @@ public class TestGraphDescription implements GraphHolder
     @BeforeClass
     public static void startDatabase()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newDatabaseManagementService();
+        managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newDatabaseManagementService();
         graphdb = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -163,7 +164,7 @@ public class TestGraphDescription implements GraphHolder
     {
         if ( graphdb != null )
         {
-            graphdb.shutdown();
+            managementService.shutdown();
         }
         graphdb = null;
     }

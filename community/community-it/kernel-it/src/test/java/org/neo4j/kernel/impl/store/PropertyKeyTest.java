@@ -74,7 +74,7 @@ class PropertyKeyTest
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 

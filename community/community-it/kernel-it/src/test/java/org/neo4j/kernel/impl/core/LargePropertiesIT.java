@@ -74,7 +74,7 @@ public class LargePropertiesIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 }

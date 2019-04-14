@@ -53,6 +53,9 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 @AbstractNeo4jTestCase.RequiresPersistentGraphDatabase( false )
 public abstract class AbstractNeo4jTestCase
 {
+
+    private final DatabaseManagementService managementService;
+
     @Retention( RetentionPolicy.RUNTIME )
     @Target( ElementType.TYPE )
     @Inherited
@@ -72,6 +75,7 @@ public abstract class AbstractNeo4jTestCase
         return base;
     };
 
+    private static ThreadLocal<DatabaseManagementService> threadLocalService = new ThreadLocal<>();
     private static ThreadLocal<GraphDatabaseAPI> threadLocalGraphDb = new ThreadLocal<>();
     private static ThreadLocal<String> currentTestClassName = new ThreadLocal<>();
     private static ThreadLocal<Boolean> requiresPersistentGraphDatabase = new ThreadLocal<>();
@@ -83,11 +87,17 @@ public abstract class AbstractNeo4jTestCase
     protected AbstractNeo4jTestCase()
     {
         graphDb = threadLocalGraphDb.get();
+        managementService = threadLocalService.get();
     }
 
     public GraphDatabaseService getGraphDb()
     {
         return graphDb;
+    }
+
+    public DatabaseManagementService getManagementService()
+    {
+        return managementService;
     }
 
     private static void setupGraphDatabase( String testClassName, boolean requiresPersistentGraphDatabase )
@@ -106,10 +116,9 @@ public abstract class AbstractNeo4jTestCase
             }
         }
 
-        DatabaseManagementService service =
-                requiresPersistentGraphDatabase ? new TestGraphDatabaseFactory().newDatabaseManagementService( getStorePath( "neo-test" ) )
-                                                : new TestGraphDatabaseFactory().newImpermanentService();
-        threadLocalGraphDb.set( (GraphDatabaseAPI) service.database( DEFAULT_DATABASE_NAME ) );
+        threadLocalService.set( requiresPersistentGraphDatabase ? new TestGraphDatabaseFactory().newDatabaseManagementService( getStorePath( "neo-test" ) )
+                                        : new TestGraphDatabaseFactory().newImpermanentService() );
+        threadLocalGraphDb.set( (GraphDatabaseAPI) threadLocalService.get().database( DEFAULT_DATABASE_NAME ) );
     }
 
     public GraphDatabaseAPI getGraphDbAPI()
@@ -162,13 +171,14 @@ public abstract class AbstractNeo4jTestCase
     {
         try
         {
-            if ( threadLocalGraphDb.get() != null )
+            if ( threadLocalService.get() != null )
             {
-                threadLocalGraphDb.get().shutdown();
+                threadLocalService.get().shutdown();
             }
         }
         finally
         {
+            threadLocalService.remove();
             threadLocalGraphDb.remove();
         }
     }

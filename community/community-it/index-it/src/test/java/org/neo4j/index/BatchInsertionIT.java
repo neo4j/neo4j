@@ -68,10 +68,6 @@ public class BatchInsertionIT
             assertThat( count( db.findNodes( label( "User" ), "name", "Bob" ) ), equalTo(1L) );
             assertThat( count( db.findNodes( label( "Admin" ), "name", "Bob" ) ), equalTo(1L) );
         }
-        finally
-        {
-            db.shutdown();
-        }
     }
 
     @Test
@@ -92,10 +88,6 @@ public class BatchInsertionIT
         try ( Transaction tx = db.beginTx() )
         {
             assertThat( count( db.findNodes( label( "Banana" ), "name", "Bob" ) ), equalTo( 0L ) );
-        }
-        finally
-        {
-            db.shutdown();
         }
 
     }
@@ -118,10 +110,6 @@ public class BatchInsertionIT
         try ( Transaction ignored = db.beginTx() )
         {
             assertThat( db.getNodeById( nodeId ).getProperty( "a" ), equalTo( finalValue ) );
-        }
-        finally
-        {
-            db.shutdown();
         }
     }
 
@@ -146,10 +134,6 @@ public class BatchInsertionIT
         {
             assertThat( db.getNodeById( nodeId ).getProperty( "a" ), equalTo( finalValue1 ) );
             assertThat( db.getNodeById( nodeId ).getProperty( "b" ), equalTo( finalValue2 ) );
-        }
-        finally
-        {
-            db.shutdown();
         }
     }
 

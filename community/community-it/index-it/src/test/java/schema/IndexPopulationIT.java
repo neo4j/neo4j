@@ -62,6 +62,7 @@ public class IndexPopulationIT
     private static GraphDatabaseService database;
     private static ExecutorService executorService;
     private static AssertableLogProvider logProvider;
+    private static DatabaseManagementService managementService;
 
     @BeforeClass
     public static void setUp()
@@ -69,7 +70,7 @@ public class IndexPopulationIT
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         logProvider = new AssertableLogProvider( true );
         factory.setInternalLogProvider( logProvider );
-        DatabaseManagementService managementService = factory.newDatabaseManagementService( directory.storeDir() );
+        managementService = factory.newDatabaseManagementService( directory.storeDir() );
         database = managementService.database( DEFAULT_DATABASE_NAME );
         executorService = Executors.newCachedThreadPool();
     }
@@ -78,7 +79,7 @@ public class IndexPopulationIT
     public static void tearDown()
     {
         executorService.shutdown();
-        database.shutdown();
+        managementService.shutdown();
     }
 
     @Test( timeout = TEST_TIMEOUT )
@@ -162,7 +163,7 @@ public class IndexPopulationIT
             shutDownDb.schema().indexFor( testLabel ).on( propertyName ).create();
             transaction.success();
         }
-        shutDownDb.shutdown();
+        managementService.shutdown();
         assertableLogProvider.assertNone( AssertableLogProvider.inLog( IndexPopulationJob.class ).anyError() );
     }
 

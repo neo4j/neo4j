@@ -75,7 +75,7 @@ class IdGeneratorRebuildTest
                 .newImpermanentService( testDirectory.storeDir() );
         GraphDatabaseService graphdb = managementService.database( DEFAULT_DATABASE_NAME );
         createInitialData( graphdb );
-        graphdb.shutdown();
+        managementService.shutdown();
         Map<String, String> params = new HashMap<>();
         params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
         Config config = Config.defaults( params );
@@ -86,9 +86,10 @@ class IdGeneratorRebuildTest
     void verifyAndDispose() throws Exception
     {
         GraphDatabaseService graphdb = null;
+        DatabaseManagementService managementService = null;
         try
         {
-            DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( uncloseableFs )
+            managementService = new TestGraphDatabaseFactory().setFileSystem( uncloseableFs )
                     .newImpermanentService( testDirectory.storeDir() );
             graphdb = managementService.database( DEFAULT_DATABASE_NAME );
             verifyData( graphdb );
@@ -97,7 +98,7 @@ class IdGeneratorRebuildTest
         {
             if ( graphdb != null )
             {
-                graphdb.shutdown();
+                managementService.shutdown();
             }
             if ( fs != null )
             {

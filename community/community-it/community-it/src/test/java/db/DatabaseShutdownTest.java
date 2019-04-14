@@ -78,7 +78,7 @@ class DatabaseShutdownTest
         DatabaseManager<?> databaseManager = ((GraphDatabaseAPI) databaseService).getDependencyResolver().resolveDependency( DatabaseManager.class );
         var databaseContext = databaseManager.getDatabaseContext( new DatabaseId( databaseLayout.getDatabaseName() ) );
         factory.setFailFlush( true );
-        databaseService.shutdown();
+        managementService.shutdown();
         DatabaseContext context = databaseContext.get();
         assertTrue( context.isFailed() );
         assertEquals( LifecycleStatus.SHUTDOWN, factory.getDatabaseStatus() );
@@ -91,7 +91,7 @@ class DatabaseShutdownTest
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         ShutdownListenerDatabaseEventHandler shutdownHandler = new ShutdownListenerDatabaseEventHandler();
         database.registerDatabaseEventHandler( shutdownHandler );
-        database.shutdown();
+        managementService.shutdown();
 
         assertTrue( shutdownHandler.isShutdownInvoked() );
     }

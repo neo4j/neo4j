@@ -23,21 +23,21 @@ import java.io.File;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 import static org.neo4j.kernel.impl.factory.DatabaseInfo.COMMUNITY;
 
 public class CommunityGraphFactory implements GraphFactory
 {
     @Override
-    public GraphDatabaseFacade newGraphDatabase( Config config, ExternalDependencies dependencies )
+    public DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
     {
         File storeDir = config.get( GraphDatabaseSettings.databases_root_path );
         GraphDatabaseFacadeFactory facadeFactory = new GraphDatabaseFacadeFactory( COMMUNITY, CommunityEditionModule::new );
-        return (GraphDatabaseFacade) facadeFactory.newFacade( storeDir, config, dependencies ).database( config.get( GraphDatabaseSettings.default_database ) );
+        return facadeFactory.newFacade( storeDir, config, dependencies );
     }
 }
 

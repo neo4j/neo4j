@@ -54,6 +54,9 @@ import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 
 class TestLogPruning
 {
+
+    private DatabaseManagementService managementService;
+
     private interface Extractor
     {
         int extract( long fromVersion ) throws IOException;
@@ -70,7 +73,7 @@ class TestLogPruning
     {
         if ( db != null )
         {
-            db.shutdown();
+            managementService.shutdown();
         }
         fs.close();
     }
@@ -178,7 +181,7 @@ class TestLogPruning
         gdf.setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) );
         GraphDatabaseBuilder builder = gdf.newImpermanentDatabaseBuilder();
         builder.setConfig( keep_logical_logs, logPruning );
-        DatabaseManagementService managementService = builder.newDatabaseManagementService();
+        managementService = builder.newDatabaseManagementService();
         this.db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         files = db.getDependencyResolver().resolveDependency( LogFiles.class );
         return db;
@@ -211,7 +214,7 @@ class TestLogPruning
     {
         db = newDb( "true", 5 );
         doTransaction();
-        db.shutdown();
+        managementService.shutdown();
         return (int) fs.getFileSize( files.getLogFileForVersion( 0 ) );
     }
 

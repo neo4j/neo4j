@@ -149,6 +149,7 @@ public class BatchInsertTest
     // This is the assumed internal index descriptor based on knowledge of what ids get assigned
     private static final IndexDescriptor internalIndex = TestIndexDescriptorFactory.forLabel( 0, 0 );
     private static final IndexDescriptor internalUniqueIndex = TestIndexDescriptorFactory.uniqueForLabel( 0, 0 );
+    private DatabaseManagementService managementService;
 
     @Parameterized.Parameters( name = "{index} denseNodeThreshold={0}" )
     public static Collection<Integer> data()
@@ -298,7 +299,7 @@ public class BatchInsertTest
 
         GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
         assertThat( getNodeInTx( node, db ), inTx( db, hasProperty( key ).withValue( value ) ) );
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -562,7 +563,7 @@ public class BatchInsertTest
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -594,7 +595,7 @@ public class BatchInsertTest
             tx.success();
         }
 
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -789,7 +790,7 @@ public class BatchInsertTest
         }
         finally
         {
-            graphdb.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -1242,7 +1243,7 @@ public class BatchInsertTest
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -1345,7 +1346,7 @@ public class BatchInsertTest
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -1416,7 +1417,7 @@ public class BatchInsertTest
         inserter.shutdown();
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fileSystemRule.get() );
-        DatabaseManagementService managementService = factory.newImpermanentDatabaseBuilder( localTestDirectory.storeDir() )
+        managementService = factory.newImpermanentDatabaseBuilder( localTestDirectory.storeDir() )
                 // Shouldn't be necessary to set dense node threshold since it's a stick config
                 .setConfig( configuration() ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );

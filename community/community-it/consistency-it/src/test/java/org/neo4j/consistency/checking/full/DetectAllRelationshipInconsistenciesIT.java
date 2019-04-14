@@ -71,6 +71,7 @@ public class DetectAllRelationshipInconsistenciesIT
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Rule
     public final RuleChain rules = RuleChain.outerRule( random ).around( directory ).around( fileSystemRule );
+    private DatabaseManagementService managementService;
 
     @Test
     public void shouldDetectSabotagedRelationshipWhereEverItIs() throws Exception
@@ -105,7 +106,7 @@ public class DetectAllRelationshipInconsistenciesIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
 
         // THEN the checker should find it, where ever it is in the store
@@ -133,7 +134,7 @@ public class DetectAllRelationshipInconsistenciesIT
         }
         finally
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -153,7 +154,7 @@ public class DetectAllRelationshipInconsistenciesIT
     private GraphDatabaseAPI getGraphDatabaseAPI()
     {
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-        DatabaseManagementService managementService = factory.newEmbeddedDatabaseBuilder( directory.storeDir() )
+        managementService = factory.newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
                 .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );

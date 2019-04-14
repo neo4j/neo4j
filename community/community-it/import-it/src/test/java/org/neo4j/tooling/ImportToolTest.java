@@ -960,10 +960,6 @@ public class ImportToolTest
 
             tx.success();
         }
-        finally
-        {
-            db.shutdown();
-        }
     }
 
     @Test

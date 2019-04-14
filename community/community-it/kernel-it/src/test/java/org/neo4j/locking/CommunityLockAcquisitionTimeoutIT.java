@@ -84,12 +84,13 @@ public class CommunityLockAcquisitionTimeoutIT
     private static final FakeClock fakeClock = Clocks.fakeClock();
 
     private static GraphDatabaseService database;
+    private static DatabaseManagementService managementService;
 
     @BeforeClass
     public static void setUp()
     {
         CustomClockFacadeFactory facadeFactory = new CustomClockFacadeFactory();
-        DatabaseManagementService managementService = new CustomClockTestGraphDatabaseFactory( facadeFactory )
+        managementService = new CustomClockTestGraphDatabaseFactory( facadeFactory )
                 .newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( GraphDatabaseSettings.lock_acquisition_timeout, "2s" )
                 .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
@@ -101,7 +102,7 @@ public class CommunityLockAcquisitionTimeoutIT
     @AfterClass
     public static void tearDownClass()
     {
-        database.shutdown();
+        managementService.shutdown();
     }
 
     @After

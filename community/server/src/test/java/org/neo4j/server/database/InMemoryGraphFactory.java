@@ -27,7 +27,6 @@ import org.neo4j.configuration.Settings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -35,15 +34,14 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 public class InMemoryGraphFactory implements GraphFactory
 {
     @Override
-    public GraphDatabaseFacade newGraphDatabase( Config config, ExternalDependencies dependencies )
+    public DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
     {
         File storeDir = new File( config.get( GraphDatabaseSettings.databases_root_path ), DEFAULT_DATABASE_NAME );
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setExtensions( dependencies.extensions() )
+        return new TestGraphDatabaseFactory().setExtensions( dependencies.extensions() )
                 .setMonitors( dependencies.monitors() )
                 .newImpermanentDatabaseBuilder( storeDir )
                 .setConfig( new BoltConnector( "bolt" ).listen_address, "localhost:0" )
                 .setConfig( new BoltConnector( "bolt" ).enabled, Settings.TRUE )
                 .setConfig( config ).newDatabaseManagementService();
-        return (GraphDatabaseFacade) managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

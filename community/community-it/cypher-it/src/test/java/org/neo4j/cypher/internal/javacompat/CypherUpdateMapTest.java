@@ -40,6 +40,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 public class CypherUpdateMapTest
 {
     private GraphDatabaseService db;
+    private DatabaseManagementService managementService;
 
     @Test
     public void updateNodeByMapParameter()
@@ -86,13 +87,13 @@ public class CypherUpdateMapTest
     @Before
     public void setup()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        managementService = new TestGraphDatabaseFactory().newImpermanentService();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @After
     public void cleanup()
     {
-        db.shutdown();
+        managementService.shutdown();
     }
 }

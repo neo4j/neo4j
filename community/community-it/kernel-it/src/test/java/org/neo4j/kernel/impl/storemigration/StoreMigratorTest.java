@@ -251,7 +251,7 @@ class StoreMigratorTest
                 transaction.success();
             }
         }
-        database.shutdown();
+        managementService.shutdown();
 
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION,
                 MetaDataRecordFormat.FIELD_NOT_PRESENT );

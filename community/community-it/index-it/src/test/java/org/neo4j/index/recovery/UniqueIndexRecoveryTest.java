@@ -66,6 +66,7 @@ public class UniqueIndexRecoveryTest
 
     private final TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
     private GraphDatabaseAPI db;
+    private DatabaseManagementService managementService;
 
     @Parameterized.Parameters( name = "{0}" )
     public static SchemaIndex[] parameters()
@@ -85,7 +86,7 @@ public class UniqueIndexRecoveryTest
     @After
     public void after()
     {
-        db.shutdown();
+        managementService.shutdown();
     }
 
     @Test
@@ -135,13 +136,13 @@ public class UniqueIndexRecoveryTest
 
     private void restart( File newStore )
     {
-        db.shutdown();
+        managementService.shutdown();
         db = (GraphDatabaseAPI) newDb();
     }
 
     private GraphDatabaseService newDb()
     {
-        DatabaseManagementService managementService = factory.newEmbeddedDatabaseBuilder( storeDir.absolutePath() )
+        managementService = factory.newEmbeddedDatabaseBuilder( storeDir.absolutePath() )
                 .setConfig( default_schema_provider, schemaIndex.providerName() ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }

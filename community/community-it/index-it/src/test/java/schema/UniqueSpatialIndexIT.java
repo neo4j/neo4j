@@ -64,6 +64,7 @@ class UniqueSpatialIndexIT
     private GraphDatabaseService db;
     private PointValue point1;
     private PointValue point2;
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void setup()
@@ -78,7 +79,7 @@ class UniqueSpatialIndexIT
     {
         if ( db != null )
         {
-            db.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -206,7 +207,7 @@ class UniqueSpatialIndexIT
         TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
         GraphDatabaseBuilder builder = dbFactory.newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() );
-        DatabaseManagementService managementService = builder.newDatabaseManagementService();
+        managementService = builder.newDatabaseManagementService();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

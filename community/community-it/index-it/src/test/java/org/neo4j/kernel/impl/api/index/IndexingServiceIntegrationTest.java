@@ -73,6 +73,7 @@ public class IndexingServiceIntegrationTest
     @Rule
     public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
     private GraphDatabaseService database;
+    private DatabaseManagementService managementService;
 
     @Parameterized.Parameters( name = "{0}" )
     public static GraphDatabaseSettings.SchemaIndex[] parameters()
@@ -87,7 +88,7 @@ public class IndexingServiceIntegrationTest
     public void setUp()
     {
         EphemeralFileSystemAbstraction fileSystem = fileSystemRule.get();
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        managementService = new TestGraphDatabaseFactory()
                 .setFileSystem( fileSystem )
                 .newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() ).newDatabaseManagementService();
@@ -100,7 +101,7 @@ public class IndexingServiceIntegrationTest
     {
         try
         {
-            database.shutdown();
+            managementService.shutdown();
         }
         catch ( Exception e )
         {

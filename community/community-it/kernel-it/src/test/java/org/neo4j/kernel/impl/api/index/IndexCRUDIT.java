@@ -77,6 +77,9 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.createIndex;
 
 public class IndexCRUDIT
 {
+
+    private DatabaseManagementService managementService;
+
     @Test
     public void addingANodeWithPropertyShouldGetIndexed() throws Exception
     {
@@ -182,7 +185,7 @@ public class IndexCRUDIT
         factory.setFileSystem( fs.get() );
         factory.setExtensions(
                 Collections.singletonList( mockedIndexProviderFactory ) );
-        DatabaseManagementService managementService = factory.newImpermanentDatabaseBuilder()
+        managementService = factory.newImpermanentDatabaseBuilder()
                 .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).newDatabaseManagementService();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         ctxSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
@@ -199,7 +202,7 @@ public class IndexCRUDIT
     @After
     public void after()
     {
-        db.shutdown();
+        managementService.shutdown();
     }
 
     private static class GatheringIndexWriter extends IndexAccessor.Adapter implements IndexPopulator

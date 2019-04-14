@@ -262,8 +262,8 @@ class StoreLockerTest
     void mustPreventMultipleInstancesFromStartingOnSameStore()
     {
         File storeDir = target.storeDir();
-        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
-        GraphDatabaseService db = managementService1.database( DEFAULT_DATABASE_NAME );
+        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
@@ -272,10 +272,9 @@ class StoreLockerTest
 
         assertThrows( Exception.class, () ->
         {
-            DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
             managementService.database( DEFAULT_DATABASE_NAME );
         } );
-        db.shutdown();
+        managementService.shutdown();
     }
 
     private class CustomChannelFileSystemAbstraction extends DelegatingFileSystemAbstraction

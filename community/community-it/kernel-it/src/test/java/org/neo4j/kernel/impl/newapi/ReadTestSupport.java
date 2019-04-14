@@ -39,6 +39,7 @@ public class ReadTestSupport implements KernelAPIReadTestSupport
 {
     private final Map<Setting,String> settings = new HashMap<>();
     private GraphDatabaseService db;
+    private DatabaseManagementService managementService;
 
     void addSetting( Setting setting, String value )
     {
@@ -50,7 +51,7 @@ public class ReadTestSupport implements KernelAPIReadTestSupport
     {
         GraphDatabaseBuilder graphDatabaseBuilder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( storeDir );
         settings.forEach( graphDatabaseBuilder::setConfig );
-        DatabaseManagementService managementService = graphDatabaseBuilder.newDatabaseManagementService();
+        managementService = graphDatabaseBuilder.newDatabaseManagementService();
         db = managementService.database( DEFAULT_DATABASE_NAME );
         create.accept( db );
     }
@@ -65,7 +66,7 @@ public class ReadTestSupport implements KernelAPIReadTestSupport
     @Override
     public void tearDown()
     {
-        db.shutdown();
+        managementService.shutdown();
         db = null;
     }
 }

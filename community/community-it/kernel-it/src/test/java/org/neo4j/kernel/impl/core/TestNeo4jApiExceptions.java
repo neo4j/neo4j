@@ -42,11 +42,12 @@ class TestNeo4jApiExceptions
 {
     private Transaction tx;
     private GraphDatabaseService graph;
+    private DatabaseManagementService managementService;
 
     @BeforeEach
     void init()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        managementService = new TestGraphDatabaseFactory().newImpermanentService();
         graph = managementService.database( DEFAULT_DATABASE_NAME );
         newTransaction();
     }
@@ -57,7 +58,7 @@ class TestNeo4jApiExceptions
         if ( graph != null )
         {
             rollback();
-            graph.shutdown();
+            managementService.shutdown();
         }
     }
 
@@ -116,7 +117,7 @@ class TestNeo4jApiExceptions
         GraphDatabaseService graphDb = graph;
         Node node = graphDb.createNode();
         commit();
-        graphDb.shutdown();
+        managementService.shutdown();
 
         assertThrows( NotInTransactionException.class, () -> node.getLabels().iterator() );
     }
@@ -127,7 +128,7 @@ class TestNeo4jApiExceptions
         GraphDatabaseService graphDb = graph;
         Node node = graphDb.createNode();
         commit();
-        graphDb.shutdown();
+        managementService.shutdown();
 
         assertThrows( NotInTransactionException.class, node::getRelationships );
         assertThrows( NotInTransactionException.class, graphDb::createNode );
