@@ -158,6 +158,7 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
@@ -503,6 +504,11 @@ public class Database extends LifecycleAdapter
                 databaseSchemaState, indexStatisticsStore );
         storageEngine.addIndexUpdateListener( indexingService );
         return indexingService;
+    }
+
+    public boolean isSystem()
+    {
+        return SYSTEM_DATABASE_NAME.equals( databaseId.name() );
     }
 
     /**
