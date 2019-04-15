@@ -164,15 +164,15 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         int expectedNumberOfIndexes = providers.length * 2;
         try
         {
-            IndexRecoveryTracker genericNativeRecoveries = new IndexRecoveryTracker();
-            filterOutGenericNativeIndexes( indexRecoveryTracker, genericNativeRecoveries );
-            int genericNativeIndexCount = genericNativeRecoveries.initialStateMap.size();
-            int indexesUsingLuceneCount = expectedNumberOfIndexes - genericNativeIndexCount;
+            IndexRecoveryTracker nonMigratedNativeRecoveries = new IndexRecoveryTracker();
+            filterOutNonMigratedNativeIndexes( db, indexRecoveryTracker, nonMigratedNativeRecoveries );
+            int nonMigratedIndexCount = nonMigratedNativeRecoveries.initialStateMap.size();
+            int migratedIndexCount = expectedNumberOfIndexes - nonMigratedIndexCount;
 
-            // All indexes that use Lucene needs to be rebuilt:
-            verifyInitialState( indexRecoveryTracker, indexesUsingLuceneCount, InternalIndexState.POPULATING );
-            // All indexes that use the Generic Native Index Provider do not need rebuilding, and start up as ONLINE:
-            verifyInitialState( genericNativeRecoveries, genericNativeIndexCount, InternalIndexState.ONLINE );
+            // All indexes that has been migrated to other provider needs to be rebuilt:
+            verifyInitialState( indexRecoveryTracker, migratedIndexCount, InternalIndexState.POPULATING );
+            // All indexes that was already backed by Generic Native Index Provider do not need rebuilding, and start up as ONLINE:
+            verifyInitialState( nonMigratedNativeRecoveries, nonMigratedIndexCount, InternalIndexState.ONLINE );
 
             // Wait for all populating indexes to finish, so we can verify their contents:
             try ( Transaction tx = db.beginTx() )
@@ -226,19 +226,39 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         }
     }
 
-    private void filterOutGenericNativeIndexes( IndexRecoveryTracker indexRecoveryTracker, IndexRecoveryTracker gbpTreeRecoveries )
+    private void filterOutNonMigratedNativeIndexes( GraphDatabaseAPI db, IndexRecoveryTracker indexRecoveryTracker,
+            IndexRecoveryTracker nonMigratedIndexRecoveries )
     {
+        String nonMigratedLabelName = Provider.BTREE_10.label.name();
+        int nonMigratedLabelId = getLabelId( db, nonMigratedLabelName );
         indexRecoveryTracker.initialStateMap.entrySet().removeIf( entry ->
         {
             StoreIndexDescriptor indexDescriptor = entry.getKey();
             InternalIndexState internalIndexState = entry.getValue();
-            if ( indexDescriptor.providerDescriptor().equals( GenericNativeIndexProvider.DESCRIPTOR ) )
+            if ( indexDescriptor.schema().getEntityTokenIds()[0] == nonMigratedLabelId )
             {
-                gbpTreeRecoveries.initialState( indexDescriptor, internalIndexState );
+                nonMigratedIndexRecoveries.initialState( indexDescriptor, internalIndexState );
                 return true;
             }
             return false;
         } );
+    }
+
+    private int getLabelId( GraphDatabaseAPI db, String labelName )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            TokenRead tokenRead = getTokenRead( db );
+            return tokenRead.nodeLabel( labelName );
+        }
+    }
+
+    private TokenRead getTokenRead( GraphDatabaseAPI db )
+    {
+        return db.getDependencyResolver()
+                .resolveDependency( ThreadToStatementContextBridge.class )
+                .getKernelTransactionBoundToThisThread( false )
+                .tokenRead();
     }
 
     private Provider[] providersUpToAndIncluding( Provider provider )
