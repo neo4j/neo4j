@@ -19,6 +19,9 @@
  */
 package org.neo4j.dbms.archive;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
@@ -48,5 +51,18 @@ public class Utils
         {
             throw new AccessDeniedException( directory.toString() );
         }
+    }
+
+    public static void copy( InputStream in, OutputStream out, ArchiveProgressPrinter progressPrinter ) throws IOException
+    {
+        progressPrinter.beginFile();
+        final byte[] buffer = new byte[8192];
+        int n;
+        while ( -1 != (n = in.read( buffer )) )
+        {
+            out.write( buffer, 0, n );
+            progressPrinter.addBytes( n );
+        }
+        progressPrinter.endFile();
     }
 }

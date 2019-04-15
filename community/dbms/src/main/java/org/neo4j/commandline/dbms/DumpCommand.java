@@ -34,6 +34,7 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.archive.CompressionFormat;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.StoreLockException;
@@ -48,7 +49,6 @@ import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 
 public class DumpCommand implements AdminCommand
 {
-
     private static final Arguments arguments = new Arguments()
             .withDatabase()
             .withTo( "Destination (file or folder) of database dump." );
@@ -129,7 +129,7 @@ public class DumpCommand implements AdminCommand
         {
             File storeLockFile = databaseLayout.getStoreLayout().storeLockFile();
             dumper.dump( databasePath, databaseLayout.getTransactionLogsDirectory().toPath(), archive,
-                    path -> Objects.equals( path.getFileName().toString(), storeLockFile.getName() ) );
+                    CompressionFormat.ZSTD, path -> Objects.equals( path.getFileName().toString(), storeLockFile.getName() ) );
         }
         catch ( FileAlreadyExistsException e )
         {

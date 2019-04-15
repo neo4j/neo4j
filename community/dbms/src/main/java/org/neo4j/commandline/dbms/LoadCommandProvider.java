@@ -73,6 +73,6 @@ public class LoadCommandProvider implements AdminCommand.Provider
     @Nonnull
     public AdminCommand create( CommandContext ctx )
     {
-        return new LoadCommand( ctx.getHomeDir(), ctx.getConfigDir(), new Loader() );
+        return new LoadCommand( ctx.getHomeDir(), ctx.getConfigDir(), new Loader( ctx.getOutsideWorld().errorStream() ) );
     }
 }

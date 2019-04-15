@@ -168,6 +168,7 @@ class ImportCommandTest
     @Test
     void letImporterDecideAboutDatabaseExistence() throws Exception
     {
+        File report = testDir.file( "report" );
         Path homeDir = testDir.directory( "home" ).toPath();
         PrintStream nullOutput = new PrintStream( NULL_OUTPUT_STREAM );
         OutsideWorld outsideWorld = new RealOutsideWorld( nullOutput, nullOutput, new ByteArrayInputStream( new byte[0] ) );

@@ -23,6 +23,7 @@
   </properties>
 
   <modules>
+    <module>zstd-proxy</module>
     <module>token-api</module>
     <module>schema</module>
     <module>import-util</module>

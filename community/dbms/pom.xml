@@ -157,6 +157,12 @@
             <artifactId>commons-compress</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.neo4j.licensing-proxy</groupId>
+            <artifactId>zstd-proxy</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
         </dependency>

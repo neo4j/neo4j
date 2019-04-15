@@ -73,6 +73,6 @@ public class DumpCommandProvider implements AdminCommand.Provider
     @Nonnull
     public AdminCommand create( CommandContext ctx )
     {
-        return new DumpCommand( ctx.getHomeDir(), ctx.getConfigDir(), new Dumper() );
+        return new DumpCommand( ctx.getHomeDir(), ctx.getConfigDir(), new Dumper( ctx.getOutsideWorld().errorStream() ) );
     }
 }
