@@ -2269,7 +2269,8 @@ public class FulltextProceduresTest
     private GraphDatabaseAPI createDatabase()
     {
         managementService = builder.newDatabaseManagementService();
-        return (GraphDatabaseAPI) cleanup.add( managementService.database( DEFAULT_DATABASE_NAME ) );
+        cleanup.add( managementService );
+        return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private void awaitIndexesOnline()

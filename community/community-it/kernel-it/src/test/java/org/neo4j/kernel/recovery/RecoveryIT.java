@@ -458,7 +458,7 @@ class RecoveryIT
 
         GraphDatabaseService service = createDatabase();
         createSingleNode( service );
-        managementService.shutdown();
+        this.managementService.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
         startStopDatabase();
 

@@ -19,8 +19,9 @@
  */
 package org.neo4j.index;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.TimeUnit;
 
@@ -35,37 +36,39 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.io.fs.FileUtils.deleteFile;
 
-public class IndexSamplingIntegrationTest
+@ExtendWith( TestDirectoryExtension.class )
+class IndexSamplingIntegrationTest
 {
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDirectory;
 
     private final Label label = Label.label( "Person" );
     private final String property = "name";
     private final long nodes = 1000;
     private final String[] names = {"Neo4j", "Neo", "Graph", "Apa"};
-    private DatabaseManagementService managementService;
 
     @Test
-    public void shouldSampleNotUniqueIndex() throws Throwable
+    void shouldSampleNotUniqueIndex() throws Throwable
     {
         GraphDatabaseService db = null;
+        DatabaseManagementService managementService = null;
         long deletedNodes = 0;
         try
         {
@@ -110,7 +113,7 @@ public class IndexSamplingIntegrationTest
         }
         finally
         {
-            if ( db != null )
+            if ( managementService != null )
             {
                 managementService.shutdown();
             }
@@ -124,7 +127,7 @@ public class IndexSamplingIntegrationTest
         // lucene will consider also the delete nodes, native won't
         DoubleLongRegister register = fetchIndexSamplingValues( db );
         assertEquals( names.length, register.readFirst() );
-        assertThat( register.readSecond(), allOf( greaterThanOrEqualTo( nodes - deletedNodes ), lessThanOrEqualTo( nodes ) ) );
+        MatcherAssert.assertThat( register.readSecond(), allOf( greaterThanOrEqualTo( nodes - deletedNodes ), lessThanOrEqualTo( nodes ) ) );
 
         // but regardless, the deleted nodes should not be considered in the index size value
         DoubleLongRegister indexSizeRegister = fetchIndexSizeValues( db );
@@ -133,14 +136,15 @@ public class IndexSamplingIntegrationTest
     }
 
     @Test
-    public void shouldSampleUniqueIndex() throws Throwable
+    void shouldSampleUniqueIndex() throws Throwable
     {
         GraphDatabaseService db = null;
+        DatabaseManagementService managementService = null;
         long deletedNodes = 0;
         try
         {
             // Given
-            DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
+            managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
             db = managementService.database( DEFAULT_DATABASE_NAME );
             try ( Transaction tx = db.beginTx() )
             {
@@ -200,10 +204,11 @@ public class IndexSamplingIntegrationTest
 
     private DoubleLongRegister fetchIndexSamplingValues( GraphDatabaseService db ) throws IndexNotFoundKernelException, TransactionFailureException
     {
+        DatabaseManagementService managementService = null;
         try
         {
             // Then
-            DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
+            managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
             db = managementService.database( DEFAULT_DATABASE_NAME );
             @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
@@ -215,7 +220,7 @@ public class IndexSamplingIntegrationTest
         }
         finally
         {
-            if ( db != null )
+            if ( managementService != null )
             {
                 managementService.shutdown();
             }
@@ -224,10 +229,11 @@ public class IndexSamplingIntegrationTest
 
     private DoubleLongRegister fetchIndexSizeValues( GraphDatabaseService db ) throws IndexNotFoundKernelException, TransactionFailureException
     {
+        DatabaseManagementService managementService = null;
         try
         {
             // Then
-            DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
+            managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
             db = managementService.database( DEFAULT_DATABASE_NAME );
             @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
@@ -239,7 +245,7 @@ public class IndexSamplingIntegrationTest
         }
         finally
         {
-            if ( db != null )
+            if ( managementService != null )
             {
                 managementService.shutdown();
             }
@@ -249,7 +255,7 @@ public class IndexSamplingIntegrationTest
     private void triggerIndexResamplingOnNextStartup()
     {
         // Trigger index resampling on next at startup
-        FileUtils.deleteFile( testDirectory.databaseLayout().countStoreA() );
-        FileUtils.deleteFile( testDirectory.databaseLayout().countStoreB() );
+        deleteFile( testDirectory.databaseLayout().countStoreA() );
+        deleteFile( testDirectory.databaseLayout().countStoreB() );
     }
 }

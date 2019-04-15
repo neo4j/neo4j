@@ -19,48 +19,48 @@
  */
 package org.neo4j.kernel.internal;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Map;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.database.DatabaseManagementService;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class StoreLockerLifecycleAdapterTest
+@ExtendWith( TestDirectoryExtension.class )
+class StoreLockerLifecycleAdapterTest
 {
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
-    private DatabaseManagementService managementService;
+    @Inject
+    private TestDirectory directory;
 
     @Test
-    public void shouldAllowDatabasesToUseFilesetsSequentially()
+    void shouldAllowDatabasesToUseFilesetsSequentially()
     {
-        newDb();
+        DatabaseManagementService managementService = newDb();
         managementService.shutdown();
-        newDb();
+        managementService = newDb();
         managementService.shutdown();
     }
 
     @Test
-    public void shouldNotAllowDatabasesToUseFilesetsConcurrently()
+    void shouldNotAllowDatabasesToUseFilesetsConcurrently()
     {
         shouldNotAllowDatabasesToUseFilesetsConcurrently( stringMap() );
     }
 
     @Test
-    public void shouldNotAllowDatabasesToUseFilesetsConcurrentlyEvenIfTheyAreInReadOnlyMode()
+    void shouldNotAllowDatabasesToUseFilesetsConcurrentlyEvenIfTheyAreInReadOnlyMode()
     {
         shouldNotAllowDatabasesToUseFilesetsConcurrently(
                 stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
@@ -68,14 +68,12 @@ public class StoreLockerLifecycleAdapterTest
 
     private void shouldNotAllowDatabasesToUseFilesetsConcurrently( Map<String,String> config )
     {
-        GraphDatabaseService db = newDb();
-        DatabaseManagementService managementService2 = null;
+        DatabaseManagementService managementService = newDb();
+        DatabaseManagementService embeddedService = null;
         try
         {
-            managementService2 = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.storeDir() )
+            embeddedService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.storeDir() )
                         .setConfig( config ).newDatabaseManagementService();
-            managementService2.database( DEFAULT_DATABASE_NAME );
-
             fail();
         }
         catch ( RuntimeException e )
@@ -84,16 +82,19 @@ public class StoreLockerLifecycleAdapterTest
         }
         finally
         {
-            if ( managementService2 != null )
+            if ( embeddedService != null )
             {
-                managementService2.shutdown();
+                embeddedService.shutdown();
+            }
+            if ( managementService != null )
+            {
+                managementService.shutdown();
             }
         }
     }
 
-    private GraphDatabaseService newDb()
+    private DatabaseManagementService newDb()
     {
-        managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( directory.storeDir() );
-        return managementService.database( DEFAULT_DATABASE_NAME );
+        return new TestGraphDatabaseFactory().newDatabaseManagementService( directory.storeDir() );
     }
 }

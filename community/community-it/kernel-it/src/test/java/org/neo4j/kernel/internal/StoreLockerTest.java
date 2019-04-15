@@ -263,18 +263,24 @@ class StoreLockerTest
     {
         File storeDir = target.storeDir();
         DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-        try ( Transaction tx = db.beginTx() )
+        try
         {
-            db.createNode();
-            tx.success();
-        }
+            GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.createNode();
+                tx.success();
+            }
 
-        assertThrows( Exception.class, () ->
+            assertThrows( Exception.class, () ->
+            {
+                new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
+            } );
+        }
+        finally
         {
-            managementService.database( DEFAULT_DATABASE_NAME );
-        } );
-        managementService.shutdown();
+            managementService.shutdown();
+        }
     }
 
     private class CustomChannelFileSystemAbstraction extends DelegatingFileSystemAbstraction

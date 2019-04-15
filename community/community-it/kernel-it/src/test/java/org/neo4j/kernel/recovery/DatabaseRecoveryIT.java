@@ -393,8 +393,8 @@ class DatabaseRecoveryIT
     {
         // given
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentService( directory.storeDir() );
-        GraphDatabaseService db = managementService1.database( DEFAULT_DATABASE_NAME );
+        managementService = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentService( directory.storeDir() );
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         produceRandomGraphUpdates( db, 100 );
         checkPoint( db );
         EphemeralFileSystemAbstraction checkPointFs = fs.snapshot();

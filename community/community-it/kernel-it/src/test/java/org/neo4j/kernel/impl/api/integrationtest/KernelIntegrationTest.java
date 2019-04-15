@@ -29,7 +29,6 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -168,7 +167,8 @@ public abstract class KernelIntegrationTest
 
     protected void startDb()
     {
-        db = (GraphDatabaseAPI) createGraphDatabase();
+        managementService = createDatabaseService();
+        db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         dependencyResolver = db.getDependencyResolver();
         kernel = dependencyResolver.resolveDependency( Kernel.class );
         indexingService = dependencyResolver.resolveDependency( IndexingService.class );
@@ -177,13 +177,12 @@ public abstract class KernelIntegrationTest
         valueMapper = new DefaultValueMapper( dependencyResolver.resolveDependency( EmbeddedProxySPI.class ) );
     }
 
-    protected GraphDatabaseService createGraphDatabase()
+    protected DatabaseManagementService createDatabaseService()
     {
         GraphDatabaseBuilder graphDatabaseBuilder = configure( createGraphDatabaseFactory() )
                 .setFileSystem( testDir.getFileSystem() )
                 .newEmbeddedDatabaseBuilder( testDir.storeDir() );
-        managementService = configure( graphDatabaseBuilder ).newDatabaseManagementService();
-        return managementService.database( DEFAULT_DATABASE_NAME );
+        return configure( graphDatabaseBuilder ).newDatabaseManagementService();
     }
 
     protected TestGraphDatabaseFactory createGraphDatabaseFactory()

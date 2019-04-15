@@ -37,7 +37,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 public class WriteTestSupport implements KernelAPIWriteTestSupport
 {
     private GraphDatabaseService db;
-    private DatabaseManagementService managementService;
+    protected DatabaseManagementService managementService;
 
     @Override
     public void setup( File storeDir )
