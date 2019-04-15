@@ -185,6 +185,10 @@ public class ThreadingRule extends ExternalResource
             @Override
             public boolean test( Thread thread )
             {
+                if ( thread == null )
+                {
+                    return false;
+                }
                 if ( thread.getState() == Thread.State.WAITING || thread.getState() == Thread.State.TIMED_WAITING )
                 {
                     for ( StackTraceElement element : thread.getStackTrace() )

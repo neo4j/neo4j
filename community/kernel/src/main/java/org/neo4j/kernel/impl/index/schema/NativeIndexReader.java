@@ -28,9 +28,12 @@ import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
@@ -67,7 +70,23 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         // be none in a unique index).
 
         FullScanNonUniqueIndexSampler<KEY,VALUE> sampler = new FullScanNonUniqueIndexSampler<>( tree, layout );
-        return sampler::result;
+        return () ->
+        {
+            try
+            {
+                return sampler.result();
+            }
+            catch ( UncheckedIOException e )
+            {
+                if ( e.getCause() instanceof FileIsNotMappedException )
+                {
+                    IndexNotFoundKernelException exception = new IndexNotFoundKernelException( "Index dropped while sampling." );
+                    exception.addSuppressed( e );
+                    throw exception;
+                }
+                throw e;
+            }
+        };
     }
 
     @Override

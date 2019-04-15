@@ -25,8 +25,8 @@ import java.io.UncheckedIOException;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
-import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 
 /**
  * {@link NonUniqueIndexSampler} which performs a full scans of a {@link GBPTree} in {@link #result()}.

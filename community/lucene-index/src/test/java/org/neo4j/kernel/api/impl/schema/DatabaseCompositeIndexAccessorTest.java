@@ -24,41 +24,69 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.function.IOFunction;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.extension.DatabaseExtensions;
+import org.neo4j.kernel.extension.ExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionFailureStrategies;
+import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
+import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
+import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.monitoring.Monitors;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.test.rule.CleanupRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.Collections.singletonList;
+import static org.hamcrest.Matchers.oneOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -71,17 +99,25 @@ public class DatabaseCompositeIndexAccessorTest
 {
     private static final int PROP_ID1 = 1;
     private static final int PROP_ID2 = 2;
-    private static final IndexDescriptor DESCRIPTOR = TestIndexDescriptorFactory.forLabel( 0, PROP_ID1, PROP_ID2 );
-    private static final Config config = Config.defaults();
+    private static final Config CONFIG = Config.defaults();
+    private static final IndexSamplingConfig SAMPLING_CONFIG = new IndexSamplingConfig( CONFIG );
+
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
+
+    private static final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+    private static final TestDirectory dir = TestDirectory.testDirectory( DatabaseCompositeIndexAccessorTest.class, fileSystemRule );
+    private static final CleanupRule cleanup = new CleanupRule();
+    private static final AssertableLogProvider logProvider = new AssertableLogProvider();
     @ClassRule
-    public static final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+    public static final RuleChain rules = RuleChain.outerRule( fileSystemRule ).around( dir ).around( cleanup ).around( logProvider );
 
-    @Parameterized.Parameter
-    public IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory;
+    @Parameterized.Parameter( 0 )
+    public String testName;
+    @Parameterized.Parameter( 1 )
+    public IOFunction<DirectoryFactory,IndexAccessor> accessorFactory;
 
-    private LuceneIndexAccessor accessor;
+    private IndexAccessor accessor;
     private final long nodeId = 1;
     private final long nodeId2 = 2;
     private final Object[] values = {"value1", "values2"};
@@ -91,42 +127,45 @@ public class DatabaseCompositeIndexAccessorTest
     private static final IndexDescriptor UNIQUE_SCHEMA_INDEX_DESCRIPTOR = TestIndexDescriptorFactory.uniqueForLabel( 1, PROP_ID1, PROP_ID2 );
 
     @Parameterized.Parameters( name = "{0}" )
-    public static Collection<IOFunction<DirectoryFactory,LuceneIndexAccessor>[]> implementations()
+    public static Collection<Object[]> implementations() throws IOException
     {
-        final File dir = new File( "dir" );
-        return Arrays.asList(
-                arg( dirFactory1 ->
-                {
-                    SchemaIndex index = LuceneSchemaIndexBuilder.create( SCHEMA_INDEX_DESCRIPTOR, config )
-                            .withFileSystem( fileSystemRule.get() )
-                            .withDirectoryFactory( dirFactory1 )
-                            .withIndexRootFolder( new File( dir, "1" ) )
-                            .build();
+        Collection<ExtensionFactory<?>> indexProviderFactories = Arrays.asList(
+                new GenericNativeIndexProviderFactory(),
+                new NativeLuceneFusionIndexProviderFactory30() );
 
-                    index.create();
-                    index.open();
-                    return new LuceneIndexAccessor( index, DESCRIPTOR );
-                } ),
-                arg( dirFactory1 ->
-                {
-                    SchemaIndex index = LuceneSchemaIndexBuilder.create( UNIQUE_SCHEMA_INDEX_DESCRIPTOR, config )
-                            .withFileSystem( fileSystemRule.get() )
-                            .withDirectoryFactory( dirFactory1 )
-                            .withIndexRootFolder( new File( dir, "testIndex" ) )
-                            .build();
+        Dependencies deps = new Dependencies();
+        JobScheduler jobScheduler = cleanup.add( JobSchedulerFactory.createInitialisedScheduler() );
+        PageCache pageCache = cleanup.add( ConfigurableStandalonePageCacheFactory.createPageCache( fileSystemRule, jobScheduler ) );
+        deps.satisfyDependencies( pageCache, jobScheduler, fileSystemRule, new SimpleLogService( logProvider ), new Monitors(), CONFIG,
+                RecoveryCleanupWorkCollector.ignore() );
+        dir.prepareDirectory( DatabaseCompositeIndexAccessorTest.class, "null" );
+        DatabaseExtensionContext context = new DatabaseExtensionContext( dir.databaseLayout(), DatabaseInfo.UNKNOWN, deps );
+        DatabaseExtensions extensions = new DatabaseExtensions( context, indexProviderFactories, deps, ExtensionFailureStrategies.fail() );
 
-                    index.create();
-                    index.open();
-                    return new LuceneIndexAccessor( index, DESCRIPTOR );
-                } )
-        );
+        extensions.init();
+        var providers = deps.resolveTypeDependencies( IndexProvider.class );
+
+        Collection<Object[]> params = new ArrayList<>();
+        for ( IndexProvider provider : providers )
+        {
+            params.add( parameterSetup( provider, SCHEMA_INDEX_DESCRIPTOR.withId( params.size() ) ) );
+            params.add( parameterSetup( provider, UNIQUE_SCHEMA_INDEX_DESCRIPTOR.withId( params.size() ) ) );
+        }
+
+        return params;
     }
 
-    @SuppressWarnings( "unchecked" )
-    private static IOFunction<DirectoryFactory,LuceneIndexAccessor>[] arg(
-            IOFunction<DirectoryFactory,LuceneIndexAccessor> foo )
+    private static Object[] parameterSetup( IndexProvider provider, StoreIndexDescriptor descriptor )
     {
-        return new IOFunction[]{foo};
+        IOFunction function = dirFactory1 ->
+        {
+            IndexPopulator populator = provider.getPopulator( descriptor, SAMPLING_CONFIG );
+            populator.create();
+            populator.close( true );
+
+            return provider.getOnlineAccessor( descriptor, SAMPLING_CONFIG );
+        };
+        return new Object[]{ provider.getClass().getSimpleName() + " / " + descriptor, function};
     }
 
     @Before
@@ -164,14 +203,14 @@ public class DatabaseCompositeIndexAccessorTest
     public void multipleIndexReadersFromDifferentPointsInTimeCanSeeDifferentResults() throws Exception
     {
         // WHEN
-        updateAndCommit( asList( add( nodeId, values ) ) );
+        updateAndCommit( singletonList( add( nodeId, values ) ) );
         IndexReader firstReader = accessor.newReader();
-        updateAndCommit( asList( add( nodeId2, values2 ) ) );
+        updateAndCommit( singletonList( add( nodeId2, values2 ) ) );
         IndexReader secondReader = accessor.newReader();
 
         // THEN
         assertEquals( asSet( nodeId ), resultSet( firstReader, exact( PROP_ID1, values[0] ), exact( PROP_ID2, values[1] ) ) );
-        assertEquals( asSet(), resultSet( firstReader, exact( PROP_ID1, values2[0] ), exact( PROP_ID2, values2[1] ) ) );
+        assertThat( resultSet( firstReader, exact( PROP_ID1, values2[0] ), exact( PROP_ID2, values2[1] ) ), oneOf( asSet(), asSet( nodeId2 )) );
         assertEquals( asSet( nodeId ), resultSet( secondReader, exact( PROP_ID1, values[0] ), exact( PROP_ID2, values[1] ) ) );
         assertEquals( asSet( nodeId2 ), resultSet( secondReader, exact( PROP_ID1, values2[0] ), exact( PROP_ID2, values2[1] ) ) );
         firstReader.close();
@@ -194,10 +233,10 @@ public class DatabaseCompositeIndexAccessorTest
     public void canChangeExistingData() throws Exception
     {
         // GIVEN
-        updateAndCommit( asList( add( nodeId, values ) ) );
+        updateAndCommit( singletonList( add( nodeId, values ) ) );
 
         // WHEN
-        updateAndCommit( asList( change( nodeId, values, values2 ) ) );
+        updateAndCommit( singletonList( change( nodeId, values, values2 ) ) );
         IndexReader reader = accessor.newReader();
 
         // THEN
@@ -213,7 +252,7 @@ public class DatabaseCompositeIndexAccessorTest
         updateAndCommit( asList( add( nodeId, values ), add( nodeId2, values2 ) ) );
 
         // WHEN
-        updateAndCommit( asList( remove( nodeId, values ) ) );
+        updateAndCommit( singletonList( remove( nodeId, values ) ) );
         IndexReader reader = accessor.newReader();
 
         // THEN
@@ -232,15 +271,30 @@ public class DatabaseCompositeIndexAccessorTest
         IndexReader indexReader = accessor.newReader(); // needs to be acquired before drop() is called
         IndexSampler indexSampler = indexReader.createSampler();
 
-        Future<Void> drop = threading.executeAndAwait( (IOFunction<Void,Void>) nothing ->
+        AtomicBoolean droppedLatch = new AtomicBoolean();
+        AtomicReference<Thread> dropper = new AtomicReference<>();
+        Predicate<Thread> awaitCompletion = waitingWhileIn( TaskCoordinator.class, "awaitCompletion" );
+        Future<Void> drop = threading.execute( nothing ->
         {
-            accessor.drop();
-            return nothing;
-        }, null, waitingWhileIn( TaskCoordinator.class, "awaitCompletion" ), 3, SECONDS );
+            dropper.set( Thread.currentThread() );
+            try
+            {
+                accessor.drop();
+            }
+            finally
+            {
+                droppedLatch.set( true );
+            }
+            return null;
+        }, null );
 
         try ( IndexReader reader = indexReader /* do not inline! */;
               IndexSampler sampler = indexSampler /* do not inline! */ )
         {
+            while ( !droppedLatch.get() && !awaitCompletion.test( dropper.get() ) )
+            {
+                Thread.onSpinWait();
+            }
             sampler.sampleIndex();
             fail( "expected exception" );
         }
@@ -279,7 +333,7 @@ public class DatabaseCompositeIndexAccessorTest
     }
 
     private void updateAndCommit( List<IndexEntryUpdate<?>> nodePropertyUpdates )
-            throws IOException, IndexEntryConflictException
+            throws IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
