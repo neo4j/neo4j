@@ -22,9 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
@@ -69,67 +66,6 @@ public class NativeStringIndexingIT
     @Rule
     public final RandomRule random = new RandomRule();
 
-    @Test
-    public void shouldHandleSizesCloseToTheLimit()
-    {
-        // given
-        createIndex( KEY );
-
-        // when
-        Map<String,Long> strings = new HashMap<>();
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( int i = 0; i < 1_000; i++ )
-            {
-                String string;
-                do
-                {
-                    string = random.nextAlphaNumericString( STRING_INLINE_LIMIT / 2, STRING_INLINE_LIMIT );
-                }
-                while ( strings.containsKey( string ) );
-
-                Node node = db.createNode( LABEL );
-                node.setProperty( KEY, string );
-                strings.put( string, node.getId() );
-            }
-            tx.success();
-        }
-
-        // then
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( String string : strings.keySet() )
-            {
-                Node node = db.findNode( LABEL, KEY, string );
-                assertEquals( strings.get( string ).longValue(), node.getId() );
-            }
-            tx.success();
-        }
-    }
-
-    @Test
-    public void shouldFailBeforeCommitOnSizesLargerThanLimit()
-    {
-        // given
-        createIndex( KEY );
-
-        // when a string slightly longer than the native string limit
-        int length = STRING_SIZE_LIMIT + 1;
-        try
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                db.createNode( LABEL ).setProperty( KEY, random.nextAlphaNumericString( length, length ) );
-                tx.success();
-            }
-            fail( "Should have failed" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // then good
-            assertThat( e.getMessage(), containsString( "Property value size is too large for index. Please see index documentation for limitations." ) );
-        }
-    }
 
     @Test
     public void shouldHandleCompositeSizesCloseToTheLimit() throws KernelException

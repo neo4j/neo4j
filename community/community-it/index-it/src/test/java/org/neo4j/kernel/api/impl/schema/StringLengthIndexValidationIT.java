@@ -19,22 +19,26 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.rule.RandomRule;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -51,6 +55,9 @@ public abstract class StringLengthIndexValidationIT
     public DbmsRule db = new EmbeddedDbmsRule()
             .withSetting( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() );
 
+    @Rule
+    public RandomRule random = new RandomRule();
+
     protected abstract int getSingleKeySizeLimit();
 
     protected abstract GraphDatabaseSettings.SchemaIndex getSchemaIndex();
@@ -60,7 +67,7 @@ public abstract class StringLengthIndexValidationIT
     @Test
     public void shouldSuccessfullyWriteAndReadWithinIndexKeySizeLimit()
     {
-        createIndex();
+        createIndex( propKey );
         String propValue = getString( singleKeySizeLimit );
         long expectedNodeId;
 
@@ -81,7 +88,7 @@ public abstract class StringLengthIndexValidationIT
         expectedNodeId = createNode( propValue );
 
         // Populate
-        createIndex();
+        createIndex( propKey );
 
         // Read
         assertReadNode( propValue, expectedNodeId );
@@ -90,7 +97,7 @@ public abstract class StringLengthIndexValidationIT
     @Test
     public void txMustFailIfExceedingIndexKeySizeLimit()
     {
-        createIndex();
+        createIndex( propKey );
 
         // Write
         try ( Transaction tx = db.beginTx() )
@@ -149,22 +156,65 @@ public abstract class StringLengthIndexValidationIT
         }
     }
 
+    @Test
+    public void shouldHandleSizesCloseToTheLimit()
+    {
+        // given
+        createIndex( propKey );
+
+        // when
+        Map<String,Long> strings = new HashMap<>();
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( int i = 0; i < 1_000; i++ )
+            {
+                String string;
+                do
+                {
+                    string = random.nextAlphaNumericString( singleKeySizeLimit / 2, singleKeySizeLimit );
+                }
+                while ( strings.containsKey( string ) );
+
+                Node node = db.createNode( LABEL_ONE );
+                node.setProperty( propKey, string );
+                strings.put( string, node.getId() );
+            }
+            tx.success();
+        }
+
+        // then
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( String string : strings.keySet() )
+            {
+                Node node = db.findNode( LABEL_ONE, propKey, string );
+                assertEquals( strings.get( string ).longValue(), node.getId() );
+            }
+            tx.success();
+        }
+    }
+
     // Each char in string need to fit in one byte
     private String getString( int byteArraySize )
     {
-        return RandomStringUtils.randomAlphabetic( byteArraySize );
+        return random.nextAlphaNumericString( byteArraySize, byteArraySize );
     }
 
-    private void createIndex()
+    private void createIndex( String... keys )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( LABEL_ONE ).on( propKey ).create();
+            IndexCreator indexCreator = db.schema().indexFor( LABEL_ONE );
+            for ( String key : keys )
+            {
+                indexCreator = indexCreator.on( key );
+            }
+            indexCreator.create();
             tx.success();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            db.schema().awaitIndexesOnline( 10, SECONDS );
             tx.success();
         }
     }
