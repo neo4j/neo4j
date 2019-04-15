@@ -108,7 +108,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
                 duplicateProbability: Double = 0.0,
                 nullProbability: Double = 0.0): Seq[X] = {
     val rng = new Random(42)
-    for {thing<- things if rng.nextDouble() < selectivity
+    for {thing <- things if rng.nextDouble() < selectivity
          dup <- if (rng.nextDouble() < duplicateProbability) Seq(thing, thing) else Seq(thing)
          nullifiedDup = if (rng.nextDouble() < nullProbability) null.asInstanceOf[X] else dup
     } yield nullifiedDup
