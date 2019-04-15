@@ -178,17 +178,7 @@ public class Loader
         }
         else
         {
-            String reason;
-            // We might reasonably anticipate 10-ish more versions in the future.
-            if ( version > 0 && version < 10 )
-            {
-                reason = "Archive version " + version + " looks like it's from a Neo4j version newer than mine.";
-            }
-            else
-            {
-                reason = "Archive version looks corrupt: " + version + ".";
-            }
-            throw new IOException( "Cannot archive meta-data. " + reason );
+            throw new IOException( "Cannot read archive meta-data. I don't recognise this archive version: " + version + "." );
         }
     }
 }
