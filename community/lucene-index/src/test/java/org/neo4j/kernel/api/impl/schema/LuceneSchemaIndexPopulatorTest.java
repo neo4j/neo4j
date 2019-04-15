@@ -118,23 +118,23 @@ class LuceneSchemaIndexPopulatorTest
         // WHEN
         addUpdate( indexPopulator, 1, "First" );
         addUpdate( indexPopulator, 2, "Second" );
-        addUpdate( indexPopulator, 3, (byte) 1 );
-        addUpdate( indexPopulator, 4, (short) 2 );
-        addUpdate( indexPopulator, 5, 3 );
-        addUpdate( indexPopulator, 6, 4L );
-        addUpdate( indexPopulator, 7, 5F );
-        addUpdate( indexPopulator, 8, 6D );
+        addUpdate( indexPopulator, 3, "(byte) 1" );
+        addUpdate( indexPopulator, 4, "(short) 2" );
+        addUpdate( indexPopulator, 5, "3" );
+        addUpdate( indexPopulator, 6, "4L" );
+        addUpdate( indexPopulator, 7, "5F" );
+        addUpdate( indexPopulator, 8, "6D" );
 
         // THEN
         assertIndexedValues(
                 hit( "First", 1 ),
                 hit( "Second", 2 ),
-                hit( (byte)1, 3 ),
-                hit( (short)2, 4 ),
-                hit( 3, 5 ),
-                hit( 4L, 6 ),
-                hit( 5F, 7 ),
-                hit( 6D, 8 ) );
+                hit( "(byte) 1", 3 ),
+                hit( "(short) 2", 4 ),
+                hit( "3", 5 ),
+                hit( "4L", 6 ),
+                hit( "5F", 7 ),
+                hit( "6D", 8 ) );
     }
 
     @Test

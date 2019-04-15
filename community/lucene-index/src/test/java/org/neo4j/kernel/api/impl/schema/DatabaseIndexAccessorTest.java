@@ -88,7 +88,7 @@ public class DatabaseIndexAccessorTest
     private final long nodeId = 1;
     private final long nodeId2 = 2;
     private final Object value = "value";
-    private final Object value2 = 40;
+    private final Object value2 = "40";
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
     private static final IndexDescriptor GENERAL_INDEX = TestIndexDescriptorFactory.forLabel( 0, PROP_ID );
     private static final IndexDescriptor UNIQUE_INDEX = TestIndexDescriptorFactory.uniqueForLabel( 1, PROP_ID );
@@ -199,7 +199,7 @@ public class DatabaseIndexAccessorTest
     @Test
     public void indexNumberRangeQueryMustThrow() throws Exception
     {
-        updateAndCommit( asList( add( 1, 1 ), add( 2, 2 ), add( 3, 3 ), add( 4, 4 ), add( 5, Double.NaN ) ) );
+        updateAndCommit( asList( add( 1, "1" ), add( 2, "2" ), add( 3, "3" ), add( 4, "4" ), add( 5, "Double.NaN" ) ) );
 
         IndexReader reader = accessor.newReader();
 

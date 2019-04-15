@@ -125,7 +125,7 @@ class LuceneSchemaIndexPopulationIT
         {
             for ( int nodeId = 0; nodeId < nodesToUpdate; nodeId++ )
             {
-                updater.process( add( nodeId, nodeId ) );
+                updater.process( add( nodeId, "node " + nodeId ) );
             }
         }
     }

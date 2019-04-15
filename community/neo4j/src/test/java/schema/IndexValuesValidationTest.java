@@ -96,7 +96,8 @@ class IndexValuesValidationTest
                 transaction.success();
             }
         } );
-        assertThat( argumentException.getMessage(), equalTo( "Property value size is too large for index. Please see index documentation for limitations." ) );
+        assertThat( argumentException.getMessage(),
+                equalTo( "Property value is too large to index into this particular index. Please see index documentation for limitations." ) );
     }
 
     @Test

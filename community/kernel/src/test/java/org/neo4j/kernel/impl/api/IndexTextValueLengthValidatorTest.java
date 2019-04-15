@@ -46,7 +46,8 @@ public class IndexTextValueLengthValidatorTest
     {
         int length = MAX_BYTE_LENGTH * 2;
         expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( containsString( "Property value size is too large for index. Please see index documentation for limitations." ) );
+        expectedException.expectMessage(
+                containsString( "Property value is too large to index into this particular index. Please see index documentation for limitations." ) );
         validator.validate( RandomUtils.nextBytes( length ) );
     }
 
@@ -55,7 +56,8 @@ public class IndexTextValueLengthValidatorTest
     {
         int length = MAX_BYTE_LENGTH * 2;
         expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( containsString( "Property value size is too large for index. Please see index documentation for limitations." ) );
+        expectedException.expectMessage(
+                containsString( "Property value is too large to index into this particular index. Please see index documentation for limitations." ) );
         validator.validate( string( length ) );
     }
 

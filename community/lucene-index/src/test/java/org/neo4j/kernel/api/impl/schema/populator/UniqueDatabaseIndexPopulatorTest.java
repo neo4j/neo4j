@@ -255,35 +255,6 @@ public class UniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    public void shouldFailAtVerificationStageWithAlreadyIndexedNumberValue() throws Exception
-    {
-        // given
-        populator = newPopulator();
-
-        addUpdate( populator, 1, 1 );
-        addUpdate( populator, 2, 2 );
-        addUpdate( populator, 3, 1 );
-
-        when( nodePropertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( Values.of( 1 ) );
-        when( nodePropertyAccessor.getNodePropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( Values.of( 1 ) );
-
-        // when
-        try
-        {
-            populator.verifyDeferredConstraints( nodePropertyAccessor );
-
-            fail( "should have thrown exception" );
-        }
-        // then
-        catch ( IndexEntryConflictException conflict )
-        {
-            assertEquals( 1, conflict.getExistingNodeId() );
-            assertEquals( Values.of( 1 ), conflict.getSinglePropertyValue() );
-            assertEquals( 3, conflict.getAddedNodeId() );
-        }
-    }
-
-    @Test
     public void shouldRejectDuplicateEntryWhenUsingPopulatingUpdater() throws Exception
     {
         // given
@@ -372,25 +343,6 @@ public class UniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    public void shouldNotRejectIndexCollisionsCausedByPrecisionLossAsDuplicates() throws Exception
-    {
-        // given
-        populator = newPopulator();
-
-        // Given we have a collision in our index...
-        addUpdate( populator, 1, 1000000000000000001L );
-        addUpdate( populator, 2, 2 );
-        addUpdate( populator, 3, 1000000000000000001L );
-
-        // ... but the actual data in the store does not collide
-        when( nodePropertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( Values.of( 1000000000000000001L ) );
-        when( nodePropertyAccessor.getNodePropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( Values.of( 1000000000000000002L ) );
-
-        // Then our verification should NOT fail:
-        populator.verifyDeferredConstraints( nodePropertyAccessor );
-    }
-
-    @Test
     public void shouldCheckAllCollisionsFromPopulatorAdd() throws Exception
     {
         // given
@@ -401,13 +353,13 @@ public class UniqueDatabaseIndexPopulatorTest
 
         for ( int nodeId = 0; nodeId < iterations; nodeId++ )
         {
-            updater.process( add( nodeId, schemaDescriptor, 1 ) );
+            updater.process( add( nodeId, schemaDescriptor, "1" ) );
             when( nodePropertyAccessor.getNodePropertyValue( nodeId, PROPERTY_KEY_ID ) ).thenReturn(
                     Values.of( nodeId ) );
         }
 
         // ... and the actual conflicting property:
-        updater.process( add( iterations, schemaDescriptor, 1 ) );
+        updater.process( add( iterations, schemaDescriptor, "1" ) );
         when( nodePropertyAccessor.getNodePropertyValue( iterations, PROPERTY_KEY_ID ) ).thenReturn(
                 Values.of( 1 ) ); // This collision is real!!!
 
@@ -436,13 +388,13 @@ public class UniqueDatabaseIndexPopulatorTest
 
         for ( int nodeId = 0; nodeId < iterations; nodeId++ )
         {
-            addUpdate( populator, nodeId, 1 );
+            addUpdate( populator, nodeId, "1" );
             when( nodePropertyAccessor.getNodePropertyValue( nodeId, PROPERTY_KEY_ID ) ).thenReturn(
                     Values.of( nodeId ) );
         }
 
         // ... and the actual conflicting property:
-        addUpdate( populator, iterations, 1 );
+        addUpdate( populator, iterations, "1" );
         when( nodePropertyAccessor.getNodePropertyValue( iterations, PROPERTY_KEY_ID ) ).thenReturn(
                 Values.of( 1 ) ); // This collision is real!!!
 

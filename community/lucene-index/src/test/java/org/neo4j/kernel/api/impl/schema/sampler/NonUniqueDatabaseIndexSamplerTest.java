@@ -24,12 +24,10 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
@@ -39,8 +37,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.IndexReaderStub;
-import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
-import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartition;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
@@ -85,28 +81,6 @@ class NonUniqueDatabaseIndexSamplerTest
         when( indexSearcher.getIndexReader() ).thenReturn( indexReader );
 
         assertEquals( new IndexSample( 4, 2, 4 ), createSampler().sampleIndex() );
-    }
-
-    @Test
-    void samplingOfLargeNumericValues() throws Exception
-    {
-        try ( RAMDirectory dir = new RAMDirectory();
-              WritableIndexPartition indexPartition = new WritableIndexPartition( new File( "testPartition" ), dir,
-                      IndexWriterConfigs.standard() ) )
-        {
-            insertDocument( indexPartition, 1, Long.MAX_VALUE );
-            insertDocument( indexPartition, 2, Integer.MAX_VALUE );
-
-            indexPartition.maybeRefreshBlocking();
-
-            try ( PartitionSearcher searcher = indexPartition.acquireSearcher() )
-            {
-                NonUniqueLuceneIndexSampler sampler = new NonUniqueLuceneIndexSampler( searcher.getIndexSearcher(),
-                        taskControl.newInstance(), new IndexSamplingConfig( Config.defaults() ) );
-
-                assertEquals( new IndexSample( 2, 2, 2 ), sampler.sampleIndex() );
-            }
-        }
     }
 
     private NonUniqueLuceneIndexSampler createSampler()

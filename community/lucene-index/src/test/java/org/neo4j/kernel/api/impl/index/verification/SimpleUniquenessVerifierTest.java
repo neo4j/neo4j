@@ -21,9 +21,7 @@ package org.neo4j.kernel.api.impl.index.verification;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
@@ -54,10 +52,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.impl.LuceneTestUtil.valueTupleList;
@@ -103,7 +98,7 @@ class SimpleUniquenessVerifierTest
     @Test
     void populationVerificationNoDuplicates() throws Exception
     {
-        List<Object> data = asList( "string1", 42, 43, 44, 45L, (byte) 46, 47.0, (float) 48.1, "string2" );
+        List<Object> data = asList( "string1", "42", "43", "44", "45L", "(byte) 46", "47.0", "(float) 48.1", "string2" );
         NodePropertyAccessor nodePropertyAccessor = newPropertyAccessor( data );
 
         insert( data );
@@ -136,61 +131,34 @@ class SimpleUniquenessVerifierTest
     @Test
     void updatesVerificationNoDuplicates() throws Exception
     {
-        List<Object> data = asList( "lucene", 1337975550, 43.10, 'a', 'b', 'c', (byte) 12 );
+        List<Object> data = asList( "lucene", "1337975550", "43.10", 'a', 'b', 'c', "(byte) 12" );
         NodePropertyAccessor nodePropertyAccessor = newPropertyAccessor( data );
 
         insert( data );
 
-        assertNoDuplicatesCreated( nodePropertyAccessor, valueTupleList( 1337975550, 'c', (byte) 12 ) );
+        assertNoDuplicatesCreated( nodePropertyAccessor, valueTupleList( "1337975550", 'c', "(byte) 12" ) );
     }
 
     @Test
     void updatesVerificationOneDuplicate() throws IOException
     {
-        List<Object> data = asList( "foo", "bar", "baz", 100, 200, 'q', 'u', 'x', "aa", 300, 'u', -100 );
+        List<Object> data = asList( "foo", "bar", "baz", "100", "200", 'q', 'u', 'x', "aa", "300", 'u', "-100" );
         NodePropertyAccessor nodePropertyAccessor = newPropertyAccessor( data );
 
         insert( data );
 
-        assertDuplicatesCreated( nodePropertyAccessor, valueTupleList( "aa", 'u', -100 ) );
+        assertDuplicatesCreated( nodePropertyAccessor, valueTupleList( "aa", 'u', "-100" ) );
     }
 
     @Test
     void updatesVerificationManyDuplicate() throws IOException
     {
-        List<Object> data = asList( -99, 'a', -10.0, -99.99999, "apa", (float) -99.99999, "mod", "div", "div", -10 );
+        List<Object> data = asList( "-99", 'a', "-10.0", "-99.99999", "apa", "-99.99999", "mod", "div", "div", "-10" );
         NodePropertyAccessor nodePropertyAccessor = newPropertyAccessor( data );
 
         insert( data );
 
-        assertDuplicatesCreated( nodePropertyAccessor, valueTupleList( (float) -99.99999, 'a', -10, "div" ) );
-    }
-
-    @Test
-    void numericIndexVerificationNoDuplicates() throws Exception
-    {
-        List<Object> data = asList( Integer.MAX_VALUE - 2, Integer.MAX_VALUE - 1, Integer.MAX_VALUE );
-        NodePropertyAccessor nodePropertyAccessor = newPropertyAccessor( data );
-
-        insert( data );
-
-        IndexSearcher indexSearcher = spy( searcherManager.acquire() );
-        runUniquenessVerification( nodePropertyAccessor, indexSearcher );
-
-        verify( indexSearcher, never() ).search( any( Query.class ), any( Collector.class ) );
-    }
-
-    @Test
-    void numericIndexVerificationSomeWithDuplicates() throws Exception
-    {
-        List<Object> data = asList( Integer.MAX_VALUE, Long.MAX_VALUE, 42, Long.MAX_VALUE );
-        NodePropertyAccessor nodePropertyAccessor = newPropertyAccessor( data );
-
-        insert( data );
-
-        IndexSearcher indexSearcher = spy( searcherManager.acquire() );
-        assertThrows( IndexEntryConflictException.class, () -> runUniquenessVerification( nodePropertyAccessor, indexSearcher ) );
-        verify( indexSearcher ).search( any( Query.class ), any( Collector.class ) );
+        assertDuplicatesCreated( nodePropertyAccessor, valueTupleList( "-99.99999", 'a', "-10", "div" ) );
     }
 
     private void runUniquenessVerification( NodePropertyAccessor nodePropertyAccessor, IndexSearcher indexSearcher )
