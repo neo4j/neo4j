@@ -136,8 +136,9 @@
             <artifactId>commons-compress</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.github.luben</groupId>
-            <artifactId>zstd-jni</artifactId>
+            <groupId>org.neo4j.licensing-proxy</groupId>
+            <artifactId>zstd-proxy</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>

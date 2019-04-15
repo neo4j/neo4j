@@ -23,6 +23,7 @@
 
   <modules>
     <module>annotation-processors</module>
+    <module>zstd-proxy</module>
     <module>common</module>
     <module>configuration</module>
     <module>resource</module>

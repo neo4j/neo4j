@@ -71,6 +71,7 @@ BSD License
   asm-tree
   asm-util
   Scala Compiler
+  Zstandard
 
 BSD License 2-clause
   zstd-jni
