@@ -23,7 +23,6 @@
 package org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint;
 
 import java.io.Flushable;
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
@@ -32,6 +31,8 @@ import java.util.function.ObjLongConsumer;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.configuration.Config;
+
+import static java.lang.Math.min;
 
 public class ConfigurableIOLimiter implements IOLimiter
 {
@@ -150,7 +151,7 @@ public class ConfigurableIOLimiter implements IOLimiter
         long ioSum = (previousStamp >> TIME_BITS) + recentlyCompletedIOs;
         if ( ioSum >= getIOPQ( state ) )
         {
-            long millisLeftInQuantum = QUANTUM_MILLIS - (now - then);
+            long millisLeftInQuantum = min( QUANTUM_MILLIS, QUANTUM_MILLIS - (now - then) );
             pauseNanos.accept( this, TimeUnit.MILLISECONDS.toNanos( millisLeftInQuantum ) );
             return currentTimeMillis() & TIME_MASK;
         }
