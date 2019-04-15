@@ -47,6 +47,7 @@ import java.io.IOException;
 
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 
 import static org.apache.lucene.document.Field.Store.YES;
 
@@ -104,15 +105,6 @@ public class LuceneDocumentStructure
             builder.add( ValueEncoding.String.encodeQuery( values[i], i ), BooleanClause.Occur.MUST );
         }
         return builder.build();
-    }
-
-    /**
-     * Range queries are always inclusive, in order to do exclusive range queries the result must be filtered after the
-     * fact. The reason we can't do inclusive range queries is that longs are coerced to doubles in the index.
-     */
-    public static Query newInclusiveNumericRangeSeekQuery( Number lower, Number upper )
-    {
-        return null; //  TODO delete this method
     }
 
     public static Query newRangeSeekByStringQuery( String lower, boolean includeLower, String upper, boolean includeUpper )
@@ -271,6 +263,10 @@ public class LuceneDocumentStructure
 
         private Field getFieldWithValue( int propertyNumber, Value value )
         {
+            if ( value.valueGroup() != ValueGroup.TEXT )
+            {
+                throw new IllegalArgumentException( "Only text values can be stored in a Lucene index, but we tried to store: " + value );
+            }
             int reuseId = propertyNumber * ValueEncoding.values().length + ValueEncoding.String.ordinal();
             String key = ValueEncoding.String.key( propertyNumber );
             Field reusableField = reusableValueFields[reuseId];
