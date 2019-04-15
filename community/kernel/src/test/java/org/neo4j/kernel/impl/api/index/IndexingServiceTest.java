@@ -24,9 +24,9 @@ import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.jupiter.api.Disabled;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
@@ -549,7 +549,7 @@ public class IndexingServiceTest
         onBothLogProviders( logProvider -> internalLogProvider.assertNoMessagesContaining( fulltextDescriptor.name() ) );
     }
 
-    @Disabled( "We don't have any deprecated index providers at the moment. This test (and the commented out code) is preserved so we can see what it would " +
+    @Ignore( "We don't have any deprecated index providers at the moment. This test (and the commented out code) is preserved so we can see what it would " +
             "look like if we did." )
     @Test
     public void shouldLogDeprecatedIndexesOnStart() throws Throwable

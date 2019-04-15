@@ -23,7 +23,6 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,6 +48,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -125,9 +125,7 @@ class SimpleIndexReaderTest
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
-        doQuery( simpleIndexReader, range( 1, 7, true, 8, true ) );
-
-        verify( indexSearcher ).search( any( Query.class ), any( DocValuesCollector.class ) );
+        assertThrows( UnsupportedOperationException.class, () -> doQuery( simpleIndexReader, range( 1, 7, true, 8, true ) ) );
     }
 
     @Test

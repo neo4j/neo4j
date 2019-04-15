@@ -114,7 +114,7 @@ class SimpleUniquenessVerifierTest
     @Test
     void populationVerificationOneDuplicate() throws IOException
     {
-        List<Object> data = asList( "cat", 21, 22, 23, 24L, (byte) 25, 26.0, (float) 22, "dog" );
+        List<Object> data = asList( "cat", "21", "22", "23", "24L", "(byte) 25", "26.0", "22", "dog" );
         NodePropertyAccessor nodePropertyAccessor = newPropertyAccessor( data );
 
         insert( data );
@@ -178,20 +178,6 @@ class SimpleUniquenessVerifierTest
         runUniquenessVerification( nodePropertyAccessor, indexSearcher );
 
         verify( indexSearcher, never() ).search( any( Query.class ), any( Collector.class ) );
-    }
-
-    @Test
-    void numericIndexVerificationSomePossibleDuplicates() throws Exception
-    {
-        List<Object> data = asList( 42, Long.MAX_VALUE - 1, Long.MAX_VALUE );
-        NodePropertyAccessor nodePropertyAccessor = newPropertyAccessor( data );
-
-        insert( data );
-
-        IndexSearcher indexSearcher = spy( searcherManager.acquire() );
-        runUniquenessVerification( nodePropertyAccessor, indexSearcher );
-
-        verify( indexSearcher ).search( any( Query.class ), any( Collector.class ) );
     }
 
     @Test
