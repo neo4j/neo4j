@@ -1,0 +1,53 @@
+/*
+ * Copyright (c) 2002-2019 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher.internal.runtime.scheduling
+
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+
+object WorkIdentity {
+  def fromPlan(plan: LogicalPlan): WorkIdentity =
+    WorkIdentityImpl(plan.id.x, plan.getClass.getSimpleName)
+
+  def fromFusedPlans(fusedPlans: Iterable[LogicalPlan]): WorkIdentity = {
+    WorkIdentityImpl(fusedPlans.head.id.x, s"Fused(${fusedPlans.map(_.getClass.getSimpleName).mkString("->")})")
+  }
+}
+
+trait HasWorkIdentity {
+  def workIdentity: WorkIdentity
+}
+
+trait WorkIdentity {
+  /**
+    * Identifies the work/computation performed by this task, as opposed to identifying the task itself.
+    * If multiple different tasks all execute the same logic (e.g., operator pipeline) they should return the same <code>workId</code>.
+    */
+  def workId: Int
+
+  /**
+    * Describes the work/computation performed by this task, as opposed to describing the task itself.
+    * Multiple tasks that each execute the same logic (e.g., operator pipeline) should return the same value.
+    * E.g., OperatorPipeline[AllNodesScan].
+    * Two tasks may return the same value <code>workDescription</code> but different values for <code>workId</code>.
+    */
+  def workDescription: String
+}
+
+case class WorkIdentityImpl(workId: Int, workDescription: String) extends WorkIdentity
