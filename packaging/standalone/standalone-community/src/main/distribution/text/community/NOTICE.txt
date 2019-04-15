@@ -120,7 +120,6 @@ BSD License
   Scala Compiler
   sntp
   tough-cookie
-  zstd
 
 BSD License 2-clause
   tar-pack

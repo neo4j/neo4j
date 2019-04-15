@@ -5,12 +5,7 @@
 
     <groupId>org.neo4j.build</groupId>
     <artifactId>build-resources</artifactId>
-    <packaging>pom</packaging>
     <version>3.5.5-SNAPSHOT</version>
-
-    <modules>
-        <module>zstd</module>
-    </modules>
 
     <name>Neo4j - Build resources</name>
     <description>Build resources for community build.</description>
