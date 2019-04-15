@@ -50,4 +50,6 @@ trait WorkIdentity {
   def workDescription: String
 }
 
-case class WorkIdentityImpl(workId: Int, workDescription: String) extends WorkIdentity
+case class WorkIdentityImpl(workId: Int, workDescription: String) extends WorkIdentity with HasWorkIdentity {
+  override def workIdentity: WorkIdentity = this
+}
