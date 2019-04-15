@@ -59,8 +59,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asUniqueSet;
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.DESCRIPTOR;
 import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.defaultDirectoryStructure;
-import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
 class LuceneIndexRecoveryIT
@@ -193,7 +193,7 @@ class LuceneIndexRecoveryIT
             waitForIndex( index );
 
             // Then
-            assertEquals( 12, db.getNodeById( nodeId ).getProperty( NUM_BANANAS_KEY ) );
+            assertEquals( "12", db.getNodeById( nodeId ).getProperty( NUM_BANANAS_KEY ) );
             assertEquals( 1, doIndexLookup( myLabel, "12" ).size() );
         }
     }
