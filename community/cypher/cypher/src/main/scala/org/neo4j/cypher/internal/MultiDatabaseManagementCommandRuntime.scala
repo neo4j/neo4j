@@ -61,62 +61,77 @@ case class MultiDatabaseManagementCommandRuntime(normalExecutionEngine: Executio
       )
 
     // CREATE DATABASE foo
-    case CreateDatabase(dbName) => (ctx, _) =>
-      UpdatingSystemCommandExecutionPlan("CreateDatabase", normalExecutionEngine,
-        "CREATE (d:Database {name:$name}) " +
-          "SET d.status = $status RETURN d.name as name, d.status as status",
-        VirtualValues.map(Array("name", "status"), Array(Values.stringValue(dbName), Values.stringValue("online"))),
-        record => {}  //TODO: Make sure we have a uniqueness constraint on Database(name)
+    case CreateDatabase(dbName) => (_, _) =>
+      SystemCommandExecutionPlan("CreateDatabase", normalExecutionEngine,
+        """CREATE (d:Database {name:$name})
+          |SET d.status = $status
+          |RETURN d.name as name, d.status as status""".stripMargin,
+        VirtualValues.map(Array("name", "status"), Array(Values.stringValue(dbName), Values.stringValue("online")))
       )
 
     // DROP DATABASE foo
     case DropDatabase(dbName) => (_, _) =>
       UpdatingSystemCommandExecutionPlan("DeleteDatabase", normalExecutionEngine,
-        "OPTIONAL MATCH (d:Database {name:$name}), (d2: Database{name:$name}) " +
-          "WHERE d2.status <> $requiredStatus "+
-          "SET d2.status = $status " +
-          "RETURN d.name as name, d.status as status, d2.name as db",
+        """OPTIONAL MATCH (d:Database {name:$name})
+          |WHERE d.status <> 'deleted'
+          |OPTIONAL MATCH (d2: Database{name:$name})
+          |WHERE d2.status = $requiredStatus
+          |SET d2.status = $status
+          |RETURN d.name as name, d.status as status, d2.name as db""".stripMargin,
         VirtualValues.map(Array("name", "requiredStatus","status"), Array(Values.stringValue(dbName),
           Values.stringValue("offline"),
           Values.stringValue("deleted"))),
         record => {
-          if (record.get("name") == null) throw new IllegalStateException("Cannot delete non existent database '" + dbName + "'")
+          if (record.get("name") == null) throw new IllegalStateException("Cannot delete non-existent database '" + dbName + "'")
           if (record.get("db") == null) throw new IllegalStateException("Cannot delete database '" + dbName + "' that is not offline. It is: " + record.get("status"))
         }
       )
 
     // START DATABASE foo
     case StartDatabase(dbName) => (_, _) =>
-      SystemCommandExecutionPlan("StartDatabase", normalExecutionEngine,
-        "MATCH (d:Database {name:$name, status: $oldStatus})" +
-          " SET d.status = $status " +
-          "RETURN d.name as name, d.status as status",
+      UpdatingSystemCommandExecutionPlan("StartDatabase", normalExecutionEngine,
+        """OPTIONAL MATCH (d:Database {name:$name})
+          |OPTIONAL MATCH (d2:Database {name:$name, status: $oldStatus})
+          |SET d2.status = $status
+          |RETURN d2.name as name, d2.status as status, d.name as db, d.status as oldstatus""".stripMargin,
         VirtualValues.map(
           Array("name", "oldStatus", "status"),
           Array(Values.stringValue(dbName),
             Values.stringValue("offline"),
             Values.stringValue("online")
           )
-        )
+        ),
+        record => {
+          if (record.get("db") == null) throw new IllegalStateException("Cannot start non-existent database '" + dbName + "'")
+          if (record.get("name") == null && record.get("oldstatus") != "online")
+            throw new IllegalStateException("Cannot start database '" + dbName + "' that is not offline. It is: " + record.get("oldstatus"))
+        }
       )
 
     // STOP DATABASE foo
     case StopDatabase(dbName) => (_, _) =>
-      SystemCommandExecutionPlan("StopDatabase", normalExecutionEngine,
-        "MATCH (d:Database {name:$name, status:$oldStatus}) SET d.status = $status " +
-          "RETURN d.name as name, d.status as status",
+      UpdatingSystemCommandExecutionPlan("StopDatabase", normalExecutionEngine,
+        """OPTIONAL MATCH (d:Database {name:$name})
+          |OPTIONAL MATCH (d2:Database {name:$name, status: $oldStatus})
+          |SET d2.status = $status
+          |RETURN d2.name as name, d2.status as status, d.name as db, d.status as oldstatus""".stripMargin,
         VirtualValues.map(
           Array("name", "oldStatus", "status"),
           Array(Values.stringValue(dbName),
             Values.stringValue("online"),
             Values.stringValue("offline")
           )
-        )
+        ),
+        record => {
+          if (record.get("db") == null) throw new IllegalStateException("Cannot stop non-existent database '" + dbName + "'")
+          if (record.get("name") == null && record.get("oldstatus") != "offline")
+            throw new IllegalStateException("Cannot stop database '" + dbName + "' that is not online. It is: " + record.get("oldstatus"))
+        }
       )
   }
 }
 
 object MultiDatabaseManagementCommandRuntime {
-  def isApplicable(logicalPlanState: LogicalPlanState) =
+  def isApplicable(logicalPlanState: LogicalPlanState): Boolean =
     MultiDatabaseManagementCommandRuntime(null).logicalToExecutable.isDefinedAt(logicalPlanState.maybeLogicalPlan.get)
 }

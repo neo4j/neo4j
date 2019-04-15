@@ -44,6 +44,10 @@ case object ProcedureRuntimeName extends RuntimeName {
   override val name = "PROCEDURE"
 }
 
+case object SystemCommandRuntimeName extends RuntimeName {
+  override val name = "SYSTEM"
+}
+
 object RuntimeName {
 
   def apply(name: String): RuntimeName = name.toUpperCase match {
@@ -52,6 +56,7 @@ object RuntimeName {
     case MorselRuntimeName.name => MorselRuntimeName
     case CompiledRuntimeName.name => CompiledRuntimeName
     case ProcedureRuntimeName.name => ProcedureRuntimeName
+    case SystemCommandRuntimeName.name => SystemCommandRuntimeName
 
     case n => throw new IllegalArgumentException(s"$n is not a valid runtime")
   }

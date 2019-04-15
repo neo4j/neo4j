@@ -25,9 +25,11 @@ import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
-import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, ProcedureRuntimeName, RuntimeName}
+import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, SystemCommandRuntimeName, RuntimeName}
 import org.neo4j.cypher.result.RuntimeResult
+import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
 /**
@@ -44,13 +46,28 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
                    subscriber: QuerySubscriber): RuntimeResult = {
 
     val tc = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
-    val execution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, subscriber)
+    val newSubscriber = if (subscriber == QuerySubscriber.NOT_A_SUBSCRIBER) customSubscriber else subscriber
+    val execution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, newSubscriber)
     SystemCommandRuntimeResult(ctx, subscriber, execution.asInstanceOf[InternalExecutionResult])
   }
 
-  override def runtimeName: RuntimeName = ProcedureRuntimeName
+  override def runtimeName: RuntimeName = SystemCommandRuntimeName
 
   override def metadata: Seq[Argument] = Nil
 
   override def notifications: Set[InternalNotification] = Set.empty
+
+  private val customSubscriber = new QuerySubscriber() {
+    override def onResult(numberOfFields: Int): Unit = {}
+    override def onRecord(): Unit = {}
+    override def onField(offset: Int, value: AnyValue): Unit = {}
+    override def onRecordCompleted(): Unit = {}
+    override def onError(throwable: Throwable): Unit = {
+      if (throwable.getMessage.contains(s" already exists with label `Database` and property `name` = "))
+        throw new IllegalStateException("Can't create already existing database")
+      else
+        throw throwable
+    }
+    override def onResultCompleted(statistics: QueryStatistics): Unit = {}
+  }
 }

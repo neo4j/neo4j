@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
-import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, ProcedureRuntimeName, RuntimeName}
+import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, SystemCommandRuntimeName, RuntimeName}
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
@@ -55,7 +55,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String, normalExecutionEngin
     SchemaWriteRuntimeResult(ctx, subscriber)
   }
 
-  override def runtimeName: RuntimeName = ProcedureRuntimeName
+  override def runtimeName: RuntimeName = SystemCommandRuntimeName
 
   override def metadata: Seq[Argument] = Nil
 
