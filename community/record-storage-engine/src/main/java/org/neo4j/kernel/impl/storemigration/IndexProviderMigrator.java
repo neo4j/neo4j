@@ -78,7 +78,7 @@ public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
             {
                 SchemaRule upgraded = upgradeIndexProvider( rule );
 
-                if ( !upgraded.equals( rule ) )
+                if ( upgraded != rule )
                 {
                     ruleAccess.writeSchemaRule( upgraded );
                 }
