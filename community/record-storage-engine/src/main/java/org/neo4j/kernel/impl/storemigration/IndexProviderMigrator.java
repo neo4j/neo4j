@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -104,6 +105,10 @@ public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
 
     private SchemaRule upgradeIndexProvider( SchemaRule rule ) throws MalformedSchemaRuleException
     {
+        if ( rule instanceof ConstraintRule )
+        {
+            return rule;
+        }
         Map<String,Value> map = SchemaStore.mapifySchemaRule( rule );
         String currentName = ((TextValue) map.get( SchemaStore.PROP_INDEX_PROVIDER_NAME )).stringValue();
         String currentVersion = ((TextValue) map.get( SchemaStore.PROP_INDEX_PROVIDER_VERSION )).stringValue();
