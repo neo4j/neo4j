@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -52,37 +53,43 @@ import static org.junit.Assert.fail;
 
 public class CompositeStringLengthValidationIT
 {
-    private static final int SIZE_OF_ENTITY_ID = Long.BYTES;
-    private static final int KEY_SIZE_LIMIT = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE );
-    private static final int STRING_SIZE_LIMIT = KEY_SIZE_LIMIT - SIZE_OF_ENTITY_ID;
-    private static final int STRING_INLINE_LIMIT = TreeNodeDynamicSize.inlineKeyValueSizeCap( PageCache.PAGE_SIZE ) - SIZE_OF_ENTITY_ID;
     private static final Label LABEL = TestLabels.LABEL_ONE;
     private static final String KEY = "key";
     private static final String KEY2 = "key2";
-
     @Rule
     public final DbmsRule db = new EmbeddedDbmsRule()
-            .withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE30.providerName() );
+            .withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName() );
     @Rule
     public final RandomRule random = new RandomRule();
+    private int firstSlotLength;
+    private int secondSlotLength;
 
+    @Before
+    public void calculateSlotSizes()
+    {
+        int totalSpace = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE ) - GenericKey.ENTITY_ID_SIZE;
+        int perSlotOverhead = GenericKey.TYPE_ID_SIZE + GenericKey.SIZE_STRING_LENGTH;
+        int firstSlotSpace = totalSpace / 2;
+        int secondSlotSpace = totalSpace - firstSlotSpace;
+        this.firstSlotLength = firstSlotSpace - perSlotOverhead;
+        this.secondSlotLength = secondSlotSpace - perSlotOverhead;
+    }
 
     @Test
     public void shouldHandleCompositeSizesCloseToTheLimit() throws KernelException
     {
+        String firstSlot = random.nextAlphaNumericString( firstSlotLength, firstSlotLength );
+        String secondSlot = random.nextAlphaNumericString( secondSlotLength, secondSlotLength );
+
         // given
         createIndex( KEY, KEY2 );
 
-        // when a string longer than native string limit, but within lucene limit
-        int length = 20_000;
-        String string1 = random.nextAlphaNumericString( length, length );
-        String string2 = random.nextAlphaNumericString( length, length );
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode( LABEL );
-            node.setProperty( KEY, string1 );
-            node.setProperty( KEY2, string2 );
+            node.setProperty( KEY, firstSlot );
+            node.setProperty( KEY2, secondSlot );
             tx.success();
         }
 
@@ -99,8 +106,8 @@ public class CompositeStringLengthValidationIT
                 IndexReadSession index = ktx.dataRead().indexReadSession(
                         TestIndexDescriptorFactory.forLabel( labelId, propertyKeyId1, propertyKeyId2 ) );
                 ktx.dataRead().nodeIndexSeek( index,
-                                              cursor, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId1, string1 ),
-                                              IndexQuery.exact( propertyKeyId2, string2 ) );
+                                              cursor, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId1, firstSlot ),
+                                              IndexQuery.exact( propertyKeyId2, secondSlot ) );
                 assertTrue( cursor.next() );
                 assertEquals( node.getId(), cursor.nodeReference() );
                 assertFalse( cursor.next() );
@@ -112,18 +119,19 @@ public class CompositeStringLengthValidationIT
     @Test
     public void shouldFailBeforeCommitOnCompositeSizesLargerThanLimit()
     {
+        String firstSlot = random.nextAlphaNumericString( firstSlotLength + 1, firstSlotLength + 1 );
+        String secondSlot = random.nextAlphaNumericString( secondSlotLength, secondSlotLength );
+
         // given
         createIndex( KEY, KEY2 );
 
-        // when a string longer than lucene string limit
-        int length = 50_000;
         try
         {
             try ( Transaction tx = db.beginTx() )
             {
                 Node node = db.createNode( LABEL );
-                node.setProperty( KEY, random.nextAlphaNumericString( length, length ) );
-                node.setProperty( KEY2, random.nextAlphaNumericString( length, length ) );
+                node.setProperty( KEY, firstSlot );
+                node.setProperty( KEY2, secondSlot );
                 tx.success();
             }
             fail( "Should have failed" );
