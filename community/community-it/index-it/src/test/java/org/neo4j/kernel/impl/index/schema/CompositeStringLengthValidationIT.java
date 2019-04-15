@@ -50,7 +50,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class NativeStringIndexingIT
+public class CompositeStringLengthValidationIT
 {
     private static final int SIZE_OF_ENTITY_ID = Long.BYTES;
     private static final int KEY_SIZE_LIMIT = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE );
