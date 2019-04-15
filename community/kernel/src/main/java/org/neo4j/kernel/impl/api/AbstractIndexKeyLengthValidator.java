@@ -56,7 +56,8 @@ public abstract class AbstractIndexKeyLengthValidator implements Validator<Value
     {
         if ( byteLength > maxByteLength )
         {
-            throw new IllegalArgumentException( "Property value size is too large for index. Please see index documentation for limitations." );
+            throw new IllegalArgumentException(
+                    "Property value is too large to index into this particular index. Please see index documentation for limitations." );
         }
     }
 

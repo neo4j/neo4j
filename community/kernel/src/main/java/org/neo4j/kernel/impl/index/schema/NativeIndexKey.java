@@ -26,7 +26,7 @@ import org.neo4j.values.utils.TemporalValueWriterAdapter;
 
 abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends TemporalValueWriterAdapter<RuntimeException>
 {
-    static final int ENTITY_ID_SIZE = Long.BYTES;
+    public static final int ENTITY_ID_SIZE = Long.BYTES;
 
     enum Inclusion
     {

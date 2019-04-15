@@ -195,7 +195,8 @@ public class NativeStringIndexingIT
         catch ( IllegalArgumentException e )
         {
             // then good
-            assertThat( e.getMessage(), containsString( "Property value size is too large for index. Please see index documentation for limitations." ) );
+            assertThat( e.getMessage(),
+                    containsString( "Property value is too large to index into this particular index. Please see index documentation for limitations. " ) );
         }
     }
 

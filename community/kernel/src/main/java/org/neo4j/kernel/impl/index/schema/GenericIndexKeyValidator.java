@@ -58,7 +58,7 @@ class GenericIndexKeyValidator implements Validator<Value[]>
             if ( size > maxLength )
             {
                 throw new IllegalArgumentException( format(
-                        "Property value size:%d of %s is too large to index into this particular index. Please see index documentation for limitations.",
+                        "Property value is too large to index into this particular index. Please see index documentation for limitations. Size=%d, value=%s.",
                         size, Arrays.toString( values ) ) );
             }
         }
