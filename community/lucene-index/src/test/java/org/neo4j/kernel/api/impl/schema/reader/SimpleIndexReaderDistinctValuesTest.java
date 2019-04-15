@@ -47,9 +47,9 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Value;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.documentRepresentingProperties;
@@ -124,7 +124,7 @@ public class SimpleIndexReaderDistinctValuesTest
         int expectedCount = 10_000;
         for ( int i = 0; i < expectedCount; i++ )
         {
-            Value value = random.nextValue();
+            Value value = random.nextTextValue();
             writer.addDocument( documentRepresentingProperties( i, value ) );
         }
         index.maybeRefreshBlocking();
