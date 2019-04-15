@@ -69,6 +69,6 @@ public class DumpCommandProvider extends AdminCommand.Provider
     @Nonnull
     public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
-        return new DumpCommand( homeDir, configDir, new Dumper() );
+        return new DumpCommand( homeDir, configDir, new Dumper( outsideWorld.errorStream() ) );
     }
 }

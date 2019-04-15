@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent</artifactId>
+    <version>3.5.5-SNAPSHOT</version>
+    <relativePath>../..</relativePath>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>zstd-proxy</artifactId>
+  <groupId>org.neo4j.licensing-proxy</groupId>
+
+  <name>Zstandard</name>
+  <description>
+    This pom file is a licensing stand-in for the native zstd library that our com.github.luben:zstd-jni pulls in.
+    Because zstd is a native library that is statically linked into zstd-jni, it does not have its own pom.xml file, and therefore cannot declare its own
+    licenses to our licensing plugin.
+    This module is here to solve this, by standing in for the native zstd library, and declaring its licenses.
+  </description>
+  <url>https://github.com/facebook/zstd</url>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.github.luben</groupId>
+      <artifactId>zstd-jni</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>licensing-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
+  <licenses>
+    <license>
+      <name>BSD 3-Clause</name>
+      <url>https://opensource.org/licenses/BSD-3-clause</url>
+      <distribution>repo</distribution>
+    </license>
+    <license>
+      <name>GPLv2</name>
+      <url>https://opensource.org/licenses/GPL-2.0</url>
+      <distribution>manual</distribution>
+    </license>
+  </licenses>
+
+</project>

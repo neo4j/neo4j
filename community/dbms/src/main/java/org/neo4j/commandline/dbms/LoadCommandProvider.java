@@ -70,6 +70,6 @@ public class LoadCommandProvider extends AdminCommand.Provider
     @Nonnull
     public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
-        return new LoadCommand( homeDir, configDir, new Loader() );
+        return new LoadCommand( homeDir, configDir, new Loader( outsideWorld.errorStream() ) );
     }
 }

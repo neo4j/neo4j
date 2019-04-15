@@ -53,13 +53,16 @@ public class Utils
         }
     }
 
-    public static void copy( InputStream in, OutputStream out ) throws IOException
+    public static void copy( InputStream in, OutputStream out, ArchiveProgressPrinter progressPrinter ) throws IOException
     {
+        progressPrinter.beginFile();
         final byte[] buffer = new byte[8192];
         int n;
         while ( -1 != (n = in.read( buffer )) )
         {
             out.write( buffer, 0, n );
+            progressPrinter.addBytes( n );
         }
+        progressPrinter.endFile();
     }
 }

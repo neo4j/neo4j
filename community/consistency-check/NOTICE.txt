@@ -38,6 +38,12 @@ Apache Software License, Version 2.0
   Netty/All-in-One
   WMI4Java
 
+BSD License
+  Zstandard
+
+BSD License 2-clause
+  zstd-jni
+
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider

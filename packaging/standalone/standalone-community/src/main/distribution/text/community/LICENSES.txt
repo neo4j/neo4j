@@ -344,6 +344,7 @@ BSD License
   Scala Compiler
   sntp
   tough-cookie
+  Zstandard
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>
@@ -377,6 +378,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 BSD License 2-clause
   tar-pack
   uri-js
+  zstd-jni
 ------------------------------------------------------------------------------
 
 Copyright <year> <copyright holder>
