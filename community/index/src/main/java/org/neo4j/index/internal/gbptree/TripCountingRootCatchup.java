@@ -45,17 +45,16 @@ import org.neo4j.util.FeatureToggles;
  */
 public class TripCountingRootCatchup implements RootCatchup
 {
-    static final String MAX_TRIP_COUNT_NAME = "max_trip_count";
-    static final int MAX_TRIP_COUNT_DEFAULT = 10;
+    private static final String MAX_TRIP_COUNT_NAME = "max_trip_count";
+    private static final int MAX_TRIP_COUNT_DEFAULT = 10;
+    static final int MAX_TRIP_COUNT = FeatureToggles.getInteger( TripCountingRootCatchup.class, MAX_TRIP_COUNT_NAME, MAX_TRIP_COUNT_DEFAULT );
     private final Supplier<Root> rootSupplier;
-    private final int maxTripCount;
     private long lastFromId = TreeNode.NO_NODE_FLAG;
     private int tripCount;
 
     TripCountingRootCatchup( Supplier<Root> rootSupplier )
     {
         this.rootSupplier = rootSupplier;
-        this.maxTripCount = FeatureToggles.getInteger( TripCountingRootCatchup.class, MAX_TRIP_COUNT_NAME, MAX_TRIP_COUNT_DEFAULT );
     }
 
     @Override
@@ -81,7 +80,7 @@ public class TripCountingRootCatchup implements RootCatchup
 
     private void assertTripCount()
     {
-        if ( tripCount >= maxTripCount )
+        if ( tripCount >= MAX_TRIP_COUNT )
         {
             throw new TreeInconsistencyException(
                     "Index traversal aborted due to being stuck in infinite loop. This is most likely caused by an inconsistency in the index. " +
