@@ -1002,7 +1002,7 @@ class InternalTreeLogic<KEY,VALUE>
         }
     }
 
-    private int simplyRemoveFromInternal( PageCursor cursor, int keyCount, int keyPos, boolean leftChild, long stableGeneration, long unstableGeneration )
+    private void simplyRemoveFromInternal( PageCursor cursor, int keyCount, int keyPos, boolean leftChild, long stableGeneration, long unstableGeneration )
             throws IOException
     {
         // Remove key and child
@@ -1016,9 +1016,7 @@ class InternalTreeLogic<KEY,VALUE>
         }
 
         // Decrease key count
-        int newKeyCount = keyCount - 1;
-        TreeNode.setKeyCount( cursor, newKeyCount );
-        return newKeyCount;
+        TreeNode.setKeyCount( cursor, keyCount - 1 );
     }
 
     private void updateRightmostChildInLeftSibling( PageCursor cursor, long childPointer, long stableGeneration,
