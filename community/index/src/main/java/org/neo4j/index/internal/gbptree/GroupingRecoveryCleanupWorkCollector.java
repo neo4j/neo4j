@@ -20,12 +20,12 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.util.Queue;
-import java.util.StringJoiner;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.util.Preconditions;
 
 /**
  * Collects recovery cleanup work to be performed and schedule them one by one in {@link #start()}}.
@@ -48,19 +48,6 @@ public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCol
     }
 
     @Override
-    public void init()
-    {
-        started = false;
-        if ( !jobs.isEmpty() )
-        {
-            StringJoiner joiner = new StringJoiner( String.format( "%n  " ), "Did not expect there to be any cleanup jobs still here. Jobs[", "]" );
-            consumeAndCloseJobs( cj -> joiner.add( jobs.toString() ) );
-            throw new IllegalStateException( joiner.toString() );
-        }
-
-    }
-
-    @Override
     public void add( CleanupJob job )
     {
         if ( started )
@@ -71,8 +58,14 @@ public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCol
     }
 
     @Override
+    public void init()
+    {   // Nothing to init
+    }
+
+    @Override
     public void start()
     {
+        Preconditions.checkState( !started, "Already started" );
         scheduleJobs();
         started = true;
     }

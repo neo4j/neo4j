@@ -73,15 +73,20 @@ class GroupingRecoveryCleanupWorkCollectorTest
     }
 
     @Test
-    void mustThrowIfOldJobsDuringInit()
+    void mustThrowIfStartedMultipleTimes()
     {
         // given
         List<DummyJob> allRuns = new ArrayList<>();
         List<DummyJob> someJobs = someJobs( allRuns );
+        addAll( someJobs );
+        collector.start();
 
         // when
-        addAll( someJobs );
-        assertThrows( IllegalStateException.class, collector::init );
+        collector.shutdown();
+        assertThrows( IllegalStateException.class, collector::start );
+
+        // then
+        collector.shutdown();
     }
 
     @Test
@@ -102,41 +107,6 @@ class GroupingRecoveryCleanupWorkCollectorTest
         {
             assertTrue( job.isClosed(), "Expected all jobs to be closed" );
         }
-    }
-
-    @Test
-    void mustNotScheduleOldJobsOnMultipleStart()
-    {
-        // given
-        List<DummyJob> allRuns = new ArrayList<>();
-        List<DummyJob> expectedJobs = someJobs( allRuns );
-
-        // when
-        collector.init();
-        addAll( expectedJobs );
-        collector.start();
-        collector.start();
-
-        // then
-        assertSame( expectedJobs, allRuns );
-    }
-
-    @Test
-    void mustNotScheduleOldJobsOnStartStopStart() throws Throwable
-    {
-        // given
-        List<DummyJob> allRuns = new ArrayList<>();
-        List<DummyJob> expectedJobs = someJobs( allRuns );
-
-        // when
-        collector.init();
-        addAll( expectedJobs );
-        collector.start();
-        collector.stop();
-        collector.start();
-
-        // then
-        assertSame( expectedJobs, allRuns );
     }
 
     @Test
