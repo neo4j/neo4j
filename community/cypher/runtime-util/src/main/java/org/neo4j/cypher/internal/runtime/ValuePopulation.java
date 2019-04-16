@@ -24,6 +24,9 @@ import org.neo4j.kernel.impl.util.RelationshipProxyWrappingValue;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.PathValue;
+import org.neo4j.values.virtual.RelationshipValue;
 
 public final class ValuePopulation
 {
@@ -41,6 +44,18 @@ public final class ValuePopulation
         else if ( value instanceof RelationshipProxyWrappingValue )
         {
             ((RelationshipProxyWrappingValue) value).populate();
+        }
+        else if ( value instanceof PathValue )
+        {
+            PathValue path = (PathValue) value;
+            for ( NodeValue node : path.nodes() )
+            {
+                populate( node );
+            }
+            for ( RelationshipValue relationship : path.relationships() )
+            {
+                populate( relationship );
+            }
         }
         else if ( value instanceof ListValue )
         {
