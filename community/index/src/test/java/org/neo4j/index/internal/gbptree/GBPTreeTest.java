@@ -943,29 +943,6 @@ class GBPTreeTest
         } );
     }
 
-    private PageCache pageCacheWithBarrierInClose( final AtomicBoolean enabled, final Barrier.Control barrier )
-    {
-        return new DelegatingPageCache( createPageCache( 1024 ) )
-        {
-            @Override
-            public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
-            {
-                return new DelegatingPagedFile( super.map( file, pageSize, openOptions ) )
-                {
-                    @Override
-                    public void close()
-                    {
-                        if ( enabled.get() )
-                        {
-                            barrier.reached();
-                        }
-                        super.close();
-                    }
-                };
-            }
-        };
-    }
-
     @Test
     void writerShouldLockOutClose()
     {
@@ -1213,34 +1190,6 @@ class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> ignored = index().with( monitor ).build() )
         {
             assertFalse( monitor.cleanOnStart() );
-        }
-    }
-
-    private Callable<List<CleanupJob>> startAndReturnStartedJobs(
-            ControlledRecoveryCleanupWorkCollector collector )
-    {
-        return () ->
-        {
-            try
-            {
-                collector.start();
-            }
-            catch ( Throwable throwable )
-            {
-                throw new RuntimeException( throwable );
-            }
-            return collector.allStartedJobs();
-        };
-    }
-
-    private void assertFailedDueToUnmappedFile( Future<List<CleanupJob>> cleanJob )
-            throws InterruptedException, ExecutionException
-    {
-        for ( CleanupJob job : cleanJob.get() )
-        {
-            assertTrue( job.hasFailed() );
-            assertThat( job.getCause().getMessage(),
-                    allOf( containsString( "File" ), containsString( "unmapped" ) ) );
         }
     }
 
@@ -2019,6 +1968,57 @@ class GBPTreeTest
     private GBPTreeBuilder<MutableLong,MutableLong> index( PageCache pageCache )
     {
         return new GBPTreeBuilder<>( pageCache, indexFile, layout );
+    }
+
+    private PageCache pageCacheWithBarrierInClose( final AtomicBoolean enabled, final Barrier.Control barrier )
+    {
+        return new DelegatingPageCache( createPageCache( 1024 ) )
+        {
+            @Override
+            public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
+            {
+                return new DelegatingPagedFile( super.map( file, pageSize, openOptions ) )
+                {
+                    @Override
+                    public void close()
+                    {
+                        if ( enabled.get() )
+                        {
+                            barrier.reached();
+                        }
+                        super.close();
+                    }
+                };
+            }
+        };
+    }
+
+    private Callable<List<CleanupJob>> startAndReturnStartedJobs(
+            ControlledRecoveryCleanupWorkCollector collector )
+    {
+        return () ->
+        {
+            try
+            {
+                collector.start();
+            }
+            catch ( Throwable throwable )
+            {
+                throw new RuntimeException( throwable );
+            }
+            return collector.allStartedJobs();
+        };
+    }
+
+    private void assertFailedDueToUnmappedFile( Future<List<CleanupJob>> cleanJob )
+            throws InterruptedException, ExecutionException
+    {
+        for ( CleanupJob job : cleanJob.get() )
+        {
+            assertTrue( job.hasFailed() );
+            assertThat( job.getCause().getMessage(),
+                    allOf( containsString( "File" ), containsString( "unmapped" ) ) );
+        }
     }
 
     private static class CheckpointControlledMonitor extends Monitor.Adaptor
