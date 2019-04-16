@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -44,6 +45,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
+import static org.neo4j.helpers.ArrayUtil.concat;
 import static org.neo4j.helpers.Exceptions.withMessage;
 import static org.neo4j.index.internal.gbptree.Generation.generation;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
@@ -373,6 +375,13 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private final Monitor monitor;
 
     /**
+     * Array of {@link OpenOption} which is passed to calls to {@link PageCache#map(File, int, OpenOption...)}
+     * at open/create. When initially creating the file an array consisting of {@link StandardOpenOption#CREATE}
+     * concatenated with the contents of this array is passed into the map call.
+     */
+    private final OpenOption[] openOptions;
+
+    /**
      * Whether or not this tree has been closed. Accessed and changed solely in
      * {@link #close()} to be able to close tree multiple times gracefully.
      */
@@ -466,10 +475,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
      */
     public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize,
             Monitor monitor, Header.Reader headerReader, Consumer<PageCursor> headerWriter,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector ) throws MetadataMismatchException
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, OpenOption... openOptions ) throws MetadataMismatchException
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
+        this.openOptions = openOptions;
         this.generation = Generation.generation( MIN_GENERATION, MIN_GENERATION + 1 );
         long rootId = IdSpace.MIN_TREE_NODE_ID;
         setRoot( rootId, Generation.unstableGeneration( generation ) );
@@ -477,7 +487,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
         try
         {
-            this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize );
+            this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, openOptions );
             this.pageSize = pagedFile.pageSize();
             closed = false;
             TreeNodeSelector.Factory format;
@@ -567,12 +577,12 @@ public class GBPTree<KEY,VALUE> implements Closeable
         clean = true;
     }
 
-    private PagedFile openOrCreate( PageCache pageCache, File indexFile,
-            int pageSizeForCreation ) throws IOException, MetadataMismatchException
+    private PagedFile openOrCreate( PageCache pageCache, File indexFile, int pageSizeForCreation, OpenOption... openOptions )
+            throws IOException, MetadataMismatchException
     {
         try
         {
-            return openExistingIndexFile( pageCache, indexFile );
+            return openExistingIndexFile( pageCache, indexFile, openOptions );
         }
         catch ( NoSuchFileException e )
         {
@@ -580,10 +590,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
-    private static PagedFile openExistingIndexFile( PageCache pageCache, File indexFile )
+    private static PagedFile openExistingIndexFile( PageCache pageCache, File indexFile, OpenOption... openOptions )
             throws IOException, MetadataMismatchException
     {
-        PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize() );
+        PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize(), openOptions );
         // This index already exists, verify meta data aligns with expectations
 
         boolean success = false;
@@ -591,7 +601,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             // We're only interested in the page size really, so don't involve layout at this point
             Meta meta = readMeta( null, pagedFile );
-            pagedFile = mapWithCorrectPageSize( pageCache, indexFile, pagedFile, meta.getPageSize() );
+            pagedFile = mapWithCorrectPageSize( pageCache, indexFile, pagedFile, meta.getPageSize(), openOptions );
             success = true;
             return pagedFile;
         }
@@ -622,7 +632,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
 
         // We need to create this index
-        PagedFile pagedFile = pageCache.map( indexFile, pageSize, StandardOpenOption.CREATE );
+        PagedFile pagedFile = pageCache.map( indexFile, pageSize, concat( StandardOpenOption.CREATE, openOptions ) );
         created = true;
         return pagedFile;
     }
@@ -862,7 +872,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
-    private static PagedFile mapWithCorrectPageSize( PageCache pageCache, File indexFile, PagedFile pagedFile, int pageSize )
+    private static PagedFile mapWithCorrectPageSize( PageCache pageCache, File indexFile, PagedFile pagedFile, int pageSize, OpenOption... openOptions )
             throws IOException
     {
         // This index was created with another page size, re-open with that actual page size
@@ -876,7 +886,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
                         pageSize, pageCache.pageSize() );
             }
             pagedFile.close();
-            return pageCache.map( indexFile, pageSize );
+            return pageCache.map( indexFile, pageSize, openOptions );
         }
         return pagedFile;
     }

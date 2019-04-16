@@ -20,7 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.io.File;
-import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.util.function.Consumer;
 
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
@@ -48,6 +48,7 @@ class GBPTreeBuilder<KEY,VALUE>
     private Layout<KEY,VALUE> layout;
     private Consumer<PageCursor> headerWriter = NO_HEADER_WRITER;
     private RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
+    private OpenOption[] openOptions = {};
 
     GBPTreeBuilder( PageCache pageCache, File file, Layout<KEY,VALUE> layout )
     {
@@ -104,9 +105,15 @@ class GBPTreeBuilder<KEY,VALUE>
         return this;
     }
 
-    GBPTree<KEY,VALUE> build() throws IOException
+    GBPTreeBuilder<KEY,VALUE> with( OpenOption... openOptions )
+    {
+        this.openOptions = openOptions;
+        return this;
+    }
+
+    GBPTree<KEY,VALUE> build()
     {
         return new GBPTree<>( pageCache, file, layout, tentativeIndexPageSize, monitor, headerReader, headerWriter,
-                recoveryCleanupWorkCollector );
+                recoveryCleanupWorkCollector, openOptions );
     }
 }

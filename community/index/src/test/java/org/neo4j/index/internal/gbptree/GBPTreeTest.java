@@ -370,7 +370,6 @@ class GBPTreeTest
         // GIVEN
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-
             // WHEN
             RawCursor<Hit<MutableLong,MutableLong>,IOException> result =
                     index.seek( new MutableLong( 0 ), new MutableLong( 10 ) );
@@ -378,6 +377,20 @@ class GBPTreeTest
             // THEN
             assertFalse( result.next() );
         }
+    }
+
+    @Test
+    void shouldPickUpOpenOptions() throws IOException
+    {
+        // given
+        try ( GBPTree<MutableLong,MutableLong> index = index().with( StandardOpenOption.DELETE_ON_CLOSE ).build() )
+        {
+            // when just closing it with the deletion flag
+            assertTrue( fileSystem.fileExists( indexFile ) );
+        }
+
+        // then
+        assertFalse( fileSystem.fileExists( indexFile ) );
     }
 
     /* Lifecycle tests */
