@@ -218,10 +218,7 @@ public class GlobalModule
 
     private void checkLegacyDefaultDatabase()
     {
-        //TODO: because our factories atm still starting on a particular database directory and set default_database and root during setup
-        // we can't simply check if setting was configured and for now we will use default value and a signal to do a check for old database
-        // as soon as database factories will be updated this should be updated to check if setting was configured instead.
-        if ( GraphDatabaseSettings.DEFAULT_DATABASE_NAME.equals( globalConfig.get( GraphDatabaseSettings.default_database ) ) )
+        if ( !globalConfig.isConfigured( GraphDatabaseSettings.default_database ) )
         {
             String legacyDatabaseName = "graph.db";
             DatabaseLayout legacyDatabaseLayout = storeLayout.databaseLayout( legacyDatabaseName );
