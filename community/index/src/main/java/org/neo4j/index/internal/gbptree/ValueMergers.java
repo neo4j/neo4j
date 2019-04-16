@@ -24,9 +24,9 @@ package org.neo4j.index.internal.gbptree;
  */
 public class ValueMergers
 {
-    private static final ValueMerger OVERWRITE = ( existingKey, newKey, existingValue, newValue ) -> newValue;
+    private static final ValueMerger OVERWRITE = ( existingKey, newKey, existingValue, newValue ) -> ValueMerger.MergeResult.REPLACED;
 
-    private static final ValueMerger KEEP_EXISTING = ( existingKey, newKey, existingValue, newValue ) -> null;
+    private static final ValueMerger KEEP_EXISTING = ( existingKey, newKey, existingValue, newValue ) -> ValueMerger.MergeResult.UNCHANGED;
 
     private ValueMergers()
     {

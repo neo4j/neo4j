@@ -2241,7 +2241,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
 
     private void insert( long key, long value, PageCursor cursor ) throws IOException
     {
-        treeLogic.insert( cursor, structurePropagation, key( key ), value( value ), overwrite(), stableGeneration,
+        treeLogic.insert( cursor, structurePropagation, key( key ), value( value ), overwrite(), true, stableGeneration,
                 unstableGeneration );
         handleAfterChange();
     }
