@@ -35,6 +35,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
 @PageCacheExtension
 class WriterTest
@@ -48,9 +49,9 @@ class WriterTest
     private GBPTree<MutableLong,MutableLong> tree;
 
     @BeforeEach
-    void setupTree() throws IOException
+    void setupTree()
     {
-        tree = new GBPTreeBuilder<>( pageCache, directory.file( "tree" ), new SimpleLongLayout( 0, "", true, 1, 2, 3 ) ).build();
+        tree = new GBPTreeBuilder<>( pageCache, directory.file( "tree" ), longLayout().withFixedSize( true ).build() ).build();
     }
 
     @AfterEach

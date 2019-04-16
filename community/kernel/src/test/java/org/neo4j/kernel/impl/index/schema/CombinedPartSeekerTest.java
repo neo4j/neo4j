@@ -39,6 +39,7 @@ import org.neo4j.test.rule.RandomRule;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
 @ExtendWith( RandomExtension.class )
 class CombinedPartSeekerTest
@@ -52,7 +53,7 @@ class CombinedPartSeekerTest
     void shouldCombineAllParts() throws IOException
     {
         // given
-        SimpleLongLayout layout = new SimpleLongLayout( 0, "", true, 1, 2, 3 );
+        SimpleLongLayout layout = longLayout().withFixedSize( true ).build();
         List<RawCursor<Hit<MutableLong,MutableLong>,IOException>> parts = new ArrayList<>();
         int partCount = random.nextInt( 1, 20 );
         List<Hit<MutableLong,MutableLong>> expectedAllData = new ArrayList<>();

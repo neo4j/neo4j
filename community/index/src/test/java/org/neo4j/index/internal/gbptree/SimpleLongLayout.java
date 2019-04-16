@@ -90,7 +90,7 @@ public class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
         return new Builder();
     }
 
-    public SimpleLongLayout( int keyPadding, String customNameAsMetaData, boolean fixedSize, int identifier, int majorVersion, int minorVersion )
+    private SimpleLongLayout( int keyPadding, String customNameAsMetaData, boolean fixedSize, int identifier, int majorVersion, int minorVersion )
     {
         this.keyPadding = keyPadding;
         this.customNameAsMetaData = customNameAsMetaData;
