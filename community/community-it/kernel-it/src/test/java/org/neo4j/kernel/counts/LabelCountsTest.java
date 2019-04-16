@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.counts;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Supplier;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -33,37 +31,38 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 
-public class LabelCountsTest
+@ImpermanentDbmsExtension
+class LabelCountsTest
 {
-    @Rule
-    public final DbmsRule db = new ImpermanentDbmsRule();
+    @Inject
+    private GraphDatabaseAPI db;
 
     private Supplier<KernelTransaction> transactionSupplier;
 
-    @Before
-    public void exposeGuts()
+    @BeforeEach
+    void exposeGuts()
     {
-        transactionSupplier = () -> db.getGraphDatabaseAPI().getDependencyResolver()
+        transactionSupplier = () -> db.getDependencyResolver()
                 .resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
     }
 
     @Test
-    public void shouldGetNumberOfNodesWithLabel()
+    void shouldGetNumberOfNodesWithLabel()
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            graphDb.createNode( label( "Foo" ) );
-            graphDb.createNode( label( "Bar" ) );
-            graphDb.createNode( label( "Bar" ) );
+            db.createNode( label( "Foo" ) );
+            db.createNode( label( "Bar" ) );
+            db.createNode( label( "Bar" ) );
 
             tx.success();
         }
@@ -78,19 +77,18 @@ public class LabelCountsTest
     }
 
     @Test
-    public void shouldAccountForDeletedNodes()
+    void shouldAccountForDeletedNodes()
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         Node node;
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            node = graphDb.createNode( label( "Foo" ) );
-            graphDb.createNode( label( "Foo" ) );
+            node = db.createNode( label( "Foo" ) );
+            db.createNode( label( "Foo" ) );
 
             tx.success();
         }
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             node.delete();
 
@@ -105,20 +103,19 @@ public class LabelCountsTest
     }
 
     @Test
-    public void shouldAccountForDeletedNodesWithMultipleLabels()
+    void shouldAccountForDeletedNodesWithMultipleLabels()
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         Node node;
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            node = graphDb.createNode( label( "Foo" ), label( "Bar" ) );
-            graphDb.createNode( label( "Foo" ) );
-            graphDb.createNode( label( "Bar" ) );
+            node = db.createNode( label( "Foo" ), label( "Bar" ) );
+            db.createNode( label( "Foo" ) );
+            db.createNode( label( "Bar" ) );
 
             tx.success();
         }
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             node.delete();
 
@@ -135,22 +132,21 @@ public class LabelCountsTest
     }
 
     @Test
-    public void shouldAccountForAddedLabels()
+    void shouldAccountForAddedLabels()
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         Node n1;
         Node n2;
         Node n3;
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            n1 = graphDb.createNode( label( "Foo" ) );
-            n2 = graphDb.createNode();
-            n3 = graphDb.createNode();
+            n1 = db.createNode( label( "Foo" ) );
+            n2 = db.createNode();
+            n3 = db.createNode();
 
             tx.success();
         }
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             n1.addLabel( label( "Bar" ) );
             n2.addLabel( label( "Bar" ) );
@@ -169,22 +165,21 @@ public class LabelCountsTest
     }
 
     @Test
-    public void shouldAccountForRemovedLabels()
+    void shouldAccountForRemovedLabels()
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         Node n1;
         Node n2;
         Node n3;
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            n1 = graphDb.createNode( label( "Foo" ), label( "Bar" ) );
-            n2 = graphDb.createNode( label( "Bar" ) );
-            n3 = graphDb.createNode( label( "Foo" ) );
+            n1 = db.createNode( label( "Foo" ), label( "Bar" ) );
+            n2 = db.createNode( label( "Bar" ) );
+            n3 = db.createNode( label( "Foo" ) );
 
             tx.success();
         }
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             n1.removeLabel( label( "Bar" ) );
             n2.removeLabel( label( "Bar" ) );
@@ -205,7 +200,7 @@ public class LabelCountsTest
     /** Transactional version of {@link #countsForNode(Label)} */
     private long numberOfNodesWith( Label label )
     {
-        try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             long nodeCount = countsForNode( label );
             tx.success();

@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 
@@ -27,13 +27,13 @@ public class MandatoryTransactionsForUniquenessConstraintDefinitionTest
     extends AbstractMandatoryTransactionsTest<ConstraintDefinition>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnUniquenessConstraintDefinitions()
+    void shouldRequireTransactionsWhenCallingMethodsOnUniquenessConstraintDefinitions()
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ConstraintDefinitionFacadeMethods.values() );
     }
 
     @Test
-    public void shouldTerminateWhenCallingMethodsOnUniquenessConstraintDefinitions()
+    void shouldTerminateWhenCallingMethodsOnUniquenessConstraintDefinitions()
     {
         assertFacadeMethodsThrowAfterTerminate( ConstraintDefinitionFacadeMethods.values() );
     }

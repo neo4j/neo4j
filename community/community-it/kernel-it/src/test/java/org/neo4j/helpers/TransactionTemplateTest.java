@@ -19,101 +19,93 @@
  */
 package org.neo4j.helpers;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasProperty;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class TransactionTemplateTest
+@DbmsExtension
+class TransactionTemplateTest
 {
-    @Rule
-    public EmbeddedDbmsRule databaseRule = new EmbeddedDbmsRule();
-
-    @Rule
-    public final ExpectedException expected = ExpectedException.none();
+    @Inject
+    private GraphDatabaseService db;
 
     private TransactionTemplate template;
     private CountingMonitor monitor;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         monitor = new CountingMonitor();
         template = new TransactionTemplate()
-                .with( databaseRule.getGraphDatabaseAPI() )
+                .with( db )
                 .monitor( monitor )
                 .retries( 5 )
                 .backoff( 3, TimeUnit.MILLISECONDS );
     }
 
     @Test
-    public void shouldForceUserToCallWith()
+    void shouldForceUserToCallWith()
     {
-        expected.expectCause( allOf(
-                instanceOf( IllegalArgumentException.class ),
-                hasProperty( "message", is( "You need to call 'with(GraphDatabaseService)' on the template in order to use it" ) ) ) );
         TransactionTemplate transactionTemplate = new TransactionTemplate();
-        transactionTemplate.execute( transaction -> null );
+        Throwable cause = assertThrows( RuntimeException.class, () -> transactionTemplate.execute( transaction -> null ) ).getCause();
+        assertThat( cause, instanceOf( IllegalArgumentException.class ) );
+        assertEquals( "You need to call 'with(GraphDatabaseService)' on the template in order to use it", cause.getMessage() );
     }
 
     @Test
-    public void validateGraphDatabaseService()
+    void validateGraphDatabaseService()
     {
-        expected.expect( NullPointerException.class );
-        template.with( null );
+        assertThrows( NullPointerException.class, () -> template.with( null ) );
     }
 
     @Test
-    public void validateRetires()
+    void validateRetires()
     {
-        expected.expect( IllegalArgumentException.class );
-        expected.expectMessage( "Number of retries must be greater than or equal to 0" );
-        template.retries( -1 );
+        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> template.retries( -1 ) );
+        assertEquals( "Number of retries must be greater than or equal to 0", exception.getMessage() );
     }
 
     @Test
-    public void validateBackoff()
+    void validateBackoff()
     {
-        expected.expect( IllegalArgumentException.class );
-        expected.expectMessage( "Backoff time must be a positive number" );
-        template.backoff( -10, TimeUnit.SECONDS );
+        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> template.backoff( -10, TimeUnit.SECONDS ) );
+        assertEquals( "Backoff time must be a positive number", exception.getMessage() );
     }
 
     @Test
-    public void validateMonitor()
+    void validateMonitor()
     {
-        expected.expect( NullPointerException.class );
-        template.monitor( null );
+        assertThrows( NullPointerException.class, () -> template.monitor( null ) );
     }
 
     @Test
-    public void validateRetryOn()
+    void validateRetryOn()
     {
-        expected.expect( NullPointerException.class );
-        template.retryOn( null );
+        assertThrows( NullPointerException.class, () -> template.retryOn( null ) );
     }
 
     @Test
-    public void shouldRetryOnError()
+    void shouldRetryOnError()
     {
         IllegalArgumentException ex = new IllegalArgumentException();
         template.execute( new FailingRetryConsumer( 3, ex ) );
@@ -124,7 +116,7 @@ public class TransactionTemplateTest
     }
 
     @Test
-    public void shouldFailIfAllRetiresFail()
+    void shouldFailIfAllRetiresFail()
     {
         IllegalArgumentException ex = new IllegalArgumentException();
         try
@@ -141,7 +133,7 @@ public class TransactionTemplateTest
     }
 
     @Test
-    public void defaultExceptionsForExit()
+    void defaultExceptionsForExit()
     {
         Error error = new Error();
         TransactionTerminatedException terminatedException = new TransactionTerminatedException( Status.Transaction.Terminated );
@@ -175,9 +167,9 @@ public class TransactionTemplateTest
     }
 
     @Test
-    public void overrideRetryExceptions()
+    void overrideRetryExceptions()
     {
-        template = template.retryOn( e -> !IllegalArgumentException.class.isInstance( e ) );
+        template = template.retryOn( e -> !(e instanceof IllegalArgumentException) );
         IllegalArgumentException e = new IllegalArgumentException();
         try
         {
@@ -196,9 +188,9 @@ public class TransactionTemplateTest
     }
 
     @Test
-    public void overrideRetryShouldOverrideDefaults()
+    void overrideRetryShouldOverrideDefaults()
     {
-        template = template.retryOn( e -> !IllegalArgumentException.class.isInstance( e ) );
+        template = template.retryOn( e -> !(e instanceof IllegalArgumentException) );
 
         TransactionTerminatedException fakeException = new TransactionTerminatedException( Status.Transaction.Terminated );
         template.execute( new FailingRetryConsumer( 1, fakeException ) );

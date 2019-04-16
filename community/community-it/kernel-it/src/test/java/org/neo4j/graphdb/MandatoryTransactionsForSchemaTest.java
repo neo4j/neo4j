@@ -19,20 +19,20 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.schema.Schema;
 
 public class MandatoryTransactionsForSchemaTest extends AbstractMandatoryTransactionsTest<Schema>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnSchema()
+    void shouldRequireTransactionsWhenCallingMethodsOnSchema()
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), SchemaFacadeMethods.values() );
     }
 
     @Test
-    public void shouldTerminateWhenCallingMethodsOnSchema()
+    void shouldTerminateWhenCallingMethodsOnSchema()
     {
         assertFacadeMethodsThrowAfterTerminate( SchemaFacadeMethods.values() );
     }

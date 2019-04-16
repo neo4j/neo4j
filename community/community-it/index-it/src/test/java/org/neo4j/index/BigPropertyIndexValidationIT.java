@@ -19,11 +19,8 @@
  */
 package org.neo4j.index;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
@@ -34,27 +31,26 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.test.mockito.matcher.Neo4jMatchers;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class BigPropertyIndexValidationIT
+@ImpermanentDbmsExtension
+class BigPropertyIndexValidationIT
 {
-    @Rule
-    public ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
-    @Rule
-    public final TestName testName = new TestName();
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
+    @Inject
+    private GraphDatabaseService db;
 
     private Label LABEL;
     private String longString;
     private String propertyKey;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         LABEL = Label.label( "LABEL" );
         char[] chars = new char[1 << 15];
@@ -64,95 +60,98 @@ public class BigPropertyIndexValidationIT
     }
 
     @Test
-    public void shouldFailTransactionThatIndexesLargePropertyDuringNodeCreation()
+    void shouldFailTransactionThatIndexesLargePropertyDuringNodeCreation()
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         IndexDefinition index = Neo4jMatchers.createIndex( db, LABEL, propertyKey );
 
         //We expect this transaction to fail due to the huge property
-        expectedException.expect( TransactionFailureException.class );
-        try ( Transaction tx = db.beginTx() )
+        assertThrows( TransactionFailureException.class, () ->
         {
-            try
+            try ( Transaction tx = db.beginTx() )
             {
-                db.execute( "CREATE (n:" + LABEL + " {name: \"" + longString + "\"})" );
-                fail( "Argument was illegal" );
+                try
+                {
+                    db.execute( "CREATE (n:" + LABEL + " {name: \"" + longString + "\"})" );
+                    fail( "Argument was illegal" );
+                }
+                catch ( IllegalArgumentException e )
+                {
+                    //this is expected.
+                }
+                tx.success();
             }
-            catch ( IllegalArgumentException e )
+            //Check that the database is empty.
+            try ( Transaction tx = db.beginTx() )
             {
-                //this is expected.
+                ResourceIterator<Node> nodes = db.getAllNodes().iterator();
+                assertFalse( nodes.hasNext() );
             }
-            tx.success();
-        }
-        //Check that the database is empty.
-        try ( Transaction tx = db.beginTx() )
-        {
-            ResourceIterator<Node> nodes = db.getAllNodes().iterator();
-            assertFalse( nodes.hasNext() );
-        }
+        } );
     }
 
     @Test
-    public void shouldFailTransactionThatIndexesLargePropertyAfterNodeCreation()
+    void shouldFailTransactionThatIndexesLargePropertyAfterNodeCreation()
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         IndexDefinition index = Neo4jMatchers.createIndex( db, LABEL, propertyKey );
 
         //We expect this transaction to fail due to the huge property
-        expectedException.expect( TransactionFailureException.class );
-        try ( Transaction tx = db.beginTx() )
+        assertThrows( TransactionFailureException.class, () ->
         {
-            db.execute( "CREATE (n:" + LABEL + ")" );
-            try
+            try ( Transaction tx = db.beginTx() )
             {
-                db.execute( "match (n:" + LABEL + ")set n.name= \"" + longString + "\"" );
-                fail( "Argument was illegal" );
+                db.execute( "CREATE (n:" + LABEL + ")" );
+                try
+                {
+                    db.execute( "match (n:" + LABEL + ")set n.name= \"" + longString + "\"" );
+                    fail( "Argument was illegal" );
+                }
+                catch ( IllegalArgumentException e )
+                {
+                    //this is expected.
+                }
+                tx.success();
             }
-            catch ( IllegalArgumentException e )
+            //Check that the database is empty.
+            try ( Transaction tx = db.beginTx() )
             {
-                //this is expected.
+                ResourceIterator<Node> nodes = db.getAllNodes().iterator();
+                assertFalse( nodes.hasNext() );
             }
-            tx.success();
-        }
-        //Check that the database is empty.
-        try ( Transaction tx = db.beginTx() )
-        {
-            ResourceIterator<Node> nodes = db.getAllNodes().iterator();
-            assertFalse( nodes.hasNext() );
-        }
+        } );
     }
 
     @Test
-    public void shouldFailTransactionThatIndexesLargePropertyOnLabelAdd()
+    void shouldFailTransactionThatIndexesLargePropertyOnLabelAdd()
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         IndexDefinition index = Neo4jMatchers.createIndex( db, LABEL, propertyKey );
 
         //We expect this transaction to fail due to the huge property
-        expectedException.expect( TransactionFailureException.class );
-        try ( Transaction tx = db.beginTx() )
+        assertThrows( TransactionFailureException.class, () ->
         {
-            String otherLabel = "SomethingElse";
-            db.execute( "CREATE (n:" + otherLabel + " {name: \"" + longString + "\"})" );
-            try
+            try ( Transaction tx = db.beginTx() )
             {
-                db.execute( "match (n:" + otherLabel + ")set n:" + LABEL );
-                fail( "Argument was illegal" );
+                String otherLabel = "SomethingElse";
+                db.execute( "CREATE (n:" + otherLabel + " {name: \"" + longString + "\"})" );
+                try
+                {
+                    db.execute( "match (n:" + otherLabel + ")set n:" + LABEL );
+                    fail( "Argument was illegal" );
+                }
+                catch ( IllegalArgumentException e )
+                {
+                    //this is expected.
+                }
+                tx.success();
             }
-            catch ( IllegalArgumentException e )
+            //Check that the database is empty.
+            try ( Transaction tx = db.beginTx() )
             {
-                //this is expected.
+                ResourceIterator<Node> nodes = db.getAllNodes().iterator();
+                assertFalse( nodes.hasNext() );
             }
-            tx.success();
-        }
-        //Check that the database is empty.
-        try ( Transaction tx = db.beginTx() )
-        {
-            ResourceIterator<Node> nodes = db.getAllNodes().iterator();
-            assertFalse( nodes.hasNext() );
-        }
+        } );
     }
 }

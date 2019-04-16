@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -36,12 +35,14 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static java.lang.String.format;
 
-@Ignore( "Too costly to run by default but useful for testing resource clean up and indexing" )
-public class ManyMergesStressTest
+@Disabled( "Too costly to run by default but useful for testing resource clean up and indexing" )
+@DbmsExtension
+class ManyMergesStressTest
 {
     private Random random = new Random();
 
@@ -49,13 +50,12 @@ public class ManyMergesStressTest
 
     private static final int TRIES = 8000;
 
-    @Rule
-    public EmbeddedDbmsRule dbRule = new EmbeddedDbmsRule();
+    @Inject
+    private GraphDatabaseService db;
 
     @Test
-    public void shouldWorkFine()
+    void shouldWorkFine()
     {
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         GraphDatabaseQueryService graph = new GraphDatabaseCypherService( db );
 
         Label person = Label.label( "Person" );
@@ -102,7 +102,7 @@ public class ManyMergesStressTest
         }
     }
 
-    public Pair<String, String> getRandomName()
+    private Pair<String, String> getRandomName()
     {
         StringBuilder identBuilder = new StringBuilder();
         StringBuilder nameBuilder = new StringBuilder();

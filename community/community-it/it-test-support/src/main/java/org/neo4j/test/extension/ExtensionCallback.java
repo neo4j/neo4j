@@ -17,28 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb;
+package org.neo4j.test.extension;
 
-import org.junit.jupiter.api.Test;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public class MandatoryTransactionsForNodeTest extends AbstractMandatoryTransactionsTest<Node>
+/**
+ * Annotation for removing unused warnings for methods called by reflection.
+ */
+@Target( ElementType.METHOD )
+@Retention( RetentionPolicy.RUNTIME )
+public @interface ExtensionCallback
 {
-    @Test
-    void shouldRequireTransactionsWhenCallingMethodsOnNode()
-    {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), NodeFacadeMethods.values() );
-    }
-
-    @Test
-    void shouldTerminateWhenCallingMethodsOnNode()
-    {
-        assertFacadeMethodsThrowAfterTerminate( NodeFacadeMethods.values() );
-    }
-
-    @Override
-    protected Node obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
-    {
-        return graphDatabaseService.createNode();
-    }
 }
-

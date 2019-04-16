@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.constraints;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
@@ -31,40 +30,49 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 
-public class ConstraintCreationIT
+@DbmsExtension
+class ConstraintCreationIT
 {
-    @Rule
-    public EmbeddedDbmsRule db = new EmbeddedDbmsRule().startLazily();
+    @Inject
+    private GraphDatabaseAPI db;
 
     private static final Label LABEL = Label.label( "label1" );
     private static final long indexId = 1;
 
+    @ExtensionCallback
+    void configureLuceneSubProvider( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( default_schema_provider, NATIVE30.providerName() );
+    }
+
     @Test
-    public void shouldNotLeaveLuceneIndexFilesHangingAroundIfConstraintCreationFails()
+    @DbmsExtension( configurationCallback = "configureLuceneSubProvider" )
+    void shouldNotLeaveLuceneIndexFilesHangingAroundIfConstraintCreationFails()
     {
         // given
-        db.withSetting( default_schema_provider, NATIVE30.providerName() ); // <-- includes Lucene sub-provider
         attemptAndFailConstraintCreation();
 
         // then
-        IndexProvider indexProvider =
-                db.getDependencyResolver().resolveDependency( IndexProviderMap.class ).getDefaultProvider();
+        IndexProvider indexProvider = db.getDependencyResolver().resolveDependency( IndexProviderMap.class ).getDefaultProvider();
         File indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
 
         assertFalse( indexDir.exists() );
     }
 
-    @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldNotLeaveNativeIndexFilesHangingAroundIfConstraintCreationFails()
+    void shouldNotLeaveNativeIndexFilesHangingAroundIfConstraintCreationFails()
     {
         // given
         attemptAndFailConstraintCreation();

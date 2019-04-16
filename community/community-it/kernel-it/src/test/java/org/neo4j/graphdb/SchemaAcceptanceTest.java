@@ -19,9 +19,7 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
@@ -30,15 +28,16 @@ import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.contains;
@@ -50,15 +49,15 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexes;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.isEmpty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.waitForIndex;
 
-public class SchemaAcceptanceTest
+@ImpermanentDbmsExtension
+class SchemaAcceptanceTest
 {
-    @Rule
-    public ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
-
+    @Inject
     private GraphDatabaseService db;
+
     private Label label = Labels.MY_LABEL;
-    private String propertyKey = "my_property_key";
-    private String secondPropertyKey = "my_second_property_key";
+    private final String propertyKey = "my_property_key";
+    private final String secondPropertyKey = "my_second_property_key";
 
     private enum Labels implements Label
     {
@@ -66,14 +65,8 @@ public class SchemaAcceptanceTest
         MY_OTHER_LABEL
     }
 
-    @Before
-    public void init()
-    {
-        db = dbRule.getGraphDatabaseAPI();
-    }
-
     @Test
-    public void addingAnIndexingRuleShouldSucceed()
+    void addingAnIndexingRuleShouldSucceed()
     {
         // WHEN
         IndexDefinition index = createIndex( db, label, propertyKey );
@@ -83,7 +76,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void addingACompositeIndexingRuleShouldSucceed()
+    void addingACompositeIndexingRuleShouldSucceed()
     {
         // WHEN
         IndexDefinition index = createIndex( db, label, propertyKey, secondPropertyKey );
@@ -93,7 +86,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void addingAnIndexingRuleInNestedTxShouldSucceed()
+    void addingAnIndexingRuleInNestedTxShouldSucceed()
     {
         IndexDefinition index;
 
@@ -117,7 +110,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldThrowConstraintViolationIfAskedToIndexSamePropertyAndLabelTwiceInSameTx()
+    void shouldThrowConstraintViolationIfAskedToIndexSamePropertyAndLabelTwiceInSameTx()
     {
         // WHEN
         try ( Transaction tx = db.beginTx() )
@@ -138,7 +131,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldThrowConstraintViolationIfAskedToIndexPropertyThatIsAlreadyIndexed()
+    void shouldThrowConstraintViolationIfAskedToIndexPropertyThatIsAlreadyIndexed()
     {
         // GIVEN
         Schema schema;
@@ -166,7 +159,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldThrowConstraintViolationIfAskedToCreateCompoundConstraint()
+    void shouldThrowConstraintViolationIfAskedToCreateCompoundConstraint()
     {
         // WHEN
         try ( Transaction tx = db.beginTx() )
@@ -185,7 +178,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void droppingExistingIndexRuleShouldSucceed()
+    void droppingExistingIndexRuleShouldSucceed()
     {
         // GIVEN
         IndexDefinition index = createIndex( db, label, propertyKey );
@@ -198,7 +191,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSameTransaction()
+    void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSameTransaction()
     {
         // GIVEN
         IndexDefinition index = createIndex( db, label, propertyKey );
@@ -224,7 +217,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSeparateTransactions()
+    void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSeparateTransactions()
     {
         // GIVEN
         IndexDefinition index = createIndex( db, label, propertyKey );
@@ -246,7 +239,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void awaitingIndexComingOnlineWorks()
+    void awaitingIndexComingOnlineWorks()
     {
         // GIVEN
 
@@ -264,7 +257,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void awaitingAllIndexesComingOnlineWorks()
+    void awaitingAllIndexesComingOnlineWorks()
     {
         // GIVEN
 
@@ -284,7 +277,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldPopulateIndex()
+    void shouldPopulateIndex()
     {
         // GIVEN
         Node node = createNode( db, propertyKey, "Neo", label );
@@ -298,7 +291,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldRecreateDroppedIndex()
+    void shouldRecreateDroppedIndex()
     {
         // GIVEN
         Node node = createNode( db, propertyKey, "Neo", label );
@@ -320,7 +313,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldCreateUniquenessConstraint()
+    void shouldCreateUniquenessConstraint()
     {
         // WHEN
         ConstraintDefinition constraint = createUniquenessConstraint( label, propertyKey );
@@ -337,7 +330,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldListAddedConstraintsByLabel()
+    void shouldListAddedConstraintsByLabel()
     {
         // GIVEN
         ConstraintDefinition constraint1 = createUniquenessConstraint( label, propertyKey );
@@ -348,7 +341,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldListAddedConstraints()
+    void shouldListAddedConstraints()
     {
         // GIVEN
         ConstraintDefinition constraint1 = createUniquenessConstraint( Labels.MY_LABEL, propertyKey );
@@ -359,7 +352,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldDropUniquenessConstraint()
+    void shouldDropUniquenessConstraint()
     {
         // GIVEN
         ConstraintDefinition constraint = createUniquenessConstraint( label, propertyKey );
@@ -372,7 +365,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void addingConstraintWhenIndexAlreadyExistsGivesNiceError()
+    void addingConstraintWhenIndexAlreadyExistsGivesNiceError()
     {
         // GIVEN
         createIndex( db, label, propertyKey );
@@ -391,7 +384,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void addingUniquenessConstraintWhenDuplicateDataExistsGivesNiceError()
+    void addingUniquenessConstraintWhenDuplicateDataExistsGivesNiceError()
     {
         // GIVEN
         try ( Transaction transaction = db.beginTx() )
@@ -415,7 +408,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void addingConstraintWhenAlreadyConstrainedGivesNiceError()
+    void addingConstraintWhenAlreadyConstrainedGivesNiceError()
     {
         // GIVEN
         createUniquenessConstraint( label, propertyKey );
@@ -436,7 +429,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void addingIndexWhenAlreadyConstrained()
+    void addingIndexWhenAlreadyConstrained()
     {
         // GIVEN
         createUniquenessConstraint( label, propertyKey );
@@ -455,7 +448,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void addingIndexWhenAlreadyIndexed()
+    void addingIndexWhenAlreadyIndexed()
     {
         // GIVEN
         createIndex( db, label, propertyKey );
@@ -473,7 +466,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void addedUncommittedIndexesShouldBeVisibleWithinTheTransaction()
+    void addedUncommittedIndexesShouldBeVisibleWithinTheTransaction()
     {
         // GIVEN
         IndexDefinition indexA = createIndex( db, label, "a" );

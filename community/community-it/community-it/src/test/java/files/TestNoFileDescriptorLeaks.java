@@ -20,38 +20,40 @@
 package files;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.os.OsBeanUtil;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
-public class TestNoFileDescriptorLeaks
+@DbmsExtension
+class TestNoFileDescriptorLeaks
 {
     private static final AtomicInteger counter = new AtomicInteger();
 
-    @Rule
-    public EmbeddedDbmsRule db = new EmbeddedDbmsRule();
+    @Inject
+    private GraphDatabaseService db;
 
-    @BeforeClass
-    public static void beforeClass()
+    @BeforeAll
+    static void beforeClass()
     {
-        Assume.assumeFalse( SystemUtils.IS_OS_WINDOWS );
-        Assume.assumeThat( OsBeanUtil.getOpenFileDescriptors(), not( OsBeanUtil.VALUE_UNAVAILABLE ) );
+        assumeFalse( SystemUtils.IS_OS_WINDOWS );
+        assumeTrue( OsBeanUtil.getOpenFileDescriptors() != OsBeanUtil.VALUE_UNAVAILABLE );
     }
 
     @Test
-    public void mustNotLeakFileDescriptorsFromMerge()
+    void mustNotLeakFileDescriptorsFromMerge()
     {
         // GIVEN
         try ( Transaction tx = db.beginTx() )

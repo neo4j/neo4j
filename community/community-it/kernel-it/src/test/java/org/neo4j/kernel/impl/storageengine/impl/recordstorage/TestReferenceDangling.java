@@ -19,30 +19,29 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 /**
  * This test ensures that lazy properties
  */
-public class TestReferenceDangling
+@ImpermanentDbmsExtension
+class TestReferenceDangling
 {
-    @Rule
-    public ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule( );
+    @Inject
+    private GraphDatabaseAPI db;
 
     @Test
-    public void testPropertyStoreReferencesOnRead() throws Throwable
+    void testPropertyStoreReferencesOnRead() throws Throwable
     {
-        // Given
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-
-        // and Given the cache contains a LazyProperty
+        // Given the cache contains a LazyProperty
         long nId = ensurePropertyIsCachedLazyProperty( db, "some" );
 
         // When
@@ -57,12 +56,9 @@ public class TestReferenceDangling
     }
 
     @Test
-    public void testPropertyStoreReferencesOnWrite() throws Throwable
+    void testPropertyStoreReferencesOnWrite() throws Throwable
     {
-        // Given
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-
-        // and Given the cache contains a LazyProperty
+        // Given the cache contains a LazyProperty
         long nId = ensurePropertyIsCachedLazyProperty( db, "some" );
 
         // When
@@ -76,7 +72,7 @@ public class TestReferenceDangling
         }
     }
 
-    private long ensurePropertyIsCachedLazyProperty( GraphDatabaseAPI slave, String key )
+    private long ensurePropertyIsCachedLazyProperty( GraphDatabaseService slave, String key )
     {
         long nId;
         try ( Transaction tx = slave.beginTx() )

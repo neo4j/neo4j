@@ -86,15 +86,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
         return function.apply( getGraphDatabaseAPI() );
     }
 
-    public void executeAndCommit( Consumer<? super GraphDatabaseService> consumer )
-    {
-        transaction( (Function<? super GraphDatabaseService,Void>) t ->
-        {
-            consumer.accept( t );
-            return null;
-        }, true );
-    }
-
     public <T> T executeAndCommit( Function<? super GraphDatabaseService, T> function )
     {
         return transaction( function, true );

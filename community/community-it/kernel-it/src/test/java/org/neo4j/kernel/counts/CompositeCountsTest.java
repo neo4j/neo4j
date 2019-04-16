@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.counts;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Supplier;
 
@@ -34,21 +33,23 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 
-public class CompositeCountsTest
+@ImpermanentDbmsExtension
+class CompositeCountsTest
 {
-    @Rule
-    public final DbmsRule db = new ImpermanentDbmsRule();
+    @Inject
+    private GraphDatabaseAPI db;
 
     @Test
-    public void shouldReportNumberOfRelationshipsFromNodesWithGivenLabel()
+    void shouldReportNumberOfRelationshipsFromNodesWithGivenLabel()
     {
         // given
         try ( Transaction tx = db.beginTx() )
@@ -81,7 +82,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnRelationshipCreate()
+    void shouldMaintainCountsOnRelationshipCreate()
     {
         // given
         Node foo;
@@ -110,7 +111,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnRelationshipDelete()
+    void shouldMaintainCountsOnRelationshipDelete()
     {
         // given
         Relationship relationship;
@@ -138,7 +139,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelAdd()
+    void shouldMaintainCountsOnLabelAdd()
     {
         // given
         Node foo;
@@ -168,7 +169,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelRemove()
+    void shouldMaintainCountsOnLabelRemove()
     {
         // given
         Node foo;
@@ -198,7 +199,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelAddAndRelationshipCreate()
+    void shouldMaintainCountsOnLabelAddAndRelationshipCreate()
     {
         // given
         Node foo;
@@ -229,7 +230,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelRemoveAndRelationshipDelete()
+    void shouldMaintainCountsOnLabelRemoveAndRelationshipDelete()
     {
         // given
         Node foo;
@@ -262,7 +263,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelAddAndRelationshipDelete()
+    void shouldMaintainCountsOnLabelAddAndRelationshipDelete()
     {
         // given
         Node foo;
@@ -295,7 +296,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelRemoveAndRelationshipCreate()
+    void shouldMaintainCountsOnLabelRemoveAndRelationshipCreate()
     {
         // given
         Node foo;
@@ -326,7 +327,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldNotUpdateCountsIfCreatedRelationshipIsDeletedInSameTransaction()
+    void shouldNotUpdateCountsIfCreatedRelationshipIsDeletedInSameTransaction()
     {
         // given
         Node foo;
@@ -359,7 +360,7 @@ public class CompositeCountsTest
      */
     private MatchingRelationships numberOfRelationshipsMatching( Label lhs, RelationshipType type, Label rhs )
     {
-        try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             long nodeCount = countsForRelationship( lhs, type, rhs );
             tx.success();
@@ -381,9 +382,9 @@ public class CompositeCountsTest
             this.count = count;
         }
 
-        public void shouldBe( long expected )
+        void shouldBe( long expected )
         {
-            assertEquals( message, expected, count );
+            assertEquals( expected, count, message );
         }
     }
 
@@ -443,10 +444,10 @@ public class CompositeCountsTest
 
     private Supplier<KernelTransaction> transactionSupplier;
 
-    @Before
-    public void exposeGuts()
+    @BeforeEach
+    void exposeGuts()
     {
-        transactionSupplier = () -> db.getGraphDatabaseAPI().getDependencyResolver()
+        transactionSupplier = () -> db.getDependencyResolver()
                               .resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
     }
 }

@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
 
@@ -31,33 +30,34 @@ import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class ManualAcquireLockTest
+@ImpermanentDbmsExtension
+class ManualAcquireLockTest
 {
-    @Rule
-    public final DbmsRule db = new ImpermanentDbmsRule();
+    @Inject
+    private GraphDatabaseService db;
 
     private Worker worker;
 
-    @Before
-    public void doBefore()
+    @BeforeEach
+    void doBefore()
     {
         worker = new Worker();
     }
 
-    @After
-    public void doAfter()
+    @AfterEach
+    void doAfter()
     {
         worker.close();
     }
 
     @Test
-    public void releaseReleaseManually() throws Exception
+    void releaseReleaseManually() throws Exception
     {
         String key = "name";
         Node node = createNode();
@@ -89,7 +89,7 @@ public class ManualAcquireLockTest
     }
 
     @Test
-    public void canOnlyReleaseOnce()
+    void canOnlyReleaseOnce()
     {
         Node node = createNode();
 
@@ -109,7 +109,7 @@ public class ManualAcquireLockTest
     }
 
     @Test
-    public void makeSureNodeStaysLockedEvenAfterManualRelease() throws Exception
+    void makeSureNodeStaysLockedEvenAfterManualRelease() throws Exception
     {
         String key = "name";
         Node node = createNode();
@@ -154,7 +154,7 @@ public class ManualAcquireLockTest
 
     private GraphDatabaseService getGraphDb()
     {
-        return db.getGraphDatabaseAPI();
+        return db;
     }
 
     private class State

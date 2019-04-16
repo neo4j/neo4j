@@ -17,32 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb;
+package org.neo4j.test.extension.dbms;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.graphdb.schema.IndexCreator;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
 
-public class MandatoryTransactionsForIndexCreatorTest
-    extends AbstractMandatoryTransactionsTest<IndexCreator>
+import static org.junit.jupiter.api.Assertions.fail;
+
+@ImpermanentDbmsExtension
+public class DbmsExtensionMixImpermanent
 {
     @Test
-    void shouldRequireTransactionsWhenCallingMethodsOnIndexCreators()
+    @DbmsExtension
+    void missingExtensionAnnotation()
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), IndexCreatorFacadeMethods.values() );
-    }
-
-    @Test
-    void shouldTerminateWhenCallingMethodsOnIndexCreators()
-    {
-        assertFacadeMethodsThrowAfterTerminate( IndexCreatorFacadeMethods.values() );
-    }
-
-    @Override
-    protected IndexCreator obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
-    {
-        return graphDatabaseService
-               .schema()
-               .indexFor( Label.label( "Label" ) );
+        fail();
     }
 }

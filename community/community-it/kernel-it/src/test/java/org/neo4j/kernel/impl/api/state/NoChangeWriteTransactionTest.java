@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -28,22 +27,22 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestLabels;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class NoChangeWriteTransactionTest
+@ImpermanentDbmsExtension
+class NoChangeWriteTransactionTest
 {
-    @Rule
-    public final DbmsRule dbr = new ImpermanentDbmsRule();
+    @Inject
+    private GraphDatabaseAPI db;
 
     @Test
-    public void shouldIdentifyTransactionWithNetZeroChangesAsReadOnly()
+    void shouldIdentifyTransactionWithNetZeroChangesAsReadOnly()
     {
         // GIVEN a transaction that has seen some changes, where all those changes result in a net 0 change set
         // a good way of producing such state is to add a label to an existing node, and then remove it.
-        GraphDatabaseAPI db = dbr.getGraphDatabaseAPI();
         TransactionIdStore txIdStore = db.getDependencyResolver().resolveDependency( TransactionIdStore.class );
         long startTxId = txIdStore.getLastCommittedTransactionId();
         Node node = createEmptyNode( db );
@@ -55,8 +54,8 @@ public class NoChangeWriteTransactionTest
         } // WHEN closing that transaction
 
         // THEN it should not have been committed
-        assertEquals( "Expected last txId to be what it started at + 2 (1 for the empty node, and one for the label)",
-                startTxId + 2, txIdStore.getLastCommittedTransactionId() );
+        assertEquals( startTxId + 2, txIdStore.getLastCommittedTransactionId(),
+                "Expected last txId to be what it started at + 2 (1 for the empty node, and one for the label)" );
     }
 
     private Node createEmptyNode( GraphDatabaseService db )
@@ -68,5 +67,4 @@ public class NoChangeWriteTransactionTest
             return node;
         }
     }
-
 }

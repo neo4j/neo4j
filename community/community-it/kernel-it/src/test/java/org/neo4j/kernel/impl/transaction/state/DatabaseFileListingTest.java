@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,11 +45,12 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -59,12 +59,13 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 
-public class DatabaseFileListingTest
+@DbmsExtension
+class DatabaseFileListingTest
 {
-    @Rule
-    public final EmbeddedDbmsRule db = new EmbeddedDbmsRule();
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private GraphDatabaseAPI db;
+    @Inject
+    private TestDirectory testDirectory;
 
     private Database database;
     private static final String[] STANDARD_STORE_DIR_FILES = new String[]{
@@ -111,15 +112,15 @@ public class DatabaseFileListingTest
 
     private static final String[] STANDARD_STORE_DIR_DIRECTORIES = new String[]{"schema", "index", "branched"};
 
-    @Before
-    public void setUp() throws IOException
+    @BeforeEach
+    void setUp() throws IOException
     {
         createIndexDbFile();
         database = db.getDependencyResolver().resolveDependency( Database.class );
     }
 
     @Test
-    public void shouldCloseIndexAndLabelScanSnapshots() throws Exception
+    void shouldCloseIndexAndLabelScanSnapshots() throws Exception
     {
         // Given
         LabelScanStore labelScanStore = mock( LabelScanStore.class );
@@ -147,28 +148,28 @@ public class DatabaseFileListingTest
     }
 
     @Test
-    public void shouldListMetaDataStoreLast() throws Exception
+    void shouldListMetaDataStoreLast() throws Exception
     {
         StoreFileMetadata fileMetadata = Iterators.last( database.listStoreFiles( false ) );
         assertEquals( fileMetadata.file(), database.getDatabaseLayout().metadataStore() );
     }
 
     @Test
-    public void shouldListMetaDataStoreLastWithTxLogs() throws Exception
+    void shouldListMetaDataStoreLastWithTxLogs() throws Exception
     {
         StoreFileMetadata fileMetadata = Iterators.last( database.listStoreFiles( true ) );
         assertEquals( fileMetadata.file(), database.getDatabaseLayout().metadataStore() );
     }
 
     @Test
-    public void shouldListTransactionLogsFromCustomAbsoluteLocationWhenConfigured() throws IOException
+    void shouldListTransactionLogsFromCustomAbsoluteLocationWhenConfigured() throws IOException
     {
         File customLogLocation = testDirectory.directory( "customLogLocation" );
         verifyLogFilesWithCustomPathListing( customLogLocation.getAbsolutePath() );
     }
 
     @Test
-    public void shouldListTxLogFiles() throws Exception
+    void shouldListTxLogFiles() throws Exception
     {
         assertTrue( database.listStoreFiles( true ).stream()
                 .map( metaData -> metaData.file().getName() )
@@ -176,7 +177,7 @@ public class DatabaseFileListingTest
     }
 
     @Test
-    public void shouldNotListTxLogFiles() throws Exception
+    void shouldNotListTxLogFiles() throws Exception
     {
         assertTrue( database.listStoreFiles( false ).stream()
                 .map( metaData -> metaData.file().getName() )
@@ -184,7 +185,7 @@ public class DatabaseFileListingTest
     }
 
     @Test
-    public void shouldListNeostoreFiles() throws Exception
+    void shouldListNeostoreFiles() throws Exception
     {
         DatabaseLayout layout = database.getDatabaseLayout();
         Set<File> expectedFiles = layout.storeFiles();
@@ -198,7 +199,7 @@ public class DatabaseFileListingTest
     }
 
     @Test
-    public void doNotListFilesFromAdditionalProviderThatRegisterTwice() throws IOException
+    void doNotListFilesFromAdditionalProviderThatRegisterTwice() throws IOException
     {
         DatabaseFileListing databaseFileListing = database.getDatabaseFileListing();
         MarkerFileProvider provider = new MarkerFileProvider();
@@ -227,7 +228,7 @@ public class DatabaseFileListingTest
         ArrayList<File> files = new ArrayList<>();
         mockFiles( filenames, files, false );
         mockFiles( dirs, files, true );
-        when( databaseLayout.listDatabaseFiles(any()) ).thenReturn( files.toArray( new File[files.size()] ) );
+        when( databaseLayout.listDatabaseFiles(any()) ).thenReturn( files.toArray( new File[0] ) );
     }
 
     private static ResourceIterator<File> scanStoreFilesAre( LabelScanStore labelScanStore, String[] fileNames )

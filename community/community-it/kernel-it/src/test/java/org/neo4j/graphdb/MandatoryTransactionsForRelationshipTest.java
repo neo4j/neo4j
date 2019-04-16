@@ -19,20 +19,20 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 public class MandatoryTransactionsForRelationshipTest extends AbstractMandatoryTransactionsTest<Relationship>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnRelationshipFacade()
+    void shouldRequireTransactionsWhenCallingMethodsOnRelationshipFacade()
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), RelationshipFacadeMethods.values() );
     }
 
     @Test
-    public void shouldTerminateWhenCallingMethodsOnRelationshipFacade()
+    void shouldTerminateWhenCallingMethodsOnRelationshipFacade()
     {
         assertFacadeMethodsThrowAfterTerminate( RelationshipFacadeMethods.values() );
     }

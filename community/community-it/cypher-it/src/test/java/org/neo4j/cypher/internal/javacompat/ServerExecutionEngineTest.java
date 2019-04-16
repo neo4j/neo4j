@@ -19,59 +19,61 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ServerExecutionEngineTest
+@ImpermanentDbmsExtension
+class ServerExecutionEngineTest
 {
-    @Rule
-    public EmbeddedDbmsRule rule = new EmbeddedDbmsRule();
+    @Inject
+    private GraphDatabaseAPI db;
 
     @Test
-    public void shouldDetectPeriodicCommitQueries()
+    void shouldDetectPeriodicCommitQueries()
     {
         // GIVEN
-        QueryExecutionEngine engine = rule.getGraphDatabaseAPI().getDependencyResolver()
+        QueryExecutionEngine engine = db.getDependencyResolver()
                                           .resolveDependency( QueryExecutionEngine.class );
 
         // WHEN
         boolean result = engine.isPeriodicCommit("USING PERIODIC COMMIT LOAD CSV FROM 'file:///tmp/foo.csv' AS line CREATE ()");
 
         // THEN
-        assertTrue( "Did not detect periodic commit query", result );
+        assertTrue( result, "Did not detect periodic commit query" );
     }
 
     @Test
-    public void shouldNotDetectNonPeriodicCommitQueriesAsPeriodicCommitQueries()
+    void shouldNotDetectNonPeriodicCommitQueriesAsPeriodicCommitQueries()
     {
         // GIVEN
-        QueryExecutionEngine engine = rule.getGraphDatabaseAPI().getDependencyResolver()
+        QueryExecutionEngine engine = db.getDependencyResolver()
                                           .resolveDependency( QueryExecutionEngine.class );
 
         // WHEN
         boolean result = engine.isPeriodicCommit("CREATE ()");
 
         // THEN
-        assertFalse( "Did detect non-periodic commit query as periodic commit query", result );
+        assertFalse( result, "Did detect non-periodic commit query as periodic commit query" );
     }
 
     @Test
-    public void shouldNotDetectInvalidQueriesAsPeriodicCommitQueries()
+    void shouldNotDetectInvalidQueriesAsPeriodicCommitQueries()
     {
         // GIVEN
-        QueryExecutionEngine engine = rule.getGraphDatabaseAPI().getDependencyResolver()
+        QueryExecutionEngine engine = db.getDependencyResolver()
                                           .resolveDependency( QueryExecutionEngine.class );
 
         // WHEN
         boolean result = engine.isPeriodicCommit("MATCH n RETURN m");
 
         // THEN
-        assertFalse( "Did detect an invalid query as periodic commit query", result );
+        assertFalse( result, "Did detect an invalid query as periodic commit query" );
     }
 }

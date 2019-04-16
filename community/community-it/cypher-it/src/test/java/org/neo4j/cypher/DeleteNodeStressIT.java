@@ -19,31 +19,33 @@
  */
 package org.neo4j.cypher;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static org.neo4j.graphdb.Label.label;
 
-public class DeleteNodeStressIT
+@ImpermanentDbmsExtension
+class DeleteNodeStressIT
 {
     private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );
 
-    @Rule
-    public ImpermanentDbmsRule db = new ImpermanentDbmsRule();
+    @Inject
+    private GraphDatabaseService db;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         for ( int i = 0; i < 100; i++ )
         {
@@ -60,14 +62,14 @@ public class DeleteNodeStressIT
         }
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         executorService.shutdown();
     }
 
     @Test
-    public void shouldBeAbleToReturnNodesWhileDeletingNode() throws InterruptedException, ExecutionException
+    void shouldBeAbleToReturnNodesWhileDeletingNode() throws InterruptedException, ExecutionException
     {
         // Given
         Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) return n" );
@@ -79,7 +81,7 @@ public class DeleteNodeStressIT
     }
 
     @Test
-    public void shouldBeAbleToCheckPropertiesWhileDeletingNode() throws InterruptedException, ExecutionException
+    void shouldBeAbleToCheckPropertiesWhileDeletingNode() throws InterruptedException, ExecutionException
     {
         // Given
         Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) RETURN exists(n.prop)" );
@@ -91,7 +93,7 @@ public class DeleteNodeStressIT
     }
 
     @Test
-    public void shouldBeAbleToRemovePropertiesWhileDeletingNode() throws InterruptedException, ExecutionException
+    void shouldBeAbleToRemovePropertiesWhileDeletingNode() throws InterruptedException, ExecutionException
     {
         // Given
         Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) REMOVE n.prop" );
@@ -103,7 +105,7 @@ public class DeleteNodeStressIT
     }
 
     @Test
-    public void shouldBeAbleToSetPropertiesWhileDeletingNode() throws InterruptedException, ExecutionException
+    void shouldBeAbleToSetPropertiesWhileDeletingNode() throws InterruptedException, ExecutionException
     {
         // Given
         Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) SET n.foo = 'bar'" );
@@ -115,7 +117,7 @@ public class DeleteNodeStressIT
     }
 
     @Test
-    public void shouldBeAbleToCheckLabelsWhileDeleting() throws InterruptedException, ExecutionException
+    void shouldBeAbleToCheckLabelsWhileDeleting() throws InterruptedException, ExecutionException
     {
         // Given
         Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n RETURN labels(n)" );

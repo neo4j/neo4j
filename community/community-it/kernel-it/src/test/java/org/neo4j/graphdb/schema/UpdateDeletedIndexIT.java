@@ -19,49 +19,51 @@
  */
 package org.neo4j.graphdb.schema;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Race;
 import org.neo4j.test.TestLabels;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static org.neo4j.test.Race.throwing;
 
-public class UpdateDeletedIndexIT
+@ImpermanentDbmsExtension
+class UpdateDeletedIndexIT
 {
+    @Inject
+    private GraphDatabaseAPI db;
+
     private static final TestLabels LABEL = TestLabels.LABEL_ONE;
     private static final String KEY = "key";
     private static final int NODES = 100;
-    @Rule
-    public final DbmsRule db = new ImpermanentDbmsRule();
 
     @Test
-    public void shouldHandleUpdateRemovalOfLabelConcurrentlyWithIndexDrop() throws Throwable
+    void shouldHandleUpdateRemovalOfLabelConcurrentlyWithIndexDrop() throws Throwable
     {
         shouldHandleIndexDropConcurrentlyWithOperation( nodeId -> db.getNodeById( nodeId ).removeLabel( LABEL ) );
     }
 
     @Test
-    public void shouldHandleDeleteNodeConcurrentlyWithIndexDrop() throws Throwable
+    void shouldHandleDeleteNodeConcurrentlyWithIndexDrop() throws Throwable
     {
         shouldHandleIndexDropConcurrentlyWithOperation( nodeId -> db.getNodeById( nodeId ).delete() );
     }
 
     @Test
-    public void shouldHandleRemovePropertyConcurrentlyWithIndexDrop() throws Throwable
+    void shouldHandleRemovePropertyConcurrentlyWithIndexDrop() throws Throwable
     {
         shouldHandleIndexDropConcurrentlyWithOperation( nodeId -> db.getNodeById( nodeId ).removeProperty( KEY ) );
     }
 
     @Test
-    public void shouldHandleNodeDetachDeleteConcurrentlyWithIndexDrop() throws Throwable
+    void shouldHandleNodeDetachDeleteConcurrentlyWithIndexDrop() throws Throwable
     {
         shouldHandleIndexDropConcurrentlyWithOperation( nodeId ->
         {

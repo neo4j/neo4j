@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -37,30 +36,30 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.LogTestUtils.CountingLogHook;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
 
 /**
  * Asserts that pure read operations does not write records to logical or transaction logs.
  */
-public class ReadTransactionLogWritingTest
+@ImpermanentDbmsExtension
+class ReadTransactionLogWritingTest
 {
-    @Rule
-    public final DbmsRule dbr = new ImpermanentDbmsRule();
+    @Inject
+    private GraphDatabaseAPI db;
 
     private final Label label = label( "Test" );
     private Node node;
     private Relationship relationship;
     private long logEntriesWrittenBeforeReadOperations;
 
-    @Before
-    public void createDataset()
+    @BeforeEach
+    void createDataset()
     {
-        GraphDatabaseAPI db = dbr.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode( label );
@@ -75,7 +74,7 @@ public class ReadTransactionLogWritingTest
     }
 
     @Test
-    public void shouldNotWriteAnyLogCommandInPureReadTransaction()
+    void shouldNotWriteAnyLogCommandInPureReadTransaction()
     {
         // WHEN
         executeTransaction( getRelationships() );
@@ -85,14 +84,13 @@ public class ReadTransactionLogWritingTest
 
         // THEN
         long actualCount = countLogEntries();
-        assertEquals( "There were " + (actualCount - logEntriesWrittenBeforeReadOperations) +
-                        " log entries written during one or more pure read transactions", logEntriesWrittenBeforeReadOperations,
-                actualCount );
+        assertEquals( logEntriesWrittenBeforeReadOperations,
+                actualCount, "There were " + (actualCount - logEntriesWrittenBeforeReadOperations) +
+                                " log entries written during one or more pure read transactions" );
     }
 
     private long countLogEntries()
     {
-        GraphDatabaseAPI db = dbr.getGraphDatabaseAPI();
         FileSystemAbstraction fs = db.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
         LogFiles logFiles = db.getDependencyResolver().resolveDependency( LogFiles.class );
         try
@@ -128,7 +126,7 @@ public class ReadTransactionLogWritingTest
 
     private void executeTransaction( Runnable runnable, boolean success )
     {
-        try ( Transaction tx = dbr.getGraphDatabaseAPI().beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             runnable.run();
             if ( success )
@@ -158,8 +156,8 @@ public class ReadTransactionLogWritingTest
     {
         return () ->
         {
-            dbr.getGraphDatabaseAPI().getNodeById( node.getId() );
-            dbr.getGraphDatabaseAPI().getRelationshipById( relationship.getId() );
+            db.getNodeById( node.getId() );
+            db.getRelationshipById( relationship.getId() );
         };
     }
 

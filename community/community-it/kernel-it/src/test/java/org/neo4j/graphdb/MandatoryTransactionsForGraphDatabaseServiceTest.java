@@ -19,19 +19,19 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class MandatoryTransactionsForGraphDatabaseServiceTest extends
         AbstractMandatoryTransactionsTest<GraphDatabaseService>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnGraphDatabaseService()
+    void shouldRequireTransactionsWhenCallingMethodsOnGraphDatabaseService()
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), GraphDatabaseServiceFacadeMethods.values() );
     }
 
     @Test
-    public void shouldTerminateWhenCallingMethodsOnGraphDatabaseService()
+    void shouldTerminateWhenCallingMethodsOnGraphDatabaseService()
     {
         assertFacadeMethodsThrowAfterTerminate( GraphDatabaseServiceFacadeMethods.values() );
     }

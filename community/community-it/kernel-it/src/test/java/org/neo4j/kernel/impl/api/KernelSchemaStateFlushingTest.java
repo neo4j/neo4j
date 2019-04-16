@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.locks.LockSupport;
 
@@ -36,36 +34,30 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
-public class KernelSchemaStateFlushingTest
+@ImpermanentDbmsExtension
+class KernelSchemaStateFlushingTest
 {
-    @Rule
-    public ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
-
+    @Inject
     private GraphDatabaseAPI db;
+
     private Kernel kernel;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
-        db = dbRule.getGraphDatabaseAPI();
         kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
     }
 
-    @After
-    public void after()
-    {
-        dbRule.shutdown();
-    }
-
     @Test
-    public void shouldKeepSchemaStateIfSchemaIsNotModified() throws TransactionFailureException
+    void shouldKeepSchemaStateIfSchemaIsNotModified() throws TransactionFailureException
     {
         // given
         String before = commitToSchemaState( "test", "before" );
@@ -81,7 +73,7 @@ public class KernelSchemaStateFlushingTest
     }
 
     @Test
-    public void shouldInvalidateSchemaStateOnCreateIndex() throws Exception
+    void shouldInvalidateSchemaStateOnCreateIndex() throws Exception
     {
         // given
         commitToSchemaState( "test", "before" );
@@ -96,7 +88,7 @@ public class KernelSchemaStateFlushingTest
     }
 
     @Test
-    public void shouldInvalidateSchemaStateOnDropIndex() throws Exception
+    void shouldInvalidateSchemaStateOnDropIndex() throws Exception
     {
         IndexReference ref = createIndex();
 
@@ -114,7 +106,7 @@ public class KernelSchemaStateFlushingTest
     }
 
     @Test
-    public void shouldInvalidateSchemaStateOnCreateConstraint() throws Exception
+    void shouldInvalidateSchemaStateOnCreateConstraint() throws Exception
     {
         // given
         commitToSchemaState( "test", "before" );
@@ -129,7 +121,7 @@ public class KernelSchemaStateFlushingTest
     }
 
     @Test
-    public void shouldInvalidateSchemaStateOnDropConstraint() throws Exception
+    void shouldInvalidateSchemaStateOnDropConstraint() throws Exception
     {
         // given
         ConstraintDescriptor descriptor = createConstraint();

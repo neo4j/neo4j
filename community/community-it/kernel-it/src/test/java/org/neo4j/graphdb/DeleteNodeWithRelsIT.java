@@ -19,26 +19,24 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-public class DeleteNodeWithRelsIT
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+@ImpermanentDbmsExtension
+class DeleteNodeWithRelsIT
 {
-    @Rule
-    public ImpermanentDbmsRule db = new ImpermanentDbmsRule();
-
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
+    @Inject
+    private GraphDatabaseService db;
 
     @Test
-    public void shouldGiveHelpfulExceptionWhenDeletingNodeWithRels()
+    void shouldGiveHelpfulExceptionWhenDeletingNodeWithRels()
     {
         // Given
-        GraphDatabaseService db = this.db.getGraphDatabaseAPI();
-
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
@@ -52,13 +50,9 @@ public class DeleteNodeWithRelsIT
         node.delete();
         tx.success();
 
-        // Expect
-        exception.expect( ConstraintViolationException.class );
-        exception.expectMessage( "Cannot delete node<" + node.getId() + ">, because it still has relationships. " +
-                "To delete this node, you must first delete its relationships." );
-
-        // When I commit
-        tx.close();
+        ConstraintViolationException ex = assertThrows( ConstraintViolationException.class, tx::close );
+        assertEquals( "Cannot delete node<" + node.getId() + ">, because it still has relationships. " +
+                "To delete this node, you must first delete its relationships.", ex.getMessage() );
     }
 
 }

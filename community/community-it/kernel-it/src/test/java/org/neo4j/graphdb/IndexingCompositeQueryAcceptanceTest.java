@@ -233,7 +233,7 @@ public class IndexingCompositeQueryAcceptanceTest
         assertThat( found, equalTo( expected ) );
     }
 
-    public MutableLongSet createNodes( GraphDatabaseService db, Label label, Object[]... propertyValueTuples )
+    private MutableLongSet createNodes( GraphDatabaseService db, Label label, Object[]... propertyValueTuples )
     {
         MutableLongSet expected = new LongHashSet();
         try ( Transaction tx = db.beginTx() )
@@ -247,7 +247,7 @@ public class IndexingCompositeQueryAcceptanceTest
         return expected;
     }
 
-    public static Map<String,Object> propertyMap( String[] keys, Object[] valueTuple )
+    private static Map<String,Object> propertyMap( String[] keys, Object[] valueTuple )
     {
         Map<String,Object> propertyValues = new HashMap<>();
         for ( int i = 0; i < keys.length; i++ )
@@ -257,7 +257,7 @@ public class IndexingCompositeQueryAcceptanceTest
         return propertyValues;
     }
 
-    public void collectNodes( MutableLongSet bucket, ResourceIterator<Node> toCollect )
+    private void collectNodes( MutableLongSet bucket, ResourceIterator<Node> toCollect )
     {
         while ( toCollect.hasNext() )
         {
@@ -279,14 +279,14 @@ public class IndexingCompositeQueryAcceptanceTest
         }
     }
 
-    public static Object[] testCase( Integer[] values, IndexSeek indexSeek, boolean withIndex )
+    private static Object[] testCase( Integer[] values, IndexSeek indexSeek, boolean withIndex )
     {
         Object[][] nonMatching = {plus( values, 1 ), plus( values, 2 ), plus( values, 3 )};
         String[] keys = Arrays.stream( values ).map( v -> "key" + v ).toArray( String[]::new );
         return new Object[]{keys, values, nonMatching, indexSeek, withIndex};
     }
 
-    public static <T> Object[] plus( Integer[] values, int offset )
+    private static <T> Object[] plus( Integer[] values, int offset )
     {
         Object[] result = new Object[values.length];
         for ( int i = 0; i < values.length; i++ )
@@ -327,8 +327,5 @@ public class IndexingCompositeQueryAcceptanceTest
             };
 
     private static IndexSeek mapIndexSeek =
-            ( keys, values, db ) ->
-            {
-                return db.findNodes( LABEL, propertyMap( keys, values ) );
-            };
+            ( keys, values, db ) -> db.findNodes( LABEL, propertyMap( keys, values ) );
 }

@@ -19,45 +19,47 @@
  */
 package org.neo4j.index;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
-public class IndexFreshDataReadIT
+@ImpermanentDbmsExtension
+class IndexFreshDataReadIT
 {
-    @Rule
-    public EmbeddedDbmsRule databaseRule = new EmbeddedDbmsRule();
+    @Inject
+    private GraphDatabaseService db;
 
     private ExecutorService executor = Executors.newCachedThreadPool();
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         executor.shutdown();
     }
 
     @Test
-    public void readLatestIndexDataAfterUsingExhaustedNodeRelationshipIterator() throws Exception
+    void readLatestIndexDataAfterUsingExhaustedNodeRelationshipIterator() throws Exception
     {
-        try ( Transaction transaction = databaseRule.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
             addStaffMember( "Fry" );
             assertEquals( 1, countStaff().intValue() );
 
-            Node fry = databaseRule.getNodeById( 0 );
+            Node fry = db.getNodeById( 0 );
             Iterable<Relationship> fryRelationships = fry.getRelationships();
             assertFalse( fryRelationships.iterator().hasNext() );
 
@@ -76,7 +78,7 @@ public class IndexFreshDataReadIT
 
     private Number countStaff()
     {
-        try ( Result countResult = databaseRule.execute( "MATCH (n:staff) return count(n.name) as count" ) )
+        try ( Result countResult = db.execute( "MATCH (n:staff) return count(n.name) as count" ) )
         {
             return (Number) countResult.columnAs( "count" ).next();
         }
@@ -94,9 +96,9 @@ public class IndexFreshDataReadIT
         @Override
         public void run()
         {
-            try ( Transaction transaction = databaseRule.beginTx() )
+            try ( Transaction transaction = db.beginTx() )
             {
-                databaseRule.execute( "CREATE (n:staff {name:{name}})", map( "name", name ) );
+                db.execute( "CREATE (n:staff {name:{name}})", map( "name", name ) );
                 transaction.success();
             }
         }

@@ -19,8 +19,7 @@
  */
 package org.neo4j.index;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -33,43 +32,44 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ShutdownOnIndexUpdateIT
+@ImpermanentDbmsExtension
+class ShutdownOnIndexUpdateIT
 {
-    @Rule
-    public DbmsRule database = new ImpermanentDbmsRule();
+    @Inject
+    private GraphDatabaseAPI db;
 
     private static final String UNIQUE_PROPERTY_NAME = "uniquePropertyName";
     private static final AtomicLong indexProvider = new AtomicLong();
     private static Label constraintIndexLabel = Label.label( "ConstraintIndexLabel" );
 
     @Test
-    public void shutdownWhileFinishingTransactionWithIndexUpdates()
+    void shutdownWhileFinishingTransactionWithIndexUpdates()
     {
-        createConstraint( database );
-        waitIndexesOnline( database );
+        createConstraint( db );
+        waitIndexesOnline( db );
 
-        try ( Transaction transaction = database.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
-            Node node = database.createNode( constraintIndexLabel );
+            Node node = db.createNode( constraintIndexLabel );
             node.setProperty( UNIQUE_PROPERTY_NAME, indexProvider.getAndIncrement() );
 
-            DependencyResolver dependencyResolver = database.getDependencyResolver();
+            DependencyResolver dependencyResolver = db.getDependencyResolver();
             Database dataSource = dependencyResolver.resolveDependency( Database.class );
             LifeSupport dataSourceLife = dataSource.getLife();
             TransactionCloseListener closeListener = new TransactionCloseListener( transaction );
             dataSourceLife.addLifecycleListener( closeListener );
             dataSource.stop();
 
-            assertTrue( "Transaction should be closed and no exception should be thrown.",
-                    closeListener.isTransactionClosed() );
+            assertTrue( closeListener.isTransactionClosed(), "Transaction should be closed and no exception should be thrown." );
         }
     }
 

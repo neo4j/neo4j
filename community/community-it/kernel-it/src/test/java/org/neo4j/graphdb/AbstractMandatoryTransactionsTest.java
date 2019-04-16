@@ -19,26 +19,24 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Rule;
-
 import java.util.function.Consumer;
 
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
+@DbmsExtension
 public abstract class AbstractMandatoryTransactionsTest<T>
 {
-    @Rule
-    public EmbeddedDbmsRule dbRule = new EmbeddedDbmsRule();
+    @Inject
+    public GraphDatabaseService db;
 
     public T obtainEntity()
     {
-        GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseAPI();
-
-        try ( Transaction tx = graphDatabaseService.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            T result = obtainEntityInTransaction( graphDatabaseService );
+            T result = obtainEntityInTransaction( db );
             tx.success();
 
             return result;
@@ -47,11 +45,9 @@ public abstract class AbstractMandatoryTransactionsTest<T>
 
     public void obtainEntityInTerminatedTransaction( Consumer<T> f )
     {
-        GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseAPI();
-
-        try ( Transaction tx = graphDatabaseService.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            T result = obtainEntityInTransaction( graphDatabaseService );
+            T result = obtainEntityInTransaction( db );
             tx.terminate();
 
             f.accept(result);

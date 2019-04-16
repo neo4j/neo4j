@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -33,8 +32,11 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.Inject;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,20 +46,26 @@ import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 
-public class CompiledExpandUtilsTest
+@DbmsExtension( configurationCallback = "config" )
+class CompiledExpandUtilsTest
 {
-    @Rule
-    public DbmsRule db = new EmbeddedDbmsRule()
-            .withSetting( GraphDatabaseSettings.dense_node_threshold, "1" );
+    @Inject
+    private GraphDatabaseAPI db;
+
+    @ExtensionCallback
+    void config( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( GraphDatabaseSettings.dense_node_threshold, "1" );
+    }
 
     private Transaction transaction() throws TransactionFailureException
     {
-        DependencyResolver resolver = this.db.getDependencyResolver();
+        DependencyResolver resolver = db.getDependencyResolver();
         return resolver.resolveDependency( Kernel.class ).beginTransaction( implicit, LoginContext.AUTH_DISABLED );
     }
 
     @Test
-    public void shouldComputeDegreeWithoutType() throws Exception
+    void shouldComputeDegreeWithoutType() throws Exception
     {
         // GIVEN
         long node;
@@ -94,7 +102,7 @@ public class CompiledExpandUtilsTest
     }
 
     @Test
-    public void shouldComputeDegreeWithType() throws Exception
+    void shouldComputeDegreeWithType() throws Exception
     {
         // GIVEN
         long node;

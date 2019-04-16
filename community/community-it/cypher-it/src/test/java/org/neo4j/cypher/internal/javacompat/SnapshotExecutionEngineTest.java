@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.CompilerFactory;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
@@ -36,10 +36,10 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -48,10 +48,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class SnapshotExecutionEngineTest
+@ImpermanentDbmsExtension
+class SnapshotExecutionEngineTest
 {
-    @Rule
-    public final DbmsRule database = new ImpermanentDbmsRule();
+    @Inject
+    private GraphDatabaseService db;
 
     private CompilerFactory compilerFactory;
     private TestSnapshotExecutionEngine executionEngine;
@@ -60,10 +61,10 @@ public class SnapshotExecutionEngineTest
     private TransactionalContext transactionalContext;
     private final Config config = Config.defaults();
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    void setUp() throws Exception
     {
-        GraphDatabaseQueryService cypherService = new GraphDatabaseCypherService( this.database.getGraphDatabaseAPI() );
+        GraphDatabaseQueryService cypherService = new GraphDatabaseCypherService( db );
 
         compilerFactory = mock( CompilerFactory.class );
         transactionalContext = mock( TransactionalContext.class );
@@ -81,7 +82,7 @@ public class SnapshotExecutionEngineTest
     }
 
     @Test
-    public void executeQueryWithoutRetries() throws QueryExecutionKernelException
+    void executeQueryWithoutRetries() throws QueryExecutionKernelException
     {
         executionEngine.executeWithRetries( "query", Collections.emptyMap(), transactionalContext, executor, false );
 
@@ -90,7 +91,7 @@ public class SnapshotExecutionEngineTest
     }
 
     @Test
-    public void executeQueryAfterSeveralRetries() throws QueryExecutionKernelException
+    void executeQueryAfterSeveralRetries() throws QueryExecutionKernelException
     {
         when( versionContext.isDirty() ).thenReturn( true, true, false );
 
@@ -101,7 +102,7 @@ public class SnapshotExecutionEngineTest
     }
 
     @Test
-    public void failQueryAfterMaxRetriesReached() throws QueryExecutionKernelException
+    void failQueryAfterMaxRetriesReached() throws QueryExecutionKernelException
     {
         when( versionContext.isDirty() ).thenReturn( true );
 

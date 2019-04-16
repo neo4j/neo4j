@@ -20,8 +20,7 @@
 package org.neo4j.cypher;
 
 import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
@@ -36,51 +35,53 @@ import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
+@SuppressWarnings( "WeakerAccess" )
+@ImpermanentDbmsExtension
 public class GraphDatabaseServiceExecuteTest
 {
-
-    @Rule
-    public final DbmsRule graphDb = new ImpermanentDbmsRule();
+    @Inject
+    private GraphDatabaseAPI db;
 
     @Test
-    public void shouldExecuteCypher()
+    void shouldExecuteCypher()
     {
         // given
         final long before;
         final long after;
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            before = Iterables.count( graphDb.getAllNodes() );
+            before = Iterables.count( db.getAllNodes() );
             tx.success();
         }
 
         // when
-        graphDb.execute( "CREATE (n:Foo{bar:\"baz\"})" );
+        db.execute( "CREATE (n:Foo{bar:\"baz\"})" );
 
         // then
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            after = Iterables.count( graphDb.getAllNodes() );
+            after = Iterables.count( db.getAllNodes() );
             tx.success();
         }
         assertEquals( before + 1, after );
     }
 
     @Test
-    public void shouldNotReturnInternalGeographicPointType()
+    void shouldNotReturnInternalGeographicPointType()
     {
         // when
-        Result execute = graphDb.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
+        Result execute = db.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
 
         // then
         Object obj = execute.next().get( "p" );
@@ -97,10 +98,10 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
-    public void shouldNotReturnInternalCartesianPointType()
+    void shouldNotReturnInternalCartesianPointType()
     {
         // when
-        Result execute = graphDb.execute( "RETURN point({x: 13.37, y: 13.37, crs:'cartesian'}) AS p" );
+        Result execute = db.execute( "RETURN point({x: 13.37, y: 13.37, crs:'cartesian'}) AS p" );
 
         // then
         Object obj = execute.next().get( "p" );
@@ -117,10 +118,10 @@ public class GraphDatabaseServiceExecuteTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldNotReturnInternalPointWhenInArray()
+    void shouldNotReturnInternalPointWhenInArray()
     {
         // when
-        Result execute = graphDb.execute( "RETURN [point({longitude: 144.317718, latitude: -37.031738})] AS ps" );
+        Result execute = db.execute( "RETURN [point({longitude: 144.317718, latitude: -37.031738})] AS ps" );
 
         // then
         List<Point> points = (List<Point>)execute.next().get( "ps" );
@@ -129,10 +130,10 @@ public class GraphDatabaseServiceExecuteTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldNotReturnInternalPointWhenInMap()
+    void shouldNotReturnInternalPointWhenInMap()
     {
         // when
-        Result execute = graphDb.execute( "RETURN {p: point({longitude: 144.317718, latitude: -37.031738})} AS m" );
+        Result execute = db.execute( "RETURN {p: point({longitude: 144.317718, latitude: -37.031738})} AS m" );
 
         // then
         Map<String,Object> points = (Map<String, Object>)execute.next().get( "m" );
@@ -140,14 +141,14 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
-    public void shouldBeAbleToUseResultingPointFromOneQueryAsParameterToNext()
+    void shouldBeAbleToUseResultingPointFromOneQueryAsParameterToNext()
     {
         // given a point create by one cypher query
-        Result execute = graphDb.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
+        Result execute = db.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
         Point point = (Point) execute.next().get( "p" );
 
         // when passing as params to a distance function
-        Result result = graphDb.execute(
+        Result result = db.execute(
                 "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),{previous}) AS dist",
                 map( "previous", point ) );
 
@@ -157,13 +158,13 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
-    public void shouldBeAbleToUseExternalPointAsParameterToQuery()
+    void shouldBeAbleToUseExternalPointAsParameterToQuery()
     {
         // given a point created from public interface
         Point point = makeFakePoint( 144.317718, -37.031738, makeWGS84() );
 
         // when passing as params to a distance function
-        Result result = graphDb.execute(
+        Result result = db.execute(
                 "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),{previous}) AS dist",
                 map( "previous", point ) );
 
@@ -173,13 +174,13 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
-    public void shouldBeAbleToUseExternalGeometryAsParameterToQuery()
+    void shouldBeAbleToUseExternalGeometryAsParameterToQuery()
     {
         // given a point created from public interface
         Geometry geometry = makeFakePointAsGeometry( 144.317718, -37.031738, makeWGS84() );
 
         // when passing as params to a distance function
-        Result result = graphDb.execute(
+        Result result = db.execute(
                 "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),{previous}) AS dist",
                 map( "previous", geometry ) );
 
@@ -189,14 +190,14 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
-    public void shouldBeAbleToUseExternalPointArrayAsParameterToQuery()
+    void shouldBeAbleToUseExternalPointArrayAsParameterToQuery()
     {
         // given a point created from public interface
         Point point = makeFakePoint( 144.317718, -37.031738, makeWGS84() );
         Point[] points = new Point[]{point, point};
 
         // when passing as params to a distance function
-        Result result = graphDb.execute(
+        Result result = db.execute(
                 "RETURN distance({points}[0],{points}[1]) AS dist",
                 map( "points", points ) );
 
@@ -206,34 +207,33 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
-    public void shouldBeAbleToUseResultsOfPointProcedureAsInputToDistanceFunction() throws Exception
+    void shouldBeAbleToUseResultsOfPointProcedureAsInputToDistanceFunction() throws Exception
     {
         // given procedure that produces a point
         GlobalProcedures globalProcedures =
-                graphDb.getDependencyResolver().resolveDependency( GlobalProcedures.class );
+                db.getDependencyResolver().resolveDependency( GlobalProcedures.class );
         globalProcedures.registerProcedure( PointProcs.class );
 
         // when calling procedure that produces a point
-        Result result = graphDb.execute(
+        Result result = db.execute(
                 "CALL spatial.point(144.317718, -37.031738) YIELD point " +
                 "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}), point) AS dist" );
 
         // then
         Double dist = (Double) result.next().get( "dist" );
         assertThat( dist, equalTo( 0.0 ) );
-
     }
 
     @Test
-    public void shouldBeAbleToUseResultsOfPointGeometryProcedureAsInputToDistanceFunction() throws Exception
+    void shouldBeAbleToUseResultsOfPointGeometryProcedureAsInputToDistanceFunction() throws Exception
     {
         // given procedure that produces a point
         GlobalProcedures globalProcedures =
-                graphDb.getDependencyResolver().resolveDependency( GlobalProcedures.class );
+                db.getDependencyResolver().resolveDependency( GlobalProcedures.class );
         globalProcedures.registerProcedure( PointProcs.class );
 
         // when calling procedure that produces a point
-        Result result = graphDb.execute(
+        Result result = db.execute(
                 "CALL spatial.pointGeometry(144.317718, -37.031738) YIELD geometry " +
                 "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}), geometry) AS dist" );
 

@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
@@ -38,34 +38,47 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class CompositeStringLengthValidationIT
+@ExtendWith( RandomExtension.class )
+@DbmsExtension( configurationCallback = "config" )
+class CompositeStringLengthValidationIT
 {
     private static final Label LABEL = TestLabels.LABEL_ONE;
     private static final String KEY = "key";
     private static final String KEY2 = "key2";
-    @Rule
-    public final DbmsRule db = new EmbeddedDbmsRule()
-            .withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName() );
-    @Rule
-    public final RandomRule random = new RandomRule();
+
+    @Inject
+    private GraphDatabaseAPI db;
+    @Inject
+    private RandomRule random;
+
     private int firstSlotLength;
     private int secondSlotLength;
 
-    @Before
-    public void calculateSlotSizes()
+    @ExtensionCallback
+    void config( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName() );
+    }
+
+    @BeforeEach
+    void calculateSlotSizes()
     {
         int totalSpace = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE ) - GenericKey.ENTITY_ID_SIZE;
         int perSlotOverhead = GenericKey.TYPE_ID_SIZE + GenericKey.SIZE_STRING_LENGTH;
@@ -76,7 +89,7 @@ public class CompositeStringLengthValidationIT
     }
 
     @Test
-    public void shouldHandleCompositeSizesCloseToTheLimit() throws KernelException
+    void shouldHandleCompositeSizesCloseToTheLimit() throws KernelException
     {
         String firstSlot = random.nextAlphaNumericString( firstSlotLength, firstSlotLength );
         String secondSlot = random.nextAlphaNumericString( secondSlotLength, secondSlotLength );
@@ -117,7 +130,7 @@ public class CompositeStringLengthValidationIT
     }
 
     @Test
-    public void shouldFailBeforeCommitOnCompositeSizesLargerThanLimit()
+    void shouldFailBeforeCommitOnCompositeSizesLargerThanLimit()
     {
         String firstSlot = random.nextAlphaNumericString( firstSlotLength + 1, firstSlotLength + 1 );
         String secondSlot = random.nextAlphaNumericString( secondSlotLength, secondSlotLength );

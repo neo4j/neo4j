@@ -17,33 +17,47 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb;
+package org.neo4j.test.extension.dbms;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 
-public class MandatoryTransactionsForIndexDefinitionTest extends AbstractMandatoryTransactionsTest<IndexDefinition>
+import static org.junit.jupiter.api.Assertions.fail;
+
+public class DbmsExtensionCheckCallbackSignature
 {
-    @Test
-    void shouldRequireTransactionsWhenCallingMethodsOnIndexDefinitions()
+    @ExtensionCallback
+    int notVoid( TestDatabaseManagementServiceBuilder builder )
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), IndexDefinitionFacadeMethods.values() );
+        return 0;
+    }
+
+    @ExtensionCallback
+    void wrongParameter( String builder )
+    {
     }
 
     @Test
-    void shouldTerminateWhenCallingMethodsOnIndexDefinitions()
+    @DbmsExtension( configurationCallback = "notVoid" )
+    void triggerNotVoid()
     {
-        assertFacadeMethodsThrowAfterTerminate( IndexDefinitionFacadeMethods.values() );
+        fail();
     }
 
-    @Override
-    protected IndexDefinition obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    @Test
+    @DbmsExtension( configurationCallback = "wrongParameter" )
+    void triggerWrongParameter()
     {
-        return graphDatabaseService
-               .schema()
-               .indexFor( Label.label( "Label" ) )
-               .on( "property" )
-               .create();
+        fail();
+    }
+
+    @Test
+    @DbmsExtension( configurationCallback = "missingMethod" )
+    void triggerMissingMethod()
+    {
+        fail();
     }
 }

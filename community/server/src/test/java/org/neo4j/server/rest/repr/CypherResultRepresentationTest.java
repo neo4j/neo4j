@@ -19,8 +19,7 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -33,26 +32,27 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
-public class CypherResultRepresentationTest
+@ImpermanentDbmsExtension
+class CypherResultRepresentationTest
 {
-    @Rule
-    public DbmsRule database = new ImpermanentDbmsRule();
+    @Inject
+    private GraphDatabaseService db;
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldSerializeProfilingResult() throws Exception
+    void shouldSerializeProfilingResult() throws Exception
     {
         // Given
         String name = "Kalle";
@@ -91,8 +91,7 @@ public class CypherResultRepresentationTest
     }
 
     @Test
-    @SuppressWarnings( "unchecked" )
-    public void shouldNotIncludePlanUnlessAskedFor() throws Exception
+    void shouldNotIncludePlanUnlessAskedFor() throws Exception
     {
         // Given
         Result result = mock( Result.class );
@@ -104,14 +103,13 @@ public class CypherResultRepresentationTest
                 /*includeStats=*/false, false ) );
 
         // Then
-        assertFalse( "Didn't expect to see a plan here", serialized.containsKey( "plan" ) );
+        assertFalse( serialized.containsKey( "plan" ), "Didn't expect to see a plan here" );
     }
 
     @Test
-    public void shouldFormatMapsProperly() throws Exception
+    void shouldFormatMapsProperly() throws Exception
     {
-        GraphDatabaseService graphdb = database.getGraphDatabaseAPI();
-        Result result = graphdb.execute( "RETURN {one:{two:['wait for it...', {three: 'GO!'}]}}" );
+        Result result = db.execute( "RETURN {one:{two:['wait for it...', {three: 'GO!'}]}}" );
         CypherResultRepresentation representation = new CypherResultRepresentation( result, false, false );
 
         // When
@@ -126,13 +124,12 @@ public class CypherResultRepresentationTest
     }
 
     @Test
-    public void shouldRenderNestedEntities() throws Exception
+    void shouldRenderNestedEntities() throws Exception
     {
-        try ( Transaction ignored = database.getGraphDatabaseAPI().beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
-            GraphDatabaseService graphdb = database.getGraphDatabaseAPI();
-            graphdb.execute( "CREATE (n {name: 'Sally'}), (m {age: 42}), (n)-[r:FOO {drunk: false}]->(m)" );
-            Result result = graphdb.execute( "MATCH p=(n)-[r]->(m) RETURN n, r, p, {node: n, edge: r, path: p}" );
+            db.execute( "CREATE (n {name: 'Sally'}), (m {age: 42}), (n)-[r:FOO {drunk: false}]->(m)" );
+            Result result = db.execute( "MATCH p=(n)-[r]->(m) RETURN n, r, p, {node: n, edge: r, path: p}" );
             CypherResultRepresentation representation = new CypherResultRepresentation( result, false, false );
 
             // When

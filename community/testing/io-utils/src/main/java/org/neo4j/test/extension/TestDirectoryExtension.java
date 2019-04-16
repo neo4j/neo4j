@@ -50,7 +50,7 @@ public class TestDirectoryExtension extends StatefullFieldExtension<TestDirector
         TestDirectory testDirectory = getStoredValue( context );
         try
         {
-            testDirectory.complete( !context.getExecutionException().isPresent() );
+            testDirectory.complete( context.getExecutionException().isEmpty() );
         }
         catch ( Exception e )
         {

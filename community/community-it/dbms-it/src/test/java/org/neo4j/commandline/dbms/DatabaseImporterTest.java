@@ -117,7 +117,7 @@ class DatabaseImporterTest
 
     private static Matcher<File> isExistingDatabase()
     {
-        return new BaseMatcher<File>()
+        return new BaseMatcher<>()
         {
             @Override
             public boolean matches( final Object item )

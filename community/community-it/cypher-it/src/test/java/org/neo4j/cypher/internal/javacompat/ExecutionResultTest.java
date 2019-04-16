@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.cypher.ArithmeticException;
 import org.neo4j.graphdb.Node;
@@ -33,7 +32,9 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -42,16 +43,18 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
-public class ExecutionResultTest
+@ImpermanentDbmsExtension
+class ExecutionResultTest
 {
-    @Rule
-    public final ImpermanentDbmsRule db = new ImpermanentDbmsRule();
+    @Inject
+    private GraphDatabaseAPI db;
 
     //TODO this test is not valid for compiled runtime as the transaction will be closed when the iterator was created
     @Test
-    public void shouldCloseTransactionsWhenIteratingResults()
+    void shouldCloseTransactionsWhenIteratingResults()
     {
         // Given an execution result that has been started but not exhausted
         createNode();
@@ -69,7 +72,7 @@ public class ExecutionResultTest
 
     //TODO this test is not valid for compiled runtime as the transaction will be closed when the iterator was created
     @Test
-    public void shouldCloseTransactionsWhenIteratingOverSingleColumn()
+    void shouldCloseTransactionsWhenIteratingOverSingleColumn()
     {
         // Given an execution result that has been started but not exhausted
         createNode();
@@ -87,7 +90,7 @@ public class ExecutionResultTest
     }
 
     @Test
-    public void shouldThrowAppropriateException()
+    void shouldThrowAppropriateException()
     {
         try
         {
@@ -100,10 +103,10 @@ public class ExecutionResultTest
         }
     }
 
-    @Test( expected = ArithmeticException.class )
-    public void shouldThrowAppropriateExceptionAlsoWhenVisiting()
+    @Test
+    void shouldThrowAppropriateExceptionAlsoWhenVisiting()
     {
-        db.execute( "RETURN rand()/0" ).accept( row -> true );
+        assertThrows( ArithmeticException.class, () -> db.execute( "RETURN rand()/0" ).accept( row -> true ) );
     }
 
     private void createNode()
@@ -116,7 +119,7 @@ public class ExecutionResultTest
     }
 
     @Test
-    public void shouldHandleListsOfPointsAsInput()
+    void shouldHandleListsOfPointsAsInput()
     {
         // Given
         Point point1 =
@@ -132,7 +135,7 @@ public class ExecutionResultTest
     }
 
     @Test
-    public void shouldHandleMapWithPointsAsInput()
+    void shouldHandleMapWithPointsAsInput()
     {
         // Given
         Point point1 = (Point) db.execute( "RETURN point({latitude: 12.78, longitude: 56.7}) as point"  ).next().get( "point" );
@@ -146,7 +149,7 @@ public class ExecutionResultTest
     }
 
     @Test
-    public void shouldHandleColumnAsWithNull()
+    void shouldHandleColumnAsWithNull()
     {
         assertThat( db.execute( "RETURN toLower(null) AS lower" ).<String>columnAs( "lower" ).next(), nullValue() );
     }

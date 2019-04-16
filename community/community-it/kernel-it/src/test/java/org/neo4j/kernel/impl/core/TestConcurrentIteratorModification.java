@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -30,41 +29,42 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class TestConcurrentIteratorModification
+@ImpermanentDbmsExtension
+class TestConcurrentIteratorModification
 {
-    @Rule
-    public EmbeddedDbmsRule dbRule = new EmbeddedDbmsRule();
+    @Inject
+    private GraphDatabaseService db;
 
     @Test
-    public void shouldNotThrowConcurrentModificationExceptionWhenUpdatingWhileIterating()
+    void shouldNotThrowConcurrentModificationExceptionWhenUpdatingWhileIterating()
     {
         // given
-        GraphDatabaseService graph = dbRule.getGraphDatabaseAPI();
         Label label = Label.label( "Bird" );
 
         Node node1;
         Node node2;
         Node node3;
-        try ( Transaction tx = graph.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            node1 = graph.createNode( label );
-            node2 = graph.createNode( label );
+            node1 = db.createNode( label );
+            node2 = db.createNode( label );
             tx.success();
         }
 
         // when
         Set<Node> result = new HashSet<>();
-        try ( Transaction tx = graph.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            node3 = graph.createNode( label );
-            ResourceIterator<Node> iterator = graph.findNodes( label );
+            node3 = db.createNode( label );
+            ResourceIterator<Node> iterator = db.findNodes( label );
             node3.removeLabel( label );
-            graph.createNode( label );
+            db.createNode( label );
             while ( iterator.hasNext() )
             {
                 result.add( iterator.next() );

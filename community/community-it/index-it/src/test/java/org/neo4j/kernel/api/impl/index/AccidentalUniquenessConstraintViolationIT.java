@@ -19,51 +19,41 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.stream.Stream;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.ArrayUtil.array;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
-@RunWith( Parameterized.class )
-public class AccidentalUniquenessConstraintViolationIT
+@ImpermanentDbmsExtension
+class AccidentalUniquenessConstraintViolationIT
 {
     private static final Label Foo = Label.label( "Foo" );
     private static final String BAR = "bar";
 
-    @Parameterized.Parameters
-    public static Collection<Object[]> data()
+    private static Stream<Arguments> parameters()
     {
-        Collection<Object[]> data = new ArrayList<>();
-        data.add( array( 42, 41 ) );
-        data.add( array( "a", "b" ) );
-        return data;
+        return Stream.of( Arguments.of( 42, 41 ), Arguments.of( "a", "b" ) );
     }
 
-    @Parameterized.Parameter
-    public Object value1;
-    @Parameterized.Parameter( 1 )
-    public Object value2;
+    @Inject
+    private GraphDatabaseService db;
 
-    @Rule
-    public final DbmsRule db = new ImpermanentDbmsRule();
-
-    @Test
-    public void shouldApplyChangesWithIntermediateConstraintViolations() throws Exception
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void shouldApplyChangesWithIntermediateConstraintViolations( Object value1, Object value2 ) throws Exception
     {
         // given
         try ( Transaction tx = db.beginTx() )

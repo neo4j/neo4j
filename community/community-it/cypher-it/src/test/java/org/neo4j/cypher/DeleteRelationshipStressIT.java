@@ -19,33 +19,35 @@
  */
 package org.neo4j.cypher;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static org.neo4j.graphdb.Label.label;
 
-public class DeleteRelationshipStressIT
+@ImpermanentDbmsExtension
+class DeleteRelationshipStressIT
 {
     private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );
 
-    @Rule
-    public ImpermanentDbmsRule db = new ImpermanentDbmsRule();
+    @Inject
+    private GraphDatabaseService db;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         for ( int i = 0; i < 100; i++ )
         {
@@ -69,14 +71,14 @@ public class DeleteRelationshipStressIT
         }
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         executorService.shutdown();
     }
 
     @Test
-    public void shouldBeAbleToReturnRelsWhileDeletingRelationship() throws InterruptedException, ExecutionException
+    void shouldBeAbleToReturnRelsWhileDeletingRelationship() throws InterruptedException, ExecutionException
     {
         // Given
         Future query1 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() return r" );
@@ -88,7 +90,7 @@ public class DeleteRelationshipStressIT
     }
 
     @Test
-    public void shouldBeAbleToGetPropertyWhileDeletingRelationship() throws InterruptedException, ExecutionException
+    void shouldBeAbleToGetPropertyWhileDeletingRelationship() throws InterruptedException, ExecutionException
     {
         // Given
         Future query1 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() return r.prop" );
@@ -100,7 +102,7 @@ public class DeleteRelationshipStressIT
     }
 
     @Test
-    public void shouldBeAbleToCheckPropertiesWhileDeletingRelationship() throws InterruptedException, ExecutionException
+    void shouldBeAbleToCheckPropertiesWhileDeletingRelationship() throws InterruptedException, ExecutionException
     {
         // Given
         Future query1 =
@@ -112,7 +114,7 @@ public class DeleteRelationshipStressIT
     }
 
     @Test
-    public void shouldBeAbleToRemovePropertiesWhileDeletingRelationship() throws InterruptedException, ExecutionException
+    void shouldBeAbleToRemovePropertiesWhileDeletingRelationship() throws InterruptedException, ExecutionException
     {
         // Given
         Future query1 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() REMOVE r.prop" );
@@ -124,7 +126,7 @@ public class DeleteRelationshipStressIT
     }
 
     @Test
-    public void shouldBeAbleToSetPropertiesWhileDeletingRelationship() throws InterruptedException, ExecutionException
+    void shouldBeAbleToSetPropertiesWhileDeletingRelationship() throws InterruptedException, ExecutionException
     {
         // Given
         Future query1 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() SET r.foo = 'bar'" );

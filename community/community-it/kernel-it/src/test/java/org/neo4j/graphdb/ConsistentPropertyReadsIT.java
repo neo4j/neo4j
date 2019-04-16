@@ -19,8 +19,7 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
@@ -28,22 +27,23 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.test.Race;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test for how properties are read and that they should be read consistently, i.e. adhere to neo4j's
  * interpretation of the ACID guarantees.
  */
-public class ConsistentPropertyReadsIT
+@ImpermanentDbmsExtension
+class ConsistentPropertyReadsIT
 {
-    @Rule
-    public DbmsRule db = new EmbeddedDbmsRule();
+    @Inject
+    private GraphDatabaseService db;
 
     @Test
-    public void shouldReadConsistentPropertyValues() throws Throwable
+    void shouldReadConsistentPropertyValues() throws Throwable
     {
         // GIVEN
         final Node[] nodes = new Node[10];
@@ -111,7 +111,7 @@ public class ConsistentPropertyReadsIT
                     {
                         String value = (String) nodes[random.nextInt( nodes.length )]
                                 .getProperty( keys[random.nextInt( keys.length )], null );
-                        assertTrue( value, value == null || ArrayUtil.contains( values, value ) );
+                        assertTrue( value == null || ArrayUtil.contains( values, value ), value );
                         tx.success();
                     }
                 }

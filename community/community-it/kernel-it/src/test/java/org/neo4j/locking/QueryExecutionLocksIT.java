@@ -20,8 +20,7 @@
 package org.neo4j.locking;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -75,30 +74,32 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
-public class QueryExecutionLocksIT
+@ImpermanentDbmsExtension
+class QueryExecutionLocksIT
 {
-
-    @Rule
-    public EmbeddedDbmsRule databaseRule = new EmbeddedDbmsRule();
+    @Inject
+    private GraphDatabaseAPI db;
 
     @Test
-    public void noLocksTakenForQueryWithoutAnyIndexesUsage() throws Exception
+    void noLocksTakenForQueryWithoutAnyIndexesUsage() throws Exception
     {
         String query = "MATCH (n) return count(n)";
         List<LockOperationRecord> lockOperationRecords = traceQueryLocks( query );
@@ -107,16 +108,16 @@ public class QueryExecutionLocksIT
     }
 
     @Test
-    public void takeLabelLockForQueryWithIndexUsages() throws Exception
+    void takeLabelLockForQueryWithIndexUsages() throws Exception
     {
         String labelName = "Human";
         Label human = Label.label( labelName );
         String propertyKey = "name";
         createIndex( human, propertyKey );
 
-        try ( Transaction transaction = databaseRule.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
-            Node node = databaseRule.createNode( human );
+            Node node = db.createNode( human );
             node.setProperty( propertyKey, RandomStringUtils.randomAscii( 10 ) );
             transaction.success();
         }
@@ -134,16 +135,16 @@ public class QueryExecutionLocksIT
     }
 
     @Test
-    public void reTakeLabelLockForQueryWithIndexUsagesWhenSchemaStateWasUpdatedDuringLockOperations() throws Exception
+    void reTakeLabelLockForQueryWithIndexUsagesWhenSchemaStateWasUpdatedDuringLockOperations() throws Exception
     {
         String labelName = "Robot";
         Label robot = Label.label( labelName );
         String propertyKey = "name";
         createIndex( robot, propertyKey );
 
-        try ( Transaction transaction = databaseRule.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
-            Node node = databaseRule.createNode( robot );
+            Node node = db.createNode( robot );
             node.setProperty( propertyKey, RandomStringUtils.randomAscii( 10 ) );
             transaction.success();
         }
@@ -173,22 +174,22 @@ public class QueryExecutionLocksIT
 
     private void createIndex( Label label, String propertyKey )
     {
-        try ( Transaction transaction = databaseRule.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
-            databaseRule.schema().indexFor( label ).on( propertyKey ).create();
+            db.schema().indexFor( label ).on( propertyKey ).create();
             transaction.success();
         }
-        try ( Transaction ignored = databaseRule.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
-            databaseRule.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
         }
     }
 
     private List<LockOperationRecord> traceQueryLocks( String query, LockOperationListener... listeners )
             throws QueryExecutionKernelException
     {
-        GraphDatabaseQueryService graph = databaseRule.resolveDependency( GraphDatabaseQueryService.class );
-        QueryExecutionEngine executionEngine = databaseRule.resolveDependency( QueryExecutionEngine.class );
+        GraphDatabaseQueryService graph = db.getDependencyResolver().resolveDependency( GraphDatabaseQueryService.class );
+        QueryExecutionEngine executionEngine = db.getDependencyResolver().resolveDependency( QueryExecutionEngine.class );
         try ( InternalTransaction tx = graph.beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED ) )
         {
             TransactionalContextWrapper context =
@@ -503,7 +504,7 @@ public class QueryExecutionLocksIT
             if ( !executed )
             {
                 ThreadToStatementContextBridge bridge =
-                        databaseRule.resolveDependency( ThreadToStatementContextBridge.class );
+                        db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
                 KernelTransaction ktx =
                         bridge.getKernelTransactionBoundToThisThread( true );
                 ktx.schemaRead().schemaStateFlush();

@@ -20,8 +20,7 @@
 package org.neo4j.kernel;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.RepeatedTest;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -32,11 +31,11 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
-import org.neo4j.test.rule.RepeatRule;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.asSet;
 
 /**
@@ -47,29 +46,29 @@ import static org.neo4j.helpers.collection.Iterables.asSet;
  * "name -> id" and "id -> name" populated.
  * Otherwise attempt to retrieve labels from newly created node can fail.
  */
-public class TokenCreationIT
+@DbmsExtension
+class TokenCreationIT
 {
-    @Rule
-    public final EmbeddedDbmsRule databaseRule = new EmbeddedDbmsRule();
+    @Inject
+    private GraphDatabaseService db;
 
     private volatile boolean stop;
 
-    @Test
-    @RepeatRule.Repeat( times = 5 )
-    public void concurrentLabelTokenCreation() throws InterruptedException
+    @RepeatedTest( 5 )
+    void concurrentLabelTokenCreation() throws InterruptedException
     {
         int concurrentWorkers = 10;
         CountDownLatch latch = new CountDownLatch( concurrentWorkers );
         for ( int i = 0; i < concurrentWorkers; i++ )
         {
-            new LabelCreator( databaseRule, latch ).start();
+            new LabelCreator( db, latch ).start();
         }
         LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 500 ) );
         stop = true;
         latch.await();
     }
 
-    public Label[] getLabels()
+    private Label[] getLabels()
     {
         int randomLabelValue = ThreadLocalRandom.current().nextInt( 2 ) + 1;
         Label[] labels = new Label[randomLabelValue];

@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.util.Arrays;
@@ -60,7 +59,8 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -68,9 +68,9 @@ import static java.util.Collections.emptySet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.inOrder;
@@ -78,16 +78,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class NeoStoreIndexStoreViewTest
+@DbmsExtension
+class NeoStoreIndexStoreViewTest
 {
-    @Rule
-    public EmbeddedDbmsRule dbRule = new EmbeddedDbmsRule();
+    @Inject
+    private GraphDatabaseAPI graphDb;
 
     private final Map<Long, Lock> lockMocks = new HashMap<>();
     private final Label label = Label.label( "Person" );
     private final RelationshipType relationshipType = RelationshipType.withName( "Knows" );
 
-    private GraphDatabaseAPI graphDb;
     private NeoStoreIndexStoreView storeView;
 
     private int labelId;
@@ -104,11 +104,9 @@ public class NeoStoreIndexStoreViewTest
     private StorageReader reader;
     private NodePropertyAccessor propertyAccessor;
 
-    @Before
-    public void before() throws KernelException
+    @BeforeEach
+    void before() throws KernelException
     {
-        graphDb = dbRule.getGraphDatabaseAPI();
-
         createAlistairAndStefanNodes();
         getOrCreateIds();
 
@@ -132,15 +130,15 @@ public class NeoStoreIndexStoreViewTest
         reader = storageEngine.newReader();
     }
 
-    @After
-    public void after()
+    @AfterEach
+    void after()
     {
         propertyAccessor.close();
         reader.close();
     }
 
     @Test
-    public void shouldScanExistingNodesForALabel() throws Exception
+    void shouldScanExistingNodesForALabel() throws Exception
     {
         // given
         EntityUpdateCollectingVisitor visitor = new EntityUpdateCollectingVisitor();
@@ -161,11 +159,10 @@ public class NeoStoreIndexStoreViewTest
     }
 
     @Test
-    public void shouldScanExistingRelationshipsForARelationshiptype() throws Exception
+    void shouldScanExistingRelationshipsForARelationshiptype() throws Exception
     {
         // given
         EntityUpdateCollectingVisitor visitor = new EntityUpdateCollectingVisitor();
-        @SuppressWarnings( "unchecked" )
         StoreScan<Exception> storeScan =
                 storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor );
 
@@ -178,7 +175,7 @@ public class NeoStoreIndexStoreViewTest
     }
 
     @Test
-    public void shouldIgnoreDeletedNodesDuringScan() throws Exception
+    void shouldIgnoreDeletedNodesDuringScan() throws Exception
     {
         // given
         deleteAlistairAndStefanNodes();
@@ -196,13 +193,12 @@ public class NeoStoreIndexStoreViewTest
     }
 
     @Test
-    public void shouldIgnoreDeletedRelationshipsDuringScan() throws Exception
+    void shouldIgnoreDeletedRelationshipsDuringScan() throws Exception
     {
         // given
         deleteAlistairAndStefanNodes();
 
         EntityUpdateCollectingVisitor visitor = new EntityUpdateCollectingVisitor();
-        @SuppressWarnings( "unchecked" )
         StoreScan<Exception> storeScan =
                 storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor );
 
@@ -214,7 +210,7 @@ public class NeoStoreIndexStoreViewTest
     }
 
     @Test
-    public void shouldLockNodesWhileReadingThem() throws Exception
+    void shouldLockNodesWhileReadingThem() throws Exception
     {
         // given
         @SuppressWarnings( "unchecked" )
@@ -229,8 +225,8 @@ public class NeoStoreIndexStoreViewTest
         assertThat( "allocated locks: " + lockMocks.keySet(), lockMocks.size(), greaterThanOrEqualTo( 2 ) );
         Lock lock0 = lockMocks.get( 0L );
         Lock lock1 = lockMocks.get( 1L );
-        assertNotNull( "Lock[node=0] never acquired", lock0 );
-        assertNotNull( "Lock[node=1] never acquired", lock1 );
+        assertNotNull( lock0, "Lock[node=0] never acquired" );
+        assertNotNull( lock1, "Lock[node=1] never acquired" );
         InOrder order = inOrder( locks, lock0, lock1 );
         order.verify( locks ).acquireNodeLock( 0, LockService.LockType.READ_LOCK );
         order.verify( lock0 ).release();
@@ -239,7 +235,7 @@ public class NeoStoreIndexStoreViewTest
     }
 
     @Test
-    public void shouldLockRelationshipsWhileReadingThem() throws Exception
+    void shouldLockRelationshipsWhileReadingThem() throws Exception
     {
         // given
         @SuppressWarnings( "unchecked" )
@@ -253,8 +249,8 @@ public class NeoStoreIndexStoreViewTest
         assertThat( "allocated locks: " + lockMocks.keySet(), lockMocks.size(), greaterThanOrEqualTo( 2 ) );
         Lock lock0 = lockMocks.get( 0L );
         Lock lock1 = lockMocks.get( 1L );
-        assertNotNull( "Lock[relationship=0] never acquired", lock0 );
-        assertNotNull( "Lock[relationship=1] never acquired", lock1 );
+        assertNotNull( lock0, "Lock[relationship=0] never acquired" );
+        assertNotNull( lock1, "Lock[relationship=1] never acquired" );
         InOrder order = inOrder( locks, lock0, lock1 );
         order.verify( locks ).acquireRelationshipLock( 0, LockService.LockType.READ_LOCK );
         order.verify( lock0 ).release();
@@ -263,16 +259,17 @@ public class NeoStoreIndexStoreViewTest
     }
 
     @Test
-    public void shouldReadProperties() throws EntityNotFoundException
+    void shouldReadProperties() throws EntityNotFoundException
     {
         Value value = propertyAccessor.getNodePropertyValue( alistair.getId(), propertyKeyId );
         assertTrue( value.equals( Values.of( "Alistair" ) ) );
     }
 
     @Test
-    public void processAllNodeProperties() throws Exception
+    void processAllNodeProperties() throws Exception
     {
         CopyUpdateVisitor propertyUpdateVisitor = new CopyUpdateVisitor();
+        @SuppressWarnings( "unchecked" )
         StoreViewNodeStoreScan storeViewNodeStoreScan =
                 new StoreViewNodeStoreScan( new RecordStorageReader( neoStores ), locks,
                         null, propertyUpdateVisitor, new int[]{labelId},
@@ -287,7 +284,7 @@ public class NeoStoreIndexStoreViewTest
         }
 
         EntityUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
-        assertNotNull( "Visitor should contain container with updates.", propertyUpdates );
+        assertNotNull( propertyUpdates, "Visitor should contain container with updates." );
 
         LabelSchemaDescriptor index1 = SchemaDescriptorFactory.forLabel( 0, 0 );
         LabelSchemaDescriptor index2 = SchemaDescriptorFactory.forLabel( 0, 1 );
@@ -303,10 +300,11 @@ public class NeoStoreIndexStoreViewTest
     }
 
     @Test
-    public void processAllRelationshipProperties() throws Exception
+    void processAllRelationshipProperties() throws Exception
     {
         createAlistairAndStefanNodes();
         CopyUpdateVisitor propertyUpdateVisitor = new CopyUpdateVisitor();
+        @SuppressWarnings( "unchecked" )
         RelationshipStoreScan relationshipStoreScan =
                 new RelationshipStoreScan( new RecordStorageReader( neoStores ), locks, propertyUpdateVisitor, new int[]{relTypeId},
                         id -> true );
@@ -320,7 +318,7 @@ public class NeoStoreIndexStoreViewTest
         }
 
         EntityUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
-        assertNotNull( "Visitor should contain container with updates.", propertyUpdates );
+        assertNotNull( propertyUpdates, "Visitor should contain container with updates." );
 
         DefaultRelationTypeSchemaDescriptor index1 = SchemaDescriptorFactory.forRelType( 0, 2 );
         DefaultRelationTypeSchemaDescriptor index2 = SchemaDescriptorFactory.forRelType( 0, 3 );

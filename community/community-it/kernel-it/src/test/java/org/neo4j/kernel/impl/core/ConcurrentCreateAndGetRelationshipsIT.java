@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,7 +34,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -52,17 +52,18 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
  * the full 0.5 seconds to try to reproduce it.
  *
  */
-public class ConcurrentCreateAndGetRelationshipsIT
+@ImpermanentDbmsExtension
+class ConcurrentCreateAndGetRelationshipsIT
 {
-    @Rule
-    public final ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
+    @Inject
+    private GraphDatabaseService db;
+
     private static final RelationshipType RELTYPE = MyRelTypes.TEST;
 
     @Test
-    public void tryToReproduceTheIssue() throws Exception
+    void tryToReproduceTheIssue() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         CountDownLatch startSignal = new CountDownLatch( 1 );
         AtomicBoolean stopSignal = new AtomicBoolean();
         AtomicReference<Exception> failure = new AtomicReference<>();
