@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.internal;
 
-import java.net.URL;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -45,14 +43,6 @@ public interface GraphDatabaseAPI extends GraphDatabaseService
 
     /** Provides the unique id assigned to this database. */
     StoreId storeId();
-
-    /**
-     * Validate whether this database instance is permitted to reach out to the specified URL (e.g. when using {@code LOAD CSV} in Cypher).
-     *
-     * @param url the URL being validated
-     * @return an updated URL that should be used for accessing the resource
-     */
-    URL validateURLAccess( URL url ) throws URLAccessValidationError;
 
     /**
      * @return underlying database directory

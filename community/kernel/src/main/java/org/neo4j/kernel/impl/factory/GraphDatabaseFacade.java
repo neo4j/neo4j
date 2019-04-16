@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.factory;
 
-import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
@@ -49,7 +48,6 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.Iterators;
@@ -167,8 +165,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         <T> void registerTransactionEventHandler( TransactionEventHandler<T> handler );
 
         <T> void unregisterTransactionEventHandler( TransactionEventHandler<T> handler );
-
-        URL validateURLAccess( URL url ) throws URLAccessValidationError;
 
         GraphDatabaseQueryService queryService();
     }
@@ -855,12 +851,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     public StoreId storeId()
     {
         return spi.storeId();
-    }
-
-    @Override
-    public URL validateURLAccess( URL url ) throws URLAccessValidationError
-    {
-        return spi.validateURLAccess( url );
     }
 
     @Override

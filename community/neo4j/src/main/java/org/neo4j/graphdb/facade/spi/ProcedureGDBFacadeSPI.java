@@ -19,15 +19,11 @@
  */
 package org.neo4j.graphdb.facade.spi;
 
-import java.net.URL;
-
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.module.DatabaseModule;
-import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -49,19 +45,16 @@ public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     private final DatabaseModule sourceModule;
     private final DependencyResolver resolver;
     private final CoreAPIAvailabilityGuard availability;
-    private final ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator;
     private final SecurityContext securityContext;
     private final ThreadToStatementContextBridge threadToTransactionBridge;
 
     public ProcedureGDBFacadeSPI( DatabaseModule sourceModule, DependencyResolver resolver, CoreAPIAvailabilityGuard availability,
-            ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator, SecurityContext securityContext,
-            ThreadToStatementContextBridge threadToTransactionBridge )
+            SecurityContext securityContext, ThreadToStatementContextBridge threadToTransactionBridge )
     {
         this.databaseLayout = sourceModule.database.getDatabaseLayout();
         this.sourceModule = sourceModule;
         this.resolver = resolver;
         this.availability = availability;
-        this.urlValidator = urlValidator;
         this.securityContext = securityContext;
         this.threadToTransactionBridge = threadToTransactionBridge;
     }
@@ -132,12 +125,6 @@ public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     public <T> void unregisterTransactionEventHandler( TransactionEventHandler<T> handler )
     {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public URL validateURLAccess( URL url ) throws URLAccessValidationError
-    {
-        return urlValidator.apply( url );
     }
 
     @Override

@@ -20,7 +20,6 @@
 package org.neo4j.test.rule;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -47,7 +46,6 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -461,12 +459,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     public String getDatabaseDirAbsolutePath()
     {
         return databaseLayout().databaseDirectory().getAbsolutePath();
-    }
-
-    @Override
-    public URL validateURLAccess( URL url ) throws URLAccessValidationError
-    {
-        return database.validateURLAccess( url );
     }
 
     @Override

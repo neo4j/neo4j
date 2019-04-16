@@ -23,7 +23,9 @@ import java.net.URL;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -37,11 +39,16 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService
 {
     private final GraphDatabaseFacade graph;
     private final DbmsOperations dbmsOperations;
+    private final URLAccessRule urlAccessRule;
+    private final Config config;
 
     public GraphDatabaseCypherService( GraphDatabaseService graph )
     {
         this.graph = (GraphDatabaseFacade) graph;
-        this.dbmsOperations = getDependencyResolver().resolveDependency( DbmsOperations.class );
+        DependencyResolver dependencyResolver = getDependencyResolver();
+        this.dbmsOperations = dependencyResolver.resolveDependency( DbmsOperations.class );
+        this.urlAccessRule = dependencyResolver.resolveDependency( URLAccessRule.class );
+        this.config = dependencyResolver.resolveDependency( Config.class );
     }
 
     @Override
@@ -72,7 +79,7 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService
     @Override
     public URL validateURLAccess( URL url ) throws URLAccessValidationError
     {
-        return graph.validateURLAccess( url );
+        return urlAccessRule.validate( config, url );
     }
 
     @Override

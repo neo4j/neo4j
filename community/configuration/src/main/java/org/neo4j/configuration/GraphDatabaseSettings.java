@@ -442,7 +442,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     @Dynamic
     public static final Setting<List<String>> store_internal_debug_contexts = setting( "unsupported.dbms.logs.debug.debug_loggers",
-            list( ",", STRING ), "org.neo4j.diagnostics,org.neo4j.cluster.protocol,org.neo4j.kernel.ha" );
+            list( ",", STRING ), "org.neo4j.diagnostics" );
 
     @Description( "Debug log level threshold." )
     @Dynamic

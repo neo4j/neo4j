@@ -95,7 +95,8 @@ public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends
         GraphDatabaseFacade facade =
                 globalConfig.get( default_database ).equals( databaseId.name() ) ? graphDatabaseFacade : new GraphDatabaseFacade();
         DatabaseModule dataSource = new DatabaseModule( databaseId, globalModule, edition, facade );
-        ClassicCoreSPI spi = new ClassicCoreSPI( globalModule, dataSource, log, dataSource.coreAPIAvailabilityGuard, edition.getThreadToTransactionBridge() );
+        ClassicCoreSPI spi = new ClassicCoreSPI( globalModule.getDatabaseInfo(), dataSource,
+                dataSource.coreAPIAvailabilityGuard, edition.getThreadToTransactionBridge() );
         Database database = dataSource.database;
         facade.init( spi, edition.getThreadToTransactionBridge(), globalConfig, database.getTokenHolders() );
         return createDatabaseContext( database, facade );

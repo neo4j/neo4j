@@ -21,7 +21,6 @@ package org.neo4j.graphdb.factory.module;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -32,7 +31,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
-import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -86,6 +84,8 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
@@ -112,7 +112,6 @@ public class GlobalModule
     private final GlobalExtensions globalExtensions;
     private final Iterable<ExtensionFactory<?>> extensionFactories;
     private final Iterable<QueryEngineProvider> queryEngineProviders;
-    private final URLAccessRule urlAccessRule;
     private final JobScheduler jobScheduler;
     private final SystemNanoClock globalClock;
     private final VersionContextSupplier versionContextSupplier;
@@ -204,7 +203,7 @@ public class GlobalModule
                 new GlobalExtensions( new GlobalExtensionContext( storeLayout, databaseInfo, globalDependencies ), extensionFactories, globalDependencies,
                         ExtensionFailureStrategies.fail() ) );
 
-        urlAccessRule = globalDependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
+        globalDependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
 
         connectorPortRegister = new ConnectorPortRegister();
         globalDependencies.satisfyDependency( connectorPortRegister );
@@ -237,7 +236,7 @@ public class GlobalModule
         }
     }
 
-    private void startDeferredExecutors( JobScheduler jobScheduler, Iterable<Pair<DeferredExecutor,Group>> deferredExecutors )
+    private static void startDeferredExecutors( JobScheduler jobScheduler, Iterable<Pair<DeferredExecutor,Group>> deferredExecutors )
     {
         for ( Pair<DeferredExecutor,Group> executorGroupPair : deferredExecutors )
         {
@@ -339,9 +338,9 @@ public class GlobalModule
         return globalLife.add( logService );
     }
 
-    private Map<String,Level> asDebugLogLevels( List<String> strings )
+    private static Map<String,Level> asDebugLogLevels( List<String> strings )
     {
-        return strings.stream().collect( HashMap::new, ( map, string ) -> map.put( string, Level.DEBUG ), HashMap::putAll );
+        return strings.stream().collect( toMap( identity(), s -> Level.DEBUG ) );
     }
 
     protected JobScheduler createJobScheduler()
@@ -441,11 +440,6 @@ public class GlobalModule
     public Config getGlobalConfig()
     {
         return globalConfig;
-    }
-
-    public URLAccessRule getUrlAccessRule()
-    {
-        return urlAccessRule;
     }
 
     public FileSystemAbstraction getFileSystem()
