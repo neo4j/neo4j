@@ -37,7 +37,7 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 
 @RecoveryExtension
-public abstract class AbstractIndexProviderFactory<DEPENDENCIES extends AbstractIndexProviderFactory.Dependencies> extends ExtensionFactory<DEPENDENCIES>
+public abstract class AbstractIndexProviderFactory extends ExtensionFactory<AbstractIndexProviderFactory.Dependencies>
 {
     protected AbstractIndexProviderFactory( String key )
     {
@@ -45,7 +45,7 @@ public abstract class AbstractIndexProviderFactory<DEPENDENCIES extends Abstract
     }
 
     @Override
-    public IndexProvider newInstance( ExtensionContext context, DEPENDENCIES dependencies )
+    public IndexProvider newInstance( ExtensionContext context, Dependencies dependencies )
     {
         PageCache pageCache = dependencies.pageCache();
         File databaseDir = context.directory();

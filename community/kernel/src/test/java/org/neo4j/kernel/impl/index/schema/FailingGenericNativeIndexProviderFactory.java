@@ -67,7 +67,7 @@ import static java.util.Arrays.copyOfRange;
  *     .newEmbeddedDatabase( dir );
  * </pre>
  */
-public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<GenericNativeIndexProviderFactory.Dependencies>
+public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<AbstractIndexProviderFactory.Dependencies>
 {
     public static final String INITIAL_STATE_FAILURE_MESSAGE = "Override initial state as failed";
     public static final String POPULATION_FAILURE_MESSAGE = "Fail on update during population";
@@ -99,7 +99,7 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<G
     }
 
     @Override
-    public Lifecycle newInstance( ExtensionContext context, GenericNativeIndexProviderFactory.Dependencies dependencies )
+    public Lifecycle newInstance( ExtensionContext context, AbstractIndexProviderFactory.Dependencies dependencies )
     {
         IndexProvider actualProvider = actual.newInstance( context, dependencies );
         return new IndexProvider( actualProvider.getProviderDescriptor(), IndexDirectoryStructure.given( actualProvider.directoryStructure() ) )

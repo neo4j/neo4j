@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
+import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
@@ -314,19 +315,19 @@ class LuceneIndexRecoveryIT
         }
     }
 
-    private ExtensionFactory<NativeLuceneFusionIndexProviderFactory30.Dependencies> createAlwaysInitiallyPopulatingLuceneIndexFactory()
+    private ExtensionFactory<AbstractIndexProviderFactory.Dependencies> createAlwaysInitiallyPopulatingLuceneIndexFactory()
     {
         return new PopulatingTestLuceneIndexExtension();
     }
 
     // Creates a lucene index factory with the shared in-memory directory
-    private ExtensionFactory<NativeLuceneFusionIndexProviderFactory30.Dependencies> createLuceneIndexFactory()
+    private ExtensionFactory<AbstractIndexProviderFactory.Dependencies> createLuceneIndexFactory()
     {
         return new TestLuceneIndexExtension();
     }
 
     @RecoveryExtension
-    private class TestLuceneIndexExtension extends ExtensionFactory<NativeLuceneFusionIndexProviderFactory30.Dependencies>
+    private class TestLuceneIndexExtension extends ExtensionFactory<AbstractIndexProviderFactory.Dependencies>
     {
 
         TestLuceneIndexExtension()
@@ -335,7 +336,7 @@ class LuceneIndexRecoveryIT
         }
 
         @Override
-        public Lifecycle newInstance( ExtensionContext context, NativeLuceneFusionIndexProviderFactory30.Dependencies dependencies )
+        public Lifecycle newInstance( ExtensionContext context, AbstractIndexProviderFactory.Dependencies dependencies )
         {
             return new LuceneIndexProvider( fs, directoryFactory, defaultDirectoryStructure( context.directory() ), IndexProvider.Monitor.EMPTY,
                     dependencies.getConfig(), context.databaseInfo().operationalMode );
@@ -343,7 +344,7 @@ class LuceneIndexRecoveryIT
     }
 
     @RecoveryExtension
-    private class PopulatingTestLuceneIndexExtension extends ExtensionFactory<NativeLuceneFusionIndexProviderFactory30.Dependencies>
+    private class PopulatingTestLuceneIndexExtension extends ExtensionFactory<AbstractIndexProviderFactory.Dependencies>
     {
         PopulatingTestLuceneIndexExtension()
         {
@@ -351,7 +352,7 @@ class LuceneIndexRecoveryIT
         }
 
         @Override
-        public Lifecycle newInstance( ExtensionContext context, NativeLuceneFusionIndexProviderFactory30.Dependencies dependencies )
+        public Lifecycle newInstance( ExtensionContext context, AbstractIndexProviderFactory.Dependencies dependencies )
         {
             return new LuceneIndexProvider( fs, directoryFactory, defaultDirectoryStructure( context.directory() ),
                     IndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )

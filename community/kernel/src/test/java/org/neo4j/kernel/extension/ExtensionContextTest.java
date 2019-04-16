@@ -38,6 +38,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -63,6 +64,23 @@ class ExtensionContextTest
         try ( Lifespan ignored = new Lifespan( extensions ) )
         {
             verify( handler ).handle( eq( extensionFactory ), any( UnsatisfiedDependencyException.class ) );
+        }
+    }
+
+    @Test
+    void shouldFindDependenciesFromHierarchyBottomUp()
+    {
+        GlobalExtensionContext context = mock( GlobalExtensionContext.class );
+        ExtensionFailureStrategy handler = mock( ExtensionFailureStrategy.class );
+        Dependencies dependencies = new Dependencies();
+        JobScheduler jobScheduler = mock( JobScheduler.class );
+        dependencies.satisfyDependencies( jobScheduler );
+        SubTestingExtensionFactory extensionFactory = new SubTestingExtensionFactory();
+        GlobalExtensions extensions = new GlobalExtensions( context, iterable( extensionFactory ), dependencies, handler );
+
+        try ( Lifespan ignored = new Lifespan( extensions ) )
+        {
+            assertNotNull( dependencies.resolveDependency( TestingExtension.class ) );
         }
     }
 
@@ -115,6 +133,11 @@ class ExtensionContextTest
         {
             return new TestingExtension( dependencies.jobScheduler() );
         }
+    }
+
+    private static class SubTestingExtensionFactory extends TestingExtensionFactory
+    {
+        // Nothing to override.
     }
 
     private static class TestingExtension extends LifecycleAdapter

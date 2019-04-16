@@ -43,7 +43,7 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySu
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 
 @ServiceProvider
-public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProviderFactory<NativeLuceneFusionIndexProviderFactory30.Dependencies>
+public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProviderFactory
 {
     public static final String KEY = NATIVE30.providerKey();
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, NATIVE30.providerVersion() );
@@ -100,9 +100,5 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
     {
         IndexDirectoryStructure parentDirectoryStructure = directoriesByProvider( databaseDirectory ).forProvider( descriptor );
         return directoriesBySubProvider( parentDirectoryStructure );
-    }
-
-    public interface Dependencies extends AbstractIndexProviderFactory.Dependencies
-    {
     }
 }
