@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.function.LongPredicate;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
@@ -96,7 +97,7 @@ public class BlockBasedIndexPopulatorTest
     public void shouldAwaitMergeToBeFullyAbortedBeforeLeavingCloseMethod() throws Exception
     {
         // given
-        TrappingMonitor monitor = new TrappingMonitor( false );
+        TrappingMonitor monitor = new TrappingMonitor( ignore -> false );
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( monitor, new LocalMemoryTracker() );
         boolean closed = false;
         try
@@ -127,10 +128,46 @@ public class BlockBasedIndexPopulatorTest
     }
 
     @Test
+    public void shouldHandleBeingAbortedWhileMerging() throws Exception
+    {
+        // given
+        TrappingMonitor monitor = new TrappingMonitor( numberOfBlocks -> numberOfBlocks == 2 );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( monitor, new LocalMemoryTracker() );
+        boolean closed = false;
+        try
+        {
+            populator.add( batchOfUpdates() );
+
+            // when starting to merge (in a separate thread)
+            Future<Object> mergeFuture = t2.execute( command( () -> populator.scanCompleted( nullInstance ) ) );
+            // and waiting for merge to get going
+            monitor.barrier.await();
+            monitor.barrier.release();
+            monitor.mergeFinishedBarrier.awaitUninterruptibly();
+            // calling close here should wait for the merge future, so that checking the merge future for "done" immediately afterwards must say true
+            Future<Object> closeFuture = t3.execute( command( () -> populator.close( false ) ) );
+            t3.get().waitUntilWaiting();
+            monitor.mergeFinishedBarrier.release();
+            closeFuture.get();
+            closed = true;
+
+            // then let's make sure scanComplete was cancelled, not throwing exception or anything.
+            mergeFuture.get();
+        }
+        finally
+        {
+            if ( !closed )
+            {
+                populator.close( false );
+            }
+        }
+    }
+
+    @Test
     public void shouldReportAccurateProgressThroughoutThePhases() throws Exception
     {
         // given
-        TrappingMonitor monitor = new TrappingMonitor( true );
+        TrappingMonitor monitor = new TrappingMonitor( numberOfBlocks -> numberOfBlocks == 1 );
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( monitor, new LocalMemoryTracker() );
         try
         {
@@ -189,7 +226,7 @@ public class BlockBasedIndexPopulatorTest
     public void shouldDeleteDirectoryOnDrop() throws Exception
     {
         // given
-        TrappingMonitor monitor = new TrappingMonitor( false );
+        TrappingMonitor monitor = new TrappingMonitor( ignore -> false );
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( monitor, new LocalMemoryTracker() );
         boolean closed = false;
         try
@@ -341,11 +378,11 @@ public class BlockBasedIndexPopulatorTest
     {
         private final Barrier.Control barrier = new Barrier.Control();
         private final Barrier.Control mergeFinishedBarrier = new Barrier.Control();
-        private final boolean alsoTrapAfterMergeCompleted;
+        private final LongPredicate trapForMergeIterationFinished;
 
-        TrappingMonitor( boolean alsoTrapAfterMergeCompleted )
+        TrappingMonitor( LongPredicate trapForMergeIterationFinished )
         {
-            this.alsoTrapAfterMergeCompleted = alsoTrapAfterMergeCompleted;
+            this.trapForMergeIterationFinished = trapForMergeIterationFinished;
         }
 
         @Override
@@ -357,7 +394,7 @@ public class BlockBasedIndexPopulatorTest
         @Override
         public void mergeIterationFinished( long numberOfBlocksBefore, long numberOfBlocksAfter )
         {
-            if ( numberOfBlocksAfter == 1 && alsoTrapAfterMergeCompleted )
+            if ( trapForMergeIterationFinished.test( numberOfBlocksAfter ) )
             {
                 mergeFinishedBarrier.reached();
             }
