@@ -69,6 +69,7 @@ import static java.time.LocalDate.ofEpochDay;
 import static java.util.Arrays.asList;
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -1185,7 +1186,6 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         IndexQuery secondSuffix = stringSuffix( 100, someString );
         IndexQuery secondContains = stringContains( 100, someString );
 
-        // Illegal queries
         List<Pair<IndexQuery[],Boolean>> queries = Arrays.asList(
                 of( new IndexQuery[]{firstExact, secondExact}, true ),
                 of( new IndexQuery[]{firstExact, secondRange}, true ),
@@ -1201,33 +1201,33 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                 of( new IndexQuery[]{firstRange, secondSuffix}, false ),
                 of( new IndexQuery[]{firstRange, secondContains}, false ),
 
-                of( new IndexQuery[]{firstPrefix,secondExact}, false ),
-                of( new IndexQuery[]{firstPrefix,secondRange}, false ),
-                of( new IndexQuery[]{firstPrefix,secondExist}, true ),
-                of( new IndexQuery[]{firstPrefix,secondPrefix}, false ),
-                of( new IndexQuery[]{firstPrefix,secondSuffix}, false ),
-                of( new IndexQuery[]{firstPrefix,secondContains}, false ),
+                of( new IndexQuery[]{firstPrefix, secondExact}, false ),
+                of( new IndexQuery[]{firstPrefix, secondRange}, false ),
+                of( new IndexQuery[]{firstPrefix, secondExist}, true ),
+                of( new IndexQuery[]{firstPrefix, secondPrefix}, false ),
+                of( new IndexQuery[]{firstPrefix, secondSuffix}, false ),
+                of( new IndexQuery[]{firstPrefix, secondContains}, false ),
 
-                of( new IndexQuery[]{firstExist,secondExact}, false ),
-                of( new IndexQuery[]{firstExist,secondRange}, false ),
-                of( new IndexQuery[]{firstExist,secondExist}, true ),
-                of( new IndexQuery[]{firstExist,secondPrefix}, false ),
-                of( new IndexQuery[]{firstExist,secondSuffix}, false ),
-                of( new IndexQuery[]{firstExist,secondContains}, false ),
+                of( new IndexQuery[]{firstExist, secondExact}, false ),
+                of( new IndexQuery[]{firstExist, secondRange}, false ),
+                of( new IndexQuery[]{firstExist, secondExist}, true ),
+                of( new IndexQuery[]{firstExist, secondPrefix}, false ),
+                of( new IndexQuery[]{firstExist, secondSuffix}, false ),
+                of( new IndexQuery[]{firstExist, secondContains}, false ),
 
-                of( new IndexQuery[]{firstSuffix,secondExact}, false ),
-                of( new IndexQuery[]{firstSuffix,secondRange}, false ),
-                of( new IndexQuery[]{firstSuffix,secondExist}, false ),
-                of( new IndexQuery[]{firstSuffix,secondPrefix}, false ),
-                of( new IndexQuery[]{firstSuffix,secondSuffix}, false ),
-                of( new IndexQuery[]{firstSuffix,secondContains}, false ),
+                of( new IndexQuery[]{firstSuffix, secondExact}, false ),
+                of( new IndexQuery[]{firstSuffix, secondRange}, false ),
+                of( new IndexQuery[]{firstSuffix, secondExist}, false ),
+                of( new IndexQuery[]{firstSuffix, secondPrefix}, false ),
+                of( new IndexQuery[]{firstSuffix, secondSuffix}, false ),
+                of( new IndexQuery[]{firstSuffix, secondContains}, false ),
 
-                of( new IndexQuery[]{firstContains,secondExact}, false ),
-                of( new IndexQuery[]{firstContains,secondRange}, false ),
-                of( new IndexQuery[]{firstContains,secondExist}, false ),
-                of( new IndexQuery[]{firstContains,secondPrefix}, false ),
-                of( new IndexQuery[]{firstContains,secondSuffix}, false ),
-                of( new IndexQuery[]{firstContains,secondContains}, false )
+                of( new IndexQuery[]{firstContains, secondExact}, false ),
+                of( new IndexQuery[]{firstContains, secondRange}, false ),
+                of( new IndexQuery[]{firstContains, secondExist}, false ),
+                of( new IndexQuery[]{firstContains, secondPrefix}, false ),
+                of( new IndexQuery[]{firstContains, secondSuffix}, false ),
+                of( new IndexQuery[]{firstContains, secondContains}, false )
         );
 
         SimpleNodeValueClient client = new SimpleNodeValueClient();
@@ -1254,7 +1254,8 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                     }
                     catch ( IllegalArgumentException e )
                     {
-                        // Then verify message
+                        // then
+                        assertThat( e.getMessage(), containsString( "Tried to query index with illegal composite query." ));
                     }
                 }
             }
