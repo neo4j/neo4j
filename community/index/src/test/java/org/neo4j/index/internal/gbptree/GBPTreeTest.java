@@ -77,7 +77,6 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.util.FeatureToggles;
 
 import static java.lang.Long.MAX_VALUE;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -1666,62 +1665,54 @@ public class GBPTreeTest
     @Test( timeout = 5_000L )
     public void mustThrowIfStuckInInfiniteRootCatchupMultipleConcurrentSeekers() throws IOException, InterruptedException
     {
-        FeatureToggles.set( TripCountingRootCatchup.class, TripCountingRootCatchup.MAX_TRIP_COUNT_NAME, 10000 );
-        try
-        {
-            List<Long> trace = new ArrayList<>();
-            MutableBoolean onOffSwitch = new MutableBoolean( true );
-            PageCursorTracer pageCursorTracer = trackingPageCursorTracer( trace, onOffSwitch );
-            PageCache pageCache = pageCacheWithTrace( pageCursorTracer );
+        List<Long> trace = new ArrayList<>();
+        MutableBoolean onOffSwitch = new MutableBoolean( true );
+        PageCursorTracer pageCursorTracer = trackingPageCursorTracer( trace, onOffSwitch );
+        PageCache pageCache = pageCacheWithTrace( pageCursorTracer );
 
-            // Build a tree with root and two children.
-            try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
+        // Build a tree with root and two children.
+        try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
+        {
+            // Insert data until we have a split in root
+            treeWithRootSplit( trace, tree );
+            long leftChild = trace.get( 1 );
+            long rightChild = trace.get( 2 );
+
+            // Stop trace tracking because we will soon start pinning pages from different threads
+            onOffSwitch.setFalse();
+
+            // Corrupt the child
+            corruptTheChild( pageCache, leftChild );
+            corruptTheChild( pageCache, rightChild );
+
+            // When seek end up in this corrupt child we should eventually fail with a tree inconsistency exception
+            // even if we have multiple seeker that traverse different part of the tree and both get stuck in start from root loop.
+            ExecutorService executor = Executors.newFixedThreadPool( 2 );
+            CountDownLatch go = new CountDownLatch( 2 );
+            Future<Object> execute1 = executor.submit( () ->
             {
-                // Insert data until we have a split in root
-                treeWithRootSplit( trace, tree );
-                long leftChild = trace.get( 1 );
-                long rightChild = trace.get( 2 );
-
-                // Stop trace tracking because we will soon start pinning pages from different threads
-                onOffSwitch.setFalse();
-
-                // Corrupt the child
-                corruptTheChild( pageCache, leftChild );
-                corruptTheChild( pageCache, rightChild );
-
-                // When seek end up in this corrupt child we should eventually fail with a tree inconsistency exception
-                // even if we have multiple seeker that traverse different part of the tree and both get stuck in start from root loop.
-                ExecutorService executor = Executors.newFixedThreadPool( 2 );
-                CountDownLatch go = new CountDownLatch( 2 );
-                Future<Object> execute1 = executor.submit( () ->
+                go.countDown();
+                go.await();
+                try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ) ) )
                 {
-                    go.countDown();
-                    go.await();
-                    try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ) ) )
-                    {
-                        seek.next();
-                    }
-                    return null;
-                } );
+                    seek.next();
+                }
+                return null;
+            } );
 
-                Future<Object> execute2 = executor.submit( () ->
+            Future<Object> execute2 = executor.submit( () ->
+            {
+                go.countDown();
+                go.await();
+                try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> seek = tree.seek( new MutableLong( MAX_VALUE ), new MutableLong( MAX_VALUE ) ) )
                 {
-                    go.countDown();
-                    go.await();
-                    try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> seek = tree.seek( new MutableLong( MAX_VALUE ), new MutableLong( MAX_VALUE ) ) )
-                    {
-                        seek.next();
-                    }
-                    return null;
-                } );
+                    seek.next();
+                }
+                return null;
+            } );
 
-                assertFutureFailsWithTreeInconsistencyException( execute1 );
-                assertFutureFailsWithTreeInconsistencyException( execute2 );
-            }
-        }
-        finally
-        {
-            FeatureToggles.clear( TripCountingRootCatchup.class, TripCountingRootCatchup.MAX_TRIP_COUNT_NAME );
+            assertFutureFailsWithTreeInconsistencyException( execute1 );
+            assertFutureFailsWithTreeInconsistencyException( execute2 );
         }
     }
 

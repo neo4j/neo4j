@@ -23,11 +23,8 @@ import org.junit.Test;
 
 import java.util.function.Supplier;
 
-import org.neo4j.util.FeatureToggles;
-
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
-import static org.neo4j.index.internal.gbptree.TripCountingRootCatchup.MAX_TRIP_COUNT_NAME;
 
 public class TripCountingRootCatchupTest
 {
@@ -40,7 +37,7 @@ public class TripCountingRootCatchupTest
         // When
         try
         {
-            for ( int i = 0; i < TripCountingRootCatchup.MAX_TRIP_COUNT_DEFAULT; i++ )
+            for ( int i = 0; i < TripCountingRootCatchup.MAX_TRIP_COUNT; i++ )
             {
                 tripCountingRootCatchup.catchupFrom( 10 );
             }
@@ -59,7 +56,7 @@ public class TripCountingRootCatchupTest
         TripCountingRootCatchup tripCountingRootCatchup = getTripCounter();
 
         // When
-        for ( int i = 0; i < TripCountingRootCatchup.MAX_TRIP_COUNT_DEFAULT * 4; i++ )
+        for ( int i = 0; i < TripCountingRootCatchup.MAX_TRIP_COUNT * 4; i++ )
         {
             tripCountingRootCatchup.catchupFrom( i % 2 );
         }
@@ -80,30 +77,6 @@ public class TripCountingRootCatchupTest
 
         // then
         assertSame( expectedRoot, actualRoot );
-    }
-
-    @Test
-    public void mustObeyFeatureToggle()
-    {
-        int configuredMaxTripCount = 5;
-        FeatureToggles.set( TripCountingRootCatchup.class, MAX_TRIP_COUNT_NAME, configuredMaxTripCount );
-        try
-        {
-            TripCountingRootCatchup tripCountingRootCatchup = getTripCounter();
-            for ( int i = 0; i < configuredMaxTripCount; i++ )
-            {
-                tripCountingRootCatchup.catchupFrom( 10 );
-            }
-            fail( "Expected to throw" );
-        }
-        catch ( TreeInconsistencyException e )
-        {
-            // Then good
-        }
-        finally
-        {
-            FeatureToggles.clear( TripCountingRootCatchup.class, MAX_TRIP_COUNT_NAME );
-        }
     }
 
     private TripCountingRootCatchup getTripCounter()
