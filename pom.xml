@@ -89,7 +89,7 @@
 
         <license-text.header>headers/AGPL-3-header.txt</license-text.header>
 
-        <scala-maven-plugin.version>3.4.4</scala-maven-plugin.version>
+        <scala-maven-plugin.version>4.0.1</scala-maven-plugin.version>
         <scala.version>2.12.7</scala.version>
         <scala.binary.version>2.12</scala.binary.version>
         <asm.version>7.1</asm.version>
