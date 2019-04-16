@@ -38,7 +38,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
  * @param <KEY> type of key in {@link GBPTree}
  * @param <VALUE> type of value in {@link GBPTree}
  */
-class GBPTreeBuilder<KEY,VALUE>
+public class GBPTreeBuilder<KEY,VALUE>
 {
     private PageCache pageCache;
     private File file;
@@ -50,68 +50,68 @@ class GBPTreeBuilder<KEY,VALUE>
     private RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
     private OpenOption[] openOptions = {};
 
-    GBPTreeBuilder( PageCache pageCache, File file, Layout<KEY,VALUE> layout )
+    public GBPTreeBuilder( PageCache pageCache, File file, Layout<KEY,VALUE> layout )
     {
         with( pageCache );
         with( file );
         with( layout );
     }
 
-    GBPTreeBuilder<KEY,VALUE> with( Layout<KEY,VALUE> layout )
+    public GBPTreeBuilder<KEY,VALUE> with( Layout<KEY,VALUE> layout )
     {
         this.layout = layout;
         return this;
     }
 
-    GBPTreeBuilder<KEY,VALUE> with( File file )
+    public GBPTreeBuilder<KEY,VALUE> with( File file )
     {
         this.file = file;
         return this;
     }
 
-    GBPTreeBuilder<KEY,VALUE> with( PageCache pageCache )
+    public GBPTreeBuilder<KEY,VALUE> with( PageCache pageCache )
     {
         this.pageCache = pageCache;
         return this;
     }
 
-    GBPTreeBuilder<KEY,VALUE> withIndexPageSize( int tentativeIndexPageSize )
+    public GBPTreeBuilder<KEY,VALUE> withIndexPageSize( int tentativeIndexPageSize )
     {
         this.tentativeIndexPageSize = tentativeIndexPageSize;
         return this;
     }
 
-    GBPTreeBuilder<KEY,VALUE> with( GBPTree.Monitor monitor )
+    public GBPTreeBuilder<KEY,VALUE> with( GBPTree.Monitor monitor )
     {
         this.monitor = monitor;
         return this;
     }
 
-    GBPTreeBuilder<KEY,VALUE> with( Header.Reader headerReader )
+    public GBPTreeBuilder<KEY,VALUE> with( Header.Reader headerReader )
     {
         this.headerReader = headerReader;
         return this;
     }
 
-    GBPTreeBuilder<KEY,VALUE> with( Consumer<PageCursor> headerWriter )
+    public GBPTreeBuilder<KEY,VALUE> with( Consumer<PageCursor> headerWriter )
     {
         this.headerWriter = headerWriter;
         return this;
     }
 
-    GBPTreeBuilder<KEY,VALUE> with( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    public GBPTreeBuilder<KEY,VALUE> with( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         return this;
     }
 
-    GBPTreeBuilder<KEY,VALUE> with( OpenOption... openOptions )
+    public GBPTreeBuilder<KEY,VALUE> with( OpenOption... openOptions )
     {
         this.openOptions = openOptions;
         return this;
     }
 
-    GBPTree<KEY,VALUE> build()
+    public GBPTree<KEY,VALUE> build()
     {
         return new GBPTree<>( pageCache, file, layout, tentativeIndexPageSize, monitor, headerReader, headerWriter,
                 recoveryCleanupWorkCollector, openOptions );
