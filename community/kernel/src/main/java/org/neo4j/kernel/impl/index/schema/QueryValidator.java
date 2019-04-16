@@ -86,17 +86,14 @@ class QueryValidator
                             illegalQueryMessage, Arrays.toString( predicates ) ) );
                 }
             }
-            if ( prev != null )
+            if ( prev instanceof IndexQuery.RangePredicate ||
+                    prev instanceof IndexQuery.StringPrefixPredicate ||
+                    prev instanceof IndexQuery.ExistsPredicate )
             {
-                if ( prev instanceof IndexQuery.RangePredicate ||
-                        prev instanceof IndexQuery.StringPrefixPredicate ||
-                        prev instanceof IndexQuery.ExistsPredicate )
+                if ( !(current instanceof IndexQuery.ExistsPredicate) )
                 {
-                    if ( !(current instanceof IndexQuery.ExistsPredicate) )
-                    {
-                        throw new IllegalArgumentException( format( "%s Composite query must have decreasing precision. Query was: %s ",
-                                illegalQueryMessage, Arrays.toString( predicates ) ) );
-                    }
+                    throw new IllegalArgumentException( format( "%s Composite query must have decreasing precision. Query was: %s ",
+                            illegalQueryMessage, Arrays.toString( predicates ) ) );
                 }
             }
             prev = current;
