@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.helpers;
 
-import com.sun.jersey.api.client.Client;
-
 import java.net.URI;
 
 import org.neo4j.server.NeoServer;
@@ -36,7 +34,6 @@ public final class FunctionalTestHelper
     private final NeoServer server;
     private final GraphDbHelper helper;
 
-    public static final Client CLIENT = Client.create();
     private RestRequest request;
 
     public FunctionalTestHelper( NeoServer server )

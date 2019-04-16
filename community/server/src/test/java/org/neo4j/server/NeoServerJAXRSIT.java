@@ -25,6 +25,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -37,8 +39,9 @@ import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
+import static java.net.http.HttpClient.Redirect.ALWAYS;
+import static java.net.http.HttpResponse.BodyHandlers.ofString;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
 
 public class NeoServerJAXRSIT extends ExclusiveServerTestBase
 {
@@ -81,18 +84,19 @@ public class NeoServerJAXRSIT extends ExclusiveServerTestBase
                 .build();
         server.start();
 
-        URI thirdPartyServiceUri = new URI( server.baseUri()
-                .toString() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT ).normalize();
-        String response = CLIENT.resource( thirdPartyServiceUri.toString() )
-                .get( String.class );
+        var httpClient = HttpClient.newBuilder().followRedirects( ALWAYS ).build();
+
+        var thirdPartyServiceUri = new URI( server.baseUri() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT ).normalize();
+
+        var request = HttpRequest.newBuilder( thirdPartyServiceUri ).GET().build();
+        var response = httpClient.send( request, ofString() ).body();
         assertEquals( "hello", response );
 
         // Assert that extensions gets initialized
         int nodesCreated = createSimpleDatabase( server.getDatabase().getGraph() );
-        thirdPartyServiceUri = new URI( server.baseUri()
-                .toString() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT + "/inject-test" ).normalize();
-        response = CLIENT.resource( thirdPartyServiceUri.toString() )
-                .get( String.class );
+        thirdPartyServiceUri = new URI( server.baseUri() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT + "/inject-test" ).normalize();
+        request = HttpRequest.newBuilder( thirdPartyServiceUri ).GET().build();
+        response = httpClient.send( request, ofString() ).body();
         assertEquals( String.valueOf( nodesCreated ), response );
     }
 
