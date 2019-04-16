@@ -31,6 +31,8 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 case class ProduceResultSlottedPipe(source: Pipe, columns: Seq[(String, Expression)])
                                    (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with Pipe {
 
+  columns.map(_._2).foreach(_.registerOwningPipe(this))
+
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     // do not register this pipe as parent as it does not do anything except filtering of already fetched
     // key-value pairs and thus should not have any stats

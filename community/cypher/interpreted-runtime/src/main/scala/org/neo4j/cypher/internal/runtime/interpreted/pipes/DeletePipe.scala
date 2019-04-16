@@ -33,6 +33,8 @@ case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
                      (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(src) with GraphElementPropertyFunctions {
 
+  expression.registerOwningPipe(this)
+
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
