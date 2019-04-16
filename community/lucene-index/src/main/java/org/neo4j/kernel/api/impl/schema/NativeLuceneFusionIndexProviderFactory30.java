@@ -35,13 +35,15 @@ import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSlotSelector30;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 
 @ServiceProvider
-public class NativeLuceneFusionIndexProviderFactory30 extends NativeLuceneFusionIndexProviderFactory<NativeLuceneFusionIndexProviderFactory30.Dependencies>
+public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProviderFactory<NativeLuceneFusionIndexProviderFactory30.Dependencies>
 {
     public static final String KEY = NATIVE30.providerKey();
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, NATIVE30.providerVersion() );
@@ -49,6 +51,12 @@ public class NativeLuceneFusionIndexProviderFactory30 extends NativeLuceneFusion
     public NativeLuceneFusionIndexProviderFactory30()
     {
         super( KEY );
+    }
+
+    @Override
+    protected Class loggingClass()
+    {
+        return FusionIndexProvider.class;
     }
 
     @Override
@@ -64,6 +72,7 @@ public class NativeLuceneFusionIndexProviderFactory30 extends NativeLuceneFusion
         return create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
     }
 
+    @VisibleForTesting
     public static FusionIndexProvider create( PageCache pageCache, File databaseDirectory, FileSystemAbstraction fs,
             IndexProvider.Monitor monitor, Config config, OperationalMode operationalMode,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
@@ -80,9 +89,17 @@ public class NativeLuceneFusionIndexProviderFactory30 extends NativeLuceneFusion
                 DESCRIPTOR, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex );
     }
 
+    @VisibleForTesting
     static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File databaseDirectory )
     {
-        return NativeLuceneFusionIndexProviderFactory.subProviderDirectoryStructure( databaseDirectory, DESCRIPTOR );
+        return subProviderDirectoryStructure( databaseDirectory, DESCRIPTOR );
+    }
+
+    @VisibleForTesting
+    public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File databaseDirectory, IndexProviderDescriptor descriptor )
+    {
+        IndexDirectoryStructure parentDirectoryStructure = directoriesByProvider( databaseDirectory ).forProvider( descriptor );
+        return directoriesBySubProvider( parentDirectoryStructure );
     }
 
     public interface Dependencies extends AbstractIndexProviderFactory.Dependencies

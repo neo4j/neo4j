@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
 import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
@@ -38,7 +39,6 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory.subProviderDirectoryStructure;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
 
 public class NativeIndexFileFilterTest
@@ -79,7 +79,7 @@ public class NativeIndexFileFilterTest
     public void shouldNotAcceptLuceneFileFromFusionProvider() throws IOException
     {
         // given
-        File dir = subProviderDirectoryStructure( storeDir, LUCENE_DESCRTIPTOR ).forProvider( LUCENE_DESCRTIPTOR ).directoryForIndex( 1 );
+        File dir = NativeLuceneFusionIndexProviderFactory30.subProviderDirectoryStructure( storeDir, LUCENE_DESCRTIPTOR ).forProvider( LUCENE_DESCRTIPTOR ).directoryForIndex( 1 );
         File file = new File( dir, "some-file" );
         createFile( file );
 
@@ -117,7 +117,7 @@ public class NativeIndexFileFilterTest
     private void shouldAcceptNativeIndexFileFromFusionProvider( IndexProviderDescriptor descriptor ) throws IOException
     {
         // given
-        File dir = subProviderDirectoryStructure( storeDir, descriptor ).forProvider( descriptor ).directoryForIndex( 1 );
+        File dir = NativeLuceneFusionIndexProviderFactory30.subProviderDirectoryStructure( storeDir, descriptor ).forProvider( descriptor ).directoryForIndex( 1 );
         File file = new File( dir, "some-file" );
         createFile( file );
 
