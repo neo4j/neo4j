@@ -1176,7 +1176,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
-    void visit( GBPTreeVisitor<KEY,VALUE> visitor ) throws IOException
+    @VisibleForTesting
+    public void visit( GBPTreeVisitor<KEY,VALUE> visitor ) throws IOException
     {
         try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
         {
