@@ -1167,6 +1167,8 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void mustThrowOnIllegalCompositeQueriesAndMustNotThrowOnLegalQueries() throws Exception
     {
+        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
+
         // given
         Value someValue = Values.of( true );
         TextValue someString = stringValue( "" );
