@@ -33,7 +33,7 @@ public class InternalTreeLogicFixedSizeTest extends InternalTreeLogicTestBase<Mu
         return ( existingKey, newKey, base, add ) ->
         {
             base.add( add.longValue() );
-            return base;
+            return ValueMerger.MergeResult.MERGED;
         };
     }
 

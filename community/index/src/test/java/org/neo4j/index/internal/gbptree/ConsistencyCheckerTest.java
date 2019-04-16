@@ -92,8 +92,7 @@ class ConsistencyCheckerTest
             for ( int i = 0; i < 100; i++, k++ )
             {
                 key.setValue( k );
-                logic.insert( cursor, structure, key, key, ValueMergers.overwrite(),
-                        stableGeneration, unstableGeneration );
+                logic.insert( cursor, structure, key, key, ValueMergers.overwrite(), true, stableGeneration, unstableGeneration );
                 if ( structure.hasRightKeyInsert )
                 {
                     root = idProvider.acquireNewId( stableGeneration, unstableGeneration );

@@ -158,6 +158,12 @@ public class NativeLabelScanWriterTest
             }
         }
 
+        @Override
+        public void mergeIfExists( LabelScanKey labelScanKey, LabelScanValue labelScanValue, ValueMerger<LabelScanKey,LabelScanValue> valueMerger )
+        {
+            throw new UnsupportedOperationException( "Should not be called" );
+        }
+
         private static LabelScanValue clone( LabelScanValue value )
         {
             LabelScanValue result = new LabelScanValue();
@@ -185,9 +191,8 @@ public class NativeLabelScanWriterTest
                 forLabel = Collections.emptyMap();
             }
 
-            Map.Entry<LabelScanKey,LabelScanValue>[] entries =
-                    forLabel.entrySet().toArray( new Map.Entry[forLabel.size()] );
-            return new RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>()
+            Map.Entry<LabelScanKey,LabelScanValue>[] entries = forLabel.entrySet().toArray( new Entry[0] );
+            return new RawCursor<>()
             {
                 private int arrayIndex = -1;
 

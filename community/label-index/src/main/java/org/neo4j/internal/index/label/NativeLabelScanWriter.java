@@ -165,12 +165,14 @@ class NativeLabelScanWriter implements LabelScanWriter
         this.addMerger = ( existingKey, newKey, existingValue, newValue ) ->
         {
             monitor.mergeAdd( existingValue, newValue );
-            return existingValue.add( newValue );
+            existingValue.add( newValue );
+            return ValueMerger.MergeResult.MERGED;
         };
         this.removeMerger = ( existingKey, newKey, existingValue, newValue ) ->
         {
             monitor.mergeRemove( existingValue, newValue );
-            return existingValue.remove( newValue );
+            existingValue.remove( newValue );
+            return ValueMerger.MergeResult.MERGED;
         };
         this.monitor = monitor;
     }
@@ -210,7 +212,7 @@ class NativeLabelScanWriter implements LabelScanWriter
         }
     }
 
-    private void flushPendingChanges() throws IOException
+    private void flushPendingChanges()
     {
         Arrays.sort( pendingUpdates, 0, pendingUpdatesCursor, UPDATE_SORTER );
         monitor.flushPendingUpdates();
@@ -234,7 +236,6 @@ class NativeLabelScanWriter implements LabelScanWriter
     }
 
     private long extractChange( long[] labels, long currentLabelId, long nodeId, long nextLabelId, boolean addition, long txId )
-            throws IOException
     {
         long foundNextLabelId = nextLabelId;
         for ( int li = 0; li < labels.length; li++ )
@@ -276,7 +277,7 @@ class NativeLabelScanWriter implements LabelScanWriter
         return foundNextLabelId;
     }
 
-    private void change( long currentLabelId, long nodeId, boolean add, long txId ) throws IOException
+    private void change( long currentLabelId, long nodeId, boolean add, long txId )
     {
         int labelId = toIntExact( currentLabelId );
         long idRange = rangeOf( nodeId );
@@ -303,7 +304,7 @@ class NativeLabelScanWriter implements LabelScanWriter
         }
     }
 
-    private void flushPendingRange() throws IOException
+    private void flushPendingRange()
     {
         if ( value.bits != 0 )
         {

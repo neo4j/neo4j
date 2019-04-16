@@ -71,4 +71,9 @@ class RawBytes
             return joiner.toString();
         }
     }
+
+    void copyFrom( RawBytes source )
+    {
+        bytes = source.bytes.clone();
+    }
 }
