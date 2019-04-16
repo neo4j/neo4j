@@ -102,7 +102,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     }
 
     @Test
-    public void shouldBeAbleToDropAClosedIndexPopulator() throws Exception
+    public void shouldBeAbleToDropAClosedIndexPopulator()
     {
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
@@ -212,7 +212,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         }
     }
 
-    private Value valueSet1Lookup( long nodeId, int propertyId )
+    private Value valueSet1Lookup( long nodeId, @SuppressWarnings( "unused" ) int propertyId )
     {
         for ( NodeAndValue x : valueSet1 )
         {

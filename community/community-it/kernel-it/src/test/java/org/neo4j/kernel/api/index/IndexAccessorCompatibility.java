@@ -54,11 +54,11 @@ import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 
 public abstract class IndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
-    protected IndexAccessor accessor;
+    private IndexAccessor accessor;
     // This map is for spatial values, so that the #query method can lookup the values for the results and filter properly
     private Map<Long,Value[]> committedValues = new HashMap<>();
 
-    public IndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
+    IndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }
@@ -111,7 +111,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
 
     protected List<Long> query( IndexQuery... predicates ) throws Exception
     {
-        try ( IndexReader reader = accessor.newReader(); )
+        try ( IndexReader reader = accessor.newReader() )
         {
             SimpleNodeValueClient nodeValueClient = new SimpleNodeValueClient();
             reader.query( NULL_CONTEXT, nodeValueClient, IndexOrder.NONE, false, predicates );

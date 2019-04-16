@@ -57,7 +57,7 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.exact;
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
-    public CompositeRandomizedIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
+    CompositeRandomizedIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }
@@ -172,15 +172,14 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
             }
         }
 
-        public ValueCategory[] getValueCategories( IndexQuery[] predicates )
+        ValueCategory[] getValueCategories( IndexQuery[] predicates )
         {
             return Arrays.stream( predicates )
                                 .map( iq -> iq.valueGroup().category() )
                                 .toArray( ValueCategory[]::new );
         }
 
-        public List<Long> expectedIds( TreeSet<IndexEntryUpdate> sortedValues, Value booleanValue, Value from, Value to, boolean fromInclusive,
-                boolean toInclusive )
+        List<Long> expectedIds( TreeSet<IndexEntryUpdate> sortedValues, Value booleanValue, Value from, Value to, boolean fromInclusive, boolean toInclusive )
         {
             return sortedValues.subSet(
                                 add( 0, descriptor.schema(), booleanValue, from ), fromInclusive,

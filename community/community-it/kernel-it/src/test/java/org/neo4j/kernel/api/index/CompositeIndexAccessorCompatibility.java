@@ -94,7 +94,7 @@ import static org.neo4j.values.storable.Values.stringValue;
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
-    public CompositeIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
+    CompositeIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }

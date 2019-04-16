@@ -840,7 +840,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     {
         private final String name;
 
-        protected Action( String name )
+        Action( String name )
         {
             this.name = name;
         }
@@ -981,7 +981,6 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     private <T> T resolveInternalDependency( Class<T> type )
     {
-        @SuppressWarnings( "deprecation" )
         GraphDatabaseAPI api = (GraphDatabaseAPI) db;
         DependencyResolver resolver = api.getDependencyResolver();
         return resolver.resolveDependency( type );
