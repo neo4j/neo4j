@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.util.Map;
 
 import org.neo4j.dbms.database.DatabaseManagementService;
-import org.neo4j.graphdb.facade.embedded.EmbeddedGraphDatabase;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.service.Services;
@@ -70,7 +69,6 @@ public abstract class ExtensionFactoryContractTest
      *
      * @param instance   used for differentiating multiple instances that will run
      *                   simultaneously.
-     * @return configuration for an {@link EmbeddedGraphDatabase} that
      */
     protected Map<String, String> configuration( int instance )
     {

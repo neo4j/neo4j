@@ -29,7 +29,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 
 /**
- * JUnit @Rule for configuring, creating and managing an EmbeddedGraphDatabase instance.
+ * JUnit @Rule for configuring, creating and managing an embedded database instance.
  * <p>
  * The database instance is created lazily, so configurations can be injected prior to calling
  * {@link #getGraphDatabaseAPI()}.
