@@ -71,4 +71,22 @@ public final class ValuePopulation
 
         return value;
     }
+
+    public static NodeValue populate( NodeValue value )
+    {
+        if ( value instanceof NodeProxyWrappingNodeValue )
+        {
+            ((NodeProxyWrappingNodeValue) value).populate();
+        }
+        return value;
+    }
+
+    public static RelationshipValue populate( RelationshipValue value )
+    {
+        if ( value instanceof RelationshipProxyWrappingValue )
+        {
+            ((RelationshipProxyWrappingValue) value).populate();
+        }
+        return value;
+    }
 }
