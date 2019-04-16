@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{ListValue, VirtualValues}
 
-import scala.collection.mutable.{Map => MutableMap}
-import scala.collection.{immutable, mutable}
+import scala.collection.immutable
+import scala.collection.mutable.{ArrayBuffer, Map => MutableMap}
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
 // to emit aggregated results.
@@ -90,7 +90,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expres
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
 
-    val result = mutable.LinkedHashMap[AnyValue, Seq[AggregationFunction]]()
+    val result = new java.util.LinkedHashMap[AnyValue, Seq[AggregationFunction]]()
     val keyNames = keyExpressions.keySet.toList
     val aggregationNames: IndexedSeq[String] = aggregations.keys.toIndexedSeq
     val keyNamesSize = keyNames.size
@@ -119,19 +119,24 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expres
 
     input.foreach(ctx => {
       val groupingValue: AnyValue = groupingFunction(ctx, state)
-      val functions = result.getOrElseUpdate(groupingValue, {
-        val aggregateFunctions: Seq[AggregationFunction] = aggregations.map(_._2.createAggregationFunction).toIndexedSeq
-        aggregateFunctions
-      })
+      var functions = result.get(groupingValue)
+      if ( functions == null ) {
+        functions =  aggregations.map(_._2.createAggregationFunction).toIndexedSeq
+        result.put(groupingValue, functions)
+      }
       functions.foreach(func => func(ctx, state))
     })
 
     if (result.isEmpty && keyNames.isEmpty) {
       createEmptyResult()
     } else {
-      result.map {
-        case (key, aggregator) => createResults(key, aggregator)
-      }.toIterator
+      val buffer = ArrayBuffer.empty[ExecutionContext]
+      val iterator = result.entrySet().iterator()
+      while (iterator.hasNext) {
+        val entry = iterator.next()
+        buffer.append(createResults(entry.getKey, entry.getValue))
+      }
+      buffer.toIterator
     }
   }
 }
