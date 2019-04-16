@@ -36,7 +36,7 @@ abstract class ArgumentTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
-      .|.filter(Seq(lessThan(varFor("x"), literalInt(5))))
+      .|.filter("x < 5")
       .|.argument("x")
       .input(variables = Seq("x"))
       .build()

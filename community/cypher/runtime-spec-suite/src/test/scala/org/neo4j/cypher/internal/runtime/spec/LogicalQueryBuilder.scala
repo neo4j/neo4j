@@ -270,7 +270,8 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver) extends AstConstructionT
     appendAtCurrentIndent(LeafOperator(Input(nodes.toArray, variables.toArray, nullable)))
   }
 
-  def filter(predicates: Seq[Expression]): LogicalQueryBuilder = {
+  def filter(predicateStrings: String*): LogicalQueryBuilder = {
+    val predicates = predicateStrings.map(ExpressionParser.parseExpression)
     appendAtCurrentIndent(UnaryOperator(lp => Selection(predicates, lp)))
   }
 

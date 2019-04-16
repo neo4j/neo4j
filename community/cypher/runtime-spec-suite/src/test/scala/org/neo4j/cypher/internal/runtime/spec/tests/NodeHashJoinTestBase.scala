@@ -172,6 +172,39 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
   }
 
+  test("should join nested") {
+    // given
+    nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) },"A", "C")
+    nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) }, "A", "B")
+    val withAllLabels = nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) }, "A", "B", "C", "D")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .nodeHashJoin("a")
+      .|.nodeHashJoin("a")
+      .|.|.filter("a:D", "a.prop % 20 = 0")
+      .|.|.allNodeScan("a")
+      .|.filter("a:C", "a.prop <= 80")
+      .|.allNodeScan("a")
+      .nodeHashJoin("a")
+      .|.filter("a:B", "a.prop % 10 = 0")
+      .|.allNodeScan("a")
+      .filter("a:A", "a.prop < 100")
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expectedResultRows = for {node <- withAllLabels
+                                  i = node.getProperty("prop").asInstanceOf[Int]
+                                  if i % 20 == 0 && i <= 80
+    } yield Array(node)
+
+    runtimeResult should beColumns("a").withRows(expectedResultRows)
+  }
+
   test("should join below an apply") {
     // given
     val (unfilteredNodes, _) = circleGraph(sizeHint)

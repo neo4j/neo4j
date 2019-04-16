@@ -34,7 +34,7 @@ abstract class FilterTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("i")
-      .filter(Seq(greaterThanOrEqual(varFor("i"), literalInt(sizeHint / 2))))
+      .filter(s"i >= ${sizeHint / 2}")
       .input(variables = Seq("i"))
       .build()
 
@@ -51,9 +51,7 @@ abstract class FilterTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("i")
-      .filter(Seq(
-        greaterThanOrEqual(varFor("i"), literalInt(sizeHint / 2)),
-        equals(modulo(varFor("i"), literalInt(2)), literalInt(0))))
+      .filter(s"i >= ${sizeHint / 2}", "i % 2 = 0")
       .input(variables = Seq("i"))
       .build()
 
@@ -70,9 +68,7 @@ abstract class FilterTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("i")
-      .filter(Seq(
-        greaterThanOrEqual(varFor("i"), literalInt(sizeHint / 2)),
-        equals(modulo(varFor("i"), literalInt(2)), literalInt(0))))
+      .filter(s"i >= ${sizeHint / 2}", "i % 2 = 0")
       .input(variables = Seq("i"))
       .build()
 
