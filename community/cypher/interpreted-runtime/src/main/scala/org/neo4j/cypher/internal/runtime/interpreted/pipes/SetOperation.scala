@@ -38,6 +38,8 @@ sealed trait SetOperation {
   def name: String
 
   def needsExclusiveLock: Boolean
+
+  def registerOwningPipe(pipe: Pipe): Unit
 }
 
 object SetOperation {
@@ -124,6 +126,8 @@ abstract class SetEntityPropertyOperation[T](itemName: String, propertyKey: Lazy
   protected def operations(qtx: QueryContext): Operations[T]
 
   protected def invalidateCachedProperties(executionContext: ExecutionContext, id: Long): Unit
+
+  override def registerOwningPipe(pipe: Pipe): Unit = expression.registerOwningPipe(pipe)
 }
 
 case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyKey,
@@ -177,6 +181,11 @@ case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropert
   }
 
   override def needsExclusiveLock = true
+
+  override def registerOwningPipe(pipe: Pipe): Unit = {
+    entityExpr.registerOwningPipe(pipe)
+    expression.registerOwningPipe(pipe)
+  }
 }
 
 abstract class SetPropertyFromMapOperation[T](itemName: String, expression: Expression,
@@ -220,6 +229,8 @@ abstract class SetPropertyFromMapOperation[T](itemName: String, expression: Expr
       }
     }
   }
+
+  override def registerOwningPipe(pipe: Pipe): Unit = expression.registerOwningPipe(pipe)
 }
 
 case class SetNodePropertyFromMapOperation(nodeName: String, expression: Expression,
@@ -258,4 +269,6 @@ case class SetLabelsOperation(nodeName: String, labels: Seq[LazyLabel]) extends 
   override def name = "SetLabels"
 
   override def needsExclusiveLock = false
+
+  override def registerOwningPipe(pipe: Pipe): Unit = ()
 }
