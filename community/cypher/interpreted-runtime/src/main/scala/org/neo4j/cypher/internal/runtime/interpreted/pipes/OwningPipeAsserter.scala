@@ -19,21 +19,22 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, LogicalPlans}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.util.Foldable._
+import org.neo4j.cypher.internal.v4_0.util.InternalException
 
-/**
-  * Maps single logical plan operators to their respective pipes. Does not recurse.
-  */
-trait PipeMapper extends LogicalPlans.Mapper[Pipe] {
-  override def onLeaf(plan: LogicalPlan): Pipe
-  override def onOneChildPlan(plan: LogicalPlan, source: Pipe): Pipe
-  override def onTwoChildPlan(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe
-}
+object OwningPipeAsserter {
 
-case class PipeTreeBuilder(pipeMapper: PipeMapper) {
-  def build(logicalPlan: LogicalPlan): Pipe = {
-    val pipe = LogicalPlans.map(logicalPlan, pipeMapper)
-    OwningPipeAsserter.assertAllExpressionsHaveAnOwningPipe(pipe)
-    pipe
+  def assertAllExpressionsHaveAnOwningPipe(pipe: Pipe): Unit = {
+    pipe.treeFold(()) {
+      case e:Expression =>
+        try {
+          e.owningPipe
+        } catch {
+          case exp: InternalException =>
+            throw new InternalException(s"${exp.getMessage}\nTop level pipe: $pipe\nExpression: $e")
+        }
+        acc => (acc, Some(identity))
+    }
   }
 }
