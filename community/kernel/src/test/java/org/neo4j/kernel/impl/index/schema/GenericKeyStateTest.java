@@ -529,6 +529,7 @@ class GenericKeyStateTest
     /**
      * If this test fails because size of index key has changed, documentation needs to be updated accordingly.
      */
+    @SuppressWarnings( "DuplicateBranchesInSwitch" )
     @ParameterizedTest
     @MethodSource( "singleValueGeneratorsStream" )
     void testDocumentedKeySizesNonArrays( ValueGenerator generator )
@@ -545,34 +546,7 @@ class GenericKeyStateTest
         switch ( value.valueGroup() )
         {
         case NUMBER:
-            if ( value instanceof ByteValue )
-            {
-                expectedSizeOfData = 3;
-            }
-            else if ( value instanceof ShortValue )
-            {
-                expectedSizeOfData = 4;
-            }
-            else if ( value instanceof IntValue )
-            {
-                expectedSizeOfData = 6;
-            }
-            else if ( value instanceof LongValue )
-            {
-                expectedSizeOfData = 10;
-            }
-            else if ( value instanceof FloatValue )
-            {
-                expectedSizeOfData = 6;
-            }
-            else if ( value instanceof DoubleValue )
-            {
-                expectedSizeOfData = 10;
-            }
-            else
-            {
-                throw new RuntimeException( "Unexpected class for value in value group " + NUMBER + ", was " + value.getClass() );
-            }
+            expectedSizeOfData = getNumberSize( value );
             break;
         case BOOLEAN:
             expectedSizeOfData = 2;
@@ -602,37 +576,10 @@ class GenericKeyStateTest
             expectedSizeOfData = 29;
             break;
         case GEOMETRY:
-            int dimensions;
-            if ( value instanceof PointValue )
-            {
-                dimensions = ((PointValue) value).coordinate().length;
-            }
-            else
-            {
-                throw new RuntimeException( "Unexpected class for value in value group " + GEOMETRY + ", was " + value.getClass() );
-            }
-            if ( dimensions == 2 )
-            {
-                expectedSizeOfData = 28;
-            }
-            else if ( dimensions == 3 )
-            {
-                expectedSizeOfData = 36;
-            }
-            else
-            {
-                throw new RuntimeException( "Did not expect spatial value with " + dimensions + " dimensions." );
-            }
+            expectedSizeOfData = getGeometrySize( value );
             break;
         case TEXT:
-            if ( value instanceof TextValue )
-            {
-                expectedSizeOfData = 3 + ((TextValue) value).stringValue().getBytes( UTF_8 ).length;
-            }
-            else
-            {
-                throw new RuntimeException( "Unexpected class for value in value group " + TEXT + ", was " + value.getClass() );
-            }
+            expectedSizeOfData = getStringSize( value );
             break;
         default:
             throw new RuntimeException( "Did not expect this type to be tested in this test. Value was " + value );
@@ -643,6 +590,7 @@ class GenericKeyStateTest
     /**
      * If this test fails because size of index key has changed, documentation needs to be updated accordingly.
      */
+    @SuppressWarnings( "DuplicateBranchesInSwitch" )
     @ParameterizedTest
     @MethodSource( "arrayValueGeneratorsStream" )
     void testDocumentedKeySizesArrays( ValueGenerator generator )
@@ -671,34 +619,7 @@ class GenericKeyStateTest
         {
         case NUMBER_ARRAY:
             arrayOverhead = numberArrayOverhead;
-            if ( value instanceof ByteArray )
-            {
-                arrayElementSize = 1;
-            }
-            else if ( value instanceof ShortArray )
-            {
-                arrayElementSize = 2;
-            }
-            else if ( value instanceof IntArray )
-            {
-                arrayElementSize = 4;
-            }
-            else if ( value instanceof LongArray )
-            {
-                arrayElementSize = 8;
-            }
-            else if ( value instanceof FloatArray )
-            {
-                arrayElementSize = 4;
-            }
-            else if ( value instanceof DoubleArray )
-            {
-                arrayElementSize = 8;
-            }
-            else
-            {
-                throw new RuntimeException( "Unexpected class for value in value group " + NUMBER_ARRAY + ", was " + value.getClass() );
-            }
+            arrayElementSize = getNumberArrayElementSize( value );
             break;
         case BOOLEAN_ARRAY:
             arrayOverhead = normalArrayOverhead;
@@ -736,45 +657,11 @@ class GenericKeyStateTest
             break;
         case GEOMETRY_ARRAY:
             arrayOverhead = geometryArrayOverhead;
-            int dimensions;
-            if ( value instanceof PointArray )
-            {
-                dimensions = ((PointArray) value).pointValue( 0 ).coordinate().length;
-            }
-            else
-            {
-                throw new RuntimeException( "Unexpected class for value in value group " + GEOMETRY_ARRAY + ", was " + value.getClass() );
-            }
-            if ( dimensions == 2 )
-            {
-                arrayElementSize = 24;
-            }
-            else if ( dimensions == 3 )
-            {
-                arrayElementSize = 32;
-            }
-            else
-            {
-                throw new RuntimeException( "Did not expect spatial value with " + dimensions + " dimensions." );
-            }
+            arrayElementSize = getGeometryArrayElementSize( value );
             break;
         case TEXT_ARRAY:
-            if ( value instanceof TextArray )
-            {
-                int sumOfStrings = 0;
-                TextArray stringArray = (TextArray) value;
-                for ( int i = 0; i < stringArray.length(); i++ )
-                {
-                    sumOfStrings += 2 + stringArray.stringValue( i ).getBytes( UTF_8 ).length;
-                }
-                int totalTextArraySize = normalArrayOverhead + sumOfStrings;
-                assertKeySize( totalTextArraySize, actualSizeOfData, typeName );
-                return;
-            }
-            else
-            {
-                throw new RuntimeException( "Unexpected class for value in value group " + TEXT_ARRAY + ", was " + value.getClass() );
-            }
+            assertTextArraySize( value, actualSizeOfData, normalArrayOverhead, typeName );
+            return;
         default:
             throw new RuntimeException( "Did not expect this type to be tested in this test. Value was " + value + " is value group " + value.valueGroup() );
         }
@@ -782,7 +669,7 @@ class GenericKeyStateTest
         assertKeySize( expectedSizeOfData, actualSizeOfData, typeName );
     }
 
-    private void assertKeySize( int expectedKeySize, int actualKeySize, String type )
+    private static void assertKeySize( int expectedKeySize, int actualKeySize, String type )
     {
         assertEquals( expectedKeySize, actualKeySize, "Expected keySize for type " + type + " to be " + expectedKeySize + " but was " + actualKeySize );
     }
@@ -1006,6 +893,162 @@ class GenericKeyStateTest
     private static Stream<ValueGenerator> validComparableValueGenerators()
     {
         return Stream.of( listValueGenerators( false ) );
+    }
+
+    private int getStringSize( Value value )
+    {
+        int expectedSizeOfData;
+        if ( value instanceof TextValue )
+        {
+            expectedSizeOfData = 3 + ((TextValue) value).stringValue().getBytes( UTF_8 ).length;
+        }
+        else
+        {
+            throw new RuntimeException( "Unexpected class for value in value group " + TEXT + ", was " + value.getClass() );
+        }
+        return expectedSizeOfData;
+    }
+
+    private int getGeometrySize( Value value )
+    {
+        int expectedSizeOfData;
+        int dimensions;
+        if ( value instanceof PointValue )
+        {
+            dimensions = ((PointValue) value).coordinate().length;
+        }
+        else
+        {
+            throw new RuntimeException( "Unexpected class for value in value group " + GEOMETRY + ", was " + value.getClass() );
+        }
+        if ( dimensions == 2 )
+        {
+            expectedSizeOfData = 28;
+        }
+        else if ( dimensions == 3 )
+        {
+            expectedSizeOfData = 36;
+        }
+        else
+        {
+            throw new RuntimeException( "Did not expect spatial value with " + dimensions + " dimensions." );
+        }
+        return expectedSizeOfData;
+    }
+
+    private int getNumberSize( Value value )
+    {
+        int expectedSizeOfData;
+        if ( value instanceof ByteValue )
+        {
+            expectedSizeOfData = 3;
+        }
+        else if ( value instanceof ShortValue )
+        {
+            expectedSizeOfData = 4;
+        }
+        else if ( value instanceof IntValue )
+        {
+            expectedSizeOfData = 6;
+        }
+        else if ( value instanceof LongValue )
+        {
+            expectedSizeOfData = 10;
+        }
+        else if ( value instanceof FloatValue )
+        {
+            expectedSizeOfData = 6;
+        }
+        else if ( value instanceof DoubleValue )
+        {
+            expectedSizeOfData = 10;
+        }
+        else
+        {
+            throw new RuntimeException( "Unexpected class for value in value group " + NUMBER + ", was " + value.getClass() );
+        }
+        return expectedSizeOfData;
+    }
+
+    private int getNumberArrayElementSize( Value value )
+    {
+        int arrayElementSize;
+        if ( value instanceof ByteArray )
+        {
+            arrayElementSize = 1;
+        }
+        else if ( value instanceof ShortArray )
+        {
+            arrayElementSize = 2;
+        }
+        else if ( value instanceof IntArray )
+        {
+            arrayElementSize = 4;
+        }
+        else if ( value instanceof LongArray )
+        {
+            arrayElementSize = 8;
+        }
+        else if ( value instanceof FloatArray )
+        {
+            arrayElementSize = 4;
+        }
+        else if ( value instanceof DoubleArray )
+        {
+            arrayElementSize = 8;
+        }
+        else
+        {
+            throw new RuntimeException( "Unexpected class for value in value group " + NUMBER_ARRAY + ", was " + value.getClass() );
+        }
+        return arrayElementSize;
+    }
+
+    private void assertTextArraySize( Value value, int actualSizeOfData, int normalArrayOverhead, String typeName )
+    {
+        if ( value instanceof TextArray )
+        {
+            int sumOfStrings = 0;
+            TextArray stringArray = (TextArray) value;
+            for ( int i = 0; i < stringArray.length(); i++ )
+            {
+                String string = stringArray.stringValue( i );
+                sumOfStrings += 2 + string.getBytes( UTF_8 ).length;
+            }
+            int totalTextArraySize = normalArrayOverhead + sumOfStrings;
+            assertKeySize( totalTextArraySize, actualSizeOfData, typeName );
+        }
+        else
+        {
+            throw new RuntimeException( "Unexpected class for value in value group " + TEXT_ARRAY + ", was " + value.getClass() );
+        }
+    }
+
+    private int getGeometryArrayElementSize( Value value )
+    {
+        int arrayElementSize;
+        int dimensions;
+        if ( value instanceof PointArray )
+        {
+            dimensions = ((PointArray) value).pointValue( 0 ).coordinate().length;
+        }
+        else
+        {
+            throw new RuntimeException( "Unexpected class for value in value group " + GEOMETRY_ARRAY + ", was " + value.getClass() );
+        }
+        if ( dimensions == 2 )
+        {
+            arrayElementSize = 24;
+        }
+        else if ( dimensions == 3 )
+        {
+            arrayElementSize = 32;
+        }
+        else
+        {
+            throw new RuntimeException( "Did not expect spatial value with " + dimensions + " dimensions." );
+        }
+        return arrayElementSize;
     }
 
     private GenericKey genericKeyStateWithSomePreviousState( ValueGenerator valueGenerator )
