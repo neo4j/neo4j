@@ -22,6 +22,8 @@ package org.neo4j.internal.batchimport.cache;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.memory.MemoryAllocationTracker;
 
+import static org.neo4j.helpers.Numbers.isPowerOfTwo;
+
 public abstract class OffHeapNumberArray<N extends NumberArray<N>> extends BaseNumberArray<N>
 {
     private final long allocatedAddress;
@@ -39,8 +41,7 @@ public abstract class OffHeapNumberArray<N extends NumberArray<N>> extends BaseN
         this.allocationTracker = allocationTracker;
 
         long dataSize = length * itemSize;
-        boolean itemSizeIsPowerOfTwo = Integer.bitCount( itemSize ) == 1;
-        if ( UnsafeUtil.allowUnalignedMemoryAccess || !itemSizeIsPowerOfTwo )
+        if ( UnsafeUtil.allowUnalignedMemoryAccess || !isPowerOfTwo(itemSize ) )
         {
             // we can end up here even if we require aligned memory access. Reason is that item size
             // isn't power of two anyway and so we have to fallback to safer means of accessing the memory,

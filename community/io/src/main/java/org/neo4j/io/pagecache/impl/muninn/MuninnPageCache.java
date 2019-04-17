@@ -54,6 +54,7 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 
+import static org.neo4j.helpers.Numbers.isPowerOfTwo;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.util.FeatureToggles.getInteger;
 
@@ -300,8 +301,7 @@ public class MuninnPageCache implements PageCache
 
     private static void verifyCachePageSizeIsPowerOfTwo( int cachePageSize )
     {
-        int exponent = 31 - Integer.numberOfLeadingZeros( cachePageSize );
-        if ( 1 << exponent != cachePageSize )
+        if ( !isPowerOfTwo( cachePageSize ) )
         {
             throw new IllegalArgumentException(
                     "Cache page size must be a power of two, but was " + cachePageSize );

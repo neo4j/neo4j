@@ -28,6 +28,13 @@ import static org.neo4j.util.Preconditions.requirePositive;
 public class Numbers
 {
 
+    private static final long MAX_POWER_OF_TWO_LONG = 1L << (Long.SIZE - 2);
+    private static final long MAX_POWER_OF_TWO_INTEGER = 1 << (Integer.SIZE - 2);
+
+    private Numbers()
+    {
+    }
+
     /**
      * Checks if {@code value} is a power of 2.
      * @param value the value to check
@@ -35,7 +42,40 @@ public class Numbers
      */
     public static boolean isPowerOfTwo( long value )
     {
-        return value > 0 && (value & (value - 1)) == 0;
+        requirePositive( value );
+        return (value & (value - 1)) == 0;
+    }
+
+    /**
+     * Calculate smallest power of two that is bigger or equal to provided value.
+     * Provided value should be positive.
+     * @param value user provided value
+     * @return smallest power of two that is bigger or equal to provided value
+     */
+    public static long ceilingPowerOfTwo( long value )
+    {
+        requirePositive( value );
+        if ( value > MAX_POWER_OF_TWO_LONG )
+        {
+            throw new IllegalArgumentException( "Provided value " + value + " is bigger than the biggest power of two long value." );
+        }
+        return 1L << -Long.numberOfLeadingZeros( value - 1 );
+    }
+
+    /**
+     * Calculate smallest power of two that is bigger or equal to provided value.
+     * Provided value should be positive.
+     * @param value user provided value
+     * @return smallest power of two that is bigger or equal to provided value
+     */
+    public static int ceilingPowerOfTwo( int value )
+    {
+        requirePositive( value );
+        if ( value > MAX_POWER_OF_TWO_INTEGER )
+        {
+            throw new IllegalArgumentException( "Provided value " + value + " is bigger than the biggest power of two long value." );
+        }
+        return 1 << -Integer.numberOfLeadingZeros( value - 1 );
     }
 
     /**

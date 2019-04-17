@@ -23,7 +23,11 @@ package org.neo4j.helpers;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.helpers.Numbers.ceilingPowerOfTwo;
+import static org.neo4j.helpers.Numbers.isPowerOfTwo;
 import static org.neo4j.helpers.Numbers.safeCastIntToShort;
 import static org.neo4j.helpers.Numbers.safeCastIntToUnsignedShort;
 import static org.neo4j.helpers.Numbers.safeCastLongToByte;
@@ -121,5 +125,46 @@ class NumbersTest
         assertEquals( 1, unsignedShortToInt( (short) 1 ) );
         assertEquals( Short.MAX_VALUE, unsignedShortToInt( Short.MAX_VALUE ) );
         assertEquals( (Short.MAX_VALUE << 1) | 1, unsignedShortToInt( (short) -1 ) );
+    }
+
+    @Test
+    void checkLongCeilingPowerOfTwo()
+    {
+        assertEquals( 1L, ceilingPowerOfTwo( 1L ) );
+        assertEquals( 2L, ceilingPowerOfTwo( 2L ) );
+        assertEquals( 8L, ceilingPowerOfTwo( 5L ) );
+        assertEquals( 32L, ceilingPowerOfTwo( 32L ) );
+        assertEquals( 1024L, ceilingPowerOfTwo( 1023L ) );
+        assertThrows( IllegalArgumentException.class, () -> ceilingPowerOfTwo( Long.MAX_VALUE ) );
+        assertThrows( IllegalArgumentException.class, () -> ceilingPowerOfTwo( 0L ) );
+        assertThrows( IllegalArgumentException.class, () -> ceilingPowerOfTwo( -1L ) );
+        assertThrows( IllegalArgumentException.class, () -> ceilingPowerOfTwo( Long.MIN_VALUE ) );
+    }
+
+    @Test
+    void checkIntCeilingPowerOfTwo()
+    {
+        assertEquals( 1, ceilingPowerOfTwo( 1 ) );
+        assertEquals( 2, ceilingPowerOfTwo( 2 ) );
+        assertEquals( 8, ceilingPowerOfTwo( 5 ) );
+        assertEquals( 32, ceilingPowerOfTwo( 32 ) );
+        assertEquals( 1024, ceilingPowerOfTwo( 1023 ) );
+        assertThrows( IllegalArgumentException.class, () -> ceilingPowerOfTwo( Integer.MAX_VALUE ) );
+        assertThrows( IllegalArgumentException.class, () -> ceilingPowerOfTwo( 0 ) );
+        assertThrows( IllegalArgumentException.class, () -> ceilingPowerOfTwo( -1 ) );
+        assertThrows( IllegalArgumentException.class, () -> ceilingPowerOfTwo( Integer.MIN_VALUE ) );
+    }
+
+    @Test
+    void checkPowerOfTwo()
+    {
+        assertTrue( isPowerOfTwo( 1 ) );
+        assertFalse( isPowerOfTwo( 5 ) );
+        assertTrue( isPowerOfTwo( 8 ) );
+        assertTrue( isPowerOfTwo( 1024 ) );
+        assertFalse( isPowerOfTwo( Long.MAX_VALUE ) );
+        assertThrows( IllegalArgumentException.class, () -> isPowerOfTwo( 0 ) );
+        assertThrows( IllegalArgumentException.class, () -> isPowerOfTwo( -1 ) );
+        assertThrows( IllegalArgumentException.class, () -> isPowerOfTwo( Long.MIN_VALUE ) );
     }
 }
