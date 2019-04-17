@@ -28,6 +28,7 @@ import org.neo4j.kernel.recovery.RecoveryStartInformationProvider;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
+import static org.neo4j.helpers.Format.duration;
 
 public class LoggingLogFileMonitor implements LogFileCreationMonitor, RecoveryMonitor,
         RecoveryStartInformationProvider.Monitor
@@ -48,12 +49,12 @@ public class LoggingLogFileMonitor implements LogFileCreationMonitor, RecoveryMo
     }
 
     @Override
-    public void recoveryCompleted( int numberOfRecoveredTransactions )
+    public void recoveryCompleted( int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds )
     {
         if ( numberOfRecoveredTransactions != 0 )
         {
-            log.info( format( "Recovery completed. %d transactions, first:%d, last:%d recovered",
-                    numberOfRecoveredTransactions, firstTransactionRecovered, lastTransactionRecovered ) );
+            log.info( format( "Recovery completed. %d transactions, first:%d, last:%d recovered, time spent: %s", numberOfRecoveredTransactions,
+                    firstTransactionRecovered, lastTransactionRecovered, duration( recoveryTimeInMilliseconds ) ) );
         }
         else
         {

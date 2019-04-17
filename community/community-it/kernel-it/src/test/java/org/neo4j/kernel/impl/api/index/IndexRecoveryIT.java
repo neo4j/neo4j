@@ -438,7 +438,7 @@ class IndexRecoveryIT
         }
 
         @Override
-        public void recoveryCompleted( int numberOfRecoveredTransactions )
+        public void recoveryCompleted( int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds )
         {
             // monitor invoked multiple times: first time for system db and second type for db we interested in.
             // and we will release semaphore only when default database recovery is completed.

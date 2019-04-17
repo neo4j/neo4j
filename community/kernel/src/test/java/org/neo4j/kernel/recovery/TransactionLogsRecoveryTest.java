@@ -226,7 +226,7 @@ class TransactionLogsRecoveryTest
 
             InOrder order = inOrder( monitor );
             order.verify( monitor ).recoveryRequired( any( LogPosition.class ) );
-            order.verify( monitor ).recoveryCompleted( 2 );
+            order.verify( monitor ).recoveryCompleted( 2, 0 );
             assertTrue( recoveryRequired.get() );
         }
         finally

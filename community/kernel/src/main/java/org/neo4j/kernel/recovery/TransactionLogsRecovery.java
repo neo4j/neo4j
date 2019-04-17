@@ -31,6 +31,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
+import static java.lang.System.currentTimeMillis;
 import static org.neo4j.kernel.recovery.Recovery.throwUnableToCleanRecover;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
@@ -70,6 +71,8 @@ public class TransactionLogsRecovery extends LifecycleAdapter
             schemaLife.init();
             return;
         }
+
+        long recoveryStartTimeInMilliseconds = currentTimeMillis();
 
         LogPosition recoveryPosition = recoveryStartInformation.getRecoveryPosition();
 
@@ -152,7 +155,8 @@ public class TransactionLogsRecovery extends LifecycleAdapter
         }
 
         recoveryService.transactionsRecovered( lastTransaction, recoveryToPosition, recoveryStartInformation.isMissingLogs() );
-        monitor.recoveryCompleted( numberOfRecoveredTransactions );
+        long totalRecoveryTimeInMilliseconds = currentTimeMillis() - recoveryStartTimeInMilliseconds;
+        monitor.recoveryCompleted( numberOfRecoveredTransactions, totalRecoveryTimeInMilliseconds );
     }
 
     private void initProgressReporter( RecoveryStartInformation recoveryStartInformation,

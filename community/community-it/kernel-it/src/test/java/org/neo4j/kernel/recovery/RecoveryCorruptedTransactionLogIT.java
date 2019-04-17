@@ -670,7 +670,7 @@ class RecoveryCorruptedTransactionLogIT
         }
 
         @Override
-        public void recoveryCompleted( int numberOfRecoveredTransactions )
+        public void recoveryCompleted( int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds )
         {
             this.numberOfRecoveredTransactions = numberOfRecoveredTransactions;
         }
