@@ -91,7 +91,7 @@ final class PathValueBuilder {
     val relsToAdd = relsOrNull.asInstanceOf[ListValue]
     val relIterator = relsToAdd.iterator
 
-    def consumeIterator(i: Iterator[AnyValue]) =
+    def consumeIterator(i: Iterator[AnyValue]): Unit =
       while (i.hasNext)
         addUndirectedRelationship(i.next().asInstanceOf[RelationshipValue])
 

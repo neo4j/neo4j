@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.v3_5.util.InternalException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.v3_5.logical.plans.PrefixRange
 import org.neo4j.values.AnyValue
@@ -33,6 +34,8 @@ case class PrefixSeekRangeExpression(range: PrefixRange[Expression]) extends Exp
   override def rewrite(f: (Expression) => Expression): Expression = f(this)
 
   override def arguments: Seq[Expression] = Seq.empty
+
+  override def children: Seq[AstNode[_]] = range.arguments
 
   override def symbolTableDependencies: Set[String] = Set.empty
 }

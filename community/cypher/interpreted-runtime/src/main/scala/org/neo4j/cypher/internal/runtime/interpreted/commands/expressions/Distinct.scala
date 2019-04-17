@@ -19,20 +19,23 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.DistinctFunction
 import org.neo4j.cypher.internal.v3_5.util.symbols._
 
 case class Distinct(innerAggregator: AggregationExpression, expression: Expression) extends AggregationWithInnerExpression(expression) {
-  val expectedInnerType = CTAny
+  override val expectedInnerType: CypherType = CTAny
 
-  def createAggregationFunction = new DistinctFunction(expression, innerAggregator.createAggregationFunction)
+  override def createAggregationFunction = new DistinctFunction(expression, innerAggregator.createAggregationFunction)
 
-  def rewrite(f: (Expression) => Expression) = innerAggregator.rewrite(f) match {
+  override def rewrite(f: Expression => Expression): Expression = innerAggregator.rewrite(f) match {
     case inner: AggregationExpression => f(Distinct(inner, expression.rewrite(f)))
     case _                            => f(Distinct(innerAggregator, expression.rewrite(f)))
   }
 
-  override def symbolTableDependencies = innerAggregator.symbolTableDependencies ++ expression.symbolTableDependencies
+  override def symbolTableDependencies: Set[String] = innerAggregator.symbolTableDependencies ++ expression.symbolTableDependencies
 
-  override def arguments = Seq(expression, innerAggregator)
+  override def arguments: Seq[Expression] = Seq(expression, innerAggregator)
+
+  override def children: Seq[AstNode[_]] = Seq(expression, innerAggregator)
 }

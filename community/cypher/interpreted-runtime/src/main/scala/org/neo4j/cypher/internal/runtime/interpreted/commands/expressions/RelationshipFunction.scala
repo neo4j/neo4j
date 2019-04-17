@@ -20,17 +20,20 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
 
 case class RelationshipFunction(path: Expression) extends NullInNullOutExpression(path) {
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState) =
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
     CypherFunctions.relationships(value)
 
-  def rewrite(f: (Expression) => Expression) = f(RelationshipFunction(path.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(RelationshipFunction(path.rewrite(f)))
 
-  def arguments = Seq(path)
+  override def arguments: Seq[Expression] = Seq(path)
 
-  def symbolTableDependencies = path.symbolTableDependencies
+  override def children: Seq[AstNode[_]] = Seq(path)
+
+  override def symbolTableDependencies: Set[String] = path.symbolTableDependencies
 }

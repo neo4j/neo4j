@@ -19,22 +19,27 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.StdevFunction
 import org.neo4j.cypher.internal.v3_5.util.symbols._
 
 case class Stdev(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
-  def createAggregationFunction = new StdevFunction(anInner, false)
+  override def createAggregationFunction = new StdevFunction(anInner, false)
 
-  def expectedInnerType = CTNumber
+  override def expectedInnerType: CypherType = CTNumber
 
-  def rewrite(f: (Expression) => Expression) = f(Stdev(anInner.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(Stdev(anInner.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(anInner)
 }
 
 case class StdevP(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
-  def createAggregationFunction = new StdevFunction(anInner, true)
+  override def createAggregationFunction = new StdevFunction(anInner, true)
 
-  def expectedInnerType = CTNumber
+  override def expectedInnerType: CypherType = CTNumber
 
-  def rewrite(f: (Expression) => Expression) = f(StdevP(anInner.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(StdevP(anInner.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(anInner)
 }
 

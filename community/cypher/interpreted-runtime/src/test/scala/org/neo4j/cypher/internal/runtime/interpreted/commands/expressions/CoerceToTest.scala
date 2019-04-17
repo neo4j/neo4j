@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QuerySta
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.v3_5.util.symbols._
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.PointValue
 import org.neo4j.values.storable.Values._
@@ -224,8 +225,11 @@ class CoerceToTest extends CypherFunSuite {
 
         override def arguments: Seq[Expression] = Seq.empty
 
+        override def children: Seq[AstNode[_]] = Seq.empty
+
         override def symbolTableDependencies: Set[String] = Set.empty
-        def apply(ctx: ExecutionContext, state: QueryState): AnyValue = in
+
+        override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = in
 
       }
 

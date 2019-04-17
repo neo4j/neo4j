@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, GraphElementPropertyFunctions}
 import org.neo4j.values.AnyValue
@@ -28,7 +29,7 @@ import scala.collection.Map
 
 case class LiteralMap(data: Map[String, Expression]) extends Expression with GraphElementPropertyFunctions {
 
-  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val builder = new MapValueBuilder
     data.foreach {
       case (k, e) => builder.add(k, e(ctx, state))
@@ -36,11 +37,13 @@ case class LiteralMap(data: Map[String, Expression]) extends Expression with Gra
     builder.build()
   }
 
-  def rewrite(f: (Expression) => Expression) = f(LiteralMap(data.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(LiteralMap(data.rewrite(f)))
 
-  def arguments = data.values.toIndexedSeq
+  override def arguments: Seq[Expression] = data.values.toIndexedSeq
 
-  def symbolTableDependencies = data.symboltableDependencies
+  override def children: Seq[AstNode[_]] = arguments
 
-  override def toString = "LiteralMap(" + data + ")"
+  override def symbolTableDependencies: Set[String] = data.symboltableDependencies
+
+  override def toString: String = "LiteralMap(" + data + ")"
 }

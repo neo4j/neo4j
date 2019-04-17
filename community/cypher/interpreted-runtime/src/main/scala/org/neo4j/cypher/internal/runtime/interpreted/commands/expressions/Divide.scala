@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherMath
 import org.neo4j.values._
@@ -35,5 +36,7 @@ case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
 
   def calc(a: AnyValue, b: AnyValue): AnyValue = CypherMath.divide(a, b)
 
-  def rewrite(f: (Expression) => Expression) = f(Divide(a.rewrite(f), b.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(Divide(a.rewrite(f), b.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(a, b)
 }

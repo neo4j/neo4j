@@ -22,25 +22,28 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 import org.neo4j.cypher.internal.v3_5.util.NonEmptyList
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Property, Variable}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 
 case class Ands(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPredicate {
   override def shouldExitWhen = false
   override def andWith(other: Predicate): Predicate = Ands(predicates :+ other)
-  override def rewrite(f: (Expression) => Expression): Expression = f(Ands(predicates.map(_.rewriteAsPredicate(f))))
-  override def toString = {
+  override def rewrite(f: Expression => Expression): Expression = f(Ands(predicates.map(_.rewriteAsPredicate(f))))
+  override def toString: String = {
     predicates.foldLeft("") {
       case (acc, next) if acc.isEmpty => next.toString
       case (acc, next) => s"$acc AND $next"
     }
   }
+
+  override def children: Seq[AstNode[_]] = predicates.toIndexedSeq
 }
 
 object Ands {
-  def apply(predicates: Predicate*) = predicates.filterNot(_ == True()).toList match {
+  def apply(predicates: Predicate*): Predicate = predicates.filterNot(_ == True()).toList match {
     case Nil => True()
     case single :: Nil => single
-    case manyPredicates => new Ands(NonEmptyList.from(manyPredicates))
+    case manyPredicates => Ands(NonEmptyList.from(manyPredicates))
   }
 }
 
@@ -50,25 +53,27 @@ class And(val a: Predicate, val b: Predicate) extends Predicate {
 
   override def atoms: Seq[Predicate] = a.atoms ++ b.atoms
   override def toString: String = s"($a AND $b)"
-  def containsIsNull = a.containsIsNull || b.containsIsNull
-  def rewrite(f: (Expression) => Expression) = f(And(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
+  override def containsIsNull: Boolean = a.containsIsNull || b.containsIsNull
+  override def rewrite(f: Expression => Expression): Expression = f(And(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
 
-  def arguments = Seq(a, b)
+  override def arguments: Seq[Expression] = Seq(a, b)
 
-  override def hashCode() = a.hashCode + 37 * b.hashCode
+  override def children: Seq[AstNode[_]] = Seq(a, b)
 
-  override def equals(p1: Any) = p1 match {
+  override def hashCode(): Int = a.hashCode + 37 * b.hashCode
+
+  override def equals(p1: Any): Boolean = p1 match {
     case null       => false
     case other: And => a == other.a && b == other.b
     case _          => false
   }
 
-  def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
+  override def symbolTableDependencies: Set[String] = a.symbolTableDependencies ++ b.symbolTableDependencies
 }
 
 @deprecated("Use Ands (plural) instead")
 object And {
-  def apply(a: Predicate, b: Predicate) = (a, b) match {
+  def apply(a: Predicate, b: Predicate): Predicate = (a, b) match {
     case (True(), other) => other
     case (other, True()) => other
     case (_, _)          => new And(a, b)
@@ -86,10 +91,12 @@ case class AndedPropertyComparablePredicates(ident: Variable, prop: Property,
       case _ => ident
     }
 
-  def rewrite(f: (Expression) => Expression): Expression =
+  override def rewrite(f: Expression => Expression): Expression =
     f(AndedPropertyComparablePredicates(rewriteVariableIfNotTypeChanged(f),
       prop.rewrite(f).asInstanceOf[Property],
       predicates.map(_.rewriteAsPredicate(f).asInstanceOf[ComparablePredicate])))
 
   override def shouldExitWhen: Boolean = false
+
+  override def children: Seq[AstNode[_]] = Seq(ident, prop) ++ predicates.toIndexedSeq
 }

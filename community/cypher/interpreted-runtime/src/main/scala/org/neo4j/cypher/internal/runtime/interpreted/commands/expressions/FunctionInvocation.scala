@@ -20,17 +20,22 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, GraphElementPropertyFunctions}
 import org.neo4j.cypher.internal.v3_5.logical.plans.UserFunctionSignature
 import org.neo4j.values._
 
-abstract class FunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
+abstract class FunctionInvocation(signature: UserFunctionSignature, input: IndexedSeq[Expression])
   extends Expression with GraphElementPropertyFunctions {
+
+  override def arguments: Seq[Expression] = input
+
+  override def children: Seq[AstNode[_]] = input
 
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val query = state.query
-    val argValues = arguments.map(arg => {
+    val argValues = input.map(arg => {
       arg(ctx, state)
     })
     call(query, argValues)
@@ -40,13 +45,13 @@ abstract class FunctionInvocation(signature: UserFunctionSignature, arguments: I
                    argValues: IndexedSeq[AnyValue]): AnyValue
 
 
-  override def symbolTableDependencies = arguments.flatMap(_.symbolTableDependencies).toSet
+  override def symbolTableDependencies = input.flatMap(_.symbolTableDependencies).toSet
 
-  override def toString = s"${signature.name}(${arguments.mkString(",")})"
+  override def toString = s"${signature.name}(${input.mkString(",")})"
 }
 
-case class FunctionInvocationById(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
-  extends FunctionInvocation(signature, arguments) {
+case class FunctionInvocationById(signature: UserFunctionSignature, input: IndexedSeq[Expression])
+  extends FunctionInvocation(signature, input) {
 
   protected def call(query: QueryContext,
                    argValues: IndexedSeq[AnyValue]): AnyValue = {
@@ -54,11 +59,11 @@ case class FunctionInvocationById(signature: UserFunctionSignature, arguments: I
   }
 
   override def rewrite(f: (Expression) => Expression) =
-    f(FunctionInvocationById(signature, arguments.map(a => a.rewrite(f))))
+    f(FunctionInvocationById(signature, input.map(a => a.rewrite(f))))
 }
 
-case class FunctionInvocationByName(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
-  extends FunctionInvocation(signature, arguments) {
+case class FunctionInvocationByName(signature: UserFunctionSignature, input: IndexedSeq[Expression])
+  extends FunctionInvocation(signature, input) {
 
   protected def call(query: QueryContext,
                      argValues: IndexedSeq[AnyValue]): AnyValue = {
@@ -66,5 +71,5 @@ case class FunctionInvocationByName(signature: UserFunctionSignature, arguments:
   }
 
   override def rewrite(f: (Expression) => Expression) =
-    f(FunctionInvocationByName(signature, arguments.map(a => a.rewrite(f))))
+    f(FunctionInvocationByName(signature, input.map(a => a.rewrite(f))))
 }

@@ -21,20 +21,21 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values._
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable._
 import org.neo4j.cypher.internal.v3_5.util.CypherTypeException
-import org.neo4j.cypher.internal.v3_5.util.symbols._
+import org.neo4j.cypher.internal.v3_5.util.symbols.{NumberType, _}
 
 abstract class MathFunction(arg: Expression) extends Expression with NumericHelper {
 
-  def innerExpectedType = CTNumber
+  def innerExpectedType: NumberType = CTNumber
 
-  override def arguments = Seq(arg)
+  override def arguments: Seq[Expression] = Seq(arg)
 
-  override def symbolTableDependencies = arg.symbolTableDependencies
+  override def symbolTableDependencies: Set[String] = arg.symbolTableDependencies
 }
 
 abstract class NullSafeMathFunction(arg: Expression) extends MathFunction(arg) {
@@ -79,7 +80,9 @@ case class AbsFunction(argument: Expression) extends MathFunction(argument) {
     if (value == NO_VALUE) NO_VALUE else CypherFunctions.abs(value)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(AbsFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(AbsFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
 case class AcosFunction(argument: Expression) extends MathFunction(argument) {
@@ -90,7 +93,9 @@ case class AcosFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.acos(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(AcosFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(AcosFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
 case class AsinFunction(argument: Expression) extends MathFunction(argument) {
@@ -101,7 +106,9 @@ case class AsinFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.asin(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(AsinFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(AsinFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
 case class AtanFunction(argument: Expression) extends MathFunction(argument) {
@@ -112,7 +119,9 @@ case class AtanFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.atan(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(AtanFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(AtanFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
 case class Atan2Function(y: Expression, x: Expression) extends Expression with NumericHelper {
@@ -126,11 +135,13 @@ case class Atan2Function(y: Expression, x: Expression) extends Expression with N
      CypherFunctions.atan2(yValue, xValue)
   }
 
-  override def arguments = Seq(x, y)
+  override def arguments: Seq[Expression] = Seq(x, y)
 
-  override def rewrite(f: (Expression) => Expression) = f(Atan2Function(y.rewrite(f), x.rewrite(f)))
+  override def children: Seq[AstNode[_]] = Seq(x, y)
 
-  override def symbolTableDependencies = x.symbolTableDependencies ++ y.symbolTableDependencies
+  override def rewrite(f: Expression => Expression): Expression = f(Atan2Function(y.rewrite(f), x.rewrite(f)))
+
+  override def symbolTableDependencies: Set[String] = x.symbolTableDependencies ++ y.symbolTableDependencies
 }
 
 case class CeilFunction(argument: Expression) extends MathFunction(argument) {
@@ -141,7 +152,9 @@ case class CeilFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.ceil(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(CeilFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(CeilFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
 case class CosFunction(argument: Expression) extends MathFunction(argument) {
@@ -152,7 +165,9 @@ case class CosFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.cos(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(CosFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(CosFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
 case class CotFunction(argument: Expression) extends MathFunction(argument) {
@@ -163,7 +178,9 @@ case class CotFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.cot(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(CotFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(CotFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
 case class DegreesFunction(argument: Expression) extends MathFunction(argument) {
@@ -174,18 +191,22 @@ case class DegreesFunction(argument: Expression) extends MathFunction(argument) 
     case v => CypherFunctions.toDegrees(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(DegreesFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(DegreesFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
 case class EFunction() extends Expression() {
 
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = Values.E
 
-  override def arguments = Seq()
+  override def arguments: Seq[Expression] = Seq.empty
 
-  override def symbolTableDependencies = Set[String]()
+  override def children: Seq[AstNode[_]] = Seq.empty
 
-  override def rewrite(f: (Expression) => Expression) = f(EFunction())
+  override def symbolTableDependencies: Set[String] = Set()
+
+  override def rewrite(f: Expression => Expression): Expression = f(EFunction())
 }
 
 case class ExpFunction(argument: Expression) extends MathFunction(argument) {
@@ -196,7 +217,9 @@ case class ExpFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.exp(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(ExpFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(ExpFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
 case class FloorFunction(argument: Expression) extends MathFunction(argument) {
@@ -207,7 +230,9 @@ case class FloorFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.floor(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(FloorFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(FloorFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
 case class LogFunction(argument: Expression) extends MathFunction(argument) {
@@ -218,7 +243,9 @@ case class LogFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.log(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(LogFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(LogFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
 case class Log10Function(argument: Expression) extends MathFunction(argument) {
@@ -229,18 +256,22 @@ case class Log10Function(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.log10(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(Log10Function(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(Log10Function(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
 case class PiFunction() extends Expression {
 
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = Values.PI
 
-  override def arguments = Seq()
+  override def arguments: Seq[Expression] = Seq.empty
 
-  override def symbolTableDependencies = Set()
+  override def children: Seq[AstNode[_]] = Seq.empty
 
-  override def rewrite(f: (Expression) => Expression) = f(PiFunction())
+  override def symbolTableDependencies: Set[String] = Set()
+
+  override def rewrite(f: Expression => Expression): Expression = f(PiFunction())
 }
 
 case class RadiansFunction(argument: Expression) extends MathFunction(argument) {
@@ -251,7 +282,9 @@ case class RadiansFunction(argument: Expression) extends MathFunction(argument) 
     case v => CypherFunctions.toRadians(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(RadiansFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(RadiansFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
 case class SinFunction(argument: Expression) extends MathFunction(argument) {
@@ -262,7 +295,9 @@ case class SinFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.sin(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(SinFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(SinFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
 case class HaversinFunction(argument: Expression) extends MathFunction(argument) {
@@ -273,7 +308,9 @@ case class HaversinFunction(argument: Expression) extends MathFunction(argument)
     case v => CypherFunctions.haversin(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(HaversinFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(HaversinFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
 case class TanFunction(argument: Expression) extends MathFunction(argument) {
@@ -284,18 +321,22 @@ case class TanFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.tan(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(TanFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(TanFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
 case class RandFunction() extends Expression {
 
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = CypherFunctions.rand()
 
-  override def arguments = Seq()
+  override def arguments: Seq[Expression] = Seq.empty
 
-  override def symbolTableDependencies = Set[String]()
+  override def children: Seq[AstNode[_]] = Seq.empty
 
-  override def rewrite(f: (Expression) => Expression) = f(RandFunction())
+  override def symbolTableDependencies: Set[String] = Set[String]()
+
+  override def rewrite(f: Expression => Expression): Expression = f(RandFunction())
 }
 
 case class RangeFunction(start: Expression, end: Expression, step: Expression) extends Expression with NumericHelper {
@@ -303,12 +344,14 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
     CypherFunctions.range(start(ctx, state), end(ctx, state), step(ctx, state))
 
-  override def arguments = Seq(start, end, step)
+  override def arguments: Seq[Expression] = Seq(start, end, step)
 
-  override def rewrite(f: (Expression) => Expression) =
+  override def children: Seq[AstNode[_]] = Seq(start, end, step)
+
+  override def rewrite(f: Expression => Expression): Expression =
     f(RangeFunction(start.rewrite(f), end.rewrite(f), step.rewrite(f)))
 
-  override def symbolTableDependencies = start.symbolTableDependencies ++
+  override def symbolTableDependencies: Set[String] = start.symbolTableDependencies ++
     end.symbolTableDependencies ++
     step.symbolTableDependencies
 }
@@ -323,18 +366,22 @@ case class SignFunction(argument: Expression) extends MathFunction(argument) {
     }
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(SignFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(SignFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
-case class RoundFunction(expression: Expression) extends MathFunction(expression) {
+case class RoundFunction(argument: Expression) extends MathFunction(argument) {
 
   override def apply(ctx: ExecutionContext,
-                     state: QueryState): AnyValue = expression(ctx, state) match {
+                     state: QueryState): AnyValue = argument(ctx, state) match {
     case NO_VALUE => NO_VALUE
     case v => CypherFunctions.round(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(RoundFunction(expression.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(RoundFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
 case class SqrtFunction(argument: Expression) extends MathFunction(argument) {
@@ -345,5 +392,7 @@ case class SqrtFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.sqrt(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(SqrtFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(SqrtFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
 }

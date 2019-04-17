@@ -19,13 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.CollectFunction
 import org.neo4j.cypher.internal.v3_5.util.symbols._
 
 case class Collect(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
-  def createAggregationFunction = new CollectFunction(anInner)
+  override def createAggregationFunction = new CollectFunction(anInner)
 
-  val expectedInnerType = CTAny
+  override val expectedInnerType: CypherType = CTAny
 
-  def rewrite(f: (Expression) => Expression) = f(Collect(anInner.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(Collect(anInner.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(anInner)
 }

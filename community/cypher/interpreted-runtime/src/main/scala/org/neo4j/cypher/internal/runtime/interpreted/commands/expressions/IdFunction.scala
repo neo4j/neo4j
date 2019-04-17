@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
@@ -33,9 +34,11 @@ case class IdFunction(inner: Expression) extends Expression {
     case value => CypherFunctions.id(value)
   }
 
-  def rewrite(f: (Expression) => Expression) = f(IdFunction(inner.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(IdFunction(inner.rewrite(f)))
 
-  def arguments = Seq(inner)
+  override def arguments: Seq[Expression] = Seq(inner)
 
-  def symbolTableDependencies = inner.symbolTableDependencies
+  override def children: Seq[AstNode[_]] = Seq(inner)
+
+  override def symbolTableDependencies: Set[String] = inner.symbolTableDependencies
 }
