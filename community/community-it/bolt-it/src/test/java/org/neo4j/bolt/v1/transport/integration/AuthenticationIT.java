@@ -52,7 +52,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
@@ -85,9 +85,9 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
 
-    protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
+    protected TestDatabaseManagementServiceBuilder getTestGraphDatabaseFactory()
     {
-        return new TestGraphDatabaseFactory( logProvider );
+        return new TestDatabaseManagementServiceBuilder( logProvider );
     }
 
     protected Consumer<Map<String,String>> getSettingsFunction()

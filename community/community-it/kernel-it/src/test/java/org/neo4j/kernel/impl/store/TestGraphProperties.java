@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -67,12 +67,12 @@ class TestGraphProperties
     private EphemeralFileSystemAbstraction fs;
     @Inject
     private TestDirectory testDirectory;
-    private TestGraphDatabaseFactory factory;
+    private TestDatabaseManagementServiceBuilder factory;
 
     @BeforeEach
     void before()
     {
-        factory = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) );
+        factory = new TestDatabaseManagementServiceBuilder().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) );
     }
 
     @Test
@@ -262,7 +262,7 @@ class TestGraphProperties
         {
             try ( EphemeralFileSystemAbstraction snapshot2 = produceUncleanStore( snapshot, databaseDir ) )
             {
-                DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+                DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                                 .setFileSystem( produceUncleanStore( snapshot2, databaseDir ) ).newImpermanentService( databaseDir );
                 GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
                 assertThat( properties( db ), inTx( db, hasProperty( "prop" ).withValue( "Some value" ) ) );
@@ -397,7 +397,7 @@ class TestGraphProperties
 
     private static EphemeralFileSystemAbstraction produceUncleanStore( EphemeralFileSystemAbstraction fileSystem, File storeDir )
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentService( storeDir );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fileSystem ).newImpermanentService( storeDir );
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         Transaction tx = db.beginTx();
         Node node = db.createNode();

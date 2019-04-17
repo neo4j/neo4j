@@ -25,7 +25,7 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.dbms.database.DatabaseManagementService;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -42,7 +42,7 @@ public class FirstStartupIT
     {
         // When
         File storeDir = testDir.absolutePath();
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( storeDir );
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         // Then

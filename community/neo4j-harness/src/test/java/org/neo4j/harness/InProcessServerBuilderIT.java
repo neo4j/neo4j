@@ -49,7 +49,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.harness.internal.InProcessNeo4j;
 import org.neo4j.harness.internal.Neo4jBuilder;
@@ -60,7 +60,7 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -239,7 +239,7 @@ class InProcessServerBuilderIT
         File existingStoreDir = directory.directory( "existingStore" );
         Config config = Config.defaults( data_directory, existingStoreDir.toPath().toString() );
         File rootDirectory = config.get( databases_root_path );
-        GraphDatabaseBuilder databaseBuilder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( rootDirectory )
+        DatabaseManagementServiceInternalBuilder databaseBuilder = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( rootDirectory )
                 .setConfig( transaction_logs_root_path, new File( existingStoreDir, DEFAULT_TX_LOGS_ROOT_DIR_NAME ).getAbsolutePath() );
         DatabaseManagementService managementService = databaseBuilder.newDatabaseManagementService();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );

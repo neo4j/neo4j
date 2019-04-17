@@ -24,8 +24,8 @@ import java.io.File;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseManagementService;
+import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 
 import static org.neo4j.kernel.impl.factory.DatabaseInfo.COMMUNITY;
@@ -36,7 +36,7 @@ public class CommunityGraphFactory implements GraphFactory
     public DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
     {
         File storeDir = config.get( GraphDatabaseSettings.databases_root_path );
-        GraphDatabaseFacadeFactory facadeFactory = new GraphDatabaseFacadeFactory( COMMUNITY, CommunityEditionModule::new );
+        DatabaseManagementServiceFactory facadeFactory = new DatabaseManagementServiceFactory( COMMUNITY, CommunityEditionModule::new );
         return facadeFactory.newFacade( storeDir, config, dependencies );
     }
 }

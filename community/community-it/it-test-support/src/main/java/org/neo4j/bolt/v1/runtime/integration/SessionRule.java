@@ -49,7 +49,7 @@ import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.storageengine.api.TransactionIdStore;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 public class SessionRule implements TestRule
 {
@@ -71,7 +71,7 @@ public class SessionRule implements TestRule
             {
                 Map<Setting<?>,String> configMap = new HashMap<>();
                 configMap.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
-                managementService = new TestGraphDatabaseFactory().newImpermanentService( configMap );
+                managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService( configMap );
                 gdb = (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
                 DependencyResolver resolver = gdb.getDependencyResolver();
                 DatabaseManager<?> databaseManager = resolver.resolveDependency( DatabaseManager.class );

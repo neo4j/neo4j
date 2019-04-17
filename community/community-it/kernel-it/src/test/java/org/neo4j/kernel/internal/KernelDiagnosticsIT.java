@@ -44,7 +44,7 @@ import org.neo4j.kernel.diagnostics.providers.StoreFilesDiagnostics;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -92,7 +92,7 @@ class KernelDiagnosticsIT
 
     private static void createIndexInIsolatedDbInstance( File storeDir, GraphDatabaseSettings.SchemaIndex index )
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                 .newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.default_schema_provider, index.providerName() ).newDatabaseManagementService();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );

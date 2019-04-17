@@ -33,9 +33,9 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -76,7 +76,7 @@ class DatabaseStartupTest
         // create a store
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         File storeDirectory = testDirectory.storeDir();
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDirectory );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( storeDirectory );
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
@@ -94,7 +94,7 @@ class DatabaseStartupTest
                     MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ));
         }
 
-        managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDirectory );
+        managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( storeDirectory );
         GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -118,7 +118,7 @@ class DatabaseStartupTest
         // create a store
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         File storeDirectory = testDirectory.storeDir();
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDirectory );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( storeDirectory );
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
@@ -137,7 +137,7 @@ class DatabaseStartupTest
                     MetaDataStore.versionStringToLong( badStoreVersion ) );
         }
 
-        managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDirectory )
+        managementService = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( storeDirectory )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, TRUE ).newDatabaseManagementService();
         GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
         try
@@ -160,7 +160,7 @@ class DatabaseStartupTest
     void startTestDatabaseOnProvidedNonAbsoluteFile()
     {
         File directory = new File( "notAbsoluteDirectory" );
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService( directory );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService( directory );
         managementService.shutdown();
     }
 
@@ -168,8 +168,8 @@ class DatabaseStartupTest
     void startCommunityDatabaseOnProvidedNonAbsoluteFile()
     {
         File directory = new File( "notAbsoluteDirectory" );
-        EphemeralCommunityFacadeFactory factory = new EphemeralCommunityFacadeFactory();
-        GraphDatabaseFactory databaseFactory = new EphemeralGraphDatabaseFactory( factory );
+        EphemeralCommunityManagementServiceFactory factory = new EphemeralCommunityManagementServiceFactory();
+        DatabaseManagementServiceBuilder databaseFactory = new EphemeralDatabaseManagementServiceBuilder( factory );
         DatabaseManagementService managementService = databaseFactory.newDatabaseManagementService( directory );
         GraphDatabaseService service = managementService.database( DEFAULT_DATABASE_NAME );
         managementService.shutdown();
@@ -179,8 +179,8 @@ class DatabaseStartupTest
     void dumpSystemDiagnosticLoggingOnStartup()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).newDatabaseManagementService(
-                testDirectory.storeDir() );
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder().setInternalLogProvider( logProvider ).newDatabaseManagementService( testDirectory.storeDir() );
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -207,9 +207,9 @@ class DatabaseStartupTest
         return databaseService.getDependencyResolver().resolveDependency( DatabaseManager.class );
     }
 
-    private static class EphemeralCommunityFacadeFactory extends GraphDatabaseFacadeFactory
+    private static class EphemeralCommunityManagementServiceFactory extends DatabaseManagementServiceFactory
     {
-        EphemeralCommunityFacadeFactory()
+        EphemeralCommunityManagementServiceFactory()
         {
             super( DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
         }
@@ -228,17 +228,17 @@ class DatabaseStartupTest
         }
     }
 
-    private static class EphemeralGraphDatabaseFactory extends GraphDatabaseFactory
+    private static class EphemeralDatabaseManagementServiceBuilder extends DatabaseManagementServiceBuilder
     {
-        private final EphemeralCommunityFacadeFactory factory;
+        private final EphemeralCommunityManagementServiceFactory factory;
 
-        EphemeralGraphDatabaseFactory( EphemeralCommunityFacadeFactory factory )
+        EphemeralDatabaseManagementServiceBuilder( EphemeralCommunityManagementServiceFactory factory )
         {
             this.factory = factory;
         }
 
         @Override
-        protected GraphDatabaseFacadeFactory getGraphDatabaseFacadeFactory()
+        protected DatabaseManagementServiceFactory getGraphDatabaseFacadeFactory()
         {
             return factory;
         }

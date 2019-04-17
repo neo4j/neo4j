@@ -27,7 +27,7 @@ import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.{Result => Neo4jResult}
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
-import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.opencypher.tools.tck.api._
 import org.opencypher.tools.tck.values.CypherValue
 
@@ -36,7 +36,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.{Failure, Success, Try}
 
 object Neo4jAdapter {
-  def apply(executionPrefix: String, graphDatabaseFactory: TestGraphDatabaseFactory,
+  def apply(executionPrefix: String, graphDatabaseFactory: TestDatabaseManagementServiceBuilder,
             dbConfig: collection.Map[Setting[_], String] = Map[Setting[_], String](cypher_hints_error -> "true")): Neo4jAdapter = {
     val managementService = createManagementService(dbConfig, graphDatabaseFactory)
     val service = createGraphDatabase(managementService)
@@ -47,7 +47,7 @@ object Neo4jAdapter {
     new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
   }
 
-  private def createManagementService(config: collection.Map[Setting[_], String], graphDatabaseFactory: TestGraphDatabaseFactory) = {
+  private def createManagementService(config: collection.Map[Setting[_], String], graphDatabaseFactory: TestDatabaseManagementServiceBuilder) = {
     graphDatabaseFactory.newImpermanentService(config.asJava)
   }
 }

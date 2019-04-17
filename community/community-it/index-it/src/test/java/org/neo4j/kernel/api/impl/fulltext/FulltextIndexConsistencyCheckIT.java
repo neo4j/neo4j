@@ -48,8 +48,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -69,7 +69,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -86,7 +86,7 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextProceduresTest.NODE_CRE
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProceduresTest.RELATIONSHIP_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProceduresTest.array;
 import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.SKIP_ONLINE_UPDATES;
-import static org.neo4j.test.TestGraphDatabaseFactory.INDEX_PROVIDERS_FILTER;
+import static org.neo4j.test.TestDatabaseManagementServiceBuilder.INDEX_PROVIDERS_FILTER;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class FulltextIndexConsistencyCheckIT
@@ -96,14 +96,14 @@ class FulltextIndexConsistencyCheckIT
     @Inject
     private TestDirectory testDirectory;
 
-    private GraphDatabaseBuilder builder;
+    private DatabaseManagementServiceInternalBuilder builder;
     private GraphDatabaseService database;
     private DatabaseManagementService managementService;
 
     @BeforeEach
     void before()
     {
-        GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+        DatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
         builder = factory.newEmbeddedDatabaseBuilder( testDirectory.storeDir() );
     }
 
@@ -543,7 +543,7 @@ class FulltextIndexConsistencyCheckIT
 
         // Remove the property without updating the index
         managementService.shutdown();
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory( NullLogProvider.getInstance() ).setFileSystem( fs )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( NullLogProvider.getInstance() ).setFileSystem( fs )
                 .removeExtensions( INDEX_PROVIDERS_FILTER )
                 .addExtension( new FailingGenericNativeIndexProviderFactory( SKIP_ONLINE_UPDATES ) )
                 .newDatabaseManagementService( testDirectory.storeDir() );

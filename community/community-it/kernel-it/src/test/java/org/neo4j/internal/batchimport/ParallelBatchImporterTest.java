@@ -69,7 +69,7 @@ import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
@@ -188,7 +188,7 @@ public class ParallelBatchImporterTest
                             NODE_COUNT * TOKENS.length / 2 ), groups ) );
 
             // THEN
-            DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                         .newEmbeddedDatabaseBuilder( directory.storeDir() )
                         .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );

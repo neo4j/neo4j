@@ -50,7 +50,7 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.values.AnyValue;
 
@@ -75,9 +75,9 @@ public class BoltChannelAutoReadLimiterIT
     private TransportConnection connection;
     private TransportTestUtil util;
 
-    protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
+    protected TestDatabaseManagementServiceBuilder getTestGraphDatabaseFactory()
     {
-        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+        TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
 
         logProvider = new AssertableLogProvider();
 

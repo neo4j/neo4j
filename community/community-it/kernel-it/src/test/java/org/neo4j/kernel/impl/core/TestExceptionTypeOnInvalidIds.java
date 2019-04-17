@@ -33,7 +33,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.fail;
@@ -64,12 +64,13 @@ public class TestExceptionTypeOnInvalidIds
     {
         var writableLayout = testDirectory.databaseLayout( testDirectory.storeDir( "writable" ) );
         var readOnlyLayout = testDirectory.databaseLayout( testDirectory.storeDir( "readOnly" ) );
-        managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( writableLayout.databaseDirectory() );
+        managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( writableLayout.databaseDirectory() );
         graphdb = managementService.database( DEFAULT_DATABASE_NAME );
-        DatabaseManagementService managementService1 = new TestGraphDatabaseFactory().newDatabaseManagementService( readOnlyLayout.databaseDirectory() );
+        DatabaseManagementService managementService1 =
+                new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( readOnlyLayout.databaseDirectory() );
         managementService1.shutdown();
-        readOnlyService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( readOnlyLayout.databaseDirectory() ).
-            setConfig( GraphDatabaseSettings.read_only, TRUE ).newDatabaseManagementService();
+        readOnlyService = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( readOnlyLayout.databaseDirectory() ).
+                setConfig( GraphDatabaseSettings.read_only, TRUE ).newDatabaseManagementService();
         graphDbReadOnly = readOnlyService.database( DEFAULT_DATABASE_NAME );
     }
 

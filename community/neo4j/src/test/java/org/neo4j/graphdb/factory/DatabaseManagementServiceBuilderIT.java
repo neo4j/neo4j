@@ -48,7 +48,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.io.fs.FileSystemUtils.isEmptyOrNonExistingDirectory;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
-class GraphDatabaseFactoryIT
+class DatabaseManagementServiceBuilderIT
 {
     @Inject
     private FileSystemAbstraction fs;
@@ -58,7 +58,7 @@ class GraphDatabaseFactoryIT
     @Test
     void startSystemAndDefaultDatabase()
     {
-        DatabaseManagementService managementService = new GraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
+        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -80,7 +80,7 @@ class GraphDatabaseFactoryIT
         File factoryDir = testDirectory.storeDir();
         File databasesDir = testDirectory.directory( "my_databases" );
 
-        DatabaseManagementService managementService = new GraphDatabaseFactory()
+        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder()
                 .newEmbeddedDatabaseBuilder( factoryDir )
                 .setConfig( databases_root_path, databasesDir.toString() ).newDatabaseManagementService();
         try
@@ -102,7 +102,7 @@ class GraphDatabaseFactoryIT
     {
         File factoryDir = testDirectory.storeDir();
 
-        DatabaseManagementService managementService = new GraphDatabaseFactory().newDatabaseManagementService( factoryDir );
+        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder().newDatabaseManagementService( factoryDir );
         try
         {
             assertFalse( isEmptyOrNonExistingDirectory( fs, new File( factoryDir, DEFAULT_DATABASE_NAME ) ) );

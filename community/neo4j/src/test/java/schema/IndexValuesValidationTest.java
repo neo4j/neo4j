@@ -33,7 +33,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -61,7 +61,7 @@ class IndexValuesValidationTest
 
     void setUp( String... settings )
     {
-        managementService = new GraphDatabaseFactory()
+        managementService = new DatabaseManagementServiceBuilder()
                 .newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( stringMap( settings ) ).newDatabaseManagementService();
         database = managementService.database( DEFAULT_DATABASE_NAME );

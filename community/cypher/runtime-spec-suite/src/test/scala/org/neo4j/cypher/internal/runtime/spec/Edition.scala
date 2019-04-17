@@ -26,9 +26,9 @@ import org.neo4j.configuration.{Config, GraphDatabaseSettings}
 import org.neo4j.cypher.internal._
 import org.neo4j.dbms.database.DatabaseManagementService
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
-class Edition[CONTEXT <: RuntimeContext](graphDatabaseFactory: TestGraphDatabaseFactory,
+class Edition[CONTEXT <: RuntimeContext](graphDatabaseFactory: TestDatabaseManagementServiceBuilder,
                                          runtimeContextCreatorFun: (CypherRuntimeConfiguration, DependencyResolver) => RuntimeContextCreator[CONTEXT],
                                          configs: (Setting[_], String)*) {
 
@@ -59,7 +59,7 @@ class Edition[CONTEXT <: RuntimeContext](graphDatabaseFactory: TestGraphDatabase
 
 object COMMUNITY {
   val EDITION = new Edition(
-    new TestGraphDatabaseFactory,
+    new TestDatabaseManagementServiceBuilder,
     (runtimeConfig, _) => CommunityRuntimeContextCreator(runtimeConfig),
     GraphDatabaseSettings.cypher_hints_error -> "true")
 }

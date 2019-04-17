@@ -41,10 +41,10 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
@@ -57,7 +57,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.time.Clocks;
@@ -89,8 +89,8 @@ public class CommunityLockAcquisitionTimeoutIT
     @BeforeClass
     public static void setUp()
     {
-        CustomClockFacadeFactory facadeFactory = new CustomClockFacadeFactory();
-        managementService = new CustomClockTestGraphDatabaseFactory( facadeFactory )
+        CustomClockManagementServiceFactory facadeFactory = new CustomClockManagementServiceFactory();
+        managementService = new CustomClockTestDatabaseManagementServiceBuilder( facadeFactory )
                 .newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( GraphDatabaseSettings.lock_acquisition_timeout, "2s" )
                 .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
@@ -216,17 +216,17 @@ public class CommunityLockAcquisitionTimeoutIT
         }
     }
 
-    private static class CustomClockTestGraphDatabaseFactory extends TestGraphDatabaseFactory
+    private static class CustomClockTestDatabaseManagementServiceBuilder extends TestDatabaseManagementServiceBuilder
     {
-        private final GraphDatabaseFacadeFactory customFacadeFactory;
+        private final DatabaseManagementServiceFactory customFacadeFactory;
 
-        CustomClockTestGraphDatabaseFactory( GraphDatabaseFacadeFactory customFacadeFactory )
+        CustomClockTestDatabaseManagementServiceBuilder( DatabaseManagementServiceFactory customFacadeFactory )
         {
             this.customFacadeFactory = customFacadeFactory;
         }
 
         @Override
-        protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator( File storeDir,
+        protected DatabaseManagementServiceInternalBuilder.DatabaseCreator createDatabaseCreator( File storeDir,
                 GraphDatabaseFactoryState state )
         {
             return config -> customFacadeFactory.newFacade( storeDir, config,
@@ -234,10 +234,10 @@ public class CommunityLockAcquisitionTimeoutIT
         }
     }
 
-    private static class CustomClockFacadeFactory extends GraphDatabaseFacadeFactory
+    private static class CustomClockManagementServiceFactory extends DatabaseManagementServiceFactory
     {
 
-        CustomClockFacadeFactory()
+        CustomClockManagementServiceFactory()
         {
             super( DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
         }

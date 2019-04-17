@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
@@ -323,9 +323,9 @@ public class TestRecoveryScenarios
         }
     }
 
-    private static TestGraphDatabaseFactory databaseFactory( FileSystemAbstraction fs )
+    private static TestDatabaseManagementServiceBuilder databaseFactory( FileSystemAbstraction fs )
     {
-        return new TestGraphDatabaseFactory().setFileSystem( fs );
+        return new TestDatabaseManagementServiceBuilder().setFileSystem( fs );
     }
 
     @SuppressWarnings( "deprecation" )

@@ -56,7 +56,7 @@ import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionEventListener;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -84,7 +84,7 @@ class FileWatchIT
         File customStoreRoot = testDirectory.storeDir( "customStore" );
         databaseLayout = testDirectory.databaseLayout( customStoreRoot );
         logProvider = new AssertableLogProvider();
-        managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
+        managementService = new TestDatabaseManagementServiceBuilder().setInternalLogProvider( logProvider )
                 .newDatabaseManagementService( customStoreRoot );
         database = managementService.database( DEFAULT_DATABASE_NAME );
     }
@@ -132,7 +132,7 @@ class FileWatchIT
             DatabaseManagementService service = null;
             try
             {
-                service = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
+                service = new TestDatabaseManagementServiceBuilder().setInternalLogProvider( logProvider )
                                 .setFileSystem( new NonWatchableFileSystemAbstraction() ).newDatabaseManagementService(
                                 testDirectory.storeDir( "failed-start-db" ) );
                 db = managementService.database( DEFAULT_DATABASE_NAME );
@@ -262,7 +262,7 @@ class FileWatchIT
             DatabaseManagementService service = null;
             try
             {
-                service = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
+                service = new TestDatabaseManagementServiceBuilder().setInternalLogProvider( logProvider )
                                 .setFileSystem( new NonWatchableFileSystemAbstraction() )
                                 .newEmbeddedDatabaseBuilder( testDirectory.databaseLayout( "failed-start-db" ).databaseDirectory() )
                                 .setConfig( GraphDatabaseSettings.filewatcher_enabled, Settings.FALSE ).newDatabaseManagementService();

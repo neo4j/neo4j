@@ -31,8 +31,8 @@ import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -50,17 +50,17 @@ import static org.neo4j.configuration.connectors.Connector.ConnectorType.BOLT;
  * Please be aware that since it's a database it will close filesystem as part of its lifecycle.
  * If you expect your file system to be open after database is closed, use {@link UncloseableDelegatingFileSystemAbstraction}
  */
-public class TestGraphDatabaseFactory extends GraphDatabaseFactory
+public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServiceBuilder
 {
     private static final File EPHEMERAL_PATH = new File( "target/test data/" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
     public static final Predicate<ExtensionFactory<?>> INDEX_PROVIDERS_FILTER = extension -> extension instanceof AbstractIndexProviderFactory;
 
-    public TestGraphDatabaseFactory()
+    public TestDatabaseManagementServiceBuilder()
     {
         this( NullLogProvider.getInstance() );
     }
 
-    public TestGraphDatabaseFactory( LogProvider logProvider )
+    public TestDatabaseManagementServiceBuilder( LogProvider logProvider )
     {
         super( new TestGraphDatabaseFactoryState() );
         setUserLogProvider( logProvider );
@@ -68,37 +68,37 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 
     public DatabaseManagementService newImpermanentService()
     {
-        GraphDatabaseBuilder databaseBuilder = newImpermanentDatabaseBuilder();
+        DatabaseManagementServiceInternalBuilder databaseBuilder = newImpermanentDatabaseBuilder();
         return databaseBuilder.newDatabaseManagementService();
     }
 
     public DatabaseManagementService newImpermanentService( File storeDir )
     {
-        GraphDatabaseBuilder databaseBuilder = newImpermanentDatabaseBuilder( storeDir );
+        DatabaseManagementServiceInternalBuilder databaseBuilder = newImpermanentDatabaseBuilder( storeDir );
         return databaseBuilder.newDatabaseManagementService();
     }
 
     public DatabaseManagementService newImpermanentService( Map<Setting<?>,String> config )
     {
-        GraphDatabaseBuilder builder = newImpermanentDatabaseBuilder();
+        DatabaseManagementServiceInternalBuilder builder = newImpermanentDatabaseBuilder();
         setConfig( config, builder );
         return builder.newDatabaseManagementService();
     }
 
     public DatabaseManagementService newImpermanentService( File storeDir , Map<Setting<?>,String> config )
     {
-        GraphDatabaseBuilder builder = newImpermanentDatabaseBuilder(storeDir);
+        DatabaseManagementServiceInternalBuilder builder = newImpermanentDatabaseBuilder(storeDir);
         setConfig( config, builder );
         return builder.newDatabaseManagementService();
     }
 
-    public GraphDatabaseBuilder newImpermanentDatabaseBuilder()
+    public DatabaseManagementServiceInternalBuilder newImpermanentDatabaseBuilder()
     {
         return newImpermanentDatabaseBuilder( EPHEMERAL_PATH );
     }
 
     @Override
-    protected void configure( GraphDatabaseBuilder builder )
+    protected void configure( DatabaseManagementServiceInternalBuilder builder )
     {
         // Reduce the default page cache memory size to 8 mega-bytes for test databases.
         builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
@@ -106,7 +106,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         builder.setConfig( new BoltConnector( "bolt" ).enabled, "false" );
     }
 
-    private void configure( GraphDatabaseBuilder builder, File storeDir )
+    private void configure( DatabaseManagementServiceInternalBuilder builder, File storeDir )
     {
         configure( builder );
         builder.setConfig( GraphDatabaseSettings.logs_directory, new File( storeDir, "logs" ).getAbsolutePath() );
@@ -129,72 +129,73 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return getCurrentState().getFileSystem();
     }
 
-    public TestGraphDatabaseFactory setFileSystem( FileSystemAbstraction fileSystem )
+    public TestDatabaseManagementServiceBuilder setFileSystem( FileSystemAbstraction fileSystem )
     {
         getCurrentState().setFileSystem( fileSystem );
         return this;
     }
 
     @Override
-    public TestGraphDatabaseFactory setMonitors( Monitors monitors )
+    public TestDatabaseManagementServiceBuilder setMonitors( Monitors monitors )
     {
         getCurrentState().setMonitors( monitors );
         return this;
     }
 
     @Override
-    public TestGraphDatabaseFactory setUserLogProvider( LogProvider logProvider )
+    public TestDatabaseManagementServiceBuilder setUserLogProvider( LogProvider logProvider )
     {
-        return (TestGraphDatabaseFactory) super.setUserLogProvider( logProvider );
+        return (TestDatabaseManagementServiceBuilder) super.setUserLogProvider( logProvider );
     }
 
-    public TestGraphDatabaseFactory setInternalLogProvider( LogProvider logProvider )
+    public TestDatabaseManagementServiceBuilder setInternalLogProvider( LogProvider logProvider )
     {
         getCurrentState().setInternalLogProvider( logProvider );
         return this;
     }
 
-    public TestGraphDatabaseFactory setClock( SystemNanoClock clock )
+    public TestDatabaseManagementServiceBuilder setClock( SystemNanoClock clock )
     {
         getCurrentState().setClock( clock );
         return this;
     }
 
-    private TestGraphDatabaseFactory addExtensions( Iterable<ExtensionFactory<?>> extensions )
+    private TestDatabaseManagementServiceBuilder addExtensions( Iterable<ExtensionFactory<?>> extensions )
     {
         getCurrentState().addExtensions( extensions );
         return this;
     }
 
-    public TestGraphDatabaseFactory addExtension( ExtensionFactory<?> extension )
+    public TestDatabaseManagementServiceBuilder addExtension( ExtensionFactory<?> extension )
     {
         return addExtensions( Collections.singletonList( extension ) );
     }
 
-    public TestGraphDatabaseFactory setExtensions( Iterable<ExtensionFactory<?>> extensions )
+    public TestDatabaseManagementServiceBuilder setExtensions( Iterable<ExtensionFactory<?>> extensions )
     {
         getCurrentState().setExtensions( extensions );
         return this;
     }
 
-    public TestGraphDatabaseFactory removeExtensions( Predicate<ExtensionFactory<?>> filter )
+    public TestDatabaseManagementServiceBuilder removeExtensions( Predicate<ExtensionFactory<?>> filter )
     {
         getCurrentState().removeExtensions( filter );
         return this;
     }
 
     @Override
-    public TestGraphDatabaseFactory addURLAccessRule( String protocol, URLAccessRule rule )
+    public TestDatabaseManagementServiceBuilder addURLAccessRule( String protocol, URLAccessRule rule )
     {
-        return (TestGraphDatabaseFactory) super.addURLAccessRule( protocol, rule );
+        return (TestDatabaseManagementServiceBuilder) super.addURLAccessRule( protocol, rule );
     }
 
-    public GraphDatabaseBuilder newImpermanentDatabaseBuilder( final File storeDir )
+    public DatabaseManagementServiceInternalBuilder newImpermanentDatabaseBuilder( final File storeDir )
     {
         final TestGraphDatabaseFactoryState state = getStateCopy();
-        GraphDatabaseBuilder.DatabaseCreator creator =
+        DatabaseManagementServiceInternalBuilder.DatabaseCreator creator =
                 createImpermanentDatabaseCreator( storeDir, state );
-        GraphDatabaseBuilder builder = new GraphDatabaseBuilder( creator ).setConfig( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
+        DatabaseManagementServiceInternalBuilder
+                builder = new DatabaseManagementServiceInternalBuilder( creator ).setConfig( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         configure( builder, storeDir );
         return builder;
     }
@@ -203,18 +204,18 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
     protected DatabaseManagementService newEmbeddedDatabase( File storeDir, Config config,
             ExternalDependencies dependencies )
     {
-        return new TestGraphDatabaseFacadeFactory( getCurrentState() ).newFacade( storeDir, config,
+        return new TestDatabaseManagementServiceFactory( getCurrentState() ).newFacade( storeDir, config,
                 GraphDatabaseDependencies.newDependencies( dependencies ) );
     }
 
-    protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator( final File storeDir,
+    protected DatabaseManagementServiceInternalBuilder.DatabaseCreator createImpermanentDatabaseCreator( final File storeDir,
             final TestGraphDatabaseFactoryState state )
     {
-        return config -> new TestGraphDatabaseFacadeFactory( state, true ).newFacade( storeDir, config,
+        return config -> new TestDatabaseManagementServiceFactory( state, true ).newFacade( storeDir, config,
                 GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
     }
 
-    private static void setConfig( Map<Setting<?>,String> config, GraphDatabaseBuilder builder )
+    private static void setConfig( Map<Setting<?>,String> config, DatabaseManagementServiceInternalBuilder builder )
     {
         for ( Map.Entry<Setting<?>,String> entry : config.entrySet() )
         {

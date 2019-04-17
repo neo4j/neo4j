@@ -34,7 +34,7 @@ import org.neo4j.internal.kernel.api.Transaction.Type._
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
-import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 class TransactionBoundPlanContextTest extends CypherFunSuite {
@@ -49,7 +49,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
   }
 
   override protected def initTest(): Unit = {
-    managementService = new TestGraphDatabaseFactory().newImpermanentService()
+    managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService()
     database = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(database)
   }

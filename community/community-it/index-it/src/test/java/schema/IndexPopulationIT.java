@@ -44,7 +44,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
@@ -67,7 +67,7 @@ public class IndexPopulationIT
     @BeforeClass
     public static void setUp()
     {
-        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+        TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
         logProvider = new AssertableLogProvider( true );
         factory.setInternalLogProvider( logProvider );
         managementService = factory.newDatabaseManagementService( directory.storeDir() );
@@ -153,8 +153,8 @@ public class IndexPopulationIT
         File storeDir = directory.directory( "shutdownDbTest" );
         Label testLabel = Label.label( "testLabel" );
         String propertyName = "testProperty";
-        DatabaseManagementService
-                managementService = new TestGraphDatabaseFactory().setInternalLogProvider( assertableLogProvider ).newDatabaseManagementService( storeDir );
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder().setInternalLogProvider( assertableLogProvider ).newDatabaseManagementService( storeDir );
         GraphDatabaseService shutDownDb = managementService.database( DEFAULT_DATABASE_NAME );
         prePopulateDatabase( shutDownDb, testLabel, propertyName );
 

@@ -64,7 +64,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.RepeatRule;
@@ -177,7 +177,7 @@ public class MultipleIndexPopulationStressIT
 
     private void populateDbAndIndexes( int nodeCount, boolean multiThreaded ) throws InterruptedException
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                 .newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( multi_threaded_schema_index_population_enabled, multiThreaded + "" ).newDatabaseManagementService();
         final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
@@ -214,7 +214,7 @@ public class MultipleIndexPopulationStressIT
 
     private void dropIndexes()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                 .newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( GraphDatabaseSettings.pagecache_memory, "8m" ).newDatabaseManagementService();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );

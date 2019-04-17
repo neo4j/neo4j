@@ -29,7 +29,7 @@ import org.neo4j.graphdb.facade.embedded.EmbeddedGraphDatabase;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.service.Services;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -60,7 +60,7 @@ public abstract class ExtensionFactoryContractTest
     protected GraphDatabaseAPI graphDb( int instance )
     {
         Map<String, String> config = configuration( instance );
-        managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( config ).newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentDatabaseBuilder().setConfig( config ).newDatabaseManagementService();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 

@@ -42,7 +42,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -535,7 +535,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 
     private GraphDatabaseService getImpermanentDatabase( Map<String,String> config )
     {
-        managementService = new TestGraphDatabaseFactory()
+        managementService = new TestDatabaseManagementServiceBuilder()
                 .newImpermanentDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( config ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );

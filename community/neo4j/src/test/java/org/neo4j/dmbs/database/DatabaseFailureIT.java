@@ -29,7 +29,7 @@ import java.io.IOException;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.UnableToStartDatabaseException;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
@@ -102,6 +102,6 @@ class DatabaseFailureIT
 
     private void startDatabaseServer()
     {
-        managementService = new GraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
+        managementService = new DatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
     }
 }

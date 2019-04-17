@@ -35,8 +35,8 @@ import java.util.stream.Stream;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.exceptions.UnderlyingStorageException;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
@@ -54,7 +54,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -206,7 +206,7 @@ public class LabelsAcceptanceTest
     public void oversteppingMaxNumberOfLabelsShouldFailGracefully()
     {
         // Given
-        DatabaseManagementService managementService = ((TestGraphDatabaseFactory) new CustomLabelTestGraphDatabaseFactory()).newImpermanentService();
+        DatabaseManagementService managementService = new CustomLabelTestDatabaseManagementServiceBuilder().newImpermanentService();
         GraphDatabaseService graphDatabase = managementService.database( DEFAULT_DATABASE_NAME );
 
         // When
@@ -729,21 +729,21 @@ public class LabelsAcceptanceTest
         }
     }
 
-    private static class CustomIdGeneratorFacadeFactory extends GraphDatabaseFacadeFactory
+    private static class CustomIdGeneratorManagementServiceFactory extends DatabaseManagementServiceFactory
     {
-        CustomIdGeneratorFacadeFactory()
+        CustomIdGeneratorManagementServiceFactory()
         {
             super( DatabaseInfo.COMMUNITY, CustomIdGenerationEditionModule::new );
         }
     }
 
-    private class CustomLabelTestGraphDatabaseFactory extends TestGraphDatabaseFactory
+    private class CustomLabelTestDatabaseManagementServiceBuilder extends TestDatabaseManagementServiceBuilder
     {
         @Override
-        protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator( File storeDir,
+        protected DatabaseManagementServiceInternalBuilder.DatabaseCreator createImpermanentDatabaseCreator( File storeDir,
                 TestGraphDatabaseFactoryState state )
         {
-            return config -> new CustomIdGeneratorFacadeFactory().newFacade( storeDir, config,
+            return config -> new CustomIdGeneratorManagementServiceFactory().newFacade( storeDir, config,
                     newDependencies( state.databaseDependencies() ) );
         }
     }

@@ -32,8 +32,8 @@ import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.DatabaseEventHandlerAdapter;
+import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -52,7 +52,7 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -71,7 +71,7 @@ class DatabaseShutdownTest
     @Test
     void shouldShutdownCorrectlyWhenCheckPointingOnShutdownFails()
     {
-        TestGraphDatabaseFactoryWithFailingPageCacheFlush factory = new TestGraphDatabaseFactoryWithFailingPageCacheFlush();
+        TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush factory = new TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         DatabaseManagementService managementService = factory.newDatabaseManagementService( databaseLayout.databaseDirectory() );
         GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
@@ -87,7 +87,7 @@ class DatabaseShutdownTest
     @Test
     void invokeKernelEventHandlersBeforeShutdown()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         ShutdownListenerDatabaseEventHandler shutdownHandler = new ShutdownListenerDatabaseEventHandler();
         database.registerDatabaseEventHandler( shutdownHandler );
@@ -96,7 +96,7 @@ class DatabaseShutdownTest
         assertTrue( shutdownHandler.isShutdownInvoked() );
     }
 
-    private static class TestGraphDatabaseFactoryWithFailingPageCacheFlush extends TestGraphDatabaseFactory
+    private static class TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush extends TestDatabaseManagementServiceBuilder
     {
         private LifeSupport globalLife;
         private volatile boolean failFlush;
@@ -105,7 +105,7 @@ class DatabaseShutdownTest
         protected DatabaseManagementService newEmbeddedDatabase( File storeDir, Config config,
                 ExternalDependencies dependencies )
         {
-            return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
+            return new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
             {
 
                 @Override

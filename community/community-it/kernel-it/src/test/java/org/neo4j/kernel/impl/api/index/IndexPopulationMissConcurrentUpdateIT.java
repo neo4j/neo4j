@@ -36,7 +36,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.index.label.LabelScanReader;
 import org.neo4j.internal.kernel.api.IndexCapability;
@@ -60,7 +60,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.Barrier;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.util.FeatureToggles;
@@ -92,9 +92,9 @@ public class IndexPopulationMissConcurrentUpdateIT
     public final DbmsRule db = new ImpermanentDbmsRule()
     {
         @Override
-        protected GraphDatabaseFactory newFactory()
+        protected DatabaseManagementServiceBuilder newFactory()
         {
-            TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+            TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
             return factory.addExtension( index );
         }
     }.withSetting( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, Settings.FALSE )

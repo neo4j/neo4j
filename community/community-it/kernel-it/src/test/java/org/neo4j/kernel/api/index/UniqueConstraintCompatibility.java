@@ -53,7 +53,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockService;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -138,7 +138,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     @Before
     public void setUp()
     {
-        TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
+        TestDatabaseManagementServiceBuilder dbFactory = new TestDatabaseManagementServiceBuilder();
         dbFactory.setExtensions( Collections.singletonList( new PredefinedIndexProviderFactory( indexProvider ) ) );
         managementService = dbFactory.newImpermanentDatabaseBuilder( graphDbDir )
                       .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() ).newDatabaseManagementService();

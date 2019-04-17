@@ -28,7 +28,7 @@ import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -46,7 +46,7 @@ public class LargePropertiesIT
         String stringValue = RandomStringUtils.randomAlphanumeric( 10000 );
         byte[] arrayValue = RandomStringUtils.randomAlphanumeric( 10000 ).getBytes();
 
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                 .setFileSystem( fs.get() )
                 .newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.string_block_size, "1024" )

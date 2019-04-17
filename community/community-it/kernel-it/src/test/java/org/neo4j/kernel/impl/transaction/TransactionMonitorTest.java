@@ -32,7 +32,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
@@ -62,7 +62,7 @@ public class TransactionMonitorTest
     @Test
     public void shouldCountCommittedTransactions() throws Exception
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -84,7 +84,7 @@ public class TransactionMonitorTest
     @Test
     public void shouldCountRolledBackTransactions() throws Exception
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -106,7 +106,7 @@ public class TransactionMonitorTest
     @Test
     public void shouldCountTerminatedTransactions() throws Exception
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

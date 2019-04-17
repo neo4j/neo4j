@@ -38,10 +38,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.TransactionIdStore;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -151,7 +151,7 @@ public class QueryRestartIT
 
     private GraphDatabaseService startSnapshotQueryDb()
     {
-        managementService = new CustomGraphDatabaseFactory( new CustomFacadeFactory() )
+        managementService = new CustomDatabaseManagementServiceBuilder( new CustomManagementServiceFactory() )
                 .newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.snapshot_query, Settings.TRUE ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );
@@ -180,17 +180,17 @@ public class QueryRestartIT
         return dependencyResolver.resolveDependency( TransactionIdStore.class );
     }
 
-    private class CustomGraphDatabaseFactory extends TestGraphDatabaseFactory
+    private class CustomDatabaseManagementServiceBuilder extends TestDatabaseManagementServiceBuilder
     {
-        private final GraphDatabaseFacadeFactory customFacadeFactory;
+        private final DatabaseManagementServiceFactory customFacadeFactory;
 
-        CustomGraphDatabaseFactory( GraphDatabaseFacadeFactory customFacadeFactory )
+        CustomDatabaseManagementServiceBuilder( DatabaseManagementServiceFactory customFacadeFactory )
         {
             this.customFacadeFactory = customFacadeFactory;
         }
 
         @Override
-        protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator( File storeDir,
+        protected DatabaseManagementServiceInternalBuilder.DatabaseCreator createDatabaseCreator( File storeDir,
                 GraphDatabaseFactoryState state )
         {
             return config -> customFacadeFactory.newFacade( storeDir, config,
@@ -198,10 +198,10 @@ public class QueryRestartIT
         }
     }
 
-    private class CustomFacadeFactory extends GraphDatabaseFacadeFactory
+    private class CustomManagementServiceFactory extends DatabaseManagementServiceFactory
     {
 
-        CustomFacadeFactory()
+        CustomManagementServiceFactory()
         {
             super( DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
         }

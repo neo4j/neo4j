@@ -44,7 +44,7 @@ import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies
 public class GraphDatabaseFactoryState
 {
     // Keep these fields volatile or equivalent because of this scenario:
-    // - one thread creates a GraphDatabaseFactory (including state)
+    // - one thread creates a DatabaseManagementServiceBuilder (including state)
     // - this factory will potentially be handed over to other threads, which will create databases
     private final List<Class<?>> settingsClasses;
     private final List<ExtensionFactory<?>> extensions;

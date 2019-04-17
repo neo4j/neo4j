@@ -39,7 +39,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -73,7 +73,7 @@ class IndexSamplingIntegrationTest
         try
         {
             // Given
-            managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
+            managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
             db = managementService.database( DEFAULT_DATABASE_NAME );
             IndexDefinition indexDefinition;
             try ( Transaction tx = db.beginTx() )
@@ -144,7 +144,7 @@ class IndexSamplingIntegrationTest
         try
         {
             // Given
-            managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
+            managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
             db = managementService.database( DEFAULT_DATABASE_NAME );
             try ( Transaction tx = db.beginTx() )
             {
@@ -208,7 +208,7 @@ class IndexSamplingIntegrationTest
         try
         {
             // Then
-            managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
+            managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
             db = managementService.database( DEFAULT_DATABASE_NAME );
             @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
@@ -233,7 +233,7 @@ class IndexSamplingIntegrationTest
         try
         {
             // Then
-            managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
+            managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
             db = managementService.database( DEFAULT_DATABASE_NAME );
             @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;

@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -52,13 +52,13 @@ class TestTxEntries
     void testStartEntryWrittenOnceOnRollback()
     {
         File storeDir = testDirectory.storeDir();
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentService( storeDir );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fs ).newImpermanentService( storeDir );
         final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         createSomeTransactions( db );
         EphemeralFileSystemAbstraction snapshot = fs.snapshot();
         managementService.shutdown();
 
-        managementService = new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentService( storeDir );
+        managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( snapshot ).newImpermanentService( storeDir );
         managementService.shutdown();
     }
 

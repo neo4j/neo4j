@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -134,7 +134,7 @@ class RelationshipGroupStoreTest
 
     private void newDb( int denseNodeThreshold )
     {
-        managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentDatabaseBuilder()
                 .setConfig( dense_node_threshold, "" + denseNodeThreshold ).newDatabaseManagementService();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         fs = db.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );

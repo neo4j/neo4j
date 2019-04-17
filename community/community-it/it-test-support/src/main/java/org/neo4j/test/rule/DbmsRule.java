@@ -43,8 +43,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -65,7 +65,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public abstract class DbmsRule extends ExternalResource implements GraphDatabaseAPI
 {
-    private GraphDatabaseBuilder databaseBuilder;
+    private DatabaseManagementServiceInternalBuilder databaseBuilder;
     private GraphDatabaseAPI database;
     private DatabaseLayout databaseLayout;
     private Supplier<Statement> statementSupplier;
@@ -255,7 +255,7 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
         createResources();
         try
         {
-            GraphDatabaseFactory factory = newFactory();
+            DatabaseManagementServiceBuilder factory = newFactory();
             factory.setMonitors( monitors );
             configure( factory );
             databaseBuilder = newBuilder( factory );
@@ -284,11 +284,11 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     {
     }
 
-    protected abstract GraphDatabaseFactory newFactory();
+    protected abstract DatabaseManagementServiceBuilder newFactory();
 
-    protected abstract GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory );
+    protected abstract DatabaseManagementServiceInternalBuilder newBuilder( DatabaseManagementServiceBuilder factory );
 
-    protected void configure( GraphDatabaseFactory databaseFactory )
+    protected void configure( DatabaseManagementServiceBuilder databaseFactory )
     {
         // Override to configure the database factory
     }

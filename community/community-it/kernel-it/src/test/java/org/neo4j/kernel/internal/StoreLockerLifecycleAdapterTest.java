@@ -28,7 +28,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.kernel.StoreLockException;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -72,7 +72,7 @@ class StoreLockerLifecycleAdapterTest
         DatabaseManagementService embeddedService = null;
         try
         {
-            embeddedService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.storeDir() )
+            embeddedService = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( directory.storeDir() )
                         .setConfig( config ).newDatabaseManagementService();
             fail();
         }
@@ -95,6 +95,6 @@ class StoreLockerLifecycleAdapterTest
 
     private DatabaseManagementService newDb()
     {
-        return new TestGraphDatabaseFactory().newDatabaseManagementService( directory.storeDir() );
+        return new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( directory.storeDir() );
     }
 }

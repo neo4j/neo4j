@@ -35,7 +35,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.rest.web.PropertyValueException;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -52,7 +52,7 @@ public class PropertySettingStrategyTest
     @BeforeClass
     public static void createDb()
     {
-        managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         propSetter = new PropertySettingStrategy( db );
     }

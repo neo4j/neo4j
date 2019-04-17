@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -114,7 +114,7 @@ class PointPropertiesRecordFormatIT
 
     private static DatabaseManagementService startDatabaseServiceWithUpgrade( File storeDir, String formatName )
     {
-        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
+        return new DatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( record_format, formatName )
                 .setConfig( allow_upgrade, TRUE ).newDatabaseManagementService();
     }

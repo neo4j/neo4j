@@ -35,7 +35,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.LogVersionRepository;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -66,7 +66,7 @@ class RunOutOfDiskSpaceIT
     void setUp()
     {
         limitedFs = new LimitedFilesystemAbstraction( new UncloseableDelegatingFileSystemAbstraction( testDirectory.getFileSystem() ) );
-        TestGraphDatabaseFactory testGraphDatabaseFactory = new TestGraphDatabaseFactory().setFileSystem( limitedFs );
+        TestDatabaseManagementServiceBuilder testGraphDatabaseFactory = new TestDatabaseManagementServiceBuilder().setFileSystem( limitedFs );
         managementService = testGraphDatabaseFactory.newDatabaseManagementService( testDirectory.storeDir() );
         database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }

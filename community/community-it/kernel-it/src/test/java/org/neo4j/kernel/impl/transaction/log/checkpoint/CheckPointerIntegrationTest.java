@@ -32,7 +32,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -73,13 +73,13 @@ class CheckPointerIntegrationTest
     @Inject
     private TestDirectory testDirectory;
 
-    private GraphDatabaseBuilder builder;
+    private DatabaseManagementServiceInternalBuilder builder;
 
     @BeforeEach
     void setup()
     {
         File storeDir = testDirectory.storeDir();
-        builder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+        builder = new TestDatabaseManagementServiceBuilder().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .newImpermanentDatabaseBuilder( storeDir );
     }
 
@@ -215,15 +215,15 @@ class CheckPointerIntegrationTest
     void shouldBeAbleToStartAndShutdownMultipleTimesTheDBWithoutCommittingTransactions() throws Throwable
     {
         // given
-        GraphDatabaseBuilder graphDatabaseBuilder = builder.setConfig( GraphDatabaseSettings
+        DatabaseManagementServiceInternalBuilder databaseManagementServiceInternalBuilder = builder.setConfig( GraphDatabaseSettings
                 .check_point_interval_time, "300m" )
                 .setConfig( GraphDatabaseSettings.check_point_interval_tx, "10000" )
                 .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1g" );
 
         // when
-        DatabaseManagementService managementService1 = graphDatabaseBuilder.newDatabaseManagementService();
+        DatabaseManagementService managementService1 = databaseManagementServiceInternalBuilder.newDatabaseManagementService();
         managementService1.shutdown();
-        DatabaseManagementService managementService = graphDatabaseBuilder.newDatabaseManagementService();
+        DatabaseManagementService managementService = databaseManagementServiceInternalBuilder.newDatabaseManagementService();
         managementService.shutdown();
 
         // then - 2 check points have been written in the log

@@ -97,7 +97,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageIndexReference;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -1415,7 +1415,7 @@ public class BatchInsertTest
     private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter )
     {
         inserter.shutdown();
-        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+        TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
         factory.setFileSystem( fileSystemRule.get() );
         managementService = factory.newImpermanentDatabaseBuilder( localTestDirectory.storeDir() )
                 // Shouldn't be necessary to set dense node threshold since it's a stick config

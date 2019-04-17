@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.InwardKernel
 import org.neo4j.kernel.api.procedure.{CallableProcedure, CallableUserAggregationFunction, CallableUserFunction, GlobalProcedures}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.monitoring.Monitors
-import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.JavaConverters._
@@ -69,7 +69,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     graph = new GraphDatabaseCypherService(graphOps)
   }
 
-  protected def graphDatabaseFactory(): TestGraphDatabaseFactory = {
+  protected def graphDatabaseFactory(): TestDatabaseManagementServiceBuilder = {
     val factory = createDatabaseFactory()
     this match {
       case custom: FakeClock =>
@@ -79,7 +79,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     factory
   }
 
-  protected def createDatabaseFactory(): TestGraphDatabaseFactory = new TestGraphDatabaseFactory
+  protected def createDatabaseFactory(): TestDatabaseManagementServiceBuilder = new TestDatabaseManagementServiceBuilder
 
   protected def restartWithConfig(config: Map[Setting[_], String] = databaseConfig()): Unit = {
     managementService.shutdown()

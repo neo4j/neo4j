@@ -32,7 +32,7 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -47,7 +47,7 @@ class TestNeo4jApiExceptions
     @BeforeEach
     void init()
     {
-        managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
         graph = managementService.database( DEFAULT_DATABASE_NAME );
         newTransaction();
     }

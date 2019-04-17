@@ -49,7 +49,7 @@ import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -76,12 +76,12 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.dbms.archive.CompressionFormat.ZSTD;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
+import static org.neo4j.dbms.archive.CompressionFormat.ZSTD;
 
 @ExtendWith( TestDirectoryExtension.class )
 class DumpCommandIT
@@ -395,7 +395,7 @@ class DumpCommandIT
     private static void putStoreInDirectory( Config config, Path databaseDirectory )
     {
         String databaseName = databaseDirectory.toFile().getName();
-        DatabaseManagementService managementService = new GraphDatabaseFactory()
+        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder()
                 .newEmbeddedDatabaseBuilder( databaseDirectory.getParent().toFile() )
                 .setConfig( config.getRaw() )
                 .setConfig( default_database, databaseName ).newDatabaseManagementService();

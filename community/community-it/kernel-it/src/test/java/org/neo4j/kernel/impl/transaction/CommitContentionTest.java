@@ -32,7 +32,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
+import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -123,7 +123,7 @@ class CommitContentionTest
     private GraphDatabaseService createDb()
     {
         GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
-        managementService = new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, globalModule -> new CommunityEditionModule( globalModule )
+        managementService = new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, globalModule -> new CommunityEditionModule( globalModule )
         {
             @Override
             public DatabaseTransactionStats createTransactionMonitor()

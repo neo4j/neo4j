@@ -34,7 +34,7 @@ import org.neo4j.helpers.Args;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -95,7 +95,7 @@ class DatabaseImporterTest
         File databaseDirectory;
         try
         {
-            managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
+            managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( storeDir );
             db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
             databaseDirectory = db.databaseLayout().databaseDirectory();
             try ( Transaction transaction = db.beginTx() )

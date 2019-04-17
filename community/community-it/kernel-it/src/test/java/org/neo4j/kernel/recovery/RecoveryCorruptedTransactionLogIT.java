@@ -77,7 +77,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionIdStore;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -111,14 +111,14 @@ class RecoveryCorruptedTransactionLogIT
     private File databaseDirectory;
     private final Monitors monitors = new Monitors();
     private LogFiles logFiles;
-    private TestGraphDatabaseFactory databaseFactory;
+    private TestDatabaseManagementServiceBuilder databaseFactory;
 
     @BeforeEach
     void setUp() throws Exception
     {
         databaseDirectory = directory.storeDir();
         monitors.addMonitorListener( recoveryMonitor );
-        databaseFactory = new TestGraphDatabaseFactory()
+        databaseFactory = new TestDatabaseManagementServiceBuilder()
                 .setInternalLogProvider( logProvider )
                 .setMonitors( monitors )
                 .setFileSystem( fileSystem );

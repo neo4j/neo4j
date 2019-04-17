@@ -27,7 +27,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.DatabaseEventHandlerAdapter;
 import org.neo4j.graphdb.event.ErrorState;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -48,7 +48,7 @@ class TestDatabaseEvents
     @Test
     void testRegisterUnregisterHandlers()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
         GraphDatabaseService graphDb = managementService.database( DEFAULT_DATABASE_NAME );
         DatabaseEventHandler handler1 = new DummyDatabaseEventHandler( RESOURCE1 )
         {
@@ -86,7 +86,7 @@ class TestDatabaseEvents
     @Test
     void testShutdownEvents()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
         GraphDatabaseService graphDb = managementService.database( DEFAULT_DATABASE_NAME );
         DummyDatabaseEventHandler handler1 = new DummyDatabaseEventHandler( RESOURCE1 )
         {

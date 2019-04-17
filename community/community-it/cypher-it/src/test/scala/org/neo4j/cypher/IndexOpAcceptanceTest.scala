@@ -29,7 +29,7 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.exceptions.schema.{DropIndexFailureException, NoSuchIndexException}
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.POPULATION
-import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.test.rule.TestDirectory
 
 class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
@@ -104,11 +104,11 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     testDirectory.prepareDirectory(getClass, "createDbWithFailedIndex")
     val storeDir = testDirectory.databaseDir()
     managementService.shutdown()
-    val dbFactory = new TestGraphDatabaseFactory()
+    val dbFactory = new TestDatabaseManagementServiceBuilder()
     // Build a properly failing index provider which is a wrapper around the default provider, but which throws exception
     // in its populator when trying to add updates to it
     val providerFactory = new FailingGenericNativeIndexProviderFactory(POPULATION)
-    dbFactory.removeExtensions(TestGraphDatabaseFactory.INDEX_PROVIDERS_FILTER)
+    dbFactory.removeExtensions(TestDatabaseManagementServiceBuilder.INDEX_PROVIDERS_FILTER)
     dbFactory.addExtension(providerFactory)
     managementService = dbFactory.newDatabaseManagementService(storeDir)
     graph = new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))

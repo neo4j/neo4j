@@ -38,7 +38,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 
 @ExtendWith( TestDirectoryExtension.class )
-class TestGraphDatabaseFactoryTest
+class TestDatabaseManagementServiceBuilderTest
 {
     @Inject
     private TestDirectory testDirectory;
@@ -46,7 +46,7 @@ class TestGraphDatabaseFactoryTest
     @Test
     void databaseStartsWithSystemAndDefaultDatabase()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -61,7 +61,7 @@ class TestGraphDatabaseFactoryTest
     @Test
     void impermanentDatabaseStartsWithSystemAndDefaultDatabase()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService( testDirectory.storeDir() );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService( testDirectory.storeDir() );
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

@@ -34,7 +34,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertNotNull;
@@ -55,7 +55,7 @@ public class NestedTransactionLocksIT
     @Before
     public void before()
     {
-        managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

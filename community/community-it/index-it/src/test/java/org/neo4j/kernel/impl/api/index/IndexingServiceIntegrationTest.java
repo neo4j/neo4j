@@ -50,7 +50,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -88,7 +88,7 @@ public class IndexingServiceIntegrationTest
     public void setUp()
     {
         EphemeralFileSystemAbstraction fileSystem = fileSystemRule.get();
-        managementService = new TestGraphDatabaseFactory()
+        managementService = new TestDatabaseManagementServiceBuilder()
                 .setFileSystem( fileSystem )
                 .newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() ).newDatabaseManagementService();

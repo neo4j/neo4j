@@ -32,7 +32,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.monitoring.Monitors
-import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Map
@@ -194,7 +194,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
   var engine: ExecutionEngine = _
 
   override protected def beforeEach(): Unit = {
-    db = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentService().database(DEFAULT_DATABASE_NAME))
+    db = new GraphDatabaseCypherService(new TestDatabaseManagementServiceBuilder().newImpermanentService().database(DEFAULT_DATABASE_NAME))
     monitor = mock[QueryExecutionMonitor]
     val monitors = db.getDependencyResolver.resolveDependency(classOf[Monitors])
     monitors.addMonitorListener(monitor)

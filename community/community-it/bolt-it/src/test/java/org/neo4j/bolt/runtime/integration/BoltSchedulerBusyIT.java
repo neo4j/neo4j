@@ -43,7 +43,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Collections.emptyMap;
@@ -72,9 +72,9 @@ public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
 
-    protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
+    protected TestDatabaseManagementServiceBuilder getTestGraphDatabaseFactory()
     {
-        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+        TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
         factory.setInternalLogProvider( internalLogProvider );
         factory.setUserLogProvider( userLogProvider );
         return factory;

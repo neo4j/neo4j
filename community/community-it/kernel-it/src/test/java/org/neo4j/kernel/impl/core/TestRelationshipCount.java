@@ -47,7 +47,7 @@ import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
@@ -92,7 +92,7 @@ public class TestRelationshipCount
             {
                 managementService.shutdown();
             }
-            managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+            managementService = new TestDatabaseManagementServiceBuilder().newImpermanentDatabaseBuilder()
                         .setConfig( GraphDatabaseSettings.dense_node_threshold, String.valueOf( denseNodeThreshold ) ).newDatabaseManagementService();
             db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         }

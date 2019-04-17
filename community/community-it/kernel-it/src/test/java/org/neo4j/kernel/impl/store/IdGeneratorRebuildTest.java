@@ -43,7 +43,7 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -71,7 +71,7 @@ class IdGeneratorRebuildTest
     {
         databaseLayout = testDirectory.databaseLayout();
         uncloseableFs = new UncloseableDelegatingFileSystemAbstraction( fs );
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( uncloseableFs )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( uncloseableFs )
                 .newImpermanentService( testDirectory.storeDir() );
         GraphDatabaseService graphdb = managementService.database( DEFAULT_DATABASE_NAME );
         createInitialData( graphdb );
@@ -89,7 +89,7 @@ class IdGeneratorRebuildTest
         DatabaseManagementService managementService = null;
         try
         {
-            managementService = new TestGraphDatabaseFactory().setFileSystem( uncloseableFs )
+            managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( uncloseableFs )
                     .newImpermanentService( testDirectory.storeDir() );
             graphdb = managementService.database( DEFAULT_DATABASE_NAME );
             verifyData( graphdb );

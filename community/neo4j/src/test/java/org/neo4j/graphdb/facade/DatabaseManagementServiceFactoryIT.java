@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
 @ExtendWith( TestDirectoryExtension.class )
-class GraphDatabaseFacadeFactoryIT
+class DatabaseManagementServiceFactoryIT
 {
     @Inject
     private TestDirectory testDirectory;
@@ -110,8 +110,9 @@ class GraphDatabaseFacadeFactoryIT
 
     private DatabaseManagementService getDatabaseManagementService()
     {
-        GraphDatabaseFacadeFactory graphDatabaseFacadeFactory = new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
-        return graphDatabaseFacadeFactory.initFacade( testDirectory.storeDir(), Config.defaults(), GraphDatabaseDependencies.newDependencies(),
+        DatabaseManagementServiceFactory databaseManagementServiceFactory =
+                new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
+        return databaseManagementServiceFactory.initFacade( testDirectory.storeDir(), Config.defaults(), GraphDatabaseDependencies.newDependencies(),
                 new GraphDatabaseFacade() );
     }
 

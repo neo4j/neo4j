@@ -45,7 +45,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
-import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 import scala.collection.mutable
@@ -65,7 +65,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   ignore("do the test") {
     val path = Files.createTempDirectory("apa").toFile.getAbsolutePath
-    val managementService = new TestGraphDatabaseFactory().newDatabaseManagementService(new File(path))
+    val managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService(new File(path))
     val graph: GraphDatabaseQueryService = new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
     try {
       graph.createIndex(LABEL, PROPERTY)
@@ -99,7 +99,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   ignore("cost for eagerness") {
     val path = Files.createTempDirectory("apa").toFile.getAbsolutePath
-    val managementService = new TestGraphDatabaseFactory().newDatabaseManagementService(new File(path))
+    val managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService(new File(path))
     val graph: GraphDatabaseQueryService = new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
     try {
       graph.createIndex(LABEL, PROPERTY)
@@ -126,7 +126,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   ignore("hash joins") {
     val path = Files.createTempDirectory("apa").toFile.getAbsolutePath
-    val managementService = new TestGraphDatabaseFactory().newDatabaseManagementService(new File(path))
+    val managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService(new File(path))
     val graph: GraphDatabaseQueryService = new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
     val labels = Seq("A", "B", "C", "D", "E", "F", "G", "H", "I", "J")
     val x = ListBuffer.empty[Array[Double]]

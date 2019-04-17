@@ -35,7 +35,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexReference;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -65,7 +65,7 @@ class SchemaImplTest
     @BeforeEach
     void createDb()
     {
-        managementService = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentService( testDirectory.storeDir() );
+        managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fs ).newImpermanentService( testDirectory.storeDir() );
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

@@ -29,8 +29,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.database.DatabaseManagementService;
+import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -44,16 +44,16 @@ import org.neo4j.monitoring.Monitors;
  * {@link #newEmbeddedDatabaseBuilder(File)} to create a database instance.
  * <p>
  */
-public class GraphDatabaseFactory
+public class DatabaseManagementServiceBuilder
 {
     private final GraphDatabaseFactoryState state;
 
-    public GraphDatabaseFactory()
+    public DatabaseManagementServiceBuilder()
     {
         this( new GraphDatabaseFactoryState() );
     }
 
-    protected GraphDatabaseFactory( GraphDatabaseFactoryState state )
+    protected DatabaseManagementServiceBuilder( GraphDatabaseFactoryState state )
     {
         this.state = state;
     }
@@ -76,26 +76,21 @@ public class GraphDatabaseFactory
     /**
      * @param storeDir desired embedded database store dir
      */
-    public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( File storeDir )
+    public DatabaseManagementServiceInternalBuilder newEmbeddedDatabaseBuilder( File storeDir )
     {
         final GraphDatabaseFactoryState state = getStateCopy();
-        GraphDatabaseBuilder.DatabaseCreator creator = createDatabaseCreator( storeDir, state );
-        GraphDatabaseBuilder builder = createGraphDatabaseBuilder( creator );
+        DatabaseManagementServiceInternalBuilder.DatabaseCreator creator = createDatabaseCreator( storeDir, state );
+        DatabaseManagementServiceInternalBuilder builder = new DatabaseManagementServiceInternalBuilder( creator );
         configure( builder );
         return builder;
     }
 
-    protected GraphDatabaseBuilder createGraphDatabaseBuilder( GraphDatabaseBuilder.DatabaseCreator creator )
-    {
-        return new GraphDatabaseBuilder( creator );
-    }
-
-    protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator( final File storeDir, final GraphDatabaseFactoryState state )
+    protected DatabaseManagementServiceInternalBuilder.DatabaseCreator createDatabaseCreator( final File storeDir, final GraphDatabaseFactoryState state )
     {
         return new EmbeddedDatabaseCreator( storeDir, state );
     }
 
-    protected void configure( GraphDatabaseBuilder builder )
+    protected void configure( DatabaseManagementServiceInternalBuilder builder )
     {
         // Let the default configuration pass through.
     }
@@ -123,30 +118,30 @@ public class GraphDatabaseFactory
         return getGraphDatabaseFacadeFactory().newFacade( storeDir, config, dependencies );
     }
 
-    protected GraphDatabaseFacadeFactory getGraphDatabaseFacadeFactory()
+    protected DatabaseManagementServiceFactory getGraphDatabaseFacadeFactory()
     {
-        return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
+        return new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new  );
     }
 
-    public GraphDatabaseFactory addURLAccessRule( String protocol, URLAccessRule rule )
+    public DatabaseManagementServiceBuilder addURLAccessRule( String protocol, URLAccessRule rule )
     {
         getCurrentState().addURLAccessRule( protocol, rule );
         return this;
     }
 
-    public GraphDatabaseFactory setUserLogProvider( LogProvider userLogProvider )
+    public DatabaseManagementServiceBuilder setUserLogProvider( LogProvider userLogProvider )
     {
         getCurrentState().setUserLogProvider( userLogProvider );
         return this;
     }
 
-    public GraphDatabaseFactory setMonitors( Monitors monitors )
+    public DatabaseManagementServiceBuilder setMonitors( Monitors monitors )
     {
         getCurrentState().setMonitors( monitors );
         return this;
     }
 
-    public GraphDatabaseFactory setExternalDependencies( DependencyResolver dependencies )
+    public DatabaseManagementServiceBuilder setExternalDependencies( DependencyResolver dependencies )
     {
         getCurrentState().setDependencies( dependencies );
         return this;
@@ -157,7 +152,7 @@ public class GraphDatabaseFactory
         return Edition.COMMUNITY.toString();
     }
 
-    private class EmbeddedDatabaseCreator implements GraphDatabaseBuilder.DatabaseCreator
+    private class EmbeddedDatabaseCreator implements DatabaseManagementServiceInternalBuilder.DatabaseCreator
     {
         private final File storeDir;
         private final GraphDatabaseFactoryState state;

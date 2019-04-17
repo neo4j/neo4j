@@ -36,7 +36,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.test.DbRepresentation;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -59,7 +59,7 @@ public class TestReadOnlyNeo4j
     public void testSimple()
     {
         DbRepresentation someData = createSomeData();
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) )
                 .newImpermanentDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( GraphDatabaseSettings.read_only, Settings.TRUE ).newDatabaseManagementService();
@@ -82,7 +82,7 @@ public class TestReadOnlyNeo4j
     private DbRepresentation createSomeData()
     {
         RelationshipType type = withName( "KNOWS" );
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) ).newImpermanentService( testDirectory.storeDir() );
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
@@ -106,7 +106,7 @@ public class TestReadOnlyNeo4j
     public void testReadOnlyOperationsAndNoTransaction()
     {
         DatabaseManagementService
-                managementService = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentService( testDirectory.storeDir() );
+                managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fs.get() ).newImpermanentService( testDirectory.storeDir() );
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         Transaction tx = db.beginTx();

@@ -25,8 +25,8 @@ import java.util.function.Function;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
+import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
@@ -40,17 +40,17 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.time.SystemNanoClock;
 
-public class TestGraphDatabaseFacadeFactory extends GraphDatabaseFacadeFactory
+public class TestDatabaseManagementServiceFactory extends DatabaseManagementServiceFactory
 {
     private final TestGraphDatabaseFactoryState state;
     private final boolean impermanent;
 
-    protected TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent )
+    protected TestDatabaseManagementServiceFactory( TestGraphDatabaseFactoryState state, boolean impermanent )
     {
         this( state, impermanent, DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
     }
 
-    public TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent,
+    public TestDatabaseManagementServiceFactory( TestGraphDatabaseFactoryState state, boolean impermanent,
             DatabaseInfo databaseInfo, Function<GlobalModule,AbstractEditionModule> editionFactory )
     {
         super( databaseInfo, editionFactory );
@@ -58,7 +58,7 @@ public class TestGraphDatabaseFacadeFactory extends GraphDatabaseFacadeFactory
         this.impermanent = impermanent;
     }
 
-    TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state )
+    TestDatabaseManagementServiceFactory( TestGraphDatabaseFactoryState state )
     {
         this( state, false );
     }

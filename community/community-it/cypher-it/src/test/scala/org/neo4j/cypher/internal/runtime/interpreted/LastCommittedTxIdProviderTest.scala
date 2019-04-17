@@ -28,7 +28,7 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.database.Database
-import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.scalatest.BeforeAndAfterAll
 
 class LastCommittedTxIdProviderTest extends CypherFunSuite with BeforeAndAfterAll {
@@ -39,7 +39,7 @@ class LastCommittedTxIdProviderTest extends CypherFunSuite with BeforeAndAfterAl
   var lastCommittedTxIdProvider: LastCommittedTxIdProvider = _
 
   override protected def beforeAll(): Unit = {
-    managementService = new TestGraphDatabaseFactory().newImpermanentService()
+    managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService()
     graph = managementService.database(DEFAULT_DATABASE_NAME)
     db = new GraphDatabaseCypherService(graph)
     lastCommittedTxIdProvider = LastCommittedTxIdProvider(db)

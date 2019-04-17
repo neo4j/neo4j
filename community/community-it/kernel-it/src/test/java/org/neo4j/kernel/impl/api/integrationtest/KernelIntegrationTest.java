@@ -29,7 +29,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Procedures;
@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Value;
 
@@ -179,23 +179,23 @@ public abstract class KernelIntegrationTest
 
     protected DatabaseManagementService createDatabaseService()
     {
-        GraphDatabaseBuilder graphDatabaseBuilder = configure( createGraphDatabaseFactory() )
+        DatabaseManagementServiceInternalBuilder databaseManagementServiceInternalBuilder = configure( createGraphDatabaseFactory() )
                 .setFileSystem( testDir.getFileSystem() )
                 .newEmbeddedDatabaseBuilder( testDir.storeDir() );
-        return configure( graphDatabaseBuilder ).newDatabaseManagementService();
+        return configure( databaseManagementServiceInternalBuilder ).newDatabaseManagementService();
     }
 
-    protected TestGraphDatabaseFactory createGraphDatabaseFactory()
+    protected TestDatabaseManagementServiceBuilder createGraphDatabaseFactory()
     {
-        return new TestGraphDatabaseFactory();
+        return new TestDatabaseManagementServiceBuilder();
     }
 
-    protected GraphDatabaseBuilder configure( GraphDatabaseBuilder graphDatabaseBuilder )
+    protected DatabaseManagementServiceInternalBuilder configure( DatabaseManagementServiceInternalBuilder databaseManagementServiceInternalBuilder )
     {
-        return graphDatabaseBuilder;
+        return databaseManagementServiceInternalBuilder;
     }
 
-    protected TestGraphDatabaseFactory configure( TestGraphDatabaseFactory factory )
+    protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder factory )
     {
         return factory;
     }

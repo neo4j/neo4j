@@ -29,7 +29,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.neo4j.helpers.collection.Iterables.count;
 
-class GraphDatabaseFactoryStateTest
+class DatabaseManagementServiceBuilderStateTest
 {
     @Test
     void mustBeAbleToRemoveAddedExtensions()

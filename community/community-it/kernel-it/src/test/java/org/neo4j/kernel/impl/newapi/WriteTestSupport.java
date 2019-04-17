@@ -30,7 +30,7 @@ import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.GraphDatabaseServiceCleaner;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
@@ -47,7 +47,7 @@ public class WriteTestSupport implements KernelAPIWriteTestSupport
 
     protected GraphDatabaseService newDb( File storeDir )
     {
-        managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( storeDir ).newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentDatabaseBuilder( storeDir ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 

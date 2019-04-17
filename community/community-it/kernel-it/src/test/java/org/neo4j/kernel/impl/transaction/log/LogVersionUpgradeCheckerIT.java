@@ -40,7 +40,7 @@ import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.matchers.NestedThrowableMatcher;
@@ -71,7 +71,7 @@ class LogVersionUpgradeCheckerIT
         createGraphDbAndKillIt();
 
         // Try to start with upgrading disabled
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                 .setFileSystem( fileSystem )
                 .newImpermanentDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( allow_upgrade, FALSE ).newDatabaseManagementService();
@@ -85,7 +85,7 @@ class LogVersionUpgradeCheckerIT
         createStoreWithLogEntryVersion( LogEntryVersion.V3_0_10 );
 
         // Try to start with upgrading disabled
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( fileSystem )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fileSystem )
                                     .newImpermanentDatabaseBuilder( testDirectory.storeDir() )
                                     .setConfig( allow_upgrade, FALSE ).newDatabaseManagementService();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
@@ -108,7 +108,7 @@ class LogVersionUpgradeCheckerIT
         createStoreWithLogEntryVersion( LogEntryVersion.V3_0_10 );
 
         // Try to start with upgrading enabled
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                 .setFileSystem( fileSystem )
                 .newImpermanentDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( allow_upgrade, TRUE ).newDatabaseManagementService();
@@ -118,7 +118,7 @@ class LogVersionUpgradeCheckerIT
 
     private void createGraphDbAndKillIt()
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                 .setFileSystem( fileSystem )
                 .newImpermanentDatabaseBuilder( testDirectory.storeDir() ).newDatabaseManagementService();
         final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );

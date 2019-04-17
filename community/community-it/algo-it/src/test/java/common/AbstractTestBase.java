@@ -31,7 +31,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -45,7 +45,7 @@ public abstract class AbstractTestBase
     @BeforeClass
     public static void beforeSuite()
     {
-        managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
         graphdb = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

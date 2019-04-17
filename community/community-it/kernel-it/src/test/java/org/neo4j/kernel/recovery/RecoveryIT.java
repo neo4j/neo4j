@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -342,7 +342,7 @@ class RecoveryIT
     @Test
     void startDatabaseWithRemovedMultipleTransactionLogFiles() throws Exception
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                 .newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" ).newDatabaseManagementService();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
@@ -364,7 +364,7 @@ class RecoveryIT
     @Test
     void killAndStartDatabaseAfterTransactionLogsRemoval() throws Exception
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                 .newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" ).newDatabaseManagementService();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
@@ -397,7 +397,7 @@ class RecoveryIT
     @Test
     void killAndStartDatabaseAfterTransactionLogsRemovalWithSeveralFilesWithoutCheckpoint() throws Exception
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                 .newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" ).newDatabaseManagementService();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
@@ -428,7 +428,7 @@ class RecoveryIT
     @Test
     void startDatabaseAfterTransactionLogsRemovalAndKillAfterRecovery() throws Exception
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                 .newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" ).newDatabaseManagementService();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
@@ -635,7 +635,7 @@ class RecoveryIT
 
     private GraphDatabaseAPI createDatabase()
     {
-        managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( directory.storeDir() );
+        managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( directory.storeDir() );
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -647,7 +647,7 @@ class RecoveryIT
 
     private DatabaseManagementService forcedRecoveryManagement()
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.storeDir() )
+        return new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( fail_on_missing_files, FALSE ).newDatabaseManagementService();
     }
 

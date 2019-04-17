@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StoreVersionCheck;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -136,7 +136,7 @@ public class StoreUpgradeOnStartupTest
 
     private GraphDatabaseService createGraphDatabaseService()
     {
-        managementService = new TestGraphDatabaseFactory()
+        managementService = new TestDatabaseManagementServiceBuilder()
                 .newEmbeddedDatabaseBuilder( workingStoreDir )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, "true" ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );

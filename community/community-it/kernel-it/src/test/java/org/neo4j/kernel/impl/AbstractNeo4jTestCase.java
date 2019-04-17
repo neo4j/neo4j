@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
@@ -116,8 +116,9 @@ public abstract class AbstractNeo4jTestCase
             }
         }
 
-        threadLocalService.set( requiresPersistentGraphDatabase ? new TestGraphDatabaseFactory().newDatabaseManagementService( getStorePath( "neo-test" ) )
-                                        : new TestGraphDatabaseFactory().newImpermanentService() );
+        threadLocalService.set(
+                requiresPersistentGraphDatabase ? new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( getStorePath( "neo-test" ) )
+                                                : new TestDatabaseManagementServiceBuilder().newImpermanentService() );
         threadLocalGraphDb.set( (GraphDatabaseAPI) threadLocalService.get().database( DEFAULT_DATABASE_NAME ) );
     }
 

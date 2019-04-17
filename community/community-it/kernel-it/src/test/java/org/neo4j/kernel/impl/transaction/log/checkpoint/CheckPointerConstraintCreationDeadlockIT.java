@@ -43,7 +43,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.Barrier;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.rule.VerboseTimeout;
@@ -97,7 +97,7 @@ public class CheckPointerConstraintCreationDeadlockIT
     {
         List<TransactionRepresentation> transactions = createConstraintCreatingTransactions();
         Monitors monitors = new Monitors();
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                 .setMonitors( monitors ).newImpermanentService();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         Barrier.Control controller = new Barrier.Control();
@@ -206,7 +206,7 @@ public class CheckPointerConstraintCreationDeadlockIT
 
     private static List<TransactionRepresentation> createConstraintCreatingTransactions() throws Exception
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

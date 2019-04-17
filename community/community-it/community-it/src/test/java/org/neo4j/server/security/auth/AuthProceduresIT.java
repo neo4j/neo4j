@@ -39,7 +39,7 @@ import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -48,7 +48,7 @@ import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.string.UTF8;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -245,7 +245,7 @@ public class AuthProceduresIT
     {
         removePreviousAuthFile();
 
-        GraphDatabaseBuilder graphDatabaseFactory = new TestGraphDatabaseFactory()
+        DatabaseManagementServiceInternalBuilder graphDatabaseFactory = new TestDatabaseManagementServiceBuilder()
                 .setFileSystem( fs )
             .newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.auth_enabled, "true" );

@@ -75,7 +75,7 @@ import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -135,7 +135,7 @@ public class IndexPopulationJobTest
     @Before
     public void before() throws Exception
     {
-        managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" ).newDatabaseManagementService();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         kernel = db.getDependencyResolver().resolveDependency( Kernel.class );

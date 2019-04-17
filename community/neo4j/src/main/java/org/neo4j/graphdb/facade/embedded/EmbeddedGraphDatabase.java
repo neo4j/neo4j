@@ -25,9 +25,10 @@ import java.util.Map;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -39,12 +40,12 @@ import static org.neo4j.helpers.collection.Iterables.asList;
 /**
  * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j
  * in an application. You typically instantiate it by using
- * {@link org.neo4j.graphdb.factory.GraphDatabaseFactory} like so:
+ * {@link DatabaseManagementServiceBuilder} like so:
  * <p>
  *
  * <pre>
  * <code>
- * GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( &quot;var/graphdb&quot; );
+ * GraphDatabaseService graphDb = new DatabaseManagementServiceBuilder().newEmbeddedDatabase( &quot;var/graphdb&quot; );
  * // ... use Neo4j
  * managementService.shutdown();
  * </code>
@@ -55,7 +56,7 @@ import static org.neo4j.helpers.collection.Iterables.asList;
 public class EmbeddedGraphDatabase extends GraphDatabaseFacade
 {
     /**
-     * Internal constructor used by {@link org.neo4j.graphdb.factory.GraphDatabaseFactory}
+     * Internal constructor used by {@link DatabaseManagementServiceBuilder}
      */
     public EmbeddedGraphDatabase( File storeDir,
                                   Map<String, String> params,
@@ -79,7 +80,7 @@ public class EmbeddedGraphDatabase extends GraphDatabaseFacade
     {
         GraphDatabaseDependencies newDependencies = newDependencies( dependencies )
                 .settingsClasses( asList( append( GraphDatabaseSettings.class, dependencies.settingsClasses() ) ) );
-        new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
+        new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 .initFacade( storeDir, params, newDependencies, this );
     }
 
@@ -87,7 +88,7 @@ public class EmbeddedGraphDatabase extends GraphDatabaseFacade
     {
         GraphDatabaseDependencies newDependencies = newDependencies( dependencies )
                 .settingsClasses( asList( append( GraphDatabaseSettings.class, dependencies.settingsClasses() ) ) );
-        new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
+        new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 .initFacade( storeDir, config, newDependencies, this );
     }
 }

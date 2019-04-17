@@ -46,7 +46,7 @@ import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -292,7 +292,7 @@ public class UniquenessRecoveryTest
 
     private static GraphDatabaseService graphdb( File path )
     {
-        managementService = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( path ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 

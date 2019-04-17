@@ -29,7 +29,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -76,7 +76,7 @@ class TestIdReuse
 
     private void makeSureIdsGetsReused( File storeFile, Object value, int iterations )
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fileSystem ).
             newImpermanentDatabaseBuilder( testDirectory.storeDir() ).newDatabaseManagementService();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         for ( int i = 0; i < 5; i++ )
@@ -85,8 +85,8 @@ class TestIdReuse
         }
         managementService.shutdown();
         long sizeBefore = storeFile.length();
-        DatabaseManagementService
-                impermanentManagement = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentService( testDirectory.storeDir() );
+        DatabaseManagementService impermanentManagement =
+                new TestDatabaseManagementServiceBuilder().setFileSystem( fileSystem ).newImpermanentService( testDirectory.storeDir() );
         db = impermanentManagement.database( DEFAULT_DATABASE_NAME );
         for ( int i = 0; i < iterations; i++ )
         {

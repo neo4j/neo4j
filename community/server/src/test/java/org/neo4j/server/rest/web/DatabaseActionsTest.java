@@ -61,7 +61,7 @@ import org.neo4j.server.rest.repr.NodeRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -96,7 +96,7 @@ public class DatabaseActionsTest
     @BeforeClass
     public static void createDb()
     {
-        managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" ).newDatabaseManagementService();
         graph = (GraphDatabaseFacade) managementService.database( DEFAULT_DATABASE_NAME );
         database = new WrappedDatabase( graph );

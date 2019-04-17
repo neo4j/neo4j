@@ -51,7 +51,7 @@ import org.neo4j.kernel.impl.newapi.DefaultPooledCursors
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory}
 import org.neo4j.kernel.impl.util.DefaultValueMapper
 import org.neo4j.lock.LockTracer
-import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.values.ValueMapper
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
@@ -69,7 +69,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   override def beforeEach() {
     super.beforeEach()
-    managementService = new TestGraphDatabaseFactory().newImpermanentService()
+    managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new javacompat.GraphDatabaseCypherService(graphOps)
     valueMapper = new DefaultValueMapper(mock[GraphDatabaseFacade])
@@ -298,7 +298,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   private def startGraph(config:(Setting[_], String)) = {
     val configs = Map[Setting[_], String](config)
-    managementService = new TestGraphDatabaseFactory().newImpermanentService(configs.asJava)
+    managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService(configs.asJava)
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
   }

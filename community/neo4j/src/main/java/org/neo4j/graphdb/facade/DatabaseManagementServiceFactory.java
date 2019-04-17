@@ -89,13 +89,13 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
  * .CommunityFacadeFactory}), and replace modules
  * with custom versions that instantiate alternative services.
  */
-public class GraphDatabaseFacadeFactory
+public class DatabaseManagementServiceFactory
 {
 
     protected final DatabaseInfo databaseInfo;
     private final Function<GlobalModule,AbstractEditionModule> editionFactory;
 
-    public GraphDatabaseFacadeFactory( DatabaseInfo databaseInfo, Function<GlobalModule,AbstractEditionModule> editionFactory )
+    public DatabaseManagementServiceFactory( DatabaseInfo databaseInfo, Function<GlobalModule,AbstractEditionModule> editionFactory )
     {
         this.databaseInfo = databaseInfo;
         this.editionFactory = editionFactory;

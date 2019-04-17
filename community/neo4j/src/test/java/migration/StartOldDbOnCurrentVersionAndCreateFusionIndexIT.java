@@ -38,8 +38,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -118,8 +118,8 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     void create3_5Database() throws Exception
     {
         File storeDir = tempStoreDirectory();
-        GraphDatabaseFactory factory = new GraphDatabaseFactory();
-        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
+        DatabaseManagementServiceBuilder factory = new DatabaseManagementServiceBuilder();
+        DatabaseManagementServiceInternalBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
 
         builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.LUCENE10.providerName() );
         DatabaseManagementService managementService = builder.newDatabaseManagementService();
@@ -220,7 +220,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     {
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( indexRecoveryTracker );
-        return new GraphDatabaseFactory()
+        return new DatabaseManagementServiceBuilder()
                 .setMonitors( monitors )
                 .newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE ).newDatabaseManagementService();

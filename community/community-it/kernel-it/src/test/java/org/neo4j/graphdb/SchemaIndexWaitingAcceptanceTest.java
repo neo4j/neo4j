@@ -26,12 +26,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.index.ControlledPopulationIndexProvider;
 import org.neo4j.test.DoubleLatch;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 
@@ -49,11 +49,11 @@ public class SchemaIndexWaitingAcceptanceTest
     public final DbmsRule rule = new ImpermanentDbmsRule()
     {
         @Override
-        protected void configure( GraphDatabaseFactory databaseFactory )
+        protected void configure( DatabaseManagementServiceBuilder databaseFactory )
         {
             super.configure( databaseFactory );
             List<ExtensionFactory<?>> extensions = Collections.singletonList( singleInstanceIndexProviderFactory( "test", provider ) );
-            ((TestGraphDatabaseFactory) databaseFactory).setExtensions( extensions );
+            ((TestDatabaseManagementServiceBuilder) databaseFactory).setExtensions( extensions );
         }
     }.withSetting( default_schema_provider, provider.getProviderDescriptor().name() );
 

@@ -66,8 +66,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
@@ -128,7 +128,7 @@ public class FulltextProceduresTest
     public final RuleChain rules = RuleChain.outerRule( timeout ).around( fs ).around( testDirectory ).around( expectedException ).around( cleanup );
 
     private GraphDatabaseAPI db;
-    private GraphDatabaseBuilder builder;
+    private DatabaseManagementServiceInternalBuilder builder;
     private static final String PROP = "prop";
     private static final String EVENTUALLY_CONSISTENT = ", {eventually_consistent: 'true'}";
     private DatabaseManagementService managementService;
@@ -136,7 +136,7 @@ public class FulltextProceduresTest
     @Before
     public void before()
     {
-        GraphDatabaseFactory factory = new GraphDatabaseFactory();
+        DatabaseManagementServiceBuilder factory = new DatabaseManagementServiceBuilder();
         builder = factory.newEmbeddedDatabaseBuilder( testDirectory.storeDir() );
         builder.setConfig( GraphDatabaseSettings.store_internal_log_level, "DEBUG" );
     }
@@ -1198,7 +1198,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             try ( Result result = db.execute( format( QUERY_NODES, "nodes", "value" ) );
-                  Stream<Map<String,Object>> stream = result.stream(); )
+                  Stream<Map<String,Object>> stream = result.stream() )
             {
                 assertThat( stream.count(), is( nodeCount ) );
             }
@@ -1229,7 +1229,7 @@ public class FulltextProceduresTest
         {
             db.createNode( LABEL ).setProperty( PROP, "value" );
             try ( Result result = db.execute( format( QUERY_NODES, "nodes", "value" ) );
-                  Stream<Map<String,Object>> stream = result.stream(); )
+                  Stream<Map<String,Object>> stream = result.stream() )
             {
                 assertThat( stream.count(), is( nodeCount + 1 ) );
             }

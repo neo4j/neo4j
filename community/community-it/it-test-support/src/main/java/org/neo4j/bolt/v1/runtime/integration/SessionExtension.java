@@ -45,11 +45,11 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.internal.NullLogService;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 public class SessionExtension implements BeforeEachCallback, AfterEachCallback
 {
-    private final TestGraphDatabaseFactory graphDatabaseFactory;
+    private final TestDatabaseManagementServiceBuilder graphDatabaseFactory;
     private GraphDatabaseAPI gdb;
     private BoltStateMachineFactoryImpl boltFactory;
     private List<BoltStateMachine> runningMachines = new ArrayList<>();
@@ -58,10 +58,10 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
 
     public SessionExtension()
     {
-        this( new TestGraphDatabaseFactory() );
+        this( new TestDatabaseManagementServiceBuilder() );
     }
 
-    public SessionExtension( TestGraphDatabaseFactory graphDatabaseFactory )
+    public SessionExtension( TestDatabaseManagementServiceBuilder graphDatabaseFactory )
     {
         this.graphDatabaseFactory = graphDatabaseFactory;
     }

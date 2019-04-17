@@ -34,7 +34,7 @@ import java.util.Objects;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -49,7 +49,7 @@ public abstract class Neo4jTestCase
     @BeforeClass
     public static void setUpDb()
     {
-        managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
         graphDb = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

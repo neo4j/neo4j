@@ -36,7 +36,7 @@ import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.OtherThreadRule;
@@ -437,7 +437,7 @@ public class GraphDatabaseServiceTest
 
     private GraphDatabaseService getTemporaryDatabase()
     {
-        managementService = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( testDirectory.directory( "impermanent" ) )
+        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentDatabaseBuilder( testDirectory.directory( "impermanent" ) )
                 .setConfig( GraphDatabaseSettings.shutdown_transaction_end_timeout, "10s" ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }

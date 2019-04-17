@@ -36,7 +36,7 @@ import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.test.DoubleLatch;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.not;
@@ -61,7 +61,7 @@ public class IndexRestartIT
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     private GraphDatabaseService db;
-    private TestGraphDatabaseFactory factory;
+    private TestDatabaseManagementServiceBuilder factory;
     private final ControlledPopulationIndexProvider provider = new ControlledPopulationIndexProvider();
     private final Label myLabel = label( "MyLabel" );
     private DatabaseManagementService managementService;
@@ -69,7 +69,7 @@ public class IndexRestartIT
     @Before
     public void before()
     {
-        factory = new TestGraphDatabaseFactory();
+        factory = new TestDatabaseManagementServiceBuilder();
         factory.setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) );
         factory.setExtensions( Collections.singletonList(
             singleInstanceIndexProviderFactory( "test", provider )

@@ -36,7 +36,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.internal.locker.StoreLocker;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -262,7 +262,7 @@ class StoreLockerTest
     void mustPreventMultipleInstancesFromStartingOnSameStore()
     {
         File storeDir = target.storeDir();
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( storeDir );
         try
         {
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
@@ -274,7 +274,7 @@ class StoreLockerTest
 
             assertThrows( Exception.class, () ->
             {
-                new TestGraphDatabaseFactory().newDatabaseManagementService( storeDir );
+                new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( storeDir );
             } );
         }
         finally

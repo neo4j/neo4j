@@ -37,10 +37,10 @@ import org.neo4j.graphdb.config.Setting;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
- * Builder for {@link GraphDatabaseService}s that allows for setting and loading
+ * Builder for {@link DatabaseManagementService}s that allows for setting and loading
  * configuration.
  */
-public class GraphDatabaseBuilder
+public class DatabaseManagementServiceInternalBuilder
 {
     /**
      * @deprecated This will be moved to an internal package in the future.
@@ -63,7 +63,7 @@ public class GraphDatabaseBuilder
      * @deprecated
      */
     @Deprecated
-    public GraphDatabaseBuilder( DatabaseCreator creator )
+    public DatabaseManagementServiceInternalBuilder( DatabaseCreator creator )
     {
         this.creator = creator;
     }
@@ -75,7 +75,7 @@ public class GraphDatabaseBuilder
      * @param value New value of the setting
      * @return the builder
      */
-    public GraphDatabaseBuilder setConfig( Setting<?> setting, String value )
+    public DatabaseManagementServiceInternalBuilder setConfig( Setting<?> setting, String value )
     {
         if ( value == null )
         {
@@ -98,7 +98,7 @@ public class GraphDatabaseBuilder
      * @param config provided config
      * @return the builder
      */
-    public GraphDatabaseBuilder setConfig( Config config )
+    public DatabaseManagementServiceInternalBuilder setConfig( Config config )
     {
         this.config.putAll( config.getRaw() );
         return this;
@@ -113,7 +113,7 @@ public class GraphDatabaseBuilder
      * @deprecated Use setConfig with explicit {@link Setting} instead.
      */
     @Deprecated
-    public GraphDatabaseBuilder setConfig( String name, String value )
+    public DatabaseManagementServiceInternalBuilder setConfig( String name, String value )
     {
         if ( value == null )
         {
@@ -134,8 +134,7 @@ public class GraphDatabaseBuilder
      * @deprecated Use setConfig with explicit {@link Setting} instead
      */
     @Deprecated
-    @SuppressWarnings( "deprecation" )
-    public GraphDatabaseBuilder setConfig( Map<String,String> config )
+    public DatabaseManagementServiceInternalBuilder setConfig( Map<String,String> config )
     {
         for ( Map.Entry<String,String> stringStringEntry : config.entrySet() )
         {
@@ -152,7 +151,7 @@ public class GraphDatabaseBuilder
      * @return the builder
      * @throws IllegalArgumentException if the builder was unable to load from the given filename
      */
-    public GraphDatabaseBuilder loadPropertiesFromFile( String fileName )
+    public DatabaseManagementServiceInternalBuilder loadPropertiesFromFile( String fileName )
             throws IllegalArgumentException
     {
         try
@@ -172,7 +171,7 @@ public class GraphDatabaseBuilder
      * @param url URL of properties file to use
      * @return the builder
      */
-    public GraphDatabaseBuilder loadPropertiesFromURL( URL url )
+    private DatabaseManagementServiceInternalBuilder loadPropertiesFromURL( URL url )
             throws IllegalArgumentException
     {
         Properties props = new Properties();

@@ -26,20 +26,18 @@ import java.util
 
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.function.Executable
-import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.opencypher.tools.tck.api.{ExpectError, Scenario}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.io.Source
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 object ScenarioTestHelper {
   def createTests(scenarios: Seq[Scenario],
                   config: TestConfig,
-                  graphDatabaseFactory: TestGraphDatabaseFactory,
+                  graphDatabaseFactory: TestDatabaseManagementServiceBuilder,
                   debugOutput: Boolean = false): util.Collection[DynamicTest] = {
     val blacklist = config.blacklist.map(parseBlacklist).getOrElse(Set.empty[BlacklistEntry])
     checkForDuplicates(scenarios, blacklist.toList)
@@ -139,7 +137,7 @@ object ScenarioTestHelper {
     It can be very useful when adding a new runtime for example.
    */
   def printComputedBlacklist(scenarios: Seq[Scenario],
-                             config: TestConfig, graphDatabaseFactory: TestGraphDatabaseFactory): Unit = {
+                             config: TestConfig, graphDatabaseFactory: TestDatabaseManagementServiceBuilder): Unit = {
     //Sometime this method doesn't print its progress output (but is actually working (Do not cancel)!).
     //TODO: Investigate this!
     println("Evaluating scenarios")

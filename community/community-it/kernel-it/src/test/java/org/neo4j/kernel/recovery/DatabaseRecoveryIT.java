@@ -51,7 +51,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder.DatabaseCreator;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder.DatabaseCreator;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.BoundedIterable;
@@ -106,8 +106,8 @@ import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.AdversarialPageCacheGraphDatabaseFactory;
-import org.neo4j.test.TestGraphDatabaseFacadeFactory;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.TestDatabaseManagementServiceFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
@@ -393,7 +393,7 @@ class DatabaseRecoveryIT
     {
         // given
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        managementService = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentService( directory.storeDir() );
+        managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fs ).newImpermanentService( directory.storeDir() );
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         produceRandomGraphUpdates( db, 100 );
         checkPoint( db );
@@ -429,7 +429,7 @@ class DatabaseRecoveryIT
                 reversedFs.set( crashedFs.snapshot() );
             }
         } );
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                 {
                     // This nested constructing is done purely to be able to fish out GlobalModule
                     // (and its PageCache inside it). It would be great if this could be done in a prettier way.
@@ -443,7 +443,7 @@ class DatabaseRecoveryIT
                             @Override
                             public DatabaseManagementService newDatabase( @Nonnull Config config )
                             {
-                                TestGraphDatabaseFacadeFactory factory = new TestGraphDatabaseFacadeFactory( state, true )
+                                TestDatabaseManagementServiceFactory factory = new TestDatabaseManagementServiceFactory( state, true )
                                 {
                                     @Override
                                     protected GlobalModule createGlobalModule( File storeDir11, Config config, ExternalDependencies dependencies )
@@ -817,7 +817,7 @@ class DatabaseRecoveryIT
 
     private GraphDatabaseAPI startDatabase( File storeDir, EphemeralFileSystemAbstraction fs, UpdateCapturingIndexProvider indexProvider )
     {
-        managementService = new TestGraphDatabaseFactory()
+        managementService = new TestDatabaseManagementServiceBuilder()
                 .setFileSystem( fs )
                 .setExtensions( singletonList( new IndexExtensionFactory( indexProvider ) ) )
                 .newImpermanentDatabaseBuilder( storeDir )
@@ -833,7 +833,7 @@ class DatabaseRecoveryIT
 
     private DatabaseManagementService getManagementService( File storeDir )
     {
-        return new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
+        return new TestDatabaseManagementServiceBuilder().setInternalLogProvider( logProvider )
                 .newDatabaseManagementService( storeDir );
     }
 

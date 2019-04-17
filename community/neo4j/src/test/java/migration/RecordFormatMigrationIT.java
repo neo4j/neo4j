@@ -31,7 +31,7 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -153,7 +153,7 @@ class RecordFormatMigrationIT
         }
         managementService.shutdown();
 
-        managementService = new GraphDatabaseFactory().newDatabaseManagementService( databaseDirectory );
+        managementService = new DatabaseManagementServiceBuilder().newDatabaseManagementService( databaseDirectory );
         GraphDatabaseService databaseService = getDefaultDatabase( managementService );
         try
         {
@@ -213,12 +213,13 @@ class RecordFormatMigrationIT
 
     private DatabaseManagementService startManagementService( String name )
     {
-        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory ).setConfig( record_format, name ).newDatabaseManagementService();
+        return new DatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( databaseDirectory ).setConfig( record_format,
+                name ).newDatabaseManagementService();
     }
 
     private static DatabaseManagementService startDatabaseServiceWithUpgrade( File storeDir, String formatName )
     {
-        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
+        return new DatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( record_format, formatName )
                 .setConfig( allow_upgrade, TRUE ).newDatabaseManagementService();
     }

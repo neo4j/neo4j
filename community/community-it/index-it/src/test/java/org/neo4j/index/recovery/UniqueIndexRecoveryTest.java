@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -64,7 +64,7 @@ public class UniqueIndexRecoveryTest
     private static final String PROPERTY_VALUE = "value";
     private static final Label LABEL = label( "label" );
 
-    private final TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+    private final TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
     private GraphDatabaseAPI db;
     private DatabaseManagementService managementService;
 

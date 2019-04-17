@@ -27,7 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.ArrayList;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
@@ -54,7 +54,7 @@ class DefaultDatabaseManagerIT
     @BeforeEach
     void setUp()
     {
-        managementService = new GraphDatabaseFactory().newDatabaseManagementService( testDirectory.storeDir() );
+        managementService = new DatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
         database = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

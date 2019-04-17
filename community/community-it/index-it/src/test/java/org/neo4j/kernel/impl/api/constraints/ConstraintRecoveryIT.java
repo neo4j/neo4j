@@ -37,7 +37,7 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -70,7 +70,7 @@ class ConstraintRecoveryIT
         // given
         File pathToDb = testDirectory.storeDir();
 
-        TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
+        TestDatabaseManagementServiceBuilder dbFactory = new TestDatabaseManagementServiceBuilder();
         dbFactory.setFileSystem( fs );
 
         final EphemeralFileSystemAbstraction[] storeInNeedOfRecovery = new EphemeralFileSystemAbstraction[1];
@@ -118,7 +118,7 @@ class ConstraintRecoveryIT
         assertTrue( monitorCalled.get() );
 
         // when
-        dbFactory = new TestGraphDatabaseFactory();
+        dbFactory = new TestDatabaseManagementServiceBuilder();
         dbFactory.setFileSystem( storeInNeedOfRecovery[0] );
         DatabaseManagementService secondManagementService = dbFactory.newImpermanentService( pathToDb );
         db = (GraphDatabaseAPI) secondManagementService.database( DEFAULT_DATABASE_NAME );

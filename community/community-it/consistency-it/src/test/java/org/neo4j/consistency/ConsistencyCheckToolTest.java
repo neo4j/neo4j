@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.LogTimeZone;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -242,7 +242,7 @@ class ConsistencyCheckToolTest
 
     private void createGraphDbAndKillIt( Config config ) throws IOException
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                 .setFileSystem( fs )
                 .newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( config.getRaw()  ).newDatabaseManagementService();

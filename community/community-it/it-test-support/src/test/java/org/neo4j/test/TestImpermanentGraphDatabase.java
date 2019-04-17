@@ -44,7 +44,7 @@ class TestImpermanentGraphDatabase
     @BeforeEach
     void createDb()
     {
-        managementService = new TestGraphDatabaseFactory().newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

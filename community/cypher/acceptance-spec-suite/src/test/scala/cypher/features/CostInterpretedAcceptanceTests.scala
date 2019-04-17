@@ -24,7 +24,7 @@ import java.util
 import cypher.features.ScenarioTestHelper.{createTests, printComputedBlacklist}
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.{Disabled, DynamicTest, TestFactory}
-import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
 class CostInterpretedAcceptanceTests extends BaseAcceptanceTest {
 
@@ -32,12 +32,12 @@ class CostInterpretedAcceptanceTests extends BaseAcceptanceTest {
 
   @TestFactory
   def runCostInterpreted(): util.Collection[DynamicTest] = {
-    createTests(scenarios, CostInterpretedTestConfig, new TestGraphDatabaseFactory())
+    createTests(scenarios, CostInterpretedTestConfig, new TestDatabaseManagementServiceBuilder())
   }
 
   @Disabled
   def generateBlacklistCostInterpreted(): Unit = {
-    printComputedBlacklist(scenarios, CostInterpretedTestConfig, new TestGraphDatabaseFactory())
+    printComputedBlacklist(scenarios, CostInterpretedTestConfig, new TestDatabaseManagementServiceBuilder())
     fail("Do not forget to add @Disabled to this method")
   }
 }

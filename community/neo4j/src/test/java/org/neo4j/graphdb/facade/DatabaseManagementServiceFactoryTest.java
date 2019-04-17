@@ -55,7 +55,7 @@ import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies
 import static org.neo4j.kernel.impl.factory.DatabaseInfo.COMMUNITY;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
-class GraphDatabaseFacadeFactoryTest
+class DatabaseManagementServiceFactoryTest
 {
     @Inject
     private TestDirectory testDirectory;
@@ -74,7 +74,7 @@ class GraphDatabaseFacadeFactoryTest
     void shouldThrowAppropriateExceptionIfStartFails()
     {
         RuntimeException startupError = new RuntimeException();
-        GraphDatabaseFacadeFactory db = newFaultyGraphDatabaseFacadeFactory( startupError, null );
+        DatabaseManagementServiceFactory db = newFaultyGraphDatabaseFacadeFactory( startupError, null );
         RuntimeException startException =
                 assertThrows( RuntimeException.class, () -> db.initFacade( testDirectory.storeDir(), Collections.emptyMap(), deps, mockFacade ) );
         assertEquals( startupError, Exceptions.rootCause( startException ) );
@@ -86,7 +86,7 @@ class GraphDatabaseFacadeFactoryTest
         RuntimeException startupError = new RuntimeException();
         RuntimeException shutdownError = new RuntimeException();
 
-        GraphDatabaseFacadeFactory db = newFaultyGraphDatabaseFacadeFactory( startupError, shutdownError );
+        DatabaseManagementServiceFactory db = newFaultyGraphDatabaseFacadeFactory( startupError, shutdownError );
         RuntimeException initException =
                 assertThrows( RuntimeException.class, () -> db.initFacade( testDirectory.storeDir(), Collections.emptyMap(), deps, mockFacade ) );
 
@@ -95,14 +95,14 @@ class GraphDatabaseFacadeFactoryTest
         assertEquals( shutdownError, initException.getSuppressed()[0].getCause() );
     }
 
-    private GraphDatabaseFacadeFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError, RuntimeException shutdownError )
+    private DatabaseManagementServiceFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError, RuntimeException shutdownError )
     {
         GlobalModule globalModule = new GlobalModule( testDirectory.storeDir(), Config.defaults(), COMMUNITY, newDependencies() );
         AbstractEditionModule editionModule = new CommunityEditionModule( globalModule )
         {
         };
         globalModule.getGlobalDependencies().satisfyDependencies( new DefaultDatabaseManager( globalModule, editionModule, null, this.mockFacade ) );
-        return new GraphDatabaseFacadeFactory( DatabaseInfo.UNKNOWN, p -> editionModule )
+        return new DatabaseManagementServiceFactory( DatabaseInfo.UNKNOWN, p -> editionModule )
         {
             @Override
             protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )

@@ -19,10 +19,10 @@
  */
 package org.neo4j.test.rule;
 
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 /**
  * JUnit @Rule for configuring, creating and managing an ImpermanentGraphDatabase instance.
@@ -50,23 +50,23 @@ public class ImpermanentDbmsRule extends DbmsRule
     }
 
     @Override
-    protected GraphDatabaseFactory newFactory()
+    protected DatabaseManagementServiceBuilder newFactory()
     {
-        return maybeSetInternalLogProvider( maybeSetUserLogProvider( new TestGraphDatabaseFactory() ) );
+        return maybeSetInternalLogProvider( maybeSetUserLogProvider( new TestDatabaseManagementServiceBuilder() ) );
     }
 
     @Override
-    protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
+    protected DatabaseManagementServiceInternalBuilder newBuilder( DatabaseManagementServiceBuilder factory )
     {
-        return ((TestGraphDatabaseFactory) factory).newImpermanentDatabaseBuilder();
+        return ((TestDatabaseManagementServiceBuilder) factory).newImpermanentDatabaseBuilder();
     }
 
-    protected final TestGraphDatabaseFactory maybeSetUserLogProvider( TestGraphDatabaseFactory factory )
+    protected final TestDatabaseManagementServiceBuilder maybeSetUserLogProvider( TestDatabaseManagementServiceBuilder factory )
     {
         return ( userLogProvider == null ) ? factory : factory.setUserLogProvider( userLogProvider );
     }
 
-    protected final TestGraphDatabaseFactory maybeSetInternalLogProvider( TestGraphDatabaseFactory factory )
+    protected final TestDatabaseManagementServiceBuilder maybeSetInternalLogProvider( TestDatabaseManagementServiceBuilder factory )
     {
         return ( internalLogProvider == null ) ? factory : factory.setInternalLogProvider( internalLogProvider );
     }

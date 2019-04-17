@@ -36,7 +36,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -176,7 +176,7 @@ class RecoveryRequiredCheckerTest
 
             assertThat( recoveryChecker.isRecoveryRequiredAt( testDirectory.databaseLayout( of( config ) ) ), is( true ) );
 
-            DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                         .setFileSystem( ephemeralFs )
                         .newEmbeddedDatabaseBuilder( storeDir )
                         .setConfig( config.getRaw() ).newDatabaseManagementService();
@@ -215,7 +215,7 @@ class RecoveryRequiredCheckerTest
     {
         try ( EphemeralFileSystemAbstraction ephemeralFs = new EphemeralFileSystemAbstraction() )
         {
-            DatabaseManagementService managementService = new TestGraphDatabaseFactory()
+            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                         .setFileSystem( ephemeralFs )
                         .newEmbeddedDatabaseBuilder( store )
                         .setConfig( config.getRaw() ).newDatabaseManagementService();
@@ -235,7 +235,8 @@ class RecoveryRequiredCheckerTest
 
     private static void startStopDatabase( FileSystemAbstraction fileSystem, File storeDir )
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newDatabaseManagementService( storeDir );
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder().setFileSystem( fileSystem ).newDatabaseManagementService( storeDir );
         managementService.shutdown();
     }
 }

@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.token.TokenHolders;
 
@@ -222,7 +222,7 @@ public class IndexStatisticsIT
 
     private void startDb()
     {
-        managementService = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
+        managementService = new TestDatabaseManagementServiceBuilder().setInternalLogProvider( logProvider )
                                            .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
                                            .newImpermanentDatabaseBuilder()
                                            .setConfig( index_background_sampling_enabled, "false" ).newDatabaseManagementService();

@@ -41,7 +41,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -54,7 +54,7 @@ public class Neo4jWithSocket extends ExternalResource
     private final Supplier<FileSystemAbstraction> fileSystemProvider;
     private final Consumer<Map<String,String>> configure;
     private final TestDirectory testDirectory;
-    private final TestGraphDatabaseFactory graphDatabaseFactory;
+    private final TestDatabaseManagementServiceBuilder graphDatabaseFactory;
     private GraphDatabaseService gdb;
     private File workingDirectory;
     private ConnectorPortRegister connectorRegister;
@@ -69,16 +69,16 @@ public class Neo4jWithSocket extends ExternalResource
 
     public Neo4jWithSocket( Class<?> testClass, Consumer<Map<String,String>> configure )
     {
-        this( testClass, new TestGraphDatabaseFactory(), configure );
+        this( testClass, new TestDatabaseManagementServiceBuilder(), configure );
     }
 
-    public Neo4jWithSocket( Class<?> testClass, TestGraphDatabaseFactory graphDatabaseFactory,
+    public Neo4jWithSocket( Class<?> testClass, TestDatabaseManagementServiceBuilder graphDatabaseFactory,
             Consumer<Map<String,String>> configure )
     {
         this( testClass, graphDatabaseFactory, EphemeralFileSystemAbstraction::new, configure );
     }
 
-    public Neo4jWithSocket( Class<?> testClass, TestGraphDatabaseFactory graphDatabaseFactory,
+    public Neo4jWithSocket( Class<?> testClass, TestDatabaseManagementServiceBuilder graphDatabaseFactory,
             Supplier<FileSystemAbstraction> fileSystemProvider, Consumer<Map<String,String>> configure )
     {
         this.testDirectory = TestDirectory.testDirectory( testClass, fileSystemProvider.get() );

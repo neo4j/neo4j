@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -68,7 +68,7 @@ class LabelRecoveryTest
     void shouldRecoverNodeWithDynamicLabelRecords()
     {
         // GIVEN
-        managementService = new TestGraphDatabaseFactory().setFileSystem( filesystem ).newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( filesystem ).newImpermanentService();
         database = managementService.database( DEFAULT_DATABASE_NAME );
         Node node;
         Label[] labels = new Label[] { label( "a" ),
@@ -96,7 +96,7 @@ class LabelRecoveryTest
         }
         EphemeralFileSystemAbstraction snapshot = filesystem.snapshot();
         managementService.shutdown();
-        managementService = new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( snapshot ).newImpermanentService();
         database = managementService.database( DEFAULT_DATABASE_NAME );
 
         // THEN

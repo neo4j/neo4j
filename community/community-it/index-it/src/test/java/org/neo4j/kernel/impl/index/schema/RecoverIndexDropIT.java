@@ -46,7 +46,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.TransactionIdStore;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -84,7 +84,7 @@ class RecoverIndexDropIT
         // given a transaction stream ending in an INDEX DROP command.
         CommittedTransactionRepresentation dropTransaction = prepareDropTransaction();
         var databaseLayout = directory.databaseLayout();
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( directory.storeDir() );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( directory.storeDir() );
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         createIndex( db );
         managementService.shutdown();
@@ -94,7 +94,7 @@ class RecoverIndexDropIT
         Monitors monitors = new Monitors();
         AssertRecoveryIsPerformed recoveryMonitor = new AssertRecoveryIsPerformed();
         monitors.addMonitorListener( recoveryMonitor );
-        managementService = new TestGraphDatabaseFactory().setMonitors( monitors )
+        managementService = new TestDatabaseManagementServiceBuilder().setMonitors( monitors )
                 .newDatabaseManagementService( directory.storeDir() );
         db = managementService.database( DEFAULT_DATABASE_NAME );
         try
@@ -139,7 +139,8 @@ class RecoverIndexDropIT
 
     private CommittedTransactionRepresentation prepareDropTransaction() throws IOException
     {
-        DatabaseManagementService managementService = new TestGraphDatabaseFactory().newDatabaseManagementService( directory.directory( "preparation" ) );
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( directory.directory( "preparation" ) );
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
-public class GraphDatabaseFactoryOnEphemeralFileSystemTest
+public class DatabaseManagementServiceBuilderOnEphemeralFileSystemTest
 {
     @Inject
     private EphemeralFileSystemAbstraction fs;
@@ -61,9 +61,9 @@ public class GraphDatabaseFactoryOnEphemeralFileSystemTest
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    protected TestGraphDatabaseFactory createGraphDatabaseFactory()
+    protected TestDatabaseManagementServiceBuilder createGraphDatabaseFactory()
     {
-        return new TestGraphDatabaseFactory();
+        return new TestDatabaseManagementServiceBuilder();
     }
 
     @AfterEach
