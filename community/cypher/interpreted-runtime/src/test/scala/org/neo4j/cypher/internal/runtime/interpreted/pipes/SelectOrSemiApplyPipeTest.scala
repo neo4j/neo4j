@@ -131,4 +131,14 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Variable("a"), Literal(2)), negated = false)().createResults(QueryStateHelper.empty).toList
     result should equal(List.empty)
   }
+
+  test("should register owning pipe") {
+    val lhs = new FakePipe(Iterator.empty)
+    val rhs = new FakePipe(Iterator.empty)
+    val predicate = Not(True())
+    val pipe = SelectOrSemiApplyPipe(lhs, rhs, predicate, negated = false)()
+
+    pipe.predicate.owningPipe should equal(pipe)
+    predicate.owningPipe should equal(pipe)
+  }
 }
