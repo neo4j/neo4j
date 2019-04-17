@@ -26,9 +26,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -37,6 +39,8 @@ import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
@@ -50,6 +54,8 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.io.compress.ZipUtils;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory30;
@@ -69,6 +75,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.helpers.ArrayUtil.concat;
@@ -118,27 +125,41 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         File storeDir = tempStoreDirectory();
         DatabaseManagementServiceBuilder factory = new DatabaseManagementServiceBuilder();
         DatabaseManagementServiceInternalBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
-        DatabaseManagementService managementService;
-        GraphDatabaseService db;
 
-        builder.setConfig( GraphDatabaseSettings.default_schema_provider, "lucene-1.0" );
-        managementService = builder.newDatabaseManagementService();
-        createIndexData( managementService.database( DEFAULT_DATABASE_NAME ), Provider.LUCENE_10.label );
-        managementService.shutdown();
+        createIndexDataAndShutdown( builder, "lucene-1.0", Provider.LUCENE_10.label );
+        createIndexDataAndShutdown( builder, "lucene+native-1.0", Provider.FUSION_10.label );
+        createIndexDataAndShutdown( builder, "lucene+native-2.0", Provider.FUSION_20.label );
+        createIndexDataAndShutdown( builder, GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName(), Provider.BTREE_10.label, db ->
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.execute( "CALL db.index.fulltext.createNodeIndex('fts1', ['Fts1'], ['prop1'] )" ).close();
+                db.execute( "CALL db.index.fulltext.createNodeIndex('fts2', ['Fts2', 'Fts3'], ['prop1', 'prop2'] )" ).close();
+                db.execute( "CALL db.index.fulltext.createNodeIndex('fts3', ['Fts4'], ['prop1'], {eventually_consistent: 'true'} )" ).close();
+                db.execute( "CALL db.index.fulltext.createRelationshipIndex('fts4', ['FtsRel1', 'FtsRel2'], ['prop1', 'prop2'], " +
+                        "{eventually_consistent: 'true'} )" ).close();
+                tx.success();
+            }
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+                Node node = db.createNode( Label.label( "Fts1" ), Label.label( "Fts2" ), Label.label( "Fts3" ), Label.label( "Fts4" ) );
+                node.setProperty( "prop1", "a" );
+                node.setProperty( "prop2", "a" );
+                node.createRelationshipTo( node, RelationshipType.withName( "FtsRel1" ) ).setProperty( "prop1", "a" );
+                node.createRelationshipTo( node, RelationshipType.withName( "FtsRel2" ) ).setProperty( "prop2", "a" );
+                tx.success();
+            }
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.execute( "call db.index.fulltext.awaitEventuallyConsistentIndexRefresh" ).close();
+                tx.success();
+            }
+        } );
 
-        builder.setConfig( GraphDatabaseSettings.default_schema_provider, "lucene+native-1.0" );
-        managementService = builder.newDatabaseManagementService();
-        createIndexData( managementService.database( DEFAULT_DATABASE_NAME ), Provider.FUSION_10.label );
-
-        builder.setConfig( GraphDatabaseSettings.default_schema_provider, "lucene+native-2.0" );
-        managementService = builder.newDatabaseManagementService();
-        createIndexData( managementService.database( DEFAULT_DATABASE_NAME ), Provider.FUSION_20.label );
-
-        builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName() );
-        managementService = builder.newDatabaseManagementService();
-        createIndexData( managementService.database( DEFAULT_DATABASE_NAME ), Provider.BTREE_10.label );
-        managementService.shutdown();
-        System.out.println( "Db created in " + storeDir.getAbsolutePath() );
+        File zipFile = new File( storeDir.getParentFile(), storeDir.getName() + ".zip" );
+        ZipUtils.zip( new DefaultFileSystemAbstraction(), storeDir, zipFile );
+        System.out.println( "Db created in " + zipFile.getAbsolutePath() );
     }
 
     @Test
@@ -161,7 +182,8 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         // then
         Provider[] providers = providersUpToAndIncluding( highestProviderInOldVersion );
         Provider[] providersIncludingSubject = concat( providers, DEFAULT_PROVIDER );
-        int expectedNumberOfIndexes = providers.length * 2;
+        int fulltextIndexes = 4;
+        int expectedNumberOfIndexes = fulltextIndexes + providers.length * 2;
         try
         {
             IndexRecoveryTracker nonMigratedNativeRecoveries = new IndexRecoveryTracker();
@@ -200,6 +222,87 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
 
                 // then
                 verifyAfterAdditionalUpdate( db, provider.label );
+            }
+
+            // then
+            try ( Transaction tx = db.beginTx() )
+            {
+                IndexDefinition fts1 = db.schema().getIndexByName( "fts1" );
+
+                Iterator<Label> fts1labels = fts1.getLabels().iterator();
+                assertTrue( fts1labels.hasNext() );
+                assertEquals( fts1labels.next().name(), "Fts1" );
+                assertFalse( fts1labels.hasNext() );
+
+                Iterator<String> fts1props = fts1.getPropertyKeys().iterator();
+                assertTrue( fts1props.hasNext() );
+                assertEquals( fts1props.next(), "prop1" );
+                assertFalse( fts1props.hasNext() );
+
+                IndexDefinition fts2 = db.schema().getIndexByName( "fts2" );
+
+                Iterator<Label> fts2labels = fts2.getLabels().iterator();
+                assertTrue( fts2labels.hasNext() );
+                assertEquals( fts2labels.next().name(), "Fts2" );
+                assertTrue( fts2labels.hasNext() );
+                assertEquals( fts2labels.next().name(), "Fts3" );
+                assertFalse( fts2labels.hasNext() );
+
+                Iterator<String> fts2props = fts2.getPropertyKeys().iterator();
+                assertTrue( fts2props.hasNext() );
+                assertEquals( fts2props.next(), "prop1" );
+                assertTrue( fts2props.hasNext() );
+                assertEquals( fts2props.next(), "prop2" );
+                assertFalse( fts2props.hasNext() );
+
+                IndexDefinition fts3 = db.schema().getIndexByName( "fts3" );
+
+                Iterator<Label> fts3labels = fts3.getLabels().iterator();
+                assertTrue( fts3labels.hasNext() );
+                assertEquals( fts3labels.next().name(), "Fts4" );
+                assertFalse( fts3labels.hasNext() );
+
+                Iterator<String> fts3props = fts3.getPropertyKeys().iterator();
+                assertTrue( fts3props.hasNext() );
+                assertEquals( fts3props.next(), "prop1" );
+                assertFalse( fts3props.hasNext() );
+                // TODO verify the index configuration of 'fts3' -- it is eventually consistent.
+
+                IndexDefinition fts4 = db.schema().getIndexByName( "fts4" );
+
+                Iterator<RelationshipType> fts4relTypes = fts4.getRelationshipTypes().iterator();
+                assertTrue( fts4relTypes.hasNext() );
+                assertEquals( fts4relTypes.next().name(), "FtsRel1" );
+                assertTrue( fts4relTypes.hasNext() );
+                assertEquals( fts4relTypes.next().name(), "FtsRel2" );
+                assertFalse( fts4relTypes.hasNext() );
+
+                Iterator<String> fts4props = fts4.getPropertyKeys().iterator();
+                assertTrue( fts4props.hasNext() );
+                assertEquals( fts4props.next(), "prop1" );
+                assertTrue( fts4props.hasNext() );
+                assertEquals( fts4props.next(), "prop2" );
+                assertFalse( fts4props.hasNext() );
+                // TODO verify the index configuration of 'fts3' -- it is eventually consistent.
+
+                try ( var result = db.execute( "CALL db.index.fulltext.queryNodes( 'fts1', 'a' )" ).stream() )
+                {
+                    assertEquals( result.count(), 1L );
+                }
+                try ( var result = db.execute( "CALL db.index.fulltext.queryNodes( 'fts2', 'a' )" ).stream() )
+                {
+                    assertEquals( result.count(), 1L );
+                }
+                try ( var result = db.execute( "CALL db.index.fulltext.queryNodes( 'fts3', 'a' )" ).stream() )
+                {
+                    assertEquals( result.count(), 1L );
+                }
+                try ( var result = db.execute( "CALL db.index.fulltext.queryRelationships( 'fts4', 'a' )" ).stream() )
+                {
+                    assertEquals( result.count(), 2L );
+                }
+
+                tx.success();
             }
 
             // and finally
@@ -316,6 +419,28 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     {
         assertEquals( expectedDescriptor.getKey(), index.providerKey(), "same key" );
         assertEquals( expectedDescriptor.getVersion(), index.providerVersion(), "same version" );
+    }
+
+    private static void createIndexDataAndShutdown( DatabaseManagementServiceInternalBuilder builder, String indexProvider, Label label )
+    {
+        createIndexDataAndShutdown( builder, indexProvider, label, db -> {} );
+    }
+
+    private static void createIndexDataAndShutdown( DatabaseManagementServiceInternalBuilder builder, String indexProvider, Label label,
+            Consumer<GraphDatabaseService> otherActions )
+    {
+        builder.setConfig( GraphDatabaseSettings.default_schema_provider, indexProvider );
+        DatabaseManagementService dbms = builder.newDatabaseManagementService();
+        try
+        {
+            GraphDatabaseService db = dbms.database( DEFAULT_DATABASE_NAME );
+            otherActions.accept( db );
+            createIndexData( db, label );
+        }
+        finally
+        {
+            dbms.shutdown();
+        }
     }
 
     private static void createIndexData( GraphDatabaseService db, Label label )
