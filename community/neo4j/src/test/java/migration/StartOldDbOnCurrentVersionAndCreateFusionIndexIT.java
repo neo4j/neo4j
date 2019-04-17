@@ -29,11 +29,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -48,6 +50,8 @@ import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
+import org.neo4j.io.compress.ZipUtils;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
@@ -116,8 +120,12 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     {
         File storeDir = tempStoreDirectory();
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
-        createIndexDataAndShutdown( db, Provider.LUCENE_10.label );
-        System.out.println( "Db created in " + storeDir.getAbsolutePath() );
+        createIndexData( db, Provider.LUCENE_10.label );
+        db.shutdown();
+
+        File zipFile = new File( storeDir.getParentFile(), storeDir.getName() + ".zip" );
+        ZipUtils.zip( new DefaultFileSystemAbstraction(), storeDir, zipFile );
+        System.out.println( "Db created in " + zipFile.getAbsolutePath() );
     }
 
     @Disabled( "Here as reference for how 3.3 db was created" )
@@ -130,12 +138,17 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
 
         builder.setConfig( GraphDatabaseSettings.enable_native_schema_index, Settings.FALSE );
         GraphDatabaseService db = builder.newGraphDatabase();
-        createIndexDataAndShutdown( db, Provider.LUCENE_10.label );
+        createIndexData( db, Provider.LUCENE_10.label );
+        db.shutdown();
 
         builder.setConfig( GraphDatabaseSettings.enable_native_schema_index, Settings.TRUE );
         db = builder.newGraphDatabase();
-        createIndexDataAndShutdown( db, Provider.FUSION_10.label );
-        System.out.println( "Db created in " + storeDir.getAbsolutePath() );
+        createIndexData( db, Provider.FUSION_10.label );
+        db.shutdown();
+
+        File zipFile = new File( storeDir.getParentFile(), storeDir.getName() + ".zip" );
+        ZipUtils.zip( new DefaultFileSystemAbstraction(), storeDir, zipFile );
+        System.out.println( "Db created in " + zipFile.getAbsolutePath() );
     }
 
     @Disabled( "Here as reference for how 3.4 db was created" )
@@ -146,18 +159,13 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         GraphDatabaseFactory factory = new GraphDatabaseFactory();
         GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
 
-        builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.LUCENE10.providerName() );
-        GraphDatabaseService db = builder.newGraphDatabase();
-        createIndexDataAndShutdown( db, Provider.LUCENE_10.label );
+        createIndexDataAndShutdown( builder, GraphDatabaseSettings.SchemaIndex.LUCENE10.providerName(), Provider.LUCENE_10.label );
+        createIndexDataAndShutdown( builder, GraphDatabaseSettings.SchemaIndex.NATIVE10.providerName(), Provider.FUSION_10.label );
+        createIndexDataAndShutdown( builder, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName(), Provider.FUSION_20.label );
 
-        builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE10.providerName() );
-        db = builder.newGraphDatabase();
-        createIndexDataAndShutdown( db, Provider.FUSION_10.label );
-
-        builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() );
-        db = builder.newGraphDatabase();
-        createIndexDataAndShutdown( db, Provider.FUSION_20.label );
-        System.out.println( "Db created in " + storeDir.getAbsolutePath() );
+        File zipFile = new File( storeDir.getParentFile(), storeDir.getName() + ".zip" );
+        ZipUtils.zip( new DefaultFileSystemAbstraction(), storeDir, zipFile );
+        System.out.println( "Db created in " + zipFile.getAbsolutePath() );
     }
 
     @Test
@@ -292,16 +300,30 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         assertEquals( expectedDescriptor.getVersion(), index.providerVersion(), "same version" );
     }
 
-    private static void createIndexDataAndShutdown( GraphDatabaseService db, Label label )
+    private static void createIndexDataAndShutdown( GraphDatabaseBuilder builder, String indexProvider, Label label )
     {
+        createIndexDataAndShutdown( builder, indexProvider, label, db -> {} );
+    }
+
+    private static void createIndexDataAndShutdown( GraphDatabaseBuilder builder, String indexProvider, Label label,
+            Consumer<GraphDatabaseService> otherActions )
+    {
+        builder.setConfig( GraphDatabaseSettings.default_schema_provider, indexProvider );
+        GraphDatabaseService db = builder.newGraphDatabase();
         try
         {
-            createIndexesAndData( db, label );
+            otherActions.accept( db );
+            createIndexData( db, label );
         }
         finally
         {
             db.shutdown();
         }
+    }
+
+    private static void createIndexData( GraphDatabaseService db, Label label )
+    {
+        createIndexesAndData( db, label );
     }
 
     private static File tempStoreDirectory() throws IOException
