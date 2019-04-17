@@ -22,7 +22,6 @@ package org.neo4j.graphdb;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
@@ -452,35 +451,6 @@ public interface GraphDatabaseService
      *                               to calling this method.
      */
     <T> TransactionEventHandler<T> unregisterTransactionEventHandler( TransactionEventHandler<T> handler );
-
-    /**
-     * Registers {@code handler} as a handler for kernel events which
-     * are generated from different places in the lifecycle of the kernel.
-     * To guarantee proper behavior the handler should be registered right
-     * after the graph database has been started. If the specified handler
-     * instance has already been registered this method will do nothing.
-     *
-     * @param handler the handler to receive events about different states
-     *                in the kernel lifecycle.
-     * @return the handler passed in as the argument.
-     */
-    DatabaseEventHandler registerDatabaseEventHandler( DatabaseEventHandler handler );
-
-    /**
-     * Unregisters {@code handler} from the list of kernel event handlers.
-     * If {@code handler} hasn't been registered with
-     * {@link #registerDatabaseEventHandler(DatabaseEventHandler)} prior to calling
-     * this method an {@link IllegalStateException} will be thrown.
-     * After a successful call to this method the {@code handler} will no
-     * longer receive any kernel events.
-     *
-     * @param handler the handler to receive events about different states
-     *                in the kernel lifecycle.
-     * @return the handler passed in as the argument.
-     * @throws IllegalStateException if {@code handler} wasn't registered prior
-     *                               to calling this method.
-     */
-    DatabaseEventHandler unregisterDatabaseEventHandler( DatabaseEventHandler handler );
 
     /**
      * Returns the {@link Schema schema manager} where all things related to schema,

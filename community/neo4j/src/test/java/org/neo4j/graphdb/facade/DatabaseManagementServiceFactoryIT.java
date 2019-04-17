@@ -29,7 +29,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseManagementException;
 import org.neo4j.dbms.database.DatabaseManagementService;
-import org.neo4j.graphdb.event.DatabaseEventHandlerAdapter;
+import org.neo4j.graphdb.event.DatabaseEventContext;
+import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -90,18 +91,15 @@ class DatabaseManagementServiceFactoryIT
     @Test
     void failToStartStopSystemDatabase()
     {
-        assertThrows( DatabaseManagementException.class, () -> managementService.stopDatabase( SYSTEM_DATABASE_NAME ) );
+        assertThrows( DatabaseManagementException.class, () -> managementService.shutdownDatabase( SYSTEM_DATABASE_NAME ) );
         assertThrows( DatabaseManagementException.class, () -> managementService.startDatabase( SYSTEM_DATABASE_NAME ) );
     }
 
     @Test
     void shutdownShouldShutdownAllDatabases()
     {
-        ShutdownListenerDatabaseEventHandler shutdownListenerDatabaseEventHandler = new ShutdownListenerDatabaseEventHandler();
-        for ( String databaseName : managementService.listDatabases() )
-        {
-            managementService.database( databaseName ).registerDatabaseEventHandler( shutdownListenerDatabaseEventHandler );
-        }
+        ShutdownListenerDatabaseEventListener shutdownListenerDatabaseEventHandler = new ShutdownListenerDatabaseEventListener();
+        managementService.registerDatabaseEventListener( shutdownListenerDatabaseEventHandler );
         managementService.shutdown();
         managementService = null;
 
@@ -116,12 +114,12 @@ class DatabaseManagementServiceFactoryIT
                 new GraphDatabaseFacade() );
     }
 
-    private static class ShutdownListenerDatabaseEventHandler extends DatabaseEventHandlerAdapter
+    private static class ShutdownListenerDatabaseEventListener extends DatabaseEventListenerAdapter
     {
         private final AtomicLong shutdownInvocations = new AtomicLong();
 
         @Override
-        public void beforeShutdown()
+        public void databaseShutdown( DatabaseEventContext eventContext )
         {
             shutdownInvocations.incrementAndGet();
         }

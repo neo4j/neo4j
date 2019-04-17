@@ -21,7 +21,6 @@ package org.neo4j.graphdb.facade.spi;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.module.DatabaseModule;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -85,18 +84,6 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     public DependencyResolver resolver()
     {
         return databaseModule.database.getDependencyResolver();
-    }
-
-    @Override
-    public void registerDatabaseEventHandler( DatabaseEventHandler handler )
-    {
-        databaseModule.database.getEventHandlers().registerDatabaseEventHandler( handler );
-    }
-
-    @Override
-    public void unregisterDatabaseEventHandler( DatabaseEventHandler handler )
-    {
-        databaseModule.database.getEventHandlers().unregisterDatabaseEventHandler( handler );
     }
 
     @Override

@@ -22,6 +22,7 @@ package org.neo4j.dbms.database;
 import java.util.List;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.event.DatabaseEventListener;
 
 /**
  * The {@link DatabaseManagementService} provides an API to manage databases and provided access to the managed database services.
@@ -62,12 +63,35 @@ public interface DatabaseManagementService
      * @param name of the database.
      * @throws DatabaseNotFoundException if no database with the given name is found.
      */
-    void stopDatabase( String name ) throws DatabaseNotFoundException;
+    void shutdownDatabase( String name ) throws DatabaseNotFoundException;
 
     /**
      * @return an alphabetically sorted list of all database names this database server manages.
      */
     List<String> listDatabases();
+
+    /**
+     * Registers {@code listener} as a listener for database events.
+     * If the specified listener instance has already been registered this method will do nothing.
+     *
+     * @param listener the listener to receive events about different states
+     *                in the database lifecycle.
+     */
+    void registerDatabaseEventListener( DatabaseEventListener listener );
+
+    /**
+     * Unregisters {@code listener} from the list of database event handlers.
+     * If {@code listener} hasn't been registered with
+     * {@link #registerDatabaseEventListener(DatabaseEventListener)} prior to calling
+     * this method an {@link IllegalStateException} will be thrown.
+     * After a successful call to this method the {@code listener} will no
+     * longer receive any database events.
+     *
+     * @param listener the listener to receive events about database lifecycle.
+     * @throws IllegalStateException if {@code listener} wasn't registered prior
+     *                               to calling this method.
+     */
+    void unregisterDatabaseEventListener( DatabaseEventListener listener );
 
     /**
      * Shutdown database server.

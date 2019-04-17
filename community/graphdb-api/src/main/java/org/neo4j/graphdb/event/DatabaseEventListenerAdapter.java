@@ -20,30 +20,26 @@
 package org.neo4j.graphdb.event;
 
 /**
- * Adapter for event handler interface for Neo4j database life cycle events.
+ * Adapter for event listener interface for database lifecycle events.
  */
-public class DatabaseEventHandlerAdapter implements DatabaseEventHandler
+public class DatabaseEventListenerAdapter implements DatabaseEventListener
 {
+
     @Override
-    public void beforeShutdown()
+    public void databaseStart( DatabaseEventContext eventContext )
     {
+        // empty
     }
 
     @Override
-    public void panic( ErrorState error )
+    public void databaseShutdown( DatabaseEventContext eventContext )
     {
-
+        // empty
     }
 
     @Override
-    public Object getResource()
+    public void databasePanic( DatabaseEventContext eventContext )
     {
-        return null;
-    }
-
-    @Override
-    public ExecutionOrder orderComparedTo( DatabaseEventHandler other )
-    {
-        return ExecutionOrder.DOESNT_MATTER;
+        // empty
     }
 }

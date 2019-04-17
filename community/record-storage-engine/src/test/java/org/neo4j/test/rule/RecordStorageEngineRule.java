@@ -44,10 +44,10 @@ import org.neo4j.lock.ReentrantLockService;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.monitoring.DatabaseEventHandlers;
-import org.neo4j.monitoring.Health;
-import org.neo4j.monitoring.DatabasePanicEventGenerator;
+import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.DatabasePanicEventGenerator;
+import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.IndexUpdateListener;
@@ -57,6 +57,7 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
 import static org.mockito.Mockito.mock;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 /**
  * Conveniently manages a {@link RecordStorageEngine} in a test. Needs {@link FileSystemAbstraction} and
@@ -110,7 +111,7 @@ public class RecordStorageEngineRule extends ExternalResource
         private final FileSystemAbstraction fs;
         private final PageCache pageCache;
         private Health databaseHealth = new DatabaseHealth(
-                new DatabasePanicEventGenerator( new DatabaseEventHandlers( NullLog.getInstance() ) ),
+                new DatabasePanicEventGenerator( new DatabaseEventListeners( NullLog.getInstance() ), DEFAULT_DATABASE_NAME ),
                 NullLog.getInstance() );
         private final DatabaseLayout databaseLayout;
         private Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer =

@@ -17,21 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.monitoring;
+package org.neo4j.graphdb.event;
 
-public class DatabasePanicEventGenerator
+/**
+ * Event context propagated to database event listeners as part of any event notification.
+ */
+public interface DatabaseEventContext
 {
-    private final DatabaseEventListeners databaseEventListeners;
-    private final String databaseName;
-
-    public DatabasePanicEventGenerator( DatabaseEventListeners databaseEventListeners, String databaseName )
-    {
-        this.databaseEventListeners = databaseEventListeners;
-        this.databaseName = databaseName;
-    }
-
-    public void panic()
-    {
-        databaseEventListeners.databasePanic( databaseName );
-    }
+    String getDatabaseName();
 }

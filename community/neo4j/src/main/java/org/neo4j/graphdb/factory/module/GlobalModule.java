@@ -76,6 +76,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.StoreLogService;
 import org.neo4j.monitoring.CompositeDatabaseHealth;
+import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.DeferredExecutor;
 import org.neo4j.scheduler.Group;
@@ -120,6 +121,7 @@ public class GlobalModule
     private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
     private final CompositeDatabaseHealth globalHealthService;
     private final FileSystemWatcherService fileSystemWatcher;
+    private final DatabaseEventListeners databaseEventListeners;
     // In the future this may not be a global decision, but for now this is a good central place to make the decision about which storage engine to use
     private final StorageEngineFactory storageEngineFactory;
 
@@ -204,6 +206,8 @@ public class GlobalModule
                         ExtensionFailureStrategies.fail() ) );
 
         globalDependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
+
+        databaseEventListeners = new DatabaseEventListeners( logService.getInternalLog( DatabaseEventListeners.class ) );
 
         connectorPortRegister = new ConnectorPortRegister();
         globalDependencies.satisfyDependency( connectorPortRegister );
@@ -492,6 +496,11 @@ public class GlobalModule
     public CompositeDatabaseHealth getGlobalHealthService()
     {
         return globalHealthService;
+    }
+
+    public DatabaseEventListeners getDatabaseEventListeners()
+    {
+        return databaseEventListeners;
     }
 
     public StorageEngineFactory getStorageEngineFactory()

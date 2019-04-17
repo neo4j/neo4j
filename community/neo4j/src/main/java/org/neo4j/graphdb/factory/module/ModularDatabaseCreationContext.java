@@ -58,7 +58,7 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.monitoring.DatabaseEventHandlers;
+import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Monitors;
@@ -105,7 +105,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
     private final DatabaseLayout databaseLayout;
-    private final DatabaseEventHandlers eventHandlers;
+    private final DatabaseEventListeners eventHandlers;
     private final DatabaseMigratorFactory databaseMigratorFactory;
     private final StorageEngineFactory storageEngineFactory;
 
@@ -130,9 +130,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.globalMonitors = globalModule.getGlobalMonitors();
         this.fs = globalModule.getFileSystem();
         this.transactionStats = perEditionComponents.getTransactionMonitor();
-        this.eventHandlers = new DatabaseEventHandlers( logService.getInternalLog( DatabaseEventHandlers.class ) );
+        this.eventHandlers = globalModule.getDatabaseEventListeners();
         this.databaseHealth = globalModule.getGlobalHealthService()
-                .createDatabaseHealth( new DatabasePanicEventGenerator( eventHandlers ),
+                .createDatabaseHealth( new DatabasePanicEventGenerator( eventHandlers, databaseId.name() ),
                         logService.getInternalLog( DatabaseHealth.class ) );
         this.transactionHeaderInformationFactory = perEditionComponents.getHeaderInformationFactory();
         this.commitProcessFactory = perEditionComponents.getCommitProcessFactory();
@@ -373,7 +373,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public DatabaseEventHandlers getEventHandlers()
+    public DatabaseEventListeners getEventHandlers()
     {
         return eventHandlers;
     }

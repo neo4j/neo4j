@@ -85,7 +85,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
-import org.neo4j.monitoring.DatabaseEventHandlers;
+import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Monitors;
@@ -272,7 +272,8 @@ public final class Recovery
         DatabaseSchemaState schemaState = new DatabaseSchemaState( logProvider );
         JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
 
-        DatabasePanicEventGenerator panicEventGenerator = new DatabasePanicEventGenerator( new DatabaseEventHandlers( recoveryLog ) );
+        DatabasePanicEventGenerator panicEventGenerator =
+                new DatabasePanicEventGenerator( new DatabaseEventListeners( recoveryLog ), databaseLayout.getDatabaseName() );
         DatabaseHealth databaseHealth = new DatabaseHealth( panicEventGenerator, recoveryLog );
 
         TokenHolders tokenHolders = new TokenHolders( new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_PROPERTY_KEY ),

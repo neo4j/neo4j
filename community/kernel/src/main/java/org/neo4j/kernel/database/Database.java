@@ -139,7 +139,7 @@ import org.neo4j.lock.ReentrantLockService;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.monitoring.DatabaseEventHandlers;
+import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
@@ -195,7 +195,7 @@ public class Database extends LifecycleAdapter
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final Locks locks;
-    private final DatabaseEventHandlers eventHandlers;
+    private final DatabaseEventListeners eventHandlers;
     private final DatabaseMigratorFactory databaseMigratorFactory;
 
     private Dependencies databaseDependencies;
@@ -427,6 +427,7 @@ public class Database extends LifecycleAdapter
             life.add( databaseAvailability );
             life.setLast( checkpointerLifecycle );
             life.start();
+            eventHandlers.databaseStart( databaseId.name() );
         }
         catch ( Throwable e )
         {
@@ -685,10 +686,10 @@ public class Database extends LifecycleAdapter
             return;
         }
 
+        eventHandlers.databaseShutdown( databaseId.name() );
         life.stop();
         awaitAllClosingTransactions();
         life.shutdown();
-        eventHandlers.shutdown();
         started = false;
     }
 
@@ -806,11 +807,6 @@ public class Database extends LifecycleAdapter
     public TokenHolders getTokenHolders()
     {
         return tokenHolders;
-    }
-
-    public DatabaseEventHandlers getEventHandlers()
-    {
-        return eventHandlers;
     }
 
     public TransactionEventHandlers getTransactionEventHandlers()

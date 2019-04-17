@@ -19,62 +19,60 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.apache.commons.lang3.mutable.MutableInt;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.dbms.database.DatabaseManagementService;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.event.DatabaseEventHandlerAdapter;
+import org.neo4j.graphdb.event.DatabaseEventContext;
+import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-public class TestShutdownSequence
+class TestShutdownSequence
 {
-    private GraphDatabaseService graphDb;
     private DatabaseManagementService managementService;
 
-    @Before
-    public void createGraphDb()
+    @BeforeEach
+    void createGraphDb()
     {
         managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
-        graphDb = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @Test
-    public void canInvokeShutdownMultipleTimes()
+    void canInvokeShutdownMultipleTimes()
     {
         managementService.shutdown();
         managementService.shutdown();
     }
 
     @Test
-    public void eventHandlersAreOnlyInvokedOnceDuringShutdown()
+    void notifyEventListenersOnShutdown()
     {
-        final AtomicInteger counter = new AtomicInteger();
-        graphDb.registerDatabaseEventHandler( new DatabaseEventHandlerAdapter()
+        MutableInt counter = new MutableInt();
+        managementService.registerDatabaseEventListener( new DatabaseEventListenerAdapter()
         {
             @Override
-            public void beforeShutdown()
+            public void databaseShutdown( DatabaseEventContext eventContext )
             {
                 counter.incrementAndGet();
             }
         } );
         managementService.shutdown();
         managementService.shutdown();
-        assertEquals( 1, counter.get() );
+        assertEquals( 2, counter.intValue() );
     }
 
     @Test
-    public void canRemoveFilesAndReinvokeShutdown() throws IOException
+    void canRemoveFilesAndReinvokeShutdown() throws IOException
     {
-        GraphDatabaseAPI databaseAPI = (GraphDatabaseAPI) this.graphDb;
+        GraphDatabaseAPI databaseAPI = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         FileSystemAbstraction fileSystemAbstraction = getDatabaseFileSystem( databaseAPI );
         managementService.shutdown();
         fileSystemAbstraction.deleteRecursively( databaseAPI.databaseLayout().databaseDirectory() );
@@ -82,12 +80,12 @@ public class TestShutdownSequence
     }
 
     @Test
-    public void canInvokeShutdownFromShutdownHandler()
+    void canInvokeShutdownFromShutdownListener()
     {
-        graphDb.registerDatabaseEventHandler( new DatabaseEventHandlerAdapter()
+        managementService.registerDatabaseEventListener( new DatabaseEventListenerAdapter()
         {
             @Override
-            public void beforeShutdown()
+            public void databaseShutdown( DatabaseEventContext eventContext )
             {
                 managementService.shutdown();
             }

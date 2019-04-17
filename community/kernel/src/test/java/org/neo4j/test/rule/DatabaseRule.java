@@ -79,7 +79,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
-import org.neo4j.monitoring.DatabaseEventHandlers;
+import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Monitors;
@@ -238,7 +238,7 @@ public class DatabaseRule extends ExternalResource
         private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
         private final GraphDatabaseFacade facade;
         private final Iterable<QueryEngineProvider> engineProviders;
-        private final DatabaseEventHandlers eventHandlers;
+        private final DatabaseEventListeners eventHandlers;
         private final DatabaseMigratorFactory databaseMigratorFactory;
         private final StorageEngineFactory storageEngineFactory;
 
@@ -289,7 +289,7 @@ public class DatabaseRule extends ExternalResource
             this.watcherServiceFactory = watcherServiceFactory;
             this.facade = facade;
             this.engineProviders = engineProviders;
-            this.eventHandlers = mock( DatabaseEventHandlers.class );
+            this.eventHandlers = mock( DatabaseEventListeners.class );
             this.databaseMigratorFactory = databaseMigratorFactory;
             this.storageEngineFactory = storageEngineFactory;
         }
@@ -519,7 +519,7 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public DatabaseEventHandlers getEventHandlers()
+        public DatabaseEventListeners getEventHandlers()
         {
             return eventHandlers;
         }

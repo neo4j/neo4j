@@ -41,7 +41,6 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
@@ -574,18 +573,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     public <T> TransactionEventHandler<T> unregisterTransactionEventHandler( TransactionEventHandler<T> handler )
     {
         return database.unregisterTransactionEventHandler( handler );
-    }
-
-    @Override
-    public DatabaseEventHandler registerDatabaseEventHandler( DatabaseEventHandler handler )
-    {
-        return database.registerDatabaseEventHandler( handler );
-    }
-
-    @Override
-    public DatabaseEventHandler unregisterDatabaseEventHandler( DatabaseEventHandler handler )
-    {
-        return database.unregisterDatabaseEventHandler( handler );
     }
 
     @Override

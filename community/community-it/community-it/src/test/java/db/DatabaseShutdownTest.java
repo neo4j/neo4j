@@ -31,7 +31,8 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.event.DatabaseEventHandlerAdapter;
+import org.neo4j.graphdb.event.DatabaseEventContext;
+import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -85,15 +86,14 @@ class DatabaseShutdownTest
     }
 
     @Test
-    void invokeKernelEventHandlersBeforeShutdown()
+    void invokeDatabaseShutdownListenersOnShutdown()
     {
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
-        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
-        ShutdownListenerDatabaseEventHandler shutdownHandler = new ShutdownListenerDatabaseEventHandler();
-        database.registerDatabaseEventHandler( shutdownHandler );
+        ShutdownListenerDatabaseEventListener shutdownHandler = new ShutdownListenerDatabaseEventListener();
+        managementService.registerDatabaseEventListener( shutdownHandler );
         managementService.shutdown();
 
-        assertTrue( shutdownHandler.isShutdownInvoked() );
+        assertEquals( 2, shutdownHandler.shutdownCounter() );
     }
 
     private static class TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush extends TestDatabaseManagementServiceBuilder
@@ -158,19 +158,19 @@ class DatabaseShutdownTest
         }
     }
 
-    private static class ShutdownListenerDatabaseEventHandler extends DatabaseEventHandlerAdapter
+    private static class ShutdownListenerDatabaseEventListener extends DatabaseEventListenerAdapter
     {
-        private volatile boolean shutdownInvoked;
+        private int shutdownCounter;
 
         @Override
-        public void beforeShutdown()
+        public void databaseShutdown( DatabaseEventContext eventContext )
         {
-            shutdownInvoked = true;
+            shutdownCounter++;
         }
 
-        boolean isShutdownInvoked()
+        int shutdownCounter()
         {
-            return shutdownInvoked;
+            return shutdownCounter;
         }
     }
 }

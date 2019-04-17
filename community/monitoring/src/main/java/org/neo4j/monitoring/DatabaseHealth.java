@@ -21,7 +21,6 @@ package org.neo4j.monitoring;
 
 import java.util.Objects;
 
-import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -33,19 +32,19 @@ public class DatabaseHealth extends LifecycleAdapter implements Health
     private static final Class<?>[] CRITICAL_EXCEPTIONS = new Class[]{OutOfMemoryError.class};
 
     private volatile boolean healthy = true;
-    private final DatabasePanicEventGenerator dbpe;
+    private final DatabasePanicEventGenerator panicEventGenerator;
     private final Log log;
     private volatile Throwable causeOfPanic;
     private final CompositeDatabaseHealth globalHealth;
 
-    public DatabaseHealth( DatabasePanicEventGenerator dbpe, Log log )
+    public DatabaseHealth( DatabasePanicEventGenerator panicEventGenerator, Log log )
     {
-        this( dbpe, log, null );
+        this( panicEventGenerator, log, null );
     }
 
-    public DatabaseHealth( DatabasePanicEventGenerator dbpe, Log log, CompositeDatabaseHealth globalHealth )
+    public DatabaseHealth( DatabasePanicEventGenerator panicEventGenerator, Log log, CompositeDatabaseHealth globalHealth )
     {
-        this.dbpe = dbpe;
+        this.panicEventGenerator = panicEventGenerator;
         this.log = log;
         this.globalHealth = globalHealth;
     }
@@ -87,7 +86,7 @@ public class DatabaseHealth extends LifecycleAdapter implements Health
         this.causeOfPanic = cause;
         this.healthy = false;
         log.error( "Database panic: " + panicMessage, cause );
-        dbpe.generateEvent( ErrorState.TX_MANAGER_NOT_OK, causeOfPanic );
+        panicEventGenerator.panic();
     }
 
     @Override

@@ -46,12 +46,12 @@ import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
 import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
-import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
-import org.neo4j.monitoring.DatabaseEventHandlers;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.DatabaseEventListeners;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
+import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
@@ -62,6 +62,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class, LifeExtension.class} )
 class BatchingTransactionAppenderRotationIT
@@ -128,7 +129,7 @@ class BatchingTransactionAppenderRotationIT
     private static Health getDatabaseHealth()
     {
         DatabasePanicEventGenerator databasePanicEventGenerator =
-                new DatabasePanicEventGenerator( new DatabaseEventHandlers( NullLog.getInstance() ) );
+                new DatabasePanicEventGenerator( new DatabaseEventListeners( NullLog.getInstance() ), DEFAULT_DATABASE_NAME );
         return new DatabaseHealth( databasePanicEventGenerator, NullLog.getInstance() );
     }
 

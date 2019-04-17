@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.monitoring.DatabaseEventHandlers;
+import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
@@ -135,7 +135,7 @@ public interface DatabaseCreationContext
 
     Iterable<QueryEngineProvider> getEngineProviders();
 
-    DatabaseEventHandlers getEventHandlers();
+    DatabaseEventListeners getEventHandlers();
 
     DatabaseMigratorFactory getDatabaseMigratorFactory();
 

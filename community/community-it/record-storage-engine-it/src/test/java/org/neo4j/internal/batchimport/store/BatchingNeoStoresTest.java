@@ -67,7 +67,7 @@ import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
-import org.neo4j.monitoring.DatabaseEventHandlers;
+import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
@@ -92,6 +92,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
@@ -356,7 +357,7 @@ class BatchingNeoStoresTest
                     new RecordStorageEngine( testDirectory.databaseLayout(), Config.defaults(), pageCache, fileSystem, NullLogProvider.getInstance(),
                             tokenHolders, new DatabaseSchemaState( NullLogProvider.getInstance() ),
                             new StandardConstraintSemantics(), LockService.NO_LOCK_SERVICE,
-                            new DatabaseHealth( new DatabasePanicEventGenerator( new DatabaseEventHandlers( nullLog ) ), nullLog ),
+                            new DatabaseHealth( new DatabasePanicEventGenerator( new DatabaseEventListeners( nullLog ), DEFAULT_DATABASE_NAME ), nullLog ),
                             new DefaultIdGeneratorFactory( fileSystem ), new DefaultIdController(), EmptyVersionContextSupplier.EMPTY ) );
             // Create the relationship type token
             TxState txState = new TxState();

@@ -23,24 +23,28 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
+import org.neo4j.monitoring.DatabaseEventListeners;
 
 public class DatabaseManagementServiceImpl implements DatabaseManagementService
 {
     private final DatabaseManager<?> databaseManager;
     private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
     private final Lifecycle globalLife;
+    private final DatabaseEventListeners databaseEventListeners;
     private final Log log;
 
     public DatabaseManagementServiceImpl( DatabaseManager<?> databaseManager, CompositeDatabaseAvailabilityGuard globalAvailabilityGuard, Lifecycle globalLife,
-            Log log )
+            DatabaseEventListeners databaseEventListeners, Log log )
     {
         this.databaseManager = databaseManager;
         this.globalAvailabilityGuard = globalAvailabilityGuard;
         this.globalLife = globalLife;
+        this.databaseEventListeners = databaseEventListeners;
         this.log = log;
     }
 
@@ -69,7 +73,7 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
     }
 
     @Override
-    public void stopDatabase( String name )
+    public void shutdownDatabase( String name )
     {
         databaseManager.stopDatabase( new DatabaseId( name ) );
     }
@@ -78,6 +82,18 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
     public List<String> listDatabases()
     {
         return databaseManager.registeredDatabases().keySet().stream().map( DatabaseId::name ).sorted().collect( Collectors.toList() );
+    }
+
+    @Override
+    public void registerDatabaseEventListener( DatabaseEventListener listener )
+    {
+        databaseEventListeners.registerDatabaseEventListener( listener );
+    }
+
+    @Override
+    public void unregisterDatabaseEventListener( DatabaseEventListener listener )
+    {
+        databaseEventListeners.unregisterDatabaseEventListener( listener );
     }
 
     @Override

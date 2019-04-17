@@ -17,7 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/**
- * Event framework.
- */
 package org.neo4j.graphdb.event;
+
+public class DefaultDatabaseEvent implements DatabaseEventContext
+{
+    private final String databaseName;
+
+    public DefaultDatabaseEvent( String databaseName )
+    {
+        this.databaseName = databaseName;
+    }
+
+    @Override
+    public String getDatabaseName()
+    {
+        return databaseName;
+    }
+}

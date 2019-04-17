@@ -21,7 +21,6 @@ package org.neo4j.graphdb.facade.spi;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.module.DatabaseModule;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -101,18 +100,6 @@ public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
         {
             throw e.asUserException();
         }
-    }
-
-    @Override
-    public void registerDatabaseEventHandler( DatabaseEventHandler handler )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void unregisterDatabaseEventHandler( DatabaseEventHandler handler )
-    {
-        throw new UnsupportedOperationException();
     }
 
     @Override
