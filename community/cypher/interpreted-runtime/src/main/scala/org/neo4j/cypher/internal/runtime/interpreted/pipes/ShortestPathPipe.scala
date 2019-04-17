@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.commands.ShortestPath
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{ListValue, PathValue, VirtualValues}
@@ -37,6 +35,9 @@ case class ShortestPathPipe(source: Pipe, shortestPathExpression: ShortestPathEx
                             withFallBack: Boolean = false, disallowSameNode: Boolean = true)
                            (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
+
+  shortestPathExpression.registerOwningPipe(this)
+
   private val shortestPathCommand = shortestPathExpression.shortestPathPattern
   private def pathName = shortestPathCommand.pathName
 

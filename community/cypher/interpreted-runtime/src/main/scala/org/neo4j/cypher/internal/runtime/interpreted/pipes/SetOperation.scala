@@ -39,6 +39,8 @@ sealed trait SetOperation {
   def name: String
 
   def needsExclusiveLock: Boolean
+
+  def registerOwningPipe(pipe: Pipe): Unit
 }
 
 object SetOperation {
@@ -135,10 +137,14 @@ abstract class SetEntityPropertyOperation[T, CURSOR](itemName: String,
   protected def entityCursor(cursors: ExpressionCursors): CURSOR
 
   protected def invalidateCachedProperties(executionContext: ExecutionContext, id: Long): Unit
+
+  override def registerOwningPipe(pipe: Pipe): Unit = expression.registerOwningPipe(pipe)
 }
 
-case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyKey,
-                                    expression: Expression, needsExclusiveLock: Boolean = true)
+case class SetNodePropertyOperation(nodeName: String,
+                                    propertyKey: LazyPropertyKey,
+                                    expression: Expression,
+                                    needsExclusiveLock: Boolean = true)
   extends SetEntityPropertyOperation[NodeValue, NodeCursor](nodeName, propertyKey, expression) {
 
   override def name = "SetNodeProperty"
@@ -153,8 +159,10 @@ case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyK
     executionContext.invalidateCachedProperties(id)
 }
 
-case class SetRelationshipPropertyOperation(relName: String, propertyKey: LazyPropertyKey,
-                                            expression: Expression, needsExclusiveLock: Boolean = true)
+case class SetRelationshipPropertyOperation(relName: String,
+                                            propertyKey: LazyPropertyKey,
+                                            expression: Expression,
+                                            needsExclusiveLock: Boolean = true)
   extends SetEntityPropertyOperation[RelationshipValue, RelationshipScanCursor](relName, propertyKey, expression) {
 
   override def name = "SetRelationshipProperty"
@@ -195,6 +203,11 @@ case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropert
   }
 
   override def needsExclusiveLock = true
+
+  override def registerOwningPipe(pipe: Pipe): Unit = {
+    entityExpr.registerOwningPipe(pipe)
+    expression.registerOwningPipe(pipe)
+  }
 }
 
 abstract class SetPropertyFromMapOperation[T, CURSOR](itemName: String,
@@ -245,10 +258,14 @@ abstract class SetPropertyFromMapOperation[T, CURSOR](itemName: String,
       }
     }
   }
+
+  override def registerOwningPipe(pipe: Pipe): Unit = expression.registerOwningPipe(pipe)
 }
 
-case class SetNodePropertyFromMapOperation(nodeName: String, expression: Expression,
-                                           removeOtherProps: Boolean, needsExclusiveLock: Boolean = true)
+case class SetNodePropertyFromMapOperation(nodeName: String,
+                                           expression: Expression,
+                                           removeOtherProps: Boolean,
+                                           needsExclusiveLock: Boolean = true)
   extends SetPropertyFromMapOperation[NodeValue, NodeCursor](nodeName, expression, removeOtherProps) {
 
   override def name = "SetNodePropertyFromMap"
@@ -260,8 +277,10 @@ case class SetNodePropertyFromMapOperation(nodeName: String, expression: Express
   override protected def entityCursor(cursors: ExpressionCursors): NodeCursor = cursors.nodeCursor
 }
 
-case class SetRelationshipPropertyFromMapOperation(relName: String, expression: Expression,
-                                                   removeOtherProps: Boolean, needsExclusiveLock: Boolean = true)
+case class SetRelationshipPropertyFromMapOperation(relName: String,
+                                                   expression: Expression,
+                                                   removeOtherProps: Boolean,
+                                                   needsExclusiveLock: Boolean = true)
   extends SetPropertyFromMapOperation[RelationshipValue, RelationshipScanCursor](relName, expression, removeOtherProps) {
 
   override def name = "SetRelationshipPropertyFromMap"
@@ -287,4 +306,6 @@ case class SetLabelsOperation(nodeName: String, labels: Seq[LazyLabel]) extends 
   override def name = "SetLabels"
 
   override def needsExclusiveLock = false
+
+  override def registerOwningPipe(pipe: Pipe): Unit = ()
 }
