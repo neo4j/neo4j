@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
+import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.values.AnyValue
 
@@ -34,6 +35,8 @@ case class PointDistanceSeekRangeExpression(range: PointDistanceRange[Expression
   override def rewrite(f: Expression => Expression): Expression = f(this)
 
   override def arguments: Seq[Expression] = Seq.empty
+
+  override def children: Seq[AstNode[_]] = range.arguments
 
   override def symbolTableDependencies: Set[String] = Set.empty
 }

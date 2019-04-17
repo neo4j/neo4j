@@ -23,9 +23,9 @@ abstract class VariableCommand(variableName: String) extends Expression {
 
   override def toString: String = variableName
 
-  def rewrite(f: Expression => Expression): Expression = f(this)
+  override def rewrite(f: Expression => Expression): Expression = f(this)
 
-  def arguments: Seq[Expression] = Seq()
+  override def arguments: Seq[Expression] = Seq()
 
-  def symbolTableDependencies: Set[String] = Set(variableName)
+  override def symbolTableDependencies: Set[String] = Set(variableName)
 }

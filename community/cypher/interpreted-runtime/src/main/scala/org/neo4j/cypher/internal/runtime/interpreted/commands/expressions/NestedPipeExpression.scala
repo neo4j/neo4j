@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import java.util
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.VirtualValues
@@ -51,7 +52,9 @@ case class NestedPipeExpression(pipe: Pipe,
 
   override def rewrite(f: Expression => Expression): Expression = f(NestedPipeExpression(pipe, inner.rewrite(f), availableExpressionVariables))
 
-  override def arguments = List(inner)
+  override def arguments: Seq[Expression] = Seq(inner)
+
+  override def children: Seq[AstNode[_]] = Seq(inner) ++ availableExpressionVariables
 
   override def symbolTableDependencies: Set[String] = Set()
 

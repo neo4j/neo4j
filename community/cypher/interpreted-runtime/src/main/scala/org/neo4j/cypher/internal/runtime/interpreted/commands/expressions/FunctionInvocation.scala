@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext}
-import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.values._
 
 
@@ -30,6 +31,9 @@ case class FunctionInvocation(signature: UserFunctionSignature, input: Array[Exp
   extends Expression with GraphElementPropertyFunctions {
 
   override def arguments: Seq[Expression] = input
+
+  override def children: Seq[AstNode[_]] = input
+
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val query = state.query
     val argValues = input.map(arg => {
@@ -45,6 +49,6 @@ case class FunctionInvocation(signature: UserFunctionSignature, input: Array[Exp
 
   override def toString = s"${signature.name}(${input.mkString(",")})"
 
-  override def rewrite(f: Expression => Expression) =
+  override def rewrite(f: Expression => Expression): Expression =
     f(FunctionInvocation(signature, input.map(a => a.rewrite(f))))
 }

@@ -21,14 +21,16 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.ListSupport
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values._
 import org.neo4j.values.storable.Values.NO_VALUE
 
-case class ContainerIndex(expression: Expression, index: Expression) extends Expression
-with ListSupport {
-  def arguments = Seq(expression, index)
+case class ContainerIndex(expression: Expression, index: Expression) extends Expression with ListSupport {
+  override def arguments: Seq[Expression] = Seq(expression, index)
+
+  override def children: Seq[AstNode[_]] = Seq(expression, index)
 
   override def apply(ctx: ExecutionContext,
                      state: QueryState): AnyValue = expression(ctx, state) match {
@@ -44,7 +46,7 @@ with ListSupport {
                                           state.cursors.propertyCursor)
   }
 
-  def rewrite(f: Expression => Expression): Expression = f(ContainerIndex(expression.rewrite(f), index.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(ContainerIndex(expression.rewrite(f), index.rewrite(f)))
 
-  def symbolTableDependencies: Set[String] = expression.symbolTableDependencies ++ index.symbolTableDependencies
+  override def symbolTableDependencies: Set[String] = expression.symbolTableDependencies ++ index.symbolTableDependencies
 }

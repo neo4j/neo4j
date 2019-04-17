@@ -20,10 +20,13 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 
 case class Variable(name: String) extends VariableCommand(name) {
 
-  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = ctx.getByName(name)
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = ctx.getByName(name)
+
+  override def children: Seq[AstNode[_]] = Seq.empty
 }

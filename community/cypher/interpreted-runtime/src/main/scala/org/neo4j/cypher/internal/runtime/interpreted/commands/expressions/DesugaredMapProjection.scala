@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.{GraphElementPropertyFunctions, IsMap, LazyMap}
 import org.neo4j.values.AnyValue
@@ -56,6 +57,8 @@ case class DesugaredMapProjection(variable: VariableCommand, includeAllProps: Bo
     f(DesugaredMapProjection(variable, includeAllProps, literalExpressions.rewrite(f)))
 
   override def arguments: Seq[Expression] = literalExpressions.values.toIndexedSeq
+
+  override def children: Seq[AstNode[_]] = Seq(variable) ++ arguments
 
   override def symbolTableDependencies: Set[String] = literalExpressions.symboltableDependencies + variable.toString
 

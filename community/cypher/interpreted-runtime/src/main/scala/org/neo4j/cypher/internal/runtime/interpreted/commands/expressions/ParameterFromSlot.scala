@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 
@@ -29,9 +30,11 @@ case class ParameterFromSlot(offset: Int, parameterName: String) extends Express
 
   override def toString: String = "$" + parameterName
 
-  def rewrite(f: Expression => Expression): Expression = f(this)
+  override def rewrite(f: Expression => Expression): Expression = f(this)
 
-  def arguments: Seq[Nothing] = Seq.empty
+  override def arguments: Seq[Expression] = Seq.empty
 
-  def symbolTableDependencies: Set[String] = Set()
+  override def children: Seq[AstNode[_]] = Seq.empty
+
+  override def symbolTableDependencies: Set[String] = Set()
 }

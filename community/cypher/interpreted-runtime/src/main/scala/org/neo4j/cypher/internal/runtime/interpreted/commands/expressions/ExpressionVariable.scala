@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.runtime.ast
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, ast}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.v4_0.expressions.LogicalVariable
 import org.neo4j.values.AnyValue
@@ -34,5 +34,7 @@ object ExpressionVariable {
 
 case class ExpressionVariable(offset: Int, name: String) extends VariableCommand(name) {
 
-  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = state.expressionVariables(offset)
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = state.expressionVariables(offset)
+
+  override def children: Seq[AstNode[_]] = Seq.empty
 }

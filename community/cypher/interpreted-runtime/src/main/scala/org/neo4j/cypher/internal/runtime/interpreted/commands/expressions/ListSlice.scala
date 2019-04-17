@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.{CastSupport, ListSupport}
 import org.neo4j.cypher.operations.CypherFunctions
@@ -28,7 +29,9 @@ import org.neo4j.values.storable.{NumberValue, Values}
 
 case class ListSlice(collection: Expression, from: Option[Expression], to: Option[Expression])
   extends NullInNullOutExpression(collection) with ListSupport {
-  def arguments: Seq[Expression] = from.toIndexedSeq ++ to.toIndexedSeq :+ collection
+  override def arguments: Seq[Expression] = from.toIndexedSeq ++ to.toIndexedSeq :+ collection
+
+  override def children: Seq[AstNode[_]] = arguments
 
   private val function: (AnyValue, ExecutionContext, QueryState) => AnyValue =
     (from, to) match {
@@ -66,8 +69,8 @@ case class ListSlice(collection: Expression, from: Option[Expression], to: Optio
   override def compute(value: AnyValue, ctx: ExecutionContext, state: QueryState): AnyValue =
     function(value, ctx, state)
 
-  def rewrite(f: Expression => Expression): Expression =
+  override def rewrite(f: Expression => Expression): Expression =
     f(ListSlice(collection.rewrite(f), from.map(_.rewrite(f)), to.map(_.rewrite(f))))
 
-  def symbolTableDependencies: Set[String] = arguments.flatMap(_.symbolTableDependencies).toSet
+  override def symbolTableDependencies: Set[String] = arguments.flatMap(_.symbolTableDependencies).toSet
 }

@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, ResourceLinenumber}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
 case class Linenumber() extends Expression {
-  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = ctx.getLinenumber match {
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = ctx.getLinenumber match {
     case Some(ResourceLinenumber(_, line, _)) => Values.longValue(line)
     case _ => Values.NO_VALUE
   }
@@ -34,12 +35,14 @@ case class Linenumber() extends Expression {
 
   override def arguments: Seq[Expression] = Seq.empty
 
+  override def children: Seq[AstNode[_]] = Seq.empty
+
   override def symbolTableDependencies: Set[String] = Set.empty
 }
 
 
 case class Filename() extends Expression {
-  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = ctx.getLinenumber match {
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = ctx.getLinenumber match {
     case Some(ResourceLinenumber(name, _, _)) => Values.stringValue(name)
     case _ => Values.NO_VALUE
   }
@@ -47,6 +50,8 @@ case class Filename() extends Expression {
   override def rewrite(f: Expression => Expression): Expression = f(Filename())
 
   override def arguments: Seq[Expression] = Seq.empty
+
+  override def children: Seq[AstNode[_]] = Seq.empty
 
   override def symbolTableDependencies: Set[String] = Set.empty
 }

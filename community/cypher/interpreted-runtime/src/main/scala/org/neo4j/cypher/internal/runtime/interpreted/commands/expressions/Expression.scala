@@ -56,11 +56,13 @@ abstract class Expression extends TypeSafe with AstNode[Expression] {
     }
   }
 
+  // TODO check overrides here
+
   // Expressions that do not get anything in their context from this expression.
   def arguments: Seq[Expression]
 
   // Any expressions that this expression builds on
-  def children: Seq[AstNode[_]] = arguments
+  def children: Seq[AstNode[_]]
 
   def containsAggregate: Boolean = exists(_.isInstanceOf[AggregationExpression])
 
@@ -80,17 +82,19 @@ abstract class Expression extends TypeSafe with AstNode[Expression] {
 case class CachedExpression(key:String, typ:CypherType) extends Expression {
   def apply(ctx: ExecutionContext, state: QueryState): AnyValue = ctx.getByName(key)
 
-  def rewrite(f: Expression => Expression) = f(this)
+  override def rewrite(f: Expression => Expression): Expression = f(this)
 
-  def arguments = Seq()
+  override def arguments: Seq[Expression] = Seq.empty
 
-  def symbolTableDependencies = Set(key)
+  override def children: Seq[AstNode[_]] = Seq.empty
+
+  override def symbolTableDependencies: Set[String] = Set(key)
 
   override def toString: String = "Cached(%s of type %s)".format(key, typ)
 }
 
 abstract class Arithmetics(left: Expression, right: Expression) extends Expression {
-  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val aVal = left(ctx, state)
     val bVal = right(ctx, state)
 
@@ -106,9 +110,9 @@ abstract class Arithmetics(left: Expression, right: Expression) extends Expressi
 
   def calc(a: AnyValue, b: AnyValue): AnyValue
 
-  def arguments = Seq(left, right)
+  override def arguments: Seq[Expression] = Seq(left, right)
 
-  def symbolTableDependencies: Set[String] = left.symbolTableDependencies ++ left.symbolTableDependencies
+  override def symbolTableDependencies: Set[String] = left.symbolTableDependencies ++ left.symbolTableDependencies
 }
 
 trait ExtendedExpression extends Expression {

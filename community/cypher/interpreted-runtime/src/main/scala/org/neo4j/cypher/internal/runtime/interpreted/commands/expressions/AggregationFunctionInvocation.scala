@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, UserDefinedAggregator}
-import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.values.AnyValue
 
-case class AggregationFunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
+case class AggregationFunctionInvocation(signature: UserFunctionSignature, override val arguments: IndexedSeq[Expression])
   extends AggregationExpression {
 
   override def createAggregationFunction: AggregationFunction = new AggregationFunction {
@@ -49,6 +50,8 @@ case class AggregationFunctionInvocation(signature: UserFunctionSignature, argum
       inner
     }
   }
+
+  override def children: Seq[AstNode[_]] = arguments
 
   override def symbolTableDependencies: Set[String] = arguments.flatMap(_.symbolTableDependencies).toSet
 

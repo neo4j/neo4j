@@ -46,7 +46,7 @@ case class ReduceFunction(collection: Expression,
     state.expressionVariables(accVariableOffset)
   }
 
-  def rewrite(f: Expression => Expression): Expression =
+  override def rewrite(f: Expression => Expression): Expression =
     f(ReduceFunction(collection.rewrite(f),
                      innerVariableName,
                      innerVariableOffset,
@@ -55,10 +55,10 @@ case class ReduceFunction(collection: Expression,
                      accVariableOffset,
                      init.rewrite(f)))
 
-  def arguments: Seq[Expression] = Seq(collection, init)
+  override def arguments: Seq[Expression] = Seq(collection, init)
 
   override def children: Seq[Expression] = Seq(collection, expression, init)
 
-  def symbolTableDependencies: Set[String] =
+  override def symbolTableDependencies: Set[String] =
     (collection.symbolTableDependencies ++ expression.symbolTableDependencies ++ init.symbolTableDependencies) - innerVariableName - accVariableName
 }
