@@ -242,6 +242,19 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
       Map("a" -> fromNodeProxy(startNode), "b" -> fromNodeProxy(endNode1), "r" -> fromRelationshipProxy(rel1))))
   }
 
+  test("should register owning pipe") {
+    // given
+    mockRelationships(relationship1)
+    val left = newMockedPipe("a",
+      row("a" -> startNode, "b" -> endNode1))
+
+    // when
+    val pipe = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())()
+
+    // then
+    pipe.predicate.owningPipe should equal(pipe)
+  }
+
   private def mockRelationships(rels: Relationship*) {
     when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[RelationshipValue]] {
       def answer(invocation: InvocationOnMock): Iterator[RelationshipValue] = rels.iterator.map(fromRelationshipProxy)

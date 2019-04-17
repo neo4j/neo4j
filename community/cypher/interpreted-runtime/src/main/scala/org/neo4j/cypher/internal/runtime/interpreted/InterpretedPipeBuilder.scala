@@ -345,29 +345,34 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
 
   private def varLengthPredicate(id: Id, predicates: Seq[(LogicalVariable, ASTExpression)]): VarLengthPredicate  = {
     //Creates commands out of the predicates
-    def asCommand(predicates: Seq[(LogicalVariable, ASTExpression)]) = {
+    def asCommand(predicates: Seq[(LogicalVariable, ASTExpression)]): ((ExecutionContext, QueryState, AnyValue) => Boolean, Seq[Predicate]) = {
       val (keys: Seq[LogicalVariable], exprs) = predicates.unzip
 
       val commands = exprs.map(buildPredicate(id, _))
-      (context: ExecutionContext, state: QueryState, entity: AnyValue) => {
-        keys.zip(commands).forall { case (variable: LogicalVariable, expr: Predicate) =>
+      val keysAndCommands = keys.zip(commands)
+
+      // Return both the command lambda and the underlying list of command predicates
+      ((context: ExecutionContext, state: QueryState, entity: AnyValue) => {
+        keysAndCommands.forall { case (variable: LogicalVariable, expr: Predicate) =>
           context(variable.name) = entity
           val result = expr.isTrue(context, state)
           context.remove(variable.name)
           result
         }
-      }
+      }, commands)
     }
 
     //partition predicates on whether they deal with nodes or rels
     val (nodePreds, relPreds) = predicates.partition(e => semanticTable.seen(e._1) && semanticTable.isNode(e._1))
-    val nodeCommand = asCommand(nodePreds)
-    val relCommand = asCommand(relPreds)
+    val (nodeCommand, nodeCommandPreds) = asCommand(nodePreds)
+    val (relCommand, relCommandPreds) = asCommand(relPreds)
 
     new VarLengthPredicate {
       override def filterNode(row: ExecutionContext, state: QueryState)(node: NodeValue): Boolean = nodeCommand(row, state, node)
 
       override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: RelationshipValue): Boolean = relCommand(row, state, rel)
+
+      override def predicateExpressions: Seq[Predicate] = nodeCommandPreds ++ relCommandPreds
     }
   }
 
