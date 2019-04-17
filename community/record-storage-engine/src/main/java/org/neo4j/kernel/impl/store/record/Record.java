@@ -31,7 +31,6 @@ public enum Record
 
     NOT_IN_USE( (byte) 0, 0 ),
     IN_USE( (byte) 1, 1 ),
-    FIRST_IN_CHAIN( (byte) 2, 2 ),
     RESERVED( (byte) -1, -1 ),
     NO_NEXT_PROPERTY( NULL_REFERENCE ),
     NO_PREVIOUS_PROPERTY( NULL_REFERENCE ),
@@ -48,7 +47,8 @@ public enum Record
     public static final byte REQUIRE_SECONDARY_UNIT = 4;
     public static final byte HAS_SECONDARY_UNIT = 8;
     public static final byte USES_FIXED_REFERENCE_FORMAT = 16;
-    public static final byte INTERNAL_TOKEN = 32;
+    // Named a bit more generically and elusive because this flag is used for different things depending on which type of record it is
+    public static final byte ADDITIONAL_FLAG_1 = 32;
 
     private final byte byteValue;
     private final int intValue;

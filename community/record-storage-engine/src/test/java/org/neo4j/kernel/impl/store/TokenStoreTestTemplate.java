@@ -210,6 +210,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
         tokenRecord.setId( store.nextId() );
         tokenRecord.initialize( true, nameRecords.get( 0 ).getIntId() );
         tokenRecord.addNameRecords( nameRecords );
+        tokenRecord.setCreated();
         return tokenRecord;
     }
 

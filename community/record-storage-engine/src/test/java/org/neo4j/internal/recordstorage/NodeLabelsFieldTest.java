@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -444,8 +447,8 @@ class NodeLabelsFieldTest
             nodeStore.getDynamicLabelStore() ) );
 
         // THEN
-        assertTrue(
-            initialRecords.containsAll( used( reallocatedRecords ) ), "initial:" + initialRecords + ", reallocated:" + reallocatedRecords );
+        assertTrue( idsOf( initialRecords ).containsAll( idsOf( used( reallocatedRecords ) ) ),
+                "initial:" + initialRecords + ", reallocated:" + reallocatedRecords );
         assertTrue( used( reallocatedRecords ).size() < initialRecords.size() );
     }
 
@@ -594,5 +597,15 @@ class NodeLabelsFieldTest
             }
         };
         return Iterables.map( clone, items );
+    }
+
+    private static LongSet idsOf( Set<DynamicRecord> records )
+    {
+        MutableLongSet ids = LongSets.mutable.empty();
+        for ( DynamicRecord record : records )
+        {
+            ids.add( record.getId() );
+        }
+        return ids;
     }
 }

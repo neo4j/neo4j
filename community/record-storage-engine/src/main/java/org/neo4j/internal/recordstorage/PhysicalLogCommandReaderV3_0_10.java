@@ -499,7 +499,10 @@ public class PhysicalLogCommandReaderV3_0_10 extends BaseCommandReader
         record.setInUse( inUse, type );
         if ( inUse )
         {
-            record.setStartRecord( (inUseFlag & Record.FIRST_IN_CHAIN.byteValue()) != 0 );
+            // Some constants have changed in 4.0 to better reflect how they are used. It's not a mistake that the CREATED_IN_TX bit
+            // is used in this legacy format for the 'start record' flag. Previously it was using a specific FIRST_IN_CHAIN flag
+            // that had the same bit position as CREATED_IN_TX
+            record.setStartRecord( (inUseFlag & Record.CREATED_IN_TX) != 0 );
             int nrOfBytes = channel.getInt();
             assert nrOfBytes >= 0 && nrOfBytes < ((1 << 24) - 1) : nrOfBytes
                                                                    + " is not valid for a number of bytes field of " + "a dynamic record";

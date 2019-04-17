@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import java.util.Objects;
+
 public class MetaDataRecord extends AbstractBaseRecord
 {
     private long value;
@@ -44,5 +46,28 @@ public class MetaDataRecord extends AbstractBaseRecord
     public long getValue()
     {
         return value;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "Meta[%d,value:%d]", getId(), value );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( super.hashCode(), value );
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        if ( !super.equals( obj ) )
+        {
+            return false;
+        }
+        MetaDataRecord other = (MetaDataRecord) obj;
+        return value == other.value;
     }
 }

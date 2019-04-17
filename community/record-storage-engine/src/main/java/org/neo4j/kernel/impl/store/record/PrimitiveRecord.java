@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import java.util.Objects;
+
 public abstract class PrimitiveRecord extends AbstractBaseRecord
 {
     protected long nextProp;
@@ -60,4 +62,21 @@ public abstract class PrimitiveRecord extends AbstractBaseRecord
     }
 
     public abstract void setIdTo( PropertyRecord property );
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( super.hashCode(), nextProp );
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        if ( !super.equals( obj ) )
+        {
+            return false;
+        }
+        PrimitiveRecord other = (PrimitiveRecord) obj;
+        return nextProp == other.nextProp;
+    }
 }

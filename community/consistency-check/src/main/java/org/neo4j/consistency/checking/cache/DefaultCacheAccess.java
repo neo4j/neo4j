@@ -50,11 +50,6 @@ public class DefaultCacheAccess implements CacheAccess
     private long recordsPerCPU;
     private final Counts counts;
 
-    public DefaultCacheAccess( Counts counts, int threads )
-    {
-        this( PackedMultiFieldCache.defaultArray(), counts, threads );
-    }
-
     public DefaultCacheAccess( ByteArray array, Counts counts, int threads )
     {
         this.counts = counts;

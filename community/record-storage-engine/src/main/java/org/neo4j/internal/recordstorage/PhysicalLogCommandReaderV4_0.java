@@ -32,6 +32,7 @@ import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -110,10 +111,9 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         {
             return null;
         }
-        if ( !before.inUse() && after.inUse() )
-        {
-            after.setCreated();
-        }
+
+        markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
+        // DynamicRecord has the created flag stored inside them because it's much harder to tell by looking at the command whether or not they are created
         return new Command.NodeCommand( before, after );
     }
 
@@ -133,10 +133,7 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
             return null;
         }
 
-        if ( !before.inUse() && after.inUse() )
-        {
-            after.setCreated();
-        }
+        markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
         return new Command.RelationshipCommand( before, after );
     }
 
@@ -156,6 +153,9 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         {
             return null;
         }
+
+        markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
+        // DynamicRecord has the created flag stored inside them because it's much harder to tell by looking at the command whether or not they are created
         return new Command.PropertyCommand( before, after );
     }
 
@@ -164,6 +164,8 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         long id = channel.getLong();
         RelationshipGroupRecord before = readRelationshipGroupRecord( id, channel );
         RelationshipGroupRecord after = readRelationshipGroupRecord( id, channel );
+
+        markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
         return new Command.RelationshipGroupCommand( before, after );
     }
 
@@ -208,6 +210,8 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
             return null;
         }
 
+        markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
+        // DynamicRecord has the created flag stored inside them because it's much harder to tell by looking at the command whether or not they are created
         return new Command.RelationshipTypeTokenCommand( before, after );
     }
 
@@ -221,7 +225,7 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         if ( (headerByte & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
         {
             inUse = true;
-            internal = (headerByte & Record.INTERNAL_TOKEN) == Record.INTERNAL_TOKEN;
+            internal = (headerByte & Record.ADDITIONAL_FLAG_1) == Record.ADDITIONAL_FLAG_1;
         }
         else if ( headerByte != Record.NOT_IN_USE.byteValue() )
         {
@@ -259,6 +263,8 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
             return null;
         }
 
+        markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
+        // DynamicRecord has the created flag stored inside them because it's much harder to tell by looking at the command whether or not they are created
         return new Command.LabelTokenCommand( before, after );
     }
 
@@ -271,7 +277,7 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         if ( (headerByte & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
         {
             inUse = true;
-            internal = (headerByte & Record.INTERNAL_TOKEN) == Record.INTERNAL_TOKEN;
+            internal = (headerByte & Record.ADDITIONAL_FLAG_1) == Record.ADDITIONAL_FLAG_1;
         }
         else if ( headerByte != Record.NOT_IN_USE.byteValue() )
         {
@@ -309,6 +315,8 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
             return null;
         }
 
+        markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
+        // DynamicRecord has the created flag stored inside them because it's much harder to tell by looking at the command whether or not they are created
         return new Command.PropertyKeyTokenCommand( before, after );
     }
 
@@ -321,7 +329,7 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         if ( (headerByte & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
         {
             inUse = true;
-            internal = (headerByte & Record.INTERNAL_TOKEN) == Record.INTERNAL_TOKEN;
+            internal = (headerByte & Record.ADDITIONAL_FLAG_1) == Record.ADDITIONAL_FLAG_1;
         }
         else if ( headerByte != Record.NOT_IN_USE.byteValue() )
         {
@@ -346,10 +354,8 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         boolean hasSchemaRule = schemaRulePresence == SchemaRecord.COMMAND_HAS_SCHEMA_RULE;
         SchemaRecord before = readSchemaRecord( id, channel );
         SchemaRecord after = readSchemaRecord( id, channel );
-        if ( !before.inUse() && after.inUse() )
-        {
-            after.setCreated();
-        }
+        markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
+
         SchemaRule schemaRule = null;
         if ( hasSchemaRule )
         {
@@ -664,7 +670,11 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         record.setInUse( inUse, type );
         if ( inUse )
         {
-            record.setStartRecord( (inUseFlag & Record.FIRST_IN_CHAIN.byteValue()) != 0 );
+            record.setStartRecord( (inUseFlag & Record.ADDITIONAL_FLAG_1) != 0 );
+            if ( (inUseFlag & Record.CREATED_IN_TX) != 0 )
+            {
+                record.setCreated();
+            }
             int nrOfBytes = channel.getInt();
             assert nrOfBytes >= 0 && nrOfBytes < ((1 << 24) - 1) : nrOfBytes
                     + " is not valid for a number of bytes field of " + "a dynamic record";
@@ -822,5 +832,13 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         int endLabelId = channel.getInt();
         long delta = channel.getLong();
         return new Command.RelationshipCountsCommand( startLabelId, typeId, endLabelId, delta );
+    }
+
+    private static void markAfterRecordAsCreatedIfCommandLooksCreated( AbstractBaseRecord before, AbstractBaseRecord after )
+    {
+        if ( !before.inUse() && after.inUse() )
+        {
+            after.setCreated();
+        }
     }
 }

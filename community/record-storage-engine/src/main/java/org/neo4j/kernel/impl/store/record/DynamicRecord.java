@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import java.util.Objects;
+
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 
@@ -211,5 +213,23 @@ public class DynamicRecord extends AbstractBaseRecord
             clone.setData( data.clone() );
         }
         return clone;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( super.hashCode(), length, nextBlock, type, startRecord );
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        if ( !super.equals( obj ) )
+        {
+            return false;
+        }
+
+        DynamicRecord other = (DynamicRecord) obj;
+        return length == other.length && nextBlock == other.nextBlock && type == other.type && startRecord == other.startRecord;
     }
 }

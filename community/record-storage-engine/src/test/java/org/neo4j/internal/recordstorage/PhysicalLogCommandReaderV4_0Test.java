@@ -42,8 +42,6 @@ import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -68,8 +66,7 @@ class PhysicalLogCommandReaderV4_0Test
         Command.PropertyKeyTokenCommand propertyKeyTokenCommand = (Command.PropertyKeyTokenCommand) command;
 
         // Then
-        assertEquals( before, propertyKeyTokenCommand.getBefore() );
-        assertEquals( after, propertyKeyTokenCommand.getAfter() );
+        assertBeforeAndAfterEquals( propertyKeyTokenCommand, before, after );
     }
 
     @Test
@@ -92,8 +89,7 @@ class PhysicalLogCommandReaderV4_0Test
         Command.PropertyKeyTokenCommand propertyKeyTokenCommand = (Command.PropertyKeyTokenCommand) command;
 
         // Then
-        assertEquals( before, propertyKeyTokenCommand.getBefore() );
-        assertEquals( after, propertyKeyTokenCommand.getAfter() );
+        assertBeforeAndAfterEquals( propertyKeyTokenCommand, before, after );
     }
 
     @Test
@@ -115,8 +111,7 @@ class PhysicalLogCommandReaderV4_0Test
         Command.LabelTokenCommand labelTokenCommand = (Command.LabelTokenCommand) command;
 
         // Then
-        assertEquals( before, labelTokenCommand.getBefore() );
-        assertEquals( after, labelTokenCommand.getAfter() );
+        assertBeforeAndAfterEquals( labelTokenCommand, before, after );
     }
 
     @Test
@@ -139,8 +134,7 @@ class PhysicalLogCommandReaderV4_0Test
         Command.LabelTokenCommand labelTokenCommand = (Command.LabelTokenCommand) command;
 
         // Then
-        assertEquals( before, labelTokenCommand.getBefore() );
-        assertEquals( after, labelTokenCommand.getAfter() );
+        assertBeforeAndAfterEquals( labelTokenCommand, before, after );
     }
 
     @Test
@@ -162,8 +156,7 @@ class PhysicalLogCommandReaderV4_0Test
         Command.RelationshipTypeTokenCommand relationshipTypeTokenCommand = (Command.RelationshipTypeTokenCommand) command;
 
         // Then
-        assertEquals( before, relationshipTypeTokenCommand.getBefore() );
-        assertEquals( after, relationshipTypeTokenCommand.getAfter() );
+        assertBeforeAndAfterEquals( relationshipTypeTokenCommand, before, after );
     }
 
     @Test
@@ -186,8 +179,7 @@ class PhysicalLogCommandReaderV4_0Test
         Command.RelationshipTypeTokenCommand relationshipTypeTokenCommand = (Command.RelationshipTypeTokenCommand) command;
 
         // Then
-        assertEquals( before, relationshipTypeTokenCommand.getBefore() );
-        assertEquals( after, relationshipTypeTokenCommand.getAfter() );
+        assertBeforeAndAfterEquals( relationshipTypeTokenCommand, before, after );
     }
 
     @Test
@@ -197,6 +189,7 @@ class PhysicalLogCommandReaderV4_0Test
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipRecord before = new RelationshipRecord( 42, -1, -1, -1 );
         RelationshipRecord after = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
+        after.setCreated();
         new Command.RelationshipCommand( before, after ).serialize( channel );
 
         // When
@@ -207,8 +200,7 @@ class PhysicalLogCommandReaderV4_0Test
         Command.RelationshipCommand relationshipCommand = (Command.RelationshipCommand) command;
 
         // Then
-        assertEquals( before, relationshipCommand.getBefore() );
-        assertEquals( after, relationshipCommand.getAfter() );
+        assertBeforeAndAfterEquals( relationshipCommand, before, after );
     }
 
     @Test
@@ -226,9 +218,7 @@ class PhysicalLogCommandReaderV4_0Test
         assertTrue( command instanceof Command.RelationshipCommand );
 
         Command.RelationshipCommand relationshipCommand = (Command.RelationshipCommand) command;
-        assertEquals( before, relationshipCommand.getBefore() );
-        verifySecondaryUnit( before, relationshipCommand.getBefore() );
-        assertEquals( after, relationshipCommand.getAfter() );
+        assertBeforeAndAfterEquals( relationshipCommand, before, after );
     }
 
     @Test
@@ -246,9 +236,7 @@ class PhysicalLogCommandReaderV4_0Test
         assertTrue( command instanceof Command.RelationshipCommand );
 
         Command.RelationshipCommand relationshipCommand = (Command.RelationshipCommand) command;
-        assertEquals( before, relationshipCommand.getBefore() );
-        verifySecondaryUnit( before, relationshipCommand.getBefore() );
-        assertEquals( after, relationshipCommand.getAfter() );
+        assertBeforeAndAfterEquals( relationshipCommand, before, after );
     }
 
     @Test
@@ -266,9 +254,8 @@ class PhysicalLogCommandReaderV4_0Test
         assertTrue( command instanceof Command.RelationshipCommand );
 
         Command.RelationshipCommand relationshipCommand = (Command.RelationshipCommand) command;
-        assertEquals( before, relationshipCommand.getBefore() );
+        assertBeforeAndAfterEquals( relationshipCommand, before, after );
         assertTrue( relationshipCommand.getBefore().isUseFixedReferences() );
-        assertEquals( after, relationshipCommand.getAfter() );
         assertTrue( relationshipCommand.getAfter().isUseFixedReferences() );
     }
 
@@ -291,8 +278,7 @@ class PhysicalLogCommandReaderV4_0Test
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
 
         // Then
-        assertEquals( before, relationshipGroupCommand.getBefore() );
-        assertEquals( after, relationshipGroupCommand.getAfter() );
+        assertBeforeAndAfterEquals( relationshipGroupCommand, before, after );
     }
 
     @Test
@@ -316,9 +302,7 @@ class PhysicalLogCommandReaderV4_0Test
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
 
         // Then
-        assertEquals( before, relationshipGroupCommand.getBefore() );
-        assertEquals( after, relationshipGroupCommand.getAfter() );
-        verifySecondaryUnit( after, relationshipGroupCommand.getAfter() );
+        assertBeforeAndAfterEquals( relationshipGroupCommand, before, after );
     }
 
     @Test
@@ -342,9 +326,7 @@ class PhysicalLogCommandReaderV4_0Test
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
 
         // Then
-        assertEquals( before, relationshipGroupCommand.getBefore() );
-        assertEquals( after, relationshipGroupCommand.getAfter() );
-        verifySecondaryUnit( after, relationshipGroupCommand.getAfter() );
+        assertBeforeAndAfterEquals( relationshipGroupCommand, before, after );
     }
 
     @Test
@@ -356,6 +338,7 @@ class PhysicalLogCommandReaderV4_0Test
         before.setUseFixedReferences( true );
         RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 3, 4, 5, 6, 7, 8, true );
         after.setUseFixedReferences( true );
+        after.setCreated();
 
         new Command.RelationshipGroupCommand( before, after ).serialize( channel );
 
@@ -367,8 +350,7 @@ class PhysicalLogCommandReaderV4_0Test
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
 
         // Then
-        assertEquals( before, relationshipGroupCommand.getBefore() );
-        assertEquals( after, relationshipGroupCommand.getAfter() );
+        assertBeforeAndAfterEquals( relationshipGroupCommand, before, after );
         assertTrue( relationshipGroupCommand.getBefore().isUseFixedReferences() );
         assertTrue( relationshipGroupCommand.getAfter().isUseFixedReferences() );
     }
@@ -392,8 +374,7 @@ class PhysicalLogCommandReaderV4_0Test
         Command.NeoStoreCommand neoStoreCommand = (Command.NeoStoreCommand) command;
 
         // Then
-        assertEquals( before.getNextProp(), neoStoreCommand.getBefore().getNextProp() );
-        assertEquals( after.getNextProp(), neoStoreCommand.getAfter().getNextProp() );
+        assertBeforeAndAfterEquals( neoStoreCommand, before, after );
     }
 
     @Test
@@ -416,8 +397,7 @@ class PhysicalLogCommandReaderV4_0Test
         Command.NodeCommand nodeCommand = (Command.NodeCommand) command;
 
         // Then
-        assertEquals( before, nodeCommand.getBefore() );
-        assertEquals( after, nodeCommand.getAfter() );
+        assertBeforeAndAfterEquals( nodeCommand, before, after );
         assertTrue( nodeCommand.getBefore().isUseFixedReferences() );
         assertTrue( nodeCommand.getAfter().isUseFixedReferences() );
     }
@@ -427,7 +407,7 @@ class PhysicalLogCommandReaderV4_0Test
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         PropertyRecord before = new PropertyRecord( 1 );
-        PropertyRecord after = new PropertyRecord( 2 );
+        PropertyRecord after = new PropertyRecord( 1 );
         after.setRequiresSecondaryUnit( true );
         after.setSecondaryUnitId( 78 );
 
@@ -437,12 +417,10 @@ class PhysicalLogCommandReaderV4_0Test
         Command command = reader.read( channel );
         assertTrue( command instanceof Command.PropertyCommand);
 
-        Command.PropertyCommand neoStoreCommand = (Command.PropertyCommand) command;
+        Command.PropertyCommand propertyCommand = (Command.PropertyCommand) command;
 
         // Then
-        assertEquals( before.getNextProp(), neoStoreCommand.getBefore().getNextProp() );
-        assertEquals( after.getNextProp(), neoStoreCommand.getAfter().getNextProp() );
-        verifySecondaryUnit( after, neoStoreCommand.getAfter() );
+        assertBeforeAndAfterEquals( propertyCommand, before, after );
     }
 
     @Test
@@ -450,7 +428,7 @@ class PhysicalLogCommandReaderV4_0Test
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         PropertyRecord before = new PropertyRecord( 1 );
-        PropertyRecord after = new PropertyRecord( 2 );
+        PropertyRecord after = new PropertyRecord( 1 );
         after.setRequiresSecondaryUnit( false );
         after.setSecondaryUnitId( 78 );
 
@@ -460,12 +438,10 @@ class PhysicalLogCommandReaderV4_0Test
         Command command = reader.read( channel );
         assertTrue( command instanceof Command.PropertyCommand);
 
-        Command.PropertyCommand neoStoreCommand = (Command.PropertyCommand) command;
+        Command.PropertyCommand propertyCommand = (Command.PropertyCommand) command;
 
         // Then
-        assertEquals( before.getNextProp(), neoStoreCommand.getBefore().getNextProp() );
-        assertEquals( after.getNextProp(), neoStoreCommand.getAfter().getNextProp() );
-        verifySecondaryUnit( after, neoStoreCommand.getAfter() );
+        assertBeforeAndAfterEquals( propertyCommand, before, after );
     }
 
     @Test
@@ -473,7 +449,7 @@ class PhysicalLogCommandReaderV4_0Test
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         PropertyRecord before = new PropertyRecord( 1 );
-        PropertyRecord after = new PropertyRecord( 2 );
+        PropertyRecord after = new PropertyRecord( 1 );
         before.setUseFixedReferences( true );
         after.setUseFixedReferences( true );
 
@@ -483,13 +459,12 @@ class PhysicalLogCommandReaderV4_0Test
         Command command = reader.read( channel );
         assertTrue( command instanceof Command.PropertyCommand);
 
-        Command.PropertyCommand neoStoreCommand = (Command.PropertyCommand) command;
+        Command.PropertyCommand propertyCommand = (Command.PropertyCommand) command;
 
         // Then
-        assertEquals( before.getNextProp(), neoStoreCommand.getBefore().getNextProp() );
-        assertEquals( after.getNextProp(), neoStoreCommand.getAfter().getNextProp() );
-        assertTrue( neoStoreCommand.getBefore().isUseFixedReferences() );
-        assertTrue( neoStoreCommand.getAfter().isUseFixedReferences() );
+        assertBeforeAndAfterEquals( propertyCommand, before, after );
+        assertTrue( propertyCommand.getBefore().isUseFixedReferences() );
+        assertTrue( propertyCommand.getAfter().isUseFixedReferences() );
     }
 
     @Test
@@ -533,20 +508,7 @@ class PhysicalLogCommandReaderV4_0Test
         Command.SchemaRuleCommand command = (Command.SchemaRuleCommand) reader.read( channel );
 
         String commandString = command.toString();
-        assertSchemaRecordEquals( commandString + " (before) ", before, command.getBefore() );
-        assertSchemaRecordEquals( commandString + " ( after) ", after, command.getAfter() );
-    }
-
-    private void assertSchemaRecordEquals( String commandString, SchemaRecord expectedRecord, SchemaRecord actualRecord )
-    {
-        assertThat( commandString + ".getId", actualRecord.getId(), is( expectedRecord.getId() ) );
-        assertThat( commandString + ".inUse", actualRecord.inUse(), is( expectedRecord.inUse() ) );
-        assertThat( commandString + ".isCreated", actualRecord.isCreated(), is( expectedRecord.isCreated() ) );
-        assertThat( commandString + ".isUseFixedReferences", actualRecord.isUseFixedReferences(), is( expectedRecord.isUseFixedReferences() ) );
-        assertThat( commandString + ".hasSecondaryUnitId", actualRecord.hasSecondaryUnitId(), is( expectedRecord.hasSecondaryUnitId() ) );
-        assertThat( commandString + ".getSecondaryUnitId", actualRecord.getSecondaryUnitId(), is( expectedRecord.getSecondaryUnitId() ) );
-        assertThat( commandString + ".isConstraint", actualRecord.isConstraint(), is( expectedRecord.isConstraint() ) );
-        assertThat( commandString + ".getNextProp", actualRecord.getNextProp(), is( expectedRecord.getNextProp() ) );
+        assertBeforeAndAfterEquals( command, before, after );
     }
 
     private SchemaRecord createRandomSchemaRecord()
@@ -582,11 +544,16 @@ class PhysicalLogCommandReaderV4_0Test
         return new PhysicalLogCommandReaderV4_0();
     }
 
-    private <T extends AbstractBaseRecord> void verifySecondaryUnit( T record, T commandRecord )
+    private static <RECORD extends AbstractBaseRecord> void assertBeforeAndAfterEquals( Command.BaseCommand<RECORD> command, RECORD before, RECORD after )
     {
-        assertEquals( record.requiresSecondaryUnit(),
-                commandRecord.requiresSecondaryUnit(), "Secondary unit requirements should be the same" );
-        assertEquals( record.getSecondaryUnitId(),
-                commandRecord.getSecondaryUnitId(), "Secondary unit ids should be the same" );
+        assertEqualsIncludingFlags( before, command.getBefore() );
+        assertEqualsIncludingFlags( after, command.getAfter() );
+    }
+
+    private static <RECORD extends AbstractBaseRecord> void assertEqualsIncludingFlags( RECORD expected, RECORD record )
+    {
+        assertEquals( expected, record );
+        assertEquals( expected.isCreated(), record.isCreated() );
+        assertEquals( expected.isUseFixedReferences(), record.isUseFixedReferences() );
     }
 }

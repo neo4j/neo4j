@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import java.util.Objects;
+
 public class SchemaRecord extends PrimitiveRecord
 {
     public static final byte COMMAND_HAS_NO_SCHEMA_RULE = 0;
@@ -65,5 +67,22 @@ public class SchemaRecord extends PrimitiveRecord
     public void setConstraint( boolean constraint )
     {
         this.constraint = constraint;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( super.hashCode(), constraint );
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        if ( !super.equals( obj ) )
+        {
+            return false;
+        }
+        SchemaRecord other = (SchemaRecord) obj;
+        return constraint == other.constraint;
     }
 }

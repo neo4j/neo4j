@@ -80,6 +80,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.withSettings;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
+import static org.neo4j.consistency.checking.cache.PackedMultiFieldCache.defaultArray;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
@@ -111,7 +112,7 @@ public class ExecutionOrderIntegrationTest
         // given
         StoreAccess store = fixture.directStoreAccess().nativeStores();
         int threads = defaultConsistencyCheckThreadsNumber();
-        CacheAccess cacheAccess = new DefaultCacheAccess( new DefaultCounts( threads ), threads );
+        CacheAccess cacheAccess = new DefaultCacheAccess( defaultArray( store.getNodeStore().getHighId() ), new DefaultCounts( threads ), threads );
         RecordAccess access = FullCheck.recordAccess( store, cacheAccess );
 
         FullCheck singlePass = new FullCheck( ConsistencyFlags.DEFAULT, getTuningConfiguration(), ProgressMonitorFactory.NONE, Statistics.NONE, threads, true );

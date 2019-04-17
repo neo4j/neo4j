@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 import org.neo4j.kernel.impl.store.PropertyType;
 
@@ -431,5 +432,23 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     public int getNumberOfBlocks()
     {
         return blocksCursor;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( super.hashCode(), nextProp, prevProp, Arrays.hashCode( blocks ), entityId, entityType );
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        if ( !super.equals( obj ) )
+        {
+            return false;
+        }
+        PropertyRecord other = (PropertyRecord) obj;
+        return nextProp == other.nextProp && prevProp == other.prevProp && Arrays.equals( blocks, other.blocks ) && entityId == other.entityId &&
+                entityType == other.entityType;
     }
 }

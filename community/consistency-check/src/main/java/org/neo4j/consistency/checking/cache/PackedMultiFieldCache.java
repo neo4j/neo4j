@@ -36,14 +36,9 @@ public class PackedMultiFieldCache
     private ByteArrayBitsManipulator slots;
     private long[] initValues;
 
-    static ByteArray defaultArray()
+    public static ByteArray defaultArray( long highNodeId )
     {
-        return AUTO_WITHOUT_PAGECACHE.newDynamicByteArray( 1_000_000, new byte[ByteArrayBitsManipulator.MAX_BYTES] );
-    }
-
-    public PackedMultiFieldCache( int... slotSizes )
-    {
-        this( defaultArray(), slotSizes );
+        return AUTO_WITHOUT_PAGECACHE.newByteArray( highNodeId, new byte[ByteArrayBitsManipulator.MAX_BYTES] );
     }
 
     public PackedMultiFieldCache( ByteArray array, int... slotSizes )

@@ -24,9 +24,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -67,7 +69,7 @@ class NodeCommandTest
 
     private NodeStore nodeStore;
     private final InMemoryClosableChannel channel = new InMemoryClosableChannel();
-    private final CommandReader commandReader = new PhysicalLogCommandReaderV3_0_10();
+    private final CommandReader commandReader = new PhysicalLogCommandReaderV4_0();
     private NeoStores neoStores;
 
     @BeforeEach
@@ -89,8 +91,8 @@ class NodeCommandTest
     void shouldSerializeAndDeserializeUnusedRecords() throws Exception
     {
         // Given
-        NodeRecord before = new NodeRecord( 12, false, 1, 2 );
-        NodeRecord after = new NodeRecord( 12, false, 2, 1 );
+        NodeRecord before = new NodeRecord( 12 );
+        NodeRecord after = new NodeRecord( 12 );
         // When
         assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
     }
@@ -99,7 +101,7 @@ class NodeCommandTest
     void shouldSerializeCreatedRecord() throws Exception
     {
         // Given
-        NodeRecord before = new NodeRecord( 12, false, 1, 2 );
+        NodeRecord before = new NodeRecord( 12 );
         NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setCreated();
         after.setInUse( true );
@@ -208,7 +210,8 @@ class NodeCommandTest
         assertThat( result.getAfter(), equalTo( cmd.getAfter() ) );
         // And dynamic records should be the same
         assertThat( result.getBefore().getDynamicLabelRecords(), equalTo( cmd.getBefore().getDynamicLabelRecords() ) );
-        assertThat( result.getAfter().getDynamicLabelRecords(), equalTo( cmd.getAfter().getDynamicLabelRecords() ) );
+        Collection<DynamicRecord> operand = emptyAndUnused( cmd.getAfter().getDynamicLabelRecords(), LONG.intValue() );
+        assertThat( result.getAfter().getDynamicLabelRecords(), equalTo( operand ) );
     }
 
     private void assertSerializationWorksFor( Command.NodeCommand cmd )
@@ -253,5 +256,15 @@ class NodeCommandTest
             labels.add( safeCastLongToInt( label ) );
         }
         return labels;
+    }
+
+    private Collection<DynamicRecord> emptyAndUnused( Collection<DynamicRecord> dynamicLabelRecords, int type )
+    {
+        return dynamicLabelRecords.stream().map( record ->
+        {
+            DynamicRecord dynamicRecord = new DynamicRecord( record.getId() );
+            dynamicRecord.setType( type );
+            return dynamicRecord;
+        } ).collect( Collectors.toList() );
     }
 }

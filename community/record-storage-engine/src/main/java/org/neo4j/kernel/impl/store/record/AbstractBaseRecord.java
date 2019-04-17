@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import java.util.Objects;
+
 /**
  * {@link AbstractBaseRecord records} are intended to be reusable. Created with a zero-arg constructor
  * and initialized with the public {@code initialize} method exposed by the specific record implementations,
@@ -158,7 +160,7 @@ public abstract class AbstractBaseRecord implements Cloneable
     @Override
     public int hashCode()
     {
-        return (int) (( id >>> 32 ) ^ id );
+        return Objects.hash( id, inUse );
     }
 
     @Override
@@ -177,7 +179,8 @@ public abstract class AbstractBaseRecord implements Cloneable
             return false;
         }
         AbstractBaseRecord other = (AbstractBaseRecord) obj;
-        return id == other.id;
+        // Don't compare 'created' flag because it isn't properly set on reading a record from the store
+        return id == other.id && inUse == other.inUse;
     }
 
     @Override

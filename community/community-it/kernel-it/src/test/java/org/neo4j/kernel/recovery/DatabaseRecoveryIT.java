@@ -83,6 +83,7 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
+import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -488,7 +489,11 @@ class DatabaseRecoveryIT
         {
             for ( StoreType storeType : StoreType.values() )
             {
-                assertSameStoreContents( store1.getRecordStore( storeType ), store2.getRecordStore( storeType ) );
+                // Don't compare meta data records because they are updated somewhat outside tx application
+                if ( storeType != StoreType.META_DATA )
+                {
+                    assertSameStoreContents( store1.getRecordStore( storeType ), store2.getRecordStore( storeType ) );
+                }
             }
         }
     }
@@ -504,7 +509,13 @@ class DatabaseRecoveryIT
         {
             store1.getRecord( id, record1, RecordLoad.CHECK );
             store2.getRecord( id, record2, RecordLoad.CHECK );
-            assertEquals( record1, record2 );
+            boolean deletedAndDynamicPropertyRecord = !record1.inUse() && store1 instanceof AbstractDynamicStore;
+            if ( !deletedAndDynamicPropertyRecord )
+            {
+                assertEquals( record1, record2 );
+            }
+            // else this record is a dynamic record which came from a property record update, a dynamic record which will not be set back
+            // to unused during reverse recovery and therefore cannot be checked with equality between the two versions of that record.
         }
     }
 

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.record;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.internal.helpers.collection.Iterables.filter;
@@ -180,5 +181,22 @@ public class NodeRecord extends PrimitiveRecord
             clone.dynamicLabelRecords = emptyList();
         }
         return clone;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( super.hashCode(), nextRel, labels, dense );
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        if ( !super.equals( obj ) )
+        {
+            return false;
+        }
+        NodeRecord other = (NodeRecord) obj;
+        return nextRel == other.nextRel && labels == other.labels && dense == other.dense;
     }
 }
