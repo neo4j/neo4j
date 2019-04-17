@@ -266,7 +266,10 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                 // Verify uniqueness
                 if ( descriptor.isUnique() )
                 {
-                    verifyUniqueKeys( recordingConflictDetector.allConflicts() );
+                    try ( IndexKeyStorage.KeyEntryCursor<KEY> allConflictingKeys = recordingConflictDetector.allConflicts() )
+                    {
+                        verifyUniqueKeys( allConflictingKeys );
+                    }
                 }
             }
         }
