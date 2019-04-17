@@ -20,10 +20,12 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.hamcrest.core.CombinableMatcher;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -32,12 +34,15 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory30;
+import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.tracking.TrackingIndexExtensionFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -58,7 +63,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR;
 import static org.neo4j.kernel.impl.index.schema.tracking.TrackingReadersIndexAccessor.numberOfClosedReaders;
 import static org.neo4j.kernel.impl.index.schema.tracking.TrackingReadersIndexAccessor.numberOfOpenReaders;
 
@@ -69,11 +73,12 @@ class UniqueIndexSeekIT
     private TestDirectory directory;
     private DatabaseManagementService managementService;
 
-    @Test
-    void uniqueIndexSeekDoNotLeakIndexReaders() throws KernelException
+    @ParameterizedTest
+    @MethodSource( "indexProviderFactories" )
+    void uniqueIndexSeekDoNotLeakIndexReaders( Pair<AbstractIndexProviderFactory,IndexProviderDescriptor> indexSetup ) throws KernelException
     {
-        TrackingIndexExtensionFactory indexExtensionFactory = new TrackingIndexExtensionFactory();
-        GraphDatabaseAPI database = createDatabase( indexExtensionFactory );
+        TrackingIndexExtensionFactory indexExtensionFactory = new TrackingIndexExtensionFactory( indexSetup.first() );
+        GraphDatabaseAPI database = createDatabase( indexExtensionFactory, indexSetup.other() );
         DependencyResolver dependencyResolver = database.getDependencyResolver();
         Config config = dependencyResolver.resolveDependency( Config.class );
         try
@@ -100,16 +105,24 @@ class UniqueIndexSeekIT
         }
     }
 
+    private static Stream<Pair<AbstractIndexProviderFactory,IndexProviderDescriptor>> indexProviderFactories()
+    {
+        return Stream.of(
+                Pair.of( new NativeLuceneFusionIndexProviderFactory30(), NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR ),
+                Pair.of( new GenericNativeIndexProviderFactory(), GenericNativeIndexProvider.DESCRIPTOR )
+        );
+    }
+
     private static CombinableMatcher<Long> closeTo( long from, long delta )
     {
         return both( greaterThanOrEqualTo( from ) ).and( lessThanOrEqualTo( from + delta ) );
     }
 
-    private GraphDatabaseAPI createDatabase( TrackingIndexExtensionFactory indexExtensionFactory )
+    private GraphDatabaseAPI createDatabase( TrackingIndexExtensionFactory indexExtensionFactory, IndexProviderDescriptor descriptor )
     {
         managementService = new TestDatabaseManagementServiceBuilder()
                         .setExtensions( singletonList( indexExtensionFactory ) ).newEmbeddedDatabaseBuilder( directory.storeDir() )
-                        .setConfig( default_schema_provider, DESCRIPTOR.name() ).newDatabaseManagementService();
+                        .setConfig( default_schema_provider, descriptor.name() ).newDatabaseManagementService();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
