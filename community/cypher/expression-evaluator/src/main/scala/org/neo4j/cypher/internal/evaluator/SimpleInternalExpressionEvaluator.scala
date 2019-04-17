@@ -24,24 +24,23 @@ import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.Result
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, expressionVariableAllocation}
-import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Variable}
-import org.neo4j.cypher.internal.v4_0.parser.CypherParser
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.parser.{CypherParser, Expressions}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.values.AnyValue
+import org.parboiled.scala.{ReportingParseRunner, Rule1}
 
 class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
 
-  import SimpleInternalExpressionEvaluator.{COLUMN, CONVERTERS}
+  import SimpleInternalExpressionEvaluator.CONVERTERS
 
   private val parser = new CypherParser()
 
   override def evaluate(expression: String): AnyValue = {
     try {
-      val Result(rewritten, nExpressionSlots, _) = expressionVariableAllocation.allocate(parseToExpression(expression))
-      val commandExpr = CONVERTERS.toCommandExpression(Id.INVALID_ID, rewritten)
-      commandExpr(ExecutionContext.empty, queryState(nExpressionSlots))
+      val parsedExpression = SimpleInternalExpressionEvaluator.ExpressionParser.parse(expression)
+      evaluate(parsedExpression)
     }
     catch {
       case e: Exception =>
@@ -49,26 +48,33 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
     }
   }
 
-  private def queryState(nExpressionSlots: Int) =  new QueryState(null,
-                                             null,
-                                             Array.empty,
-                                             null,
-                                             Array.empty[IndexReadSession],
-                                             new Array(nExpressionSlots))
+  def evaluate(expr: Expression): AnyValue = {
+    val Result(rewritten, nExpressionSlots, _) = expressionVariableAllocation.allocate(expr)
+    val commandExpr = CONVERTERS.toCommandExpression(Id.INVALID_ID, rewritten)
 
-  private def parseToExpression(expression: String): Expression = {
-    val statement: Statement = parser.parse(s"RETURN $expression AS $COLUMN", None)
-    statement match {
-      case Query(_,
-                 SingleQuery(
-                 Seq(Return(_, ReturnItems(_, Seq(AliasedReturnItem(e, Variable(COLUMN)))), _, _, _, _)))) =>
-        e
-      case _ => throw new EvaluationException(s"Invalid statement $statement")
-    }
+    val emptyQueryState = new QueryState(null,
+      null,
+      Array.empty,
+      null,
+      Array.empty[IndexReadSession],
+      new Array(nExpressionSlots))
+
+    commandExpr(ExecutionContext.empty, emptyQueryState)
   }
 }
 
 object SimpleInternalExpressionEvaluator {
   private val CONVERTERS = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
-  private val COLUMN = "RESULT"
+
+  object ExpressionParser extends Expressions {
+    private val parser: Rule1[Expression] = Expression
+
+    def parse(text: String): Expression = {
+      val res = ReportingParseRunner(parser).run(text)
+      res.result match {
+        case Some(e) => e
+        case None => throw new IllegalArgumentException(s"Could not parse expression: ${res.parseErrors}")
+      }
+    }
+  }
 }

@@ -24,20 +24,19 @@ import java.util.function.BiFunction
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.exceptionHandler.runSafely
-import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.compatibility.{CypherPlanner, simpleExpressionEvaluator, _}
-import org.neo4j.cypher.internal.compiler
+import org.neo4j.cypher.internal.compatibility.{CypherPlanner, _}
+import org.neo4j.cypher.internal.{compiler, _}
 import org.neo4j.cypher.internal.compiler._
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
-import org.neo4j.cypher.internal.compiler.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
+import org.neo4j.cypher.internal.compiler.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory, simpleExpressionEvaluator}
+import org.neo4j.cypher.internal.logical.plans.{LoadCSV, LogicalPlan}
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.{ExceptionTranslatingPlanContext, TransactionBoundPlanContext}
 import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.expressions.Parameter
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
-import org.neo4j.cypher.internal.logical.plans.{LoadCSV, LogicalPlan}
-import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{GeneratingNamer, InnerVariableNamer}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen

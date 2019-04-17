@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.notification.LogicalPlanNotifications
 import org.neo4j.cypher.internal.compiler
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
-import org.neo4j.cypher.internal.compiler.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
+import org.neo4j.cypher.internal.compiler.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory, simpleExpressionEvaluator}
 import org.neo4j.cypher.internal.compiler.{CypherPlanner => _, _}
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.{ExceptionTranslatingPlanContext, TransactionBoundPlanContext}

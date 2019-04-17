@@ -22,14 +22,15 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CardinalityModel, CostModel, QueryGraphCardinalityModel}
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator
-import org.neo4j.cypher.internal.ir.{PlannerQuery, StrictnessMode, QueryGraph}
+import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator
+import org.neo4j.cypher.internal.ir.{PlannerQuery, QueryGraph, StrictnessMode}
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, ResolvedFunctionInvocation}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Rand
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, FunctionInvocation, LabelName, Parameter}
-import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Cost}
+import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Cost, CypherException}
 
 import scala.language.implicitConversions
 
@@ -88,6 +89,18 @@ trait ExpressionEvaluator {
     }
 
   def evaluateExpression(expr: Expression): Option[Any]
+}
+
+/**
+  * Wrapper around [[SimpleInternalExpressionEvaluator]] that catches exceptions and returns an Option.
+  */
+object simpleExpressionEvaluator extends ExpressionEvaluator {
+  private val expressionEvaluator = new SimpleInternalExpressionEvaluator()
+  override def evaluateExpression(expr: Expression): Option[Any] = try {
+    Some(expressionEvaluator.evaluate(expr))
+  } catch {
+    case _: CypherException => None // Silently disregard expressions that cannot be evaluated in an empty context
+  }
 }
 
 case class Metrics(cost: CostModel,
