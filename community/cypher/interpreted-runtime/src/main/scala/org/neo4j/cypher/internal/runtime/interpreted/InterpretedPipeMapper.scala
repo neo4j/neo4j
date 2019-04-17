@@ -378,24 +378,26 @@ case class InterpretedPipeMapper(readOnly: Boolean,
                                  relationshipPredicate: Option[VariablePredicate]): VarLengthPredicate  = {
 
     //Creates commands out of the predicates
-    def asCommand(maybeVariablePredicate: Option[VariablePredicate]) =
+    def asCommand(maybeVariablePredicate: Option[VariablePredicate]): ((ExecutionContext, QueryState, AnyValue) => Boolean, Option[Predicate]) =
      maybeVariablePredicate match {
-       case None => (_: ExecutionContext, _: QueryState, _: AnyValue) => true
+       case None => ((_: ExecutionContext, _: QueryState, _: AnyValue) => true, None)
        case Some(VariablePredicate(variable, astPredicate)) =>
          val command = buildPredicate(id, astPredicate)
          val ev = ExpressionVariable.cast(variable)
-         (context: ExecutionContext, state: QueryState, entity: AnyValue) => {
+         ((context: ExecutionContext, state: QueryState, entity: AnyValue) => {
            state.expressionVariables(ev.offset) = entity
            command.isTrue(context, state)
-         }
+         }, Some(command))
      }
 
-    val nodeCommand = asCommand(nodePredicate)
-    val relCommand = asCommand(relationshipPredicate)
+    val (nodeCommand, maybeNodeCommandPred) = asCommand(nodePredicate)
+    val (relCommand, maybeRelCommandPred) = asCommand(relationshipPredicate)
 
     new VarLengthPredicate {
       override def filterNode(row: ExecutionContext, state: QueryState)(node: NodeValue): Boolean = nodeCommand(row, state, node)
       override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: RelationshipValue): Boolean = relCommand(row, state, rel)
+
+      override def predicateExpressions: Seq[Predicate] = maybeNodeCommandPred.toSeq ++ maybeRelCommandPred
     }
   }
 

@@ -27,12 +27,12 @@ import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEqu
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, Property, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Equals, Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedProperty
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthExpandPipeTest.createVarLengthPredicate
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.impl.util.ValueUtils._
-import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 import scala.collection.immutable.IndexedSeq
 import scala.util.Random
@@ -312,6 +312,17 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     }
   }
 
+  test("should register owning pipe") {
+    val src = new FakePipe(Iterator.empty)
+    val pred1 = True()
+    val pred2 = True()
+    val pipeUnderTest = createPipe(src, 1, 2, SemanticDirection.OUTGOING, pred1, pred2)
+
+    pipeUnderTest.filteringStep.predicateExpressions.foreach(_.owningPipe should equal(pipeUnderTest))
+    pred1.owningPipe should equal(pipeUnderTest)
+    pred2.owningPipe should equal(pipeUnderTest)
+  }
+
   private def setUpGraph(seed: Long, POPULATION: Int, friendCount: Int = 50): IndexedSeq[Node] = {
     val r = new Random(seed)
 
@@ -423,18 +434,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
                          outgoing: SemanticDirection,
                          relationshipPredicate: Predicate,
                          nodePredicate: Predicate) = {
-    PruningVarLengthExpandPipe(src, "from", "to", types, outgoing, min, max, new VarLengthPredicate {
-      override def filterNode(row: ExecutionContext, state: QueryState)(node: NodeValue): Boolean = {
-        val cp = row.copyWith("to", node)
-        val result = nodePredicate.isTrue(cp, state)
-        result
-      }
-
-      override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: RelationshipValue): Boolean = {
-        val cp = row.copyWith("r", rel)
-        val result = relationshipPredicate.isTrue(cp, state)
-        result
-      }
-    })()
+    val filteringStep = createVarLengthPredicate(nodePredicate, relationshipPredicate)
+    PruningVarLengthExpandPipe(src, "from", "to", types, outgoing, min, max, filteringStep)()
   }
 }

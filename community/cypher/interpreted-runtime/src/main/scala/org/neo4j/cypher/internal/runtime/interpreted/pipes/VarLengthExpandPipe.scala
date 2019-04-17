@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, RelationshipContainer}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
@@ -31,12 +32,14 @@ import scala.collection.mutable
 trait VarLengthPredicate {
   def filterNode(row: ExecutionContext, state:QueryState)(node: NodeValue): Boolean
   def filterRelationship(row: ExecutionContext, state:QueryState)(rel: RelationshipValue): Boolean
+  def predicateExpressions: Seq[Predicate]
 }
 
 object VarLengthPredicate {
   val NONE: VarLengthPredicate = new VarLengthPredicate {
     override def filterNode(row: ExecutionContext, state:QueryState)(node: NodeValue): Boolean = true
     override def filterRelationship(row: ExecutionContext, state:QueryState)(rel: RelationshipValue): Boolean = true
+    override def predicateExpressions: Seq[Predicate] = Seq.empty
   }
 }
 
@@ -52,6 +55,9 @@ case class VarLengthExpandPipe(source: Pipe,
                                nodeInScope: Boolean,
                                filteringStep: VarLengthPredicate = VarLengthPredicate.NONE)
                               (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
+
+  filteringStep.predicateExpressions.foreach(_.registerOwningPipe(this))
+
   private def varLengthExpand(node: NodeValue, state: QueryState, maxDepth: Option[Int],
                               row: ExecutionContext): Iterator[(NodeValue, RelationshipContainer)] = {
     val stack = new mutable.Stack[(NodeValue, RelationshipContainer)]

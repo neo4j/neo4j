@@ -30,6 +30,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.symbols.SymbolTable
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthExpandPipeTest.createVarLengthPredicate
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -725,6 +727,8 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
       override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: RelationshipValue): Boolean =
         rel.id() != 2
+
+      override def predicateExpressions: Seq[Predicate] = Seq.empty
     }
 
     // when
@@ -1065,6 +1069,19 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     single.getByName("b") should beEquivalentTo(toNode)
   }
 
+  test("should register owning pipe") {
+    val src = new FakePipe(Iterator.empty)
+    val pred1 = True()
+    val pred2 = True()
+    val filteringStep = createVarLengthPredicate(pred1, pred2)
+    val pipe = VarLengthExpandPipe(src, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING,
+      LazyTypes.empty, 3, None, nodeInScope = false, filteringStep)()
+
+    pipe.filteringStep.predicateExpressions.foreach(_.owningPipe should equal(pipe))
+    pred1.owningPipe should equal(pipe)
+    pred2.owningPipe should equal(pipe)
+  }
+
   private def row(values: (String, AnyValue)*) = ExecutionContext.from(values: _*)
 
   private def newMockedNode(id: Int) = {
@@ -1101,5 +1118,25 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
   private def newMockedPipe(symbolTable: SymbolTable): Pipe = {
     val pipe = mock[Pipe]
     pipe
+  }
+}
+
+object VarLengthExpandPipeTest {
+  def createVarLengthPredicate(nodePredicate: Predicate, relationshipPredicate: Predicate): VarLengthPredicate = {
+    new VarLengthPredicate {
+      override def filterNode(row: ExecutionContext, state: QueryState)(node: NodeValue): Boolean = {
+        val cp = row.copyWith("to", node)
+        val result = nodePredicate.isTrue(cp, state)
+        result
+      }
+
+      override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: RelationshipValue): Boolean = {
+        val cp = row.copyWith("r", rel)
+        val result = relationshipPredicate.isTrue(cp, state)
+        result
+      }
+
+      override def predicateExpressions: Seq[Predicate] = Seq(nodePredicate, relationshipPredicate)
+    }
   }
 }

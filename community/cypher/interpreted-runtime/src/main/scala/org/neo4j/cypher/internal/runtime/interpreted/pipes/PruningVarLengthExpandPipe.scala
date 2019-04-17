@@ -40,6 +40,8 @@ case class PruningVarLengthExpandPipe(source: Pipe,
 
   assert(min <= max)
 
+  filteringStep.predicateExpressions.foreach(_.registerOwningPipe(this))
+
   /**
     * Performs DFS traversal, but omits traversing relationships that have been completely traversed (to the
     * remaining depth) before.
