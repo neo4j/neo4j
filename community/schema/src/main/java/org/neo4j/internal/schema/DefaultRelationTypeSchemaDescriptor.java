@@ -86,12 +86,6 @@ public class DefaultRelationTypeSchemaDescriptor implements RelationTypeSchemaDe
     }
 
     @Override
-    public int keyId()
-    {
-        return getRelTypeId();
-    }
-
-    @Override
     public ResourceType keyType()
     {
         return ResourceTypes.RELATIONSHIP_TYPE;

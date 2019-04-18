@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.api.exceptions.index;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -63,10 +66,12 @@ public class IndexEntryConflictException extends KernelException
     {
         assert schema.getPropertyIds().length == propertyValues.size();
 
-        String labelName = tokenNameLookup.labelGetName( schema.keyId() );
+        String labelName = Arrays.stream( schema.getEntityTokenIds() )
+                .mapToObj( tokenNameLookup::labelGetName )
+                .collect( Collectors.joining( "', '", "'", "'") );
         if ( addedNodeId == NO_SUCH_NODE )
         {
-            return format( "Node(%d) already exists with label `%s` and %s",
+            return format( "Node(%d) already exists with label %s and %s",
                     existingNodeId, labelName, propertyString( tokenNameLookup, schema.getPropertyIds() ) );
         }
         else

@@ -46,11 +46,13 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
@@ -338,7 +340,11 @@ public class TxStateTest
         state.indexDoAdd( indexOn_2_1 );
 
         // THEN
-        assertEquals( asSet( indexOn_1_1 ), state.indexDiffSetsByLabel( indexOn_1_1.schema().keyId() ).getAdded() );
+        SchemaDescriptor schema = indexOn_1_1.schema();
+        int[] labels = schema.getEntityTokenIds();
+        assertEquals( schema.entityType(), EntityType.NODE );
+        assertEquals( labels.length, 1 );
+        assertEquals( asSet( indexOn_1_1 ), state.indexDiffSetsByLabel( labels[0] ).getAdded() );
     }
 
     @Test
@@ -1125,16 +1131,19 @@ public class TxStateTest
 
             private <T> void withProperties( Collection<Pair<Long,T>> nodesWithValues )
             {
-                final int labelId = descriptor.schema().keyId();
-                final int propertyKeyId = descriptor.schema().getPropertyId();
+                SchemaDescriptor schema = descriptor.schema();
+                int[] labelIds = schema.getEntityTokenIds();
+                int[] propertyKeyIds = schema.getPropertyIds();
+                assertEquals( labelIds.length, 1 );
+                assertEquals( propertyKeyIds.length, 1 );
                 for ( Pair<Long,T> entry : nodesWithValues )
                 {
                     long nodeId = entry.first();
                     state.nodeDoCreate( nodeId );
-                    state.nodeDoAddLabel( labelId, nodeId );
+                    state.nodeDoAddLabel( labelIds[0], nodeId );
                     Value valueAfter = Values.of( entry.other() );
-                    state.nodeDoAddProperty( nodeId, propertyKeyId, valueAfter );
-                    state.indexDoUpdateEntry( descriptor.schema(), nodeId, null, ValueTuple.of( valueAfter ) );
+                    state.nodeDoAddProperty( nodeId, propertyKeyIds[0], valueAfter );
+                    state.indexDoUpdateEntry( schema, nodeId, null, ValueTuple.of( valueAfter ) );
                 }
             }
         };

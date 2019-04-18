@@ -84,12 +84,6 @@ class FulltextSchemaDescriptor implements SchemaDescriptor
     }
 
     @Override
-    public int keyId()
-    {
-        return schema.keyId();
-    }
-
-    @Override
     public ResourceType keyType()
     {
         return schema.keyType();

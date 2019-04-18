@@ -31,6 +31,7 @@ import java.util.Set;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
+import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -104,9 +105,13 @@ public class IndexTxStateUpdaterTest
             Set<SchemaDescriptor> descriptors = new HashSet<>();
             for ( IndexDescriptor index : indexes )
             {
-                if ( contains( labels, index.schema().keyId() ) && contains( index.schema().getPropertyIds(), propertyKeyId ) )
+                SchemaDescriptor schema = index.schema();
+                if ( schema.isAffected( labels ) && contains( schema.getPropertyIds(), propertyKeyId ) )
                 {
-                    descriptors.add( index.schema() );
+                    if ( schema.propertySchemaType() == PropertySchemaType.COMPLETE_ALL_TOKENS )
+                    {
+                        descriptors.add( schema );
+                    }
                 }
             }
             return descriptors;
@@ -118,7 +123,7 @@ public class IndexTxStateUpdaterTest
             Set<SchemaDescriptor> descriptors = new HashSet<>();
             for ( IndexDescriptor index : indexes )
             {
-                if ( contains( labels, index.schema().keyId() ) )
+                if ( index.schema().isAffected( labels ) )
                 {
                     boolean containsAll = true;
                     for ( int propertyId : index.schema().getPropertyIds() )

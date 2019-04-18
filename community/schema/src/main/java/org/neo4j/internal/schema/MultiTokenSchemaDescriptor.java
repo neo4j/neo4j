@@ -96,12 +96,6 @@ public class MultiTokenSchemaDescriptor implements SchemaDescriptor
     }
 
     @Override
-    public int keyId()
-    {
-        throw new UnsupportedOperationException( this + " does not have a single keyId." );
-    }
-
-    @Override
     public ResourceType keyType()
     {
         return entityType == EntityType.NODE ? ResourceTypes.LABEL : ResourceTypes.RELATIONSHIP_TYPE;

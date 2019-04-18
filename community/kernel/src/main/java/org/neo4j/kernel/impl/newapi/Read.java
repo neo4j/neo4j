@@ -558,8 +558,8 @@ abstract class Read implements TxStateHolder,
 
     void acquireSharedSchemaLock( SchemaDescriptor schema )
     {
-        long[] lockingIds = schemaTokenLockingIds( schema );
-        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), schema.keyType(), lockingIds );
+        long[] lockingKeys = schema.lockingKeys();
+        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), schema.keyType(), lockingKeys );
     }
 
     void acquireSharedLock( ResourceType resource, long resourceId )

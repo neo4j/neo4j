@@ -74,12 +74,6 @@ public class DefaultLabelSchemaDescriptor implements LabelSchemaDescriptor
     }
 
     @Override
-    public int keyId()
-    {
-        return getLabelId();
-    }
-
-    @Override
     public ResourceType keyType()
     {
         return ResourceTypes.LABEL;

@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.Optional;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
@@ -179,7 +180,12 @@ public class Operations implements Write, SchemaWrite
         // And we don't need to take the exclusive lock on the node, because it was created in this transaction and
         // isn't visible to anyone else yet.
         ktx.assertOpen();
-        long[] lockingIds = schemaTokenLockingIds( labels );
+        int labelCount = labels.length;
+        long[] lockingIds = new long[labelCount];
+        for ( int i = 0; i < labelCount; i++ )
+        {
+            lockingIds[i] = labels[i];
+        }
         Arrays.sort( lockingIds ); // Sort to ensure labels are locked and assigned in order.
         ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, lockingIds );
         long nodeId = commandCreationContext.reserveNode();
@@ -485,12 +491,20 @@ public class Operations implements Write, SchemaWrite
               IndexReaders indexReaders = new IndexReaders( schemaIndexDescriptor, allStoreHolder ) )
         {
             assertIndexOnline( schemaIndexDescriptor );
-            int labelId = schemaIndexDescriptor.schema().keyId();
+            SchemaDescriptor indexSchema = schemaIndexDescriptor.schema();
+            long[] labelIds = indexSchema.lockingKeys();
+            if ( labelIds.length != 1 )
+            {
+                SilentTokenNameLookup tokenNameLookup = new SilentTokenNameLookup( token() );
+                throw new UnableToValidateConstraintException( constraint, new AssertionError( "Constraint indexes are not expected to be multi-token " +
+                        "indexes, but the constraint " + constraint.prettyPrint( tokenNameLookup ) + " was referencing an index with the following schema: " +
+                        indexSchema.userDescription( tokenNameLookup ) + "." ) );
+            }
 
             //Take a big fat lock, and check for existing node in index
             ktx.statementLocks().optimistic().acquireExclusive(
                     ktx.lockTracer(), INDEX_ENTRY,
-                    indexEntryResourceId( labelId, propertyValues )
+                    indexEntryResourceId( labelIds[0], propertyValues )
             );
 
             allStoreHolder.nodeIndexSeekWithFreshIndexReader( valueCursor, indexReaders.createReader(), propertyValues );
@@ -995,7 +1009,7 @@ public class Operations implements Write, SchemaWrite
     {
         //Lock
         SchemaDescriptor schema = descriptor.schema();
-        exclusiveOptimisticLock( schema.keyType(), schema.keyId() );
+        exclusiveOptimisticLock( schema.keyType(), schema.lockingKeys() );
         ktx.assertOpen();
 
         //verify data integrity
@@ -1044,7 +1058,7 @@ public class Operations implements Write, SchemaWrite
         }
     }
 
-    private void exclusiveOptimisticLock( ResourceType resource, long resourceId )
+    private void exclusiveOptimisticLock( ResourceType resource, long[] resourceId )
     {
         ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), resource, resourceId );
     }
@@ -1073,7 +1087,7 @@ public class Operations implements Write, SchemaWrite
 
     private void exclusiveSchemaLock( SchemaDescriptor schema )
     {
-        long[] lockingIds = schemaTokenLockingIds( schema );
+        long[] lockingIds = schema.lockingKeys();
         ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), schema.keyType(), lockingIds );
     }
 

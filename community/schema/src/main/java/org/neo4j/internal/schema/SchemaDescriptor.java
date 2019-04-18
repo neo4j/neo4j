@@ -75,12 +75,6 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
         }
 
         @Override
-        public int keyId()
-        {
-            return 0;
-        }
-
-        @Override
         public ResourceType keyType()
         {
             return null;
@@ -111,16 +105,13 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
         }
     };
 
-    static long[] schemaTokenLockingIds( SchemaDescriptor schema )
+    private static long[] schemaTokenLockingIds( SchemaDescriptor schema )
     {
         // TODO make getEntityTokenIds produce a long array directly, and avoid this extra copying.
-        return schemaTokenLockingIds( schema.getEntityTokenIds() );
-    }
-
-    static long[] schemaTokenLockingIds( int[] tokenIds )
-    {
-        long[] lockingIds = new long[tokenIds.length];
-        for ( int i = 0; i < lockingIds.length; i++ )
+        int[] tokenIds = schema.getEntityTokenIds();
+        int length = tokenIds.length;
+        long[] lockingIds = new long[length];
+        for ( int i = 0; i < length; i++ )
         {
             lockingIds[i] = tokenIds[i];
         }
@@ -194,11 +185,12 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
     int[] getEntityTokenIds();
 
     /**
-     * Id of underlying schema descriptor key.
-     * Key is part of schema unit that determines which resources with specified properties are applicable.
-     * @return id of underlying key
+     * Get the ids that together with the {@link #keyType()} can be used to acquire the schema locks needed to lock the schema represented by this descriptor.
      */
-    int keyId();
+    default long[] lockingKeys()
+    {
+        return schemaTokenLockingIds( this );
+    }
 
     /**
      * Type of underlying schema descriptor key.

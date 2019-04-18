@@ -970,7 +970,7 @@ public class AllStoreHolder extends Read
     private ConstraintDescriptor lockConstraint( ConstraintDescriptor constraint )
     {
         SchemaDescriptor schema = constraint.schema();
-        ktx.statementLocks().pessimistic().acquireShared( ktx.lockTracer(), schema.keyType(), schema.keyId() );
+        ktx.statementLocks().pessimistic().acquireShared( ktx.lockTracer(), schema.keyType(), schema.lockingKeys() );
         return constraint;
     }
 }

@@ -138,9 +138,7 @@ class BuiltInProceduresTest
                 i -> Iterators.concat( indexes.iterator(), uniqueIndexes.iterator() ) );
         when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenAnswer( (Answer<IndexReference>) invocationOnMock -> {
             SchemaDescriptor schema = invocationOnMock.getArgument( 0 );
-            int label = schema.keyId();
-            int prop = schema.getPropertyId();
-            return getIndexReference( label, prop );
+            return getIndexReference( schema );
         } );
         when( schemaRead.constraintsGetAll() ).thenAnswer( i -> constraints.iterator() );
 
@@ -387,23 +385,23 @@ class BuiltInProceduresTest
                      .findFirst().orElseGet( allocateFromMap );
     }
 
-    private IndexReference getIndexReference( int label, int prop )
+    private IndexReference getIndexReference( SchemaDescriptor schema )
     {
         for ( IndexReference index : indexes )
         {
-            if ( index.schema().getEntityTokenIds()[0] == label && prop == index.properties()[0] )
+            if ( index.schema().equals( schema ) )
             {
                 return index;
             }
         }
         for ( IndexReference index : uniqueIndexes )
         {
-            if ( index.schema().getEntityTokenIds()[0] == label && prop == index.properties()[0] )
+            if ( index.schema().equals( schema ) )
             {
                 return index;
             }
         }
-        throw new AssertionError(  );
+        throw new AssertionError( "No index matching the schema: " + schema );
     }
 
     private static Answer<Iterator<NamedToken>> asTokens( Map<Integer,String> tokens )
