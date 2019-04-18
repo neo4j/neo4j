@@ -261,7 +261,7 @@ public class DatabaseCompositeIndexAccessorTest
         reader.close();
     }
 
-    @Test
+    @Test( timeout = 60_000 )
     public void shouldStopSamplingWhenIndexIsDropped() throws Exception
     {
         // given
