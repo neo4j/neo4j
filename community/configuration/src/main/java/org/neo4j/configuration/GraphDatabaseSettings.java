@@ -562,6 +562,7 @@ public class GraphDatabaseSettings implements LoadableConfig
         private final boolean deprecated;
         private final String providerName;
 
+        // NOTE: if any providers are deprecated in the future, go to the git history and bring back IndexingServiceTest.shouldLogDeprecatedIndexesOnStart.
         SchemaIndex( String providerKey, String providerVersion, boolean deprecated )
         {
             this.providerKey = providerKey;

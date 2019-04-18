@@ -549,67 +549,6 @@ public class IndexingServiceTest
         onBothLogProviders( logProvider -> internalLogProvider.assertNoMessagesContaining( fulltextDescriptor.name() ) );
     }
 
-    @Ignore( "We don't have any deprecated index providers at the moment. This test (and the commented out code) is preserved so we can see what it would " +
-            "look like if we did." )
-    @Test
-    public void shouldLogDeprecatedIndexesOnStart() throws Throwable
-    {
-        // given
-//        StoreIndexDescriptor lucene10Index       = storeIndex( 1, 1, 1, lucene10Descriptor );
-//        StoreIndexDescriptor native10Index       = storeIndex( 2, 1, 2, native10Descriptor );
-//        StoreIndexDescriptor native20Index1      = storeIndex( 3, 1, 3, native20Descriptor );
-//        StoreIndexDescriptor native20Index2      = storeIndex( 4, 1, 4, native20Descriptor );
-        StoreIndexDescriptor native30Index       = storeIndex( 5, 1, 5, native30Descriptor );
-        StoreIndexDescriptor nativeBtree10Index  = storeIndex( 6, 1, 6, nativeBtree10Descriptor );
-        StoreIndexDescriptor fulltextIndex  = storeIndex( 7, 1, 7, fulltextDescriptor );
-
-//        IndexProvider lucene10Provider = mockIndexProviderWithAccessor( lucene10Descriptor );
-//        IndexProvider native10Provider = mockIndexProviderWithAccessor( native10Descriptor );
-//        IndexProvider native20Provider = mockIndexProviderWithAccessor( native20Descriptor );
-        IndexProvider native30Provider = mockIndexProviderWithAccessor( native30Descriptor );
-        IndexProvider nativeBtree10Provider = mockIndexProviderWithAccessor( nativeBtree10Descriptor );
-        IndexProvider fulltextProvider = mockIndexProviderWithAccessor( fulltextDescriptor );
-
-//        when( lucene10Provider.getInitialState( lucene10Index ) ).thenReturn( ONLINE );
-//        when( native10Provider.getInitialState( native10Index ) ).thenReturn( ONLINE );
-//        when( native20Provider.getInitialState( native20Index1 ) ).thenReturn( ONLINE );
-//        when( native20Provider.getInitialState( native20Index2 ) ).thenReturn( ONLINE );
-        when( native30Provider.getInitialState( native30Index ) ).thenReturn( ONLINE );
-        when( nativeBtree10Provider.getInitialState( nativeBtree10Index ) ).thenReturn( ONLINE );
-        when( fulltextProvider.getInitialState( fulltextIndex ) ).thenReturn( ONLINE );
-
-        Config config = Config.defaults( default_schema_provider, nativeBtree10Descriptor.name() );
-        DependencyResolver dependencies = buildIndexDependencies( /*lucene10Provider, native10Provider, native20Provider,*/ nativeBtree10Provider );
-        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( dependencies, config );
-        providerMap.init();
-        TokenNameLookup mockLookup = mock( TokenNameLookup.class );
-
-        IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
-                mock( JobScheduler.class ), providerMap, storeView, mockLookup,
-                asList( /*lucene10Index, native10Index, native20Index1, native20Index2,*/ nativeBtree10Index ), internalLogProvider, userLogProvider,
-                IndexingService.NO_MONITOR, schemaState, indexStatisticsStore );
-
-        // when
-        indexingService.init();
-        userLogProvider.clear();
-        indexingService.start();
-
-        // then
-        userLogProvider.assertContainsExactlyOneMessageMatching(
-                Matchers.allOf(
-                        Matchers.containsString( "Deprecated index providers in use:" ),
-//                        Matchers.containsString( lucene10Descriptor.name() + " (1 index)" ),
-//                        Matchers.containsString( native10Descriptor.name() + " (1 index)" ),
-//                        Matchers.containsString( native20Descriptor.name() + " (2 indexes)" ),
-                        Matchers.containsString( "Use procedure 'db.indexes()' to see what indexes use which index provider." )
-                )
-        );
-        onBothLogProviders( logProvider -> internalLogProvider.assertNoMessagesContaining( native30Descriptor.name() ) );
-        onBothLogProviders( logProvider -> internalLogProvider.assertNoMessagesContaining( nativeBtree10Descriptor.name() ) );
-        onBothLogProviders( logProvider -> internalLogProvider.assertNoMessagesContaining( fulltextDescriptor.name() ) );
-        userLogProvider.print( System.out );
-    }
-
     @Test
     public void shouldFailToStartIfMissingIndexProvider() throws Exception
     {
