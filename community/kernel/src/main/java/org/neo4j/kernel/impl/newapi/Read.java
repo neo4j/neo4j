@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -63,7 +64,6 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-import static org.neo4j.internal.schema.SchemaDescriptor.schemaTokenLockingIds;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.clearEncoding;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
@@ -590,13 +590,11 @@ abstract class Read implements TxStateHolder,
     private void assertIndexOnline( IndexReference index )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        switch ( indexGetState( index ) )
+        if ( indexGetState( index ) == InternalIndexState.ONLINE )
         {
-        case ONLINE:
             return;
-        default:
-            throw new IndexBrokenKernelException( indexGetFailure( index ) );
         }
+        throw new IndexBrokenKernelException( indexGetFailure( index ) );
     }
 
     private static void assertPredicatesMatchSchema( IndexReference index, IndexQuery.ExactPredicate[] predicates )

@@ -21,7 +21,6 @@ package org.neo4j.storageengine.api;
 
 import java.util.Arrays;
 
-import org.neo4j.internal.schema.LabelSchemaSupplier;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.values.storable.Value;
 
@@ -33,7 +32,7 @@ import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
  * update.
  * This is of use in populating indexes that might be relevant to node label and property combinations.
  *
- * @param <INDEX_KEY> {@link LabelSchemaSupplier} specifying the schema
+ * @param <INDEX_KEY> {@link SchemaDescriptorSupplier} specifying the schema
  */
 public class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier>
 {

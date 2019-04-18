@@ -31,9 +31,9 @@ import java.util.Set;
 import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.internal.schema.LabelSchemaSupplier;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
@@ -160,7 +160,7 @@ public class DbStructureCollector implements DbStructureVisitor
                 return indexSize / nodesWithLabelCardinality( labelId );
             }
 
-            private Iterator<Pair<String,String[]>> idsToNames( Iterable<? extends LabelSchemaSupplier> nodeConstraints )
+            private Iterator<Pair<String,String[]>> idsToNames( Iterable<? extends SchemaDescriptorSupplier> nodeConstraints )
             {
                 return Iterators.map( nodeConstraint ->
                 {

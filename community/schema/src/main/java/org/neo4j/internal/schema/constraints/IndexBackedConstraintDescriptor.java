@@ -23,10 +23,10 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.DefaultIndexDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.LabelSchemaSupplier;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.token.api.TokenIdPrettyPrinter;
 
-public abstract class IndexBackedConstraintDescriptor extends AbstractConstraintDescriptor implements LabelSchemaSupplier
+public abstract class IndexBackedConstraintDescriptor extends AbstractConstraintDescriptor implements SchemaDescriptorSupplier
 {
     private final LabelSchemaDescriptor schema;
     private final IndexDescriptor ownedIndexDescriptor;

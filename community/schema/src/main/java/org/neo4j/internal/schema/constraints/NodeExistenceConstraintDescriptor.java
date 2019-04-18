@@ -21,10 +21,10 @@ package org.neo4j.internal.schema.constraints;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.LabelSchemaSupplier;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.token.api.TokenIdPrettyPrinter;
 
-public class NodeExistenceConstraintDescriptor extends AbstractConstraintDescriptor implements LabelSchemaSupplier
+public class NodeExistenceConstraintDescriptor extends AbstractConstraintDescriptor implements SchemaDescriptorSupplier
 {
     private LabelSchemaDescriptor schema;
 

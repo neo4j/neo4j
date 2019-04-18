@@ -19,6 +19,6 @@
  */
 package org.neo4j.internal.schema;
 
-public interface LabelSchemaDescriptor extends SchemaDescriptor, LabelSchemaSupplier
+public interface LabelSchemaDescriptor extends SchemaDescriptor
 {
 }

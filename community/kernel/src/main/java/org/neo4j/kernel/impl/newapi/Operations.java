@@ -28,7 +28,6 @@ import java.util.Iterator;
 import java.util.Optional;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
@@ -94,7 +93,6 @@ import static java.lang.Math.min;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
-import static org.neo4j.internal.schema.SchemaDescriptor.schemaTokenLockingIds;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
@@ -971,8 +969,7 @@ public class Operations implements Write, SchemaWrite
         try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor() )
         {
             allStoreHolder.nodeLabelScan( descriptor.getLabelId(), nodes );
-            constraintSemantics
-                    .validateNodePropertyExistenceConstraint( nodes, nodeCursor, propertyCursor, descriptor );
+            constraintSemantics.validateNodePropertyExistenceConstraint( nodes, nodeCursor, propertyCursor, descriptor );
         }
 
         //create constraint
@@ -995,8 +992,7 @@ public class Operations implements Write, SchemaWrite
 
         //enforce constraints
         allStoreHolder.relationshipTypeScan( descriptor.getRelTypeId(), relationshipCursor );
-        constraintSemantics
-                .validateRelationshipPropertyExistenceConstraint( relationshipCursor, propertyCursor, descriptor );
+        constraintSemantics.validateRelationshipPropertyExistenceConstraint( relationshipCursor, propertyCursor, descriptor );
 
         //Create
         ktx.txState().constraintDoAdd( constraint );
