@@ -60,9 +60,9 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
     }
 
     @Override
-    protected String descriptorString()
+    public IndexProviderDescriptor descriptor()
     {
-        return DESCRIPTOR.toString();
+        return DESCRIPTOR;
     }
 
     @Override

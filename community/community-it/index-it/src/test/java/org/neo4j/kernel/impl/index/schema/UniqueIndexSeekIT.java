@@ -34,7 +34,6 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -75,10 +74,10 @@ class UniqueIndexSeekIT
 
     @ParameterizedTest
     @MethodSource( "indexProviderFactories" )
-    void uniqueIndexSeekDoNotLeakIndexReaders( Pair<AbstractIndexProviderFactory,IndexProviderDescriptor> indexSetup ) throws KernelException
+    void uniqueIndexSeekDoNotLeakIndexReaders( AbstractIndexProviderFactory providerFactory ) throws KernelException
     {
-        TrackingIndexExtensionFactory indexExtensionFactory = new TrackingIndexExtensionFactory( indexSetup.first() );
-        GraphDatabaseAPI database = createDatabase( indexExtensionFactory, indexSetup.other() );
+        TrackingIndexExtensionFactory indexExtensionFactory = new TrackingIndexExtensionFactory( providerFactory );
+        GraphDatabaseAPI database = createDatabase( indexExtensionFactory, providerFactory.descriptor() );
         DependencyResolver dependencyResolver = database.getDependencyResolver();
         Config config = dependencyResolver.resolveDependency( Config.class );
         try
@@ -105,12 +104,11 @@ class UniqueIndexSeekIT
         }
     }
 
-    private static Stream<Pair<AbstractIndexProviderFactory,IndexProviderDescriptor>> indexProviderFactories()
+    private static Stream<AbstractIndexProviderFactory> indexProviderFactories()
     {
         return Stream.of(
-                Pair.of( new NativeLuceneFusionIndexProviderFactory30(), NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR ),
-                Pair.of( new GenericNativeIndexProviderFactory(), GenericNativeIndexProvider.DESCRIPTOR )
-        );
+                new NativeLuceneFusionIndexProviderFactory30(),
+                new GenericNativeIndexProviderFactory() );
     }
 
     private static CombinableMatcher<Long> closeTo( long from, long delta )

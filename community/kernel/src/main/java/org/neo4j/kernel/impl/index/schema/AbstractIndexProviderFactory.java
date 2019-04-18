@@ -26,6 +26,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
@@ -52,8 +53,9 @@ public abstract class AbstractIndexProviderFactory extends ExtensionFactory<Abst
         FileSystemAbstraction fs = dependencies.fileSystem();
         Log log = dependencies.getLogService().getInternalLogProvider().getLog( loggingClass() );
         Monitors monitors = dependencies.monitors();
-        monitors.addMonitorListener( new LoggingMonitor( log ), descriptorString() );
-        IndexProvider.Monitor monitor = monitors.newMonitor( IndexProvider.Monitor.class, descriptorString() );
+        String descriptorString = descriptor().toString();
+        monitors.addMonitorListener( new LoggingMonitor( log ), descriptorString );
+        IndexProvider.Monitor monitor = monitors.newMonitor( IndexProvider.Monitor.class, descriptorString );
         Config config = dependencies.getConfig();
         OperationalMode operationalMode = context.databaseInfo().operationalMode;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = dependencies.recoveryCleanupWorkCollector();
@@ -62,7 +64,7 @@ public abstract class AbstractIndexProviderFactory extends ExtensionFactory<Abst
 
     protected abstract Class loggingClass();
 
-    protected abstract String descriptorString();
+    public abstract IndexProviderDescriptor descriptor();
 
     protected abstract IndexProvider internalCreate( PageCache pageCache, File storeDir, FileSystemAbstraction fs,
             IndexProvider.Monitor monitor, Config config, OperationalMode operationalMode,

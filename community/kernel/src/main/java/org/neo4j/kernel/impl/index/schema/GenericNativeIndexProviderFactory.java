@@ -29,6 +29,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
@@ -48,9 +49,9 @@ public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFact
     }
 
     @Override
-    protected String descriptorString()
+    public IndexProviderDescriptor descriptor()
     {
-        return GenericNativeIndexProvider.DESCRIPTOR.toString();
+        return GenericNativeIndexProvider.DESCRIPTOR;
     }
 
     @Override
