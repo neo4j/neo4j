@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import java.util.function
+
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Expression}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, MutableMaps}
@@ -27,7 +29,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{ListValue, VirtualValues}
 
 import scala.collection.immutable
-import scala.collection.mutable.{ArrayBuffer, Map => MutableMap}
+import scala.collection.mutable.{Map => MutableMap}
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
 // to emit aggregated results.
@@ -39,6 +41,8 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expres
   keyExpressions.values.foreach(_.registerOwningPipe(this))
 
   private val expressionOrder: immutable.Seq[(String, Expression)] = keyExpressions.toIndexedSeq
+  private val computeAggregations: function.Function[AnyValue, Seq[AggregationFunction]] =
+    (_: AnyValue) => aggregations.map(_._2.createAggregationFunction).toIndexedSeq
 
   val groupingFunction: (ExecutionContext, QueryState) => AnyValue = {
     keyExpressions.size match {
@@ -117,26 +121,24 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expres
       ExecutionContext(newMap)
     }
 
+
     input.foreach(ctx => {
       val groupingValue: AnyValue = groupingFunction(ctx, state)
-      var functions = result.get(groupingValue)
-      if ( functions == null ) {
-        functions =  aggregations.map(_._2.createAggregationFunction).toIndexedSeq
-        result.put(groupingValue, functions)
-      }
+      val functions = result.computeIfAbsent(groupingValue, computeAggregations)
       functions.foreach(func => func(ctx, state))
     })
 
     if (result.isEmpty && keyNames.isEmpty) {
       createEmptyResult()
     } else {
-      val buffer = ArrayBuffer.empty[ExecutionContext]
       val iterator = result.entrySet().iterator()
-      while (iterator.hasNext) {
-        val entry = iterator.next()
-        buffer.append(createResults(entry.getKey, entry.getValue))
+      new Iterator[ExecutionContext] {
+        override def hasNext: Boolean = iterator.hasNext
+        override def next(): ExecutionContext = {
+          val entry = iterator.next()
+          createResults(entry.getKey, entry.getValue)
+        }
       }
-      buffer.toIterator
     }
   }
 }
