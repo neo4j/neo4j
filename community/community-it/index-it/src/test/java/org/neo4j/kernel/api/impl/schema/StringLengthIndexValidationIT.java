@@ -38,6 +38,7 @@ import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.RandomRule;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -214,7 +215,7 @@ public abstract class StringLengthIndexValidationIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 10, SECONDS );
+            db.schema().awaitIndexesOnline( 1, MINUTES );
             tx.success();
         }
     }
