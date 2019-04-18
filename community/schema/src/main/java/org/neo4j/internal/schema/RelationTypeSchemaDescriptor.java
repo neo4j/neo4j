@@ -21,5 +21,4 @@ package org.neo4j.internal.schema;
 
 public interface RelationTypeSchemaDescriptor extends SchemaDescriptor
 {
-    int getRelTypeId();
 }

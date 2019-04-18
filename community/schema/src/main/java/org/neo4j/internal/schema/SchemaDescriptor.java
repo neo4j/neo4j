@@ -185,6 +185,42 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
     int[] getEntityTokenIds();
 
     /**
+     * Assuming this schema descriptor represents a schema on nodes, with a single label id, then get that label id.
+     * Otherwise an exception is thrown.
+     */
+    default int getLabelId()
+    {
+        if ( entityType() != EntityType.NODE )
+        {
+            throw new IllegalStateException( "Cannot get label id from a schema on " + entityType() + " entities." );
+        }
+        int[] entityTokenIds = getEntityTokenIds();
+        if ( entityTokenIds.length != 1 )
+        {
+            throw new IllegalStateException( "Cannot get a single label id from a multi-token schema descriptor: " + this );
+        }
+        return entityTokenIds[0];
+    }
+
+    /**
+     * Assuming this schema descriptor represents a schema on relationships, with a single relationship type id, then get that relationship type id.
+     * Otherwise an exception is thrown.
+     */
+    default int getRelTypeId()
+    {
+        if ( entityType() != EntityType.RELATIONSHIP )
+        {
+            throw new IllegalStateException( "Cannot get relationship type id from a schema on " + entityType() + " entities." );
+        }
+        int[] entityTokenIds = getEntityTokenIds();
+        if ( entityTokenIds.length != 1 )
+        {
+            throw new IllegalStateException( "Cannot get a single relationship type id from a multi-token schema descriptor: " + this );
+        }
+        return entityTokenIds[0];
+    }
+
+    /**
      * Get the ids that together with the {@link #keyType()} can be used to acquire the schema locks needed to lock the schema represented by this descriptor.
      */
     default long[] lockingKeys()
