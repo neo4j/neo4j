@@ -41,6 +41,33 @@ sealed trait MultiGraphDDL extends CatalogDDL {
     requireFeatureSupport(s"The `$name` clause", SemanticFeature.MultipleGraphs, position)
 }
 
+final case class ShowRoles(withUsers: Boolean, showAll: Boolean)(val position: InputPosition) extends MultiDatabaseDDL {
+
+  override def name: String = if (showAll) "CATALOG SHOW ALL ROLES" else "CATALOG SHOW POPULATED ROLES"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
+final case class CreateRole(roleName: String, from: Option[String])(val position: InputPosition) extends MultiDatabaseDDL {
+
+  override def name = "CATALOG CREATE ROLE"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
+final case class DropRole(roleName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+
+  override def name = "CATALOG DROP ROLE"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
 final case class ShowDatabases()(val position: InputPosition) extends MultiDatabaseDDL {
 
   override def name = "CATALOG SHOW DATABASES"

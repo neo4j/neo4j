@@ -117,6 +117,11 @@ object Arguments {
     override def name = "database"
   }
 
+  case class Role(value: String) extends Argument {
+
+    override def name = "role"
+  }
+
   case class ExpandExpression(from: String, relName: String, relTypes: Seq[String], to: String,
                               direction: SemanticDirection, minLength: Int, maxLength: Option[Int]) extends Argument
 

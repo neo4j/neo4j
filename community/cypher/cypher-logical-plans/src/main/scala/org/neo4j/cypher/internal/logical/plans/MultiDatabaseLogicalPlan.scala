@@ -32,6 +32,9 @@ abstract class MultiDatabaseLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen)
   override def strictness: StrictnessMode = LazyMode
 }
 
+case class ShowRoles(withUsers: Boolean, showAll: Boolean)(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(idGen)
+case class CreateRole(roleName: String, from: Option[String])(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(idGen)
+case class DropRole(roleName: String)(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(idGen)
 case class ShowDatabases()(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(idGen)
 case class ShowDatabase(dbName: String)(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(idGen)
 case class CreateDatabase(dbName: String)(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(idGen)

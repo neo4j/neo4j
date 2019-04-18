@@ -109,6 +109,16 @@ trait Base extends Parser {
     ) memoMismatches) ~~> (_.reduce(_ + '`' + _))
   }
 
+  def RoleNameString: Rule1[String] = UnquotedRoleNameString | QuotedRoleNameString
+
+  def UnquotedRoleNameString: Rule1[String] = rule("a role name") {
+    oneOrMore(RoleNamePart) ~> (_.toLowerCase) ~ !RoleNamePart
+  }
+
+  def QuotedRoleNameString: Rule1[String] = rule("a role name") {
+    group(ch('"') ~ oneOrMore(RoleNamePart) ~ ch('"')) ~> (_.replace("\"","").toLowerCase) ~ !RoleNamePart
+  }
+
   def DatabaseNameString: Rule1[String] = UnquotedDatabaseNameString | QuotedDatabaseNameString
 
   def UnquotedDatabaseNameString: Rule1[String] = rule("a database name") {

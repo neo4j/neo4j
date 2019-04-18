@@ -31,6 +31,50 @@ class CatalogDDLParserTest
   private val returnGraph: ast.ReturnGraph = ast.ReturnGraph(None)(pos)
   private val returnQuery = ast.SingleQuery(Seq(returnGraph))(pos)
 
+  test("SHOW ROLES") {
+    yields(ast.ShowRoles(withUsers = false, showAll = true))
+  }
+
+  test("SHOW ALL ROLES") {
+    yields(ast.ShowRoles(withUsers = false, showAll = true))
+  }
+
+  test("SHOW POPULATED ROLES") {
+    yields(ast.ShowRoles(withUsers = false, showAll = false))
+  }
+
+  test("SHOW ROLES WITH USERS") {
+    yields(ast.ShowRoles(withUsers = true, showAll = true))
+  }
+
+  test("SHOW ALL ROLES WITH USERS") {
+    yields(ast.ShowRoles(withUsers = true, showAll = true))
+  }
+
+  test("SHOW POPULATED ROLES WITH USERS") {
+    yields(ast.ShowRoles(withUsers = true, showAll = false))
+  }
+
+  test("CREATE ROLE foo") {
+    yields(ast.CreateRole("foo", None))
+  }
+
+  test("CREATE ROLE \"foo\"") {
+    yields(ast.CreateRole("foo", None))
+  }
+
+  test("CREATE ROLE foo AS COPY OF bar") {
+    yields(ast.CreateRole("foo", Some("bar")))
+  }
+
+  test("CREATE ROLE foo AS COPY OF") {
+    failsToParse
+  }
+
+  test("DROP ROLE foo") {
+    yields(ast.DropRole("foo"))
+  }
+
   test("SHOW DATABASE foo.bar") {
     yields(ast.ShowDatabase("foo.bar"))
   }

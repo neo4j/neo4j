@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
-import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, SystemCommandRuntimeName, RuntimeName}
+import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
@@ -48,7 +48,8 @@ case class UpdatingSystemCommandExecutionPlan(name: String, normalExecutionEngin
                    subscriber: QuerySubscriber): RuntimeResult = {
 
     val tc = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
-    val execution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, subscriber).asInstanceOf[InternalExecutionResult]
+    val newSubscriber = if (subscriber == QuerySubscriber.NOT_A_SUBSCRIBER) CustomSubscriber else subscriber
+    val execution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, newSubscriber).asInstanceOf[InternalExecutionResult]
 
     execution.javaIterator.stream().forEach(resultHandler)
 

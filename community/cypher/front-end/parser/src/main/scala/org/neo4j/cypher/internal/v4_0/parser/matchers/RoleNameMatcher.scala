@@ -14,16 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.v4_0
+package org.neo4j.cypher.internal.v4_0.parser.matchers
 
-import org.neo4j.cypher.internal.v4_0.parser.matchers._
-import org.parboiled.scala.Rule0
-
-package object parser {
-  lazy val IdentifierStart: Rule0 = new IdentifierStartMatcher()
-  lazy val IdentifierPart: Rule0 = new IdentifierPartMatcher()
-  lazy val DatabaseNameStart: Rule0 = new DatabaseNameStartMatcher()
-  lazy val DatabaseNamePart: Rule0 = new DatabaseNamePartMatcher()
-  lazy val RoleNamePart: Rule0 = new RoleNameMatcher()
-  lazy val WSChar: Rule0 = new WhitespaceCharMatcher()
+class RoleNameMatcher extends ScalaCharMatcher("a role name") {
+  protected def matchChar(c: Char): Boolean = Character.isLetterOrDigit(c) || c == '_'
 }

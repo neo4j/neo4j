@@ -46,6 +46,78 @@ case class MultiDatabaseManagementCommandRuntime(normalExecutionEngine: Executio
   }
 
   val logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, Map[String, Int]) => ExecutionPlan] = {
+    // SHOW [ ALL | POPULATED ] ROLES [ WITH USERS ]
+    case ShowRoles(withUsers, showAll) => (_, _) =>
+      // TODO fix the predefined roles to be connected to PredefinedRoles (aka PredefinedRoles.ADMIN)
+      val predefinedRoles = Values.stringArray("admin", "architect", "publisher", "editor", "reader")
+      val query = if (showAll)
+                        """MATCH (r:Role)
+                          |OPTIONAL MATCH (u:User)-[:HAS_ROLE]->(r)
+                          |RETURN DISTINCT r.name as role,
+                          |CASE
+                          | WHEN r.name IN $predefined THEN true
+                          | ELSE false
+                          |END as is_built_in
+                        """.stripMargin
+                      else
+                        """MATCH (r:Role)<-[:HAS_ROLE]-(u:User)
+                          |RETURN DISTINCT r.name as role,
+                          |CASE
+                          | WHEN r.name IN $predefined THEN true
+                          | ELSE false
+                          |END as is_built_in
+                        """.stripMargin
+      if (withUsers) {
+        SystemCommandExecutionPlan("ShowRoles", normalExecutionEngine, query + ", u.name as member",
+          VirtualValues.map(Array("predefined"), Array(predefinedRoles))
+        )
+      } else {
+        SystemCommandExecutionPlan("ShowRoles", normalExecutionEngine, query,
+          VirtualValues.map(Array("predefined"), Array(predefinedRoles))
+        )
+      }
+
+    // CREATE ROLE foo AS COPY OF bar
+    case CreateRole(roleName, Some(from)) => (_, _) =>
+      UpdatingSystemCommandExecutionPlan("CreateRole", normalExecutionEngine,
+        """OPTIONAL MATCH (f:Role {name:$from})
+          |// FOREACH is an IF, only create the role if the 'from' node exists
+          |FOREACH (ignoreMe in CASE WHEN f IS NOT NULL THEN [1] ELSE [] END |
+          | CREATE (r:Role)
+          | SET r.name = $name
+          |)
+          |WITH f
+          |// Make sure the create is eagerly done
+          |OPTIONAL MATCH (r:Role {name:$name})
+          |RETURN r.name as name, f.name as old""".stripMargin,
+        VirtualValues.map(Array("name", "from"), Array(Values.stringValue(roleName), Values.stringValue(from))),
+        record => {
+          if (record.get("old") == null) throw new IllegalStateException("Cannot create role '" + roleName + "' from non-existent role '" + from + "'")
+        }
+      )
+
+    // CREATE ROLE foo
+    case CreateRole(roleName, _) => (_, _) =>
+      SystemCommandExecutionPlan("CreateRole", normalExecutionEngine,
+        """CREATE (r:Role)
+          |SET r.name = $name
+          |RETURN r.name as name""".stripMargin,
+        VirtualValues.map(Array("name"), Array(Values.stringValue(roleName)))
+      )
+
+    // DROP ROLE foo
+    case DropRole(roleName) => (_, _) =>
+      UpdatingSystemCommandExecutionPlan("DropRole", normalExecutionEngine,
+        """OPTIONAL MATCH (r:Role {name:$name})
+          |WITH r, r.name as name
+          |DETACH DELETE r
+          |RETURN name""".stripMargin,
+        VirtualValues.map(Array("name"), Array(Values.stringValue(roleName))),
+        record => {
+          if (record.get("name") == null) throw new IllegalStateException("Cannot drop non-existent role '" + roleName + "'")
+        }
+      )
+
     // SHOW DATABASES
     case ShowDatabases() => (_, _) =>
       SystemCommandExecutionPlan("ShowDatabases", normalExecutionEngine,
@@ -68,7 +140,7 @@ case class MultiDatabaseManagementCommandRuntime(normalExecutionEngine: Executio
 
     // DROP DATABASE foo
     case DropDatabase(dbName) => (_, _) =>
-      UpdatingSystemCommandExecutionPlan("DeleteDatabase", normalExecutionEngine,
+      UpdatingSystemCommandExecutionPlan("DropDatabase", normalExecutionEngine,
         """OPTIONAL MATCH (d:Database {name: $name})
           |REMOVE d:Database
           |SET d:DeletedDatabase

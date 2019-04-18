@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.parser
 
 import org.neo4j.cypher.internal.v4_0.ast
-import org.neo4j.cypher.internal.v4_0.ast.CatalogDDL
+import org.neo4j.cypher.internal.v4_0.ast._
 import org.parboiled.scala._
 
 trait Statement extends Parser
@@ -26,57 +26,85 @@ trait Statement extends Parser
   with Base {
 
   def Statement: Rule1[ast.Statement] = rule(
-    CatalogCommand
-      | Command
-      | Query
+    CatalogCommand | SecurityCommand | Command | Query
   )
 
   def CatalogCommand: Rule1[CatalogDDL] = rule("Catalog DDL statement") {
     ShowDatabase | ShowDatabases | CreateDatabase | DropDatabase | StartDatabase | StopDatabase | CreateGraph | DropGraph | CreateView | DropView
   }
 
-  def ShowDatabase = rule("CATALOG SHOW DATABASE") {
+  def SecurityCommand: Rule1[CatalogDDL] = rule("Security DDL statement") {
+    ShowRoles | CreateRole | DropRole
+  }
+
+  def ShowRoles: Rule1[ShowRoles] = rule("CATALOG SHOW ROLES") {
+    //SHOW [ ALL | POPULATED ] ROLES WITH USERS
+    group(optional(keyword("CATALOG")) ~~
+      keyword("SHOW") ~~ keyword("POPULATED") ~~ keyword("ROLES") ~~
+      keyword("WITH USERS")) ~>>> (_ => ast.ShowRoles(withUsers = true, showAll = false)) |
+    group(optional(keyword("CATALOG")) ~~
+      keyword("SHOW") ~~ optional(keyword("ALL")) ~~ keyword("ROLES") ~~
+      keyword("WITH USERS")) ~>>> (_ => ast.ShowRoles(withUsers = true, showAll = true)) |
+    // SHOW [ ALL | POPULATED ] ROLES
+    group(optional(keyword("CATALOG")) ~~
+      keyword("SHOW") ~~ keyword("POPULATED") ~~ keyword("ROLES")) ~>>>
+      (_ => ast.ShowRoles(withUsers = false, showAll = false)) |
+    group(optional(keyword("CATALOG")) ~~
+      keyword("SHOW") ~~ optional(keyword("ALL")) ~~ keyword("ROLES")) ~>>>
+      (_ => ast.ShowRoles(withUsers = false, showAll = true))
+  }
+
+  def CreateRole: Rule1[CreateRole] = rule("CATALOG CREATE ROLE") {
+    group(optional(keyword("CATALOG")) ~~ keyword("CREATE ROLE") ~~ RoleNameString ~~
+      optional(keyword("AS COPY OF") ~~ RoleNameString)) ~~>> (ast.CreateRole(_, _))
+  }
+
+  def DropRole: Rule1[DropRole] = rule("CATALOG DROP ROLE") {
+    group(optional(keyword("CATALOG")) ~~ keyword("DROP ROLE") ~~ RoleNameString) ~~>> (ast.DropRole(_))
+  }
+
+  def ShowDatabase: Rule1[ShowDatabase] = rule("CATALOG SHOW DATABASE") {
     group(optional(keyword("CATALOG")) ~~ keyword("SHOW DATABASE") ~~ DatabaseNameString) ~~>> (ast.ShowDatabase(_))
   }
 
-  def ShowDatabases = rule("CATALOG SHOW DATABASES") {
+  def ShowDatabases: Rule1[ShowDatabases] = rule("CATALOG SHOW DATABASES") {
     group(optional(keyword("CATALOG")) ~~ keyword("SHOW DATABASES")) ~>>> (_=> ast.ShowDatabases())
   }
 
-  def CreateDatabase = rule("CATALOG CREATE DATABASE") {
+  def CreateDatabase: Rule1[CreateDatabase] = rule("CATALOG CREATE DATABASE") {
     group(optional(keyword("CATALOG")) ~~ keyword("CREATE DATABASE") ~~ DatabaseNameString) ~~>> (ast.CreateDatabase(_))
   }
 
-  def DropDatabase = rule("CATALOG DROP DATABASE") {
+  def DropDatabase: Rule1[DropDatabase] = rule("CATALOG DROP DATABASE") {
     group(optional(keyword("CATALOG")) ~~ keyword("DROP DATABASE") ~~ DatabaseNameString) ~~>> (ast.DropDatabase(_))
   }
 
-  def StartDatabase = rule("CATALOG START DATABASE") {
+  def StartDatabase: Rule1[StartDatabase] = rule("CATALOG START DATABASE") {
     group(optional(keyword("CATALOG")) ~~ keyword("START DATABASE") ~~ DatabaseNameString) ~~>> (ast.StartDatabase(_))
   }
 
-  def StopDatabase = rule("CATALOG STOP DATABASE") {
+  def StopDatabase: Rule1[StopDatabase] = rule("CATALOG STOP DATABASE") {
     group(optional(keyword("CATALOG")) ~~ keyword("STOP DATABASE") ~~ DatabaseNameString) ~~>> (ast.StopDatabase(_))
   }
 
-  def CreateGraph = rule("CATALOG CREATE GRAPH") {
+  def CreateGraph: Rule1[CreateGraph] = rule("CATALOG CREATE GRAPH") {
     group(keyword("CATALOG CREATE GRAPH") ~~ CatalogName ~~ "{" ~~
       RegularQuery ~~
       "}") ~~>> (ast.CreateGraph(_, _))
   }
 
-  def DropGraph = rule("CATALOG DROP GRAPH") {
+  def DropGraph: Rule1[DropGraph] = rule("CATALOG DROP GRAPH") {
     group(keyword("CATALOG DROP GRAPH") ~~ CatalogName) ~~>> (ast.DropGraph(_))
   }
 
-  def CreateView = rule("CATALOG CREATE VIEW") {
+  def CreateView: Rule1[CreateView] = rule("CATALOG CREATE VIEW") {
     group((keyword("CATALOG CREATE VIEW") | keyword("CATALOG CREATE QUERY")) ~~
       CatalogName ~~ optional("(" ~~ zeroOrMore(Parameter, separator = CommaSep) ~~ ")") ~~ "{" ~~
       captureString(RegularQuery) ~~
       "}") ~~>> { case (name, params, (query, string)) => ast.CreateView(name, params.getOrElse(Seq.empty), query, string) }
   }
 
-  def DropView = rule("CATALOG DROP VIEW") {
+  def DropView: Rule1[DropView] = rule("CATALOG DROP VIEW") {
     group((keyword("CATALOG DROP VIEW") | keyword("CATALOG DROP QUERY")) ~~ CatalogName) ~~>> (ast.DropView(_))
   }
 }

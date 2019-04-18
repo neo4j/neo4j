@@ -70,6 +70,7 @@ object PlanDescriptionArgumentSerializer {
       case Runtime(runtime) => runtime
       case RuntimeVersion(value) => value
       case Database(name) => name
+      case Role(name) => name
       case SourceCode(className, sourceCode) => sourceCode
       case ByteCode(className, byteCode) => byteCode
       case RuntimeImpl(runtimeName) => runtimeName

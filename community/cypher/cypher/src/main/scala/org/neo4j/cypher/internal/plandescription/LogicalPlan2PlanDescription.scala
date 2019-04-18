@@ -153,6 +153,17 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case _: DropRelationshipPropertyExistenceConstraint =>
         PlanDescriptionImpl(id, "DropRelationshipPropertyExistenceConstraint", NoChildren, Seq.empty, variables)
 
+      case ShowRoles(_,_) =>
+        PlanDescriptionImpl(id, "ShowRoles", NoChildren, Seq.empty, variables)
+
+      case CreateRole(name, _) =>
+        val roleName = Role(name)
+        PlanDescriptionImpl(id, "CreateRole", NoChildren, Seq(roleName), variables)
+
+      case DropRole(name) =>
+        val roleName = Role(name)
+        PlanDescriptionImpl(id, "DropRole", NoChildren, Seq(roleName), variables)
+
       case ShowDatabase(name) =>
         val dbName = Database(name)
         PlanDescriptionImpl(id, "ShowDatabase", NoChildren, Seq(dbName), variables)
