@@ -33,11 +33,11 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
 abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
@@ -78,7 +78,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
             }
             catch ( UncheckedIOException e )
             {
-                if ( e.getCause() instanceof FileIsNotMappedException )
+                if ( getRootCause( e ) instanceof FileIsNotMappedException )
                 {
                     IndexNotFoundKernelException exception = new IndexNotFoundKernelException( "Index dropped while sampling." );
                     exception.addSuppressed( e );
