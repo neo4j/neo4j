@@ -26,7 +26,7 @@
         <test.runner.jvm.settings.additional/>
         <test.runner.jvm.settings>
             <!-- shortest path and possibly others are leaking cursors,
-            leave this disables until fixed-->
+            leave this disabled until fixed-->
             -Dorg.neo4j.kernel.impl.newapi.DefaultCursors.trackCursors=false
         </test.runner.jvm.settings>
     </properties>
