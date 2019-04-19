@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -31,22 +31,24 @@ import java.util.concurrent.Future;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.batchimport.input.BadCollector.COLLECT_ALL;
 import static org.neo4j.internal.batchimport.input.BadCollector.UNLIMITED_TOLERANCE;
 import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
 import static org.neo4j.test.OtherThreadExecutor.command;
 
-public class BadCollectorTest
+@ExtendWith( EphemeralFileSystemExtension.class )
+class BadCollectorTest
 {
-    @Rule
-    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Inject
+    private FileSystemAbstraction fs;
 
     @Test
-    public void shouldCollectBadRelationshipsEvenIfThresholdNeverReached() throws IOException
+    void shouldCollectBadRelationshipsEvenIfThresholdNeverReached() throws IOException
     {
         // given
         int tolerance = 5;
@@ -62,7 +64,7 @@ public class BadCollectorTest
     }
 
     @Test
-    public void shouldThrowExceptionIfDuplicateNodeTipsUsOverTheToleranceEdge() throws IOException
+    void shouldThrowExceptionIfDuplicateNodeTipsUsOverTheToleranceEdge() throws IOException
     {
         // given
         int tolerance = 1;
@@ -71,20 +73,12 @@ public class BadCollectorTest
         {
             // when
             collectBadRelationship( badCollector );
-            try
-            {
-                badCollector.collectDuplicateNode( 1, 1, "group" );
-                fail( "Should have thrown an InputException" );
-            }
-            catch ( InputException ignored )
-            {
-                // then expect to end up here
-            }
+            assertThrows( InputException.class, () -> badCollector.collectDuplicateNode( 1, 1, "group" ) );
         }
     }
 
     @Test
-    public void shouldThrowExceptionIfBadRelationshipsTipsUsOverTheToleranceEdge() throws IOException
+    void shouldThrowExceptionIfBadRelationshipsTipsUsOverTheToleranceEdge() throws IOException
     {
         // given
         int tolerance = 1;
@@ -93,20 +87,12 @@ public class BadCollectorTest
         {
             // when
             badCollector.collectDuplicateNode( 1, 1, "group" );
-            try
-            {
-                collectBadRelationship( badCollector );
-                fail( "Should have thrown an InputException" );
-            }
-            catch ( InputException ignored )
-            {
-                // then expect to end up here
-            }
+            assertThrows( InputException.class, () ->  collectBadRelationship( badCollector ) );
         }
     }
 
     @Test
-    public void shouldNotCollectBadRelationshipsIfWeShouldOnlyBeCollectingNodes() throws IOException
+    void shouldNotCollectBadRelationshipsIfWeShouldOnlyBeCollectingNodes() throws IOException
     {
         // given
         int tolerance = 1;
@@ -115,20 +101,13 @@ public class BadCollectorTest
         {
             // when
             badCollector.collectDuplicateNode( 1, 1, "group" );
-            try
-            {
-                collectBadRelationship( badCollector );
-            }
-            catch ( InputException ignored )
-            {
-                // then expect to end up here
-                assertEquals( 1 /* only duplicate node collected */, badCollector.badEntries() );
-            }
+            assertThrows( InputException.class, () ->  collectBadRelationship( badCollector ) );
+            assertEquals( 1 /* only duplicate node collected */, badCollector.badEntries() );
         }
     }
 
     @Test
-    public void shouldNotCollectBadNodesIfWeShouldOnlyBeCollectingRelationships() throws IOException
+    void shouldNotCollectBadNodesIfWeShouldOnlyBeCollectingRelationships() throws IOException
     {
         // given
         int tolerance = 1;
@@ -137,20 +116,13 @@ public class BadCollectorTest
         {
             // when
             collectBadRelationship( badCollector );
-            try
-            {
-                badCollector.collectDuplicateNode( 1, 1, "group" );
-            }
-            catch ( InputException ignored )
-            {
-                // then expect to end up here
-                assertEquals( 1 /* only duplicate rel collected */, badCollector.badEntries() );
-            }
+            assertThrows( InputException.class, () ->  badCollector.collectDuplicateNode( 1, 1, "group" ) );
+            assertEquals( 1 /* only duplicate rel collected */, badCollector.badEntries() );
         }
     }
 
     @Test
-    public void shouldCollectUnlimitedNumberOfBadEntriesIfToldTo()
+    void shouldCollectUnlimitedNumberOfBadEntriesIfToldTo()
     {
         // GIVEN
         try ( BadCollector collector = new BadCollector( NULL_OUTPUT_STREAM, UNLIMITED_TOLERANCE, COLLECT_ALL ) )
@@ -168,7 +140,7 @@ public class BadCollectorTest
     }
 
     @Test
-    public void skipBadEntriesLogging()
+    void skipBadEntriesLogging()
     {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try ( BadCollector badCollector = new BadCollector( outputStream, 100, COLLECT_ALL, 10, true, BadCollector.NO_MONITOR ) )
@@ -180,12 +152,12 @@ public class BadCollectorTest
             }
             collectBadRelationship( badCollector );
             badCollector.collectExtraColumns( "a,b,c", 1, "a" );
-            assertEquals( "Output stream should not have any reported entries", 0, outputStream.size() );
+            assertEquals( 0, outputStream.size(), "Output stream should not have any reported entries" );
         }
     }
 
     @Test
-    public void shouldApplyBackPressure() throws Exception
+    void shouldApplyBackPressure() throws Exception
     {
         // given
         int backPressureThreshold = 10;
@@ -208,7 +180,7 @@ public class BadCollectorTest
         }
     }
 
-    private void collectBadRelationship( Collector collector )
+    private static void collectBadRelationship( Collector collector )
     {
         collector.collectBadRelationship( "A", Group.GLOBAL.name(), "TYPE", "B", Group.GLOBAL.name(), "A" );
     }
@@ -216,12 +188,11 @@ public class BadCollectorTest
     private OutputStream badOutputFile() throws IOException
     {
         File badDataPath = new File( "/tmp/foo2" ).getAbsoluteFile();
-        FileSystemAbstraction fileSystem = fs.get();
-        File badDataFile = badDataFile( fileSystem, badDataPath );
-        return fileSystem.openAsOutputStream( badDataFile, true );
+        File badDataFile = badDataFile( fs, badDataPath );
+        return fs.openAsOutputStream( badDataFile, true );
     }
 
-    private File badDataFile( FileSystemAbstraction fileSystem, File badDataPath ) throws IOException
+    private static File badDataFile( FileSystemAbstraction fileSystem, File badDataPath ) throws IOException
     {
         fileSystem.mkdir( badDataPath.getParentFile() );
         fileSystem.write( badDataPath );

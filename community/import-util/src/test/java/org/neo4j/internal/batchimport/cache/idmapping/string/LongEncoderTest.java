@@ -19,14 +19,14 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-public class LongEncoderTest
+class LongEncoderTest
 {
     @Test
-    public void shouldProperlyEncodeLength()
+    void shouldProperlyEncodeLength()
     {
         // GIVEN
         Encoder encoder = new LongEncoder();

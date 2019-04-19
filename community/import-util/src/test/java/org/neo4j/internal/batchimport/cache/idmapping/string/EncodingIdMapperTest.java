@@ -206,11 +206,6 @@ public class EncodingIdMapperTest
         verifyNoMoreInteractions( collector );
     }
 
-    private static LongFunction<Object> wrap( List<Object> ids )
-    {
-        return nodeId -> ids.get( toIntExact( nodeId ) );
-    }
-
     @Test
     public void shouldCopeWithCollisionsBasedOnDifferentInputIds()
     {

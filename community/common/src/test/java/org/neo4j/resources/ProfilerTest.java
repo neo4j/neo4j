@@ -57,7 +57,7 @@ class ProfilerTest
         assertThat( output, not( containsString( "otherIntensiveWork" ) ) );
     }
 
-    private String getProfilerOutput( Profiler profiler ) throws InterruptedException
+    private static String getProfilerOutput( Profiler profiler ) throws InterruptedException
     {
         profiler.finish();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -69,12 +69,12 @@ class ProfilerTest
         return buffer.toString();
     }
 
-    private void expensiveComputation() throws InterruptedException
+    private static void expensiveComputation() throws InterruptedException
     {
         Thread.sleep( COMPUTE_WORK_MILLIS );
     }
 
-    private void otherIntenseWork() throws InterruptedException
+    private static void otherIntenseWork() throws InterruptedException
     {
         Thread.sleep( COMPUTE_WORK_MILLIS );
     }

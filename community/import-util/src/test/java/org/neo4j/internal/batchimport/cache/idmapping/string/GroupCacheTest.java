@@ -19,16 +19,16 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class GroupCacheTest
+class GroupCacheTest
 {
     @Test
-    public void shouldHandleSingleByteCount()
+    void shouldHandleSingleByteCount()
     {
         // given
         int max = 256;
@@ -40,19 +40,11 @@ public class GroupCacheTest
         assertSetAndGet( cache, 1000, 245 );
 
         // then
-        try
-        {
-            cache.set( 10000, 345 );
-            fail( "Shouldn't handle that" );
-        }
-        catch ( ArithmeticException e )
-        {
-            // OK
-        }
+        assertThrows(ArithmeticException.class, () -> cache.set( 10000, 345 ) );
     }
 
     @Test
-    public void shouldSwitchToTwoByteVersionBeyondSingleByteGroupIds()
+    void shouldSwitchToTwoByteVersionBeyondSingleByteGroupIds()
     {
         // given
         int max = 257;
@@ -65,18 +57,10 @@ public class GroupCacheTest
         assertSetAndGet( cache, 10000, 0xFFFF );
 
         // then
-        try
-        {
-            cache.set( 100000, 123456 );
-            fail( "Shouldn't handle that" );
-        }
-        catch ( ArithmeticException e )
-        {
-            // OK
-        }
+        assertThrows(ArithmeticException.class, () -> cache.set( 100000, 123456 ) );
     }
 
-    private void assertSetAndGet( GroupCache cache, long nodeId, int groupId )
+    private static void assertSetAndGet( GroupCache cache, long nodeId, int groupId )
     {
         cache.set( nodeId, groupId );
     }

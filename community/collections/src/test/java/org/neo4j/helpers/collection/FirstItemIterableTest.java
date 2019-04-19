@@ -26,13 +26,11 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 class FirstItemIterableTest
 {
@@ -42,15 +40,7 @@ class FirstItemIterableTest
         FirstItemIterable<?> firstItemIterable = new FirstItemIterable<>( Collections.emptyList() );
         Iterator<?> empty = firstItemIterable.iterator();
         assertFalse( empty.hasNext() );
-        try
-        {
-            empty.next();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( NoSuchElementException.class ) );
-        }
+        assertThrows( NoSuchElementException.class, empty::next );
         assertNull( firstItemIterable.getFirst() );
     }
 
@@ -63,15 +53,7 @@ class FirstItemIterableTest
         assertEquals( Boolean.TRUE, empty.next() );
         assertEquals( Boolean.TRUE, firstItemIterable.getFirst() );
         assertFalse( empty.hasNext() );
-        try
-        {
-            empty.next();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( NoSuchElementException.class ) );
-        }
+        assertThrows( NoSuchElementException.class, empty::next );
         assertEquals( Boolean.TRUE, firstItemIterable.getFirst() );
     }
 
@@ -87,15 +69,7 @@ class FirstItemIterableTest
         assertEquals( Boolean.FALSE, empty.next() );
         assertEquals( Boolean.TRUE, firstItemIterable.getFirst() );
         assertFalse( empty.hasNext() );
-        try
-        {
-            empty.next();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( NoSuchElementException.class ) );
-        }
+        assertThrows( NoSuchElementException.class, empty::next );
         assertEquals( Boolean.TRUE, firstItemIterable.getFirst() );
     }
 }

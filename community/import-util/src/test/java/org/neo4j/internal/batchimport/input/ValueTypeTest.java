@@ -19,27 +19,31 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.Flushable;
 import java.io.IOException;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FlushableChannel;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ValueTypeTest
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+class ValueTypeTest
 {
-    @Rule
-    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory( fs );
+    @Inject
+    private FileSystemAbstraction fs;
+    @Inject
+    private TestDirectory directory;
 
     @Test
-    public void arraysShouldCalculateCorrectLength() throws IOException
+    void arraysShouldCalculateCorrectLength() throws IOException
     {
         // given
         int[] value = new int[3];

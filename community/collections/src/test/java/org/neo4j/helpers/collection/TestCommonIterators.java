@@ -325,7 +325,7 @@ class TestCommonIterators
         assertTrue( pager.hasNext() );
     }
 
-    private void assertPage( Iterator<Integer> page, int size, int plus )
+    private static void assertPage( Iterator<Integer> page, int size, int plus )
     {
         for ( int i = 0; i < size; i++ )
         {

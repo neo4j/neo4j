@@ -19,14 +19,14 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DynamicIntArrayTest
+class DynamicIntArrayTest
 {
     @Test
-    public void shouldWorkOnSingleChunk()
+    void shouldWorkOnSingleChunk()
     {
         // GIVEN
         int defaultValue = 0;
@@ -41,7 +41,7 @@ public class DynamicIntArrayTest
     }
 
     @Test
-    public void shouldChunksAsNeeded()
+    void shouldChunksAsNeeded()
     {
         // GIVEN
         IntArray array = NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicIntArray( 10, 0 );

@@ -19,19 +19,19 @@
  */
 package org.neo4j.common;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class HexPrinterTest
+class HexPrinterTest
 {
     @Test
-    public void shouldPrintACoupleOfLines()
+    void shouldPrintACoupleOfLines()
     {
         // GIVEN
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -54,7 +54,7 @@ public class HexPrinterTest
     }
 
     @Test
-    public void shouldPrintUserSpecifiedBytesGroupingFormat()
+    void shouldPrintUserSpecifiedBytesGroupingFormat()
     {
         // GIVEN
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -77,7 +77,7 @@ public class HexPrinterTest
     }
 
     @Test
-    public void shouldNotGroupingWhenBytesPerGroupIsGreaterThanBytesPerLine()
+    void shouldNotGroupingWhenBytesPerGroupIsGreaterThanBytesPerLine()
     {
         // GIVEN
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -100,7 +100,7 @@ public class HexPrinterTest
     }
 
     @Test
-    public void shouldPrintUserSpecifiedLineNumberFormat()
+    void shouldPrintUserSpecifiedLineNumberFormat()
     {
         // GIVEN
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -125,7 +125,7 @@ public class HexPrinterTest
     }
 
     @Test
-    public void shouldStartFromUserSpecifiedLineNumber()
+    void shouldStartFromUserSpecifiedLineNumber()
     {
         // GIVEN
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -150,7 +150,7 @@ public class HexPrinterTest
     }
 
     @Test
-    public void shouldPrintPartOfByteBuffer()
+    void shouldPrintPartOfByteBuffer()
     {
         ByteBuffer bytes = ByteBuffer.allocate( 1024 );
         for ( byte value = 0; value < 33; value++ )
@@ -158,11 +158,11 @@ public class HexPrinterTest
             bytes.put( value );
         }
         String hexString = HexPrinter.hex( bytes, 3, 8 );
-        assertEquals( format( "03 04 05 06 07 08 09 0A" ), hexString );
+        assertEquals( "03 04 05 06 07 08 09 0A", hexString );
     }
 
     @Test
-    public void shouldOnlyPrintBytesWrittenToBuffer()
+    void shouldOnlyPrintBytesWrittenToBuffer()
     {
         // Given
         ByteBuffer bytes = ByteBuffer.allocate( 1024 );
@@ -176,6 +176,6 @@ public class HexPrinterTest
         String hexString = HexPrinter.hex( bytes );
 
         // Then
-        assertEquals( format( "00 01 02 03 04 05 06 07    08 09" ), hexString );
+        assertEquals( "00 01 02 03 04 05 06 07    08 09", hexString );
     }
 }

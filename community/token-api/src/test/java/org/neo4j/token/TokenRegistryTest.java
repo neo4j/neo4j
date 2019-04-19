@@ -46,7 +46,7 @@ class TokenRegistryTest
     private TokenRegistry registry;
 
     @BeforeEach
-    private void setUp()
+    void setUp()
     {
         registry = new TokenRegistry( "testType" );
     }

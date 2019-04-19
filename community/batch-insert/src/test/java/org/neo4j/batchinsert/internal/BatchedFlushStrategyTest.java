@@ -24,6 +24,7 @@ import org.mockito.Mockito;
 
 import org.neo4j.internal.recordstorage.DirectRecordAccessSet;
 
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -34,7 +35,7 @@ class BatchedFlushStrategyTest
     @Test
     void testFlush()
     {
-        DirectRecordAccessSet recordAccessSet = Mockito.mock( DirectRecordAccessSet.class );
+        DirectRecordAccessSet recordAccessSet = mock( DirectRecordAccessSet.class );
         BatchInserterImpl.BatchedFlushStrategy flushStrategy = createFlushStrategy( recordAccessSet, 2 );
         flushStrategy.flush();
         verifyZeroInteractions( recordAccessSet );
@@ -56,7 +57,7 @@ class BatchedFlushStrategyTest
     @Test
     void testForceFlush()
     {
-        DirectRecordAccessSet recordAccessSet = Mockito.mock( DirectRecordAccessSet.class );
+        DirectRecordAccessSet recordAccessSet = mock( DirectRecordAccessSet.class );
         BatchInserterImpl.BatchedFlushStrategy flushStrategy = createFlushStrategy( recordAccessSet, 2 );
 
         flushStrategy.forceFlush();
@@ -71,7 +72,7 @@ class BatchedFlushStrategyTest
     @Test
     void testResetBatchCounterOnForce()
     {
-        DirectRecordAccessSet recordAccessSet = Mockito.mock( DirectRecordAccessSet.class );
+        DirectRecordAccessSet recordAccessSet = mock( DirectRecordAccessSet.class );
         BatchInserterImpl.BatchedFlushStrategy flushStrategy = createFlushStrategy( recordAccessSet, 3 );
 
         flushStrategy.flush();
@@ -86,7 +87,7 @@ class BatchedFlushStrategyTest
         flushStrategy.flush();
     }
 
-    private BatchInserterImpl.BatchedFlushStrategy createFlushStrategy( DirectRecordAccessSet recordAccessSet, int batchSize )
+    private static BatchInserterImpl.BatchedFlushStrategy createFlushStrategy( DirectRecordAccessSet recordAccessSet, int batchSize )
     {
         return new BatchInserterImpl.BatchedFlushStrategy( recordAccessSet, batchSize );
     }

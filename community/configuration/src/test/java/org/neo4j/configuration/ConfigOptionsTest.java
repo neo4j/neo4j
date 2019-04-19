@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ConfigOptionsTest
 {
-    private Setting<Integer> setting = new BaseSetting<Integer>()
+    private final Setting<Integer> setting = new BaseSetting<>()
     {
         @Override
         public String name()

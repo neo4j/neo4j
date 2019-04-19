@@ -19,26 +19,26 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
 import org.neo4j.io.pagecache.PageCache;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 
-public class PageCacheArrayFactoryMonitorTest
+class PageCacheArrayFactoryMonitorTest
 {
     private final PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( mock( PageCache.class ), new File( "storeDir" ) );
     private final PageCacheArrayFactoryMonitor monitor = new PageCacheArrayFactoryMonitor();
 
     @Test
-    public void shouldComposeFailureDescriptionForFailedCandidates()
+    void shouldComposeFailureDescriptionForFailedCandidates()
     {
         // given
         monitor.allocationSuccessful( 123, factory, asList(
@@ -54,7 +54,7 @@ public class PageCacheArrayFactoryMonitorTest
     }
 
     @Test
-    public void shouldClearFailureStateAfterAccessorCall()
+    void shouldClearFailureStateAfterAccessorCall()
     {
         // given
         monitor.allocationSuccessful( 123, factory, asList(
@@ -71,7 +71,7 @@ public class PageCacheArrayFactoryMonitorTest
     }
 
     @Test
-    public void shouldReturnNullFailureOnNoFailure()
+    void shouldReturnNullFailureOnNoFailure()
     {
         // then
         assertNull( monitor.pageCacheAllocationOrNull() );

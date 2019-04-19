@@ -33,8 +33,8 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 class ListenAddressSettingsTest
 {
-    private static Setting<ListenSocketAddress> legacy_address_setting = listenAddress( "address", 1234 );
-    private static Setting<ListenSocketAddress> listen_address_setting =
+    private static final Setting<ListenSocketAddress> legacy_address_setting = listenAddress( "address", 1234 );
+    private static final Setting<ListenSocketAddress> listen_address_setting =
             legacyFallback( legacy_address_setting, listenAddress( "listen_address", 1234 ) );
 
     @Test

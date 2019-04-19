@@ -19,42 +19,38 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.CHUNKED_FIXED_SIZE;
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.HEAP;
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.OFF_HEAP;
 
-@RunWith( Parameterized.class )
-public class LongCollisionValuesTest
+@ExtendWith( RandomExtension.class )
+class LongCollisionValuesTest
 {
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
 
-    @Parameters
-    public static Collection<NumberArrayFactory> data()
+    static Collection<NumberArrayFactory> data()
     {
         return Arrays.asList( HEAP, OFF_HEAP, AUTO_WITHOUT_PAGECACHE, CHUNKED_FIXED_SIZE );
     }
 
-    @Parameter( 0 )
-    public NumberArrayFactory factory;
-
-    @Test
-    public void shouldStoreAndLoadLongs()
+    @ParameterizedTest
+    @MethodSource( "data" )
+    void shouldStoreAndLoadLongs( NumberArrayFactory factory )
     {
         // given
         try ( LongCollisionValues values = new LongCollisionValues( factory, 100 ) )

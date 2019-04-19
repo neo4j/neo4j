@@ -19,16 +19,16 @@
  */
 package org.neo4j.helpers.collection;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class MultiSetTest
+class MultiSetTest
 {
     @Test
-    public void anEmptySetContainsNothing()
+    void anEmptySetContainsNothing()
     {
         // given
         Object aValue = new Object();
@@ -45,7 +45,7 @@ public class MultiSetTest
     }
 
     @Test
-    public void shouldAddAnElementToTheMultiSet()
+    void shouldAddAnElementToTheMultiSet()
     {
         // given
         MultiSet<Object> multiSet = new MultiSet<>();
@@ -64,7 +64,7 @@ public class MultiSetTest
     }
 
     @Test
-    public void shouldRemoveAnElementFromTheMultiSet()
+    void shouldRemoveAnElementFromTheMultiSet()
     {
         // given
         MultiSet<Object> multiSet = new MultiSet<>();
@@ -84,7 +84,7 @@ public class MultiSetTest
     }
 
     @Test
-    public void shouldAddAnElementTwice()
+    void shouldAddAnElementTwice()
     {
         // given
         MultiSet<Object> multiSet = new MultiSet<>();
@@ -104,7 +104,7 @@ public class MultiSetTest
     }
 
     @Test
-    public void shouldRemoveAnElementWhenMultiElementArePresentInTheMultiSet()
+    void shouldRemoveAnElementWhenMultiElementArePresentInTheMultiSet()
     {
         // given
         MultiSet<Object> multiSet = new MultiSet<>();
@@ -125,7 +125,7 @@ public class MultiSetTest
     }
 
     @Test
-    public void shouldClearTheMultiSet()
+    void shouldClearTheMultiSet()
     {
         // given
         MultiSet<Object> multiSet = new MultiSet<>();

@@ -19,14 +19,14 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class LongBitsManipulatorTest
+class LongBitsManipulatorTest
 {
     @Test
-    public void shouldManageTwoSlots()
+    void shouldManageTwoSlots()
     {
         // GIVEN
         LongBitsManipulator manipulator = new LongBitsManipulator( 64 - 29, 29 );
@@ -42,7 +42,7 @@ public class LongBitsManipulatorTest
     }
 
     @Test
-    public void shouldInterpretAllOnesAsMinusOne()
+    void shouldInterpretAllOnesAsMinusOne()
     {
         // GIVEN
         LongBitsManipulator manipulator = new LongBitsManipulator( 64 - 29, 29 );
@@ -55,7 +55,7 @@ public class LongBitsManipulatorTest
     }
 
     @Test
-    public void shouldHandleMinusOneValues()
+    void shouldHandleMinusOneValues()
     {
         // GIVEN
         LongBitsManipulator manipulator = new LongBitsManipulator( 1, 5, 10, 16, 32 ); // = 64 bits
@@ -71,16 +71,16 @@ public class LongBitsManipulatorTest
                     long valueAfterClearWouldHaveChangedIt = manipulator.clear( field, j, true );
                     field = manipulator.set( field, j, -1 );
                     // We piggy pack testing of clear(true) vs. set -1 here
-                    assertEquals( "Clear(true) and set -1 produced different results for i:" + i + ", j:" + j,
-                            field, valueAfterClearWouldHaveChangedIt );
+                    assertEquals( field, valueAfterClearWouldHaveChangedIt,
+                            "Clear(true) and set -1 produced different results for i:" + i + ", j:" + j );
                 }
                 else
                 {   // The other ones
                     long valueAfterClearWouldHaveChangedIt = manipulator.clear( field, j, false );
                     field = manipulator.set( field, j, 0 );
                     // We piggy pack testing of clear(false) vs. set 0 here
-                    assertEquals( "Clear(false) and set 0 produced different results for i:" + i + ", j:" + j,
-                            field, valueAfterClearWouldHaveChangedIt );
+                    assertEquals( field, valueAfterClearWouldHaveChangedIt,
+                            "Clear(false) and set 0 produced different results for i:" + i + ", j:" + j );
                 }
             }
 

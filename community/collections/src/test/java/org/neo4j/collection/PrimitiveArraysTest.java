@@ -179,9 +179,9 @@ class PrimitiveArraysTest
 
     // helpers
 
-    private Matcher<Long> isIntPair( int left, int right )
+    private static Matcher<Long> isIntPair( int left, int right )
     {
-        return new BaseMatcher<Long>()
+        return new BaseMatcher<>()
         {
             @Override
             public void describeTo( Description description )

@@ -19,21 +19,24 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class IntTrackerTest
+@ExtendWith( RandomExtension.class )
+class IntTrackerTest
 {
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
 
     @Test
-    public void shouldKeepIdsAndMarkDuplicates()
+    void shouldKeepIdsAndMarkDuplicates()
     {
         // given
         int length = 10_000;

@@ -77,8 +77,8 @@ class ConfigTest
     private TestDirectory testDirectory;
 
     private static final String ORIGIN = "test";
-    private static MyMigratingSettings myMigratingSettings = new MyMigratingSettings();
-    private static MySettingsWithDefaults mySettingsWithDefaults = new MySettingsWithDefaults();
+    private static final MyMigratingSettings myMigratingSettings = new MyMigratingSettings();
+    private static final MySettingsWithDefaults mySettingsWithDefaults = new MySettingsWithDefaults();
 
     @Test
     void shouldApplyDefaults()

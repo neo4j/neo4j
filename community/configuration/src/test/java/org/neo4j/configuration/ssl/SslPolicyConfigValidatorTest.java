@@ -68,7 +68,7 @@ class SslPolicyConfigValidatorTest
     }
 
     @Test
-    public void shouldAcceptAllValidJksPolicyKeys() throws Throwable
+    void shouldAcceptAllValidJksPolicyKeys()
     {
         // given
         SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
@@ -96,7 +96,7 @@ class SslPolicyConfigValidatorTest
     }
 
     @Test()
-    public void shouldThrowIfCombinationOfPemAndJks() throws Throwable
+    void shouldThrowIfCombinationOfPemAndJks()
     {
         // given
         SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
@@ -181,7 +181,7 @@ class SslPolicyConfigValidatorTest
     }
 
     @Test
-    public void shouldThrowIfUnknownFormat() throws Throwable
+    void shouldThrowIfUnknownFormat()
     {
         // given
         SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
@@ -196,7 +196,7 @@ class SslPolicyConfigValidatorTest
     }
 
     @Test
-    public void shouldThrowIfMissingFormat() throws Throwable
+    void shouldThrowIfMissingFormat()
     {
         // given
         SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
@@ -210,7 +210,7 @@ class SslPolicyConfigValidatorTest
     }
 
     @Test
-    public void shouldAllowCaseInsensitiveFormat() throws Throwable
+    void shouldAllowCaseInsensitiveFormat()
     {
         // given
         SslPolicyConfigValidator validator = new SslPolicyConfigValidator();

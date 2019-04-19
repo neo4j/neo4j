@@ -54,16 +54,6 @@ class ListenersTest
         assertEquals( asList( original ), asList( copy ) );
     }
 
-    private <T> List<T> asList( Listeners<T> listeners )
-    {
-        final List<T> list = new ArrayList<>();
-        for ( final T listener : listeners )
-        {
-            list.add( listener );
-        }
-        return list;
-    }
-
     @Test
     void addNull()
     {
@@ -178,6 +168,16 @@ class ListenersTest
         Listeners<Listener> listeners = newListeners( listener1, listener2, listener3 );
 
         assertEquals( Arrays.asList( listener1, listener2, listener3 ), asList( listeners ) );
+    }
+
+    private static <T> List<T> asList( Listeners<T> listeners )
+    {
+        final List<T> list = new ArrayList<>();
+        for ( final T listener : listeners )
+        {
+            list.add( listener );
+        }
+        return list;
     }
 
     @SafeVarargs

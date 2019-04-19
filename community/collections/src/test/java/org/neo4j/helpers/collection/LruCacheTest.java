@@ -140,7 +140,7 @@ class LruCacheTest
         cache.put( key3, s3 );
         cache.get( key2 );
 
-        assertEquals( set( key1, key2, key3 ), cache.keySet() );
+        assertEquals( Set.of( new Integer[]{key1, key2, key3} ), cache.keySet() );
         assertEquals( cache.maxSize(), cache.size() );
 
         cache.resize( 5 );
@@ -151,27 +151,27 @@ class LruCacheTest
 
         cache.put( key4, s4 );
 
-        assertEquals( set( key1, key2, key3, key4 ), cache.keySet() );
+        assertEquals( Set.of( new Integer[]{key1, key2, key3, key4} ), cache.keySet() );
 
         cache.put( key5, s5 );
 
-        assertEquals( set( key1, key2, key3, key4, key5 ), cache.keySet() );
+        assertEquals( Set.of( new Integer[]{key1, key2, key3, key4, key5} ), cache.keySet() );
         assertEquals( cache.maxSize(), cache.size() );
 
         cache.resize( 4 );
 
-        assertEquals( set( key2, key3, key4, key5 ), cache.keySet() );
+        assertEquals( Set.of( new Integer[]{key2, key3, key4, key5} ), cache.keySet() );
         assertEquals( cache.maxSize(), cache.size() );
-        assertEquals( set( s1 ), cleaned );
+        assertEquals( Set.of( new String[]{s1} ), cleaned );
 
         cleaned.clear();
 
         cache.resize( 3 );
 
-        assertEquals( set( key2, key4, key5 ), cache.keySet() );
+        assertEquals( Set.of( new Integer[]{key2, key4, key5} ), cache.keySet() );
         assertEquals( 3, cache.maxSize() );
         assertEquals( 3, cache.size() );
-        assertEquals( set( s3 ), cleaned );
+        assertEquals( Set.of( new String[]{s3} ), cleaned );
     }
 
     @Test
@@ -203,7 +203,7 @@ class LruCacheTest
         cache.put( key3, s3 );
         cache.get( key2 );
 
-        assertEquals( set( key1, key2, key3 ), cache.keySet() );
+        assertEquals( Set.of( new Integer[]{key1, key2, key3} ), cache.keySet() );
         assertEquals( cache.maxSize(), cache.size() );
 
         cache.resize( 5 );
@@ -213,21 +213,16 @@ class LruCacheTest
 
         cache.put( key4, s4 );
 
-        assertEquals( set( key1, key2, key3, key4 ), cache.keySet() );
+        assertEquals( Set.of( new Integer[]{key1, key2, key3, key4} ), cache.keySet() );
 
         cache.put( key5, s5 );
 
-        assertEquals( set( key1, key2, key3, key4, key5 ), cache.keySet() );
+        assertEquals( Set.of( new Integer[]{key1, key2, key3, key4, key5} ), cache.keySet() );
         assertEquals( cache.maxSize(), cache.size() );
 
         cache.clear( );
 
         assertEquals( 0, cache.size() );
-        assertEquals( set( s1, s2, s3, s4, s5 ), cleaned );
-    }
-
-    private static <E> Set<E> set( E... elems )
-    {
-        return new HashSet<>( Arrays.asList( elems ) );
+        assertEquals( Set.of( new String[]{s1, s2, s3, s4, s5} ), cleaned );
     }
 }

@@ -32,13 +32,13 @@ import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.oneOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -285,7 +285,7 @@ class DelegatingTokenHolderTest
                 token( "four", 4 ) );
     }
 
-    private void assertTokens( Iterable<NamedToken> allTokens, NamedToken... expectedTokens )
+    private static void assertTokens( Iterable<NamedToken> allTokens, NamedToken... expectedTokens )
     {
         Map<String,NamedToken> existing = new HashMap<>();
         for ( NamedToken token : allTokens )
@@ -300,12 +300,12 @@ class DelegatingTokenHolderTest
         assertEquals( expected, existing );
     }
 
-    private NamedToken token( String name, int id )
+    private static NamedToken token( String name, int id )
     {
         return token( name, id, false );
     }
 
-    private NamedToken token( String name, int id, boolean internal )
+    private static NamedToken token( String name, int id, boolean internal )
     {
         return new NamedToken( name, id, internal );
     }

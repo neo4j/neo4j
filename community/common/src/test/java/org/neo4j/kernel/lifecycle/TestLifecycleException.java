@@ -69,12 +69,12 @@ class TestLifecycleException
                 containsString( root.getMessage()));
     }
 
-    private LifecycleException exceptionFor( LifecycleStatus from, LifecycleStatus to )
+    private static LifecycleException exceptionFor( LifecycleStatus from, LifecycleStatus to )
     {
         return exceptionFor( from, to, null );
     }
 
-    private LifecycleException exceptionFor( LifecycleStatus from, LifecycleStatus to, Throwable cause )
+    private static LifecycleException exceptionFor( LifecycleStatus from, LifecycleStatus to, Throwable cause )
     {
         return new LifecycleException( new Object()
         {

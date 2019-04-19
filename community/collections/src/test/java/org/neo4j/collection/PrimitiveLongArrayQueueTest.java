@@ -211,7 +211,7 @@ class PrimitiveLongArrayQueueTest
         assertThrows( IllegalArgumentException.class, () -> new PrimitiveLongArrayQueue( 7 ) );
     }
 
-    private PrimitiveLongArrayQueue createQueue()
+    private static PrimitiveLongArrayQueue createQueue()
     {
         return new PrimitiveLongArrayQueue();
     }

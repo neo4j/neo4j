@@ -19,14 +19,14 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DynamicLongArrayTest
+class DynamicLongArrayTest
 {
     @Test
-    public void shouldWorkOnSingleChunk()
+    void shouldWorkOnSingleChunk()
     {
         // GIVEN
         long defaultValue = 0;
@@ -41,7 +41,7 @@ public class DynamicLongArrayTest
     }
 
     @Test
-    public void shouldChunksAsNeeded()
+    void shouldChunksAsNeeded()
     {
         // GIVEN
         LongArray array = NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicLongArray( 10, 0 );

@@ -19,19 +19,19 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.test.Race;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class GroupsTest
+class GroupsTest
 {
     @Test
-    public void shouldHandleConcurrentGetOrCreate() throws Throwable
+    void shouldHandleConcurrentGetOrCreate() throws Throwable
     {
         // GIVEN
         Groups groups = new Groups();
@@ -42,7 +42,7 @@ public class GroupsTest
             race.addContestant( () ->
             {
                 Group group = groups.getOrCreate( name );
-                Assert.assertEquals( Groups.LOWEST_NONGLOBAL_ID, group.id() );
+                assertEquals( Groups.LOWEST_NONGLOBAL_ID, group.id() );
             } );
         }
 
@@ -51,11 +51,11 @@ public class GroupsTest
 
         // THEN
         Group otherGroup = groups.getOrCreate( "MyOtherGroup" );
-        Assert.assertEquals( Groups.LOWEST_NONGLOBAL_ID + 1, otherGroup.id() );
+        assertEquals( Groups.LOWEST_NONGLOBAL_ID + 1, otherGroup.id() );
     }
 
     @Test
-    public void shouldSupportMixedGroupModeInGetOrCreate()
+    void shouldSupportMixedGroupModeInGetOrCreate()
     {
         // given
         Groups groups = new Groups();
@@ -66,7 +66,7 @@ public class GroupsTest
     }
 
     @Test
-    public void shouldSupportMixedGroupModeInGetOrCreate2()
+    void shouldSupportMixedGroupModeInGetOrCreate2()
     {
         // given
         Groups groups = new Groups();
@@ -77,7 +77,7 @@ public class GroupsTest
     }
 
     @Test
-    public void shouldGetCreatedGroup()
+    void shouldGetCreatedGroup()
     {
         // given
         Groups groups = new Groups();
@@ -92,7 +92,7 @@ public class GroupsTest
     }
 
     @Test
-    public void shouldGetGlobalGroup()
+    void shouldGetGlobalGroup()
     {
         // given
         Groups groups = new Groups();
@@ -106,7 +106,7 @@ public class GroupsTest
     }
 
     @Test
-    public void shouldSupportMixedGroupModeInGet()
+    void shouldSupportMixedGroupModeInGet()
     {
         // given
         Groups groups = new Groups();
@@ -116,13 +116,13 @@ public class GroupsTest
         assertEquals( Group.GLOBAL, groups.get( null ) );
     }
 
-    @Test ( expected = HeaderException.class )
-    public void shouldFailOnGettingNonExistentGroup()
+    @Test
+    void shouldFailOnGettingNonExistentGroup()
     {
         // given
         Groups groups = new Groups();
 
         // when
-        groups.get( "Something" );
+        assertThrows( HeaderException.class, () -> groups.get( "Something" ) );
     }
 }

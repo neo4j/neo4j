@@ -279,8 +279,7 @@ class LinkedQueuePoolTest
         assertEquals( 0, stateMonitor.disposed.get() );
     }
 
-    private void buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects( int MAX_SIZE, FakeClock clock,
-            LinkedQueuePool<Object> pool,
+    private static void buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects( int MAX_SIZE, FakeClock clock, LinkedQueuePool<Object> pool,
             List<FlyweightHolder<Object>> holders )
     {
         holders.addAll( acquireFromPool( pool, MAX_SIZE ) );
@@ -296,13 +295,13 @@ class LinkedQueuePoolTest
         }
     }
 
-    private LinkedQueuePool<Object> getLinkedQueuePool( StatefulMonitor stateMonitor, FakeClock clock, int minSize )
+    private static LinkedQueuePool<Object> getLinkedQueuePool( StatefulMonitor stateMonitor, FakeClock clock, int minSize )
     {
         return new LinkedQueuePool<>( minSize, Object::new,
                 new LinkedQueuePool.CheckStrategy.TimeoutCheckStrategy( 100, clock ), stateMonitor );
     }
 
-    private <R> List<FlyweightHolder<R>>  acquireFromPool( final LinkedQueuePool<R> pool, int times )
+    private static <R> List<FlyweightHolder<R>>  acquireFromPool( final LinkedQueuePool<R> pool, int times )
     {
         List<FlyweightHolder<R>> acquirers = new LinkedList<>();
         for ( int i = 0; i < times; i++ )

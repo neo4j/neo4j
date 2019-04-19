@@ -21,14 +21,14 @@ package org.neo4j.internal.batchimport.cache.idmapping.string;
 
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class StringEncoderTest
+class StringEncoderTest
 {
     @Test
-    public void shouldEncodeStringWithZeroLength()
+    void shouldEncodeStringWithZeroLength()
     {
         // GIVEN
         Encoder encoder = new StringEncoder();
@@ -41,7 +41,7 @@ public class StringEncoderTest
     }
 
     @Test
-    public void shouldEncodeStringWithAnyLength()
+    void shouldEncodeStringWithAnyLength()
     {
         // GIVEN
         Encoder encoder = new StringEncoder();
@@ -63,7 +63,7 @@ public class StringEncoderTest
         assertTrue( ((float) duplicates / (float) total) < 0.01f );
     }
 
-    private String abcStringOfLength( int length )
+    private static String abcStringOfLength( int length )
     {
         char[] chars = new char[length];
         for ( int i = 0; i < length; i++ )

@@ -19,21 +19,29 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.test.Race;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.rule.RandomRule;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
-public class NodeLabelsCacheTest
+@ExtendWith( RandomExtension.class )
+class NodeLabelsCacheTest
 {
+    private static final int CHUNK_SIZE = 100;
+    @Inject
+    private RandomRule random;
+
     @Test
-    public void shouldCacheSmallSetOfLabelsPerNode()
+    void shouldCacheSmallSetOfLabelsPerNode()
     {
         // GIVEN
         NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 5, CHUNK_SIZE );
@@ -50,7 +58,7 @@ public class NodeLabelsCacheTest
     }
 
     @Test
-    public void shouldHandleLargeAmountOfLabelsPerNode()
+    void shouldHandleLargeAmountOfLabelsPerNode()
     {
         // GIVEN
         int highLabelId = 1000;
@@ -69,7 +77,7 @@ public class NodeLabelsCacheTest
     }
 
     @Test
-    public void shouldHandleLabelsForManyNodes()
+    void shouldHandleLabelsForManyNodes()
     {
         // GIVEN a really weird scenario where we have 5000 different labels
         int highLabelId = 1_000;
@@ -89,12 +97,12 @@ public class NodeLabelsCacheTest
         for ( int i = 0; i < numberOfNodes; i++ )
         {
             int[] labels = cache.get( client, i, forceCreationOfNewIntArray );
-            assertArrayEquals( "For node " + i, expectedLabels[i], labels );
+            assertArrayEquals( expectedLabels[i], labels, "For node " + i );
         }
     }
 
     @Test
-    public void shouldEndTargetArrayWithMinusOne()
+    void shouldEndTargetArrayWithMinusOne()
     {
         // GIVEN
         NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 10 );
@@ -114,7 +122,7 @@ public class NodeLabelsCacheTest
     }
 
     @Test
-    public void shouldReturnEmptyArrayForNodeWithNoLabelsAndNoLabelsWhatsoever()
+    void shouldReturnEmptyArrayForNodeWithNoLabelsAndNoLabelsWhatsoever()
     {
         // GIVEN
         NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 0 );
@@ -129,7 +137,7 @@ public class NodeLabelsCacheTest
     }
 
     @Test
-    public void shouldSupportConcurrentGet() throws Throwable
+    void shouldSupportConcurrentGet() throws Throwable
     {
         // GIVEN
         int highLabelId = 10;
@@ -195,7 +203,7 @@ public class NodeLabelsCacheTest
         }
     }
 
-    private long[] asLongArray( int[] labels )
+    private static long[] asLongArray( int[] labels )
     {
         long[] result = new long[labels.length];
         for ( int i = 0; i < labels.length; i++ )
@@ -214,7 +222,4 @@ public class NodeLabelsCacheTest
         }
         return result;
     }
-
-    private static final int CHUNK_SIZE = 100;
-    private final Random random = new Random( 1234 );
 }

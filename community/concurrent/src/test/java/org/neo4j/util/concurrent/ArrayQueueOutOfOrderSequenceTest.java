@@ -19,7 +19,8 @@
  */
 package org.neo4j.util.concurrent;
 
-import org.junit.Test;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -31,19 +32,19 @@ import java.util.concurrent.atomic.AtomicLong;
 import static java.lang.Thread.sleep;
 import static java.lang.Thread.yield;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class ArrayQueueOutOfOrderSequenceTest
+class ArrayQueueOutOfOrderSequenceTest
 {
     private final long[] EMPTY_META = new long[]{42L};
 
     @Test
-    public void shouldExposeGapFreeSequenceSingleThreaded()
+    void shouldExposeGapFreeSequenceSingleThreaded()
     {
         // GIVEN
         OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 0L, 10, new long[1] );
@@ -77,7 +78,7 @@ public class ArrayQueueOutOfOrderSequenceTest
     }
 
     @Test
-    public void shouldExtendArrayIfNeedBe()
+    void shouldExtendArrayIfNeedBe()
     {
         // GIVEN
         OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 0L, 5, new long[1] );
@@ -97,7 +98,7 @@ public class ArrayQueueOutOfOrderSequenceTest
     }
 
     @Test
-    public void shouldDealWithThisScenario()
+    void shouldDealWithThisScenario()
     {
         // GIVEN
         OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 0, 5, new long[1] );
@@ -125,7 +126,7 @@ public class ArrayQueueOutOfOrderSequenceTest
     }
 
     @Test
-    public void shouldKeepItsCoolWhenMultipleThreadsAreHammeringIt() throws Exception
+    void shouldKeepItsCoolWhenMultipleThreadsAreHammeringIt() throws Exception
     {
         // An interesting note is that during tests the call to sequence#offer made no difference
         // in performance, so there seems to be no visible penalty in using ArrayQueueOutOfOrderSequence.
@@ -172,7 +173,7 @@ public class ArrayQueueOutOfOrderSequenceTest
     }
 
     @Test
-    public void highestEverSeenTest()
+    void highestEverSeenTest()
     {
         final OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 0, 5, EMPTY_META );
         assertEquals( 0L, sequence.highestEverSeen() );
@@ -185,30 +186,21 @@ public class ArrayQueueOutOfOrderSequenceTest
     }
 
     @Test
-    public void shouldBeAbleToTimeoutWaitingForNumber() throws Exception
+    void shouldBeAbleToTimeoutWaitingForNumber() throws Exception
     {
         // given
         long timeout = 10;
         final OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 3, 5, EMPTY_META );
 
         long startTime = System.currentTimeMillis();
-        try
-        {
-            // when
-            sequence.await( 4, timeout );
-            fail();
-        }
-        catch ( TimeoutException e )
-        {
-            // expected
-        }
+        assertThrows( TimeoutException.class, () -> sequence.await( 4, timeout ) );
 
         long endTime = System.currentTimeMillis();
-        assertThat( endTime - startTime, greaterThanOrEqualTo( timeout ) );
+        MatcherAssert.assertThat( endTime - startTime, greaterThanOrEqualTo( timeout ) );
     }
 
     @Test
-    public void shouldBeAbleToReturnImmediatelyWhenNumberAvailable() throws Exception
+    void shouldBeAbleToReturnImmediatelyWhenNumberAvailable() throws Exception
     {
         // given
         final OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 4, 5, EMPTY_META );
@@ -220,7 +212,7 @@ public class ArrayQueueOutOfOrderSequenceTest
     }
 
     @Test
-    public void shouldBeNotifiedWhenNumberAvailable() throws Exception
+    void shouldBeNotifiedWhenNumberAvailable() throws Exception
     {
         // given
         final Semaphore done = new Semaphore( 0 );
@@ -251,7 +243,7 @@ public class ArrayQueueOutOfOrderSequenceTest
         numberWaiter.join();
     }
 
-    private boolean offer( OutOfOrderSequence sequence, long number, long[] meta )
+    private static boolean offer( OutOfOrderSequence sequence, long number, long[] meta )
     {
         assertFalse( sequence.seen( number, meta ) );
         boolean result = sequence.offer( number, meta );
@@ -259,7 +251,7 @@ public class ArrayQueueOutOfOrderSequenceTest
         return result;
     }
 
-    private void assertGet( OutOfOrderSequence sequence, long number, long[] meta )
+    private static void assertGet( OutOfOrderSequence sequence, long number, long[] meta )
     {
         long[] data = sequence.get();
         long[] expected = new long[meta.length + 1];
@@ -268,7 +260,7 @@ public class ArrayQueueOutOfOrderSequenceTest
         assertArrayEquals( expected, data );
     }
 
-    private void await( CountDownLatch latch )
+    private static void await( CountDownLatch latch )
     {
         try
         {

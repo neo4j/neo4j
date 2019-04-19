@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.io.IOException;
@@ -27,20 +28,19 @@ import java.io.IOException;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.internal.batchimport.input.csv.Decorator;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class InputEntityDecoratorsTest
+class InputEntityDecoratorsTest
 {
     private final InputEntity entity = new InputEntity();
 
     @Test
-    public void shouldProvideDefaultRelationshipType() throws Exception
+    void shouldProvideDefaultRelationshipType() throws Exception
     {
         // GIVEN
         String defaultType = "TYPE";
@@ -54,7 +54,7 @@ public class InputEntityDecoratorsTest
     }
 
     @Test
-    public void shouldNotOverrideAlreadySetRelationshipType() throws Exception
+    void shouldNotOverrideAlreadySetRelationshipType() throws Exception
     {
         // GIVEN
         String defaultType = "TYPE";
@@ -70,7 +70,7 @@ public class InputEntityDecoratorsTest
     }
 
     @Test
-    public void shouldNotOverrideAlreadySetRelationshipTypeId() throws Exception
+    void shouldNotOverrideAlreadySetRelationshipTypeId() throws Exception
     {
         // GIVEN
         String defaultType = "TYPE";
@@ -83,12 +83,12 @@ public class InputEntityDecoratorsTest
                 "start", "end", null, typeId );
 
         // THEN
-        assertTrue( entity.hasIntType );
+        Assertions.assertTrue( entity.hasIntType );
         assertEquals( typeId, entity.intType );
     }
 
     @Test
-    public void shouldAddLabelsToNodeWithoutLabels() throws Exception
+    void shouldAddLabelsToNodeWithoutLabels() throws Exception
     {
         // GIVEN
         String[] toAdd = new String[] {"Add1", "Add2"};
@@ -102,7 +102,7 @@ public class InputEntityDecoratorsTest
     }
 
     @Test
-    public void shouldAddMissingLabels() throws Exception
+    void shouldAddMissingLabels() throws Exception
     {
         // GIVEN
         String[] toAdd = new String[] {"Add1", "Add2"};
@@ -117,7 +117,7 @@ public class InputEntityDecoratorsTest
     }
 
     @Test
-    public void shouldNotTouchLabelsIfNodeHasLabelFieldSet() throws Exception
+    void shouldNotTouchLabelsIfNodeHasLabelFieldSet() throws Exception
     {
         // GIVEN
         String[] toAdd = new String[] {"Add1", "Add2"};
@@ -133,7 +133,7 @@ public class InputEntityDecoratorsTest
     }
 
     @Test
-    public void shouldCramMultipleDecoratorsIntoOne()
+    void shouldCramMultipleDecoratorsIntoOne()
     {
         // GIVEN
         Decorator decorator1 = spy( new IdentityDecorator() );
