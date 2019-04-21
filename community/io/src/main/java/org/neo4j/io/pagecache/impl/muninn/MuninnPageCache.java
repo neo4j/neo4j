@@ -54,6 +54,7 @@ import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
+import static java.lang.String.format;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.util.FeatureToggles.getInteger;
 
@@ -153,6 +154,9 @@ public class MuninnPageCache implements PageCache
 
     private static final List<OpenOption> ignoredOpenOptions = Arrays.asList( (OpenOption) StandardOpenOption.APPEND,
             StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.SPARSE );
+
+    // Used when trying to figure out number of available pages in a page cache. Could be returned from tryGetNumberOfAvailablePages.
+    private static final int UNKNOWN_AVAILABLE_PAGES = -1;
 
     private final int pageCacheId;
     private final PageSwapperFactory swapperFactory;
@@ -314,7 +318,7 @@ public class MuninnPageCache implements PageCache
         int minimumPageCount = 2;
         if ( maxPages < minimumPageCount )
         {
-            throw new IllegalArgumentException( String.format(
+            throw new IllegalArgumentException( format(
                     "Page cache must have at least %s pages (%s bytes of memory), but was given %s pages.",
                     minimumPageCount, minimumPageCount * memoryPerPage, maxPages ) );
         }
@@ -913,30 +917,40 @@ public class MuninnPageCache implements PageCache
                 return 0;
             }
 
-            Object freelistHead = getFreelistHead();
-
-            if ( freelistHead == null )
+            int availablePages = tryGetNumberOfAvailablePages( keepFree );
+            if ( availablePages != UNKNOWN_AVAILABLE_PAGES )
             {
-                return keepFree;
-            }
-            else if ( freelistHead.getClass() == FreePage.class )
-            {
-                int availablePages = ((FreePage) freelistHead).count;
-                if ( availablePages < keepFree )
-                {
-                    return keepFree - availablePages;
-                }
-            }
-            else if ( freelistHead.getClass() == AtomicInteger.class )
-            {
-                AtomicInteger counter = (AtomicInteger) freelistHead;
-                long count = pages.getPageCount() - counter.get();
-                if ( count < keepFree )
-                {
-                    return count < 0 ? keepFree : (int) (keepFree - count);
-                }
+                return availablePages;
             }
         }
+    }
+
+    private int tryGetNumberOfAvailablePages( int keepFree )
+    {
+        Object freelistHead = getFreelistHead();
+
+        if ( freelistHead == null )
+        {
+            return keepFree;
+        }
+        else if ( freelistHead.getClass() == FreePage.class )
+        {
+            int availablePages = ((FreePage) freelistHead).count;
+            if ( availablePages < keepFree )
+            {
+                return keepFree - availablePages;
+            }
+        }
+        else if ( freelistHead.getClass() == AtomicInteger.class )
+        {
+            AtomicInteger counter = (AtomicInteger) freelistHead;
+            long count = pages.getPageCount() - counter.get();
+            if ( count < keepFree )
+            {
+                return count < 0 ? keepFree : (int) (keepFree - count);
+            }
+        }
+        return UNKNOWN_AVAILABLE_PAGES;
     }
 
     int evictPages( int pageCountToEvict, int clockArm, EvictionRunEvent evictionRunEvent )
@@ -1014,16 +1028,9 @@ public class MuninnPageCache implements PageCache
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append( "MuninnPageCache[ \n" );
-        for ( int i = 0; i < pages.getPageCount(); i++ )
-        {
-            sb.append( ' ' );
-            pages.toString( pages.deref( i ), sb );
-            sb.append( '\n' );
-        }
-        sb.append( ']' ).append( '\n' );
-        return sb.toString();
+        int availablePages = tryGetNumberOfAvailablePages( keepFree );
+        return format( "%s[pageCacheId:%d, pageSize:%d, pages:%d, availablePages:%s]", getClass().getSimpleName(),
+                pageCacheId, cachePageSize, pages.getPageCount(), availablePages != UNKNOWN_AVAILABLE_PAGES ? String.valueOf( availablePages ) : "N/A" );
     }
 
     void vacuum( SwapperSet swappers )
