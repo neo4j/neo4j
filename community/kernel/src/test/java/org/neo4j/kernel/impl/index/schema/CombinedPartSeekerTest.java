@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -29,7 +30,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.SimpleLongLayout;
 import org.neo4j.test.extension.Inject;
@@ -44,7 +44,7 @@ import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 @ExtendWith( RandomExtension.class )
 class CombinedPartSeekerTest
 {
-    private static final Comparator<Hit<MutableLong,MutableLong>> HIT_COMPARATOR = Comparator.comparing( Hit::key );
+    private static final Comparator<Pair<MutableLong,MutableLong>> HIT_COMPARATOR = Comparator.comparing( Pair::getKey );
 
     @Inject
     RandomRule random;
@@ -56,16 +56,16 @@ class CombinedPartSeekerTest
         SimpleLongLayout layout = longLayout().withFixedSize( true ).build();
         List<Seeker<MutableLong,MutableLong>> parts = new ArrayList<>();
         int partCount = random.nextInt( 1, 20 );
-        List<Hit<MutableLong,MutableLong>> expectedAllData = new ArrayList<>();
+        List<Pair<MutableLong,MutableLong>> expectedAllData = new ArrayList<>();
         int maxKey = random.nextInt( 100, 10_000 );
         for ( int i = 0; i < partCount; i++ )
         {
             int dataSize = random.nextInt( 0, 100 );
-            List<Hit<MutableLong,MutableLong>> partData = new ArrayList<>( dataSize );
+            List<Pair<MutableLong,MutableLong>> partData = new ArrayList<>( dataSize );
             for ( int j = 0; j < dataSize; j++ )
             {
                 long key = random.nextLong( maxKey );
-                partData.add( new SimpleHit<>( new MutableLong( key ), new MutableLong( key * 2 ) ) );
+                partData.add( Pair.of( new MutableLong( key ), new MutableLong( key * 2 ) ) );
             }
             partData.sort( HIT_COMPARATOR );
             parts.add( new SimpleSeeker( partData ) );
@@ -77,12 +77,12 @@ class CombinedPartSeekerTest
         CombinedPartSeeker<MutableLong,MutableLong> combinedSeeker = new CombinedPartSeeker<>( layout, parts );
 
         // then
-        for ( Hit<MutableLong,MutableLong> expectedHit : expectedAllData )
+        for ( Pair<MutableLong,MutableLong> expectedHit : expectedAllData )
         {
             assertTrue( combinedSeeker.next() );
 
-            assertEquals( expectedHit.key().longValue(), combinedSeeker.key().longValue() );
-            assertEquals( expectedHit.value().longValue(), combinedSeeker.value().longValue() );
+            assertEquals( expectedHit.getKey().longValue(), combinedSeeker.key().longValue() );
+            assertEquals( expectedHit.getValue().longValue(), combinedSeeker.value().longValue() );
         }
         assertFalse( combinedSeeker.next() );
         // And just ensure it will return false again after that
@@ -91,10 +91,10 @@ class CombinedPartSeekerTest
 
     private static class SimpleSeeker implements Seeker<MutableLong,MutableLong>
     {
-        private final Iterator<Hit<MutableLong,MutableLong>> data;
-        private Hit<MutableLong,MutableLong> current;
+        private final Iterator<Pair<MutableLong,MutableLong>> data;
+        private Pair<MutableLong,MutableLong> current;
 
-        private SimpleSeeker( Iterable<Hit<MutableLong,MutableLong>> data )
+        private SimpleSeeker( Iterable<Pair<MutableLong,MutableLong>> data )
         {
             this.data = data.iterator();
         }
@@ -119,13 +119,13 @@ class CombinedPartSeekerTest
         @Override
         public MutableLong key()
         {
-            return current.key();
+            return current.getKey();
         }
 
         @Override
         public MutableLong value()
         {
-            return current.value();
+            return current.getValue();
         }
     }
 }

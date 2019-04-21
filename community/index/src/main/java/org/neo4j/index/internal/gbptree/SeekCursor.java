@@ -33,7 +33,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
  * {@link Seeker} over tree leaves, making keys/values accessible to user. Given a starting leaf
  * and key range this cursor traverses each leaf and its right siblings as long as visited keys are within
  * key range. Each visited key within the key range can be accessible using {@link #key()}.
- * The key/value instances provided by {@link Hit} instance are mutable and overwritten with new values
+ * The instances provided by {@link Seeker#key()} and {@link Seeker#value()} are mutable and overwritten with new values
  * for every call to {@link #next()} so user cannot keep references to key/value instances, expecting them
  * to keep their values intact.
  * <p>

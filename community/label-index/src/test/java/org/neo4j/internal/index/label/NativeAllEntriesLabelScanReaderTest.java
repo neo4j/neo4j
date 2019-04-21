@@ -240,19 +240,18 @@ public class NativeAllEntriesLabelScanReaderTest
         {
             return new Seeker<>()
             {
-                MutableHit<LabelScanKey,LabelScanValue> current;
                 int cursor = -1;
 
                 @Override
                 public LabelScanKey key()
                 {
-                    return current.key();
+                    return entries.get( cursor ).first();
                 }
 
                 @Override
                 public LabelScanValue value()
                 {
-                    return current.value();
+                    return entries.get( cursor ).other();
                 }
 
                 @Override
@@ -263,8 +262,6 @@ public class NativeAllEntriesLabelScanReaderTest
                         return false;
                     }
                     cursor++;
-                    Pair<LabelScanKey,LabelScanValue> entry = entries.get( cursor );
-                    current = new MutableHit<>( entry.first(), entry.other() );
                     return true;
                 }
 

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
@@ -30,7 +31,6 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
@@ -98,8 +98,8 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     void verifyUpdates( IndexEntryUpdate<IndexDescriptor>[] updates )
             throws IOException
     {
-        Hit<KEY,VALUE>[] expectedHits = convertToHits( updates, layout );
-        List<Hit<KEY,VALUE>> actualHits = new ArrayList<>();
+        Pair<KEY,VALUE>[] expectedHits = convertToHits( updates, layout );
+        List<Pair<KEY,VALUE>> actualHits = new ArrayList<>();
         try ( GBPTree<KEY,VALUE> tree = getTree();
               Seeker<KEY,VALUE> scan = scan( tree ) )
         {
@@ -109,19 +109,19 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
             }
         }
 
-        Comparator<Hit<KEY,VALUE>> hitComparator = ( h1, h2 ) ->
+        Comparator<Pair<KEY,VALUE>> hitComparator = ( h1, h2 ) ->
         {
-            int keyCompare = layout.compare( h1.key(), h2.key() );
+            int keyCompare = layout.compare( h1.getKey(), h2.getKey() );
             if ( keyCompare == 0 )
             {
-                return valueCreatorUtil.compareIndexedPropertyValue( h1.key(), h2.key() );
+                return valueCreatorUtil.compareIndexedPropertyValue( h1.getKey(), h2.getKey() );
             }
             else
             {
                 return keyCompare;
             }
         };
-        assertSameHits( expectedHits, actualHits.toArray( new Hit[0] ), hitComparator );
+        assertSameHits( expectedHits, actualHits.toArray( new Pair[0] ), hitComparator );
     }
 
     GBPTree<KEY,VALUE> getTree()
@@ -141,8 +141,8 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
         return tree.seek( lowest, highest );
     }
 
-    private void assertSameHits( Hit<KEY, VALUE>[] expectedHits, Hit<KEY, VALUE>[] actualHits,
-            Comparator<Hit<KEY, VALUE>> comparator )
+    private void assertSameHits( Pair<KEY, VALUE>[] expectedHits, Pair<KEY, VALUE>[] actualHits,
+            Comparator<Pair<KEY, VALUE>> comparator )
     {
         Arrays.sort( expectedHits, comparator );
         Arrays.sort( actualHits, comparator );
@@ -152,25 +152,25 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
 
         for ( int i = 0; i < expectedHits.length; i++ )
         {
-            Hit<KEY,VALUE> expected = expectedHits[i];
-            Hit<KEY,VALUE> actual = actualHits[i];
+            Pair<KEY,VALUE> expected = expectedHits[i];
+            Pair<KEY,VALUE> actual = actualHits[i];
             assertEquals( "Hits differ on item number " + i + ". Expected " + expected + " but was " + actual, 0, comparator.compare( expected, actual ) );
         }
     }
 
-    private Hit<KEY,VALUE> deepCopy( Seeker<KEY,VALUE> from )
+    private Pair<KEY,VALUE> deepCopy( Seeker<KEY,VALUE> from )
     {
         KEY intoKey = layout.newKey();
         VALUE intoValue = layout.newValue();
         layout.copyKey( from.key(), intoKey );
         copyValue( from.value(), intoValue );
-        return new SimpleHit<>( intoKey, intoValue );
+        return Pair.of( intoKey, intoValue );
     }
 
-    private Hit<KEY,VALUE>[] convertToHits( IndexEntryUpdate<IndexDescriptor>[] updates,
+    private Pair<KEY,VALUE>[] convertToHits( IndexEntryUpdate<IndexDescriptor>[] updates,
             Layout<KEY,VALUE> layout )
     {
-        List<Hit<KEY,VALUE>> hits = new ArrayList<>( updates.length );
+        List<Pair<KEY,VALUE>> hits = new ArrayList<>( updates.length );
         for ( IndexEntryUpdate<IndexDescriptor> u : updates )
         {
             KEY key = layout.newKey();
@@ -181,14 +181,9 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
             }
             VALUE value = layout.newValue();
             value.from( u.values() );
-            hits.add( hit( key, value ) );
+            hits.add( Pair.of( key, value ) );
         }
-        return hits.toArray( new Hit[0] );
-    }
-
-    private Hit<KEY,VALUE> hit( final KEY key, final VALUE value )
-    {
-        return new SimpleHit<>( key, value );
+        return hits.toArray( new Pair[0] );
     }
 
     void assertFilePresent()

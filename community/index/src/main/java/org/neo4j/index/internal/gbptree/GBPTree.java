@@ -907,8 +907,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
     }
 
     /**
-     * Seeks hits in this tree, given a key range. Hits are iterated over using the returned {@link RawCursor}.
-     * There's no guarantee that neither the {@link Hit} nor key/value instances are immutable and so
+     * Seeks hits in this tree, given a key range. Hits are iterated over using the returned {@link Seeker}.
+     * There's no guarantee that neither the {@link KEY} nor the {@link VALUE} instances are immutable and so
      * if caller wants to cache the results it's safest to copy the instances, or rather their contents,
      * into its own result cache.
      * <p>
