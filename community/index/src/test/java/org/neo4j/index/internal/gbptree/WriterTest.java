@@ -74,8 +74,8 @@ class WriterTest
         try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ) ) )
         {
             assertTrue( cursor.next() );
-            assertEquals( key, cursor.get().key().longValue() );
-            assertEquals( value, cursor.get().value().longValue() );
+            assertEquals( key, cursor.key().longValue() );
+            assertEquals( value, cursor.value().longValue() );
             assertFalse( cursor.next() );
         }
     }
@@ -95,8 +95,8 @@ class WriterTest
         try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ) ) )
         {
             assertTrue( cursor.next() );
-            assertEquals( key, cursor.get().key().longValue() );
-            assertEquals( value, cursor.get().value().longValue() );
+            assertEquals( key, cursor.key().longValue() );
+            assertEquals( value, cursor.value().longValue() );
             assertFalse( cursor.next() );
         }
     }
@@ -122,8 +122,8 @@ class WriterTest
         try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ) ) )
         {
             assertTrue( cursor.next() );
-            assertEquals( key, cursor.get().key().longValue() );
-            assertEquals( value, cursor.get().value().longValue() );
+            assertEquals( key, cursor.key().longValue() );
+            assertEquals( value, cursor.value().longValue() );
             assertFalse( cursor.next() );
         }
     }
@@ -149,8 +149,8 @@ class WriterTest
         try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ) ) )
         {
             assertTrue( cursor.next() );
-            assertEquals( key, cursor.get().key().longValue() );
-            assertEquals( value + 1, cursor.get().value().longValue() );
+            assertEquals( key, cursor.key().longValue() );
+            assertEquals( value + 1, cursor.value().longValue() );
             assertFalse( cursor.next() );
         }
     }
@@ -194,8 +194,8 @@ class WriterTest
         try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ) ) )
         {
             assertTrue( cursor.next() );
-            assertEquals( key, cursor.get().key().longValue() );
-            assertEquals( value, cursor.get().value().longValue() );
+            assertEquals( key, cursor.key().longValue() );
+            assertEquals( value, cursor.value().longValue() );
             assertFalse( cursor.next() );
         }
     }
@@ -221,8 +221,8 @@ class WriterTest
         try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ) ) )
         {
             assertTrue( cursor.next() );
-            assertEquals( key, cursor.get().key().longValue() );
-            assertEquals( value + 1, cursor.get().value().longValue() );
+            assertEquals( key, cursor.key().longValue() );
+            assertEquals( value + 1, cursor.value().longValue() );
             assertFalse( cursor.next() );
         }
     }

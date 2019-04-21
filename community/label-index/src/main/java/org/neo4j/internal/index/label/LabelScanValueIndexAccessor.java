@@ -22,8 +22,6 @@ package org.neo4j.internal.index.label;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Seeker;
 
 /**
@@ -32,7 +30,7 @@ import org.neo4j.index.internal.gbptree.Seeker;
 abstract class LabelScanValueIndexAccessor
 {
     /**
-     * {@link RawCursor} to lazily read new {@link LabelScanValue} from.
+     * {@link Seeker} to lazily read new {@link LabelScanValue} from.
      */
     protected final Seeker<LabelScanKey,LabelScanValue> cursor;
 

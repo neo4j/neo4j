@@ -28,9 +28,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.Writer;
@@ -216,8 +214,8 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         {
             while ( seek.next() )
             {
-                IndexStatisticsKey key = layout.copyKey( seek.get().key(), new IndexStatisticsKey() );
-                IndexStatisticsValue value = layout.copyValue( seek.get().value(), new IndexStatisticsValue() );
+                IndexStatisticsKey key = layout.copyKey( seek.key(), new IndexStatisticsKey() );
+                IndexStatisticsValue value = layout.copyValue( seek.value(), new IndexStatisticsValue() );
                 consumer.accept( key, value );
             }
         }

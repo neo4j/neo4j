@@ -23,8 +23,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Comparator;
 
-import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Seeker;
 
 public class NativeDistinctValuesProgressor<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexProgressor<KEY,VALUE>
@@ -52,7 +50,7 @@ public class NativeDistinctValuesProgressor<KEY extends NativeIndexKey<KEY>, VAL
         {
             while ( seeker.next() )
             {
-                KEY key = seeker.get().key();
+                KEY key = seeker.key();
                 if ( first )
                 {
                     first = false;

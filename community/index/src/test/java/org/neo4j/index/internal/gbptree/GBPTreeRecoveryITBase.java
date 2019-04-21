@@ -126,9 +126,8 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
             try ( Seeker<KEY,VALUE> cursor = index.seek( key( Long.MIN_VALUE ), key( Long.MAX_VALUE ) ) )
             {
                 assertTrue( cursor.next() );
-                Hit<KEY,VALUE> hit = cursor.get();
-                assertEqualsKey( key, hit.key() );
-                assertEqualsValue( value, hit.value() );
+                assertEqualsKey( key, cursor.key() );
+                assertEqualsValue( value, cursor.value() );
             }
         }
     }
@@ -248,9 +247,8 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
                 for ( int i = 0; i < aggregate.length; )
                 {
                     assertTrue( cursor.next() );
-                    Hit<KEY,VALUE> hit = cursor.get();
-                    assertEqualsKey( key( aggregate[i++] ), hit.key() );
-                    assertEqualsValue( value( aggregate[i++] ), hit.value() );
+                    assertEqualsKey( key( aggregate[i++] ), cursor.key() );
+                    assertEqualsValue( value( aggregate[i++] ), cursor.value() );
                 }
                 assertFalse( cursor.next() );
             }

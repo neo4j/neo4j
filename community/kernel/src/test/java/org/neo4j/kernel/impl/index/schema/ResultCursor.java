@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Iterator;
 
-import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Seeker;
 
 import static org.neo4j.values.storable.Values.stringValue;
@@ -29,8 +28,8 @@ import static org.neo4j.values.storable.Values.stringValue;
 class ResultCursor implements Seeker<StringIndexKey,NativeIndexValue>
 {
     private final Iterator<String> iterator;
-    private String current;
     private int pos = -1;
+    private StringIndexKey key;
 
     ResultCursor( Iterator<String> keys )
     {
@@ -42,8 +41,11 @@ class ResultCursor implements Seeker<StringIndexKey,NativeIndexValue>
     {
         if ( iterator.hasNext() )
         {
-            current = iterator.next();
+            String current = iterator.next();
             pos++;
+            key = new StringIndexKey();
+            key.initialize( pos );
+            key.from( stringValue( current ) );
             return true;
         }
         return false;
@@ -56,23 +58,14 @@ class ResultCursor implements Seeker<StringIndexKey,NativeIndexValue>
     }
 
     @Override
-    public Hit<StringIndexKey,NativeIndexValue> get()
-    {
-        StringIndexKey key = new StringIndexKey();
-        key.initialize( pos );
-        key.from( stringValue( current ) );
-        return new SimpleHit<>( key, NativeIndexValue.INSTANCE );
-    }
-
-    @Override
     public StringIndexKey key()
     {
-        return get().key();
+        return key;
     }
 
     @Override
     public NativeIndexValue value()
     {
-        return get().value();
+        return NativeIndexValue.INSTANCE;
     }
 }

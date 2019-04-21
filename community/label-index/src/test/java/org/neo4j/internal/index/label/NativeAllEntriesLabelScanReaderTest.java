@@ -33,7 +33,6 @@ import java.util.TreeMap;
 import java.util.function.IntFunction;
 
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.test.rule.RandomRule;
 
@@ -241,26 +240,19 @@ public class NativeAllEntriesLabelScanReaderTest
         {
             return new Seeker<>()
             {
+                MutableHit<LabelScanKey,LabelScanValue> current;
                 int cursor = -1;
-
-                @Override
-                public Hit<LabelScanKey,LabelScanValue> get()
-                {
-                    assert cursor >= 0;
-                    Pair<LabelScanKey,LabelScanValue> entry = entries.get( cursor );
-                    return new MutableHit<>( entry.first(), entry.other() );
-                }
 
                 @Override
                 public LabelScanKey key()
                 {
-                    return get().key();
+                    return current.key();
                 }
 
                 @Override
                 public LabelScanValue value()
                 {
-                    return get().value();
+                    return current.value();
                 }
 
                 @Override
@@ -271,6 +263,8 @@ public class NativeAllEntriesLabelScanReaderTest
                         return false;
                     }
                     cursor++;
+                    Pair<LabelScanKey,LabelScanValue> entry = entries.get( cursor );
+                    current = new MutableHit<>( entry.first(), entry.other() );
                     return true;
                 }
 
@@ -284,12 +278,6 @@ public class NativeAllEntriesLabelScanReaderTest
 
     private static final Seeker<LabelScanKey,LabelScanValue> EMPTY_CURSOR = new Seeker<>()
     {
-        @Override
-        public Hit<LabelScanKey,LabelScanValue> get()
-        {
-            throw new IllegalStateException();
-        }
-
         @Override
         public boolean next()
         {

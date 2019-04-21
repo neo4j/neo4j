@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
@@ -64,18 +63,17 @@ class FullScanNonUniqueIndexSampler<KEY extends NativeIndexKey<KEY>, VALUE exten
             // Get the first one so that prev gets initialized
             if ( seek.next() )
             {
-                prev = layout.copyKey( seek.get().key(), prev );
+                prev = layout.copyKey( seek.key(), prev );
                 sampledValues++;
                 uniqueValues++;
 
                 // Then do the rest
                 while ( seek.next() )
                 {
-                    Hit<KEY,VALUE> hit = seek.get();
-                    if ( layout.compareValue( prev, hit.key() ) != 0 )
+                    if ( layout.compareValue( prev, seek.key() ) != 0 )
                     {
                         uniqueValues++;
-                        layout.copyKey( hit.key(), prev );
+                        layout.copyKey( seek.key(), prev );
                     }
                     // else this is a duplicate of the previous one
                     sampledValues++;

@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.Seeker;
 
@@ -35,7 +34,7 @@ import static org.neo4j.io.IOUtils.closeAll;
  * @param <KEY> type of key
  * @param <VALUE> type of value
  */
-class CombinedPartSeeker<KEY,VALUE> implements Seeker<KEY,VALUE>, Hit<KEY,VALUE>
+class CombinedPartSeeker<KEY,VALUE> implements Seeker<KEY,VALUE>
 {
     private final KEY end;
     private final Seeker<KEY,VALUE>[] partCursors;
@@ -72,7 +71,7 @@ class CombinedPartSeeker<KEY,VALUE> implements Seeker<KEY,VALUE>, Hit<KEY,VALUE>
             {
                 if ( partCursors[i].next() )
                 {
-                    partHeads[i] = candidate = partCursors[i].get().key();
+                    partHeads[i] = candidate = partCursors[i].key();
                 }
                 else
                 {
@@ -94,7 +93,7 @@ class CombinedPartSeeker<KEY,VALUE> implements Seeker<KEY,VALUE>, Hit<KEY,VALUE>
         if ( nextKeyIndex != -1 )
         {
             // We have a next key/value
-            nextValue = partCursors[nextKeyIndex].get().value();
+            nextValue = partCursors[nextKeyIndex].value();
             partHeads[nextKeyIndex] = null;
             return true;
         }
@@ -109,12 +108,6 @@ class CombinedPartSeeker<KEY,VALUE> implements Seeker<KEY,VALUE>, Hit<KEY,VALUE>
     public void close() throws IOException
     {
         closeAll( partCursors );
-    }
-
-    @Override
-    public Hit<KEY,VALUE> get()
-    {
-        return this;
     }
 
     @Override

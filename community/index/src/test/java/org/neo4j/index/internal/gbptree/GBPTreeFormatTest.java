@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.FormatCompatibilityVerifier;
@@ -243,9 +242,8 @@ public class GBPTreeFormatTest extends FormatCompatibilityVerifier
     private static void assertHit( Seeker<MutableLong,MutableLong> cursor, Long expectedKey ) throws IOException
     {
         assertTrue( "Had no next when expecting key " + expectedKey, cursor.next() );
-        Hit<MutableLong,MutableLong> hit = cursor.get();
-        assertEquals( expectedKey.longValue(), hit.key().longValue() );
-        assertEquals( value( expectedKey ), hit.value().longValue() );
+        assertEquals( expectedKey.longValue(), cursor.key().longValue() );
+        assertEquals( value( expectedKey ), cursor.value().longValue() );
     }
 
     private void put( Writer<MutableLong,MutableLong> writer, long key )

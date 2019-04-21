@@ -19,13 +19,36 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import java.io.Closeable;
 import java.io.IOException;
 
-import org.neo4j.cursor.RawCursor;
-
-public interface Seeker<KEY,VALUE> extends RawCursor<Hit<KEY,VALUE>,IOException>
+/**
+ * Seeks and allows read access to data in a {@link GBPTree}. The interaction is cursor-like, where the next item is visited
+ * on every call to {@link #next()} and if returning {@code true} the entry data can be accessed using {@link #key()} and {@link #value()}.
+ *
+ * @param <KEY> type of key in this tree.
+ * @param <VALUE> type of value in this value.
+ */
+public interface Seeker<KEY,VALUE> extends Closeable
 {
+    /**
+     * Moves this seeker to the next result in this seek.
+     *
+     * @return {@code true} if there was a result to go to where the data for this result item can be accessed from {@link #key()} and {@link #value()}.
+     * Otherwise {@code false} is returned meaning that the seek is exhausted.
+     * @throws IOException on I/O error.
+     */
+    boolean next() throws IOException;
+
+    /**
+     * @return key of the current result item, i.e. from the most recent call to a successful and true-returning {@link #next()}.
+     * @throws IllegalStateException if called before first invocation of true-returning {@link #next()}.
+     */
     KEY key();
 
+    /**
+     * @return value of the current result item, i.e. from the most recent call to a successful and true-returning {@link #next()}.
+     * @throws IllegalStateException if called before first invocation of true-returning {@link #next()}.
+     */
     VALUE value();
 }

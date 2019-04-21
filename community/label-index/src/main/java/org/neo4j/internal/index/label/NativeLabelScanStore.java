@@ -300,7 +300,7 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
         {
             if ( cursor.next() )
             {
-                highestLabelId = cursor.get().key().labelId;
+                highestLabelId = cursor.key().labelId;
             }
         }
         catch ( IOException e )

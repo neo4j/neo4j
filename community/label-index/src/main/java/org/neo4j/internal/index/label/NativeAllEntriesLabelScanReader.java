@@ -28,11 +28,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.IntFunction;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Seeker;
 
 import static java.lang.Long.min;
@@ -85,7 +83,7 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
                 // Bootstrap the cursor, which also provides a great opportunity to exclude if empty
                 if ( cursor.next() )
                 {
-                    lowestRange = min( lowestRange, cursor.get().key().idRange );
+                    lowestRange = min( lowestRange, cursor.key().idRange );
                     cursors.add( cursor );
                 }
             }
@@ -143,7 +141,7 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
                 // One "rangeSize" range at a time
                 for ( Seeker<LabelScanKey,LabelScanValue> cursor : cursors )
                 {
-                    long idRange = cursor.get().key().idRange;
+                    long idRange = cursor.key().idRange;
                     if ( idRange < currentRange )
                     {
                         // This should only happen if the cursor has been exhausted and the iterator have moved on
@@ -152,20 +150,20 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
                     }
                     else if ( idRange == currentRange )
                     {
-                        long bits = cursor.get().value().bits;
-                        long labelId = cursor.get().key().labelId;
+                        long bits = cursor.value().bits;
+                        long labelId = cursor.key().labelId;
                         NodeLabelRange.readBitmap( bits, labelId, labelsForEachNode );
 
                         // Advance cursor and look ahead to the next range
                         if ( cursor.next() )
                         {
-                            nextLowestRange = min( nextLowestRange, cursor.get().key().idRange );
+                            nextLowestRange = min( nextLowestRange, cursor.key().idRange );
                         }
                     }
                     else
                     {
                         // Excluded from this range
-                        nextLowestRange = min( nextLowestRange, cursor.get().key().idRange );
+                        nextLowestRange = min( nextLowestRange, cursor.key().idRange );
                     }
                 }
 

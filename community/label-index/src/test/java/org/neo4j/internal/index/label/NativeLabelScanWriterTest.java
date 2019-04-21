@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
-import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.ValueMergers;
@@ -196,22 +195,15 @@ public class NativeLabelScanWriterTest
                 private int arrayIndex = -1;
 
                 @Override
-                public Hit<LabelScanKey,LabelScanValue> get()
-                {
-                    Entry<LabelScanKey,LabelScanValue> entry = entries[arrayIndex];
-                    return new MutableHit<>( entry.getKey(), entry.getValue() );
-                }
-
-                @Override
                 public LabelScanKey key()
                 {
-                    return get().key();
+                    return entries[arrayIndex].getKey();
                 }
 
                 @Override
                 public LabelScanValue value()
                 {
-                    return get().value();
+                    return entries[arrayIndex].getValue();
                 }
 
                 @Override

@@ -586,8 +586,8 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         {
             // then
             assertTrue( seeker.next() );
-            assertEqualsKey( key( i ), seeker.get().key() );
-            assertEqualsValue( value( i ), seeker.get().value() );
+            assertEqualsKey( key( i ), seeker.key() );
+            assertEqualsValue( value( i ), seeker.value() );
             assertFalse( seeker.next() );
         }
     }
@@ -1319,7 +1319,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         {
             // reading a couple of keys
             assertTrue( cursor.next() );
-            assertEqualsKey( key( 0 ), cursor.get().key() );
+            assertEqualsKey( key( 0 ), cursor.key() );
 
             // and WHEN a change happens
             append( keyCount );
@@ -1329,12 +1329,12 @@ abstract class SeekCursorTestBase<KEY, VALUE>
             assertTrue( cursor.next() );
 
             // and the new key should be found in the end as well
-            assertEqualsKey( key( 1 ), cursor.get().key() );
+            assertEqualsKey( key( 1 ), cursor.key() );
             long lastFoundKey = 1;
             while ( cursor.next() )
             {
-                assertEqualsKey( key( lastFoundKey + 1 ), cursor.get().key() );
-                lastFoundKey = getSeed( cursor.get().key() );
+                assertEqualsKey( key( lastFoundKey + 1 ), cursor.key() );
+                lastFoundKey = getSeed( cursor.key() );
             }
             assertEquals( keyCount, lastFoundKey );
         }
@@ -1728,8 +1728,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
 
             while ( seek.next() )
             {
-                Hit<KEY,VALUE> hit = seek.get();
-                actual.add( getSeed( hit.key() ) );
+                actual.add( getSeed( seek.key() ) );
             }
         }
 
@@ -2066,7 +2065,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         {
             while ( seek.next() )
             {
-                seek.get();
+                seek.key();
             }
         }
 
@@ -2145,7 +2144,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
     {
         // ... seeker has started seeking in range
         assertTrue( seeker.next() );
-        assertThat( getSeed( seeker.get().key() ), is( fromInclusive ) );
+        assertThat( getSeed( seeker.key() ), is( fromInclusive ) );
 
         int stride = fromInclusive <= toExclusive ? 1 : -1;
         triggerUnderflowAndSeekRange( seeker, seekCursor, fromInclusive + stride, toExclusive, underflowNode, stride );
@@ -2161,7 +2160,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         for ( long expected = fromInclusive; Long.compare( expected, toExclusive ) * stride < 0; expected += stride )
         {
             assertTrue( seeker.next() );
-            assertThat( getSeed( seeker.get().key() ), is( expected ) );
+            assertThat( getSeed( seeker.key() ), is( expected ) );
         }
         assertFalse( seeker.next() );
     }
@@ -2334,8 +2333,8 @@ abstract class SeekCursorTestBase<KEY, VALUE>
 
     private void assertKeyAndValue( SeekCursor<KEY,VALUE> cursor, KEY expectedKey, VALUE expectedValue )
     {
-        KEY foundKey = cursor.get().key();
-        VALUE foundValue = cursor.get().value();
+        KEY foundKey = cursor.key();
+        VALUE foundValue = cursor.value();
         assertEqualsKey( expectedKey, foundKey );
         assertEqualsValue( expectedValue, foundValue );
     }

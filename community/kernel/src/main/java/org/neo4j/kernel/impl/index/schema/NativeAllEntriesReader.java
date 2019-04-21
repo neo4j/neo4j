@@ -23,11 +23,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Iterator;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.Seeker;
 
@@ -63,7 +61,7 @@ public class NativeAllEntriesReader<KEY extends NativeIndexKey<KEY>,VALUE extend
                 {
                     try
                     {
-                        return seeker.next() ? seeker.get().key().getEntityId() : null;
+                        return seeker.next() ? seeker.key().getEntityId() : null;
                     }
                     catch ( IOException e )
                     {

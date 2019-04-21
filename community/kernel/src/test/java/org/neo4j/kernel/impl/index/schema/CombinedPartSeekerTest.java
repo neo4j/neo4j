@@ -80,10 +80,9 @@ class CombinedPartSeekerTest
         for ( Hit<MutableLong,MutableLong> expectedHit : expectedAllData )
         {
             assertTrue( combinedSeeker.next() );
-            Hit<MutableLong,MutableLong> actualHit = combinedSeeker.get();
 
-            assertEquals( expectedHit.key().longValue(), actualHit.key().longValue() );
-            assertEquals( expectedHit.value().longValue(), actualHit.value().longValue() );
+            assertEquals( expectedHit.key().longValue(), combinedSeeker.key().longValue() );
+            assertEquals( expectedHit.value().longValue(), combinedSeeker.value().longValue() );
         }
         assertFalse( combinedSeeker.next() );
         // And just ensure it will return false again after that
@@ -115,12 +114,6 @@ class CombinedPartSeekerTest
         public void close()
         {
             // Nothing to close
-        }
-
-        @Override
-        public Hit<MutableLong,MutableLong> get()
-        {
-            return current;
         }
 
         @Override

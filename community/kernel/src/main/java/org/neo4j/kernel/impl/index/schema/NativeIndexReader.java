@@ -22,9 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -107,7 +105,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
             long count = 0;
             while ( seeker.next() )
             {
-                if ( seeker.get().key().getEntityId() == nodeId )
+                if ( seeker.key().getEntityId() == nodeId )
                 {
                     count++;
                 }

@@ -334,9 +334,8 @@ class GBPTreeTest
                 int i = 0;
                 while ( seek.next() )
                 {
-                    Hit<MutableLong,MutableLong> hit = seek.get();
-                    assertEquals( hit.key().getValue(), expectedData.get( i ) );
-                    assertEquals( hit.value().getValue(), expectedData.get( i ) );
+                    assertEquals( seek.key().getValue(), expectedData.get( i ) );
+                    assertEquals( seek.value().getValue(), expectedData.get( i ) );
                     i++;
                 }
             }
@@ -1340,8 +1339,8 @@ class GBPTreeTest
             try ( Seeker<MutableLong,MutableLong> seek = index.seek( from, to ) )
             {
                 assertTrue( seek.next() );
-                assertEquals( key, seek.get().key().longValue() );
-                assertEquals( value, seek.get().value().longValue() );
+                assertEquals( key, seek.key().longValue() );
+                assertEquals( value, seek.value().longValue() );
             }
         }
     }

@@ -537,8 +537,8 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
                     while ( cursor.next() )
                     {
                         // Actual
-                        long lastSeenKey = keySeed( cursor.get().key() );
-                        long lastSeenValue = valueSeed( cursor.get().value() );
+                        long lastSeenKey = keySeed( cursor.key() );
+                        long lastSeenValue = valueSeed( cursor.value() );
 
                         if ( lastSeenKey != lastSeenValue )
                         {

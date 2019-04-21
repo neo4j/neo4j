@@ -26,7 +26,6 @@ import java.io.IOException;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Seeker;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -50,11 +49,14 @@ public class NativeLabelScanReaderTest
         GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );
         Seeker<LabelScanKey,LabelScanValue> cursor = mock( Seeker.class );
         when( cursor.next() ).thenReturn( true, true, true, false );
-        when( cursor.get() ).thenReturn(
-                // range, bits
-                hit( 0, 0b1000_1000__1100_0010L ),
-                hit( 1, 0b0000_0010__0000_1000L ),
-                hit( 3, 0b0010_0000__1010_0001L ),
+        when( cursor.key() ).thenReturn(
+                key( 0 ),
+                key( 1 ),
+                key( 3 ) );
+        when( cursor.value() ).thenReturn(
+                value( 0b1000_1000__1100_0010L ),
+                value( 0b0000_0010__0000_1000L ),
+                value( 0b0010_0000__1010_0001L ),
                 null );
         when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ) ) )
                 .thenReturn( cursor );
@@ -146,11 +148,14 @@ public class NativeLabelScanReaderTest
         GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );
         Seeker<LabelScanKey,LabelScanValue> cursor = mock( Seeker.class );
         when( cursor.next() ).thenReturn( true, true, false );
-        when( cursor.get() ).thenReturn(
-                // range, bits
-                hit( 1, 0b0001_1000__0101_1110L ),
-                //                        ^--fromId, i.e. ids after this id should be visible
-                hit( 3, 0b0010_0000__1010_0001L ),
+        when( cursor.key() ).thenReturn(
+                key( 1 ),
+                key( 3 ),
+                null );
+        when( cursor.value() ).thenReturn(
+                value( 0b0001_1000__0101_1110L ),
+                //                     ^--fromId, i.e. ids after this id should be visible
+                value( 0b0010_0000__1010_0001L ),
                 null );
         when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ) ) )
                 .thenReturn( cursor );
@@ -171,12 +176,16 @@ public class NativeLabelScanReaderTest
         }
     }
 
-    private static Hit<LabelScanKey,LabelScanValue> hit( long baseNodeId, long bits )
+    private static LabelScanValue value( long bits )
     {
-        LabelScanKey key = new LabelScanKey( LABEL_ID, baseNodeId );
         LabelScanValue value = new LabelScanValue();
         value.bits = bits;
-        return new MutableHit<>( key, value );
+        return value;
+    }
+
+    private static LabelScanKey key( long idRange )
+    {
+        return new LabelScanKey( LABEL_ID, idRange );
     }
 
     private void exhaust( LongIterator iterator )

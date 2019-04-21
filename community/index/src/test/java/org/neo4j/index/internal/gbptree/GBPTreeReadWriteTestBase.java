@@ -83,7 +83,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
                 for ( int i = 0; i < count; i++ )
                 {
                     assertTrue( cursor.next() );
-                    assertEqualsKey( key( i ), cursor.get().key() );
+                    assertEqualsKey( key( i ), cursor.key() );
                 }
                 assertFalse( cursor.next() );
             }
@@ -109,7 +109,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
                 try ( Seeker<KEY,VALUE> cursor = index.seek( key( i ), key( i ) ) )
                 {
                     assertTrue( cursor.next() );
-                    assertEqualsKey( key( i ), cursor.get().key() );
+                    assertEqualsKey( key( i ), cursor.key() );
                     assertFalse( cursor.next() );
                 }
             }
@@ -149,7 +149,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
                 long prev = -1;
                 while ( cursor.next() )
                 {
-                    KEY hit = cursor.get().key();
+                    KEY hit = cursor.key();
                     long hitSeed = layout.keySeed( hit );
                     if ( hitSeed < prev )
                     {

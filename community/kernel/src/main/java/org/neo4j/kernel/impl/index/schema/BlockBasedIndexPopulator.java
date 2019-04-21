@@ -35,8 +35,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -366,11 +364,12 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         {
             if ( seek.next() )
             {
-                long firstEntityId = seek.get().key().getEntityId();
+                KEY key = seek.key();
+                long firstEntityId = key.getEntityId();
                 if ( seek.next() )
                 {
-                    long secondEntityId = seek.get().key().getEntityId();
-                    throw new IndexEntryConflictException( firstEntityId, secondEntityId, seek.get().key().asValues() );
+                    long secondEntityId = key.getEntityId();
+                    throw new IndexEntryConflictException( firstEntityId, secondEntityId, key.asValues() );
                 }
             }
         }

@@ -302,9 +302,8 @@ class LargeDynamicKeysIT
         try ( Seeker<RawBytes,RawBytes> seek = tree.seek( key, key ) )
         {
             assertTrue( seek.next() );
-            Hit<RawBytes,RawBytes> hit = seek.get();
-            assertEquals( 0, layout.compare( key, hit.key() ) );
-            assertEquals( 0, layout.compare( value, hit.value() ) );
+            assertEquals( 0, layout.compare( key, seek.key() ) );
+            assertEquals( 0, layout.compare( value, seek.value() ) );
             assertFalse( seek.next() );
         }
     }

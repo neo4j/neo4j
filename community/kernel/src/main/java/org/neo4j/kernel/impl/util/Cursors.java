@@ -58,60 +58,6 @@ public class Cursors
         return (Cursor<T>) EMPTY;
     }
 
-    public static <E extends Exception> int count( RawCursor<?,E> cursor ) throws E
-    {
-        try
-        {
-            int count = 0;
-            while ( cursor.next() )
-            {
-                count++;
-            }
-            return count;
-        }
-        finally
-        {
-            cursor.close();
-        }
-    }
-
-    public static <T, EX extends Exception> RawCursor<T,EX> rawCursorOf( T... values )
-    {
-        return new RawCursor<T,EX>()
-        {
-            private int idx;
-            private CursorValue<T> current = new CursorValue<>();
-
-            @Override
-            public T get()
-            {
-                return current.get();
-            }
-
-            @Override
-            public boolean next() throws EX
-            {
-                if ( idx >= values.length )
-                {
-                    current.invalidate();
-                    return false;
-                }
-
-                current.set( values[idx] );
-                idx++;
-
-                return true;
-            }
-
-            @Override
-            public void close() throws EX
-            {
-                idx = values.length;
-                current.invalidate();
-            }
-        };
-    }
-
     public static <T, EX extends Exception> RawCursor<T,EX> rawCursorOf( Iterable<T> iterable )
     {
         return new RawCursor<T,EX>()

@@ -36,7 +36,6 @@ import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -925,7 +924,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      *
      * @param fromInclusive lower bound of the range to seek (inclusive).
      * @param toExclusive higher bound of the range to seek (exclusive).
-     * @return a {@link RawCursor} used to iterate over the hits within the specified key range.
+     * @return a {@link Seeker} used to iterate over the hits within the specified key range.
      * @throws IOException on error reading from index.
      */
     public Seeker<KEY,VALUE> seek( KEY fromInclusive, KEY toExclusive ) throws IOException

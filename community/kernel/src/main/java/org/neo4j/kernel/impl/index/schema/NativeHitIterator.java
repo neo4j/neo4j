@@ -27,8 +27,6 @@ import java.util.Collection;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.values.storable.Value;
 
@@ -59,7 +57,7 @@ public class NativeHitIterator<KEY extends NativeIndexKey<KEY>, VALUE extends Na
         {
             while ( seeker.next() )
             {
-                KEY key = seeker.get().key();
+                KEY key = seeker.key();
                 if ( acceptValues( key.asValues() ) )
                 {
                     return next( key.getEntityId() );

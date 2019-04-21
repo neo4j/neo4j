@@ -29,7 +29,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
@@ -106,7 +105,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
         {
             while ( scan.next() )
             {
-                actualHits.add( deepCopy( scan.get() ) );
+                actualHits.add( deepCopy( scan ) );
             }
         }
 
@@ -159,7 +158,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
         }
     }
 
-    private Hit<KEY,VALUE> deepCopy( Hit<KEY,VALUE> from )
+    private Hit<KEY,VALUE> deepCopy( Seeker<KEY,VALUE> from )
     {
         KEY intoKey = layout.newKey();
         VALUE intoValue = layout.newValue();

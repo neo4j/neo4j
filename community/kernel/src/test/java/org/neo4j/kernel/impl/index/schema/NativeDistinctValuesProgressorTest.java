@@ -23,7 +23,6 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,7 +30,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.IndexOrder;
@@ -152,12 +150,6 @@ public class NativeDistinctValuesProgressorTest
         public void close() throws RuntimeException
         {
             // Nothing to close
-        }
-
-        @Override
-        public Hit<StringIndexKey,NativeIndexValue> get()
-        {
-            return current;
         }
 
         @Override

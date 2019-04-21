@@ -29,9 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Seeker;
 
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
@@ -39,7 +37,7 @@ import static org.neo4j.internal.index.label.NativeLabelScanWriter.rangeOf;
 
 /**
  * {@link LabelScanReader} for reading data from {@link NativeLabelScanStore}.
- * Each {@link LongIterator} returned from each of the methods is backed by {@link RawCursor}
+ * Each {@link LongIterator} returned from each of the methods is backed by {@link Seeker}
  * directly from {@link GBPTree#seek(Object, Object)}.
  */
 class NativeLabelScanReader implements LabelScanReader
@@ -96,7 +94,7 @@ class NativeLabelScanReader implements LabelScanReader
         try ( Seeker<LabelScanKey,LabelScanValue> seeker = index.seek( new LabelScanKey( labelId, Long.MAX_VALUE ),
                 new LabelScanKey( labelId, Long.MIN_VALUE ) ) )
         {
-            return seeker.next() ? (seeker.get().key().idRange + 1) * RANGE_SIZE : 0;
+            return seeker.next() ? (seeker.key().idRange + 1) * RANGE_SIZE : 0;
         }
     }
 

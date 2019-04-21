@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
@@ -31,9 +30,9 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
 /**
- * {@link RawCursor} over tree leaves, making keys/values accessible to user. Given a starting leaf
+ * {@link Seeker} over tree leaves, making keys/values accessible to user. Given a starting leaf
  * and key range this cursor traverses each leaf and its right siblings as long as visited keys are within
- * key range. Each visited key within the key range can be accessible using {@link #get()}.
+ * key range. Each visited key within the key range can be accessible using {@link #key()}.
  * The key/value instances provided by {@link Hit} instance are mutable and overwritten with new values
  * for every call to {@link #next()} so user cannot keep references to key/value instances, expecting them
  * to keep their values intact.
@@ -139,7 +138,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
  * suddenly another key when he goes there he knows that he could have missed some keys and he needs to go back until
  * he find the place where he left off, K4.
  */
-class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>, Hit<KEY,VALUE>
+class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
 {
     static final int DEFAULT_MAX_READ_AHEAD = 20;
 
@@ -902,21 +901,6 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>, Hit<KEY,VALUE>
     }
 
     /**
-     * @return the key/value found from the most recent call to {@link #next()} returning {@code true}.
-     * @throws IllegalStateException if no {@link #next()} call which returned {@code true} has been made yet.
-     */
-    @Override
-    public Hit<KEY,VALUE> get()
-    {
-        if ( first )
-        {
-            throw new IllegalStateException( "There has been no successful call to next() yet" );
-        }
-
-        return this;
-    }
-
-    /**
      * Moves {@link PageCursor} to next sibling (read before this call into {@link #pointerId}).
      * Also, on backwards seek, calls {@link #scoutNextSibling()} to be able to verify consistent read on
      * new sibling even on concurrent writes.
@@ -1178,15 +1162,25 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>, Hit<KEY,VALUE>
         return false;
     }
 
+    /**
+     * @return the key found from the most recent call to {@link #next()} returning {@code true}.
+     * @throws IllegalStateException if no {@link #next()} call which returned {@code true} has been made yet.
+     */
     @Override
     public KEY key()
     {
+        assertHasResult();
         return mutableKeys[cachedIndex];
     }
 
+    /**
+     * @return the value found from the most recent call to {@link #next()} returning {@code true}.
+     * @throws IllegalStateException if no {@link #next()} call which returned {@code true} has been made yet.
+     */
     @Override
     public VALUE value()
     {
+        assertHasResult();
         return mutableValues[cachedIndex];
     }
 
@@ -1195,5 +1189,13 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>, Hit<KEY,VALUE>
     {
         cursor.close();
         closed = true;
+    }
+
+    private void assertHasResult()
+    {
+        if ( first )
+        {
+            throw new IllegalStateException( "There has been no successful call to next() yet" );
+        }
     }
 }

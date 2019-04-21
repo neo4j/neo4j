@@ -142,7 +142,7 @@ abstract class GBPTreeITBase<KEY,VALUE>
                     {
                         while ( result.next() )
                         {
-                            KEY key = result.get().key();
+                            KEY key = result.key();
                             if ( expectedHits.remove( key ) == null )
                             {
                                 fail( "Unexpected hit " + key + " when searching for " + from + " - " + to );

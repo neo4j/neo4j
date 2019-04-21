@@ -26,8 +26,6 @@ import java.io.UncheckedIOException;
 import java.util.NoSuchElementException;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Seeker;
 
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
@@ -37,7 +35,7 @@ import static org.neo4j.internal.index.label.NativeLabelScanWriter.rangeOf;
  * {@link LongIterator} which iterate over multiple {@link LabelScanValue} and for each
  * iterate over each set bit, returning actual node ids, i.e. {@code nodeIdRange+bitOffset}.
  *
- * The provided {@link RawCursor} is managed externally, e.g. {@link NativeLabelScanReader},
+ * The provided {@link Seeker} is managed externally, e.g. {@link NativeLabelScanReader},
  * this because implemented interface lacks close-method.
  */
 class LabelScanValueIterator extends LabelScanValueIndexAccessor implements PrimitiveLongResourceIterator
@@ -81,7 +79,7 @@ class LabelScanValueIterator extends LabelScanValueIndexAccessor implements Prim
 
     /**
      * @return next node id in the current {@link LabelScanValue} or, if current value exhausted,
-     * goes to next {@link LabelScanValue} from {@link RawCursor}. Returns {@code true} if next node id
+     * goes to next {@link LabelScanValue} from {@link Seeker}. Returns {@code true} if next node id
      * was found, otherwise {@code false}.
      */
     protected boolean fetchNext()
@@ -110,15 +108,15 @@ class LabelScanValueIterator extends LabelScanValueIndexAccessor implements Prim
                 throw new UncheckedIOException( e );
             }
 
-            Hit<LabelScanKey,LabelScanValue> hit = cursor.get();
-            baseNodeId = hit.key().idRange * RANGE_SIZE;
-            bits = hit.value().bits;
+            LabelScanKey key = cursor.key();
+            baseNodeId = key.idRange * RANGE_SIZE;
+            bits = cursor.value().bits;
 
             if ( fromId != LabelScanReader.NO_ID )
             {
                 // If we've been told to start at a specific id then trim off ids in this range less than or equal to that id
                 long range = rangeOf( fromId );
-                if ( range == hit.key().idRange )
+                if ( range == key.idRange )
                 {
                     // Only do this if we're in the idRange that fromId is in, otherwise there were no ids this time in this range
                     long relativeStartId = fromId % RANGE_SIZE;
@@ -130,7 +128,7 @@ class LabelScanValueIterator extends LabelScanValueIndexAccessor implements Prim
             }
 
             //noinspection AssertWithSideEffects
-            assert keysInOrder( hit.key() );
+            assert keysInOrder( key );
         }
     }
 }
