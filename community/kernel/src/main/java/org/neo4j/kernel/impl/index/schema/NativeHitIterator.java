@@ -29,6 +29,7 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -41,12 +42,11 @@ public class NativeHitIterator<KEY extends NativeIndexKey<KEY>, VALUE extends Na
         extends PrimitiveLongCollections.PrimitiveLongBaseIterator
         implements PrimitiveLongResourceIterator
 {
-    private final RawCursor<Hit<KEY,VALUE>,IOException> seeker;
-    private final Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromWhenExhausted;
+    private final Seeker<KEY,VALUE> seeker;
+    private final Collection<Seeker<KEY,VALUE>> toRemoveFromWhenExhausted;
     private boolean closed;
 
-    NativeHitIterator( RawCursor<Hit<KEY,VALUE>,IOException> seeker,
-            Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromWhenExhausted )
+    NativeHitIterator( Seeker<KEY,VALUE> seeker, Collection<Seeker<KEY,VALUE>> toRemoveFromWhenExhausted )
     {
         this.seeker = seeker;
         this.toRemoveFromWhenExhausted = toRemoveFromWhenExhausted;

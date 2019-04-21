@@ -32,6 +32,7 @@ import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -211,7 +212,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
 
     private void scanTree( BiConsumer<IndexStatisticsKey,IndexStatisticsValue> consumer ) throws IOException
     {
-        try ( RawCursor<Hit<IndexStatisticsKey,IndexStatisticsValue>,IOException> seek = tree.seek( LOWEST_KEY, HIGHEST_KEY ) )
+        try ( Seeker<IndexStatisticsKey,IndexStatisticsValue> seek = tree.seek( LOWEST_KEY, HIGHEST_KEY ) )
         {
             while ( seek.next() )
             {

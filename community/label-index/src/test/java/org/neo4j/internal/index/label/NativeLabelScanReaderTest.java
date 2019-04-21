@@ -25,9 +25,9 @@ import org.junit.Test;
 import java.io.IOException;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.index.internal.gbptree.Seeker;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -48,7 +48,7 @@ public class NativeLabelScanReaderTest
     {
         // GIVEN
         GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );
-        RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor = mock( RawCursor.class );
+        Seeker<LabelScanKey,LabelScanValue> cursor = mock( Seeker.class );
         when( cursor.next() ).thenReturn( true, true, true, false );
         when( cursor.get() ).thenReturn(
                 // range, bits
@@ -80,9 +80,9 @@ public class NativeLabelScanReaderTest
     {
         // GIVEN
         GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );
-        RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor1 = mock( RawCursor.class );
+        Seeker<LabelScanKey,LabelScanValue> cursor1 = mock( Seeker.class );
         when( cursor1.next() ).thenReturn( false );
-        RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor2 = mock( RawCursor.class );
+        Seeker<LabelScanKey,LabelScanValue> cursor2 = mock( Seeker.class );
         when( cursor2.next() ).thenReturn( false );
         when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ) ) ).thenReturn( cursor1, cursor2 );
 
@@ -116,9 +116,9 @@ public class NativeLabelScanReaderTest
     {
         // GIVEN
         GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );
-        RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor1 = mock( RawCursor.class );
+        Seeker<LabelScanKey,LabelScanValue> cursor1 = mock( Seeker.class );
         when( cursor1.next() ).thenReturn( false );
-        RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor2 = mock( RawCursor.class );
+        Seeker<LabelScanKey,LabelScanValue> cursor2 = mock( Seeker.class );
         when( cursor2.next() ).thenReturn( false );
         when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ) ) ).thenReturn( cursor1, cursor2 );
 
@@ -144,7 +144,7 @@ public class NativeLabelScanReaderTest
     {
         // given
         GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );
-        RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor = mock( RawCursor.class );
+        Seeker<LabelScanKey,LabelScanValue> cursor = mock( Seeker.class );
         when( cursor.next() ).thenReturn( true, true, false );
         when( cursor.get() ).thenReturn(
                 // range, bits

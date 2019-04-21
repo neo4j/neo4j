@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -292,7 +291,7 @@ class LargeDynamicKeysIT
 
     private void assertDontFind( GBPTree<RawBytes,RawBytes> tree, RawBytes key ) throws IOException
     {
-        try ( RawCursor<Hit<RawBytes,RawBytes>,IOException> seek = tree.seek( key, key ) )
+        try ( Seeker<RawBytes,RawBytes> seek = tree.seek( key, key ) )
         {
             assertFalse( seek.next() );
         }
@@ -300,7 +299,7 @@ class LargeDynamicKeysIT
 
     private void assertFindExact( GBPTree<RawBytes,RawBytes> tree, RawBytes key, RawBytes value ) throws IOException
     {
-        try ( RawCursor<Hit<RawBytes,RawBytes>,IOException> seek = tree.seek( key, key ) )
+        try ( Seeker<RawBytes,RawBytes> seek = tree.seek( key, key ) )
         {
             assertTrue( seek.next() );
             Hit<RawBytes,RawBytes> hit = seek.get();

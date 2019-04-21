@@ -19,15 +19,14 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.IOException;
 import java.util.Iterator;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.index.internal.gbptree.Seeker;
 
 import static org.neo4j.values.storable.Values.stringValue;
 
-class ResultCursor implements RawCursor<Hit<StringIndexKey,NativeIndexValue>,IOException>
+class ResultCursor implements Seeker<StringIndexKey,NativeIndexValue>
 {
     private final Iterator<String> iterator;
     private String current;
@@ -63,5 +62,17 @@ class ResultCursor implements RawCursor<Hit<StringIndexKey,NativeIndexValue>,IOE
         key.initialize( pos );
         key.from( stringValue( current ) );
         return new SimpleHit<>( key, NativeIndexValue.INSTANCE );
+    }
+
+    @Override
+    public StringIndexKey key()
+    {
+        return get().key();
+    }
+
+    @Override
+    public NativeIndexValue value()
+    {
+        return get().value();
     }
 }

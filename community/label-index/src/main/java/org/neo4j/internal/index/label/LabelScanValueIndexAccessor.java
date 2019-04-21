@@ -24,6 +24,7 @@ import java.io.UncheckedIOException;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.index.internal.gbptree.Seeker;
 
 /**
  * Base class for iterator and index-progressor of label scans.
@@ -33,7 +34,7 @@ abstract class LabelScanValueIndexAccessor
     /**
      * {@link RawCursor} to lazily read new {@link LabelScanValue} from.
      */
-    protected final RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor;
+    protected final Seeker<LabelScanKey,LabelScanValue> cursor;
 
     /**
      * Current base nodeId, i.e. the {@link LabelScanKey#idRange} of the current {@link LabelScanKey}.
@@ -56,7 +57,7 @@ abstract class LabelScanValueIndexAccessor
      */
     protected boolean closed;
 
-    LabelScanValueIndexAccessor( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor )
+    LabelScanValueIndexAccessor( Seeker<LabelScanKey,LabelScanValue> cursor )
     {
         this.cursor = cursor;
     }

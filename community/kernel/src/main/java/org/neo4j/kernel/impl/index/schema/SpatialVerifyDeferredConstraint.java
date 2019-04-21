@@ -30,6 +30,7 @@ import java.io.UncheckedIOException;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -45,7 +46,7 @@ class SpatialVerifyDeferredConstraint
         SpatialIndexKey from = layout.newKey();
         SpatialIndexKey to = layout.newKey();
         initializeKeys( from, to );
-        try ( RawCursor<Hit<SpatialIndexKey,NativeIndexValue>,IOException> seek = tree.seek( from, to ) )
+        try ( Seeker<SpatialIndexKey,NativeIndexValue> seek = tree.seek( from, to ) )
         {
             scanAndVerifyDuplicates( nodePropertyAccessor, descriptor, seek );
         }
@@ -56,7 +57,7 @@ class SpatialVerifyDeferredConstraint
     }
 
     private static void scanAndVerifyDuplicates( NodePropertyAccessor nodePropertyAccessor, IndexDescriptor descriptor,
-            RawCursor<Hit<SpatialIndexKey,NativeIndexValue>,IOException> seek ) throws IOException, IndexEntryConflictException
+            Seeker<SpatialIndexKey,NativeIndexValue> seek ) throws IOException, IndexEntryConflictException
     {
         LongArrayList nodesWithCollidingPoints = new LongArrayList();
         long prevRawBits = Long.MIN_VALUE;

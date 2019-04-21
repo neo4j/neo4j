@@ -29,8 +29,8 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.SimpleLongLayout;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -54,7 +54,7 @@ class CombinedPartSeekerTest
     {
         // given
         SimpleLongLayout layout = longLayout().withFixedSize( true ).build();
-        List<RawCursor<Hit<MutableLong,MutableLong>,IOException>> parts = new ArrayList<>();
+        List<Seeker<MutableLong,MutableLong>> parts = new ArrayList<>();
         int partCount = random.nextInt( 1, 20 );
         List<Hit<MutableLong,MutableLong>> expectedAllData = new ArrayList<>();
         int maxKey = random.nextInt( 100, 10_000 );
@@ -90,7 +90,7 @@ class CombinedPartSeekerTest
         assertFalse( combinedSeeker.next() );
     }
 
-    private static class SimpleSeeker implements RawCursor<Hit<MutableLong,MutableLong>,IOException>
+    private static class SimpleSeeker implements Seeker<MutableLong,MutableLong>
     {
         private final Iterator<Hit<MutableLong,MutableLong>> data;
         private Hit<MutableLong,MutableLong> current;
@@ -121,6 +121,18 @@ class CombinedPartSeekerTest
         public Hit<MutableLong,MutableLong> get()
         {
             return current;
+        }
+
+        @Override
+        public MutableLong key()
+        {
+            return current.key();
+        }
+
+        @Override
+        public MutableLong value()
+        {
+            return current.value();
         }
     }
 }

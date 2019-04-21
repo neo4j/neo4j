@@ -33,6 +33,7 @@ import java.util.Map;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.test.rule.RandomRule;
@@ -126,7 +127,7 @@ public class NativeDistinctValuesProgressorTest
         return data;
     }
 
-    private static class DataCursor implements RawCursor<Hit<StringIndexKey,NativeIndexValue>,IOException>
+    private static class DataCursor implements Seeker<StringIndexKey,NativeIndexValue>
     {
         private final Iterator<Hit<StringIndexKey,NativeIndexValue>> iterator;
         private Hit<StringIndexKey,NativeIndexValue> current;
@@ -157,6 +158,18 @@ public class NativeDistinctValuesProgressorTest
         public Hit<StringIndexKey,NativeIndexValue> get()
         {
             return current;
+        }
+
+        @Override
+        public StringIndexKey key()
+        {
+            return current.key();
+        }
+
+        @Override
+        public NativeIndexValue value()
+        {
+            return current.value();
         }
     }
 }

@@ -56,7 +56,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Exceptions;
@@ -330,7 +329,7 @@ class GBPTreeTest
         {
             MutableLong fromInclusive = new MutableLong( 0L );
             MutableLong toExclusive = new MutableLong( 200L );
-            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> seek = index.seek( fromInclusive, toExclusive ) )
+            try ( Seeker<MutableLong,MutableLong> seek = index.seek( fromInclusive, toExclusive ) )
             {
                 int i = 0;
                 while ( seek.next() )
@@ -371,8 +370,7 @@ class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
             // WHEN
-            RawCursor<Hit<MutableLong,MutableLong>,IOException> result =
-                    index.seek( new MutableLong( 0 ), new MutableLong( 10 ) );
+            Seeker<MutableLong,MutableLong> result = index.seek( new MutableLong( 0 ), new MutableLong( 10 ) );
 
             // THEN
             assertFalse( result.next() );
@@ -1313,7 +1311,7 @@ class GBPTreeTest
         {
             MutableLong from = new MutableLong( Long.MIN_VALUE );
             MutableLong to = new MutableLong( MAX_VALUE );
-            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> seek = index.seek( from, to ) )
+            try ( Seeker<MutableLong,MutableLong> seek = index.seek( from, to ) )
             {
                 assertFalse( seek.next() );
             }
@@ -1339,7 +1337,7 @@ class GBPTreeTest
         {
             MutableLong from = new MutableLong( Long.MIN_VALUE );
             MutableLong to = new MutableLong( MAX_VALUE );
-            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> seek = index.seek( from, to ) )
+            try ( Seeker<MutableLong,MutableLong> seek = index.seek( from, to ) )
             {
                 assertTrue( seek.next() );
                 assertEquals( key, seek.get().key().longValue() );
@@ -1577,7 +1575,7 @@ class GBPTreeTest
                 }
             }
 
-            RawCursor<Hit<MutableLong,MutableLong>,IOException> seek =
+            Seeker<MutableLong,MutableLong> seek =
                     tree.seek( new MutableLong( 0 ), new MutableLong( MAX_VALUE ) );
             assertTrue( seek.next() );
             assertTrue( seek.next() );
@@ -1645,7 +1643,7 @@ class GBPTreeTest
                 TreeInconsistencyException e = assertThrows( TreeInconsistencyException.class, () ->
                 {
                     // when seek end up in this corrupt child we should eventually fail with a tree inconsistency exception
-                    try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ) ) )
+                    try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ) ) )
                     {
                         seek.next();
                     }
@@ -1690,7 +1688,7 @@ class GBPTreeTest
                 {
                     go.countDown();
                     go.await();
-                    try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ) ) )
+                    try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ) ) )
                     {
                         seek.next();
                     }
@@ -1701,7 +1699,7 @@ class GBPTreeTest
                 {
                     go.countDown();
                     go.await();
-                    try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> seek = tree
+                    try ( Seeker<MutableLong,MutableLong> seek = tree
                             .seek( new MutableLong( MAX_VALUE ), new MutableLong( MAX_VALUE ) ) )
                     {
                         seek.next();
@@ -1771,7 +1769,7 @@ class GBPTreeTest
                 count++;
             }
             trace.clear();
-            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ) ) )
+            try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ) ) )
             {
                 seek.next();
             }
@@ -1779,7 +1777,7 @@ class GBPTreeTest
         while ( trace.size() <= 1 );
 
         trace.clear();
-        try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> seek = tree.seek( new MutableLong( 0 ), new MutableLong( MAX_VALUE ) ) )
+        try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( MAX_VALUE ) ) )
         {
             //noinspection StatementWithEmptyBody
             while ( seek.next() )

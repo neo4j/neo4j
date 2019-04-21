@@ -25,6 +25,7 @@ import java.util.Comparator;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.index.internal.gbptree.Seeker;
 
 public class NativeDistinctValuesProgressor<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexProgressor<KEY,VALUE>
 {
@@ -35,7 +36,7 @@ public class NativeDistinctValuesProgressor<KEY extends NativeIndexKey<KEY>, VAL
     private long countForCurrentValue;
     private boolean last;
 
-    NativeDistinctValuesProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, EntityValueClient client, IndexLayout<KEY,VALUE> layout,
+    NativeDistinctValuesProgressor( Seeker<KEY,VALUE> seeker, EntityValueClient client, IndexLayout<KEY,VALUE> layout,
             Comparator<KEY> comparator )
     {
         super( seeker, client );

@@ -139,7 +139,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
  * suddenly another key when he goes there he knows that he could have missed some keys and he needs to go back until
  * he find the place where he left off, K4.
  */
-class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hit<KEY,VALUE>
+class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>, Hit<KEY,VALUE>
 {
     static final int DEFAULT_MAX_READ_AHEAD = 20;
 

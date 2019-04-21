@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.io.ByteUnit;
@@ -359,7 +360,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         }
     }
 
-    private void verifyUniqueSeek( RawCursor<Hit<KEY,VALUE>,IOException> seek ) throws IOException, IndexEntryConflictException
+    private void verifyUniqueSeek( Seeker<KEY,VALUE> seek ) throws IOException, IndexEntryConflictException
     {
         if ( seek != null )
         {

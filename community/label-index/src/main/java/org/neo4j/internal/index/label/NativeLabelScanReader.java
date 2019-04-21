@@ -32,6 +32,7 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.index.internal.gbptree.Seeker;
 
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
 import static org.neo4j.internal.index.label.NativeLabelScanWriter.rangeOf;
@@ -56,7 +57,7 @@ class NativeLabelScanReader implements LabelScanReader
     @Override
     public PrimitiveLongResourceIterator nodesWithLabel( int labelId )
     {
-        RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor;
+        Seeker<LabelScanKey,LabelScanValue> cursor;
         try
         {
             cursor = seekerForLabel( 0, labelId );
@@ -92,7 +93,7 @@ class NativeLabelScanReader implements LabelScanReader
 
     private long highestNodeIdForLabel( int labelId ) throws IOException
     {
-        try ( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> seeker = index.seek( new LabelScanKey( labelId, Long.MAX_VALUE ),
+        try ( Seeker<LabelScanKey,LabelScanValue> seeker = index.seek( new LabelScanKey( labelId, Long.MAX_VALUE ),
                 new LabelScanKey( labelId, Long.MIN_VALUE ) ) )
         {
             return seeker.next() ? (seeker.get().key().idRange + 1) * RANGE_SIZE : 0;
@@ -106,7 +107,7 @@ class NativeLabelScanReader implements LabelScanReader
         {
             for ( int labelId : labelIds )
             {
-                RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor = seekerForLabel( fromId, labelId );
+                Seeker<LabelScanKey,LabelScanValue> cursor = seekerForLabel( fromId, labelId );
                 iterators.add( new LabelScanValueIterator( cursor, fromId ) );
             }
         }
@@ -117,14 +118,14 @@ class NativeLabelScanReader implements LabelScanReader
         return iterators;
     }
 
-    private RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> seekerForLabel( long startId, int labelId ) throws IOException
+    private Seeker<LabelScanKey,LabelScanValue> seekerForLabel( long startId, int labelId ) throws IOException
     {
         LabelScanKey from = new LabelScanKey( labelId, rangeOf( startId ) );
         LabelScanKey to = new LabelScanKey( labelId, Long.MAX_VALUE );
         return index.seek( from, to );
     }
 
-    private RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> seekerForLabel( long startId, long stopId, int labelId ) throws IOException
+    private Seeker<LabelScanKey,LabelScanValue> seekerForLabel( long startId, long stopId, int labelId ) throws IOException
     {
         LabelScanKey from = new LabelScanKey( labelId, rangeOf( startId ) );
         LabelScanKey to = new LabelScanKey( labelId, rangeOf( stopId ) );
@@ -170,7 +171,7 @@ class NativeLabelScanReader implements LabelScanReader
 
         private PrimitiveLongResourceIterator init( long start, long stop )
         {
-            RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor;
+            Seeker<LabelScanKey,LabelScanValue> cursor;
             try
             {
                 cursor = seekerForLabel( start, stop, labelId );

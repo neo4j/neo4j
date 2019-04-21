@@ -28,6 +28,7 @@ import java.util.NoSuchElementException;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.index.internal.gbptree.Seeker;
 
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
 import static org.neo4j.internal.index.label.NativeLabelScanWriter.rangeOf;
@@ -50,7 +51,7 @@ class LabelScanValueIterator extends LabelScanValueIndexAccessor implements Prim
      * @param fromId entity to start from (exclusive). The cursor gives entries that are effectively small bit-sets and the fromId may
      * be somewhere inside a bit-set range.
      */
-    LabelScanValueIterator( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor, long fromId )
+    LabelScanValueIterator( Seeker<LabelScanKey,LabelScanValue> cursor, long fromId )
     {
         super( cursor );
         this.fromId = fromId;

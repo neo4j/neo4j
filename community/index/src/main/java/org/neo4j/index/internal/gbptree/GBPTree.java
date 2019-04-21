@@ -928,7 +928,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @return a {@link RawCursor} used to iterate over the hits within the specified key range.
      * @throws IOException on error reading from index.
      */
-    public RawCursor<Hit<KEY,VALUE>,IOException> seek( KEY fromInclusive, KEY toExclusive ) throws IOException
+    public Seeker<KEY,VALUE> seek( KEY fromInclusive, KEY toExclusive ) throws IOException
     {
         long generation = this.generation;
         long stableGeneration = stableGeneration( generation );

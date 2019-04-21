@@ -29,6 +29,7 @@ import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
@@ -124,7 +125,7 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
         highest.initValuesAsHighest();
         try
         {
-            RawCursor<Hit<SpatialIndexKey,VALUE>,IOException> seeker = tree.seek( lowest, highest );
+            Seeker<SpatialIndexKey,VALUE> seeker = tree.seek( lowest, highest );
             Comparator<SpatialIndexKey> comparator =
                     new PropertyLookupFallbackComparator<>( layout, propertyAccessor, descriptor.schema().getPropertyId() );
             NativeDistinctValuesProgressor<SpatialIndexKey,VALUE> progressor =
@@ -190,7 +191,7 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
                 initializeKeys( treeKeyFrom, treeKeyTo );
                 treeKeyFrom.fromDerivedValue( Long.MIN_VALUE, range.min );
                 treeKeyTo.fromDerivedValue( Long.MAX_VALUE, range.max + 1 );
-                RawCursor<Hit<SpatialIndexKey,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo, IndexOrder.NONE );
+                Seeker<SpatialIndexKey,VALUE> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo, IndexOrder.NONE );
                 IndexProgressor hitProgressor = new NativeHitIndexProgressor<>( seeker, client );
                 multiProgressor.initialize( descriptor, hitProgressor, query, IndexOrder.NONE, false, false );
             }
@@ -220,7 +221,7 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
         }
         try
         {
-            RawCursor<Hit<SpatialIndexKey,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo, indexOrder );
+            Seeker<SpatialIndexKey,VALUE> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo, indexOrder );
             IndexProgressor hitProgressor = new NativeHitIndexProgressor<>( seeker, client );
             client.initialize( descriptor, hitProgressor, query, IndexOrder.NONE, false, false );
         }

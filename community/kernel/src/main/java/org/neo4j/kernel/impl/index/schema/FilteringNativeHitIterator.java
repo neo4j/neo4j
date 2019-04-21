@@ -24,6 +24,7 @@ import java.util.Collection;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.values.storable.Value;
 
@@ -31,8 +32,7 @@ class FilteringNativeHitIterator<KEY extends NativeIndexKey<KEY>, VALUE extends 
 {
     private final IndexQuery[] filters;
 
-    FilteringNativeHitIterator( RawCursor<Hit<KEY,VALUE>,IOException> seeker,
-            Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromWhenExhausted, IndexQuery[] filters )
+    FilteringNativeHitIterator( Seeker<KEY,VALUE> seeker, Collection<Seeker<KEY,VALUE>> toRemoveFromWhenExhausted, IndexQuery[] filters )
     {
         super( seeker, toRemoveFromWhenExhausted );
         this.filters = filters;

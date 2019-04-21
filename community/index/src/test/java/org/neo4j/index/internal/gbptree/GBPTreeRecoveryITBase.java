@@ -36,7 +36,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
@@ -124,8 +123,7 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
             index.consistencyCheck();
 
             // ... containing all the stuff load says
-            try ( RawCursor<Hit<KEY,VALUE>,IOException> cursor =
-                          index.seek( key( Long.MIN_VALUE ), key( Long.MAX_VALUE ) ) )
+            try ( Seeker<KEY,VALUE> cursor = index.seek( key( Long.MIN_VALUE ), key( Long.MAX_VALUE ) ) )
             {
                 assertTrue( cursor.next() );
                 Hit<KEY,VALUE> hit = cursor.get();
@@ -245,8 +243,7 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
             // we should end up with a consistent index containing all the stuff load says
             index.consistencyCheck();
             long[/*key,value,key,value...*/] aggregate = expectedSortedAggregatedDataFromGeneratedLoad( load );
-            try ( RawCursor<Hit<KEY,VALUE>,IOException> cursor =
-                    index.seek( key( Long.MIN_VALUE ), key( Long.MAX_VALUE ) ) )
+            try ( Seeker<KEY,VALUE> cursor = index.seek( key( Long.MIN_VALUE ), key( Long.MAX_VALUE ) ) )
             {
                 for ( int i = 0; i < aggregate.length; )
                 {

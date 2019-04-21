@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 
@@ -56,7 +56,7 @@ class FullScanNonUniqueIndexSampler<KEY extends NativeIndexKey<KEY>, VALUE exten
         highest.initialize( Long.MAX_VALUE );
         highest.initValuesAsHighest();
         KEY prev = layout.newKey();
-        try ( RawCursor<Hit<KEY,VALUE>,IOException> seek = gbpTree.seek( lowest, highest ) )
+        try ( Seeker<KEY,VALUE> seek = gbpTree.seek( lowest, highest ) )
         {
             long sampledValues = 0;
             long uniqueValues = 0;

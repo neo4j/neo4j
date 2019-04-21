@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.values.storable.Value;
 
@@ -30,7 +31,7 @@ class FilteringNativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE e
 {
     private final IndexQuery[] filter;
 
-    FilteringNativeHitIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, EntityValueClient client, IndexQuery[] filter )
+    FilteringNativeHitIndexProgressor( Seeker<KEY,VALUE> seeker, EntityValueClient client, IndexQuery[] filter )
     {
         super( seeker, client );
         this.filter = filter;

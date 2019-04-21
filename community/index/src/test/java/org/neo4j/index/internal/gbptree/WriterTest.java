@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -72,7 +71,7 @@ class WriterTest
         }
 
         // then
-        try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ) ) )
+        try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ) ) )
         {
             assertTrue( cursor.next() );
             assertEquals( key, cursor.get().key().longValue() );
@@ -93,7 +92,7 @@ class WriterTest
         }
 
         // then
-        try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ) ) )
+        try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ) ) )
         {
             assertTrue( cursor.next() );
             assertEquals( key, cursor.get().key().longValue() );
@@ -120,7 +119,7 @@ class WriterTest
         }
 
         // then
-        try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ) ) )
+        try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ) ) )
         {
             assertTrue( cursor.next() );
             assertEquals( key, cursor.get().key().longValue() );
@@ -147,7 +146,7 @@ class WriterTest
         }
 
         // then
-        try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ) ) )
+        try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ) ) )
         {
             assertTrue( cursor.next() );
             assertEquals( key, cursor.get().key().longValue() );
@@ -168,7 +167,7 @@ class WriterTest
         }
 
         // then
-        try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ) ) )
+        try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ) ) )
         {
             assertFalse( cursor.next() );
         }
@@ -192,7 +191,7 @@ class WriterTest
         }
 
         // then
-        try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ) ) )
+        try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ) ) )
         {
             assertTrue( cursor.next() );
             assertEquals( key, cursor.get().key().longValue() );
@@ -219,7 +218,7 @@ class WriterTest
         }
 
         // then
-        try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ) ) )
+        try ( Seeker<MutableLong,MutableLong> cursor = tree.seek( new MutableLong( key ), new MutableLong( key ) ) )
         {
             assertTrue( cursor.next() );
             assertEquals( key, cursor.get().key().longValue() );

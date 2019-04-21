@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.IOException;
 import java.util.List;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.index.internal.gbptree.Seeker;
 
 import static org.neo4j.io.IOUtils.closeAll;
 
@@ -35,21 +35,21 @@ import static org.neo4j.io.IOUtils.closeAll;
  * @param <KEY> type of key
  * @param <VALUE> type of value
  */
-class CombinedPartSeeker<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hit<KEY,VALUE>
+class CombinedPartSeeker<KEY,VALUE> implements Seeker<KEY,VALUE>, Hit<KEY,VALUE>
 {
     private final KEY end;
-    private final RawCursor<Hit<KEY,VALUE>,IOException>[] partCursors;
+    private final Seeker<KEY,VALUE>[] partCursors;
     private final Object[] partHeads;
     private final Layout<KEY,VALUE> layout;
     private KEY nextKey;
     private VALUE nextValue;
 
-    CombinedPartSeeker( Layout<KEY,VALUE> layout, List<RawCursor<Hit<KEY,VALUE>,IOException>> parts )
+    CombinedPartSeeker( Layout<KEY,VALUE> layout, List<Seeker<KEY,VALUE>> parts )
     {
         this.layout = layout;
         int length = parts.size();
         this.end = layout.newKey();
-        this.partCursors = parts.toArray( new RawCursor[0] );
+        this.partCursors = parts.toArray( new Seeker[0] );
         this.partHeads = new Object[length];
     }
 

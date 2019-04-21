@@ -24,16 +24,17 @@ import java.io.UncheckedIOException;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
 abstract class NativeIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> implements IndexProgressor
 {
-    final RawCursor<Hit<KEY,VALUE>,IOException> seeker;
+    final Seeker<KEY,VALUE> seeker;
     final EntityValueClient client;
     private boolean closed;
 
-    NativeIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, EntityValueClient client )
+    NativeIndexProgressor( Seeker<KEY,VALUE> seeker, EntityValueClient client )
     {
         this.seeker = seeker;
         this.client = client;

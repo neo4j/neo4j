@@ -25,6 +25,7 @@ import java.io.UncheckedIOException;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
@@ -101,7 +102,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
             treeKeyFrom.initFromValue( i, propertyValues[i], NEUTRAL );
             treeKeyTo.initFromValue( i, propertyValues[i], NEUTRAL );
         }
-        try ( RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo ) )
+        try ( Seeker<KEY,VALUE> seeker = tree.seek( treeKeyFrom, treeKeyTo ) )
         {
             long count = 0;
             while ( seeker.next() )
@@ -152,7 +153,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         highest.initValuesAsHighest();
         try
         {
-            RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( lowest, highest );
+            Seeker<KEY,VALUE> seeker = tree.seek( lowest, highest );
             client.initialize( descriptor, new NativeDistinctValuesProgressor<>( seeker, client, layout, layout::compareValue ),
                     new IndexQuery[0], IndexOrder.NONE, needsValues, false );
         }
@@ -179,7 +180,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         }
         try
         {
-            RawCursor<Hit<KEY,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo, indexOrder );
+            Seeker<KEY,VALUE> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo, indexOrder );
             IndexProgressor hitProgressor = getIndexProgressor( seeker, client, needFilter, query );
             client.initialize( descriptor, hitProgressor, query, indexOrder, needsValues, false );
         }
@@ -189,7 +190,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         }
     }
 
-    RawCursor<Hit<KEY,VALUE>,IOException> makeIndexSeeker( KEY treeKeyFrom, KEY treeKeyTo, IndexOrder indexOrder ) throws IOException
+    Seeker<KEY,VALUE> makeIndexSeeker( KEY treeKeyFrom, KEY treeKeyTo, IndexOrder indexOrder ) throws IOException
     {
         if ( indexOrder == IndexOrder.DESCENDING )
         {
@@ -200,8 +201,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         return tree.seek( treeKeyFrom, treeKeyTo );
     }
 
-    private IndexProgressor getIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, IndexProgressor.EntityValueClient client, boolean needFilter,
-            IndexQuery[] query )
+    private IndexProgressor getIndexProgressor( Seeker<KEY,VALUE> seeker, IndexProgressor.EntityValueClient client, boolean needFilter, IndexQuery[] query )
     {
         return needFilter ? new FilteringNativeHitIndexProgressor<>( seeker, client, query )
                           : new NativeHitIndexProgressor<>( seeker, client );

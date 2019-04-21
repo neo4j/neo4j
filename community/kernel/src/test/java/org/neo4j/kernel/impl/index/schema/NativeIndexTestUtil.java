@@ -34,6 +34,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -101,7 +102,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
         Hit<KEY,VALUE>[] expectedHits = convertToHits( updates, layout );
         List<Hit<KEY,VALUE>> actualHits = new ArrayList<>();
         try ( GBPTree<KEY,VALUE> tree = getTree();
-              RawCursor<Hit<KEY,VALUE>,IOException> scan = scan( tree ) )
+              Seeker<KEY,VALUE> scan = scan( tree ) )
         {
             while ( scan.next() )
             {
@@ -130,7 +131,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
                 NO_HEADER_READER, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.immediate() );
     }
 
-    private RawCursor<Hit<KEY,VALUE>, IOException> scan( GBPTree<KEY,VALUE> tree ) throws IOException
+    private Seeker<KEY,VALUE> scan( GBPTree<KEY,VALUE> tree ) throws IOException
     {
         KEY lowest = layout.newKey();
         lowest.initialize( Long.MIN_VALUE );

@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -79,7 +78,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
                 }
             }
 
-            try ( RawCursor<Hit<KEY,VALUE>,IOException> cursor = index.seek( key( 0 ), key( Long.MAX_VALUE ) ) )
+            try ( Seeker<KEY,VALUE> cursor = index.seek( key( 0 ), key( Long.MAX_VALUE ) ) )
             {
                 for ( int i = 0; i < count; i++ )
                 {
@@ -107,7 +106,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
 
             for ( int i = 0; i < count; i++ )
             {
-                try ( RawCursor<Hit<KEY,VALUE>,IOException> cursor = index.seek( key( i ), key( i ) ) )
+                try ( Seeker<KEY,VALUE> cursor = index.seek( key( i ), key( i ) ) )
                 {
                     assertTrue( cursor.next() );
                     assertEqualsKey( key( i ), cursor.get().key() );
@@ -145,7 +144,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
             }
 
             // THEN
-            try ( RawCursor<Hit<KEY,VALUE>,IOException> cursor = index.seek( key( 0 ), key( Long.MAX_VALUE ) ) )
+            try ( Seeker<KEY,VALUE> cursor = index.seek( key( 0 ), key( Long.MAX_VALUE ) ) )
             {
                 long prev = -1;
                 while ( cursor.next() )

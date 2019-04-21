@@ -45,7 +45,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -530,7 +529,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
             long start = readerInstruction.start();
             long end = readerInstruction.end();
             boolean forward = start <= end;
-            try ( RawCursor<Hit<KEY,VALUE>,IOException> cursor = index.seek( key( start ), key( end ) ) )
+            try ( Seeker<KEY,VALUE> cursor = index.seek( key( start ), key( end ) ) )
             {
                 if ( expectToSee.hasNext() )
                 {

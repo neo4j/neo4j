@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 
-import org.neo4j.cursor.RawCursor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -139,7 +138,7 @@ abstract class GBPTreeITBase<KEY,VALUE>
                         to = first;
                     }
                     Map<KEY,VALUE> expectedHits = expectedHits( data, from, to, keyComparator );
-                    try ( RawCursor<Hit<KEY,VALUE>,IOException> result = index.seek( from, to ) )
+                    try ( Seeker<KEY,VALUE> result = index.seek( from, to ) )
                     {
                         while ( result.next() )
                         {
@@ -217,7 +216,7 @@ abstract class GBPTreeITBase<KEY,VALUE>
             }
 
             // then
-            try ( RawCursor<Hit<KEY,VALUE>,IOException> seek = index.seek( key( 0 ), key( numberOfNodes ) ) )
+            try ( Seeker<KEY,VALUE> seek = index.seek( key( 0 ), key( numberOfNodes ) ) )
             {
                 assertFalse( seek.next() );
             }
@@ -249,7 +248,7 @@ abstract class GBPTreeITBase<KEY,VALUE>
 
                 KEY from = layout.key( 3 );
                 KEY to = layout.key( 1 );
-                try ( RawCursor<Hit<KEY,VALUE>,IOException> seek = index.seek( from, to ) )
+                try ( Seeker<KEY,VALUE> seek = index.seek( from, to ) )
                 {
                     assertFalse( seek.next() );
                 }
