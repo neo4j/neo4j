@@ -26,7 +26,6 @@ import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -40,7 +39,6 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
@@ -163,14 +161,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     @Override
     public Map<String,Object> metaData()
     {
-        if ( transaction instanceof KernelTransactionImplementation )
-        {
-            return transaction.getMetaData();
-        }
-        else
-        {
-            return Collections.emptyMap();
-        }
+        return transaction.getMetaData();
     }
 
     @Override
@@ -218,7 +209,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
                         }
                         catch ( PropertyKeyIdNotFoundKernelException e )
                         {
-                            throw new IllegalStateException( "Nonexisting properties was modified for node " + nodeId, e );
+                            throw new IllegalStateException( "Not existing properties was modified for node " + nodeId, e );
                         }
                     }
 
@@ -230,7 +221,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
                         }
                         catch ( LabelNotFoundKernelException e )
                         {
-                            throw new IllegalStateException( "Nonexisting label was modified for node " + nodeId, e );
+                            throw new IllegalStateException( "Not existing label was modified for node " + nodeId, e );
                         }
                     }
                 }
@@ -252,7 +243,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
                         }
                         catch ( PropertyKeyIdNotFoundKernelException e )
                         {
-                            throw new IllegalStateException( "Nonexisting node properties was modified for relationship " + relId, e );
+                            throw new IllegalStateException( "Not existing node properties was modified for relationship " + relId, e );
                         }
                     }
                 }
@@ -278,7 +269,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
                     }
                     catch ( PropertyKeyIdNotFoundKernelException e )
                     {
-                        throw new IllegalStateException( "Nonexisting node properties was modified for node " + nodeId, e );
+                        throw new IllegalStateException( "Not existing node properties was modified for node " + nodeId, e );
                     }
                 } );
 
@@ -307,7 +298,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
                     }
                     catch ( PropertyKeyIdNotFoundKernelException e )
                     {
-                        throw new IllegalStateException( "Nonexisting properties was modified for relationship " + relState.getId(), e );
+                        throw new IllegalStateException( "Not existing properties was modified for relationship " + relState.getId(), e );
                     }
                 } );
             }
@@ -335,7 +326,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
             }
             catch ( LabelNotFoundKernelException e )
             {
-                throw new IllegalStateException( "Nonexisting label was modified for node " + nodeId, e );
+                throw new IllegalStateException( "Not existing label was modified for node " + nodeId, e );
             }
         } );
     }
@@ -389,7 +380,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         return committedValue( properties, node, property );
     }
 
-    private Value committedValue( StoragePropertyCursor properties, StorageEntityCursor entity, int propertyKey )
+    private static Value committedValue( StoragePropertyCursor properties, StorageEntityCursor entity, int propertyKey )
     {
         entity.properties( properties );
         while ( properties.next() )
@@ -447,7 +438,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         }
 
         @Override
-        public Object previouslyCommitedValue()
+        public Object previouslyCommittedValue()
         {
             return oldValue.asObjectCopy();
         }
@@ -502,7 +493,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         }
 
         @Override
-        public Object previouslyCommitedValue()
+        public Object previouslyCommittedValue()
         {
             return oldValue.asObjectCopy();
         }

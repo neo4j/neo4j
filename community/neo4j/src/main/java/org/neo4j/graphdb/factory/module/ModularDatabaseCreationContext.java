@@ -52,10 +52,10 @@ import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.events.GlobalTransactionEventListeners;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
-import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.DatabaseEventListeners;
@@ -80,7 +80,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final TokenHolders tokenHolders;
     private final Locks locks;
     private final StatementLocksFactory statementLocksFactory;
-    private final TransactionEventHandlers transactionEventHandlers;
     private final FileSystemAbstraction fs;
     private final DatabaseTransactionStats transactionStats;
     private final DatabaseHealth databaseHealth;
@@ -105,7 +104,8 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
     private final DatabaseLayout databaseLayout;
-    private final DatabaseEventListeners eventHandlers;
+    private final DatabaseEventListeners eventListeners;
+    private final GlobalTransactionEventListeners transactionEventListeners;
     private final DatabaseMigratorFactory databaseMigratorFactory;
     private final StorageEngineFactory storageEngineFactory;
 
@@ -126,13 +126,13 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
         this.locks = perEditionComponents.getLocks();
         this.statementLocksFactory = perEditionComponents.getStatementLocksFactory();
-        this.transactionEventHandlers = new TransactionEventHandlers( facade );
+        this.transactionEventListeners = globalModule.getTransactionEventListeners();
         this.globalMonitors = globalModule.getGlobalMonitors();
         this.fs = globalModule.getFileSystem();
         this.transactionStats = perEditionComponents.getTransactionMonitor();
-        this.eventHandlers = globalModule.getDatabaseEventListeners();
+        this.eventListeners = globalModule.getDatabaseEventListeners();
         this.databaseHealth = globalModule.getGlobalHealthService()
-                .createDatabaseHealth( new DatabasePanicEventGenerator( eventHandlers, databaseId.name() ),
+                .createDatabaseHealth( new DatabasePanicEventGenerator( eventListeners, databaseId.name() ),
                         logService.getInternalLog( DatabaseHealth.class ) );
         this.transactionHeaderInformationFactory = perEditionComponents.getHeaderInformationFactory();
         this.commitProcessFactory = perEditionComponents.getCommitProcessFactory();
@@ -229,9 +229,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public TransactionEventHandlers getTransactionEventHandlers()
+    public GlobalTransactionEventListeners getTransactionEventListeners()
     {
-        return transactionEventHandlers;
+        return transactionEventListeners;
     }
 
     @Override
@@ -375,7 +375,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     @Override
     public DatabaseEventListeners getDatabaseEventListeners()
     {
-        return eventHandlers;
+        return eventListeners;
     }
 
     @Override

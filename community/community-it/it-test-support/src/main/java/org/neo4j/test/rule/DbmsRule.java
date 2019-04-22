@@ -41,7 +41,6 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.graphdb.schema.Schema;
@@ -561,18 +560,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     public boolean isAvailable( long timeout )
     {
         return database.isAvailable( timeout );
-    }
-
-    @Override
-    public <T> TransactionEventHandler<T> registerTransactionEventHandler( TransactionEventHandler<T> handler )
-    {
-        return database.registerTransactionEventHandler( handler );
-    }
-
-    @Override
-    public <T> TransactionEventHandler<T> unregisterTransactionEventHandler( TransactionEventHandler<T> handler )
-    {
-        return database.unregisterTransactionEventHandler( handler );
     }
 
     @Override

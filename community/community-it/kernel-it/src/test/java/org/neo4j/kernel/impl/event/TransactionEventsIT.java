@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -44,7 +45,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.event.TransactionEventListener;
+import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -65,6 +67,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 
 /**
@@ -83,9 +86,10 @@ public class TransactionEventsIT
     public void shouldSeeExpectedTransactionData()
     {
         // GIVEN
+        DatabaseManagementService managementService = db.getManagementService();
         final Graph state = new Graph( db, random );
         final ExpectedTransactionData expected = new ExpectedTransactionData( true );
-        final TransactionEventHandler<Object> handler = new VerifyingTransactionEventHandler( expected );
+        final TransactionEventListener<Object> listener = new VerifyingTransactionEventListener( expected );
         try ( Transaction tx = db.beginTx() )
         {
             for ( int i = 0; i < 100; i++ )
@@ -99,7 +103,7 @@ public class TransactionEventsIT
             tx.success();
         }
 
-        db.registerTransactionEventHandler( handler );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
 
         // WHEN
         Operation[] operations = Operation.values();
@@ -117,14 +121,15 @@ public class TransactionEventsIT
             }
         }
 
-        // THEN the verifications all happen inside the transaction event handler
+        // THEN the verifications all happen inside the transaction event listener
     }
 
     @Test
     public void transactionIdAndCommitTimeAccessibleAfterCommit()
     {
         TransactionIdCommitTimeTracker commitTimeTracker = new TransactionIdCommitTimeTracker();
-        db.registerTransactionEventHandler( commitTimeTracker );
+        DatabaseManagementService managementService = db.getManagementService();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, commitTimeTracker );
 
         runTransaction();
 
@@ -148,7 +153,8 @@ public class TransactionEventsIT
     @Test
     public void transactionIdNotAccessibleBeforeCommit()
     {
-        db.registerTransactionEventHandler( getBeforeCommitHandler( TransactionData::getTransactionId ) );
+        DatabaseManagementService managementService = db.getManagementService();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, getBeforeCommitListener( TransactionData::getTransactionId ) );
         String message = "Transaction id is not assigned yet. It will be assigned during transaction commit.";
         expectedException.expectCause( new RootCauseMatcher<>( IllegalStateException.class, message ) );
         runTransaction();
@@ -157,7 +163,8 @@ public class TransactionEventsIT
     @Test
     public void commitTimeNotAccessibleBeforeCommit()
     {
-        db.registerTransactionEventHandler( getBeforeCommitHandler( TransactionData::getCommitTime ) );
+        DatabaseManagementService managementService = db.getManagementService();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, getBeforeCommitListener( TransactionData::getCommitTime ) );
         String message = "Transaction commit time is not assigned yet. It will be assigned during transaction commit.";
         expectedException.expectCause( new RootCauseMatcher<>( IllegalStateException.class, message ) );
         runTransaction();
@@ -166,7 +173,8 @@ public class TransactionEventsIT
     @Test
     public void shouldGetEmptyUsernameOnAuthDisabled()
     {
-        db.registerTransactionEventHandler( getBeforeCommitHandler( txData ->
+        DatabaseManagementService managementService = db.getManagementService();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, getBeforeCommitListener( txData ->
         {
             assertThat( "Should have no username", txData.username(), equalTo( "" ) );
             assertThat( "Should have no metadata", txData.metaData(), equalTo( Collections.emptyMap() ) );
@@ -179,7 +187,8 @@ public class TransactionEventsIT
     {
         final AtomicReference<String> usernameRef = new AtomicReference<>();
         final AtomicReference<Map<String,Object>> metaDataRef = new AtomicReference<>();
-        db.registerTransactionEventHandler( getBeforeCommitHandler( txData ->
+        DatabaseManagementService managementService = db.getManagementService();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, getBeforeCommitListener( txData ->
         {
             usernameRef.set( txData.username() );
             metaDataRef.set( txData.metaData() );
@@ -215,10 +224,11 @@ public class TransactionEventsIT
         AtomicInteger doneCounter = new AtomicInteger();
         BinaryLatch startLatch = new BinaryLatch();
         RelationshipType relationshipType = RelationshipType.withName( "REL" );
-        CountingTransactionEventHandler[] handlers = new CountingTransactionEventHandler[20];
+        DatabaseManagementService managementService = db.getManagementService();
+        CountingTransactionEventListener[] handlers = new CountingTransactionEventListener[20];
         for ( int i = 0; i < handlers.length; i++ )
         {
-            handlers[i] = new CountingTransactionEventHandler();
+            handlers[i] = new CountingTransactionEventListener();
         }
         long relNodeId;
         try ( Transaction tx = db.beginTx() )
@@ -278,38 +288,38 @@ public class TransactionEventsIT
             Thread.yield();
         }
         int i = 0;
-        db.registerTransactionEventHandler( handlers[i] );
-        CountingTransactionEventHandler currentlyRegistered = handlers[i];
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, handlers[i] );
+        CountingTransactionEventListener currentlyRegistered = handlers[i];
         i++;
         startLatch.release();
         while ( doneCounter.get() < 2 )
         {
-            db.registerTransactionEventHandler( handlers[i] );
+            managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, handlers[i] );
             i++;
             if ( i == handlers.length )
             {
                 i = 0;
             }
-            db.unregisterTransactionEventHandler( currentlyRegistered );
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, currentlyRegistered );
             currentlyRegistered = handlers[i];
         }
         nodeCreator.get();
         relationshipCreator.get();
-        for ( CountingTransactionEventHandler handler : handlers )
+        for ( CountingTransactionEventListener handler : handlers )
         {
             assertEquals( 0, handler.get() );
         }
     }
 
-    private TransactionEventHandler.Adapter<Object> getBeforeCommitHandler( Consumer<TransactionData> dataConsumer )
+    private static TransactionEventListenerAdapter<Object> getBeforeCommitListener( Consumer<TransactionData> dataConsumer )
     {
-        return new TransactionEventHandler.Adapter<Object>()
+        return new TransactionEventListenerAdapter<>()
         {
             @Override
-            public Object beforeCommit( TransactionData data ) throws Exception
+            public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService ) throws Exception
             {
                 dataConsumer.accept( data );
-                return super.beforeCommit( data );
+                return super.beforeCommit( data, databaseService );
             }
         };
     }
@@ -595,24 +605,24 @@ public class TransactionEventsIT
         }
     }
 
-    private static class TransactionIdCommitTimeTracker extends TransactionEventHandler.Adapter<Object>
+    private static class TransactionIdCommitTimeTracker extends TransactionEventListenerAdapter<Object>
     {
 
         private long transactionIdAfterCommit;
         private long commitTimeAfterCommit;
 
         @Override
-        public Object beforeCommit( TransactionData data ) throws Exception
+        public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService ) throws Exception
         {
-            return super.beforeCommit( data );
+            return super.beforeCommit( data, databaseService );
         }
 
         @Override
-        public void afterCommit( TransactionData data, Object state )
+        public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
         {
             commitTimeAfterCommit = data.getCommitTime();
             transactionIdAfterCommit = data.getTransactionId();
-            super.afterCommit( data, state );
+            super.afterCommit( data, state, databaseService );
         }
 
         public long getTransactionIdAfterCommit()
@@ -626,27 +636,27 @@ public class TransactionEventsIT
         }
     }
 
-    private static class CountingTransactionEventHandler
+    private static class CountingTransactionEventListener
             extends AtomicInteger
-            implements TransactionEventHandler<CountingTransactionEventHandler>
+            implements TransactionEventListener<CountingTransactionEventListener>
     {
 
         @Override
-        public CountingTransactionEventHandler beforeCommit( TransactionData data )
+        public CountingTransactionEventListener beforeCommit( TransactionData data, GraphDatabaseService databaseService )
         {
             getAndIncrement();
             return this;
         }
 
         @Override
-        public void afterCommit( TransactionData data, CountingTransactionEventHandler state )
+        public void afterCommit( TransactionData data, CountingTransactionEventListener state, GraphDatabaseService databaseService )
         {
             getAndDecrement();
             assertThat( state, sameInstance( this ) );
         }
 
         @Override
-        public void afterRollback( TransactionData data, CountingTransactionEventHandler state )
+        public void afterRollback( TransactionData data, CountingTransactionEventListener state, GraphDatabaseService databaseService )
         {
             getAndDecrement();
             assertThat( state, sameInstance( this ) );

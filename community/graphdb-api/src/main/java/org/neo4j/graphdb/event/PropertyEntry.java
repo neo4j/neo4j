@@ -73,7 +73,7 @@ public interface PropertyEntry<T extends PropertyContainer>
      * @return The value of the property as it was before the transaction
      * started.
      */
-    Object previouslyCommitedValue();
+    Object previouslyCommittedValue();
 
     /**
      * Get the value of the modified property. If this {@link PropertyEntry}

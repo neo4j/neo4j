@@ -19,13 +19,14 @@
  */
 package org.neo4j.graphdb.event;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 
 /**
- * An event handler interface for Neo4j Transaction events. Once it has been
- * registered at a {@link GraphDatabaseService} instance it will receive events
+ * An event handler interface for transaction events. Once it has been
+ * registered at a {@link DatabaseManagementService} instance it will receive events
  * about what has happened in each transaction which is about to be committed
  * and has any data that is accessible via {@link TransactionData}.
  * Handlers won't get notified about transactions which hasn't performed any
@@ -34,39 +35,36 @@ import org.neo4j.graphdb.TransactionFailureException;
  * marked as failed, {@link Transaction#failure()}.
  * <p>
  * Right before a transaction is about to be committed the
- * {@link #beforeCommit(TransactionData)} method is called with the entire diff
+ * {@link #beforeCommit(TransactionData, GraphDatabaseService)} method is called with the entire diff
  * of modifications made in the transaction. At this point the transaction is
  * still running so changes can still be made. However there's no guarantee that
  * other handlers will see such changes since the order in which handlers are
  * executed is undefined. This method can also throw an exception and will, in
  * such a case, prevent the transaction from being committed.
  * <p>
- * If {@link #beforeCommit(TransactionData)} is successfully executed the
+ * If {@link #beforeCommit(TransactionData, GraphDatabaseService)} is successfully executed the
  * transaction will be committed and the
- * {@link #afterCommit(TransactionData, Object)} method will be called with the
+ * {@link #afterCommit(TransactionData, Object, GraphDatabaseService)} method will be called with the
  * same transaction data as well as the object returned from
- * {@link #beforeCommit(TransactionData)}. This assumes that all other handlers
+ * {@link #beforeCommit(TransactionData, GraphDatabaseService)}. This assumes that all other handlers
  * (if more were registered) also executed
- * {@link #beforeCommit(TransactionData)} successfully.
+ * {@link #beforeCommit(TransactionData, GraphDatabaseService)} successfully.
  * <p>
- * If {@link #beforeCommit(TransactionData)} isn't executed successfully, but
+ * If {@link #beforeCommit(TransactionData, GraphDatabaseService)} isn't executed successfully, but
  * instead throws an exception the transaction won't be committed and a
  * {@link TransactionFailureException} will (eventually) be thrown from
  * {@link Transaction#close()}. All handlers which at this point have had its
- * {@link #beforeCommit(TransactionData)} method executed successfully will
- * receive a call to {@link #afterRollback(TransactionData, Object)}.
- *
- * @author Tobias Ivarsson
- * @author Mattias Persson
+ * {@link #beforeCommit(TransactionData, GraphDatabaseService)} method executed successfully will
+ * receive a call to {@link #afterRollback(TransactionData, Object, GraphDatabaseService)}.
  *
  * @param <T> The type of a state object that the transaction handler can use to
- *            pass information from the {@link #beforeCommit(TransactionData)}
+ *            pass information from the {@link #beforeCommit(TransactionData, GraphDatabaseService)}
  *            event dispatch method to the
- *            {@link #afterCommit(TransactionData, Object)} or
- *            {@link #afterRollback(TransactionData, Object)} method, depending
+ *            {@link #afterCommit(TransactionData, Object, GraphDatabaseService)} or
+ *            {@link #afterRollback(TransactionData, Object, GraphDatabaseService)} method, depending
  *            on whether the transaction succeeded or failed.
  */
-public interface TransactionEventHandler<T>
+public interface TransactionEventListener<T>
 {
     /**
      * Invoked when a transaction that has changes accessible via {@link TransactionData}
@@ -79,69 +77,44 @@ public interface TransactionEventHandler<T>
      * The transaction is still open when this method is invoked, making it
      * possible to perform mutating operations in this method. This is however
      * highly discouraged since changes made in this method are not guaranteed to be
-     * visible by this or other {@link TransactionEventHandler}s.
+     * visible by this or other {@link TransactionEventListener}s.
      *
      * @param data the changes that will be committed in this transaction.
+     * @param databaseService underlying database service
      * @return a state object (or <code>null</code>) that will be passed on to
-     *         {@link #afterCommit(TransactionData, Object)} or
-     *         {@link #afterRollback(TransactionData, Object)} of this object.
+     *         {@link #afterCommit(TransactionData, Object, GraphDatabaseService)} or
+     *         {@link #afterRollback(TransactionData, Object, GraphDatabaseService)} of this object.
      * @throws Exception to indicate that the transaction should be rolled back.
      */
-    T beforeCommit( TransactionData data ) throws Exception;
+    T beforeCommit( TransactionData data, GraphDatabaseService databaseService ) throws Exception;
 
     /**
      * Invoked after the transaction has been committed successfully.
      * Any {@link TransactionData} being passed in to this method is guaranteed
-     * to first have been called with {@link #beforeCommit(TransactionData)}.
+     * to first have been called with {@link #beforeCommit(TransactionData, GraphDatabaseService)}.
      * At the point of calling this method the transaction have been closed
      * and so accessing data outside that of what the {@link TransactionData}
      * can provide will require a new transaction to be opened.
-     *
-     * @param data the changes that were committed in this transaction.
+     *  @param data the changes that were committed in this transaction.
      * @param state the object returned by
-     *            {@link #beforeCommit(TransactionData)}.
+     *            {@link #beforeCommit(TransactionData, GraphDatabaseService)}.
+     * @param databaseService underlying database service
      */
-    void afterCommit( TransactionData data, T state );
+    void afterCommit( TransactionData data, T state, GraphDatabaseService databaseService );
 
     /**
      * Invoked after the transaction has been rolled back if committing the
      * transaction failed for some reason.
      * Any {@link TransactionData} being passed in to this method is guaranteed
-     * to first have been called with {@link #beforeCommit(TransactionData)}.
+     * to first have been called with {@link #beforeCommit(TransactionData, GraphDatabaseService)}.
      * At the point of calling this method the transaction have been closed
      * and so accessing data outside that of what the {@link TransactionData}
      * can provide will require a new transaction to be opened.
-     *
-     * @param data the changes that were attempted to be committed in this transaction.
-     * @param state the object returned by {@link #beforeCommit(TransactionData)}.
-     * If this handler failed when executing {@link #beforeCommit(TransactionData)} this
+     *  @param data the changes that were attempted to be committed in this transaction.
+     * @param state the object returned by {@link #beforeCommit(TransactionData, GraphDatabaseService)}.
+     * If this handler failed when executing {@link #beforeCommit(TransactionData, GraphDatabaseService)} this
      * {@code state} will be {@code null}.
+     * @param databaseService underlying database service
      */
-    // TODO: should this method take a parameter describing WHY the tx failed?
-    void afterRollback( TransactionData data, T state );
-
-    /**
-     * Adapter for a {@link TransactionEventHandler}
-     *
-     * @param <T> the type of object communicated from a successful
-     * {@link #beforeCommit(TransactionData)} to {@link #afterCommit(TransactionData, Object)}.
-     */
-    class Adapter<T> implements TransactionEventHandler<T>
-    {
-        @Override
-        public T beforeCommit( TransactionData data ) throws Exception
-        {
-            return null;
-        }
-
-        @Override
-        public void afterCommit( TransactionData data, T state )
-        {
-        }
-
-        @Override
-        public void afterRollback( TransactionData data, T state )
-        {
-        }
-    }
+    void afterRollback( TransactionData data, T state, GraphDatabaseService databaseService );
 }

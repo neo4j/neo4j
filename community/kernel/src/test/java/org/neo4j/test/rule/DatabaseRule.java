@@ -68,10 +68,10 @@ import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.events.GlobalTransactionEventListeners;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
-import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.kernel.recovery.RecoveryExtension;
@@ -156,7 +156,7 @@ public class DatabaseRule extends ExternalResource
 
         database = new Database( new TestDatabaseCreationContext( databaseName, databaseLayout, config, idGeneratorFactory, logService,
                 mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ), mutableDependencies, mockedTokenHolders(), locksFactory,
-                mock( TransactionEventHandlers.class ), fs, transactionStats, databaseHealth,
+                mock( GlobalTransactionEventListeners.class ), fs, transactionStats, databaseHealth,
                 TransactionHeaderInformationFactory.DEFAULT, new CommunityCommitProcessFactory(),
                 pageCache, new StandardConstraintSemantics(), monitors,
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
@@ -215,7 +215,7 @@ public class DatabaseRule extends ExternalResource
         private final DependencyResolver dependencyResolver;
         private final TokenHolders tokenHolders;
         private final StatementLocksFactory statementLocksFactory;
-        private final TransactionEventHandlers transactionEventHandlers;
+        private final GlobalTransactionEventListeners globalTransactionEventListeners;
         private final FileSystemAbstraction fs;
         private final DatabaseTransactionStats databaseTransactionStats;
         private final DatabaseHealth databaseHealth;
@@ -238,14 +238,14 @@ public class DatabaseRule extends ExternalResource
         private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
         private final GraphDatabaseFacade facade;
         private final Iterable<QueryEngineProvider> engineProviders;
-        private final DatabaseEventListeners eventHandlers;
+        private final DatabaseEventListeners eventListeners;
         private final DatabaseMigratorFactory databaseMigratorFactory;
         private final StorageEngineFactory storageEngineFactory;
 
         TestDatabaseCreationContext( String databaseName, DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory,
                 LogService logService, JobScheduler scheduler, TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
                 TokenHolders tokenHolders, StatementLocksFactory statementLocksFactory,
-                TransactionEventHandlers transactionEventHandlers, FileSystemAbstraction fs, DatabaseTransactionStats databaseTransactionStats,
+                GlobalTransactionEventListeners globalTransactionEventListeners, FileSystemAbstraction fs, DatabaseTransactionStats databaseTransactionStats,
                 DatabaseHealth databaseHealth, TransactionHeaderInformationFactory transactionHeaderInformationFactory,
                 CommitProcessFactory commitProcessFactory, PageCache pageCache, ConstraintSemantics constraintSemantics, Monitors monitors, Tracers tracers,
                 GlobalProcedures globalProcedures, IOLimiter ioLimiter, SystemNanoClock clock, AccessCapability accessCapability,
@@ -266,7 +266,7 @@ public class DatabaseRule extends ExternalResource
             this.dependencyResolver = dependencyResolver;
             this.tokenHolders = tokenHolders;
             this.statementLocksFactory = statementLocksFactory;
-            this.transactionEventHandlers = transactionEventHandlers;
+            this.globalTransactionEventListeners = globalTransactionEventListeners;
             this.fs = fs;
             this.databaseTransactionStats = databaseTransactionStats;
             this.databaseHealth = databaseHealth;
@@ -289,7 +289,7 @@ public class DatabaseRule extends ExternalResource
             this.watcherServiceFactory = watcherServiceFactory;
             this.facade = facade;
             this.engineProviders = engineProviders;
-            this.eventHandlers = mock( DatabaseEventListeners.class );
+            this.eventListeners = mock( DatabaseEventListeners.class );
             this.databaseMigratorFactory = databaseMigratorFactory;
             this.storageEngineFactory = storageEngineFactory;
         }
@@ -371,9 +371,9 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public TransactionEventHandlers getTransactionEventHandlers()
+        public GlobalTransactionEventListeners getTransactionEventListeners()
         {
-            return transactionEventHandlers;
+            return globalTransactionEventListeners;
         }
 
         @Override
@@ -521,7 +521,7 @@ public class DatabaseRule extends ExternalResource
         @Override
         public DatabaseEventListeners getDatabaseEventListeners()
         {
-            return eventHandlers;
+            return eventListeners;
         }
 
         @Override

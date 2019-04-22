@@ -22,22 +22,14 @@ package org.neo4j.graphdb;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
 /**
- * The most common way to instantiate a {@link GraphDatabaseService} is as follows:
- * <pre>
- * <code>GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( new File("var/graphDb") );
- * // ... use Neo4j
- * graphDb.{@link #shutdown() shutdown()};</code>
- * </pre>
  * <p>
  * GraphDatabaseService provides operations to {@link #createNode() create
- * nodes}, {@link #getNodeById(long) get nodes given an id} and ultimately {@link #shutdown()
- * shutdown Neo4j}.
+ * nodes}, {@link #getNodeById(long) get nodes given an id}
  * <p>
  * Please note that all operations on the graph must be invoked in a
  * {@link Transaction transactional context}. Failure to do so will result in a
@@ -417,40 +409,6 @@ public interface GraphDatabaseService
      * @throws QueryExecutionException If the Query contains errors
      */
     Result execute( String query, Map<String,Object> parameters, long timeout, TimeUnit unit ) throws QueryExecutionException;
-
-    /**
-     * Registers {@code handler} as a handler for transaction events which
-     * are generated from different places in the lifecycle of each
-     * transaction. To guarantee that the handler gets all events properly
-     * it shouldn't be registered when the application is running (i.e. in the
-     * middle of one or more transactions). If the specified handler instance
-     * has already been registered this method will do nothing.
-     *
-     * @param <T>     the type of state object used in the handler, see more
-     *                documentation about it at {@link TransactionEventHandler}.
-     * @param handler the handler to receive events about different states
-     *                in transaction lifecycles.
-     * @return the handler passed in as the argument.
-     */
-    <T> TransactionEventHandler<T> registerTransactionEventHandler( TransactionEventHandler<T> handler );
-
-    /**
-     * Unregisters {@code handler} from the list of transaction event handlers.
-     * If {@code handler} hasn't been registered with
-     * {@link #registerTransactionEventHandler(TransactionEventHandler)} prior
-     * to calling this method an {@link IllegalStateException} will be thrown.
-     * After a successful call to this method the {@code handler} will no
-     * longer receive any transaction events.
-     *
-     * @param <T>     the type of state object used in the handler, see more
-     *                documentation about it at {@link TransactionEventHandler}.
-     * @param handler the handler to receive events about different states
-     *                in transaction lifecycles.
-     * @return the handler passed in as the argument.
-     * @throws IllegalStateException if {@code handler} wasn't registered prior
-     *                               to calling this method.
-     */
-    <T> TransactionEventHandler<T> unregisterTransactionEventHandler( TransactionEventHandler<T> handler );
 
     /**
      * Returns the {@link Schema schema manager} where all things related to schema,

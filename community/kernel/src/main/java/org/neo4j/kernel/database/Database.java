@@ -92,6 +92,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.events.GlobalTransactionEventListeners;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LogVersionUpgradeChecker;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
@@ -128,7 +129,7 @@ import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
-import org.neo4j.kernel.internal.TransactionEventHandlers;
+import org.neo4j.kernel.internal.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -179,7 +180,7 @@ public class Database extends LifecycleAdapter
     private final TokenNameLookup tokenNameLookup;
     private final TokenHolders tokenHolders;
     private final StatementLocksFactory statementLocksFactory;
-    private final TransactionEventHandlers transactionEventHandlers;
+    private final GlobalTransactionEventListeners transactionEventListeners;
     private final IdGeneratorFactory idGeneratorFactory;
     private final JobScheduler scheduler;
     private final LockService lockService;
@@ -195,7 +196,7 @@ public class Database extends LifecycleAdapter
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final Locks locks;
-    private final DatabaseEventListeners eventHandlers;
+    private final DatabaseEventListeners eventListeners;
     private final DatabaseMigratorFactory databaseMigratorFactory;
 
     private Dependencies databaseDependencies;
@@ -242,7 +243,7 @@ public class Database extends LifecycleAdapter
         this.tokenHolders = context.getTokenHolders();
         this.locks = context.getLocks();
         this.statementLocksFactory = context.getStatementLocksFactory();
-        this.transactionEventHandlers = context.getTransactionEventHandlers();
+        this.transactionEventListeners = context.getTransactionEventListeners();
         this.fs = context.getFs();
         this.transactionStats = context.getTransactionStats();
         this.databaseHealth = context.getDatabaseHealth();
@@ -255,7 +256,7 @@ public class Database extends LifecycleAdapter
         this.ioLimiter = context.getIoLimiter();
         this.clock = context.getClock();
         this.accessCapability = context.getAccessCapability();
-        this.eventHandlers = context.getDatabaseEventListeners();
+        this.eventListeners = context.getDatabaseEventListeners();
 
         this.readOnly = context.getGlobalConfig().get( GraphDatabaseSettings.read_only );
         this.idController = context.getIdController();
@@ -427,7 +428,7 @@ public class Database extends LifecycleAdapter
             life.add( databaseAvailability );
             life.setLast( checkpointerLifecycle );
             life.start();
-            eventHandlers.databaseStart( databaseId.name() );
+            eventListeners.databaseStart( databaseId.name() );
         }
         catch ( Throwable e )
         {
@@ -621,7 +622,7 @@ public class Database extends LifecycleAdapter
         final KernelImpl kernel = new KernelImpl( kernelTransactions, hooks, databaseHealth, transactionStats, globalProcedures,
                 config, storageEngine );
 
-        kernel.registerTransactionHook( transactionEventHandlers );
+        kernel.registerTransactionHook( new DatabaseTransactionEventListeners( facade, transactionEventListeners, databaseId ) );
         life.add( kernel );
 
         final DatabaseFileListing fileListing = new DatabaseFileListing( databaseLayout, logFiles, labelScanStore, indexingService, storageEngine );
@@ -686,7 +687,7 @@ public class Database extends LifecycleAdapter
             return;
         }
 
-        eventHandlers.databaseShutdown( databaseId.name() );
+        eventListeners.databaseShutdown( databaseId.name() );
         life.stop();
         awaitAllClosingTransactions();
         life.shutdown();
@@ -809,9 +810,9 @@ public class Database extends LifecycleAdapter
         return tokenHolders;
     }
 
-    public TransactionEventHandlers getTransactionEventHandlers()
+    public GlobalTransactionEventListeners getTransactionEventListeners()
     {
-        return transactionEventHandlers;
+        return transactionEventListeners;
     }
 
     public DatabaseAvailabilityGuard getDatabaseAvailabilityGuard()

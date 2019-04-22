@@ -19,35 +19,35 @@
  */
 package org.neo4j.kernel.impl.event;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.helpers.collection.Iterables;
 
-public class VerifyingTransactionEventHandler implements
-        TransactionEventHandler<Object>
+public class VerifyingTransactionEventListener implements TransactionEventListener<Object>
 {
     private final ExpectedTransactionData expectedData;
     private boolean hasBeenCalled;
     private Throwable failure;
 
-    public VerifyingTransactionEventHandler( ExpectedTransactionData expectedData )
+    public VerifyingTransactionEventListener( ExpectedTransactionData expectedData )
     {
         this.expectedData = expectedData;
     }
 
     @Override
-    public void afterCommit( TransactionData data, Object state )
+    public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
     {
         verify( data );
     }
 
     @Override
-    public void afterRollback( TransactionData data, Object state )
+    public void afterRollback( TransactionData data, Object state, GraphDatabaseService databaseService )
     {
     }
 
     @Override
-    public Object beforeCommit( TransactionData data )
+    public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService )
     {
         return verify( data );
     }

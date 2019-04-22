@@ -22,17 +22,19 @@ package org.neo4j.kernel;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.junit.Assert.assertThat;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
@@ -44,6 +46,7 @@ public class TestTransactionEventDeadlocks
     @Test
     public void canAvoidDeadlockThatWouldHappenIfTheRelationshipTypeCreationTransactionModifiedData()
     {
+        DatabaseManagementService managementService = database.getManagementService();
         GraphDatabaseService graphdb = database.getGraphDatabaseAPI();
         Node node;
         try ( Transaction tx = graphdb.beginTx() )
@@ -53,7 +56,7 @@ public class TestTransactionEventDeadlocks
             tx.success();
         }
 
-        graphdb.registerTransactionEventHandler( new RelationshipCounterTransactionEventHandler( node ) );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new RelationshipCounterTransactionEventListener( node ) );
 
         try ( Transaction tx = graphdb.beginTx() )
         {
@@ -66,18 +69,18 @@ public class TestTransactionEventDeadlocks
         assertThat( node, inTx( graphdb, hasProperty( "counter" ).withValue( 1L ) ) );
     }
 
-    private static class RelationshipCounterTransactionEventHandler implements TransactionEventHandler<Void>
+    private static class RelationshipCounterTransactionEventListener implements TransactionEventListener<Void>
     {
         private final Node node;
 
-        RelationshipCounterTransactionEventHandler( Node node )
+        RelationshipCounterTransactionEventListener( Node node )
         {
             this.node = node;
         }
 
         @SuppressWarnings( "boxing" )
         @Override
-        public Void beforeCommit( TransactionData data )
+        public Void beforeCommit( TransactionData data, GraphDatabaseService databaseService )
         {
             if ( Iterables.count( data.createdRelationships() ) == 0 )
             {
@@ -89,13 +92,13 @@ public class TestTransactionEventDeadlocks
         }
 
         @Override
-        public void afterCommit( TransactionData data, Void state )
+        public void afterCommit( TransactionData data, Void state, GraphDatabaseService databaseService )
         {
             // nothing
         }
 
         @Override
-        public void afterRollback( TransactionData data, Void state )
+        public void afterRollback( TransactionData data, Void state, GraphDatabaseService databaseService )
         {
             // nothing
         }

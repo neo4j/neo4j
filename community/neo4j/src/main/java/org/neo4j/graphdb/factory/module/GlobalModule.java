@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.security.URLAccessRules;
+import org.neo4j.kernel.impl.transaction.events.GlobalTransactionEventListeners;
 import org.neo4j.kernel.impl.util.collection.CachingOffHeapBlockAllocator;
 import org.neo4j.kernel.impl.util.collection.CapacityLimitingBlockAllocatorDecorator;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
@@ -122,6 +123,7 @@ public class GlobalModule
     private final CompositeDatabaseHealth globalHealthService;
     private final FileSystemWatcherService fileSystemWatcher;
     private final DatabaseEventListeners databaseEventListeners;
+    private final GlobalTransactionEventListeners transactionEventListeners;
     // In the future this may not be a global decision, but for now this is a good central place to make the decision about which storage engine to use
     private final StorageEngineFactory storageEngineFactory;
 
@@ -208,6 +210,7 @@ public class GlobalModule
         globalDependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
 
         databaseEventListeners = new DatabaseEventListeners( logService.getInternalLog( DatabaseEventListeners.class ) );
+        transactionEventListeners = new GlobalTransactionEventListeners();
 
         connectorPortRegister = new ConnectorPortRegister();
         globalDependencies.satisfyDependency( connectorPortRegister );
@@ -501,6 +504,11 @@ public class GlobalModule
     public DatabaseEventListeners getDatabaseEventListeners()
     {
         return databaseEventListeners;
+    }
+
+    public GlobalTransactionEventListeners getTransactionEventListeners()
+    {
+        return transactionEventListeners;
     }
 
     public StorageEngineFactory getStorageEngineFactory()

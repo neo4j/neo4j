@@ -63,7 +63,7 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
     private final TransactionMonitor transactionMonitor;
     private final GlobalProcedures globalProcedures;
     private final Config config;
-    private DefaultThreadSafeCursors cursors;
+    private final DefaultThreadSafeCursors cursors;
     private volatile boolean isRunning;
 
     public KernelImpl( KernelTransactions transactionFactory, TransactionHooks hooks, Health health,

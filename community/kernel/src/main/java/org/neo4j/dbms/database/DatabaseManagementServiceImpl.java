@@ -24,8 +24,10 @@ import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.DatabaseEventListener;
+import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.impl.transaction.events.GlobalTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.monitoring.DatabaseEventListeners;
@@ -36,15 +38,17 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
     private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
     private final Lifecycle globalLife;
     private final DatabaseEventListeners databaseEventListeners;
+    private final GlobalTransactionEventListeners transactionEventListeners;
     private final Log log;
 
     public DatabaseManagementServiceImpl( DatabaseManager<?> databaseManager, CompositeDatabaseAvailabilityGuard globalAvailabilityGuard, Lifecycle globalLife,
-            DatabaseEventListeners databaseEventListeners, Log log )
+            DatabaseEventListeners databaseEventListeners, GlobalTransactionEventListeners transactionEventListeners, Log log )
     {
         this.databaseManager = databaseManager;
         this.globalAvailabilityGuard = globalAvailabilityGuard;
         this.globalLife = globalLife;
         this.databaseEventListeners = databaseEventListeners;
+        this.transactionEventListeners = transactionEventListeners;
         this.log = log;
     }
 
@@ -94,6 +98,18 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
     public void unregisterDatabaseEventListener( DatabaseEventListener listener )
     {
         databaseEventListeners.unregisterDatabaseEventListener( listener );
+    }
+
+    @Override
+    public void registerTransactionEventListener( String databaseName, TransactionEventListener<?> listener )
+    {
+        transactionEventListeners.registerTransactionEventListener( databaseName, listener );
+    }
+
+    @Override
+    public void unregisterTransactionEventListener( String databaseName, TransactionEventListener<?> listener )
+    {
+        transactionEventListeners.unregisterTransactionEventListener( databaseName, listener );
     }
 
     @Override

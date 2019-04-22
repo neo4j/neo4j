@@ -151,7 +151,7 @@ public class DatabaseManagementServiceFactory
         Log internalLog = logService.getInternalLog( getClass() );
         DatabaseManager<?> databaseManager = createAndInitializeDatabaseManager( globalModule, edition, graphDatabaseFacade, internalLog );
         DatabaseManagementService managementService = new DatabaseManagementServiceImpl( databaseManager, globalModule.getGlobalAvailabilityGuard(),
-                globalLife, globalModule.getDatabaseEventListeners(), internalLog );
+                globalLife, globalModule.getDatabaseEventListeners(), globalModule.getTransactionEventListeners(), internalLog );
 
         GlobalProcedures globalProcedures = setupProcedures( globalModule, edition, databaseManager );
         globalDependencies.satisfyDependency( new NonTransactionalDbmsOperations( globalProcedures ) );

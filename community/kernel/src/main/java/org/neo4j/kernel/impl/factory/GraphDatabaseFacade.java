@@ -45,7 +45,6 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -156,10 +155,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
         /** Execute a cypher statement */
         Result executeQuery( String query, MapValue parameters, TransactionalContext context );
-
-        <T> void registerTransactionEventHandler( TransactionEventHandler<T> handler );
-
-        <T> void unregisterTransactionEventHandler( TransactionEventHandler<T> handler );
 
         GraphDatabaseQueryService queryService();
     }
@@ -479,21 +474,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                     statementContext.getKernelTransactionBoundToThisThread( true );
             return tokens.all( transaction );
         };
-    }
-
-    @Override
-    public <T> TransactionEventHandler<T> registerTransactionEventHandler( TransactionEventHandler<T> handler )
-    {
-        spi.registerTransactionEventHandler( handler );
-        return handler;
-    }
-
-    @Override
-    public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
-            TransactionEventHandler<T> handler )
-    {
-        spi.unregisterTransactionEventHandler( handler );
-        return handler;
     }
 
     @Override

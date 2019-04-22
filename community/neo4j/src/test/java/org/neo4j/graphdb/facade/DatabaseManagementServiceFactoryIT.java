@@ -98,12 +98,12 @@ class DatabaseManagementServiceFactoryIT
     @Test
     void shutdownShouldShutdownAllDatabases()
     {
-        ShutdownListenerDatabaseEventListener shutdownListenerDatabaseEventHandler = new ShutdownListenerDatabaseEventListener();
-        managementService.registerDatabaseEventListener( shutdownListenerDatabaseEventHandler );
+        ShutdownListenerDatabaseEventListener shutdownListenerDatabaseEventListener = new ShutdownListenerDatabaseEventListener();
+        managementService.registerDatabaseEventListener( shutdownListenerDatabaseEventListener );
         managementService.shutdown();
         managementService = null;
 
-        assertEquals( 2, shutdownListenerDatabaseEventHandler.getShutdownInvocations() );
+        assertEquals( 2, shutdownListenerDatabaseEventListener.getShutdownInvocations() );
     }
 
     private DatabaseManagementService getDatabaseManagementService()

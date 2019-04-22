@@ -19,84 +19,45 @@
  */
 package org.neo4j.kernel.internal;
 
-import java.util.Collection;
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.coreapi.TxStateTransactionDataSnapshot;
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.transaction.events.GlobalTransactionEventListeners;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 /**
  * Handle the collection of transaction event handlers, and fire events as needed.
  */
-public class TransactionEventHandlers
-        implements Lifecycle, TransactionHook<TransactionEventHandlers.TransactionHandlerState>
+public class DatabaseTransactionEventListeners implements TransactionHook<DatabaseTransactionEventListeners.TransactionHandlerState>
 {
-    private final CopyOnWriteArraySet<TransactionEventHandler> transactionEventHandlers = new CopyOnWriteArraySet<>();
+    private final GlobalTransactionEventListeners globalTransactionEventListeners;
+    private final DatabaseId databaseId;
+    private final GraphDatabaseFacade databaseFacade;
 
-    private final EmbeddedProxySPI proxySpi;
-
-    public TransactionEventHandlers( EmbeddedProxySPI spi )
+    public DatabaseTransactionEventListeners( GraphDatabaseFacade databaseFacade, GlobalTransactionEventListeners globalTransactionEventListeners,
+            DatabaseId databaseId )
     {
-        this.proxySpi = spi;
-    }
-
-    @Override
-    public void init()
-    {
-    }
-
-    @Override
-    public void start()
-    {
-    }
-
-    @Override
-    public void stop()
-    {
-    }
-
-    @Override
-    public void shutdown()
-    {
-    }
-
-    public <T> TransactionEventHandler<T> registerTransactionEventHandler(
-            TransactionEventHandler<T> handler )
-    {
-        this.transactionEventHandlers.add( handler );
-        return handler;
-    }
-
-    public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
-            TransactionEventHandler<T> handler )
-    {
-        return unregisterHandler( this.transactionEventHandlers, handler );
-    }
-
-    private <T> T unregisterHandler( Collection<?> setOfHandlers, T handler )
-    {
-        if ( !setOfHandlers.remove( handler ) )
-        {
-            throw new IllegalStateException( handler + " isn't registered" );
-        }
-        return handler;
+        this.databaseFacade = databaseFacade;
+        this.globalTransactionEventListeners = globalTransactionEventListeners;
+        this.databaseId = databaseId;
     }
 
     @Override
@@ -104,7 +65,7 @@ public class TransactionEventHandlers
             StorageReader storageReader )
     {
         // The iterator grabs a snapshot of our list of handlers
-        Iterator<TransactionEventHandler> handlers = transactionEventHandlers.iterator();
+        Iterator<TransactionEventListener<?>> handlers = globalTransactionEventListeners.getDatabaseTransactionEventListeners( databaseId.name() ).iterator();
         if ( !handlers.hasNext() )
         {
             // Use 'null' as a signal that no event handlers were registered at beforeCommit time
@@ -112,15 +73,15 @@ public class TransactionEventHandlers
         }
 
         TransactionData txData = state == null ? EMPTY_DATA :
-                new TxStateTransactionDataSnapshot( state, proxySpi, storageReader, transaction );
+                new TxStateTransactionDataSnapshot( state, databaseFacade, storageReader, transaction );
 
         TransactionHandlerState handlerStates = new TransactionHandlerState( txData );
         while ( handlers.hasNext() )
         {
-            TransactionEventHandler<?> handler = handlers.next();
+            TransactionEventListener<?> handler = handlers.next();
             try
             {
-                handlerStates.add( handler ).setState( handler.beforeCommit( txData ) );
+                handlerStates.add( handler ).setState( handler.beforeCommit( txData, databaseFacade ) );
             }
             catch ( Throwable t )
             {
@@ -148,7 +109,7 @@ public class TransactionEventHandlers
         {
             for ( HandlerAndState handlerAndState : handlerState.states )
             {
-                handlerAndState.handler.afterCommit( handlerState.txData, handlerAndState.state );
+                handlerAndState.handler.afterCommit( handlerState.txData, handlerAndState.state, databaseFacade );
             }
         }
         finally
@@ -175,16 +136,16 @@ public class TransactionEventHandlers
 
         for ( HandlerAndState handlerAndState : handlerState.states )
         {
-            handlerAndState.handler.afterRollback( handlerState.txData, handlerAndState.state );
+            handlerAndState.handler.afterRollback( handlerState.txData, handlerAndState.state, databaseFacade );
         }
     }
 
     public static class HandlerAndState
     {
-        private final TransactionEventHandler handler;
+        private final TransactionEventListener handler;
         private Object state;
 
-        public HandlerAndState( TransactionEventHandler<?> handler )
+        HandlerAndState( TransactionEventListener<?> handler )
         {
             this.handler = handler;
         }
@@ -201,7 +162,7 @@ public class TransactionEventHandlers
         private final List<HandlerAndState> states = new LinkedList<>();
         private Throwable error;
 
-        public TransactionHandlerState( TransactionData txData )
+        TransactionHandlerState( TransactionData txData )
         {
             this.txData = txData;
         }
@@ -223,7 +184,7 @@ public class TransactionEventHandlers
             return error;
         }
 
-        public HandlerAndState add( TransactionEventHandler<?> handler )
+        public HandlerAndState add( TransactionEventListener<?> handler )
         {
             HandlerAndState result = new HandlerAndState( handler );
             states.add( result );
@@ -296,7 +257,7 @@ public class TransactionEventHandlers
         @Override
         public String username()
         {
-            return "";
+            return StringUtils.EMPTY;
         }
 
         @Override

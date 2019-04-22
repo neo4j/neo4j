@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -44,9 +45,11 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.event.TransactionEventListener;
+import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
@@ -58,10 +61,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -76,73 +79,74 @@ public class TestTransactionEvents
     private static final int AWAIT_INDEX_DURATION = 60;
 
     @Test
-    public void testRegisterUnregisterHandlers()
+    public void testRegisterUnregisterListeners()
     {
         Object value1 = 10;
         Object value2 = 3.5D;
-        DummyTransactionEventHandler<Integer> handler1 = new DummyTransactionEventHandler<>( (Integer) value1 );
-        DummyTransactionEventHandler<Double> handler2 = new DummyTransactionEventHandler<>( (Double) value2 );
+        DummyTransactionEventListener<Integer> listener1 = new DummyTransactionEventListener<>( (Integer) value1 );
+        DummyTransactionEventListener<Double> listener2 = new DummyTransactionEventListener<>( (Double) value2 );
 
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        DatabaseManagementService managementService = dbRule.getManagementService();
         try
         {
-            db.unregisterTransactionEventHandler( handler1 );
-            fail( "Shouldn't be able to do unregister on a unregistered handler" );
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
+            fail( "Shouldn't be able to do unregister on a unregistered listener" );
         }
         catch ( IllegalStateException e )
         { /* Good */
         }
 
-        assertSame( handler1, db.registerTransactionEventHandler( handler1 ) );
-        assertSame( handler1, db.registerTransactionEventHandler( handler1 ) );
-        assertSame( handler1, db.unregisterTransactionEventHandler( handler1 ) );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
+        managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
 
         try
         {
-            db.unregisterTransactionEventHandler( handler1 );
-            fail( "Shouldn't be able to do unregister on a unregistered handler" );
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
+            fail( "Shouldn't be able to do unregister on a unregistered listener" );
         }
         catch ( IllegalStateException e )
         { /* Good */
         }
 
-        assertSame( handler1, db.registerTransactionEventHandler( handler1 ) );
-        assertSame( handler2, db.registerTransactionEventHandler( handler2 ) );
-        assertSame( handler1, db.unregisterTransactionEventHandler( handler1 ) );
-        assertSame( handler2, db.unregisterTransactionEventHandler( handler2 ) );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener2 );
+        managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
+        managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener2 );
 
-        db.registerTransactionEventHandler( handler1 );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().delete();
             tx.success();
         }
 
-        assertNotNull( handler1.beforeCommit );
-        assertNotNull( handler1.afterCommit );
-        assertNull( handler1.afterRollback );
-        assertEquals( value1, handler1.receivedState );
-        assertNotNull( handler1.receivedTransactionData );
-        db.unregisterTransactionEventHandler( handler1 );
+        assertNotNull( listener1.beforeCommit );
+        assertNotNull( listener1.afterCommit );
+        assertNull( listener1.afterRollback );
+        assertEquals( value1, listener1.receivedState );
+        assertNotNull( listener1.receivedTransactionData );
+        managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
     }
 
     @Test
-    public void makeSureHandlersCantBeRegisteredTwice()
+    public void makeSureListenersCantBeRegisteredTwice()
     {
-        DummyTransactionEventHandler<Object> handler = new DummyTransactionEventHandler<>( null );
+        DummyTransactionEventListener<Object> listener = new DummyTransactionEventListener<>( null );
+        DatabaseManagementService managementService = dbRule.getManagementService();
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        db.registerTransactionEventHandler( handler );
-        db.registerTransactionEventHandler( handler );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().delete();
             tx.success();
         }
-        assertEquals( Integer.valueOf( 0 ), handler.beforeCommit );
-        assertEquals( Integer.valueOf( 1 ), handler.afterCommit );
-        assertNull( handler.afterRollback );
+        assertEquals( Integer.valueOf( 0 ), listener.beforeCommit );
+        assertEquals( Integer.valueOf( 1 ), listener.afterCommit );
+        assertNull( listener.afterRollback );
 
-        db.unregisterTransactionEventHandler( handler );
+        managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
     }
 
     @Test
@@ -150,9 +154,10 @@ public class TestTransactionEvents
     {
         // Create new data, nothing modified, just added/created
         ExpectedTransactionData expectedData = new ExpectedTransactionData();
-        VerifyingTransactionEventHandler handler = new VerifyingTransactionEventHandler( expectedData );
+        VerifyingTransactionEventListener listener = new VerifyingTransactionEventListener( expectedData );
+        DatabaseManagementService managementService = dbRule.getManagementService();
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        db.registerTransactionEventHandler( handler );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         Node node1;
         Node node2;
         Node node3;
@@ -197,8 +202,8 @@ public class TestTransactionEvents
                 tx.success();
             }
 
-            assertTrue( "Should have been invoked", handler.hasBeenCalled() );
-            Throwable failure = handler.failure();
+            assertTrue( "Should have been invoked", listener.hasBeenCalled() );
+            Throwable failure = listener.failure();
             if ( failure != null )
             {
                 throw new RuntimeException( failure );
@@ -206,13 +211,13 @@ public class TestTransactionEvents
         }
         finally
         {
-            db.unregisterTransactionEventHandler( handler );
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         }
 
         // Use the above data and modify it, change properties, delete stuff
         expectedData = new ExpectedTransactionData();
-        handler = new VerifyingTransactionEventHandler( expectedData );
-        db.registerTransactionEventHandler( handler );
+        listener = new VerifyingTransactionEventListener( expectedData );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         try
         {
             try ( Transaction tx = db.beginTx() )
@@ -262,8 +267,8 @@ public class TestTransactionEvents
                 tx.success();
             }
 
-            assertTrue( "Should have been invoked", handler.hasBeenCalled() );
-            Throwable failure = handler.failure();
+            assertTrue( "Should have been invoked", listener.hasBeenCalled() );
+            Throwable failure = listener.failure();
             if ( failure != null )
             {
                 throw new RuntimeException( failure );
@@ -271,22 +276,23 @@ public class TestTransactionEvents
         }
         finally
         {
-            db.unregisterTransactionEventHandler( handler );
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         }
     }
 
     @Test
     public void makeSureBeforeAfterAreCalledCorrectly()
     {
-        List<TransactionEventHandler<Object>> handlers = new ArrayList<>();
-        handlers.add( new FailingEventHandler<>( new DummyTransactionEventHandler<>( null ), false ) );
-        handlers.add( new FailingEventHandler<>( new DummyTransactionEventHandler<>( null ), false ) );
-        handlers.add( new FailingEventHandler<>( new DummyTransactionEventHandler<>( null ), true ) );
-        handlers.add( new FailingEventHandler<>( new DummyTransactionEventHandler<>( null ), false ) );
+        List<TransactionEventListener<Object>> listeners = new ArrayList<>();
+        listeners.add( new FailingEventListener<>( new DummyTransactionEventListener<>( null ), false ) );
+        listeners.add( new FailingEventListener<>( new DummyTransactionEventListener<>( null ), false ) );
+        listeners.add( new FailingEventListener<>( new DummyTransactionEventListener<>( null ), true ) );
+        listeners.add( new FailingEventListener<>( new DummyTransactionEventListener<>( null ), false ) );
+        DatabaseManagementService managementService = dbRule.getManagementService();
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        for ( TransactionEventHandler<Object> handler : handlers )
+        for ( TransactionEventListener<Object> listener : listeners )
         {
-            db.registerTransactionEventHandler( handler );
+            managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         }
 
         try
@@ -302,25 +308,25 @@ public class TestTransactionEvents
             catch ( TransactionFailureException e )
             {   // OK
             }
-            verifyHandlerCalls( handlers, false );
+            verifyListenerCalls( listeners, false );
 
-            db.unregisterTransactionEventHandler( handlers.remove( 2 ) );
-            for ( TransactionEventHandler<Object> handler : handlers )
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listeners.remove( 2 ) );
+            for ( TransactionEventListener<Object> listener : listeners )
             {
-                ((DummyTransactionEventHandler<Object>) ((FailingEventHandler<Object>)handler).source).reset();
+                ((DummyTransactionEventListener<Object>) ((FailingEventListener<Object>)listener).source).reset();
             }
             try ( Transaction transaction = db.beginTx() )
             {
                 db.createNode().delete();
                 transaction.success();
             }
-            verifyHandlerCalls( handlers, true );
+            verifyListenerCalls( listeners, true );
         }
         finally
         {
-            for ( TransactionEventHandler<Object> handler : handlers )
+            for ( TransactionEventListener<Object> listener : listeners )
             {
-                db.unregisterTransactionEventHandler( handler );
+                managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
             }
         }
     }
@@ -333,9 +339,10 @@ public class TestTransactionEvents
 
         }
 
-        ExceptionThrowingEventHandler handler = new ExceptionThrowingEventHandler( new MyFancyException(), null, null );
+        ExceptionThrowingEventListener listener = new ExceptionThrowingEventListener( new MyFancyException(), null, null );
+        DatabaseManagementService managementService = dbRule.getManagementService();
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        db.registerTransactionEventHandler( handler );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
 
         try
         {
@@ -364,13 +371,14 @@ public class TestTransactionEvents
         }
         finally
         {
-            db.unregisterTransactionEventHandler( handler );
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         }
     }
 
     @Test
     public void deleteNodeRelTriggerPropertyRemoveEvents()
     {
+        DatabaseManagementService managementService = dbRule.getManagementService();
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         Node node1;
         Node node2;
@@ -387,8 +395,8 @@ public class TestTransactionEvents
             rel.setProperty( "test3", new int[] { 1, 2, 3 } );
             tx.success();
         }
-        MyTxEventHandler handler = new MyTxEventHandler();
-        db.registerTransactionEventHandler( handler );
+        MyTxEventListener listener = new MyTxEventListener();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         try ( Transaction tx = db.beginTx() )
         {
             rel.delete();
@@ -396,69 +404,66 @@ public class TestTransactionEvents
             node2.delete();
             tx.success();
         }
-        assertEquals( "stringvalue", handler.nodeProps.get( "test1" ) );
-        assertEquals( "stringvalue", handler.relProps.get( "test1" ) );
-        assertEquals( 1L, handler.nodeProps.get( "test2" ) );
-        assertEquals( 1L, handler.relProps.get( "test2" ) );
-        int[] intArray = (int[]) handler.relProps.get( "test3" );
+        assertEquals( "stringvalue", listener.nodeProps.get( "test1" ) );
+        assertEquals( "stringvalue", listener.relProps.get( "test1" ) );
+        assertEquals( 1L, listener.nodeProps.get( "test2" ) );
+        assertEquals( 1L, listener.relProps.get( "test2" ) );
+        int[] intArray = (int[]) listener.relProps.get( "test3" );
         assertEquals( 3, intArray.length );
         assertEquals( 1, intArray[0] );
         assertEquals( 2, intArray[1] );
         assertEquals( 3, intArray[2] );
     }
 
-    private static class MyTxEventHandler implements TransactionEventHandler<Object>
+    private static class MyTxEventListener implements TransactionEventListener<Object>
     {
         Map<String,Object> nodeProps = new HashMap<>();
         Map<String,Object> relProps = new HashMap<>();
 
         @Override
-        public void afterCommit( TransactionData data, Object state )
+        public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
         {
             for ( PropertyEntry<Node> entry : data.removedNodeProperties() )
             {
                 String key = entry.key();
-                Object value = entry.previouslyCommitedValue();
+                Object value = entry.previouslyCommittedValue();
                 nodeProps.put( key, value );
             }
             for ( PropertyEntry<Relationship> entry : data.removedRelationshipProperties() )
             {
-                relProps.put( entry.key(), entry.previouslyCommitedValue() );
+                relProps.put( entry.key(), entry.previouslyCommittedValue() );
             }
         }
 
         @Override
-        public void afterRollback( TransactionData data, Object state )
+        public void afterRollback( TransactionData data, Object state, GraphDatabaseService databaseService )
         {
         }
 
         @Override
-        public Object beforeCommit( TransactionData data )
+        public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService )
         {
             return null;
         }
     }
 
-    private void verifyHandlerCalls(
-            List<TransactionEventHandler<Object>> handlers, boolean txSuccess )
+    private static void verifyListenerCalls( List<TransactionEventListener<Object>> listeners, boolean txSuccess )
     {
-        for ( TransactionEventHandler<Object> handler : handlers )
+        for ( TransactionEventListener<Object> listener : listeners )
         {
-            DummyTransactionEventHandler<Object> realHandler =
-                    (DummyTransactionEventHandler<Object>) ((FailingEventHandler<Object>) handler).source;
+            DummyTransactionEventListener<Object> realListener =
+                    (DummyTransactionEventListener<Object>) ((FailingEventListener<Object>) listener).source;
             if ( txSuccess )
             {
-                assertEquals( Integer.valueOf( 0 ), realHandler.beforeCommit );
-                assertEquals( Integer.valueOf( 1 ), realHandler.afterCommit );
+                assertEquals( Integer.valueOf( 0 ), realListener.beforeCommit );
+                assertEquals( Integer.valueOf( 1 ), realListener.afterCommit );
             }
             else
             {
-                if ( realHandler.counter > 0 )
+                if ( realListener.counter > 0 )
                 {
-                    assertEquals( Integer.valueOf( 0 ),
-                            realHandler.beforeCommit );
-                    assertEquals( Integer.valueOf( 1 ),
-                            realHandler.afterRollback );
+                    assertEquals( Integer.valueOf( 0 ), realListener.beforeCommit );
+                    assertEquals( Integer.valueOf( 1 ), realListener.afterRollback );
                 }
             }
         }
@@ -469,35 +474,35 @@ public class TestTransactionEvents
         TXEVENT
     }
 
-    private static class FailingEventHandler<T> implements TransactionEventHandler<T>
+    private static class FailingEventListener<T> implements TransactionEventListener<T>
     {
-        private final TransactionEventHandler<T> source;
+        private final TransactionEventListener<T> source;
         private final boolean willFail;
 
-        FailingEventHandler( TransactionEventHandler<T> source, boolean willFail )
+        FailingEventListener( TransactionEventListener<T> source, boolean willFail )
         {
             this.source = source;
             this.willFail = willFail;
         }
 
         @Override
-        public void afterCommit( TransactionData data, T state )
+        public void afterCommit( TransactionData data, T state, GraphDatabaseService databaseService )
         {
-            source.afterCommit( data, state );
+            source.afterCommit( data, state, databaseService );
         }
 
         @Override
-        public void afterRollback( TransactionData data, T state )
+        public void afterRollback( TransactionData data, T state, GraphDatabaseService databaseService )
         {
-            source.afterRollback( data, state );
+            source.afterRollback( data, state, databaseService );
         }
 
         @Override
-        public T beforeCommit( TransactionData data ) throws Exception
+        public T beforeCommit( TransactionData data, GraphDatabaseService databaseService ) throws Exception
         {
             try
             {
-                return source.beforeCommit( data );
+                return source.beforeCommit( data, databaseService );
             }
             finally
             {
@@ -509,18 +514,18 @@ public class TestTransactionEvents
         }
     }
 
-    private static class ExceptionThrowingEventHandler implements TransactionEventHandler<Object>
+    private static class ExceptionThrowingEventListener implements TransactionEventListener<Object>
     {
         private final Exception beforeCommitException;
         private final Exception afterCommitException;
         private final Exception afterRollbackException;
 
-        ExceptionThrowingEventHandler( Exception exceptionForAll )
+        ExceptionThrowingEventListener( Exception exceptionForAll )
         {
             this( exceptionForAll, exceptionForAll, exceptionForAll );
         }
 
-        ExceptionThrowingEventHandler( Exception beforeCommitException, Exception afterCommitException,
+        ExceptionThrowingEventListener( Exception beforeCommitException, Exception afterCommitException,
                 Exception afterRollbackException )
         {
             this.beforeCommitException = beforeCommitException;
@@ -529,7 +534,7 @@ public class TestTransactionEvents
         }
 
         @Override
-        public Object beforeCommit( TransactionData data ) throws Exception
+        public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService ) throws Exception
         {
             if ( beforeCommitException != null )
             {
@@ -539,7 +544,7 @@ public class TestTransactionEvents
         }
 
         @Override
-        public void afterCommit( TransactionData data, Object state )
+        public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
         {
             if ( afterCommitException != null )
             {
@@ -548,7 +553,7 @@ public class TestTransactionEvents
         }
 
         @Override
-        public void afterRollback( TransactionData data, Object state )
+        public void afterRollback( TransactionData data, Object state, GraphDatabaseService databaseService )
         {
             if ( afterRollbackException != null )
             {
@@ -557,8 +562,7 @@ public class TestTransactionEvents
         }
     }
 
-    private static class DummyTransactionEventHandler<T> implements
-            TransactionEventHandler<T>
+    private static class DummyTransactionEventListener<T> implements TransactionEventListener<T>
     {
         private final T object;
         private TransactionData receivedTransactionData;
@@ -568,13 +572,13 @@ public class TestTransactionEvents
         private Integer afterCommit;
         private Integer afterRollback;
 
-        DummyTransactionEventHandler( T object )
+        DummyTransactionEventListener( T object )
         {
             this.object = object;
         }
 
         @Override
-        public void afterCommit( TransactionData data, T state )
+        public void afterCommit( TransactionData data, T state, GraphDatabaseService databaseService )
         {
             assertNotNull( data );
             this.receivedState = state;
@@ -582,7 +586,7 @@ public class TestTransactionEvents
         }
 
         @Override
-        public void afterRollback( TransactionData data, T state )
+        public void afterRollback( TransactionData data, T state, GraphDatabaseService databaseService )
         {
             assertNotNull( data );
             this.receivedState = state;
@@ -590,7 +594,7 @@ public class TestTransactionEvents
         }
 
         @Override
-        public T beforeCommit( TransactionData data )
+        public T beforeCommit( TransactionData data, GraphDatabaseService databaseService )
         {
             assertNotNull( data );
             this.receivedTransactionData = data;
@@ -614,25 +618,25 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void makeSureHandlerIsntCalledWhenTxRolledBack()
+    public void makeSureListenerIsntCalledWhenTxRolledBack()
     {
-        DummyTransactionEventHandler<Integer> handler =
-            new DummyTransactionEventHandler<>( 10 );
+        DummyTransactionEventListener<Integer> listener = new DummyTransactionEventListener<>( 10 );
+        DatabaseManagementService managementService = dbRule.getManagementService();
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        db.registerTransactionEventHandler( handler );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         try
         {
             try ( Transaction ignore = db.beginTx() )
             {
                 db.createNode().delete();
             }
-            assertNull( handler.beforeCommit );
-            assertNull( handler.afterCommit );
-            assertNull( handler.afterRollback );
+            assertNull( listener.beforeCommit );
+            assertNull( listener.afterCommit );
+            assertNull( listener.afterRollback );
         }
         finally
         {
-            db.unregisterTransactionEventHandler( handler );
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         }
     }
 
@@ -641,6 +645,7 @@ public class TestTransactionEvents
     {
         // Given
         // -- create node and set property on it in one transaction
+        DatabaseManagementService managementService = dbRule.getManagementService();
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         final String key = "key";
         final Object value1 = "the old value";
@@ -652,11 +657,11 @@ public class TestTransactionEvents
             node.setProperty( key, "initial value" );
             tx.success();
         }
-        // -- register a tx handler which will override a property
-        TransactionEventHandler<Void> handler = new TransactionEventHandler.Adapter<Void>()
+        // -- register a tx listener which will override a property
+        TransactionEventListener<Void> listener = new TransactionEventListenerAdapter<Void>()
         {
             @Override
-            public Void beforeCommit( TransactionData data )
+            public Void beforeCommit( TransactionData data, GraphDatabaseService databaseService )
             {
                 Node modifiedNode = data.assignedNodeProperties().iterator().next().entity();
                 assertEquals( node, modifiedNode );
@@ -664,7 +669,7 @@ public class TestTransactionEvents
                 return null;
             }
         };
-        db.registerTransactionEventHandler( handler );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -674,13 +679,14 @@ public class TestTransactionEvents
         }
         // Then
         assertThat(node, inTx(db, hasProperty(key).withValue(value2)));
-        db.unregisterTransactionEventHandler( handler );
+        managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
     }
 
     @Test
     public void nodeCanBecomeSchemaIndexableInBeforeCommitByAddingProperty()
     {
         // Given we have a schema index...
+        DatabaseManagementService managementService = dbRule.getManagementService();
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         Label label = label( "Label" );
         try ( Transaction tx = db.beginTx() )
@@ -689,11 +695,11 @@ public class TestTransactionEvents
             tx.success();
         }
 
-        // ... and a transaction event handler that likes to add the indexed property on nodes
-        db.registerTransactionEventHandler( new TransactionEventHandler.Adapter<Object>()
+        // ... and a transaction event listener that likes to add the indexed property on nodes
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<Object>()
         {
             @Override
-            public Object beforeCommit( TransactionData data )
+            public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService )
             {
                 Iterator<Node> nodes = data.createdNodes().iterator();
                 if ( nodes.hasNext() )
@@ -726,6 +732,7 @@ public class TestTransactionEvents
     public void nodeCanBecomeSchemaIndexableInBeforeCommitByAddingLabel()
     {
         // Given we have a schema index...
+        DatabaseManagementService managementService = dbRule.getManagementService();
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         final Label label = label( "Label" );
         try ( Transaction tx = db.beginTx() )
@@ -734,11 +741,11 @@ public class TestTransactionEvents
             tx.success();
         }
 
-        // ... and a transaction event handler that likes to add the indexed property on nodes
-        db.registerTransactionEventHandler( new TransactionEventHandler.Adapter<Object>()
+        // ... and a transaction event listener that likes to add the indexed property on nodes
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<Object>()
         {
             @Override
-            public Object beforeCommit( TransactionData data )
+            public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService )
             {
                 Iterator<Node> nodes = data.createdNodes().iterator();
                 if ( nodes.hasNext() )
@@ -772,9 +779,11 @@ public class TestTransactionEvents
     public void shouldAccessAssignedLabels()
     {
         // given
+        DatabaseManagementService managementService = dbRule.getManagementService();
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
 
-        ChangedLabels labels = (ChangedLabels) db.registerTransactionEventHandler( new ChangedLabels() );
+        ChangedLabels labels = new ChangedLabels();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, labels );
         try
         {
             // when
@@ -797,7 +806,7 @@ public class TestTransactionEvents
         }
         finally
         {
-            db.unregisterTransactionEventHandler( labels );
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, labels );
         }
     }
 
@@ -805,9 +814,11 @@ public class TestTransactionEvents
     public void shouldAccessRemovedLabels()
     {
         // given
+        DatabaseManagementService managementService = dbRule.getManagementService();
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
 
-        ChangedLabels labels = (ChangedLabels) db.registerTransactionEventHandler( new ChangedLabels() );
+        ChangedLabels labels = new ChangedLabels();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, labels );
         try
         {
             Node node1;
@@ -844,7 +855,7 @@ public class TestTransactionEvents
         }
         finally
         {
-            db.unregisterTransactionEventHandler( labels );
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, labels );
         }
     }
 
@@ -852,13 +863,14 @@ public class TestTransactionEvents
     public void shouldAccessRelationshipDataInAfterCommit()
     {
         // GIVEN
+        DatabaseManagementService managementService = dbRule.getManagementService();
         final GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         final AtomicInteger accessCount = new AtomicInteger();
         final Map<Long,RelationshipData> expectedRelationshipData = new HashMap<>();
-        TransactionEventHandler<Void> handler = new TransactionEventHandler.Adapter<Void>()
+        TransactionEventListener<Void> listener = new TransactionEventListenerAdapter<>()
         {
             @Override
-            public void afterCommit( TransactionData data, Void state )
+            public void afterCommit( TransactionData data, Void state, GraphDatabaseService databaseService )
             {
                 accessCount.set( 0 );
                 try ( Transaction tx = db.beginTx() )
@@ -889,7 +901,7 @@ public class TestTransactionEvents
                 assertEquals( expectancy.endNode, relationship.getEndNode() );
             }
         };
-        db.registerTransactionEventHandler( handler );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
 
         // WHEN
         try
@@ -927,13 +939,14 @@ public class TestTransactionEvents
         }
         finally
         {
-            db.unregisterTransactionEventHandler( handler );
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         }
     }
 
     @Test
     public void shouldProvideTheCorrectRelationshipData()
     {
+        DatabaseManagementService managementService = dbRule.getManagementService();
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
 
         // create a rel type so the next type id is non zero
@@ -959,10 +972,10 @@ public class TestTransactionEvents
 
         final Set<String> changedRelationships = new HashSet<>();
 
-        db.registerTransactionEventHandler( new TransactionEventHandler.Adapter<Void>()
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<Void>()
         {
             @Override
-            public Void beforeCommit( TransactionData data )
+            public Void beforeCommit( TransactionData data, GraphDatabaseService databaseService )
             {
                 for ( PropertyEntry<Relationship> entry : data.assignedRelationshipProperties() )
                 {
@@ -990,8 +1003,9 @@ public class TestTransactionEvents
     {
         // GIVEN
         Node root = createTree( 3, 3 );
-        dbRule.getGraphDatabaseAPI().registerTransactionEventHandler(
-                new ExceptionThrowingEventHandler( new RuntimeException( "Just failing" ) ) );
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME,
+                new ExceptionThrowingEventListener( new RuntimeException( "Just failing" ) ) );
 
         // WHEN
         try ( Transaction tx = dbRule.beginTx() )
@@ -1006,10 +1020,11 @@ public class TestTransactionEvents
     {
         // GIVEN
         final AtomicInteger counter = new AtomicInteger();
-        dbRule.getGraphDatabaseAPI().registerTransactionEventHandler( new TransactionEventHandler.Adapter<Void>()
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<Void>()
         {
             @Override
-            public Void beforeCommit( TransactionData data )
+            public Void beforeCommit( TransactionData data, GraphDatabaseService databaseService )
             {
                 assertTrue( "Expected only transactions that had nodes or relationships created",
                         data.createdNodes().iterator().hasNext() ||
@@ -1065,10 +1080,11 @@ public class TestTransactionEvents
     {
         // GIVEN
         final Node node = createNode( "one", "Two", "three", "Four" );
-        dbRule.getGraphDatabaseAPI().registerTransactionEventHandler( new TransactionEventHandler.Adapter<Object>()
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<>()
         {
             @Override
-            public void afterCommit( TransactionData data, Object nothing )
+            public void afterCommit( TransactionData data, Object nothing, GraphDatabaseService databaseService )
             {
                 try ( Transaction tx = dbRule.beginTx() )
                 {
@@ -1098,6 +1114,7 @@ public class TestTransactionEvents
         Node startNode;
         Node endNode;
         RelationshipType type = MyRelTypes.TEST;
+        DatabaseManagementService managementService = dbRule.getManagementService();
         try ( Transaction tx = dbRule.beginTx() )
         {
             startNode = dbRule.createNode();
@@ -1108,10 +1125,10 @@ public class TestTransactionEvents
 
         // WHEN
         AtomicReference<String> deletedToString = new AtomicReference<>();
-        dbRule.registerTransactionEventHandler( new TransactionEventHandler.Adapter<Object>()
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<>()
         {
             @Override
-            public void afterCommit( TransactionData data, Object state )
+            public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
             {
                 for ( Relationship relationship : data.deletedRelationships() )
                 {
@@ -1136,16 +1153,17 @@ public class TestTransactionEvents
     public void shouldGetCallToAfterRollbackEvenIfBeforeCommitFailed()
     {
         // given
-        CapturingEventHandler<Integer> firstWorkingHandler = new CapturingEventHandler<>( () -> 5 );
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        CapturingEventListener<Integer> firstWorkingListener = new CapturingEventListener<>( () -> 5 );
         String failureMessage = "Massive fail";
-        CapturingEventHandler<Integer> faultyHandler = new CapturingEventHandler<>( () ->
+        CapturingEventListener<Integer> faultyListener = new CapturingEventListener<>( () ->
         {
             throw new RuntimeException( failureMessage );
         } );
-        CapturingEventHandler<Integer> otherWorkingHandler = new CapturingEventHandler<>( () -> 10 );
-        dbRule.registerTransactionEventHandler( firstWorkingHandler );
-        dbRule.registerTransactionEventHandler( faultyHandler );
-        dbRule.registerTransactionEventHandler( otherWorkingHandler );
+        CapturingEventListener<Integer> otherWorkingListener = new CapturingEventListener<>( () -> 10 );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, firstWorkingListener );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, faultyListener );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, otherWorkingListener );
 
         boolean failed = false;
         try ( Transaction tx = dbRule.beginTx() )
@@ -1162,15 +1180,15 @@ public class TestTransactionEvents
         assertTrue( failed );
 
         // then
-        assertTrue( firstWorkingHandler.beforeCommitCalled );
-        assertTrue( firstWorkingHandler.afterRollbackCalled );
-        assertEquals( 5, firstWorkingHandler.afterRollbackState.intValue() );
-        assertTrue( faultyHandler.beforeCommitCalled );
-        assertTrue( faultyHandler.afterRollbackCalled );
-        assertNull( faultyHandler.afterRollbackState );
-        assertTrue( otherWorkingHandler.beforeCommitCalled );
-        assertTrue( otherWorkingHandler.afterRollbackCalled );
-        assertEquals( 10, otherWorkingHandler.afterRollbackState.intValue() );
+        assertTrue( firstWorkingListener.beforeCommitCalled );
+        assertTrue( firstWorkingListener.afterRollbackCalled );
+        assertEquals( 5, firstWorkingListener.afterRollbackState.intValue() );
+        assertTrue( faultyListener.beforeCommitCalled );
+        assertTrue( faultyListener.afterRollbackCalled );
+        assertNull( faultyListener.afterRollbackState );
+        assertTrue( otherWorkingListener.beforeCommitCalled );
+        assertTrue( otherWorkingListener.afterRollbackCalled );
+        assertEquals( 10, otherWorkingListener.afterRollbackState.intValue() );
     }
 
     private Node createNode( String... properties )
@@ -1212,14 +1230,14 @@ public class TestTransactionEvents
         }
     }
 
-    private static final class ChangedLabels extends TransactionEventHandler.Adapter<Void>
+    private static final class ChangedLabels extends TransactionEventListenerAdapter<Void>
     {
         private final Map<Node,Set<String>> added = new HashMap<>();
         private final Map<Node,Set<String>> removed = new HashMap<>();
         private boolean active;
 
         @Override
-        public Void beforeCommit( TransactionData data )
+        public Void beforeCommit( TransactionData data, GraphDatabaseService databaseService )
         {
             if ( active )
             {
@@ -1298,7 +1316,7 @@ public class TestTransactionEvents
         }
     }
 
-    static class CapturingEventHandler<T> implements TransactionEventHandler<T>
+    static class CapturingEventListener<T> implements TransactionEventListener<T>
     {
         private final Supplier<T> stateSource;
         boolean beforeCommitCalled;
@@ -1307,27 +1325,27 @@ public class TestTransactionEvents
         boolean afterRollbackCalled;
         T afterRollbackState;
 
-        CapturingEventHandler( Supplier<T> stateSource )
+        CapturingEventListener( Supplier<T> stateSource )
         {
             this.stateSource = stateSource;
         }
 
         @Override
-        public T beforeCommit( TransactionData data )
+        public T beforeCommit( TransactionData data, GraphDatabaseService databaseService )
         {
             beforeCommitCalled = true;
             return stateSource.get();
         }
 
         @Override
-        public void afterCommit( TransactionData data, T state )
+        public void afterCommit( TransactionData data, T state, GraphDatabaseService databaseService )
         {
             afterCommitCalled = true;
             afterCommitState = state;
         }
 
         @Override
-        public void afterRollback( TransactionData data, T state )
+        public void afterRollback( TransactionData data, T state, GraphDatabaseService databaseService )
         {
             afterRollbackCalled = true;
             afterRollbackState = state;
