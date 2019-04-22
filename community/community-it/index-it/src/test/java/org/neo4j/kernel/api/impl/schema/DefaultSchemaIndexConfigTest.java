@@ -32,7 +32,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -53,7 +53,7 @@ public class DefaultSchemaIndexConfigTest
 {
     private static final String KEY = "key";
     private static final TestLabels LABEL = TestLabels.LABEL_ONE;
-    private static final DatabaseManagementServiceInternalBuilder dbBuilder = new TestDatabaseManagementServiceBuilder().newImpermanentDatabaseBuilder();
+    private static final DatabaseManagementServiceBuilder dbBuilder = new TestDatabaseManagementServiceBuilder().newImpermanentDatabaseBuilder();
 
     @Parameterized.Parameters( name = "{0}" )
     public static List<GraphDatabaseSettings.SchemaIndex> providers()
@@ -70,9 +70,9 @@ public class DefaultSchemaIndexConfigTest
     public void shouldUseConfiguredIndexProvider() throws IndexNotFoundKernelException
     {
         // given
-        DatabaseManagementServiceInternalBuilder
-                databaseManagementServiceInternalBuilder = dbBuilder.setConfig( default_schema_provider, provider == null ? null : provider.providerName() );
-        DatabaseManagementService managementService = databaseManagementServiceInternalBuilder.newDatabaseManagementService();
+        DatabaseManagementServiceBuilder
+                databaseManagementServiceBuilder = dbBuilder.setConfig( default_schema_provider, provider == null ? null : provider.providerName() );
+        DatabaseManagementService managementService = databaseManagementServiceBuilder.newDatabaseManagementService();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

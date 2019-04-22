@@ -56,15 +56,14 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  * {@link #newEmbeddedDatabaseBuilder(File)} to create a database instance.
  * <p>
  */
-public class DatabaseManagementServiceBuilder implements DatabaseManagementServiceInternalBuilder
+public class DatabaseManagementServiceBuilder
 {
     protected final GraphDatabaseFactoryState state;
     protected EmbeddedDatabaseCreator creator;
     protected Map<String,String> config = new HashMap<>();
 
     //################ Swap ###########
-    @Override
-    public DatabaseManagementServiceInternalBuilder setConfig( Setting<?> setting, String value )
+    public DatabaseManagementServiceBuilder setConfig( Setting<?> setting, String value )
     {
         if ( value == null )
         {
@@ -82,15 +81,14 @@ public class DatabaseManagementServiceBuilder implements DatabaseManagementServi
         return this;
     }
 
-    @Override
-    public DatabaseManagementServiceInternalBuilder setConfig( Config config )
+    public DatabaseManagementServiceBuilder setConfig( Config config )
     {
         this.config.putAll( config.getRaw() );
         return this;
     }
 
-    @Override
-    public DatabaseManagementServiceInternalBuilder setConfig( String name, String value )
+    @Deprecated
+    public DatabaseManagementServiceBuilder setConfig( String name, String value )
     {
         if ( value == null )
         {
@@ -103,8 +101,8 @@ public class DatabaseManagementServiceBuilder implements DatabaseManagementServi
         return this;
     }
 
-    @Override
-    public DatabaseManagementServiceInternalBuilder setConfig( Map<String,String> config )
+    @Deprecated
+    public DatabaseManagementServiceBuilder setConfig( Map<String,String> config )
     {
         for ( Map.Entry<String,String> stringStringEntry : config.entrySet() )
         {
@@ -113,8 +111,7 @@ public class DatabaseManagementServiceBuilder implements DatabaseManagementServi
         return this;
     }
 
-    @Override
-    public DatabaseManagementServiceInternalBuilder loadPropertiesFromFile( String fileName ) throws IllegalArgumentException
+    public DatabaseManagementServiceBuilder loadPropertiesFromFile( String fileName ) throws IllegalArgumentException
     {
         try
         {
@@ -126,7 +123,7 @@ public class DatabaseManagementServiceBuilder implements DatabaseManagementServi
         }
     }
 
-    private DatabaseManagementServiceInternalBuilder loadPropertiesFromURL( URL url ) throws IllegalArgumentException
+    private DatabaseManagementServiceBuilder loadPropertiesFromURL( URL url ) throws IllegalArgumentException
     {
         Properties props = new Properties();
         try
@@ -181,7 +178,7 @@ public class DatabaseManagementServiceBuilder implements DatabaseManagementServi
     /**
      * @param storeDir desired embedded database store dir
      */
-    public DatabaseManagementServiceInternalBuilder newEmbeddedDatabaseBuilder( File storeDir )
+    public DatabaseManagementServiceBuilder newEmbeddedDatabaseBuilder( File storeDir )
     {
         creator = new EmbeddedDatabaseCreator( storeDir, state );
         configure( this );
@@ -242,7 +239,7 @@ public class DatabaseManagementServiceBuilder implements DatabaseManagementServi
      * Override to change default values
      * @param builder
      */
-    protected void configure( DatabaseManagementServiceInternalBuilder builder )
+    protected void configure( DatabaseManagementServiceBuilder builder )
     {
         // Let the default configuration pass through.
     }

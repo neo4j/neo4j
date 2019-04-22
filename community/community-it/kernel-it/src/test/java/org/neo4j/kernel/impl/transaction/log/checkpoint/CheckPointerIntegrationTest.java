@@ -32,7 +32,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -73,7 +73,7 @@ class CheckPointerIntegrationTest
     @Inject
     private TestDirectory testDirectory;
 
-    private DatabaseManagementServiceInternalBuilder builder;
+    private DatabaseManagementServiceBuilder builder;
 
     @BeforeEach
     void setup()
@@ -215,15 +215,15 @@ class CheckPointerIntegrationTest
     void shouldBeAbleToStartAndShutdownMultipleTimesTheDBWithoutCommittingTransactions() throws Throwable
     {
         // given
-        DatabaseManagementServiceInternalBuilder databaseManagementServiceInternalBuilder = builder.setConfig( GraphDatabaseSettings
+        DatabaseManagementServiceBuilder databaseManagementServiceBuilder = builder.setConfig( GraphDatabaseSettings
                 .check_point_interval_time, "300m" )
                 .setConfig( GraphDatabaseSettings.check_point_interval_tx, "10000" )
                 .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1g" );
 
         // when
-        DatabaseManagementService managementService1 = databaseManagementServiceInternalBuilder.newDatabaseManagementService();
+        DatabaseManagementService managementService1 = databaseManagementServiceBuilder.newDatabaseManagementService();
         managementService1.shutdown();
-        DatabaseManagementService managementService = databaseManagementServiceInternalBuilder.newDatabaseManagementService();
+        DatabaseManagementService managementService = databaseManagementServiceBuilder.newDatabaseManagementService();
         managementService.shutdown();
 
         // then - 2 check points have been written in the log

@@ -43,7 +43,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -124,7 +123,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     {
         File storeDir = tempStoreDirectory();
         DatabaseManagementServiceBuilder factory = new DatabaseManagementServiceBuilder();
-        DatabaseManagementServiceInternalBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
+        DatabaseManagementServiceBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
 
         createIndexDataAndShutdown( builder, "lucene-1.0", Provider.LUCENE_10.label );
         createIndexDataAndShutdown( builder, "lucene+native-1.0", Provider.FUSION_10.label );

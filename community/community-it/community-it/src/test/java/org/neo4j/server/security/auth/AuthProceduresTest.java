@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
@@ -59,9 +59,9 @@ public class AuthProceduresTest extends KernelIntegrationTest
     }
 
     @Override
-    protected DatabaseManagementServiceInternalBuilder configure( DatabaseManagementServiceInternalBuilder databaseManagementServiceInternalBuilder )
+    protected DatabaseManagementServiceBuilder configure( DatabaseManagementServiceBuilder databaseManagementServiceBuilder )
     {
-        databaseManagementServiceInternalBuilder.setConfig( GraphDatabaseSettings.auth_enabled, "true" );
-        return databaseManagementServiceInternalBuilder;
+        databaseManagementServiceBuilder.setConfig( GraphDatabaseSettings.auth_enabled, "true" );
+        return databaseManagementServiceBuilder;
     }
 }

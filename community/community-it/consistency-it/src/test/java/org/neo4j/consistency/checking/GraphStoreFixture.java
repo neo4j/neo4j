@@ -42,7 +42,7 @@ import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
@@ -679,7 +679,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
     private void generateInitialData()
     {
-        DatabaseManagementServiceInternalBuilder builder = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( directory.storeDir() );
+        DatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( directory.storeDir() );
         DatabaseManagementService managementService = builder
                 .setConfig( GraphDatabaseSettings.record_format, formatName )
                 // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded

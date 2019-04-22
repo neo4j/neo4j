@@ -37,7 +37,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.impl.index.schema.config.SpatialIndexValueTestUtil;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -205,7 +205,7 @@ class UniqueSpatialIndexIT
     private void setupDb( GraphDatabaseSettings.SchemaIndex schemaIndex )
     {
         TestDatabaseManagementServiceBuilder dbFactory = new TestDatabaseManagementServiceBuilder();
-        DatabaseManagementServiceInternalBuilder builder = dbFactory.newEmbeddedDatabaseBuilder( directory.storeDir() )
+        DatabaseManagementServiceBuilder builder = dbFactory.newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() );
         managementService = builder.newDatabaseManagementService();
         db = managementService.database( DEFAULT_DATABASE_NAME );

@@ -42,7 +42,6 @@ import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -63,7 +62,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public abstract class DbmsRule extends ExternalResource implements GraphDatabaseAPI
 {
-    private DatabaseManagementServiceInternalBuilder databaseBuilder;
+    private DatabaseManagementServiceBuilder databaseBuilder;
     private GraphDatabaseAPI database;
     private DatabaseLayout databaseLayout;
     private Supplier<Statement> statementSupplier;
@@ -284,7 +283,7 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
 
     protected abstract DatabaseManagementServiceBuilder newFactory();
 
-    protected abstract DatabaseManagementServiceInternalBuilder newBuilder( DatabaseManagementServiceBuilder factory );
+    protected abstract DatabaseManagementServiceBuilder newBuilder( DatabaseManagementServiceBuilder factory );
 
     protected void configure( DatabaseManagementServiceBuilder databaseFactory )
     {

@@ -33,7 +33,6 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -69,37 +68,37 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
 
     public DatabaseManagementService newImpermanentService()
     {
-        DatabaseManagementServiceInternalBuilder databaseBuilder = newImpermanentDatabaseBuilder();
+        DatabaseManagementServiceBuilder databaseBuilder = newImpermanentDatabaseBuilder();
         return databaseBuilder.newDatabaseManagementService();
     }
 
     public DatabaseManagementService newImpermanentService( File storeDir )
     {
-        DatabaseManagementServiceInternalBuilder databaseBuilder = newImpermanentDatabaseBuilder( storeDir );
+        DatabaseManagementServiceBuilder databaseBuilder = newImpermanentDatabaseBuilder( storeDir );
         return databaseBuilder.newDatabaseManagementService();
     }
 
     public DatabaseManagementService newImpermanentService( Map<Setting<?>,String> config )
     {
-        DatabaseManagementServiceInternalBuilder builder = newImpermanentDatabaseBuilder();
+        DatabaseManagementServiceBuilder builder = newImpermanentDatabaseBuilder();
         setConfig( config, builder );
         return builder.newDatabaseManagementService();
     }
 
     public DatabaseManagementService newImpermanentService( File storeDir , Map<Setting<?>,String> config )
     {
-        DatabaseManagementServiceInternalBuilder builder = newImpermanentDatabaseBuilder(storeDir);
+        DatabaseManagementServiceBuilder builder = newImpermanentDatabaseBuilder(storeDir);
         setConfig( config, builder );
         return builder.newDatabaseManagementService();
     }
 
-    public DatabaseManagementServiceInternalBuilder newImpermanentDatabaseBuilder()
+    public DatabaseManagementServiceBuilder newImpermanentDatabaseBuilder()
     {
         return newImpermanentDatabaseBuilder( EPHEMERAL_PATH );
     }
 
     @Override
-    protected void configure( DatabaseManagementServiceInternalBuilder builder )
+    protected void configure( DatabaseManagementServiceBuilder builder )
     {
         // Reduce the default page cache memory size to 8 mega-bytes for test databases.
         builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
@@ -107,7 +106,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         builder.setConfig( new BoltConnector( "bolt" ).enabled, "false" );
     }
 
-    private void configure( DatabaseManagementServiceInternalBuilder builder, File storeDir )
+    private void configure( DatabaseManagementServiceBuilder builder, File storeDir )
     {
         configure( builder );
         builder.setConfig( GraphDatabaseSettings.logs_directory, new File( storeDir, "logs" ).getAbsolutePath() );
@@ -191,7 +190,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         return (TestDatabaseManagementServiceBuilder) super.addURLAccessRule( protocol, rule );
     }
 
-    public DatabaseManagementServiceInternalBuilder newImpermanentDatabaseBuilder( final File storeDir )
+    public DatabaseManagementServiceBuilder newImpermanentDatabaseBuilder( final File storeDir )
     {
         creator = new EmbeddedDatabaseCreator( storeDir, state, true );
         setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
@@ -206,7 +205,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
                 GraphDatabaseDependencies.newDependencies( dependencies ) );
     }
 
-    private static void setConfig( Map<Setting<?>,String> config, DatabaseManagementServiceInternalBuilder builder )
+    private static void setConfig( Map<Setting<?>,String> config, DatabaseManagementServiceBuilder builder )
     {
         for ( Map.Entry<Setting<?>,String> entry : config.entrySet() )
         {

@@ -49,7 +49,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -106,7 +106,7 @@ public class CountsRotationTest
                                           .around( testDir );
 
     private FileSystemAbstraction fs;
-    private DatabaseManagementServiceInternalBuilder dbBuilder;
+    private DatabaseManagementServiceBuilder dbBuilder;
     private PageCache pageCache;
 
     @Before

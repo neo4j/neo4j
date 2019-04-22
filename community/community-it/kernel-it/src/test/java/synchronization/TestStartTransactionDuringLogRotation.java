@@ -34,7 +34,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
@@ -51,7 +50,7 @@ public class TestStartTransactionDuringLogRotation
     public DbmsRule db = new EmbeddedDbmsRule()
     {
         @Override
-        protected DatabaseManagementServiceInternalBuilder newBuilder( DatabaseManagementServiceBuilder factory )
+        protected DatabaseManagementServiceBuilder newBuilder( DatabaseManagementServiceBuilder factory )
         {
             return super.newBuilder( factory ).setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" );
         }

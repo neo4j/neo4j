@@ -67,7 +67,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
@@ -128,7 +127,7 @@ public class FulltextProceduresTest
     public final RuleChain rules = RuleChain.outerRule( timeout ).around( fs ).around( testDirectory ).around( expectedException ).around( cleanup );
 
     private GraphDatabaseAPI db;
-    private DatabaseManagementServiceInternalBuilder builder;
+    private DatabaseManagementServiceBuilder builder;
     private static final String PROP = "prop";
     private static final String EVENTUALLY_CONSISTENT = ", {eventually_consistent: 'true'}";
     private DatabaseManagementService managementService;

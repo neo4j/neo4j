@@ -39,7 +39,7 @@ import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -245,7 +245,7 @@ public class AuthProceduresIT
     {
         removePreviousAuthFile();
 
-        DatabaseManagementServiceInternalBuilder graphDatabaseFactory = new TestDatabaseManagementServiceBuilder()
+        DatabaseManagementServiceBuilder graphDatabaseFactory = new TestDatabaseManagementServiceBuilder()
                 .setFileSystem( fs )
             .newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.auth_enabled, "true" );

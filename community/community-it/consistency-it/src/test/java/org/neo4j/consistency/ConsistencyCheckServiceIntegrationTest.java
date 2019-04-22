@@ -46,7 +46,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -347,7 +347,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
     private GraphDatabaseService getGraphDatabaseService( File storeDir, String... settings )
     {
-        DatabaseManagementServiceInternalBuilder builder = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( storeDir );
+        DatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( storeDir );
         builder.setConfig( settings( settings ) );
 
         managementService = builder.newDatabaseManagementService();

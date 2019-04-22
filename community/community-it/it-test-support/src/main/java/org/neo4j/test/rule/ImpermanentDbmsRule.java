@@ -20,7 +20,6 @@
 package org.neo4j.test.rule;
 
 import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
@@ -56,7 +55,7 @@ public class ImpermanentDbmsRule extends DbmsRule
     }
 
     @Override
-    protected DatabaseManagementServiceInternalBuilder newBuilder( DatabaseManagementServiceBuilder factory )
+    protected DatabaseManagementServiceBuilder newBuilder( DatabaseManagementServiceBuilder factory )
     {
         return ((TestDatabaseManagementServiceBuilder) factory).newImpermanentDatabaseBuilder();
     }

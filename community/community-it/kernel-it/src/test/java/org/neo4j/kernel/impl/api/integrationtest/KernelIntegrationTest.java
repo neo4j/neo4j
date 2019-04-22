@@ -29,7 +29,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Procedures;
@@ -179,10 +179,10 @@ public abstract class KernelIntegrationTest
 
     protected DatabaseManagementService createDatabaseService()
     {
-        DatabaseManagementServiceInternalBuilder databaseManagementServiceInternalBuilder = configure( createGraphDatabaseFactory() )
+        DatabaseManagementServiceBuilder databaseManagementServiceBuilder = configure( createGraphDatabaseFactory() )
                 .setFileSystem( testDir.getFileSystem() )
                 .newEmbeddedDatabaseBuilder( testDir.storeDir() );
-        return configure( databaseManagementServiceInternalBuilder ).newDatabaseManagementService();
+        return configure( databaseManagementServiceBuilder ).newDatabaseManagementService();
     }
 
     protected TestDatabaseManagementServiceBuilder createGraphDatabaseFactory()
@@ -190,9 +190,9 @@ public abstract class KernelIntegrationTest
         return new TestDatabaseManagementServiceBuilder();
     }
 
-    protected DatabaseManagementServiceInternalBuilder configure( DatabaseManagementServiceInternalBuilder databaseManagementServiceInternalBuilder )
+    protected DatabaseManagementServiceBuilder configure( DatabaseManagementServiceBuilder databaseManagementServiceBuilder )
     {
-        return databaseManagementServiceInternalBuilder;
+        return databaseManagementServiceBuilder;
     }
 
     protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder factory )

@@ -28,7 +28,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -49,10 +49,10 @@ public class ReadTestSupport implements KernelAPIReadTestSupport
     @Override
     public void setup( File storeDir, Consumer<GraphDatabaseService> create )
     {
-        DatabaseManagementServiceInternalBuilder databaseManagementServiceInternalBuilder =
+        DatabaseManagementServiceBuilder databaseManagementServiceBuilder =
                 new TestDatabaseManagementServiceBuilder().newImpermanentDatabaseBuilder( storeDir );
-        settings.forEach( databaseManagementServiceInternalBuilder::setConfig );
-        managementService = databaseManagementServiceInternalBuilder.newDatabaseManagementService();
+        settings.forEach( databaseManagementServiceBuilder::setConfig );
+        managementService = databaseManagementServiceBuilder.newDatabaseManagementService();
         db = managementService.database( DEFAULT_DATABASE_NAME );
         create.accept( db );
     }

@@ -47,7 +47,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.kernel.database.Database;
@@ -293,7 +293,7 @@ class RecoveryCleanupIT
 
     private GraphDatabaseService startDatabase()
     {
-        DatabaseManagementServiceInternalBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
+        DatabaseManagementServiceBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
         testSpecificConfig.forEach( builder::setConfig );
         managementService = builder.newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );

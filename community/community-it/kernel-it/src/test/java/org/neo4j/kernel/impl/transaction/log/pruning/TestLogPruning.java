@@ -27,7 +27,7 @@ import java.io.IOException;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
+import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -179,7 +179,7 @@ class TestLogPruning
         fs = new EphemeralFileSystemAbstraction();
         TestDatabaseManagementServiceBuilder gdf = new TestDatabaseManagementServiceBuilder();
         gdf.setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) );
-        DatabaseManagementServiceInternalBuilder builder = gdf.newImpermanentDatabaseBuilder();
+        DatabaseManagementServiceBuilder builder = gdf.newImpermanentDatabaseBuilder();
         builder.setConfig( keep_logical_logs, logPruning );
         managementService = builder.newDatabaseManagementService();
         this.db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );

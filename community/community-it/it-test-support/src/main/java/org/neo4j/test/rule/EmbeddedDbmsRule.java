@@ -23,7 +23,6 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
@@ -67,7 +66,7 @@ public class EmbeddedDbmsRule extends DbmsRule
     }
 
     @Override
-    protected DatabaseManagementServiceInternalBuilder newBuilder( DatabaseManagementServiceBuilder factory )
+    protected DatabaseManagementServiceBuilder newBuilder( DatabaseManagementServiceBuilder factory )
     {
         return factory.newEmbeddedDatabaseBuilder( testDirectory.storeDir() );
     }

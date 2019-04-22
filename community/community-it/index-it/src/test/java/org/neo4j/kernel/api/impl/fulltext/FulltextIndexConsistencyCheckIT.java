@@ -49,7 +49,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -96,7 +95,7 @@ class FulltextIndexConsistencyCheckIT
     @Inject
     private TestDirectory testDirectory;
 
-    private DatabaseManagementServiceInternalBuilder builder;
+    private DatabaseManagementServiceBuilder builder;
     private GraphDatabaseService database;
     private DatabaseManagementService managementService;
 
