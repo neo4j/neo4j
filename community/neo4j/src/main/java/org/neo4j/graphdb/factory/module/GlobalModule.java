@@ -126,11 +126,12 @@ public class GlobalModule
     private final GlobalTransactionEventListeners transactionEventListeners;
     // In the future this may not be a global decision, but for now this is a good central place to make the decision about which storage engine to use
     private final StorageEngineFactory storageEngineFactory;
+    private final DependencyResolver externalDependencyResolver;
 
     public GlobalModule( File providedStoreDir, Config globalConfig, DatabaseInfo databaseInfo,
             ExternalDependencies externalDependencies )
     {
-        DependencyResolver externalDeps = externalDependencies.dependencies();
+        externalDependencyResolver = externalDependencies.dependencies();
 
         this.databaseInfo = databaseInfo;
 
@@ -182,14 +183,15 @@ public class GlobalModule
                 logService.getInternalLog( Tracers.class ), globalMonitors, jobScheduler, globalClock ) );
         globalDependencies.satisfyDependency( tracers.getPageCacheTracer() );
 
-        versionContextSupplier = createCursorContextSupplier( globalConfig );
+        versionContextSupplier =
+                externalDependencyResolver.tryResolveOrCreate( VersionContextSupplier.class, () -> createCursorContextSupplier( globalConfig ) );
         globalDependencies.satisfyDependency( versionContextSupplier );
 
         collectionsFactorySupplier = createCollectionsFactorySupplier( globalConfig, globalLife );
 
-        PageCache externalPageCache = externalDeps != null ? externalDeps.resolveDependency( PageCache.class ) : null;
-        pageCache = externalPageCache != null ? externalPageCache
-                                              : createPageCache( fileSystem, globalConfig, logService, tracers, versionContextSupplier, jobScheduler );
+        pageCache = externalDependencyResolver.tryResolveOrCreate( PageCache.class,
+                () -> createPageCache( fileSystem, globalConfig, logService, tracers, versionContextSupplier, jobScheduler ) );
+
         globalLife.add( new PageCacheLifecycle( pageCache ) );
 
         dbmsDiagnosticsManager = new DbmsDiagnosticsManager( globalDependencies, logService );
@@ -514,5 +516,10 @@ public class GlobalModule
     public StorageEngineFactory getStorageEngineFactory()
     {
         return storageEngineFactory;
+    }
+
+    public DependencyResolver getExternalDependencyResolver()
+    {
+        return externalDependencyResolver;
     }
 }

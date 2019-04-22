@@ -21,6 +21,7 @@ package org.neo4j.kernel.recovery;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,12 +35,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import javax.annotation.Nonnull;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -50,9 +50,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder.DatabaseCreator;
-import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterators;
@@ -108,13 +105,12 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.AdversarialPageCacheGraphDatabaseFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.TestDatabaseManagementServiceFactory;
-import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
@@ -133,7 +129,6 @@ import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.count;
 
@@ -148,6 +143,9 @@ class DatabaseRecoveryIT
     private DefaultFileSystemAbstraction fileSystem;
     @Inject
     private RandomRule random;
+    @RegisterExtension
+    static final PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
+
     private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
     private DatabaseManagementService managementService;
 
@@ -406,8 +404,11 @@ class DatabaseRecoveryIT
 
         managementService.shutdown();
         fs.close();
+        Dependencies dependencies = new Dependencies();
+        PageCache pageCache = pageCacheExtension.getPageCache( crashedFs );
+        dependencies.satisfyDependencies( pageCache );
+
         Monitors monitors = new Monitors();
-        AtomicReference<PageCache> pageCache = new AtomicReference<>();
         AtomicReference<EphemeralFileSystemAbstraction> reversedFs = new AtomicReference<>();
         monitors.addMonitorListener( new RecoveryMonitor()
         {
@@ -417,7 +418,7 @@ class DatabaseRecoveryIT
                 try
                 {
                     // Flush the page cache which will fished out of the GlobalModule at the point of constructing the database
-                    pageCache.get().flushAndForce();
+                    pageCache.flushAndForce();
                 }
                 catch ( IOException e )
                 {
@@ -430,37 +431,10 @@ class DatabaseRecoveryIT
             }
         } );
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
-                {
-                    // This nested constructing is done purely to be able to fish out GlobalModule
-                    // (and its PageCache inside it). It would be great if this could be done in a prettier way.
-
-                    @Override
-                    protected DatabaseCreator createImpermanentDatabaseCreator( File storeDir1, TestGraphDatabaseFactoryState state )
-                    {
-                        return new DatabaseCreator()
-                        {
-
-                            @Override
-                            public DatabaseManagementService newDatabase( @Nonnull Config config )
-                            {
-                                TestDatabaseManagementServiceFactory factory = new TestDatabaseManagementServiceFactory( state, true )
-                                {
-                                    @Override
-                                    protected GlobalModule createGlobalModule( File storeDir11, Config config, ExternalDependencies dependencies )
-                                    {
-                                        GlobalModule globalModule = super.createGlobalModule( storeDir11, config, dependencies );
-                                        // nice way of getting the page cache dependency before db is created, huh?
-                                        pageCache.set( globalModule.getPageCache() );
-                                        return globalModule;
-                                    }
-                                };
-                                return factory.newFacade( storeDir1, config, newDependencies( state.databaseDependencies() ) );
-                            }
-                        };
-                    }
-                }
                 .setFileSystem( crashedFs )
-                .setMonitors( monitors ).newImpermanentService( directory.storeDir() );
+                .setExternalDependencies( dependencies )
+                .setMonitors( monitors )
+                .newImpermanentService( directory.storeDir() );
 
         managementService.shutdown();
 

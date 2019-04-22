@@ -219,7 +219,7 @@ public class GraphDatabaseDependencies implements ExternalDependencies
     // to ExtensionFactory<?> generic types
     private static Iterator<ExtensionFactory<?>> getExtensions( Iterator<ExtensionFactory> parent )
     {
-        return new Iterator<ExtensionFactory<?>>()
+        return new Iterator<>()
         {
             @Override
             public boolean hasNext()

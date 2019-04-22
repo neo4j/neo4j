@@ -50,8 +50,7 @@ public class AdversarialPageCacheGraphDatabaseFactory
         return new TestDatabaseManagementServiceBuilder()
         {
             @Override
-            protected DatabaseManagementService newEmbeddedDatabase( File dir, Config config, ExternalDependencies
-                    dependencies )
+            protected DatabaseManagementService newEmbeddedDatabase( File dir, Config config, ExternalDependencies dependencies, boolean impermanent )
             {
                 return new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 {

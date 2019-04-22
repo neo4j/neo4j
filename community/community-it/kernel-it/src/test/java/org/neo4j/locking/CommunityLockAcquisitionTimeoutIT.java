@@ -27,13 +27,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.io.File;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -41,14 +39,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
-import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
-import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.community.CommunityLockClient;
@@ -62,7 +52,6 @@ import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
-import org.neo4j.time.SystemNanoClock;
 
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -89,8 +78,8 @@ public class CommunityLockAcquisitionTimeoutIT
     @BeforeClass
     public static void setUp()
     {
-        CustomClockManagementServiceFactory facadeFactory = new CustomClockManagementServiceFactory();
-        managementService = new CustomClockTestDatabaseManagementServiceBuilder( facadeFactory )
+        managementService = new TestDatabaseManagementServiceBuilder()
+                .setClock( fakeClock )
                 .newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( GraphDatabaseSettings.lock_acquisition_timeout, "2s" )
                 .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
@@ -213,46 +202,6 @@ public class CommunityLockAcquisitionTimeoutIT
         {
             database.createNode( marker );
             transaction.success();
-        }
-    }
-
-    private static class CustomClockTestDatabaseManagementServiceBuilder extends TestDatabaseManagementServiceBuilder
-    {
-        private final DatabaseManagementServiceFactory customFacadeFactory;
-
-        CustomClockTestDatabaseManagementServiceBuilder( DatabaseManagementServiceFactory customFacadeFactory )
-        {
-            this.customFacadeFactory = customFacadeFactory;
-        }
-
-        @Override
-        protected DatabaseManagementServiceInternalBuilder.DatabaseCreator createDatabaseCreator( File storeDir,
-                GraphDatabaseFactoryState state )
-        {
-            return config -> customFacadeFactory.newFacade( storeDir, config,
-                    GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
-        }
-    }
-
-    private static class CustomClockManagementServiceFactory extends DatabaseManagementServiceFactory
-    {
-
-        CustomClockManagementServiceFactory()
-        {
-            super( DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
-        }
-
-        @Override
-        protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
-        {
-            return new GlobalModule( storeDir, config, databaseInfo, dependencies )
-            {
-                @Override
-                protected SystemNanoClock createClock()
-                {
-                    return fakeClock;
-                }
-            };
         }
     }
 }

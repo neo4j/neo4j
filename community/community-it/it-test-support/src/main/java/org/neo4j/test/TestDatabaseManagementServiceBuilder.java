@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -118,12 +119,6 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         return (TestGraphDatabaseFactoryState) super.getCurrentState();
     }
 
-    @Override
-    protected TestGraphDatabaseFactoryState getStateCopy()
-    {
-        return new TestGraphDatabaseFactoryState( getCurrentState() );
-    }
-
     public FileSystemAbstraction getFileSystem()
     {
         return getCurrentState().getFileSystem();
@@ -132,6 +127,13 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     public TestDatabaseManagementServiceBuilder setFileSystem( FileSystemAbstraction fileSystem )
     {
         getCurrentState().setFileSystem( fileSystem );
+        return this;
+    }
+
+    @Override
+    public TestDatabaseManagementServiceBuilder setExternalDependencies( DependencyResolver dependencies )
+    {
+        getCurrentState().setDependencies( dependencies );
         return this;
     }
 
@@ -191,28 +193,17 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
 
     public DatabaseManagementServiceInternalBuilder newImpermanentDatabaseBuilder( final File storeDir )
     {
-        final TestGraphDatabaseFactoryState state = getStateCopy();
-        DatabaseManagementServiceInternalBuilder.DatabaseCreator creator =
-                createImpermanentDatabaseCreator( storeDir, state );
-        DatabaseManagementServiceInternalBuilder
-                builder = new DatabaseManagementServiceInternalBuilder( creator ).setConfig( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
-        configure( builder, storeDir );
-        return builder;
+        creator = new EmbeddedDatabaseCreator( storeDir, state, true );
+        setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
+        configure( this, storeDir );
+        return this;
     }
 
     @Override
-    protected DatabaseManagementService newEmbeddedDatabase( File storeDir, Config config,
-            ExternalDependencies dependencies )
+    protected DatabaseManagementService newEmbeddedDatabase( File storeDir, Config config, ExternalDependencies dependencies, boolean impermanent )
     {
-        return new TestDatabaseManagementServiceFactory( getCurrentState() ).newFacade( storeDir, config,
+        return new TestDatabaseManagementServiceFactory( getCurrentState(), impermanent ).newFacade( storeDir, augmentConfig( config ),
                 GraphDatabaseDependencies.newDependencies( dependencies ) );
-    }
-
-    protected DatabaseManagementServiceInternalBuilder.DatabaseCreator createImpermanentDatabaseCreator( final File storeDir,
-            final TestGraphDatabaseFactoryState state )
-    {
-        return config -> new TestDatabaseManagementServiceFactory( state, true ).newFacade( storeDir, config,
-                GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
     }
 
     private static void setConfig( Map<Setting<?>,String> config, DatabaseManagementServiceInternalBuilder builder )

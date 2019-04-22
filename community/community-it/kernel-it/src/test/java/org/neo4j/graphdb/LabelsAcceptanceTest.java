@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -32,15 +33,13 @@ import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.stream.Stream;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.exceptions.UnderlyingStorageException;
-import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
-import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
@@ -52,10 +51,9 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -69,7 +67,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -203,23 +200,58 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void oversteppingMaxNumberOfLabelsShouldFailGracefully()
+    public void oversteppingMaxNumberOfLabelsShouldFailGracefully() throws IOException
     {
-        // Given
-        DatabaseManagementService managementService = new CustomLabelTestDatabaseManagementServiceBuilder().newImpermanentService();
-        GraphDatabaseService graphDatabase = managementService.database( DEFAULT_DATABASE_NAME );
-
-        // When
-        try ( Transaction tx = graphDatabase.beginTx() )
+        try ( EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction() )
         {
-            graphDatabase.createNode().addLabel( Labels.MY_LABEL );
-            fail( "Should have thrown exception" );
-        }
-        catch ( ConstraintViolationException ex )
-        {   // Happy
-        }
+            // Given
+            Dependencies dependencies = new Dependencies();
+            dependencies.satisfyDependencies( createIdContextFactory( fileSystem ) );
 
-        managementService.shutdown();
+            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
+                    .setFileSystem( fileSystem )
+                    .setExternalDependencies( dependencies )
+                    .newImpermanentService();
+
+            GraphDatabaseService graphDatabase = managementService.database( DEFAULT_DATABASE_NAME );
+
+            // When
+            try ( Transaction tx = graphDatabase.beginTx() )
+            {
+                graphDatabase.createNode().addLabel( Labels.MY_LABEL );
+                fail( "Should have thrown exception" );
+            }
+            catch ( ConstraintViolationException ex )
+            {   // Happy
+            }
+
+            managementService.shutdown();
+        }
+    }
+
+    private IdContextFactory createIdContextFactory( FileSystemAbstraction fileSystem )
+    {
+        return IdContextFactoryBuilder.of( new CommunityIdTypeConfigurationProvider(), JobSchedulerFactory.createScheduler() ).withIdGenerationFactoryProvider(
+                any -> new DefaultIdGeneratorFactory( fileSystem )
+                {
+                    @Override
+                    public IdGenerator open( File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
+                    {
+                        IdGenerator idGenerator = super.open( fileName, grabSize, idType, highId, maxId );
+                        if ( idType != IdType.LABEL_TOKEN )
+                        {
+                            return idGenerator;
+                        }
+                        return new IdGenerator.Delegate( idGenerator )
+                        {
+                            @Override
+                            public long nextId()
+                            {
+                                throw new UnderlyingStorageException( "Id capacity exceeded" );
+                            }
+                        };
+                    }
+                } ).build();
     }
 
     @Test
@@ -693,59 +725,6 @@ public class LabelsAcceptanceTest
     private static String labelName( int index )
     {
         return "Label-" + index;
-    }
-
-    private static class CustomIdGenerationEditionModule extends CommunityEditionModule
-    {
-        CustomIdGenerationEditionModule( GlobalModule globalModule )
-        {
-            super( globalModule );
-        }
-
-        @Override
-        protected IdContextFactory createIdContextFactory( GlobalModule globalModule, FileSystemAbstraction fileSystem )
-        {
-            return IdContextFactoryBuilder.of( new CommunityIdTypeConfigurationProvider(), globalModule.getJobScheduler() ).withIdGenerationFactoryProvider(
-                    any -> new DefaultIdGeneratorFactory( globalModule.getFileSystem() )
-                    {
-                        @Override
-                        public IdGenerator open( File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
-                        {
-                            IdGenerator idGenerator = super.open( fileName, grabSize, idType, highId, maxId );
-                            if ( idType != IdType.LABEL_TOKEN )
-                            {
-                                return idGenerator;
-                            }
-                            return new IdGenerator.Delegate( idGenerator )
-                            {
-                                @Override
-                                public long nextId()
-                                {
-                                    throw new UnderlyingStorageException( "Id capacity exceeded" );
-                                }
-                            };
-                        }
-                    } ).build();
-        }
-    }
-
-    private static class CustomIdGeneratorManagementServiceFactory extends DatabaseManagementServiceFactory
-    {
-        CustomIdGeneratorManagementServiceFactory()
-        {
-            super( DatabaseInfo.COMMUNITY, CustomIdGenerationEditionModule::new );
-        }
-    }
-
-    private class CustomLabelTestDatabaseManagementServiceBuilder extends TestDatabaseManagementServiceBuilder
-    {
-        @Override
-        protected DatabaseManagementServiceInternalBuilder.DatabaseCreator createImpermanentDatabaseCreator( File storeDir,
-                TestGraphDatabaseFactoryState state )
-        {
-            return config -> new CustomIdGeneratorManagementServiceFactory().newFacade( storeDir, config,
-                    newDependencies( state.databaseDependencies() ) );
-        }
     }
 
     private static Node createNode( GraphDatabaseService db, Label... labels )

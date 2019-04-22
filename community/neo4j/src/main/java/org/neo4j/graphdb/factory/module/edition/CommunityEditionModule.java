@@ -25,6 +25,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.Dependencies;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
@@ -42,7 +43,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
-import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -94,6 +94,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
         PageCache pageCache = globalModule.getPageCache();
         LifeSupport globalLife = globalModule.getGlobalLife();
         SystemNanoClock globalClock = globalModule.getGlobalClock();
+        DependencyResolver externalDependencies = globalModule.getExternalDependencyResolver();
 
         watcherServiceFactory = databaseLayout -> createDatabaseFileSystemWatcher( globalModule.getFileWatcher(), databaseLayout,
                 logService, fileWatcherFileNameFilter() );
@@ -109,7 +110,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
 
         threadToTransactionBridge = globalDependencies.satisfyDependency( new ThreadToStatementContextBridge() );
 
-        idContextFactory = createIdContextFactory( globalModule, fileSystem );
+        idContextFactory = externalDependencies.tryResolveOrCreate( IdContextFactory.class, () -> createIdContextFactory( globalModule, fileSystem ) );
 
         tokenHoldersProvider = createTokenHolderProvider( globalModule );
 

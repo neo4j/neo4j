@@ -102,8 +102,7 @@ class DatabaseShutdownTest
         private volatile boolean failFlush;
 
         @Override
-        protected DatabaseManagementService newEmbeddedDatabase( File storeDir, Config config,
-                ExternalDependencies dependencies )
+        protected DatabaseManagementService newEmbeddedDatabase( File storeDir, Config config, ExternalDependencies dependencies, boolean impermanent )
         {
             return new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
             {

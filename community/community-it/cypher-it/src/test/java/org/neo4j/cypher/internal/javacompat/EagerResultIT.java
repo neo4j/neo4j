@@ -32,8 +32,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.LongSupplier;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.database.DatabaseManagementService;
@@ -46,18 +46,9 @@ import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
-import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceInternalBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
-import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.context.TransactionVersionContext;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -250,7 +241,10 @@ public class EagerResultIT
 
     private GraphDatabaseService startRestartableDatabase()
     {
-        managementService = new CustomDatabaseManagementServiceBuilder( new CustomManagementServiceFactory() )
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( testContextSupplier );
+        managementService = new TestDatabaseManagementServiceBuilder()
+                .setExternalDependencies( dependencies )
                 .newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.snapshot_query, Settings.TRUE ).newDatabaseManagementService();
         return managementService.database( DEFAULT_DATABASE_NAME );
@@ -260,47 +254,6 @@ public class EagerResultIT
     {
         DependencyResolver dependencyResolver = ((GraphDatabaseAPI) database).getDependencyResolver();
         return dependencyResolver.resolveDependency( TransactionIdStore.class );
-    }
-
-    private class CustomDatabaseManagementServiceBuilder extends TestDatabaseManagementServiceBuilder
-    {
-
-        private final DatabaseManagementServiceFactory customFacadeFactory;
-
-        CustomDatabaseManagementServiceBuilder( DatabaseManagementServiceFactory customFacadeFactory )
-        {
-            this.customFacadeFactory = customFacadeFactory;
-        }
-
-        @Override
-        protected DatabaseManagementServiceInternalBuilder.DatabaseCreator createDatabaseCreator( File storeDir,
-                GraphDatabaseFactoryState state )
-        {
-            return config -> customFacadeFactory.newFacade( storeDir, config,
-                    GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
-        }
-    }
-
-    private class CustomManagementServiceFactory extends DatabaseManagementServiceFactory
-    {
-
-        CustomManagementServiceFactory()
-        {
-            super( DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
-        }
-
-        @Override
-        protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
-        {
-            return new GlobalModule( storeDir, config, databaseInfo, dependencies )
-            {
-                @Override
-                protected VersionContextSupplier createCursorContextSupplier( Config config )
-                {
-                    return testContextSupplier != null ? testContextSupplier : super.createCursorContextSupplier(config);
-                }
-            };
-        }
     }
 
     private class TestVersionContext extends TransactionVersionContext

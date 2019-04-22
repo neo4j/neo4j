@@ -20,7 +20,14 @@
 package org.neo4j.graphdb.factory;
 
 import java.io.File;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.function.Function;
 import javax.annotation.Nonnull;
 
 import org.neo4j.common.DependencyResolver;
@@ -29,24 +36,127 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.database.DatabaseManagementService;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
+import org.neo4j.graphdb.factory.module.GlobalModule;
+import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Monitors;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 /**
- * Creates a {@link org.neo4j.graphdb.GraphDatabaseService} with Community Edition features.
+ * Creates a {@link DatabaseManagementService} with Community Edition features.
  * <p>
  * Use {@link #newDatabaseManagementService(File)} or
  * {@link #newEmbeddedDatabaseBuilder(File)} to create a database instance.
  * <p>
  */
-public class DatabaseManagementServiceBuilder
+public class DatabaseManagementServiceBuilder implements DatabaseManagementServiceInternalBuilder
 {
-    private final GraphDatabaseFactoryState state;
+    protected final GraphDatabaseFactoryState state;
+    protected EmbeddedDatabaseCreator creator;
+    protected Map<String,String> config = new HashMap<>();
+
+    //################ Swap ###########
+    @Override
+    public DatabaseManagementServiceInternalBuilder setConfig( Setting<?> setting, String value )
+    {
+        if ( value == null )
+        {
+            config.remove( setting.name() );
+        }
+        else
+        {
+            // Test if we can get this setting with an updated config
+            Map<String,String> testValue = stringMap( setting.name(), value );
+            setting.apply( key -> testValue.containsKey( key ) ? testValue.get( key ) : config.get( key ) );
+
+            // No exception thrown, add it to existing config
+            config.put( setting.name(), value );
+        }
+        return this;
+    }
+
+    @Override
+    public DatabaseManagementServiceInternalBuilder setConfig( Config config )
+    {
+        this.config.putAll( config.getRaw() );
+        return this;
+    }
+
+    @Override
+    public DatabaseManagementServiceInternalBuilder setConfig( String name, String value )
+    {
+        if ( value == null )
+        {
+            config.remove( name );
+        }
+        else
+        {
+            config.put( name, value );
+        }
+        return this;
+    }
+
+    @Override
+    public DatabaseManagementServiceInternalBuilder setConfig( Map<String,String> config )
+    {
+        for ( Map.Entry<String,String> stringStringEntry : config.entrySet() )
+        {
+            setConfig( stringStringEntry.getKey(), stringStringEntry.getValue() );
+        }
+        return this;
+    }
+
+    @Override
+    public DatabaseManagementServiceInternalBuilder loadPropertiesFromFile( String fileName ) throws IllegalArgumentException
+    {
+        try
+        {
+            return loadPropertiesFromURL( new File( fileName ).toURI().toURL() );
+        }
+        catch ( MalformedURLException e )
+        {
+            throw new IllegalArgumentException( "Illegal filename:" + fileName, e );
+        }
+    }
+
+    private DatabaseManagementServiceInternalBuilder loadPropertiesFromURL( URL url ) throws IllegalArgumentException
+    {
+        Properties props = new Properties();
+        try
+        {
+            try ( InputStream stream = url.openStream() )
+            {
+                props.load( stream );
+            }
+        }
+        catch ( Exception e )
+        {
+            throw new IllegalArgumentException( "Unable to load " + url, e );
+        }
+        Set<Map.Entry<Object,Object>> entries = props.entrySet();
+        for ( Map.Entry<Object,Object> entry : entries )
+        {
+            String key = (String) entry.getKey();
+            String value = (String) entry.getValue();
+            setConfig( key, value );
+        }
+
+        return this;
+    }
+
+    public DatabaseManagementService newDatabaseManagementService()
+    {
+        return creator.newDatabase( Config.defaults( config ) );
+    }
+
+    // ###################################
 
     public DatabaseManagementServiceBuilder()
     {
@@ -63,11 +173,6 @@ public class DatabaseManagementServiceBuilder
         return state;
     }
 
-    protected GraphDatabaseFactoryState getStateCopy()
-    {
-        return new GraphDatabaseFactoryState( getCurrentState() );
-    }
-
     public DatabaseManagementService newDatabaseManagementService( File storeDir )
     {
         return newEmbeddedDatabaseBuilder( storeDir ).newDatabaseManagementService();
@@ -78,49 +183,30 @@ public class DatabaseManagementServiceBuilder
      */
     public DatabaseManagementServiceInternalBuilder newEmbeddedDatabaseBuilder( File storeDir )
     {
-        final GraphDatabaseFactoryState state = getStateCopy();
-        DatabaseManagementServiceInternalBuilder.DatabaseCreator creator = createDatabaseCreator( storeDir, state );
-        DatabaseManagementServiceInternalBuilder builder = new DatabaseManagementServiceInternalBuilder( creator );
-        configure( builder );
-        return builder;
+        creator = new EmbeddedDatabaseCreator( storeDir, state );
+        configure( this );
+        return this;
     }
 
-    protected DatabaseManagementServiceInternalBuilder.DatabaseCreator createDatabaseCreator( final File storeDir, final GraphDatabaseFactoryState state )
-    {
-        return new EmbeddedDatabaseCreator( storeDir, state );
-    }
-
-    protected void configure( DatabaseManagementServiceInternalBuilder builder )
-    {
-        // Let the default configuration pass through.
-    }
-
-    /**
-     * See {@link #newDatabase(File, Config, ExternalDependencies)} instead.
-     */
-    @Deprecated
-    protected DatabaseManagementService newDatabase( File storeDir, Map<String,String> settings,
-                                                ExternalDependencies dependencies )
-    {
-        return newDatabase( storeDir, Config.defaults( settings ), dependencies );
-    }
-
-    protected DatabaseManagementService newEmbeddedDatabase( File storeDir, Config config,
-                                                        ExternalDependencies dependencies )
-    {
-        return newDatabase( storeDir, config, dependencies );
-    }
-
-    protected DatabaseManagementService newDatabase( File storeDir, Config config,
-                                                ExternalDependencies dependencies )
+    protected DatabaseManagementService newEmbeddedDatabase( File storeDir, Config config, ExternalDependencies dependencies, boolean impermanent )
     {
         config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
-        return getGraphDatabaseFacadeFactory().newFacade( storeDir, config, dependencies );
+        return getGraphDatabaseFacadeFactory().newFacade( storeDir, augmentConfig( config ), dependencies );
+    }
+
+    protected DatabaseInfo getDatabaseInfo()
+    {
+        return DatabaseInfo.COMMUNITY;
+    }
+
+    protected Function<GlobalModule,AbstractEditionModule> getEditionFactory()
+    {
+        return CommunityEditionModule::new;
     }
 
     protected DatabaseManagementServiceFactory getGraphDatabaseFacadeFactory()
     {
-        return new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new  );
+        return new DatabaseManagementServiceFactory( getDatabaseInfo(), getEditionFactory()  );
     }
 
     public DatabaseManagementServiceBuilder addURLAccessRule( String protocol, URLAccessRule rule )
@@ -152,21 +238,48 @@ public class DatabaseManagementServiceBuilder
         return Edition.COMMUNITY.toString();
     }
 
-    private class EmbeddedDatabaseCreator implements DatabaseManagementServiceInternalBuilder.DatabaseCreator
+    /**
+     * Override to change default values
+     * @param builder
+     */
+    protected void configure( DatabaseManagementServiceInternalBuilder builder )
+    {
+        // Let the default configuration pass through.
+    }
+
+    /**
+     * Override to augment config values
+     * @param config
+     * @return
+     */
+    protected Config augmentConfig( Config config )
+    {
+        return config;
+    }
+
+    protected class EmbeddedDatabaseCreator
     {
         private final File storeDir;
         private final GraphDatabaseFactoryState state;
+        private final boolean impermanent;
 
         EmbeddedDatabaseCreator( File storeDir, GraphDatabaseFactoryState state )
         {
             this.storeDir = storeDir;
             this.state = state;
+            impermanent = false;
         }
 
-        @Override
-        public DatabaseManagementService newDatabase( @Nonnull Config config )
+        public EmbeddedDatabaseCreator( File storeDir, GraphDatabaseFactoryState state, boolean impermanent )
         {
-            return newEmbeddedDatabase( storeDir, config, state.databaseDependencies() );
+            this.storeDir = storeDir;
+            this.state = state;
+            this.impermanent = impermanent;
+        }
+
+        DatabaseManagementService newDatabase( @Nonnull Config config )
+        {
+            return newEmbeddedDatabase( storeDir, config, state.databaseDependencies(), impermanent );
         }
     }
 }

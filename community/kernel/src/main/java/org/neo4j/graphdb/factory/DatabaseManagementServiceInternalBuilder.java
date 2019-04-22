@@ -19,55 +19,18 @@
  */
 package org.neo4j.graphdb.factory;
 
-import java.io.File;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import javax.annotation.Nonnull;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseManagementService;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * Builder for {@link DatabaseManagementService}s that allows for setting and loading
  * configuration.
  */
-public class DatabaseManagementServiceInternalBuilder
+public interface DatabaseManagementServiceInternalBuilder
 {
-    /**
-     * @deprecated This will be moved to an internal package in the future.
-     */
-    @Deprecated
-    public interface DatabaseCreator
-    {
-        /**
-         * @param config initial configuration for the database.
-         * @return an instance of {@link GraphDatabaseService}.
-         */
-        DatabaseManagementService newDatabase( @Nonnull Config config );
-    }
-
-    protected DatabaseCreator creator;
-    protected Map<String,String> config = new HashMap<>();
-
-    /**
-     * @param creator database creator used by builder
-     * @deprecated
-     */
-    @Deprecated
-    public DatabaseManagementServiceInternalBuilder( DatabaseCreator creator )
-    {
-        this.creator = creator;
-    }
-
     /**
      * Set a database setting to a particular value.
      *
@@ -75,34 +38,14 @@ public class DatabaseManagementServiceInternalBuilder
      * @param value New value of the setting
      * @return the builder
      */
-    public DatabaseManagementServiceInternalBuilder setConfig( Setting<?> setting, String value )
-    {
-        if ( value == null )
-        {
-            config.remove( setting.name() );
-        }
-        else
-        {
-            // Test if we can get this setting with an updated config
-            Map<String,String> testValue = stringMap( setting.name(), value );
-            setting.apply( key -> testValue.containsKey( key ) ? testValue.get( key ) : config.get( key ) );
-
-            // No exception thrown, add it to existing config
-            config.put( setting.name(), value );
-        }
-        return this;
-    }
+    DatabaseManagementServiceInternalBuilder setConfig( Setting<?> setting, String value );
 
     /**
      * Set database settings from provided config. All previously configured overlapped config options will be overwritten.
      * @param config provided config
      * @return the builder
      */
-    public DatabaseManagementServiceInternalBuilder setConfig( Config config )
-    {
-        this.config.putAll( config.getRaw() );
-        return this;
-    }
+    DatabaseManagementServiceInternalBuilder setConfig( Config config );
 
     /**
      * Set an unvalidated configuration option.
@@ -113,18 +56,7 @@ public class DatabaseManagementServiceInternalBuilder
      * @deprecated Use setConfig with explicit {@link Setting} instead.
      */
     @Deprecated
-    public DatabaseManagementServiceInternalBuilder setConfig( String name, String value )
-    {
-        if ( value == null )
-        {
-            config.remove( name );
-        }
-        else
-        {
-            config.put( name, value );
-        }
-        return this;
-    }
+    DatabaseManagementServiceInternalBuilder setConfig( String name, String value );
 
     /**
      * Set a map of configuration settings into the builder. Overwrites any existing values.
@@ -134,14 +66,7 @@ public class DatabaseManagementServiceInternalBuilder
      * @deprecated Use setConfig with explicit {@link Setting} instead
      */
     @Deprecated
-    public DatabaseManagementServiceInternalBuilder setConfig( Map<String,String> config )
-    {
-        for ( Map.Entry<String,String> stringStringEntry : config.entrySet() )
-        {
-            setConfig( stringStringEntry.getKey(), stringStringEntry.getValue() );
-        }
-        return this;
-    }
+    DatabaseManagementServiceInternalBuilder setConfig( Map<String,String> config );
 
     /**
      * Load a Properties file from a given file, and add the settings to
@@ -151,54 +76,8 @@ public class DatabaseManagementServiceInternalBuilder
      * @return the builder
      * @throws IllegalArgumentException if the builder was unable to load from the given filename
      */
-    public DatabaseManagementServiceInternalBuilder loadPropertiesFromFile( String fileName )
-            throws IllegalArgumentException
-    {
-        try
-        {
-            return loadPropertiesFromURL( new File( fileName ).toURI().toURL() );
-        }
-        catch ( MalformedURLException e )
-        {
-            throw new IllegalArgumentException( "Illegal filename:" + fileName, e );
-        }
-    }
+     DatabaseManagementServiceInternalBuilder loadPropertiesFromFile( String fileName )
+            throws IllegalArgumentException;
 
-    /**
-     * Load Properties file from a given URL, and add the settings to
-     * the builder.
-     *
-     * @param url URL of properties file to use
-     * @return the builder
-     */
-    private DatabaseManagementServiceInternalBuilder loadPropertiesFromURL( URL url )
-            throws IllegalArgumentException
-    {
-        Properties props = new Properties();
-        try
-        {
-            try ( InputStream stream = url.openStream() )
-            {
-                props.load( stream );
-            }
-        }
-        catch ( Exception e )
-        {
-            throw new IllegalArgumentException( "Unable to load " + url, e );
-        }
-        Set<Map.Entry<Object,Object>> entries = props.entrySet();
-        for ( Map.Entry<Object,Object> entry : entries )
-        {
-            String key = (String) entry.getKey();
-            String value = (String) entry.getValue();
-            setConfig( key, value );
-        }
-
-        return this;
-    }
-
-    public DatabaseManagementService newDatabaseManagementService()
-    {
-        return creator.newDatabase( Config.defaults( config ) );
-    }
+     DatabaseManagementService newDatabaseManagementService();
 }

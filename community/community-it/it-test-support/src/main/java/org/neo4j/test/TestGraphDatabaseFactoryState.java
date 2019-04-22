@@ -36,40 +36,32 @@ public class TestGraphDatabaseFactoryState extends GraphDatabaseFactoryState
         internalLogProvider = null;
     }
 
-    TestGraphDatabaseFactoryState( TestGraphDatabaseFactoryState previous )
-    {
-        super( previous );
-        fileSystem = previous.fileSystem;
-        internalLogProvider = previous.internalLogProvider;
-        clock = previous.clock;
-    }
-
-    public FileSystemAbstraction getFileSystem()
+    public synchronized FileSystemAbstraction getFileSystem()
     {
         return fileSystem;
     }
 
-    public void setFileSystem( FileSystemAbstraction fileSystem )
+    public synchronized void setFileSystem( FileSystemAbstraction fileSystem )
     {
         this.fileSystem = fileSystem;
     }
 
-    public LogProvider getInternalLogProvider()
+    public synchronized LogProvider getInternalLogProvider()
     {
         return internalLogProvider;
     }
 
-    public void setInternalLogProvider( LogProvider logProvider )
+    public synchronized void setInternalLogProvider( LogProvider logProvider )
     {
         this.internalLogProvider = logProvider;
     }
 
-    public SystemNanoClock clock()
+    public synchronized SystemNanoClock clock()
     {
         return clock;
     }
 
-    public void setClock( SystemNanoClock clock )
+    public synchronized void setClock( SystemNanoClock clock )
     {
         this.clock = clock;
     }
