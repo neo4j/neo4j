@@ -42,25 +42,22 @@ import org.neo4j.time.SystemNanoClock;
 
 public class TestDatabaseManagementServiceFactory extends DatabaseManagementServiceFactory
 {
-    private final TestGraphDatabaseFactoryState state;
     private final boolean impermanent;
+    // TODO: bind all 3
+    private FileSystemAbstraction fs;
+    private LogProvider internalLogProvider;
+    private SystemNanoClock clock;
 
-    protected TestDatabaseManagementServiceFactory( TestGraphDatabaseFactoryState state, boolean impermanent )
+    protected TestDatabaseManagementServiceFactory( boolean impermanent )
     {
-        this( state, impermanent, DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
+        this( impermanent, DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
     }
 
-    public TestDatabaseManagementServiceFactory( TestGraphDatabaseFactoryState state, boolean impermanent,
+    public TestDatabaseManagementServiceFactory( boolean impermanent,
             DatabaseInfo databaseInfo, Function<GlobalModule,AbstractEditionModule> editionFactory )
     {
         super( databaseInfo, editionFactory );
-        this.state = state;
         this.impermanent = impermanent;
-    }
-
-    TestDatabaseManagementServiceFactory( TestGraphDatabaseFactoryState state )
-    {
-        this( state, false );
     }
 
     @Override
@@ -92,7 +89,6 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
         @Override
         protected FileSystemAbstraction createFileSystemAbstraction()
         {
-            FileSystemAbstraction fs = state.getFileSystem();
             if ( fs != null )
             {
                 return fs;
@@ -111,7 +107,6 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
         @Override
         protected LogService createLogService( LogProvider userLogProvider )
         {
-            LogProvider internalLogProvider = state.getInternalLogProvider();
             if ( internalLogProvider == null )
             {
                 if ( !impermanent )
@@ -126,7 +121,6 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
         @Override
         protected SystemNanoClock createClock()
         {
-            SystemNanoClock clock = state.clock();
             return clock != null ? clock : super.createClock();
         }
     }

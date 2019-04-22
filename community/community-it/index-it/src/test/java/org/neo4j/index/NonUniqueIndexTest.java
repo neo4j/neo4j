@@ -21,20 +21,14 @@ package org.neo4j.index;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.configuration.Config;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
-import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
-import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
@@ -42,14 +36,11 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.internal.LogService;
-import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -75,8 +66,7 @@ class NonUniqueIndexTest
     void concurrentIndexPopulationAndInsertsShouldNotProduceDuplicates() throws Exception
     {
         // Given
-        Config config = Config.defaults();
-        GraphDatabaseService db = newEmbeddedGraphDatabaseWithSlowJobScheduler( config );
+        GraphDatabaseService db = newEmbeddedGraphDatabaseWithSlowJobScheduler();
         try
         {
             // When
@@ -123,34 +113,25 @@ class NonUniqueIndexTest
         }
     }
 
-    private GraphDatabaseService newEmbeddedGraphDatabaseWithSlowJobScheduler( Config config )
+    private GraphDatabaseService newEmbeddedGraphDatabaseWithSlowJobScheduler()
     {
-        GraphDatabaseFactoryState graphDatabaseFactoryState = new GraphDatabaseFactoryState();
-        graphDatabaseFactoryState.setUserLogProvider( NullLogService.getInstance().getUserLogProvider() );
-        managementService = new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
-        {
-            @Override
-            protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
-            {
-                return new GlobalModule( storeDir, config, databaseInfo, dependencies )
-                {
-                    @Override
-                    protected CentralJobScheduler createJobScheduler()
-                    {
-                        CentralJobScheduler scheduler = newSlowJobScheduler();
-                        scheduler.init();
-                        return scheduler;
-                    }
+        // Inject JobScheduler
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( createJobScheduler() );
 
-                    @Override
-                    protected LogService createLogService( LogProvider userLogProvider )
-                    {
-                        return NullLogService.getInstance();
-                    }
-                };
-            }
-        }.newFacade( testDirectory.storeDir(), config, graphDatabaseFactoryState.databaseDependencies() );
-        return managementService.database( config.get( GraphDatabaseSettings.default_database ) );
+        managementService = new TestDatabaseManagementServiceBuilder()
+                .setExternalDependencies( dependencies )
+                .newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
+                .newDatabaseManagementService();
+
+        return managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+    }
+
+    private static CentralJobScheduler createJobScheduler()
+    {
+        CentralJobScheduler scheduler = newSlowJobScheduler();
+        scheduler.init();
+        return scheduler;
     }
 
     private static CentralJobScheduler newSlowJobScheduler()

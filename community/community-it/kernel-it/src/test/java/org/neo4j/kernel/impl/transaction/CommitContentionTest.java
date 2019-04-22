@@ -33,7 +33,7 @@ import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
+import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
@@ -122,7 +122,6 @@ class CommitContentionTest
 
     private GraphDatabaseService createDb()
     {
-        GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
         managementService = new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, globalModule -> new CommunityEditionModule( globalModule )
         {
             @Override
@@ -130,7 +129,7 @@ class CommitContentionTest
             {
                 return new SkipTransactionDatabaseStats();
             }
-        } ).newFacade( testDirectory.storeDir(), Config.defaults(), state.databaseDependencies() );
+        } ).newFacade( testDirectory.storeDir(), Config.defaults(), GraphDatabaseDependencies.newDependencies() );
         return managementService
                 .database( Config.defaults().get( GraphDatabaseSettings.default_database ));
     }

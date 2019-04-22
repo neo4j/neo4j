@@ -23,13 +23,16 @@ import java.io.File;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Edition;
 import org.neo4j.configuration.Config;
@@ -43,10 +46,13 @@ import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.security.URLAccessRule;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.service.Services;
 
+import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
@@ -58,9 +64,115 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  */
 public class DatabaseManagementServiceBuilder
 {
-    protected final GraphDatabaseFactoryState state;
+    protected final List<Class<?>> settingsClasses = new ArrayList<>();
+    protected final List<ExtensionFactory<?>> extensions = new ArrayList<>();
+    protected Monitors monitors;
+    protected LogProvider userLogProvider;
+    protected DependencyResolver dependencies = new Dependencies();
+    protected final Map<String,URLAccessRule> urlAccessRules = new HashMap<>();
     protected EmbeddedDatabaseCreator creator;
     protected Map<String,String> config = new HashMap<>();
+
+    public DatabaseManagementServiceBuilder()
+    {
+        settingsClasses.add( GraphDatabaseSettings.class );
+        Services.loadAll( ExtensionFactory.class ).forEach( extensions::add );
+    }
+
+    public DatabaseManagementService newDatabaseManagementService( File storeDir )
+    {
+        return newEmbeddedDatabaseBuilder( storeDir ).newDatabaseManagementService();
+    }
+
+    /**
+     * @param storeDir desired embedded database store dir
+     */
+    public DatabaseManagementServiceBuilder newEmbeddedDatabaseBuilder( File storeDir )
+    {
+        creator = new EmbeddedDatabaseCreator( storeDir );
+        configure( this );
+        return this;
+    }
+
+    protected DatabaseManagementService newEmbeddedDatabase( File storeDir, Config config, ExternalDependencies dependencies, boolean impermanent )
+    {
+        config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
+        return getGraphDatabaseFacadeFactory().newFacade( storeDir, augmentConfig( config ), dependencies );
+    }
+
+    protected DatabaseInfo getDatabaseInfo()
+    {
+        return DatabaseInfo.COMMUNITY;
+    }
+
+    protected Function<GlobalModule,AbstractEditionModule> getEditionFactory()
+    {
+        return CommunityEditionModule::new;
+    }
+
+    protected DatabaseManagementServiceFactory getGraphDatabaseFacadeFactory()
+    {
+        return new DatabaseManagementServiceFactory( getDatabaseInfo(), getEditionFactory()  );
+    }
+
+    public DatabaseManagementServiceBuilder addURLAccessRule( String protocol, URLAccessRule rule )
+    {
+        urlAccessRules.put( protocol, rule );
+        return this;
+    }
+
+    public DatabaseManagementServiceBuilder setUserLogProvider( LogProvider userLogProvider )
+    {
+        this.userLogProvider = userLogProvider;
+        return this;
+    }
+
+    public DatabaseManagementServiceBuilder setMonitors( Monitors monitors )
+    {
+        this.monitors = monitors;
+        return this;
+    }
+
+    public DatabaseManagementServiceBuilder setExternalDependencies( DependencyResolver dependencies )
+    {
+        this.dependencies = dependencies;
+        return this;
+    }
+
+    public String getEdition()
+    {
+        return Edition.COMMUNITY.toString();
+    }
+
+    protected ExternalDependencies databaseDependencies()
+    {
+        return newDependencies().
+                monitors( monitors ).
+                userLogProvider( userLogProvider ).
+                dependencies( dependencies ).
+                settingsClasses( settingsClasses ).
+                urlAccessRules( urlAccessRules ).
+                extensions( extensions );
+    }
+
+    /**
+     * Override to change default values
+     * @param builder
+     */
+    protected void configure( DatabaseManagementServiceBuilder builder )
+    {
+        // Let the default configuration pass through.
+    }
+
+    /**
+     * Override to augment config values
+     * @param config
+     * @return
+     */
+    protected Config augmentConfig( Config config )
+    {
+        return config;
+    }
 
     //################ Swap ###########
     public DatabaseManagementServiceBuilder setConfig( Setting<?> setting, String value )
@@ -155,128 +267,26 @@ public class DatabaseManagementServiceBuilder
 
     // ###################################
 
-    public DatabaseManagementServiceBuilder()
-    {
-        this( new GraphDatabaseFactoryState() );
-    }
-
-    protected DatabaseManagementServiceBuilder( GraphDatabaseFactoryState state )
-    {
-        this.state = state;
-    }
-
-    protected GraphDatabaseFactoryState getCurrentState()
-    {
-        return state;
-    }
-
-    public DatabaseManagementService newDatabaseManagementService( File storeDir )
-    {
-        return newEmbeddedDatabaseBuilder( storeDir ).newDatabaseManagementService();
-    }
-
-    /**
-     * @param storeDir desired embedded database store dir
-     */
-    public DatabaseManagementServiceBuilder newEmbeddedDatabaseBuilder( File storeDir )
-    {
-        creator = new EmbeddedDatabaseCreator( storeDir, state );
-        configure( this );
-        return this;
-    }
-
-    protected DatabaseManagementService newEmbeddedDatabase( File storeDir, Config config, ExternalDependencies dependencies, boolean impermanent )
-    {
-        config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
-        return getGraphDatabaseFacadeFactory().newFacade( storeDir, augmentConfig( config ), dependencies );
-    }
-
-    protected DatabaseInfo getDatabaseInfo()
-    {
-        return DatabaseInfo.COMMUNITY;
-    }
-
-    protected Function<GlobalModule,AbstractEditionModule> getEditionFactory()
-    {
-        return CommunityEditionModule::new;
-    }
-
-    protected DatabaseManagementServiceFactory getGraphDatabaseFacadeFactory()
-    {
-        return new DatabaseManagementServiceFactory( getDatabaseInfo(), getEditionFactory()  );
-    }
-
-    public DatabaseManagementServiceBuilder addURLAccessRule( String protocol, URLAccessRule rule )
-    {
-        getCurrentState().addURLAccessRule( protocol, rule );
-        return this;
-    }
-
-    public DatabaseManagementServiceBuilder setUserLogProvider( LogProvider userLogProvider )
-    {
-        getCurrentState().setUserLogProvider( userLogProvider );
-        return this;
-    }
-
-    public DatabaseManagementServiceBuilder setMonitors( Monitors monitors )
-    {
-        getCurrentState().setMonitors( monitors );
-        return this;
-    }
-
-    public DatabaseManagementServiceBuilder setExternalDependencies( DependencyResolver dependencies )
-    {
-        getCurrentState().setDependencies( dependencies );
-        return this;
-    }
-
-    public String getEdition()
-    {
-        return Edition.COMMUNITY.toString();
-    }
-
-    /**
-     * Override to change default values
-     * @param builder
-     */
-    protected void configure( DatabaseManagementServiceBuilder builder )
-    {
-        // Let the default configuration pass through.
-    }
-
-    /**
-     * Override to augment config values
-     * @param config
-     * @return
-     */
-    protected Config augmentConfig( Config config )
-    {
-        return config;
-    }
-
     protected class EmbeddedDatabaseCreator
     {
         private final File storeDir;
-        private final GraphDatabaseFactoryState state;
         private final boolean impermanent;
 
-        EmbeddedDatabaseCreator( File storeDir, GraphDatabaseFactoryState state )
+        EmbeddedDatabaseCreator( File storeDir )
         {
             this.storeDir = storeDir;
-            this.state = state;
             impermanent = false;
         }
 
-        public EmbeddedDatabaseCreator( File storeDir, GraphDatabaseFactoryState state, boolean impermanent )
+        public EmbeddedDatabaseCreator( File storeDir, boolean impermanent )
         {
             this.storeDir = storeDir;
-            this.state = state;
             this.impermanent = impermanent;
         }
 
         DatabaseManagementService newDatabase( @Nonnull Config config )
         {
-            return newEmbeddedDatabase( storeDir, config, state.databaseDependencies(), impermanent );
+            return newEmbeddedDatabase( storeDir, config, databaseDependencies(), impermanent );
         }
     }
 }

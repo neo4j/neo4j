@@ -55,6 +55,10 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     private static final File EPHEMERAL_PATH = new File( "target/test data/" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
     public static final Predicate<ExtensionFactory<?>> INDEX_PROVIDERS_FILTER = extension -> extension instanceof AbstractIndexProviderFactory;
 
+    protected FileSystemAbstraction fileSystem;
+    protected LogProvider internalLogProvider;
+    protected SystemNanoClock clock;
+
     public TestDatabaseManagementServiceBuilder()
     {
         this( NullLogProvider.getInstance() );
@@ -62,7 +66,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
 
     public TestDatabaseManagementServiceBuilder( LogProvider logProvider )
     {
-        super( new TestGraphDatabaseFactoryState() );
+        super();
         setUserLogProvider( logProvider );
     }
 
@@ -112,35 +116,27 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         builder.setConfig( GraphDatabaseSettings.logs_directory, new File( storeDir, "logs" ).getAbsolutePath() );
     }
 
-    @Override
-    protected TestGraphDatabaseFactoryState getCurrentState()
-    {
-        return (TestGraphDatabaseFactoryState) super.getCurrentState();
-    }
-
     public FileSystemAbstraction getFileSystem()
     {
-        return getCurrentState().getFileSystem();
+        return fileSystem;
     }
 
     public TestDatabaseManagementServiceBuilder setFileSystem( FileSystemAbstraction fileSystem )
     {
-        getCurrentState().setFileSystem( fileSystem );
+        this.fileSystem = fileSystem;
         return this;
     }
 
     @Override
     public TestDatabaseManagementServiceBuilder setExternalDependencies( DependencyResolver dependencies )
     {
-        getCurrentState().setDependencies( dependencies );
-        return this;
+        return (TestDatabaseManagementServiceBuilder) super.setExternalDependencies( dependencies );
     }
 
     @Override
     public TestDatabaseManagementServiceBuilder setMonitors( Monitors monitors )
     {
-        getCurrentState().setMonitors( monitors );
-        return this;
+        return (TestDatabaseManagementServiceBuilder) super.setMonitors( monitors );
     }
 
     @Override
@@ -149,21 +145,24 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         return (TestDatabaseManagementServiceBuilder) super.setUserLogProvider( logProvider );
     }
 
-    public TestDatabaseManagementServiceBuilder setInternalLogProvider( LogProvider logProvider )
+    public TestDatabaseManagementServiceBuilder setInternalLogProvider( LogProvider internalLogProvider )
     {
-        getCurrentState().setInternalLogProvider( logProvider );
+        this.internalLogProvider = internalLogProvider;
         return this;
     }
 
     public TestDatabaseManagementServiceBuilder setClock( SystemNanoClock clock )
     {
-        getCurrentState().setClock( clock );
+        this.clock = clock;
         return this;
     }
 
     private TestDatabaseManagementServiceBuilder addExtensions( Iterable<ExtensionFactory<?>> extensions )
     {
-        getCurrentState().addExtensions( extensions );
+        for ( ExtensionFactory<?> extension : extensions )
+        {
+            this.extensions.add( extension );
+        }
         return this;
     }
 
@@ -172,15 +171,16 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         return addExtensions( Collections.singletonList( extension ) );
     }
 
-    public TestDatabaseManagementServiceBuilder setExtensions( Iterable<ExtensionFactory<?>> extensions )
+    public TestDatabaseManagementServiceBuilder setExtensions( Iterable<ExtensionFactory<?>> newExtensions )
     {
-        getCurrentState().setExtensions( extensions );
+        extensions.clear();
+        addExtensions( newExtensions );
         return this;
     }
 
-    public TestDatabaseManagementServiceBuilder removeExtensions( Predicate<ExtensionFactory<?>> filter )
+    public TestDatabaseManagementServiceBuilder removeExtensions( Predicate<ExtensionFactory<?>> toRemove )
     {
-        getCurrentState().removeExtensions( filter );
+        extensions.removeIf( toRemove );
         return this;
     }
 
@@ -192,7 +192,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
 
     public DatabaseManagementServiceBuilder newImpermanentDatabaseBuilder( final File storeDir )
     {
-        creator = new EmbeddedDatabaseCreator( storeDir, state, true );
+        creator = new EmbeddedDatabaseCreator( storeDir, true );
         setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
         configure( this, storeDir );
         return this;
@@ -201,7 +201,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     @Override
     protected DatabaseManagementService newEmbeddedDatabase( File storeDir, Config config, ExternalDependencies dependencies, boolean impermanent )
     {
-        return new TestDatabaseManagementServiceFactory( getCurrentState(), impermanent ).newFacade( storeDir, augmentConfig( config ),
+        return new TestDatabaseManagementServiceFactory( impermanent ).newFacade( storeDir, augmentConfig( config ),
                 GraphDatabaseDependencies.newDependencies( dependencies ) );
     }
 

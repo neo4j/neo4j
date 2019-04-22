@@ -155,8 +155,9 @@ public class GlobalModule
         globalMonitors = externalDependencies.monitors() == null ? new Monitors() : externalDependencies.monitors();
         globalDependencies.satisfyDependency( globalMonitors );
 
-        jobScheduler = globalLife.add( globalDependencies.satisfyDependency( createJobScheduler() ) );
-        startDeferredExecutors( jobScheduler, externalDependencies.deferredExecutors() );
+        JobScheduler jobScheduler = externalDependencyResolver.tryResolveOrCreate( JobScheduler.class, this::createJobScheduler );
+        this.jobScheduler = globalLife.add( globalDependencies.satisfyDependency( jobScheduler ) );
+        startDeferredExecutors( this.jobScheduler, externalDependencies.deferredExecutors() );
 
         // If no logging was passed in from the outside then create logging and register
         // with this life
@@ -170,7 +171,7 @@ public class GlobalModule
         new JvmChecker( logService.getInternalLog( JvmChecker.class ),
                 new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
-        globalLife.add( new VmPauseMonitorComponent( globalConfig, logService.getInternalLog( VmPauseMonitorComponent.class ), jobScheduler ) );
+        globalLife.add( new VmPauseMonitorComponent( globalConfig, logService.getInternalLog( VmPauseMonitorComponent.class ), this.jobScheduler ) );
 
         globalAvailabilityGuard = new CompositeDatabaseAvailabilityGuard( globalClock, logService );
         globalDependencies.satisfyDependency( globalAvailabilityGuard );
@@ -180,7 +181,7 @@ public class GlobalModule
 
         String desiredImplementationName = globalConfig.get( GraphDatabaseSettings.tracer );
         tracers = globalDependencies.satisfyDependency( new Tracers( desiredImplementationName,
-                logService.getInternalLog( Tracers.class ), globalMonitors, jobScheduler, globalClock ) );
+                logService.getInternalLog( Tracers.class ), globalMonitors, this.jobScheduler, globalClock ) );
         globalDependencies.satisfyDependency( tracers.getPageCacheTracer() );
 
         versionContextSupplier =
@@ -190,7 +191,7 @@ public class GlobalModule
         collectionsFactorySupplier = createCollectionsFactorySupplier( globalConfig, globalLife );
 
         pageCache = externalDependencyResolver.tryResolveOrCreate( PageCache.class,
-                () -> createPageCache( fileSystem, globalConfig, logService, tracers, versionContextSupplier, jobScheduler ) );
+                () -> createPageCache( fileSystem, globalConfig, logService, tracers, versionContextSupplier, this.jobScheduler ) );
 
         globalLife.add( new PageCacheLifecycle( pageCache ) );
 
@@ -199,7 +200,7 @@ public class GlobalModule
 
         dbmsDiagnosticsManager.dumpSystemDiagnostics();
 
-        fileSystemWatcher = createFileSystemWatcherService( fileSystem, logService, jobScheduler, globalConfig );
+        fileSystemWatcher = createFileSystemWatcherService( fileSystem, logService, this.jobScheduler, globalConfig );
         globalLife.add( fileSystemWatcher );
         globalDependencies.satisfyDependency( fileSystemWatcher );
 
