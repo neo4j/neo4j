@@ -774,7 +774,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Boolean =
     try {
       transactionalContext.kernelTransaction.schemaWrite().relationshipPropertyExistenceConstraintCreate(
-        SchemaDescriptorFactory.forRelType(relTypeId, propertyKeyId))
+        SchemaDescriptorFactory.forRelTypeNoIndex(relTypeId, propertyKeyId))
       true
     } catch {
       case _: AlreadyConstrainedException => false

@@ -159,7 +159,7 @@ public class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTes
         int relTypeId = relationshipTypeId( relType1 );
         int propKeyId = propertyKeyId( propertyKey );
         Set<ConstraintDescriptor> constraints = asSet(
-                storageReader.constraintsGetForSchema( SchemaDescriptorFactory.forRelType( relTypeId, propKeyId ) ) );
+                storageReader.constraintsGetForSchema( SchemaDescriptorFactory.forRelTypeNoIndex( relTypeId, propKeyId ) ) );
 
         // Then
         Set<ConstraintDescriptor> expectedConstraints = Iterators.asSet(

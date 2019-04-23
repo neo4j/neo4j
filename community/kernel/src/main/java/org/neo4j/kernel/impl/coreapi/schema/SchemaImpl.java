@@ -750,7 +750,7 @@ public class SchemaImpl implements Schema
                     int typeId = tokenWrite.relationshipTypeGetOrCreateForName( type.name() );
                     int[] propertyKeyId = getOrCreatePropertyKeyIds( tokenWrite, propertyKey );
                     transaction.schemaWrite().relationshipPropertyExistenceConstraintCreate(
-                            SchemaDescriptorFactory.forRelType( typeId, propertyKeyId ) );
+                            SchemaDescriptorFactory.forRelTypeNoIndex( typeId, propertyKeyId ) );
                     return new RelationshipPropertyExistenceConstraintDefinition( this, type, propertyKey );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException |

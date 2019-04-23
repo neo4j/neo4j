@@ -52,7 +52,7 @@ public class SchemaDescriptorFactory
 
     public static RelationTypeSchemaDescriptor forRelType( int relTypeId, int... propertyIds )
     {
-        return forRelTypeOfType( IndexType.NOT_AN_INDEX, relTypeId, propertyIds );
+        return forRelTypeOfType( IndexType.ANY_GENERAL, relTypeId, propertyIds );
     }
 
     public static RelationTypeSchemaDescriptor forRelTypeNoIndex( int relTypeId, int... propertyIds )
