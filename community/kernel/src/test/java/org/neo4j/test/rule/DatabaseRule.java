@@ -519,7 +519,7 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public DatabaseEventListeners getEventHandlers()
+        public DatabaseEventListeners getDatabaseEventListeners()
         {
             return eventHandlers;
         }

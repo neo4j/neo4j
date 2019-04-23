@@ -135,7 +135,7 @@ public interface DatabaseCreationContext
 
     Iterable<QueryEngineProvider> getEngineProviders();
 
-    DatabaseEventListeners getEventHandlers();
+    DatabaseEventListeners getDatabaseEventListeners();
 
     DatabaseMigratorFactory getDatabaseMigratorFactory();
 

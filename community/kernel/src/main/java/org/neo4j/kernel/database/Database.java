@@ -255,7 +255,7 @@ public class Database extends LifecycleAdapter
         this.ioLimiter = context.getIoLimiter();
         this.clock = context.getClock();
         this.accessCapability = context.getAccessCapability();
-        this.eventHandlers = context.getEventHandlers();
+        this.eventHandlers = context.getDatabaseEventListeners();
 
         this.readOnly = context.getGlobalConfig().get( GraphDatabaseSettings.read_only );
         this.idController = context.getIdController();

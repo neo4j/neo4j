@@ -373,7 +373,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public DatabaseEventListeners getEventHandlers()
+    public DatabaseEventListeners getDatabaseEventListeners()
     {
         return eventHandlers;
     }
