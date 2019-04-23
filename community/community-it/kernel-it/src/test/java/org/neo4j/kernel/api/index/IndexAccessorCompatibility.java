@@ -54,7 +54,7 @@ import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 
 public abstract class IndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
-    private IndexAccessor accessor;
+    IndexAccessor accessor;
     // This map is for spatial values, so that the #query method can lookup the values for the results and filter properly
     private Map<Long,Value[]> committedValues = new HashMap<>();
 
