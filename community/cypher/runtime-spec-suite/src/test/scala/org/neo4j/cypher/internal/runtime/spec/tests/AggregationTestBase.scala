@@ -316,7 +316,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     })
   }
 
-  test("should not get a numerical overflow in avg(n.prop)") {
+  test("should avg(n.prop) without numerical overflow") {
     // given
     nodePropertyGraph(sizeHint, {
       case i: Int if i % 1000 == 0 => Map("num" -> (Double.MaxValue - 2.0))
