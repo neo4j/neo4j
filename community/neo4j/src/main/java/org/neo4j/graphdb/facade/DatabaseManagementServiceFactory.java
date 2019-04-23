@@ -39,7 +39,6 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.factory.module.DatabaseModule;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.spatial.Geometry;
@@ -81,8 +80,8 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPoint;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
 
 /**
- * This is the main factory for creating database instances. It delegates creation to three different modules
- * ({@link GlobalModule}, {@link AbstractEditionModule}, and {@link DatabaseModule}),
+ * This is the main factory for creating database instances. It delegates creation to two different modules
+ * ({@link GlobalModule} and {@link AbstractEditionModule}),
  * which create all the specific services needed to run a graph database.
  * <p>
  * To create test versions of databases, override an edition factory (e.g. {@link org.neo4j.kernel.impl.factory

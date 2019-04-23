@@ -32,9 +32,6 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
-import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.logging.Log;
-import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.token.TokenHolders;
 
 public interface EditionDatabaseComponents
@@ -54,8 +51,6 @@ public interface EditionDatabaseComponents
     CommitProcessFactory getCommitProcessFactory();
 
     TransactionHeaderInformationFactory getHeaderInformationFactory();
-
-    long getTransactionStartTimeout();
 
     Locks getLocks();
 

@@ -26,12 +26,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.facade.spi.ClassicCoreSPI;
-import org.neo4j.graphdb.factory.module.DatabaseModule;
 import org.neo4j.graphdb.factory.module.GlobalModule;
+import org.neo4j.graphdb.factory.module.ModularDatabaseCreationContext;
+import org.neo4j.graphdb.factory.module.ProcedureGDSFactory;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
+import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -94,10 +100,16 @@ public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends
         Config globalConfig = globalModule.getGlobalConfig();
         GraphDatabaseFacade facade =
                 globalConfig.get( default_database ).equals( databaseId.name() ) ? graphDatabaseFacade : new GraphDatabaseFacade();
-        DatabaseModule dataSource = new DatabaseModule( databaseId, globalModule, edition, facade );
-        ClassicCoreSPI spi = new ClassicCoreSPI( globalModule.getDatabaseInfo(), dataSource,
-                dataSource.coreAPIAvailabilityGuard, edition.getThreadToTransactionBridge() );
-        Database database = dataSource.database;
+
+        DatabaseCreationContext databaseCreationContext = newDatabaseCreationContext( databaseId, facade );
+        Database database = new Database( databaseCreationContext );
+
+        CoreAPIAvailabilityGuard coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( globalModule.getGlobalAvailabilityGuard(),
+                edition.getTransactionStartTimeout() );
+
+        registerGraphDatabaseServiceForProcedures( database, coreAPIAvailabilityGuard );
+
+        ClassicCoreSPI spi = new ClassicCoreSPI( globalModule.getDatabaseInfo(), database, coreAPIAvailabilityGuard, edition.getThreadToTransactionBridge() );
         facade.init( spi, edition.getThreadToTransactionBridge(), globalConfig, database.getTokenHolders() );
         return createDatabaseContext( database, facade );
     }
@@ -136,5 +148,20 @@ public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends
         log.info( "Stop '%s' database.", databaseId.name() );
         Database database = context.database();
         database.stop();
+    }
+
+    private DatabaseCreationContext newDatabaseCreationContext( DatabaseId databaseId, GraphDatabaseFacade facade )
+    {
+        EditionDatabaseComponents editionDatabaseComponents = edition.createDatabaseComponents( databaseId );
+        GlobalProcedures globalProcedures = edition.getGlobalProcedures();
+        return new ModularDatabaseCreationContext( databaseId, globalModule, editionDatabaseComponents, globalProcedures, facade );
+    }
+
+    private void registerGraphDatabaseServiceForProcedures( Database database, CoreAPIAvailabilityGuard availabilityGuard )
+    {
+        // TODO: this is incorrect, and we should remove procedure specific service and factory
+        //  as soon as we will split database and dbms operations into separate services
+        ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( globalModule, database, availabilityGuard, edition.getThreadToTransactionBridge() );
+        edition.getGlobalProcedures().registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
     }
 }

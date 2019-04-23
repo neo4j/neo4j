@@ -44,7 +44,6 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
     private final ConstraintSemantics constraintSemantics;
     private final CommitProcessFactory commitProcessFactory;
     private final TransactionHeaderInformationFactory headerInformationFactory;
-    private final long transactionStartTimeout;
     private final TokenHolders tokenHolders;
     private final Locks locks;
     private final DatabaseTransactionStats transactionMonitor;
@@ -53,7 +52,6 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
 
     public StandaloneDatabaseComponents( StandaloneEditionModule editionModule, DatabaseId databaseId )
     {
-        this.transactionStartTimeout = editionModule.getTransactionStartTimeout();
         this.headerInformationFactory = editionModule.getHeaderInformationFactory();
         this.commitProcessFactory = editionModule.getCommitProcessFactory();
         this.constraintSemantics = editionModule.getConstraintSemantics();
@@ -113,12 +111,6 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
     public TransactionHeaderInformationFactory getHeaderInformationFactory()
     {
         return headerInformationFactory;
-    }
-
-    @Override
-    public long getTransactionStartTimeout()
-    {
-        return transactionStartTimeout;
     }
 
     @Override

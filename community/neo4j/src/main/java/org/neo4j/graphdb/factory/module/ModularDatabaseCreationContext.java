@@ -109,7 +109,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final DatabaseMigratorFactory databaseMigratorFactory;
     private final StorageEngineFactory storageEngineFactory;
 
-    ModularDatabaseCreationContext( DatabaseId databaseId, GlobalModule globalModule, EditionDatabaseComponents perEditionComponents,
+    public ModularDatabaseCreationContext( DatabaseId databaseId, GlobalModule globalModule, EditionDatabaseComponents perEditionComponents,
             GlobalProcedures globalProcedures, GraphDatabaseFacade facade )
     {
         this.databaseId = databaseId;

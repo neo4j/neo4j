@@ -26,26 +26,24 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.procedure.Context;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.token.TokenHolders;
 
 public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDatabaseService,ProcedureException>
 {
     private final GlobalModule platform;
-    private final DatabaseModule dataSource;
+    private final Database database;
     private final CoreAPIAvailabilityGuard availability;
-    private final TokenHolders tokenHolders;
     private final ThreadToStatementContextBridge bridge;
 
-    ProcedureGDSFactory( GlobalModule platform, DatabaseModule databaseModule, CoreAPIAvailabilityGuard coreAPIAvailabilityGuard, TokenHolders tokenHolders,
+    public ProcedureGDSFactory( GlobalModule platform, Database database, CoreAPIAvailabilityGuard coreAPIAvailabilityGuard,
             ThreadToStatementContextBridge bridge )
     {
         this.platform = platform;
-        this.dataSource = databaseModule;
+        this.database = database;
         this.availability = coreAPIAvailabilityGuard;
-        this.tokenHolders = tokenHolders;
         this.bridge = bridge;
     }
 
@@ -63,9 +61,8 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
             securityContext = context.securityContext();
         }
         GraphDatabaseFacade facade = new GraphDatabaseFacade();
-        ProcedureGDBFacadeSPI procedureGDBFacadeSPI = new ProcedureGDBFacadeSPI( dataSource, dataSource.database.getDependencyResolver(),
-                availability, securityContext, bridge );
-        facade.init( procedureGDBFacadeSPI, bridge, platform.getGlobalConfig(), tokenHolders );
+        ProcedureGDBFacadeSPI procedureGDBFacadeSPI = new ProcedureGDBFacadeSPI( database, availability, securityContext, bridge );
+        facade.init( procedureGDBFacadeSPI, bridge, platform.getGlobalConfig(), database.getTokenHolders() );
         return facade;
     }
 }

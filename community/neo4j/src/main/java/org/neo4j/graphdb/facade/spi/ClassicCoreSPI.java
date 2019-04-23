@@ -22,13 +22,13 @@ package org.neo4j.graphdb.facade.spi;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.factory.module.DatabaseModule;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -47,15 +47,15 @@ import org.neo4j.values.virtual.MapValue;
 public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
 {
     private final DatabaseInfo databaseInfo;
-    private final DatabaseModule databaseModule;
+    private final Database database;
     private final CoreAPIAvailabilityGuard availability;
     private final ThreadToStatementContextBridge threadToTransactionBridge;
 
-    public ClassicCoreSPI( DatabaseInfo databaseInfo, DatabaseModule databaseModule, CoreAPIAvailabilityGuard availability,
+    public ClassicCoreSPI( DatabaseInfo databaseInfo, Database database, CoreAPIAvailabilityGuard availability,
             ThreadToStatementContextBridge threadToTransactionBridge )
     {
         this.databaseInfo = databaseInfo;
-        this.databaseModule = databaseModule;
+        this.database = database;
         this.availability = availability;
         this.threadToTransactionBridge = threadToTransactionBridge;
     }
@@ -63,7 +63,7 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     @Override
     public boolean databaseIsAvailable( long timeout )
     {
-        return databaseModule.database.getDatabaseAvailabilityGuard().isAvailable( timeout );
+        return database.getDatabaseAvailabilityGuard().isAvailable( timeout );
     }
 
     @Override
@@ -72,7 +72,7 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
         try
         {
             availability.assertDatabaseAvailable();
-            return databaseModule.database.getExecutionEngine().executeQuery( query, parameters, transactionalContext, false );
+            return database.getExecutionEngine().executeQuery( query, parameters, transactionalContext, false );
         }
         catch ( QueryExecutionKernelException e )
         {
@@ -83,31 +83,31 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     @Override
     public DependencyResolver resolver()
     {
-        return databaseModule.database.getDependencyResolver();
+        return database.getDependencyResolver();
     }
 
     @Override
     public <T> void registerTransactionEventHandler( TransactionEventHandler<T> handler )
     {
-        databaseModule.database.getTransactionEventHandlers().registerTransactionEventHandler( handler );
+        database.getTransactionEventHandlers().registerTransactionEventHandler( handler );
     }
 
     @Override
     public <T> void unregisterTransactionEventHandler( TransactionEventHandler<T> handler )
     {
-        databaseModule.database.getTransactionEventHandlers().unregisterTransactionEventHandler( handler );
+        database.getTransactionEventHandlers().unregisterTransactionEventHandler( handler );
     }
 
     @Override
     public StoreId storeId()
     {
-        return databaseModule.storeId.get();
+        return database.getStoreId();
     }
 
     @Override
     public DatabaseLayout databaseLayout()
     {
-        return databaseModule.database.getDatabaseLayout();
+        return database.getDatabaseLayout();
     }
 
     @Override
@@ -128,7 +128,7 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
         try
         {
             availability.assertDatabaseAvailable();
-            KernelTransaction kernelTx = databaseModule.kernelAPI.get().beginTransaction( type, loginContext, connectionInfo, timeout );
+            KernelTransaction kernelTx = database.getKernel().beginTransaction( type, loginContext, connectionInfo, timeout );
             kernelTx.registerCloseListener( txId -> threadToTransactionBridge.unbindTransactionFromCurrentThread() );
             threadToTransactionBridge.bindTransactionToCurrentThread( kernelTx );
             return kernelTx;
