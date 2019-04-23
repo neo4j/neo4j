@@ -43,8 +43,8 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
-import org.neo4j.internal.schema.DefaultRelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -159,7 +159,7 @@ class NeoStoreIndexStoreViewTest
     }
 
     @Test
-    void shouldScanExistingRelationshipsForARelationshiptype() throws Exception
+    void shouldScanExistingRelationshipsForARelationshipType() throws Exception
     {
         // given
         EntityUpdateCollectingVisitor visitor = new EntityUpdateCollectingVisitor();
@@ -266,12 +266,11 @@ class NeoStoreIndexStoreViewTest
     }
 
     @Test
-    void processAllNodeProperties() throws Exception
+    void processAllNodeProperties()
     {
         CopyUpdateVisitor propertyUpdateVisitor = new CopyUpdateVisitor();
-        @SuppressWarnings( "unchecked" )
-        StoreViewNodeStoreScan storeViewNodeStoreScan =
-                new StoreViewNodeStoreScan( new RecordStorageReader( neoStores ), locks,
+        StoreViewNodeStoreScan<RuntimeException> storeViewNodeStoreScan =
+                new StoreViewNodeStoreScan<>( new RecordStorageReader( neoStores ), locks,
                         null, propertyUpdateVisitor, new int[]{labelId},
                         id -> true );
 
@@ -300,13 +299,12 @@ class NeoStoreIndexStoreViewTest
     }
 
     @Test
-    void processAllRelationshipProperties() throws Exception
+    void processAllRelationshipProperties()
     {
         createAlistairAndStefanNodes();
         CopyUpdateVisitor propertyUpdateVisitor = new CopyUpdateVisitor();
-        @SuppressWarnings( "unchecked" )
-        RelationshipStoreScan relationshipStoreScan =
-                new RelationshipStoreScan( new RecordStorageReader( neoStores ), locks, propertyUpdateVisitor, new int[]{relTypeId},
+        RelationshipStoreScan<RuntimeException> relationshipStoreScan =
+                new RelationshipStoreScan<>( new RecordStorageReader( neoStores ), locks, propertyUpdateVisitor, new int[]{relTypeId},
                         id -> true );
 
         try ( StorageRelationshipScanCursor relationshipScanCursor = reader.allocateRelationshipScanCursor() )
@@ -320,11 +318,11 @@ class NeoStoreIndexStoreViewTest
         EntityUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
         assertNotNull( propertyUpdates, "Visitor should contain container with updates." );
 
-        DefaultRelationTypeSchemaDescriptor index1 = SchemaDescriptorFactory.forRelType( 0, 2 );
-        DefaultRelationTypeSchemaDescriptor index2 = SchemaDescriptorFactory.forRelType( 0, 3 );
-        DefaultRelationTypeSchemaDescriptor index3 = SchemaDescriptorFactory.forRelType( 0, 2, 3 );
-        DefaultRelationTypeSchemaDescriptor index4 = SchemaDescriptorFactory.forRelType( 1, 3 );
-        List<DefaultRelationTypeSchemaDescriptor> indexes = Arrays.asList( index1, index2, index3, index4 );
+        RelationTypeSchemaDescriptor index1 = SchemaDescriptorFactory.forRelType( 0, 2 );
+        RelationTypeSchemaDescriptor index2 = SchemaDescriptorFactory.forRelType( 0, 3 );
+        RelationTypeSchemaDescriptor index3 = SchemaDescriptorFactory.forRelType( 0, 2, 3 );
+        RelationTypeSchemaDescriptor index4 = SchemaDescriptorFactory.forRelType( 1, 3 );
+        List<RelationTypeSchemaDescriptor> indexes = Arrays.asList( index1, index2, index3, index4 );
 
         assertThat( Iterables.map( IndexEntryUpdate::indexKey, propertyUpdates.forIndexKeys( indexes ) ), containsInAnyOrder( index1, index2, index3 ) );
     }

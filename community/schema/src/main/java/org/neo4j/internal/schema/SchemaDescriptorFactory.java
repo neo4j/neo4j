@@ -50,17 +50,17 @@ public class SchemaDescriptorFactory
         return new DefaultLabelSchemaDescriptor( indexType, labelId, propertyIds );
     }
 
-    public static DefaultRelationTypeSchemaDescriptor forRelType( int relTypeId, int... propertyIds )
+    public static RelationTypeSchemaDescriptor forRelType( int relTypeId, int... propertyIds )
     {
         return forRelTypeOfType( IndexType.NOT_AN_INDEX, relTypeId, propertyIds );
     }
 
-    public static DefaultRelationTypeSchemaDescriptor forRelTypeNoIndex( int relTypeId, int... propertyIds )
+    public static RelationTypeSchemaDescriptor forRelTypeNoIndex( int relTypeId, int... propertyIds )
     {
         return forRelTypeOfType( IndexType.NOT_AN_INDEX, relTypeId, propertyIds );
     }
 
-    public static DefaultRelationTypeSchemaDescriptor forRelTypeOfType( IndexType indexType, int relTypeId, int... propertyIds )
+    public static RelationTypeSchemaDescriptor forRelTypeOfType( IndexType indexType, int relTypeId, int... propertyIds )
     {
         validateRelationshipTypeIds( relTypeId );
         validatePropertyIds( propertyIds );

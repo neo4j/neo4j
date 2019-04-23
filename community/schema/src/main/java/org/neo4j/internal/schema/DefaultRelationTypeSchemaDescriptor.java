@@ -29,7 +29,7 @@ import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.token.api.TokenIdPrettyPrinter;
 
-public class DefaultRelationTypeSchemaDescriptor implements RelationTypeSchemaDescriptor
+class DefaultRelationTypeSchemaDescriptor implements RelationTypeSchemaDescriptor
 {
     private final IndexType indexType;
     private final int relTypeId;

@@ -44,7 +44,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.DefaultRelationTypeSchemaDescriptor;
+import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -67,6 +67,7 @@ public class IndexingServiceIntegrationTest
     private static final String CLOTHES_LABEL = "clothes";
     private static final String WEATHER_LABEL = "weather";
     private static final String PROPERTY_NAME = "name";
+    private static final int NUMBER_OF_NODES = 100;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -91,7 +92,7 @@ public class IndexingServiceIntegrationTest
         managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fileSystem ).impermanent()
                 .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() ).build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
-        createData( database, 100 );
+        createData( database );
     }
 
     @After
@@ -131,7 +132,7 @@ public class IndexingServiceIntegrationTest
     @Test
     public void testManualRelationshipIndexPopulation() throws Exception
     {
-        DefaultRelationTypeSchemaDescriptor descriptor;
+        RelationTypeSchemaDescriptor descriptor;
         Kernel kernel = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( Kernel.class );
         try ( org.neo4j.internal.kernel.api.Transaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )
         {
@@ -233,9 +234,9 @@ public class IndexingServiceIntegrationTest
         return ((GraphDatabaseAPI)database).getDependencyResolver();
     }
 
-    private void createData( GraphDatabaseService database, int numberOfNodes )
+    private void createData( GraphDatabaseService database )
     {
-        for ( int i = 0; i < numberOfNodes; i++ )
+        for ( int i = 0; i < NUMBER_OF_NODES; i++ )
         {
             try ( Transaction transaction = database.beginTx() )
             {
@@ -251,7 +252,7 @@ public class IndexingServiceIntegrationTest
 
     private int getPropertyKeyId( String name )
     {
-        try ( Transaction tx = database.beginTx() )
+        try ( Transaction ignored = database.beginTx() )
         {
             KernelTransaction transaction = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency(
                     ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
@@ -261,7 +262,7 @@ public class IndexingServiceIntegrationTest
 
     private int getLabelId( String name )
     {
-        try ( Transaction tx = database.beginTx() )
+        try ( Transaction ignored = database.beginTx() )
         {
             KernelTransaction transaction = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency(
                     ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
