@@ -176,10 +176,10 @@ class RecoveryRequiredCheckerTest
 
             assertThat( recoveryChecker.isRecoveryRequiredAt( testDirectory.databaseLayout( of( config ) ) ), is( true ) );
 
-            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
+            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                         .setFileSystem( ephemeralFs )
-                        .newEmbeddedDatabaseBuilder( storeDir )
-                        .setConfig( config.getRaw() ).newDatabaseManagementService();
+                        .setConfigRaw( config.getRaw() )
+                    .build();
             managementService.shutdown();
 
             assertThat( recoveryChecker.isRecoveryRequiredAt( databaseLayout ), is( false ) );
@@ -215,10 +215,10 @@ class RecoveryRequiredCheckerTest
     {
         try ( EphemeralFileSystemAbstraction ephemeralFs = new EphemeralFileSystemAbstraction() )
         {
-            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
+            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( store )
                         .setFileSystem( ephemeralFs )
-                        .newEmbeddedDatabaseBuilder( store )
-                        .setConfig( config.getRaw() ).newDatabaseManagementService();
+                        .setConfigRaw( config.getRaw() )
+                    .build();
             final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
             try ( Transaction tx = db.beginTx() )
@@ -236,7 +236,9 @@ class RecoveryRequiredCheckerTest
     private static void startStopDatabase( FileSystemAbstraction fileSystem, File storeDir )
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder().setFileSystem( fileSystem ).newDatabaseManagementService( storeDir );
+                new TestDatabaseManagementServiceBuilder( storeDir )
+                        .setFileSystem( fileSystem )
+                        .build();
         managementService.shutdown();
     }
 }

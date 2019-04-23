@@ -94,8 +94,7 @@ public class IndexPopulationMissConcurrentUpdateIT
         @Override
         protected DatabaseManagementServiceBuilder newFactory()
         {
-            TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
-            return factory.addExtension( index );
+            return new TestDatabaseManagementServiceBuilder().impermanent().addExtension( index );
         }
     }.withSetting( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, Settings.FALSE )
      .withSetting( GraphDatabaseSettings.default_schema_provider, ControlledSchemaIndexProvider.INDEX_PROVIDER.name() );

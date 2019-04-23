@@ -118,7 +118,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         databaseDirectory = directory.storeDir();
         monitors.addMonitorListener( recoveryMonitor );
-        databaseFactory = new TestDatabaseManagementServiceBuilder()
+        databaseFactory = new TestDatabaseManagementServiceBuilder( databaseDirectory )
                 .setInternalLogProvider( logProvider )
                 .setMonitors( monitors )
                 .setFileSystem( fileSystem );
@@ -129,7 +129,7 @@ class RecoveryCorruptedTransactionLogIT
     @Test
     void evenTruncateNewerTransactionLogFile() throws IOException
     {
-        DatabaseManagementService managementService = databaseFactory.newDatabaseManagementService( databaseDirectory );
+        DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         TransactionIdStore transactionIdStore = getTransactionIdStore( database );
         long lastClosedTransactionBeforeStart = transactionIdStore.getLastClosedTransactionId();
@@ -151,7 +151,7 @@ class RecoveryCorruptedTransactionLogIT
     @Test
     void doNotTruncateNewerTransactionLogFileWhenFailOnError() throws IOException
     {
-        DatabaseManagementService managementService1 = databaseFactory.newDatabaseManagementService( databaseDirectory );
+        DatabaseManagementService managementService1 = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
         for ( int i = 0; i < 10; i++ )
         {
@@ -161,7 +161,7 @@ class RecoveryCorruptedTransactionLogIT
         removeLastCheckpointRecordFromLastLogFile();
         addRandomBytesToLastLogFile( this::randomPositiveBytes );
 
-        DatabaseManagementService managementService = databaseFactory.newDatabaseManagementService( databaseDirectory );
+        DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -179,7 +179,7 @@ class RecoveryCorruptedTransactionLogIT
     @Test
     void truncateNewerTransactionLogFileWhenForced() throws IOException
     {
-        DatabaseManagementService managementService = databaseFactory.newDatabaseManagementService( databaseDirectory );
+        DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         for ( int i = 0; i < 10; i++ )
         {
@@ -224,7 +224,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         addCorruptedCommandsToLastLogFile();
 
-        DatabaseManagementService managementService = databaseFactory.newDatabaseManagementService( databaseDirectory );
+        DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -242,7 +242,7 @@ class RecoveryCorruptedTransactionLogIT
     @Test
     void recoverNotAFirstCorruptedTransactionSingleFileNoCheckpoint() throws IOException
     {
-        DatabaseManagementService managementService = databaseFactory.newDatabaseManagementService( databaseDirectory );
+        DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         TransactionIdStore transactionIdStore = getTransactionIdStore( database );
         long lastClosedTransactionBeforeStart = transactionIdStore.getLastClosedTransactionId();
@@ -283,7 +283,7 @@ class RecoveryCorruptedTransactionLogIT
     @Test
     void recoverNotAFirstCorruptedTransactionMultipleFilesNoCheckpoints() throws IOException
     {
-        DatabaseManagementService managementService = databaseFactory.newDatabaseManagementService( databaseDirectory );
+        DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         TransactionIdStore transactionIdStore = getTransactionIdStore( database );
         long lastClosedTransactionBeforeStart = transactionIdStore.getLastClosedTransactionId();
@@ -326,7 +326,7 @@ class RecoveryCorruptedTransactionLogIT
     @Test
     void recoverNotAFirstCorruptedTransactionMultipleFilesMultipleCheckpoints() throws IOException
     {
-        DatabaseManagementService managementService = databaseFactory.newDatabaseManagementService( databaseDirectory );
+        DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         long transactionsToRecover = 7;
         generateTransactionsAndRotateWithCheckpoint( database, 3 );
@@ -364,7 +364,7 @@ class RecoveryCorruptedTransactionLogIT
     @Test
     void recoverFirstCorruptedTransactionAfterCheckpointInLastLogFile() throws IOException
     {
-        DatabaseManagementService managementService = databaseFactory.newDatabaseManagementService( databaseDirectory );
+        DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         generateTransactionsAndRotate( database, 5 );
         managementService.shutdown();
@@ -397,7 +397,7 @@ class RecoveryCorruptedTransactionLogIT
     @Test
     void repetitiveRecoveryOfCorruptedLogs() throws IOException
     {
-        DatabaseManagementService managementService1 = databaseFactory.newDatabaseManagementService( databaseDirectory );
+        DatabaseManagementService managementService1 = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
         generateTransactionsAndRotate( database, 4, false );
         managementService1.shutdown();
@@ -407,7 +407,7 @@ class RecoveryCorruptedTransactionLogIT
         while ( expectedRecoveredTransactions > 0 )
         {
             truncateBytesFromLastLogFile( 1 + random.nextInt( 10 ) );
-            DatabaseManagementService managementService = databaseFactory.newDatabaseManagementService( databaseDirectory );
+            DatabaseManagementService managementService = databaseFactory.build();
             managementService.shutdown();
             int numberOfRecoveredTransactions = recoveryMonitor.getNumberOfRecoveredTransactions();
             assertEquals( expectedRecoveredTransactions, numberOfRecoveredTransactions );
@@ -419,7 +419,7 @@ class RecoveryCorruptedTransactionLogIT
     @Test
     void repetitiveRecoveryIfCorruptedLogsWithCheckpoints() throws IOException
     {
-        DatabaseManagementService managementService1 = databaseFactory.newDatabaseManagementService( databaseDirectory );
+        DatabaseManagementService managementService1 = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
         generateTransactionsAndRotate( database, 4, true );
         managementService1.shutdown();
@@ -428,7 +428,7 @@ class RecoveryCorruptedTransactionLogIT
         {
             int bytesToTrim = 1 + CHECKPOINT_COMMAND_SIZE + random.nextInt( 100 );
             truncateBytesFromLastLogFile( bytesToTrim );
-            DatabaseManagementService managementService = databaseFactory.newDatabaseManagementService( databaseDirectory );
+            DatabaseManagementService managementService = databaseFactory.build();
             managementService.shutdown();
             int numberOfRecoveredTransactions = recoveryMonitor.getNumberOfRecoveredTransactions();
             assertThat( numberOfRecoveredTransactions, Matchers.greaterThanOrEqualTo( 0 ) );
@@ -441,7 +441,7 @@ class RecoveryCorruptedTransactionLogIT
     @Test
     void repetitiveRecoveryIfCorruptedLogsSmallTailsWithCheckpoints() throws IOException
     {
-        DatabaseManagementService managementService1 = databaseFactory.newDatabaseManagementService( databaseDirectory );
+        DatabaseManagementService managementService1 = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
         generateTransactionsAndRotate( database, 4, true );
         managementService1.shutdown();
@@ -452,7 +452,7 @@ class RecoveryCorruptedTransactionLogIT
         {
             byte bytesToTrim = (byte) (trimSizes[trimSize++ % trimSizes.length] + CHECKPOINT_COMMAND_SIZE);
             truncateBytesFromLastLogFile( bytesToTrim );
-            DatabaseManagementService managementService = databaseFactory.newDatabaseManagementService( databaseDirectory );
+            DatabaseManagementService managementService = databaseFactory.build();
             managementService.shutdown();
             int numberOfRecoveredTransactions = recoveryMonitor.getNumberOfRecoveredTransactions();
             assertThat( numberOfRecoveredTransactions, Matchers.greaterThanOrEqualTo( 0 ) );
@@ -626,14 +626,14 @@ class RecoveryCorruptedTransactionLogIT
 
     private void startStopDbNoRecoveryOfCorruptedLogs()
     {
-        DatabaseManagementService managementService = databaseFactory.newEmbeddedDatabaseBuilder( databaseDirectory )
-                .setConfig( GraphDatabaseSettings.fail_on_corrupted_log_files, Settings.FALSE ).newDatabaseManagementService();
+        DatabaseManagementService managementService = databaseFactory
+                .setConfig( GraphDatabaseSettings.fail_on_corrupted_log_files, Settings.FALSE ).build();
         managementService.shutdown();
     }
 
     private void createEmptyDatabase()
     {
-        DatabaseManagementService managementService = databaseFactory.newDatabaseManagementService( databaseDirectory );
+        DatabaseManagementService managementService = databaseFactory.build();
         managementService.shutdown();
     }
 

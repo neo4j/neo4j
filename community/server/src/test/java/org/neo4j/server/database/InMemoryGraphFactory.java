@@ -37,11 +37,13 @@ public class InMemoryGraphFactory implements GraphFactory
     public DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
     {
         File storeDir = new File( config.get( GraphDatabaseSettings.databases_root_path ), DEFAULT_DATABASE_NAME );
-        return new TestDatabaseManagementServiceBuilder().setExtensions( dependencies.extensions() )
+        return new TestDatabaseManagementServiceBuilder( storeDir )
+                .setExtensions( dependencies.extensions() )
                 .setMonitors( dependencies.monitors() )
-                .newImpermanentDatabaseBuilder( storeDir )
+                .impermanent()
                 .setConfig( new BoltConnector( "bolt" ).listen_address, "localhost:0" )
                 .setConfig( new BoltConnector( "bolt" ).enabled, Settings.TRUE )
-                .setConfig( config ).newDatabaseManagementService();
+                .setConfigRaw( config.getRaw() )
+                .build();
     }
 }

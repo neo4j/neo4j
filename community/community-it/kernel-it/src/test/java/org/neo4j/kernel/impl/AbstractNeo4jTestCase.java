@@ -117,8 +117,8 @@ public abstract class AbstractNeo4jTestCase
         }
 
         threadLocalService.set(
-                requiresPersistentGraphDatabase ? new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( getStorePath( "neo-test" ) )
-                                                : new TestDatabaseManagementServiceBuilder().newImpermanentService() );
+                requiresPersistentGraphDatabase ? new TestDatabaseManagementServiceBuilder( getStorePath( "neo-test" ) ).build()
+                                                : new TestDatabaseManagementServiceBuilder().impermanent().build() );
         threadLocalGraphDb.set( (GraphDatabaseAPI) threadLocalService.get().database( DEFAULT_DATABASE_NAME ) );
     }
 

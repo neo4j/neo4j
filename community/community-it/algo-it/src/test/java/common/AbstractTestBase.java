@@ -45,7 +45,7 @@ public abstract class AbstractTestBase
     @BeforeClass
     public static void beforeSuite()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         graphdb = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

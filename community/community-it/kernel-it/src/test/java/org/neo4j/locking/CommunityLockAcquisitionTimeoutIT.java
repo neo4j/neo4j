@@ -78,11 +78,11 @@ public class CommunityLockAcquisitionTimeoutIT
     @BeforeClass
     public static void setUp()
     {
-        managementService = new TestDatabaseManagementServiceBuilder()
+        managementService = new TestDatabaseManagementServiceBuilder( directory.storeDir() )
                 .setClock( fakeClock )
-                .newEmbeddedDatabaseBuilder( directory.storeDir() )
                 .setConfig( GraphDatabaseSettings.lock_acquisition_timeout, "2s" )
-                .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
+                .setConfig( "dbms.backup.enabled", "false" )
+                .build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
 
         createTestNode( marker );

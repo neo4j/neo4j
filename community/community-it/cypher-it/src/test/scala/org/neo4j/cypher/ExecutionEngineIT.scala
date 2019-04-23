@@ -42,8 +42,8 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("by default when using cypher 3.5 some queries should default to COST") {
     //given
-    managementService = new TestDatabaseManagementServiceBuilder().newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.5").newDatabaseManagementService()
+    managementService = new TestDatabaseManagementServiceBuilder().impermanent()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.5").build()
     db = managementService.database(DEFAULT_DATABASE_NAME)
     val service = new GraphDatabaseCypherService(db)
 
@@ -61,8 +61,8 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
   test("by default when using cypher 4.0 some queries should default to COST") {
     //given
     val managementService = new TestDatabaseManagementServiceBuilder()
-      .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "4.0").newDatabaseManagementService()
+      .impermanent()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "4.0").build()
     db = managementService.database(DEFAULT_DATABASE_NAME)
     val service = new GraphDatabaseCypherService(db)
 
@@ -80,9 +80,9 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
   test("should be able to force COST as default when using cypher 4.0") {
     //given
     val managementService = new TestDatabaseManagementServiceBuilder()
-      .newImpermanentDatabaseBuilder()
+      .impermanent()
       .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "4.0").newDatabaseManagementService
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "4.0").build
     db = managementService.database(DEFAULT_DATABASE_NAME)
     val service = new GraphDatabaseCypherService(db)
 
@@ -97,8 +97,8 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
   test("should work if query cache size is set to zero") {
     //given
     val managementService = new TestDatabaseManagementServiceBuilder()
-      .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.query_cache_size, "0").newDatabaseManagementService()
+      .impermanent()
+      .setConfig(GraphDatabaseSettings.query_cache_size, "0").build()
     db = managementService.database(DEFAULT_DATABASE_NAME)
 
     // when
@@ -109,7 +109,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("should not refer to stale plan context in the cached execution plans") {
     // given
-    db = new TestDatabaseManagementServiceBuilder().newImpermanentService().database(DEFAULT_DATABASE_NAME)
+    db = new TestDatabaseManagementServiceBuilder().impermanent().build().database(DEFAULT_DATABASE_NAME)
 
     // when
     db.execute("EXPLAIN MERGE (a:A) ON MATCH SET a.prop = 21  RETURN *").close()
@@ -118,7 +118,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("should crash of erroneous parameters values if they are used") {
     // given
-    db = new TestDatabaseManagementServiceBuilder().newImpermanentService().database(DEFAULT_DATABASE_NAME)
+    db = new TestDatabaseManagementServiceBuilder().impermanent().build().database(DEFAULT_DATABASE_NAME)
 
     // when
     val params = new java.util.HashMap[String, AnyRef]()
@@ -134,7 +134,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("should ignore erroneous parameters values if they are not used") {
     // given
-    db = new TestDatabaseManagementServiceBuilder().newImpermanentService().database(DEFAULT_DATABASE_NAME)
+    db = new TestDatabaseManagementServiceBuilder().impermanent().build().database(DEFAULT_DATABASE_NAME)
 
     // when
     val params = new java.util.HashMap[String, AnyRef]()

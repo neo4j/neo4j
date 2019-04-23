@@ -35,10 +35,12 @@ class DiagnosticsLoggingTest
     void shouldSeeExpectedDiagnostics()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().setInternalLogProvider( logProvider )
-                .newImpermanentDatabaseBuilder()
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
+                .setInternalLogProvider( logProvider )
+                .impermanent()
                 .setConfig( GraphDatabaseSettings.dump_configuration, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.pagecache_memory, "4M" ).newDatabaseManagementService();
+                .setConfig( GraphDatabaseSettings.pagecache_memory, "4M" )
+                .build();
         try
         {
             // THEN we should have logged

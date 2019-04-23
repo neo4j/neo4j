@@ -42,7 +42,7 @@ public class FirstStartupIT
     {
         // When
         File storeDir = testDir.absolutePath();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( storeDir );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         // Then

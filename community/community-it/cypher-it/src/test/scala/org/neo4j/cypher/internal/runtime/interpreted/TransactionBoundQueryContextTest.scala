@@ -69,7 +69,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   override def beforeEach() {
     super.beforeEach()
-    managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService()
+    managementService = new TestDatabaseManagementServiceBuilder().impermanent().build()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new javacompat.GraphDatabaseCypherService(graphOps)
     valueMapper = new DefaultValueMapper(mock[GraphDatabaseFacade])
@@ -298,7 +298,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   private def startGraph(config:(Setting[_], String)) = {
     val configs = Map[Setting[_], String](config)
-    managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService(configs.asJava)
+    managementService = new TestDatabaseManagementServiceBuilder().impermanent().setConfig(configs.asJava).build()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
   }

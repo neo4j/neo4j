@@ -49,10 +49,9 @@ public class ReadTestSupport implements KernelAPIReadTestSupport
     @Override
     public void setup( File storeDir, Consumer<GraphDatabaseService> create )
     {
-        DatabaseManagementServiceBuilder databaseManagementServiceBuilder =
-                new TestDatabaseManagementServiceBuilder().newImpermanentDatabaseBuilder( storeDir );
+        DatabaseManagementServiceBuilder databaseManagementServiceBuilder = new TestDatabaseManagementServiceBuilder( storeDir ).impermanent();
         settings.forEach( databaseManagementServiceBuilder::setConfig );
-        managementService = databaseManagementServiceBuilder.newDatabaseManagementService();
+        managementService = databaseManagementServiceBuilder.build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
         create.accept( db );
     }

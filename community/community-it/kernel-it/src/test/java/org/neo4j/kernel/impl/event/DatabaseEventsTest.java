@@ -39,7 +39,7 @@ class DatabaseEventsTest
     @BeforeEach
     void setUp()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
     }
 
     @AfterEach

@@ -84,9 +84,10 @@ class PartialTransactionFailureIT
 
         File storeDir = testDirectory.storeDir();
         final Map<String,String> params = stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
-        managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( new AdversarialFileSystemAbstraction( adversary ) )
-                .newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( params ).newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder( storeDir )
+                .setFileSystem( new AdversarialFileSystemAbstraction( adversary ) )
+                .setConfigRaw( params )
+                .build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         Node a;
         Node b;
@@ -118,8 +119,7 @@ class PartialTransactionFailureIT
         managementService.shutdown();
 
         // We should observe the store in a consistent state
-        managementService = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( params ).newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder( storeDir ).setConfigRaw( params ).build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = database.beginTx() )
         {

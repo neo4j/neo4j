@@ -64,7 +64,6 @@ public class UniqueIndexRecoveryTest
     private static final String PROPERTY_VALUE = "value";
     private static final Label LABEL = label( "label" );
 
-    private final TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
     private GraphDatabaseAPI db;
     private DatabaseManagementService managementService;
 
@@ -142,8 +141,9 @@ public class UniqueIndexRecoveryTest
 
     private GraphDatabaseService newDb()
     {
-        managementService = factory.newEmbeddedDatabaseBuilder( storeDir.absolutePath() )
-                .setConfig( default_schema_provider, schemaIndex.providerName() ).newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder( storeDir.absolutePath() )
+                .setConfig( default_schema_provider, schemaIndex.providerName() )
+                .build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 

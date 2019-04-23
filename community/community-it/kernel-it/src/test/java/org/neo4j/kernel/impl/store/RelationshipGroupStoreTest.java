@@ -134,8 +134,8 @@ class RelationshipGroupStoreTest
 
     private void newDb( int denseNodeThreshold )
     {
-        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentDatabaseBuilder()
-                .setConfig( dense_node_threshold, "" + denseNodeThreshold ).newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent()
+                .setConfig( dense_node_threshold, "" + denseNodeThreshold ).build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         fs = db.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
     }

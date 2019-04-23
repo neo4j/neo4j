@@ -177,8 +177,8 @@ public class IndexRestartIT
             managementService.shutdown();
         }
 
-        managementService = factory.newImpermanentDatabaseBuilder()
-                    .setConfig( default_schema_provider, provider.getProviderDescriptor().name() ).newDatabaseManagementService();
+        managementService = factory.impermanent()
+                    .setConfig( default_schema_provider, provider.getProviderDescriptor().name() ).build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

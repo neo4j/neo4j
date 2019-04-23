@@ -179,9 +179,9 @@ class TestLogPruning
         fs = new EphemeralFileSystemAbstraction();
         TestDatabaseManagementServiceBuilder gdf = new TestDatabaseManagementServiceBuilder();
         gdf.setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) );
-        DatabaseManagementServiceBuilder builder = gdf.newImpermanentDatabaseBuilder();
+        DatabaseManagementServiceBuilder builder = gdf.impermanent();
         builder.setConfig( keep_logical_logs, logPruning );
-        managementService = builder.newDatabaseManagementService();
+        managementService = builder.build();
         this.db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         files = db.getDependencyResolver().resolveDependency( LogFiles.class );
         return db;

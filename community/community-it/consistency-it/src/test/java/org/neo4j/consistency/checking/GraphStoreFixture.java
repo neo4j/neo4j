@@ -629,9 +629,9 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
         Applier()
         {
-            managementService = new TestDatabaseManagementServiceBuilder()
-                        .newEmbeddedDatabaseBuilder( directory.storeDir() )
-                        .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
+            managementService = new TestDatabaseManagementServiceBuilder( directory.storeDir() )
+                    .setConfig( "dbms.backup.enabled", "false" )
+                    .build();
             database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
             DependencyResolver dependencyResolver = database.getDependencyResolver();
 
@@ -679,14 +679,14 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
     private void generateInitialData()
     {
-        DatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( directory.storeDir() );
+        DatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( directory.storeDir() );
         DatabaseManagementService managementService = builder
                 .setConfig( GraphDatabaseSettings.record_format, formatName )
                 // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
                 // tests and records around that. Those tests could change, but the simpler option is to just
                 // keep the block size to 60 and let them be.
                 .setConfig( GraphDatabaseSettings.label_block_size, "60" )
-                .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
+                .setConfig( "dbms.backup.enabled", "false" ).build();
         // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
         // tests and records around that. Those tests could change, but the simpler option is to just
         // keep the block size to 60 and let them be.

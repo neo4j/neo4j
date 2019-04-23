@@ -395,10 +395,10 @@ class DumpCommandIT
     private static void putStoreInDirectory( Config config, Path databaseDirectory )
     {
         String databaseName = databaseDirectory.toFile().getName();
-        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder()
-                .newEmbeddedDatabaseBuilder( databaseDirectory.getParent().toFile() )
-                .setConfig( config.getRaw() )
-                .setConfig( default_database, databaseName ).newDatabaseManagementService();
+        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder( databaseDirectory.getParent().toFile() )
+                .setConfigRaw( config.getRaw() )
+                .setConfig( default_database, databaseName )
+                .build();
         managementService.shutdown();
     }
 

@@ -49,7 +49,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
   }
 
   override protected def initTest(): Unit = {
-    managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService()
+    managementService = new TestDatabaseManagementServiceBuilder().impermanent().build()
     database = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(database)
   }

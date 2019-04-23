@@ -92,9 +92,10 @@ class KernelDiagnosticsIT
 
     private static void createIndexInIsolatedDbInstance( File storeDir, GraphDatabaseSettings.SchemaIndex index )
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
-                .newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( GraphDatabaseSettings.default_schema_provider, index.providerName() ).newDatabaseManagementService();
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder( storeDir )
+                        .setConfig( GraphDatabaseSettings.default_schema_provider, index.providerName() )
+                        .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

@@ -46,7 +46,7 @@ class DescriptionTest
     @BeforeAll
     static void startDb()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentDatabaseBuilder().newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         graphdb = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

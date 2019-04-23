@@ -208,10 +208,8 @@ public class LabelsAcceptanceTest
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependencies( createIdContextFactory( fileSystem ) );
 
-            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
-                    .setFileSystem( fileSystem )
-                    .setExternalDependencies( dependencies )
-                    .newImpermanentService();
+            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fileSystem ).setExternalDependencies(
+                    dependencies ).impermanent().build();
 
             GraphDatabaseService graphDatabase = managementService.database( DEFAULT_DATABASE_NAME );
 
@@ -227,31 +225,6 @@ public class LabelsAcceptanceTest
 
             managementService.shutdown();
         }
-    }
-
-    private IdContextFactory createIdContextFactory( FileSystemAbstraction fileSystem )
-    {
-        return IdContextFactoryBuilder.of( new CommunityIdTypeConfigurationProvider(), JobSchedulerFactory.createScheduler() ).withIdGenerationFactoryProvider(
-                any -> new DefaultIdGeneratorFactory( fileSystem )
-                {
-                    @Override
-                    public IdGenerator open( File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
-                    {
-                        IdGenerator idGenerator = super.open( fileName, grabSize, idType, highId, maxId );
-                        if ( idType != IdType.LABEL_TOKEN )
-                        {
-                            return idGenerator;
-                        }
-                        return new IdGenerator.Delegate( idGenerator )
-                        {
-                            @Override
-                            public long nextId()
-                            {
-                                throw new UnderlyingStorageException( "Id capacity exceeded" );
-                            }
-                        };
-                    }
-                } ).build();
     }
 
     @Test
@@ -735,5 +708,30 @@ public class LabelsAcceptanceTest
             tx.success();
             return node;
         }
+    }
+
+    private IdContextFactory createIdContextFactory( FileSystemAbstraction fileSystem )
+    {
+        return IdContextFactoryBuilder.of( new CommunityIdTypeConfigurationProvider(), JobSchedulerFactory.createScheduler() ).withIdGenerationFactoryProvider(
+                any -> new DefaultIdGeneratorFactory( fileSystem )
+                {
+                    @Override
+                    public IdGenerator open( File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
+                    {
+                        IdGenerator idGenerator = super.open( fileName, grabSize, idType, highId, maxId );
+                        if ( idType != IdType.LABEL_TOKEN )
+                        {
+                            return idGenerator;
+                        }
+                        return new IdGenerator.Delegate( idGenerator )
+                        {
+                            @Override
+                            public long nextId()
+                            {
+                                throw new UnderlyingStorageException( "Id capacity exceeded" );
+                            }
+                        };
+                    }
+                } ).build();
     }
 }

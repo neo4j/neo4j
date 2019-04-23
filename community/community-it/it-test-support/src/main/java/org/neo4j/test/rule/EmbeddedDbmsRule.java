@@ -35,7 +35,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
  */
 public class EmbeddedDbmsRule extends DbmsRule
 {
-    private final TestDirectory testDirectory;
+    protected final TestDirectory testDirectory;
 
     public EmbeddedDbmsRule()
     {
@@ -62,13 +62,7 @@ public class EmbeddedDbmsRule extends DbmsRule
     @Override
     protected DatabaseManagementServiceBuilder newFactory()
     {
-        return new TestDatabaseManagementServiceBuilder();
-    }
-
-    @Override
-    protected DatabaseManagementServiceBuilder newBuilder( DatabaseManagementServiceBuilder factory )
-    {
-        return factory.newEmbeddedDatabaseBuilder( testDirectory.storeDir() );
+        return new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() );
     }
 
     @Override

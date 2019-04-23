@@ -88,10 +88,8 @@ public class IndexingServiceIntegrationTest
     public void setUp()
     {
         EphemeralFileSystemAbstraction fileSystem = fileSystemRule.get();
-        managementService = new TestDatabaseManagementServiceBuilder()
-                .setFileSystem( fileSystem )
-                .newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() ).newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fileSystem ).impermanent()
+                .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() ).build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
         createData( database, 100 );
     }

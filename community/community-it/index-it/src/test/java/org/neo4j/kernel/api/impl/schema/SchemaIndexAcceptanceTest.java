@@ -178,8 +178,8 @@ public class SchemaIndexAcceptanceTest
 
     private GraphDatabaseService newDb()
     {
-        managementService = new TestDatabaseManagementServiceBuilder()
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fsRule.get() ) ).newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().setFileSystem(
+                new UncloseableDelegatingFileSystemAbstraction( fsRule.get() ) ).impermanent().build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 

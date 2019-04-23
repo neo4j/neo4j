@@ -47,7 +47,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.kernel.database.Database;
@@ -79,8 +78,7 @@ class RecoveryCleanupIT
     private TestDirectory testDirectory;
 
     private GraphDatabaseService db;
-    private File storeDir;
-    private final TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
+    private TestDatabaseManagementServiceBuilder factory;
     private final ExecutorService executor = Executors.newFixedThreadPool( 2 );
     private final Label label = Label.label( "label" );
     private final String propKey = "propKey";
@@ -90,8 +88,8 @@ class RecoveryCleanupIT
     @BeforeEach
     void setup()
     {
-        storeDir = testDirectory.storeDir();
         testSpecificConfig.clear();
+        factory = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() );
     }
 
     @AfterEach
@@ -293,9 +291,8 @@ class RecoveryCleanupIT
 
     private GraphDatabaseService startDatabase()
     {
-        DatabaseManagementServiceBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
-        testSpecificConfig.forEach( builder::setConfig );
-        managementService = builder.newDatabaseManagementService();
+        testSpecificConfig.forEach( factory::setConfig );
+        managementService = factory.build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 

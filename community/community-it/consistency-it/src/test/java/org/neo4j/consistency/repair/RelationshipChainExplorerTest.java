@@ -129,10 +129,9 @@ public class RelationshipChainExplorerTest
     private StoreAccess createStoreWithOneHighDegreeNodeAndSeveralDegreeTwoNodes( int nDegreeTwoNodes )
     {
         File storeDirectory = testDirectory.storeDir();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
-                .newEmbeddedDatabaseBuilder( storeDirectory )
-                .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
-                .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder( storeDirectory ).setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
+                .setConfig( "dbms.backup.enabled", "false" ).build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
 
         try ( Transaction transaction = database.beginTx() )

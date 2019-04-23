@@ -311,9 +311,8 @@ class MemoryRecommendationsCommandTest
         // Create one index for every provider that we have
         for ( SchemaIndex schemaIndex : SchemaIndex.values() )
         {
-            DatabaseManagementService managementService =
-                    new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( databaseLayout.databaseDirectory() ).setConfig(
-                            default_schema_provider, schemaIndex.providerName() ).newDatabaseManagementService();
+            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout.databaseDirectory() ).setConfig(
+                            default_schema_provider, schemaIndex.providerName() ).build();
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             String key = "key-" + schemaIndex.name();
             try

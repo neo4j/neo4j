@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
-import javax.annotation.Nonnull;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
@@ -57,47 +56,33 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * Creates a {@link DatabaseManagementService} with Community Edition features.
- * <p>
- * Use {@link #newDatabaseManagementService(File)} or
- * {@link #newEmbeddedDatabaseBuilder(File)} to create a database instance.
- * <p>
  */
 public class DatabaseManagementServiceBuilder
 {
-    protected final List<Class<?>> settingsClasses = new ArrayList<>();
     protected final List<ExtensionFactory<?>> extensions = new ArrayList<>();
     protected Monitors monitors;
     protected LogProvider userLogProvider;
     protected DependencyResolver dependencies = new Dependencies();
     protected final Map<String,URLAccessRule> urlAccessRules = new HashMap<>();
-    protected EmbeddedDatabaseCreator creator;
+    protected File databaseRootDir;
     protected Map<String,String> config = new HashMap<>();
 
-    public DatabaseManagementServiceBuilder()
+    public DatabaseManagementServiceBuilder( File databaseRootDirectory )
     {
-        settingsClasses.add( GraphDatabaseSettings.class );
+        this.databaseRootDir = databaseRootDirectory;
         Services.loadAll( ExtensionFactory.class ).forEach( extensions::add );
     }
 
-    public DatabaseManagementService newDatabaseManagementService( File storeDir )
+    public DatabaseManagementService build()
     {
-        return newEmbeddedDatabaseBuilder( storeDir ).newDatabaseManagementService();
+        return newDatabaseManagementService( databaseRootDir, Config.defaults( config ), databaseDependencies() );
     }
 
-    /**
-     * @param storeDir desired embedded database store dir
-     */
-    public DatabaseManagementServiceBuilder newEmbeddedDatabaseBuilder( File storeDir )
-    {
-        creator = new EmbeddedDatabaseCreator( storeDir );
-        configure( this );
-        return this;
-    }
-
-    protected DatabaseManagementService newEmbeddedDatabase( File storeDir, Config config, ExternalDependencies dependencies, boolean impermanent )
+    protected DatabaseManagementService newDatabaseManagementService( File storeDir, Config config, ExternalDependencies dependencies )
     {
         config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
-        return getGraphDatabaseFacadeFactory().newFacade( storeDir, augmentConfig( config ), dependencies );
+        return new DatabaseManagementServiceFactory( getDatabaseInfo(), getEditionFactory() )
+                .newFacade( storeDir, augmentConfig( config ), dependencies );
     }
 
     protected DatabaseInfo getDatabaseInfo()
@@ -110,9 +95,14 @@ public class DatabaseManagementServiceBuilder
         return CommunityEditionModule::new;
     }
 
-    protected DatabaseManagementServiceFactory getGraphDatabaseFacadeFactory()
+    /**
+     * Override to augment config values
+     * @param config
+     * @return
+     */
+    protected Config augmentConfig( Config config )
     {
-        return new DatabaseManagementServiceFactory( getDatabaseInfo(), getEditionFactory()  );
+        return config;
     }
 
     public DatabaseManagementServiceBuilder addURLAccessRule( String protocol, URLAccessRule rule )
@@ -144,37 +134,16 @@ public class DatabaseManagementServiceBuilder
         return Edition.COMMUNITY.toString();
     }
 
-    protected ExternalDependencies databaseDependencies()
+    private ExternalDependencies databaseDependencies()
     {
         return newDependencies().
                 monitors( monitors ).
                 userLogProvider( userLogProvider ).
                 dependencies( dependencies ).
-                settingsClasses( settingsClasses ).
                 urlAccessRules( urlAccessRules ).
                 extensions( extensions );
     }
 
-    /**
-     * Override to change default values
-     * @param builder
-     */
-    protected void configure( DatabaseManagementServiceBuilder builder )
-    {
-        // Let the default configuration pass through.
-    }
-
-    /**
-     * Override to augment config values
-     * @param config
-     * @return
-     */
-    protected Config augmentConfig( Config config )
-    {
-        return config;
-    }
-
-    //################ Swap ###########
     public DatabaseManagementServiceBuilder setConfig( Setting<?> setting, String value )
     {
         if ( value == null )
@@ -193,12 +162,6 @@ public class DatabaseManagementServiceBuilder
         return this;
     }
 
-    public DatabaseManagementServiceBuilder setConfig( Config config )
-    {
-        this.config.putAll( config.getRaw() );
-        return this;
-    }
-
     @Deprecated
     public DatabaseManagementServiceBuilder setConfig( String name, String value )
     {
@@ -214,9 +177,18 @@ public class DatabaseManagementServiceBuilder
     }
 
     @Deprecated
-    public DatabaseManagementServiceBuilder setConfig( Map<String,String> config )
+    public DatabaseManagementServiceBuilder setConfigRaw( Map<String,String> config )
     {
         for ( Map.Entry<String,String> stringStringEntry : config.entrySet() )
+        {
+            setConfig( stringStringEntry.getKey(), stringStringEntry.getValue() );
+        }
+        return this;
+    }
+
+    public DatabaseManagementServiceBuilder setConfig( Map<Setting<?>,String> config )
+    {
+        for ( var stringStringEntry : config.entrySet() )
         {
             setConfig( stringStringEntry.getKey(), stringStringEntry.getValue() );
         }
@@ -258,35 +230,5 @@ public class DatabaseManagementServiceBuilder
         }
 
         return this;
-    }
-
-    public DatabaseManagementService newDatabaseManagementService()
-    {
-        return creator.newDatabase( Config.defaults( config ) );
-    }
-
-    // ###################################
-
-    protected class EmbeddedDatabaseCreator
-    {
-        private final File storeDir;
-        private final boolean impermanent;
-
-        EmbeddedDatabaseCreator( File storeDir )
-        {
-            this.storeDir = storeDir;
-            impermanent = false;
-        }
-
-        public EmbeddedDatabaseCreator( File storeDir, boolean impermanent )
-        {
-            this.storeDir = storeDir;
-            this.impermanent = impermanent;
-        }
-
-        DatabaseManagementService newDatabase( @Nonnull Config config )
-        {
-            return newEmbeddedDatabase( storeDir, config, databaseDependencies(), impermanent );
-        }
     }
 }

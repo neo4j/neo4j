@@ -119,10 +119,9 @@ class NonUniqueIndexTest
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( createJobScheduler() );
 
-        managementService = new TestDatabaseManagementServiceBuilder()
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
                 .setExternalDependencies( dependencies )
-                .newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
-                .newDatabaseManagementService();
+                .build();
 
         return managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
     }

@@ -57,7 +57,7 @@ public class CountsStoreRecoveryTest
     @Before
     public void before()
     {
-        managementService = databaseFactory( fsRule.get() ).newImpermanentService();
+        managementService = databaseFactory( fsRule.get() ).impermanent().build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -109,7 +109,7 @@ public class CountsStoreRecoveryTest
     {
         final GraphDatabaseService db1 = db;
         FileSystemAbstraction uncleanFs = fsRule.snapshot( managementService::shutdown );
-        managementService = databaseFactory( uncleanFs ).newImpermanentService();
+        managementService = databaseFactory( uncleanFs ).impermanent().build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

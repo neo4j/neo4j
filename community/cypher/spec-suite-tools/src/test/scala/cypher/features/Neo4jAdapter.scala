@@ -48,7 +48,7 @@ object Neo4jAdapter {
   }
 
   private def createManagementService(config: collection.Map[Setting[_], String], graphDatabaseFactory: TestDatabaseManagementServiceBuilder) = {
-    graphDatabaseFactory.newImpermanentService(config.asJava)
+    graphDatabaseFactory.impermanent().setConfig(config.asJava).build()
   }
 }
 

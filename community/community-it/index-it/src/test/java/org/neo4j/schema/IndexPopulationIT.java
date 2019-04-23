@@ -67,10 +67,10 @@ public class IndexPopulationIT
     @BeforeClass
     public static void setUp()
     {
-        TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
         logProvider = new AssertableLogProvider( true );
-        factory.setInternalLogProvider( logProvider );
-        managementService = factory.newDatabaseManagementService( directory.storeDir() );
+        managementService = new TestDatabaseManagementServiceBuilder( directory.storeDir() )
+                .setInternalLogProvider( logProvider )
+                .build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
         executorService = Executors.newCachedThreadPool();
     }
@@ -154,7 +154,9 @@ public class IndexPopulationIT
         Label testLabel = Label.label( "testLabel" );
         String propertyName = "testProperty";
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder().setInternalLogProvider( assertableLogProvider ).newDatabaseManagementService( storeDir );
+                new TestDatabaseManagementServiceBuilder( storeDir )
+                        .setInternalLogProvider( assertableLogProvider )
+                        .build();
         GraphDatabaseService shutDownDb = managementService.database( DEFAULT_DATABASE_NAME );
         prePopulateDatabase( shutDownDb, testLabel, propertyName );
 

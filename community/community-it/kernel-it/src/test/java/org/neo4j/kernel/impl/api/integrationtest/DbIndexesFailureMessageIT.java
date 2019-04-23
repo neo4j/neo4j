@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.Test;
 
+import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.collection.RawIterator;
@@ -110,9 +111,9 @@ public class DbIndexesFailureMessageIT extends KernelIntegrationTest
     }
 
     @Override
-    protected TestDatabaseManagementServiceBuilder createGraphDatabaseFactory()
+    protected TestDatabaseManagementServiceBuilder createGraphDatabaseFactory( File databaseRootDir )
     {
-        return super.createGraphDatabaseFactory()
+        return super.createGraphDatabaseFactory( databaseRootDir )
                 .removeExtensions( INDEX_PROVIDERS_FILTER )
                 .addExtension( new FailingGenericNativeIndexProviderFactory( POPULATION ) );
     }

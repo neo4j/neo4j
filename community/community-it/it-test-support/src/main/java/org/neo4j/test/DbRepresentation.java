@@ -40,7 +40,6 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.io.fs.IoPrimitiveUtils;
@@ -99,11 +98,9 @@ public class DbRepresentation
 
     public static DbRepresentation of( File databaseDirectory, Config config )
     {
-        DatabaseManagementServiceBuilder builder =
-                new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( databaseDirectory.getParentFile() );
-        builder.setConfig( config.getRaw() );
-
-        DatabaseManagementService managementService = builder.newDatabaseManagementService();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseDirectory.getParentFile() )
+                .setConfigRaw( config.getRaw() )
+                .build();
         GraphDatabaseService db = managementService.database( config.get( default_database ) );
         try
         {

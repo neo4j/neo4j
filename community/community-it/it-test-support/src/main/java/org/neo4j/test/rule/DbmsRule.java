@@ -252,10 +252,9 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
         createResources();
         try
         {
-            DatabaseManagementServiceBuilder factory = newFactory();
-            factory.setMonitors( monitors );
-            configure( factory );
-            databaseBuilder = newBuilder( factory );
+            databaseBuilder = newFactory();
+            databaseBuilder.setMonitors( monitors );
+            configure( databaseBuilder );
             globalConfig.forEach( databaseBuilder::setConfig );
         }
         catch ( RuntimeException e )
@@ -283,8 +282,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
 
     protected abstract DatabaseManagementServiceBuilder newFactory();
 
-    protected abstract DatabaseManagementServiceBuilder newBuilder( DatabaseManagementServiceBuilder factory );
-
     protected void configure( DatabaseManagementServiceBuilder databaseFactory )
     {
         // Override to configure the database factory
@@ -309,7 +306,7 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     {
         if ( database == null )
         {
-            managementService = databaseBuilder.newDatabaseManagementService();
+            managementService = databaseBuilder.build();
             database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
             databaseLayout = database.databaseLayout();
             statementSupplier = resolveDependency( ThreadToStatementContextBridge.class );
@@ -382,7 +379,7 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
         database = null;
         // This DatabaseBuilder has already been configured with the global settings as well as any test-specific settings,
         // so just apply these additional settings.
-        databaseBuilder.setConfig( stringMap( configChanges ) );
+        databaseBuilder.setConfigRaw( stringMap( configChanges ) );
         return getGraphDatabaseAPI();
     }
 

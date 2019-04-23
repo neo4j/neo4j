@@ -51,13 +51,7 @@ public class ImpermanentDbmsRule extends DbmsRule
     @Override
     protected DatabaseManagementServiceBuilder newFactory()
     {
-        return maybeSetInternalLogProvider( maybeSetUserLogProvider( new TestDatabaseManagementServiceBuilder() ) );
-    }
-
-    @Override
-    protected DatabaseManagementServiceBuilder newBuilder( DatabaseManagementServiceBuilder factory )
-    {
-        return ((TestDatabaseManagementServiceBuilder) factory).newImpermanentDatabaseBuilder();
+        return maybeSetInternalLogProvider( maybeSetUserLogProvider( new TestDatabaseManagementServiceBuilder().impermanent() ) );
     }
 
     protected final TestDatabaseManagementServiceBuilder maybeSetUserLogProvider( TestDatabaseManagementServiceBuilder factory )

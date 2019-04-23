@@ -40,8 +40,9 @@ public interface DependencyResolver
      * @param <T> the type that the returned instance must implement
      * @return the resolved dependency for the given type.
      * @throws IllegalArgumentException if no matching dependency was found.
+     * @throws UnsatisfiedDependencyException if no matching dependency was found.
      */
-    <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException;
+    <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException, UnsatisfiedDependencyException;
 
     /**
      * Tries to resolve a dependency that matches a given class. All candidates are fed to the
@@ -53,18 +54,9 @@ public interface DependencyResolver
      * @param <T> the type that the returned instance must implement
      * @return the resolved dependency for the given type.
      * @throws IllegalArgumentException if no matching dependency was found.
+     * @throws UnsatisfiedDependencyException if no matching dependency was found.
      */
-    <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException;
-
-    /**
-     * Tries to resolve a dependecy that matches a given type. If nothing matches, {@code newInstanceMethod) will be invoked.
-     *
-     * @param type the type of {@link Class} that the returned instance must implement.
-     * @param newInstanceMethod a method that will create a new instance of the given type if no dependency can be resloved.
-     * @param <T> the type that the returned instance must implement.
-     * @return the resolved dependency or a newly created instance from newInstanceMethod
-     */
-    <T> T tryResolveOrCreate( Class<T> type, Supplier<T> newInstanceMethod );
+    <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException, UnsatisfiedDependencyException;
 
     /**
      * Tries to resolve a dependencies that matches a given class.
@@ -152,19 +144,6 @@ public interface DependencyResolver
         public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
         {
             return resolveDependency( type, SINGLE );
-        }
-
-        @Override
-        public <T> T tryResolveOrCreate( Class<T> type, Supplier<T> newInstanceMethod )
-        {
-            try
-            {
-                return resolveDependency( type );
-            }
-            catch ( UnsatisfiedDependencyException e )
-            {
-                return newInstanceMethod.get();
-            }
         }
 
         @Override

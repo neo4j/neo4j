@@ -59,7 +59,7 @@ public class StreamingJsonFormatTest
     @Test
     public void canFormatNode()
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction transaction = db.beginTx() )
         {

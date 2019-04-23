@@ -54,7 +54,7 @@ class DefaultDatabaseManagerIT
     @BeforeEach
     void setUp()
     {
-        managementService = new DatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
+        managementService = new DatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

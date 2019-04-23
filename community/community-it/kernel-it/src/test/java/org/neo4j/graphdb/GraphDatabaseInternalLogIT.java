@@ -51,8 +51,9 @@ public class GraphDatabaseInternalLogIT
     public void shouldWriteToInternalDiagnosticsLog() throws Exception
     {
         // Given
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( testDir.storeDir() )
-                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() ).newDatabaseManagementService();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.storeDir() )
+                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() )
+                .build();
         managementService.shutdown();
         File internalLog = new File( testDir.directory( "logs" ), INTERNAL_LOG_FILE );
 
@@ -68,8 +69,9 @@ public class GraphDatabaseInternalLogIT
     public void shouldNotWriteDebugToInternalDiagnosticsLogByDefault() throws Exception
     {
         // Given
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( testDir.storeDir() )
-                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() ).newDatabaseManagementService();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.storeDir() )
+                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() )
+                .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         // When
@@ -90,9 +92,10 @@ public class GraphDatabaseInternalLogIT
     public void shouldWriteDebugToInternalDiagnosticsLogForEnabledContexts() throws Exception
     {
         // Given
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( testDir.storeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.storeDir() )
                 .setConfig( GraphDatabaseSettings.store_internal_debug_contexts, getClass().getName() + ",java.io" )
-                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() ).newDatabaseManagementService();
+                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() )
+                .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         // When

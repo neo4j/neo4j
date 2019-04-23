@@ -73,7 +73,7 @@ class IndexSamplingIntegrationTest
         try
         {
             // Given
-            managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
+            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
             db = managementService.database( DEFAULT_DATABASE_NAME );
             IndexDefinition indexDefinition;
             try ( Transaction tx = db.beginTx() )
@@ -144,7 +144,7 @@ class IndexSamplingIntegrationTest
         try
         {
             // Given
-            managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
+            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
             db = managementService.database( DEFAULT_DATABASE_NAME );
             try ( Transaction tx = db.beginTx() )
             {
@@ -208,7 +208,7 @@ class IndexSamplingIntegrationTest
         try
         {
             // Then
-            managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
+            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
             db = managementService.database( DEFAULT_DATABASE_NAME );
             @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
@@ -233,7 +233,7 @@ class IndexSamplingIntegrationTest
         try
         {
             // Then
-            managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
+            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
             db = managementService.database( DEFAULT_DATABASE_NAME );
             @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;

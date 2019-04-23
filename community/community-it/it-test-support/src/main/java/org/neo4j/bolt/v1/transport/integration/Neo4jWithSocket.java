@@ -171,8 +171,8 @@ public class Neo4jWithSocket extends ExternalResource
         Map<String,String> settings = configure( overrideSettingsFunction );
         File storeDir = new File( workingDirectory, "storeDir" );
         graphDatabaseFactory.setFileSystem( fileSystemProvider.get() );
-        managementService = graphDatabaseFactory.newImpermanentDatabaseBuilder( storeDir ).
-                setConfig( settings ).newDatabaseManagementService();
+        managementService = graphDatabaseFactory.setDatabaseRootDirectory( storeDir ).impermanent().
+                setConfigRaw( settings ).build();
         gdb = managementService.database( DEFAULT_DATABASE_NAME );
         connectorRegister =
                 ((GraphDatabaseAPI) gdb).getDependencyResolver().resolveDependency( ConnectorPortRegister.class );

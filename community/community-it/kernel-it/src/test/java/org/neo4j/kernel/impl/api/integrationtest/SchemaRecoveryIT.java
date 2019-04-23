@@ -132,9 +132,10 @@ class SchemaRecoveryIT
             managementService.shutdown();
         }
 
-        TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
-        factory.setFileSystem( fs );
-        managementService = factory.newImpermanentService( testDirectory.storeDir() );
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+                .setFileSystem( fs )
+                .impermanent()
+                .build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 

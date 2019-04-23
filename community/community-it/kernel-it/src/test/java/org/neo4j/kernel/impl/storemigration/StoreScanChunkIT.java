@@ -47,7 +47,7 @@ class StoreScanChunkIT
     @Test
     void differentChunksHaveDifferentCursors()
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

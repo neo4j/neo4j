@@ -232,8 +232,8 @@ class LuceneIndexRecoveryIT
         TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
         factory.setFileSystem( fs );
         factory.setExtensions( Collections.singletonList( indexProviderFactory ) );
-        managementService = factory.newImpermanentDatabaseBuilder()
-                .setConfig( default_schema_provider, DESCRIPTOR.name() ).newDatabaseManagementService();
+        managementService = factory.impermanent()
+                .setConfig( default_schema_provider, DESCRIPTOR.name() ).build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 

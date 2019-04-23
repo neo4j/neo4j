@@ -64,8 +64,10 @@ public class SystemTimeZoneLoggingIT
     {
         TimeZone.setDefault( TimeZone.getTimeZone( ZoneOffset.ofHours( hoursShift ) ) );
         File storeDir = testDirectory.storeDir( String.valueOf( hoursShift ) );
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( GraphDatabaseSettings.db_timezone, LogTimeZone.SYSTEM.name() ).newDatabaseManagementService();
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder( storeDir )
+                        .setConfig( GraphDatabaseSettings.db_timezone, LogTimeZone.SYSTEM.name() )
+                        .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         managementService.shutdown();
         Path databasePath = storeDir.toPath();

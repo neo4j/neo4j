@@ -53,7 +53,7 @@ class CommunityEditionModuleIntegrationTest
     @Test
     void createBufferedIdComponentsByDefault()
     {
-        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
+        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

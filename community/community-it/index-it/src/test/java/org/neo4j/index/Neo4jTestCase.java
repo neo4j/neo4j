@@ -49,7 +49,7 @@ public abstract class Neo4jTestCase
     @BeforeClass
     public static void setUpDb()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         graphDb = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

@@ -47,7 +47,7 @@ class TestNeo4jApiExceptions
     @BeforeEach
     void init()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         graph = managementService.database( DEFAULT_DATABASE_NAME );
         newTransaction();
     }

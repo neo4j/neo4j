@@ -68,7 +68,7 @@ class LabelRecoveryTest
     void shouldRecoverNodeWithDynamicLabelRecords()
     {
         // GIVEN
-        managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( filesystem ).newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( filesystem ).impermanent().build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
         Node node;
         Label[] labels = new Label[] { label( "a" ),
@@ -96,7 +96,7 @@ class LabelRecoveryTest
         }
         EphemeralFileSystemAbstraction snapshot = filesystem.snapshot();
         managementService.shutdown();
-        managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( snapshot ).newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( snapshot ).impermanent().build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
 
         // THEN

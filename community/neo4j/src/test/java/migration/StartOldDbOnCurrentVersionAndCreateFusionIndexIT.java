@@ -40,7 +40,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -122,8 +121,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     void create3_5Database() throws Exception
     {
         File storeDir = tempStoreDirectory();
-        DatabaseManagementServiceBuilder factory = new DatabaseManagementServiceBuilder();
-        DatabaseManagementServiceBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
+        DatabaseManagementServiceBuilder builder = new DatabaseManagementServiceBuilder( storeDir );
 
         createIndexDataAndShutdown( builder, "lucene-1.0", Provider.LUCENE_10.label );
         createIndexDataAndShutdown( builder, "lucene+native-1.0", Provider.FUSION_10.label );
@@ -372,10 +370,10 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     {
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( indexRecoveryTracker );
-        return new DatabaseManagementServiceBuilder()
+        return new DatabaseManagementServiceBuilder( storeDir )
                 .setMonitors( monitors )
-                .newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE ).newDatabaseManagementService();
+                .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
+                .build();
     }
 
     private GraphDatabaseAPI getDefaultDatabase()
@@ -420,16 +418,16 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         assertEquals( expectedDescriptor.getVersion(), index.providerVersion(), "same version" );
     }
 
-    private static void createIndexDataAndShutdown( DatabaseManagementServiceInternalBuilder builder, String indexProvider, Label label )
+    private static void createIndexDataAndShutdown( DatabaseManagementServiceBuilder builder, String indexProvider, Label label )
     {
         createIndexDataAndShutdown( builder, indexProvider, label, db -> {} );
     }
 
-    private static void createIndexDataAndShutdown( DatabaseManagementServiceInternalBuilder builder, String indexProvider, Label label,
+    private static void createIndexDataAndShutdown( DatabaseManagementServiceBuilder builder, String indexProvider, Label label,
             Consumer<GraphDatabaseService> otherActions )
     {
         builder.setConfig( GraphDatabaseSettings.default_schema_provider, indexProvider );
-        DatabaseManagementService dbms = builder.newDatabaseManagementService();
+        DatabaseManagementService dbms = builder.build();
         try
         {
             GraphDatabaseService db = dbms.database( DEFAULT_DATABASE_NAME );

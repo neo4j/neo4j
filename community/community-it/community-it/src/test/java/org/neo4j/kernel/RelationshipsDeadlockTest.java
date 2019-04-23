@@ -79,7 +79,7 @@ class RelationshipsDeadlockTest
     @BeforeEach
     void setUp()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

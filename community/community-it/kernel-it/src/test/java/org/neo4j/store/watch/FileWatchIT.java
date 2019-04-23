@@ -84,8 +84,7 @@ class FileWatchIT
         File customStoreRoot = testDirectory.storeDir( "customStore" );
         databaseLayout = testDirectory.databaseLayout( customStoreRoot );
         logProvider = new AssertableLogProvider();
-        managementService = new TestDatabaseManagementServiceBuilder().setInternalLogProvider( logProvider )
-                .newDatabaseManagementService( customStoreRoot );
+        managementService = new TestDatabaseManagementServiceBuilder( customStoreRoot ).setInternalLogProvider( logProvider ).build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -132,9 +131,10 @@ class FileWatchIT
             DatabaseManagementService service = null;
             try
             {
-                service = new TestDatabaseManagementServiceBuilder().setInternalLogProvider( logProvider )
-                                .setFileSystem( new NonWatchableFileSystemAbstraction() ).newDatabaseManagementService(
-                                testDirectory.storeDir( "failed-start-db" ) );
+                service = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir( "failed-start-db" ) )
+                        .setInternalLogProvider( logProvider )
+                        .setFileSystem( new NonWatchableFileSystemAbstraction() )
+                        .build();
                 db = managementService.database( DEFAULT_DATABASE_NAME );
 
                 logProvider.assertContainsMessageContaining(
@@ -262,10 +262,11 @@ class FileWatchIT
             DatabaseManagementService service = null;
             try
             {
-                service = new TestDatabaseManagementServiceBuilder().setInternalLogProvider( logProvider )
-                                .setFileSystem( new NonWatchableFileSystemAbstraction() )
-                                .newEmbeddedDatabaseBuilder( testDirectory.databaseLayout( "failed-start-db" ).databaseDirectory() )
-                                .setConfig( GraphDatabaseSettings.filewatcher_enabled, Settings.FALSE ).newDatabaseManagementService();
+                service = new TestDatabaseManagementServiceBuilder( testDirectory.databaseLayout( "failed-start-db" ).databaseDirectory() )
+                        .setInternalLogProvider( logProvider )
+                        .setFileSystem( new NonWatchableFileSystemAbstraction() )
+                        .setConfig( GraphDatabaseSettings.filewatcher_enabled, Settings.FALSE )
+                        .build();
                 db = managementService.database( DEFAULT_DATABASE_NAME );
 
                 logProvider.assertContainsMessageContaining( "File watcher disabled by configuration." );

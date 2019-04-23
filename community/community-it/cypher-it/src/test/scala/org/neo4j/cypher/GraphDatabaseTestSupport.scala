@@ -58,19 +58,19 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   protected def startGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): Unit = {
-    managementService = graphDatabaseFactory().newImpermanentService(config.asJava)
+    managementService = graphDatabaseFactory(new File("test")).impermanent().setConfig(config.asJava).build()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
   }
 
   protected def startGraphDatabase(storeDir: File): Unit = {
-    managementService = graphDatabaseFactory().newImpermanentService(storeDir)
+    managementService = graphDatabaseFactory(storeDir).impermanent().build()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
   }
 
-  protected def graphDatabaseFactory(): TestDatabaseManagementServiceBuilder = {
-    val factory = createDatabaseFactory()
+  protected def graphDatabaseFactory(databaseRootDir: File): TestDatabaseManagementServiceBuilder = {
+    val factory = createDatabaseFactory(databaseRootDir)
     this match {
       case custom: FakeClock =>
         factory.setClock(custom.clock)
@@ -79,7 +79,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     factory
   }
 
-  protected def createDatabaseFactory(): TestDatabaseManagementServiceBuilder = new TestDatabaseManagementServiceBuilder
+  protected def createDatabaseFactory(databaseRootDir: File): TestDatabaseManagementServiceBuilder = new TestDatabaseManagementServiceBuilder(databaseRootDir)
 
   protected def restartWithConfig(config: Map[Setting[_], String] = databaseConfig()): Unit = {
     managementService.shutdown()

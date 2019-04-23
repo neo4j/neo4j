@@ -262,7 +262,7 @@ class StoreLockerTest
     void mustPreventMultipleInstancesFromStartingOnSameStore()
     {
         File storeDir = target.storeDir();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( storeDir );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir ).build();
         try
         {
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
@@ -274,7 +274,7 @@ class StoreLockerTest
 
             assertThrows( Exception.class, () ->
             {
-                new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( storeDir );
+                new TestDatabaseManagementServiceBuilder( storeDir ).build();
             } );
         }
         finally

@@ -65,7 +65,10 @@ class SchemaImplTest
     @BeforeEach
     void createDb()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fs ).newImpermanentService( testDirectory.storeDir() );
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+                .setFileSystem( fs )
+                .impermanent()
+                .build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

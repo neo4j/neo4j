@@ -73,7 +73,7 @@ public class LabelAndIndexUpdateBatchingIT
 
         // a bunch of nodes (to have the index population later on to decide to use label scan for population)
         List<TransactionRepresentation> transactions;
-        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         String nodeN = "our guy";
         String otherNode = "just to create the tokens";
@@ -107,7 +107,7 @@ public class LabelAndIndexUpdateBatchingIT
             managementService.shutdown();
         }
 
-        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         TransactionCommitProcess commitProcess =
                 db.getDependencyResolver().resolveDependency( TransactionCommitProcess.class );

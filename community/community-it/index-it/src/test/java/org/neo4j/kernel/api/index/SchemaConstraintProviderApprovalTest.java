@@ -133,7 +133,7 @@ public abstract class SchemaConstraintProviderApprovalTest
     @BeforeClass
     public static void init()
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         for ( TestValue value : TestValue.values() )
         {

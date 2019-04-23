@@ -60,7 +60,7 @@ public class ConstraintIndexFailureIT
     {
         // given a perfectly normal constraint
         File dir = directory.storeDir();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( dir );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( dir ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
@@ -74,9 +74,8 @@ public class ConstraintIndexFailureIT
 
         // Remove the indexes offline and start up with an index provider which reports FAILED as initial state. An ordeal, I know right...
         FileUtils.deleteRecursively( IndexDirectoryStructure.baseSchemaIndexFolder( dir ) );
-        managementService = new TestDatabaseManagementServiceBuilder()
-                .removeExtensions( INDEX_PROVIDERS_FILTER )
-                .addExtension( new FailingGenericNativeIndexProviderFactory( INITIAL_STATE ) ).newDatabaseManagementService( dir );
+        managementService = new TestDatabaseManagementServiceBuilder( dir ).removeExtensions( INDEX_PROVIDERS_FILTER ).addExtension(
+                new FailingGenericNativeIndexProviderFactory( INITIAL_STATE ) ).build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
         // when
         try ( Transaction tx = db.beginTx() )

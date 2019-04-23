@@ -136,9 +136,9 @@ public class StoreUpgradeOnStartupTest
 
     private GraphDatabaseService createGraphDatabaseService()
     {
-        managementService = new TestDatabaseManagementServiceBuilder()
-                .newEmbeddedDatabaseBuilder( workingStoreDir )
-                .setConfig( GraphDatabaseSettings.allow_upgrade, "true" ).newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder( workingStoreDir )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, "true" )
+                .build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

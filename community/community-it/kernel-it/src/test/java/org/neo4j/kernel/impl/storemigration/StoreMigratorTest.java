@@ -240,8 +240,10 @@ class StoreMigratorTest
         DatabaseLayout databaseLayout = testDirectory.databaseLayout( LayoutConfig.of( config ) );
         File neoStore = databaseLayout.metadataStore();
 
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
-                .setConfig( transaction_logs_root_path, customLogsLocation ).newDatabaseManagementService();
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+                        .setConfig( transaction_logs_root_path, customLogsLocation )
+                        .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         for ( int i = 0; i < 10; i++ )
         {

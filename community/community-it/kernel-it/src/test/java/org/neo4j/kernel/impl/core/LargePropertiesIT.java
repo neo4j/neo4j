@@ -46,11 +46,9 @@ public class LargePropertiesIT
         String stringValue = RandomStringUtils.randomAlphanumeric( 10000 );
         byte[] arrayValue = RandomStringUtils.randomAlphanumeric( 10000 ).getBytes();
 
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
-                .setFileSystem( fs.get() )
-                .newImpermanentDatabaseBuilder()
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fs.get() ).impermanent()
                 .setConfig( GraphDatabaseSettings.string_block_size, "1024" )
-                .setConfig( GraphDatabaseSettings.array_block_size, "2048" ).newDatabaseManagementService();
+                .setConfig( GraphDatabaseSettings.array_block_size, "2048" ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

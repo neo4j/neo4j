@@ -70,7 +70,7 @@ class ConstraintRecoveryIT
         // given
         File pathToDb = testDirectory.storeDir();
 
-        TestDatabaseManagementServiceBuilder dbFactory = new TestDatabaseManagementServiceBuilder();
+        TestDatabaseManagementServiceBuilder dbFactory = new TestDatabaseManagementServiceBuilder( pathToDb );
         dbFactory.setFileSystem( fs );
 
         final EphemeralFileSystemAbstraction[] storeInNeedOfRecovery = new EphemeralFileSystemAbstraction[1];
@@ -92,8 +92,8 @@ class ConstraintRecoveryIT
 
         // This test relies on behaviour that is specific to the Lucene populator, where uniqueness is controlled
         // after index has been populated, which is why we're using NATIVE20 and index booleans (they end up in Lucene)
-        DatabaseManagementService managementService = dbFactory.newImpermanentDatabaseBuilder( pathToDb )
-                .setConfig( default_schema_provider, NATIVE30.providerName() ).newDatabaseManagementService();
+        DatabaseManagementService managementService = dbFactory.impermanent()
+                .setConfig( default_schema_provider, NATIVE30.providerName() ).build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
         try ( Transaction tx = db.beginTx() )
@@ -118,9 +118,9 @@ class ConstraintRecoveryIT
         assertTrue( monitorCalled.get() );
 
         // when
-        dbFactory = new TestDatabaseManagementServiceBuilder();
+        dbFactory = new TestDatabaseManagementServiceBuilder( pathToDb );
         dbFactory.setFileSystem( storeInNeedOfRecovery[0] );
-        DatabaseManagementService secondManagementService = dbFactory.newImpermanentService( pathToDb );
+        DatabaseManagementService secondManagementService = dbFactory.impermanent().build();
         db = (GraphDatabaseAPI) secondManagementService.database( DEFAULT_DATABASE_NAME );
 
         // then

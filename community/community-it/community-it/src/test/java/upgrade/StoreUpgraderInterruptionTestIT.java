@@ -233,8 +233,8 @@ public class StoreUpgraderInterruptionTestIT
 
     private static void startStopDatabase( File storeDir )
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( storeDir )
-                        .setConfig( GraphDatabaseSettings.allow_upgrade, "true" ).newDatabaseManagementService();
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder( storeDir ).setConfig( GraphDatabaseSettings.allow_upgrade, "true" ).build();
         GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
         managementService.shutdown();
     }

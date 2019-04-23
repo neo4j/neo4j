@@ -52,7 +52,7 @@ public class PropertySettingStrategyTest
     @BeforeClass
     public static void createDb()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         propSetter = new PropertySettingStrategy( db );
     }

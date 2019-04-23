@@ -1424,8 +1424,10 @@ public class NeoStoresTest
 
     private static void createShutdownTestDatabase( FileSystemAbstraction fileSystem, File storeDir )
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) ).newImpermanentService( storeDir );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir )
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
+                .impermanent()
+                .build();
         managementService.shutdown();
     }
 

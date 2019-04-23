@@ -65,8 +65,7 @@ public class ConcurrentChangesOnEntitiesTest
     @Before
     public void setup()
     {
-        managementService = new TestDatabaseManagementServiceBuilder()
-                .newEmbeddedDatabaseBuilder( testDirectory.storeDir() ).newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

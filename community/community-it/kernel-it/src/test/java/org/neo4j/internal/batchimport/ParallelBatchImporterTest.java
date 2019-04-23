@@ -188,9 +188,8 @@ public class ParallelBatchImporterTest
                             NODE_COUNT * TOKENS.length / 2 ), groups ) );
 
             // THEN
-            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
-                        .newEmbeddedDatabaseBuilder( directory.storeDir() )
-                        .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
+            DatabaseManagementService managementService =
+                    new TestDatabaseManagementServiceBuilder( directory.storeDir() ).setConfig( "dbms.backup.enabled", "false" ).build();
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             try ( Transaction tx = db.beginTx() )
             {

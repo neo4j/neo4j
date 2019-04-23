@@ -146,11 +146,10 @@ public class QueryRestartIT
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( testContextSupplier );
 
-        managementService = new TestDatabaseManagementServiceBuilder()
+        managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                 .setExternalDependencies( dependencies )
-                .newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.snapshot_query, Settings.TRUE )
-                .newDatabaseManagementService();
+                .build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 

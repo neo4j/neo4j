@@ -342,9 +342,10 @@ class RecoveryIT
     @Test
     void startDatabaseWithRemovedMultipleTransactionLogFiles() throws Exception
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
-                .newEmbeddedDatabaseBuilder( directory.storeDir() )
-                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" ).newDatabaseManagementService();
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder( directory.storeDir() )
+                        .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" )
+                        .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         while ( countTransactionLogFiles() < 5 )
         {
@@ -364,9 +365,10 @@ class RecoveryIT
     @Test
     void killAndStartDatabaseAfterTransactionLogsRemoval() throws Exception
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
-                .newEmbeddedDatabaseBuilder( directory.storeDir() )
-                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" ).newDatabaseManagementService();
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder( directory.storeDir() )
+                        .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" )
+                        .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         while ( countTransactionLogFiles() < 5 )
         {
@@ -397,9 +399,10 @@ class RecoveryIT
     @Test
     void killAndStartDatabaseAfterTransactionLogsRemovalWithSeveralFilesWithoutCheckpoint() throws Exception
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
-                .newEmbeddedDatabaseBuilder( directory.storeDir() )
-                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" ).newDatabaseManagementService();
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder( directory.storeDir() )
+                        .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" )
+                        .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         while ( countTransactionLogFiles() < 5 )
         {
@@ -428,9 +431,10 @@ class RecoveryIT
     @Test
     void startDatabaseAfterTransactionLogsRemovalAndKillAfterRecovery() throws Exception
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
-                .newEmbeddedDatabaseBuilder( directory.storeDir() )
-                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" ).newDatabaseManagementService();
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder( directory.storeDir() )
+                        .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" )
+                        .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         while ( countTransactionLogFiles() < 5 )
         {
@@ -635,7 +639,7 @@ class RecoveryIT
 
     private GraphDatabaseAPI createDatabase()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( directory.storeDir() );
+        managementService = new TestDatabaseManagementServiceBuilder( directory.storeDir() ).build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -647,8 +651,7 @@ class RecoveryIT
 
     private DatabaseManagementService forcedRecoveryManagement()
     {
-        return new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( directory.storeDir() )
-                .setConfig( fail_on_missing_files, FALSE ).newDatabaseManagementService();
+        return new TestDatabaseManagementServiceBuilder( directory.storeDir() ).setConfig( fail_on_missing_files, FALSE ).build();
     }
 
     private PageCache getDatabasePageCache( GraphDatabaseAPI databaseAPI )

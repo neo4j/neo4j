@@ -60,7 +60,7 @@ class DefaultValueMapperTest
     @BeforeEach
     void setup()
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
         mapper = new DefaultValueMapper( (EmbeddedProxySPI) db );
     }

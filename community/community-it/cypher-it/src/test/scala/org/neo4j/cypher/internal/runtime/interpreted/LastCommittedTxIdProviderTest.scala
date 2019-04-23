@@ -39,7 +39,7 @@ class LastCommittedTxIdProviderTest extends CypherFunSuite with BeforeAndAfterAl
   var lastCommittedTxIdProvider: LastCommittedTxIdProvider = _
 
   override protected def beforeAll(): Unit = {
-    managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService()
+    managementService = new TestDatabaseManagementServiceBuilder().impermanent().build()
     graph = managementService.database(DEFAULT_DATABASE_NAME)
     db = new GraphDatabaseCypherService(graph)
     lastCommittedTxIdProvider = LastCommittedTxIdProvider(db)

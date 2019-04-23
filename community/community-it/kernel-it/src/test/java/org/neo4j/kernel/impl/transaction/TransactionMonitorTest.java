@@ -62,7 +62,7 @@ public class TransactionMonitorTest
     @Test
     public void shouldCountCommittedTransactions() throws Exception
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -84,7 +84,7 @@ public class TransactionMonitorTest
     @Test
     public void shouldCountRolledBackTransactions() throws Exception
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -106,7 +106,7 @@ public class TransactionMonitorTest
     @Test
     public void shouldCountTerminatedTransactions() throws Exception
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

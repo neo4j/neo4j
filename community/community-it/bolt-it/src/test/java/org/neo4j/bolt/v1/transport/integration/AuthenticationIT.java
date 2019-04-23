@@ -87,7 +87,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
 
     protected TestDatabaseManagementServiceBuilder getTestGraphDatabaseFactory()
     {
-        return new TestDatabaseManagementServiceBuilder( logProvider );
+        return new TestDatabaseManagementServiceBuilder().setUserLogProvider( logProvider );
     }
 
     protected Consumer<Map<String,String>> getSettingsFunction()

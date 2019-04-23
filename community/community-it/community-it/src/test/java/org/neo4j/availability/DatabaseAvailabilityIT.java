@@ -57,7 +57,7 @@ class DatabaseAvailabilityIT
     @BeforeEach
     void setUp()
     {
-        managementService = new DatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
+        managementService = new DatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
         database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 

@@ -78,7 +78,7 @@ class CommunitySystemDatabaseIT
     @BeforeEach
     void setUp()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( testDirectory.storeDir() ).newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
         databaseManager = getDatabaseManager( database );
         defaultDb = getDatabaseByName( databaseManager, new DatabaseId( DEFAULT_DATABASE_NAME ) );
@@ -202,7 +202,7 @@ class CommunitySystemDatabaseIT
         try
         {
             File disabledSystemDbDirectory = testDirectory.databaseDir( "withSystemDd" );
-            managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( disabledSystemDbDirectory );
+            managementService = new TestDatabaseManagementServiceBuilder( disabledSystemDbDirectory ).build();
             databaseWithSystemDb = managementService.database( DEFAULT_DATABASE_NAME );
             DatabaseManager<?> databaseManager = getDatabaseManager( databaseWithSystemDb );
             assertTrue( databaseManager.getDatabaseContext( new DatabaseId( SYSTEM_DATABASE_NAME ) ).isPresent() );

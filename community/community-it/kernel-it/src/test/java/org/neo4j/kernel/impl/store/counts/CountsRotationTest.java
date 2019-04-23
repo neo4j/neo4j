@@ -113,8 +113,9 @@ public class CountsRotationTest
     public void setup()
     {
         fs = fsRule.get();
-        dbBuilder = new TestDatabaseManagementServiceBuilder().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
-                .newImpermanentDatabaseBuilder( testDir.storeDir() );
+        dbBuilder = new TestDatabaseManagementServiceBuilder( testDir.storeDir() )
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+                .impermanent();
         pageCache = pcRule.getPageCache( fs );
     }
 
@@ -122,7 +123,7 @@ public class CountsRotationTest
     public void shouldCreateEmptyCountsTrackerStoreWhenCreatingDatabase()
     {
         // GIVEN
-        DatabaseManagementService managementService = dbBuilder.newDatabaseManagementService();
+        DatabaseManagementService managementService = dbBuilder.build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
         // WHEN
@@ -157,7 +158,7 @@ public class CountsRotationTest
             throws Throwable
     {
         // Given
-        DatabaseManagementService managementService = dbBuilder.newDatabaseManagementService();
+        DatabaseManagementService managementService = dbBuilder.build();
         managementService.shutdown();
         CountsTracker store = createCountsTracker( pageCache,
                 Config.defaults( GraphDatabaseSettings.counts_store_rotation_timeout, "100ms" ) );
@@ -188,7 +189,7 @@ public class CountsRotationTest
     public void rotationShouldNotCauseUnmappedFileProblem() throws IOException
     {
         // GIVEN
-        DatabaseManagementService managementService = dbBuilder.newDatabaseManagementService();
+        DatabaseManagementService managementService = dbBuilder.build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
         DependencyResolver resolver = db.getDependencyResolver();
@@ -240,7 +241,7 @@ public class CountsRotationTest
     public void shouldRotateCountsStoreWhenClosingTheDatabase()
     {
         // GIVEN
-        DatabaseManagementService managementService = dbBuilder.newDatabaseManagementService();
+        DatabaseManagementService managementService = dbBuilder.build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
@@ -271,7 +272,7 @@ public class CountsRotationTest
     public void shouldRotateCountsStoreWhenRotatingLog() throws IOException
     {
         // GIVEN
-        DatabaseManagementService managementService = dbBuilder.newDatabaseManagementService();
+        DatabaseManagementService managementService = dbBuilder.build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
         // WHEN doing a transaction (actually two, the label-mini-tx also counts)
@@ -332,8 +333,8 @@ public class CountsRotationTest
                 NodeStore.class );
         adversary.disable();
 
-        DatabaseManagementService managementService = AdversarialPageCacheGraphDatabaseFactory.create( fs, adversary )
-                .newEmbeddedDatabaseBuilder( testDir.storeDir() ).newDatabaseManagementService();
+        DatabaseManagementService managementService =
+                AdversarialPageCacheGraphDatabaseFactory.create( testDir.storeDir(), fs, adversary ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         CountDownLatch txStartLatch = new CountDownLatch( 1 );

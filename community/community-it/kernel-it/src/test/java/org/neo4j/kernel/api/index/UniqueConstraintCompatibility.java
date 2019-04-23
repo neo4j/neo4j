@@ -138,10 +138,11 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     @Before
     public void setUp()
     {
-        TestDatabaseManagementServiceBuilder dbFactory = new TestDatabaseManagementServiceBuilder();
-        dbFactory.setExtensions( Collections.singletonList( new PredefinedIndexProviderFactory( indexProvider ) ) );
-        managementService = dbFactory.newImpermanentDatabaseBuilder( graphDbDir )
-                      .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() ).newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder( graphDbDir )
+                .setExtensions( Collections.singletonList( new PredefinedIndexProviderFactory( indexProvider ) ) )
+                .impermanent()
+                .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() )
+                .build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

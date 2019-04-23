@@ -73,7 +73,7 @@ public class TestRecoveryScenarios
     @Before
     public void before()
     {
-        managementService = databaseFactory( fsRule.get() ).newImpermanentService();
+        managementService = databaseFactory( fsRule.get() ).impermanent().build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -333,7 +333,7 @@ public class TestRecoveryScenarios
     {
         final GraphDatabaseService db1 = db;
         FileSystemAbstraction uncleanFs = fsRule.snapshot( managementService::shutdown );
-        DatabaseManagementService managementService = databaseFactory( uncleanFs ).newImpermanentService();
+        DatabaseManagementService managementService = databaseFactory( uncleanFs ).impermanent().build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

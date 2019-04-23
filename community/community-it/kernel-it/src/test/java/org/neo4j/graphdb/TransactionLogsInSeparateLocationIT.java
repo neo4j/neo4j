@@ -64,8 +64,10 @@ class TransactionLogsInSeparateLocationIT
 
     private static void performTransactions( String txPath, File storeDir )
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( GraphDatabaseSettings.transaction_logs_root_path, txPath ).newDatabaseManagementService();
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder( storeDir )
+                        .setConfig( GraphDatabaseSettings.transaction_logs_root_path, txPath )
+                        .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         for ( int i = 0; i < 10; i++ )
         {

@@ -52,13 +52,19 @@ class TestTxEntries
     void testStartEntryWrittenOnceOnRollback()
     {
         File storeDir = testDirectory.storeDir();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fs ).newImpermanentService( storeDir );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir )
+                .setFileSystem( fs )
+                .impermanent()
+                .build();
         final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         createSomeTransactions( db );
         EphemeralFileSystemAbstraction snapshot = fs.snapshot();
         managementService.shutdown();
 
-        managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( snapshot ).newImpermanentService( storeDir );
+        managementService = new TestDatabaseManagementServiceBuilder( storeDir )
+                .setFileSystem( snapshot )
+                .impermanent()
+                .build();
         managementService.shutdown();
     }
 

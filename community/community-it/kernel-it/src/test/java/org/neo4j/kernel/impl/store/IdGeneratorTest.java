@@ -681,8 +681,10 @@ class IdGeneratorTest
 
     private GraphDatabaseService createTestDatabase( File storeDir )
     {
-        managementService = new TestDatabaseManagementServiceBuilder()
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) ).newImpermanentService( storeDir );
+        managementService = new TestDatabaseManagementServiceBuilder( storeDir )
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
+                .impermanent()
+                .build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

@@ -135,8 +135,7 @@ public class FulltextProceduresTest
     @Before
     public void before()
     {
-        DatabaseManagementServiceBuilder factory = new DatabaseManagementServiceBuilder();
-        builder = factory.newEmbeddedDatabaseBuilder( testDirectory.storeDir() );
+        builder = new DatabaseManagementServiceBuilder( testDirectory.storeDir() );
         builder.setConfig( GraphDatabaseSettings.store_internal_log_level, "DEBUG" );
     }
 
@@ -2267,7 +2266,7 @@ public class FulltextProceduresTest
 
     private GraphDatabaseAPI createDatabase()
     {
-        managementService = builder.newDatabaseManagementService();
+        managementService = builder.build();
         cleanup.add( managementService );
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }

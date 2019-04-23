@@ -102,6 +102,6 @@ class DatabaseFailureIT
 
     private void startDatabaseServer()
     {
-        managementService = new DatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
+        managementService = new DatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
     }
 }

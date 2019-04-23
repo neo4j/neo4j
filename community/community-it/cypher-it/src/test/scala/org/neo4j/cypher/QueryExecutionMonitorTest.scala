@@ -194,7 +194,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
   var engine: ExecutionEngine = _
 
   override protected def beforeEach(): Unit = {
-    db = new GraphDatabaseCypherService(new TestDatabaseManagementServiceBuilder().newImpermanentService().database(DEFAULT_DATABASE_NAME))
+    db = new GraphDatabaseCypherService(new TestDatabaseManagementServiceBuilder().impermanent().build().database(DEFAULT_DATABASE_NAME))
     monitor = mock[QueryExecutionMonitor]
     val monitors = db.getDependencyResolver.resolveDependency(classOf[Monitors])
     monitors.addMonitorListener(monitor)

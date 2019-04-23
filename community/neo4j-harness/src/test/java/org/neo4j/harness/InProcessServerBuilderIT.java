@@ -239,9 +239,9 @@ class InProcessServerBuilderIT
         File existingStoreDir = directory.directory( "existingStore" );
         Config config = Config.defaults( data_directory, existingStoreDir.toPath().toString() );
         File rootDirectory = config.get( databases_root_path );
-        DatabaseManagementServiceBuilder databaseBuilder = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( rootDirectory )
+        DatabaseManagementServiceBuilder databaseBuilder = new TestDatabaseManagementServiceBuilder( rootDirectory )
                 .setConfig( transaction_logs_root_path, new File( existingStoreDir, DEFAULT_TX_LOGS_ROOT_DIR_NAME ).getAbsolutePath() );
-        DatabaseManagementService managementService = databaseBuilder.newDatabaseManagementService();
+        DatabaseManagementService managementService = databaseBuilder.build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -268,7 +268,7 @@ class InProcessServerBuilderIT
         }
 
         // Then: we still only have one node since the server is supposed to work on a copy
-        managementService = databaseBuilder.newDatabaseManagementService();
+        managementService = databaseBuilder.build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

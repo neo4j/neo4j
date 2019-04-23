@@ -72,9 +72,10 @@ class DatabaseShutdownTest
     @Test
     void shouldShutdownCorrectlyWhenCheckPointingOnShutdownFails()
     {
-        TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush factory = new TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        DatabaseManagementService managementService = factory.newDatabaseManagementService( databaseLayout.databaseDirectory() );
+        TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush factory =
+                new TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush( databaseLayout.databaseDirectory() );
+        DatabaseManagementService managementService = factory.build();
         GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
         DatabaseManager<?> databaseManager = ((GraphDatabaseAPI) databaseService).getDependencyResolver().resolveDependency( DatabaseManager.class );
         var databaseContext = databaseManager.getDatabaseContext( new DatabaseId( databaseLayout.getDatabaseName() ) );
@@ -88,7 +89,7 @@ class DatabaseShutdownTest
     @Test
     void invokeDatabaseShutdownListenersOnShutdown()
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
         ShutdownListenerDatabaseEventListener shutdownHandler = new ShutdownListenerDatabaseEventListener();
         managementService.registerDatabaseEventListener( shutdownHandler );
         managementService.shutdown();
@@ -101,8 +102,13 @@ class DatabaseShutdownTest
         private LifeSupport globalLife;
         private volatile boolean failFlush;
 
+        TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush( File databaseRootDir )
+        {
+            super( databaseRootDir );
+        }
+
         @Override
-        protected DatabaseManagementService newEmbeddedDatabase( File storeDir, Config config, ExternalDependencies dependencies, boolean impermanent )
+        protected DatabaseManagementService newDatabaseManagementService( File storeDir, Config config, ExternalDependencies dependencies )
         {
             return new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
             {

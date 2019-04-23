@@ -61,9 +61,7 @@ class IndexValuesValidationTest
 
     void setUp( String... settings )
     {
-        managementService = new DatabaseManagementServiceBuilder()
-                .newEmbeddedDatabaseBuilder( directory.storeDir() )
-                .setConfig( stringMap( settings ) ).newDatabaseManagementService();
+        managementService = new DatabaseManagementServiceBuilder( directory.storeDir() ).setConfigRaw( stringMap( settings ) ).build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

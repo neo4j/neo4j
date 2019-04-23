@@ -177,9 +177,10 @@ public class MultipleIndexPopulationStressIT
 
     private void populateDbAndIndexes( int nodeCount, boolean multiThreaded ) throws InterruptedException
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
-                .newEmbeddedDatabaseBuilder( directory.storeDir() )
-                .setConfig( multi_threaded_schema_index_population_enabled, multiThreaded + "" ).newDatabaseManagementService();
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder( directory.storeDir() )
+                        .setConfig( multi_threaded_schema_index_population_enabled, multiThreaded + "" )
+                        .build();
         final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -214,9 +215,10 @@ public class MultipleIndexPopulationStressIT
 
     private void dropIndexes()
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
-                .newEmbeddedDatabaseBuilder( directory.storeDir() )
-                .setConfig( GraphDatabaseSettings.pagecache_memory, "8m" ).newDatabaseManagementService();
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder( directory.storeDir() )
+                        .setConfig( GraphDatabaseSettings.pagecache_memory, "8m" )
+                        .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {

@@ -23,12 +23,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.helpers.collection.Pair;
@@ -131,7 +133,7 @@ public class GlobalModule
     public GlobalModule( File providedStoreDir, Config globalConfig, DatabaseInfo databaseInfo,
             ExternalDependencies externalDependencies )
     {
-        externalDependencyResolver = externalDependencies.dependencies();
+        externalDependencyResolver = externalDependencies.dependencies() != null ? externalDependencies.dependencies() : new Dependencies();
 
         this.databaseInfo = databaseInfo;
 
@@ -155,7 +157,7 @@ public class GlobalModule
         globalMonitors = externalDependencies.monitors() == null ? new Monitors() : externalDependencies.monitors();
         globalDependencies.satisfyDependency( globalMonitors );
 
-        JobScheduler jobScheduler = externalDependencyResolver.tryResolveOrCreate( JobScheduler.class, this::createJobScheduler );
+        JobScheduler jobScheduler = tryResolveOrCreate( JobScheduler.class, this::createJobScheduler );
         this.jobScheduler = globalLife.add( globalDependencies.satisfyDependency( jobScheduler ) );
         startDeferredExecutors( this.jobScheduler, externalDependencies.deferredExecutors() );
 
@@ -184,13 +186,12 @@ public class GlobalModule
                 logService.getInternalLog( Tracers.class ), globalMonitors, this.jobScheduler, globalClock ) );
         globalDependencies.satisfyDependency( tracers.getPageCacheTracer() );
 
-        versionContextSupplier =
-                externalDependencyResolver.tryResolveOrCreate( VersionContextSupplier.class, () -> createCursorContextSupplier( globalConfig ) );
+        versionContextSupplier = tryResolveOrCreate( VersionContextSupplier.class, () -> createCursorContextSupplier( globalConfig ) );
         globalDependencies.satisfyDependency( versionContextSupplier );
 
         collectionsFactorySupplier = createCollectionsFactorySupplier( globalConfig, globalLife );
 
-        pageCache = externalDependencyResolver.tryResolveOrCreate( PageCache.class,
+        pageCache = tryResolveOrCreate( PageCache.class,
                 () -> createPageCache( fileSystem, globalConfig, logService, tracers, versionContextSupplier, this.jobScheduler ) );
 
         globalLife.add( new PageCacheLifecycle( pageCache ) );
@@ -224,6 +225,18 @@ public class GlobalModule
         globalDependencies.satisfyDependency( storageEngineFactory );
 
         checkLegacyDefaultDatabase();
+    }
+
+    private <T> T tryResolveOrCreate( Class<T> clazz, Supplier<T> newInstanceMethod )
+    {
+        try
+        {
+            return externalDependencyResolver.resolveDependency( clazz );
+        }
+        catch ( IllegalArgumentException | UnsatisfiedDependencyException e )
+        {
+            return newInstanceMethod.get();
+        }
     }
 
     private void checkLegacyDefaultDatabase()

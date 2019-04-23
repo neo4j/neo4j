@@ -71,8 +71,10 @@ class IdGeneratorRebuildTest
     {
         databaseLayout = testDirectory.databaseLayout();
         uncloseableFs = new UncloseableDelegatingFileSystemAbstraction( fs );
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( uncloseableFs )
-                .newImpermanentService( testDirectory.storeDir() );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+                .setFileSystem( uncloseableFs )
+                .impermanent()
+                .build();
         GraphDatabaseService graphdb = managementService.database( DEFAULT_DATABASE_NAME );
         createInitialData( graphdb );
         managementService.shutdown();
@@ -89,8 +91,10 @@ class IdGeneratorRebuildTest
         DatabaseManagementService managementService = null;
         try
         {
-            managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( uncloseableFs )
-                    .newImpermanentService( testDirectory.storeDir() );
+            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+                    .setFileSystem( uncloseableFs )
+                    .impermanent()
+                    .build();
             graphdb = managementService.database( DEFAULT_DATABASE_NAME );
             verifyData( graphdb );
         }

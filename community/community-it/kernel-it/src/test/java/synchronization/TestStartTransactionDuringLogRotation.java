@@ -50,9 +50,10 @@ public class TestStartTransactionDuringLogRotation
     public DbmsRule db = new EmbeddedDbmsRule()
     {
         @Override
-        protected DatabaseManagementServiceBuilder newBuilder( DatabaseManagementServiceBuilder factory )
+        protected void configure( DatabaseManagementServiceBuilder databaseFactory )
         {
-            return super.newBuilder( factory ).setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" );
+            super.configure( databaseFactory );
+            databaseFactory.setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" );
         }
     };
     @Rule

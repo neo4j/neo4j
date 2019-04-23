@@ -53,7 +53,7 @@ public class DefaultSchemaIndexConfigTest
 {
     private static final String KEY = "key";
     private static final TestLabels LABEL = TestLabels.LABEL_ONE;
-    private static final DatabaseManagementServiceBuilder dbBuilder = new TestDatabaseManagementServiceBuilder().newImpermanentDatabaseBuilder();
+    private static final DatabaseManagementServiceBuilder dbBuilder = new TestDatabaseManagementServiceBuilder().impermanent();
 
     @Parameterized.Parameters( name = "{0}" )
     public static List<GraphDatabaseSettings.SchemaIndex> providers()
@@ -72,7 +72,7 @@ public class DefaultSchemaIndexConfigTest
         // given
         DatabaseManagementServiceBuilder
                 databaseManagementServiceBuilder = dbBuilder.setConfig( default_schema_provider, provider == null ? null : provider.providerName() );
-        DatabaseManagementService managementService = databaseManagementServiceBuilder.newDatabaseManagementService();
+        DatabaseManagementService managementService = databaseManagementServiceBuilder.build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

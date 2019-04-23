@@ -59,10 +59,11 @@ public class TestReadOnlyNeo4j
     public void testSimple()
     {
         DbRepresentation someData = createSomeData();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) )
-                .newImpermanentDatabaseBuilder( testDirectory.storeDir() )
-                .setConfig( GraphDatabaseSettings.read_only, Settings.TRUE ).newDatabaseManagementService();
+                .impermanent()
+                .setConfig( GraphDatabaseSettings.read_only, Settings.TRUE )
+                .build();
         GraphDatabaseService readGraphDb = managementService.database( DEFAULT_DATABASE_NAME );
         assertEquals( someData, DbRepresentation.of( readGraphDb ) );
 
@@ -82,8 +83,10 @@ public class TestReadOnlyNeo4j
     private DbRepresentation createSomeData()
     {
         RelationshipType type = withName( "KNOWS" );
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) ).newImpermanentService( testDirectory.storeDir() );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) )
+                .impermanent()
+                .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
@@ -105,8 +108,10 @@ public class TestReadOnlyNeo4j
     @Test
     public void testReadOnlyOperationsAndNoTransaction()
     {
-        DatabaseManagementService
-                managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fs.get() ).newImpermanentService( testDirectory.storeDir() );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+                .setFileSystem( fs.get() )
+                .impermanent()
+                .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         Transaction tx = db.beginTx();

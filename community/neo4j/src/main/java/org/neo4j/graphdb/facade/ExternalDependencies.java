@@ -43,8 +43,6 @@ public interface ExternalDependencies
 
     LogProvider userLogProvider();
 
-    Iterable<Class<?>> settingsClasses();
-
     Iterable<ExtensionFactory<?>> extensions();
 
     Map<String,URLAccessRule> urlAccessRules();

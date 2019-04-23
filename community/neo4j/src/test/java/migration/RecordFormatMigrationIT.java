@@ -153,7 +153,7 @@ class RecordFormatMigrationIT
         }
         managementService.shutdown();
 
-        managementService = new DatabaseManagementServiceBuilder().newDatabaseManagementService( databaseDirectory );
+        managementService = new DatabaseManagementServiceBuilder( databaseDirectory ).build();
         GraphDatabaseService databaseService = getDefaultDatabase( managementService );
         try
         {
@@ -213,14 +213,13 @@ class RecordFormatMigrationIT
 
     private DatabaseManagementService startManagementService( String name )
     {
-        return new DatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( databaseDirectory ).setConfig( record_format,
-                name ).newDatabaseManagementService();
+        return new DatabaseManagementServiceBuilder( databaseDirectory ).setConfig( record_format,
+                name ).build();
     }
 
     private static DatabaseManagementService startDatabaseServiceWithUpgrade( File storeDir, String formatName )
     {
-        return new DatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( record_format, formatName )
-                .setConfig( allow_upgrade, TRUE ).newDatabaseManagementService();
+        return new DatabaseManagementServiceBuilder( storeDir ).setConfig( record_format, formatName )
+                .setConfig( allow_upgrade, TRUE ).build();
     }
 }

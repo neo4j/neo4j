@@ -199,9 +199,9 @@ public class ConsistencyCheckServiceIntegrationTest
         // given
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration = Config.defaults( settings() );
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
-                .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
-                .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
+                .setConfig( "dbms.backup.enabled", "false" ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         String propertyKey = "itemId";
@@ -347,18 +347,18 @@ public class ConsistencyCheckServiceIntegrationTest
 
     private GraphDatabaseService getGraphDatabaseService( File storeDir, String... settings )
     {
-        DatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( storeDir );
-        builder.setConfig( settings( settings ) );
+        DatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( storeDir );
+        builder.setConfigRaw( settings( settings ) );
 
-        managementService = builder.newDatabaseManagementService();
+        managementService = builder.build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private void prepareDbWithDeletedRelationshipPartOfTheChain()
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
-                .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
-                .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
+                .setConfig( "dbms.backup.enabled", "false" ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -397,10 +397,9 @@ public class ConsistencyCheckServiceIntegrationTest
         File tmpLogDir = new File( testDirectory.directory(), "logs" );
         fs.mkdir( tmpLogDir );
         var databaseLayout = testDirectory.databaseLayout();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
-                .newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
-                .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
-                .setConfig( "dbms.backup.enabled", "false" ).newDatabaseManagementService();
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
+                .setConfig( "dbms.backup.enabled", "false" ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
         RelationshipType relationshipType = RelationshipType.withName( "testRelationshipType" );

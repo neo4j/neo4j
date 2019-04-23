@@ -64,7 +64,7 @@ class DiagnosticsReportCommandIT
     @BeforeEach
     void setUp()
     {
-        managementService = new DatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( testDirectory.storeDir() ).newDatabaseManagementService();
+        managementService = new DatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

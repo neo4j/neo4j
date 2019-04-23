@@ -104,13 +104,13 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     testDirectory.prepareDirectory(getClass, "createDbWithFailedIndex")
     val storeDir = testDirectory.databaseDir()
     managementService.shutdown()
-    val dbFactory = new TestDatabaseManagementServiceBuilder()
+    val dbFactory = new TestDatabaseManagementServiceBuilder(storeDir)
     // Build a properly failing index provider which is a wrapper around the default provider, but which throws exception
     // in its populator when trying to add updates to it
     val providerFactory = new FailingGenericNativeIndexProviderFactory(POPULATION)
     dbFactory.removeExtensions(TestDatabaseManagementServiceBuilder.INDEX_PROVIDERS_FILTER)
     dbFactory.addExtension(providerFactory)
-    managementService = dbFactory.newDatabaseManagementService(storeDir)
+    managementService = dbFactory.build()
     graph = new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
     eengine = createEngine(graph)
     execute("create (:Person {name:42})")

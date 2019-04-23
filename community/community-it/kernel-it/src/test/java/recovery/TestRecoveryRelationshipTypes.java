@@ -62,7 +62,7 @@ class TestRecoveryRelationshipTypes
                 getClassPath(), getClass().getName(), storeDir.getAbsolutePath()} ).waitFor() );
 
         // When
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( storeDir );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         // Then
@@ -85,7 +85,7 @@ class TestRecoveryRelationshipTypes
         }
 
         File storeDir = new File( args[0] );
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( storeDir );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {

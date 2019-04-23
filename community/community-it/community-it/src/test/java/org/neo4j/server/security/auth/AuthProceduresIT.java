@@ -245,12 +245,10 @@ public class AuthProceduresIT
     {
         removePreviousAuthFile();
 
-        DatabaseManagementServiceBuilder graphDatabaseFactory = new TestDatabaseManagementServiceBuilder()
-                .setFileSystem( fs )
-            .newImpermanentDatabaseBuilder()
+        DatabaseManagementServiceBuilder graphDatabaseFactory = new TestDatabaseManagementServiceBuilder().setFileSystem( fs ).impermanent()
                 .setConfig( GraphDatabaseSettings.auth_enabled, "true" );
 
-        managementService = graphDatabaseFactory.newDatabaseManagementService();
+        managementService = graphDatabaseFactory.build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 

@@ -222,14 +222,16 @@ public class IndexStatisticsIT
 
     private void startDb()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().setInternalLogProvider( logProvider )
-                                           .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
-                                           .newImpermanentDatabaseBuilder()
-                                           .setConfig( index_background_sampling_enabled, "false" ).newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder()
+                .setInternalLogProvider( logProvider )
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
+                .impermanent()
+                .setConfig( index_background_sampling_enabled, "false" )
+                .build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    void restart()
+    private void restart()
     {
         managementService.shutdown();
         startDb();

@@ -23,13 +23,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 
+import java.io.File;
 import java.util.Iterator;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Procedures;
@@ -179,25 +179,19 @@ public abstract class KernelIntegrationTest
 
     protected DatabaseManagementService createDatabaseService()
     {
-        DatabaseManagementServiceBuilder databaseManagementServiceBuilder = configure( createGraphDatabaseFactory() )
-                .setFileSystem( testDir.getFileSystem() )
-                .newEmbeddedDatabaseBuilder( testDir.storeDir() );
-        return configure( databaseManagementServiceBuilder ).newDatabaseManagementService();
+        TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder = configure( createGraphDatabaseFactory( testDir.storeDir() ) )
+                .setFileSystem( testDir.getFileSystem() );
+        return configure( databaseManagementServiceBuilder ).build();
     }
 
-    protected TestDatabaseManagementServiceBuilder createGraphDatabaseFactory()
+    protected TestDatabaseManagementServiceBuilder createGraphDatabaseFactory( File databaseRootDir )
     {
-        return new TestDatabaseManagementServiceBuilder();
+        return new TestDatabaseManagementServiceBuilder( databaseRootDir );
     }
 
-    protected DatabaseManagementServiceBuilder configure( DatabaseManagementServiceBuilder databaseManagementServiceBuilder )
+    protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder )
     {
         return databaseManagementServiceBuilder;
-    }
-
-    protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder factory )
-    {
-        return factory;
     }
 
     void dbWithNoCache() throws TransactionFailureException

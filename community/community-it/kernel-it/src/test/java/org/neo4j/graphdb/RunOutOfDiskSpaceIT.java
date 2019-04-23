@@ -66,8 +66,9 @@ class RunOutOfDiskSpaceIT
     void setUp()
     {
         limitedFs = new LimitedFilesystemAbstraction( new UncloseableDelegatingFileSystemAbstraction( testDirectory.getFileSystem() ) );
-        TestDatabaseManagementServiceBuilder testGraphDatabaseFactory = new TestDatabaseManagementServiceBuilder().setFileSystem( limitedFs );
-        managementService = testGraphDatabaseFactory.newDatabaseManagementService( testDirectory.storeDir() );
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+                .setFileSystem( limitedFs )
+                .build();
         database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 

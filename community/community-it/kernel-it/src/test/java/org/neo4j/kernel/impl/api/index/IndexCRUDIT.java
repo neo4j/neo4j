@@ -181,12 +181,14 @@ public class IndexCRUDIT
         when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ), any() ) )
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
         when( mockedIndexProvider.bless( any( IndexDescriptor.class ) ) ).thenCallRealMethod();
-        TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
-        factory.setFileSystem( fs.get() );
-        factory.setExtensions(
-                Collections.singletonList( mockedIndexProviderFactory ) );
-        managementService = factory.newImpermanentDatabaseBuilder()
-                .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).newDatabaseManagementService();
+
+        managementService = new TestDatabaseManagementServiceBuilder()
+                .setFileSystem( fs.get() )
+                .setExtensions( Collections.singletonList( mockedIndexProviderFactory ) )
+                .impermanent()
+                .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() )
+                .build();
+
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         ctxSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }

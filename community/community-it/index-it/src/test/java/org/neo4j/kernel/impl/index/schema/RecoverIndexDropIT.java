@@ -84,7 +84,7 @@ class RecoverIndexDropIT
         // given a transaction stream ending in an INDEX DROP command.
         CommittedTransactionRepresentation dropTransaction = prepareDropTransaction();
         var databaseLayout = directory.databaseLayout();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( directory.storeDir() );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( directory.storeDir() ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         createIndex( db );
         managementService.shutdown();
@@ -94,8 +94,8 @@ class RecoverIndexDropIT
         Monitors monitors = new Monitors();
         AssertRecoveryIsPerformed recoveryMonitor = new AssertRecoveryIsPerformed();
         monitors.addMonitorListener( recoveryMonitor );
-        managementService = new TestDatabaseManagementServiceBuilder().setMonitors( monitors )
-                .newDatabaseManagementService( directory.storeDir() );
+        managementService = new TestDatabaseManagementServiceBuilder( directory.storeDir() ).setMonitors( monitors )
+                .build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -140,7 +140,7 @@ class RecoverIndexDropIT
     private CommittedTransactionRepresentation prepareDropTransaction() throws IOException
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( directory.directory( "preparation" ) );
+                new TestDatabaseManagementServiceBuilder( directory.directory( "preparation" ) ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

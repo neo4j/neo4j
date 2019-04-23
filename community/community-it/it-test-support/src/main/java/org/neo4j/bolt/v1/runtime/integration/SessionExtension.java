@@ -94,7 +94,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
     {
         Map<Setting<?>,String> configMap = new HashMap<>();
         configMap.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
-        managementService = graphDatabaseFactory.newImpermanentService( configMap );
+        managementService = graphDatabaseFactory.impermanent().setConfig( configMap ).build();
         gdb = (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         DependencyResolver resolver = gdb.getDependencyResolver();
         Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),

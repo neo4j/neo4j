@@ -179,8 +179,7 @@ public class GraphDatabaseShutdownTest
 
     private GraphDatabaseAPI newDb()
     {
-        managementService = new TestDatabaseManagementServiceBuilder()
-                .newImpermanentDatabaseBuilder().newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

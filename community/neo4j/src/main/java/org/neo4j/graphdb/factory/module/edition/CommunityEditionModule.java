@@ -33,6 +33,7 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DefaultDatabaseManager;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
@@ -110,7 +111,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
 
         threadToTransactionBridge = globalDependencies.satisfyDependency( new ThreadToStatementContextBridge() );
 
-        idContextFactory = externalDependencies.tryResolveOrCreate( IdContextFactory.class, () -> createIdContextFactory( globalModule, fileSystem ) );
+        idContextFactory = tryResolveOrCreate( IdContextFactory.class, externalDependencies, () -> createIdContextFactory( globalModule, fileSystem ) );
 
         tokenHoldersProvider = createTokenHolderProvider( globalModule );
 
@@ -251,6 +252,18 @@ public class CommunityEditionModule extends StandaloneEditionModule
             NoAuthSecurityProvider noAuthSecurityProvider = NoAuthSecurityProvider.INSTANCE;
             globalLife.add( noAuthSecurityProvider );
             this.securityProvider = noAuthSecurityProvider;
+        }
+    }
+
+    private static <T> T tryResolveOrCreate( Class<T> clazz, DependencyResolver dependencies, Supplier<T> newInstanceMethod )
+    {
+        try
+        {
+            return dependencies.resolveDependency( clazz );
+        }
+        catch ( IllegalArgumentException | UnsatisfiedDependencyException e )
+        {
+            return newInstanceMethod.get();
         }
     }
 }

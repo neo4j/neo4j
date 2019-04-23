@@ -42,6 +42,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.SystemNanoClock;
+import org.neo4j.util.Preconditions;
 
 import static org.neo4j.configuration.connectors.Connector.ConnectorType.BOLT;
 
@@ -58,62 +59,35 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     protected FileSystemAbstraction fileSystem;
     protected LogProvider internalLogProvider;
     protected SystemNanoClock clock;
+    protected boolean impermanent;
 
     public TestDatabaseManagementServiceBuilder()
     {
-        this( NullLogProvider.getInstance() );
+        this( null );
+        setUserLogProvider( NullLogProvider.getInstance() );
     }
 
-    public TestDatabaseManagementServiceBuilder( LogProvider logProvider )
+    public TestDatabaseManagementServiceBuilder( File databaseRootDir )
     {
-        super();
-        setUserLogProvider( logProvider );
-    }
-
-    public DatabaseManagementService newImpermanentService()
-    {
-        DatabaseManagementServiceBuilder databaseBuilder = newImpermanentDatabaseBuilder();
-        return databaseBuilder.newDatabaseManagementService();
-    }
-
-    public DatabaseManagementService newImpermanentService( File storeDir )
-    {
-        DatabaseManagementServiceBuilder databaseBuilder = newImpermanentDatabaseBuilder( storeDir );
-        return databaseBuilder.newDatabaseManagementService();
-    }
-
-    public DatabaseManagementService newImpermanentService( Map<Setting<?>,String> config )
-    {
-        DatabaseManagementServiceBuilder builder = newImpermanentDatabaseBuilder();
-        setConfig( config, builder );
-        return builder.newDatabaseManagementService();
-    }
-
-    public DatabaseManagementService newImpermanentService( File storeDir , Map<Setting<?>,String> config )
-    {
-        DatabaseManagementServiceBuilder builder = newImpermanentDatabaseBuilder(storeDir);
-        setConfig( config, builder );
-        return builder.newDatabaseManagementService();
-    }
-
-    public DatabaseManagementServiceBuilder newImpermanentDatabaseBuilder()
-    {
-        return newImpermanentDatabaseBuilder( EPHEMERAL_PATH );
+        super( databaseRootDir );
+        setUserLogProvider( NullLogProvider.getInstance() );
     }
 
     @Override
-    protected void configure( DatabaseManagementServiceBuilder builder )
+    protected DatabaseManagementService newDatabaseManagementService( File storeDir, Config config, ExternalDependencies dependencies )
     {
-        // Reduce the default page cache memory size to 8 mega-bytes for test databases.
-        builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
-        builder.setConfig( new BoltConnector( "bolt" ).type, BOLT.name() );
-        builder.setConfig( new BoltConnector( "bolt" ).enabled, "false" );
+        Preconditions.checkArgument( storeDir != null || impermanent, "Database must have a root path or be impermanent." );
+        return new TestDatabaseManagementServiceFactory( getDatabaseInfo(), getEditionFactory(), impermanent, fileSystem, clock, internalLogProvider )
+                .newFacade( storeDir, augmentConfig( config ), GraphDatabaseDependencies.newDependencies( dependencies ) );
     }
 
-    private void configure( DatabaseManagementServiceBuilder builder, File storeDir )
+    @Override
+    protected Config augmentConfig( Config config )
     {
-        configure( builder );
-        builder.setConfig( GraphDatabaseSettings.logs_directory, new File( storeDir, "logs" ).getAbsolutePath() );
+        config.augmentDefaults( GraphDatabaseSettings.pagecache_memory, "8m" );
+        config.augmentDefaults( new BoltConnector( "bolt" ).type, BOLT.name() );
+        config.augmentDefaults( new BoltConnector( "bolt" ).enabled, "false" );
+        return config;
     }
 
     public FileSystemAbstraction getFileSystem()
@@ -127,22 +101,10 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         return this;
     }
 
-    @Override
-    public TestDatabaseManagementServiceBuilder setExternalDependencies( DependencyResolver dependencies )
+    public TestDatabaseManagementServiceBuilder setDatabaseRootDirectory( File storeDir )
     {
-        return (TestDatabaseManagementServiceBuilder) super.setExternalDependencies( dependencies );
-    }
-
-    @Override
-    public TestDatabaseManagementServiceBuilder setMonitors( Monitors monitors )
-    {
-        return (TestDatabaseManagementServiceBuilder) super.setMonitors( monitors );
-    }
-
-    @Override
-    public TestDatabaseManagementServiceBuilder setUserLogProvider( LogProvider logProvider )
-    {
-        return (TestDatabaseManagementServiceBuilder) super.setUserLogProvider( logProvider );
+        this.databaseRootDir = storeDir;
+        return this;
     }
 
     public TestDatabaseManagementServiceBuilder setInternalLogProvider( LogProvider internalLogProvider )
@@ -184,34 +146,63 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         return this;
     }
 
+    public TestDatabaseManagementServiceBuilder impermanent()
+    {
+        impermanent = true;
+        if ( databaseRootDir == null )
+        {
+            databaseRootDir = EPHEMERAL_PATH;
+        }
+        return this;
+    }
+
+    // Override to allow chaining
+
+    @Override
+    public TestDatabaseManagementServiceBuilder setExternalDependencies( DependencyResolver dependencies )
+    {
+        return (TestDatabaseManagementServiceBuilder) super.setExternalDependencies( dependencies );
+    }
+
+    @Override
+    public TestDatabaseManagementServiceBuilder setMonitors( Monitors monitors )
+    {
+        return (TestDatabaseManagementServiceBuilder) super.setMonitors( monitors );
+    }
+
+    @Override
+    public TestDatabaseManagementServiceBuilder setUserLogProvider( LogProvider logProvider )
+    {
+        return (TestDatabaseManagementServiceBuilder) super.setUserLogProvider( logProvider );
+    }
+
     @Override
     public TestDatabaseManagementServiceBuilder addURLAccessRule( String protocol, URLAccessRule rule )
     {
         return (TestDatabaseManagementServiceBuilder) super.addURLAccessRule( protocol, rule );
     }
 
-    public DatabaseManagementServiceBuilder newImpermanentDatabaseBuilder( final File storeDir )
+    @Override
+    public TestDatabaseManagementServiceBuilder setConfig( String name, String value )
     {
-        creator = new EmbeddedDatabaseCreator( storeDir, true );
-        setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
-        configure( this, storeDir );
-        return this;
+        return (TestDatabaseManagementServiceBuilder) super.setConfig( name, value );
     }
 
     @Override
-    protected DatabaseManagementService newEmbeddedDatabase( File storeDir, Config config, ExternalDependencies dependencies, boolean impermanent )
+    public TestDatabaseManagementServiceBuilder setConfig( Setting<?> setting, String value )
     {
-        return new TestDatabaseManagementServiceFactory( impermanent ).newFacade( storeDir, augmentConfig( config ),
-                GraphDatabaseDependencies.newDependencies( dependencies ) );
+        return (TestDatabaseManagementServiceBuilder) super.setConfig( setting, value );
     }
 
-    private static void setConfig( Map<Setting<?>,String> config, DatabaseManagementServiceBuilder builder )
+    @Override
+    public TestDatabaseManagementServiceBuilder setConfig( Map<Setting<?>,String> config )
     {
-        for ( Map.Entry<Setting<?>,String> entry : config.entrySet() )
-        {
-            Setting<?> key = entry.getKey();
-            String value = entry.getValue();
-            builder.setConfig( key, value );
-        }
+        return (TestDatabaseManagementServiceBuilder) super.setConfig( config );
+    }
+
+    @Override
+    public TestDatabaseManagementServiceBuilder setConfigRaw( Map<String,String> config )
+    {
+        return (TestDatabaseManagementServiceBuilder) super.setConfigRaw( config );
     }
 }

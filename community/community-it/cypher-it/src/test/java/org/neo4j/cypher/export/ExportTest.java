@@ -58,7 +58,7 @@ public class ExportTest
     @Before
     public void setUp()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         gdb = managementService.database( DEFAULT_DATABASE_NAME );
         tx = gdb.beginTx();
     }

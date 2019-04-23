@@ -93,7 +93,7 @@ class ManyPropertyKeysIT
     void concurrently_creating_same_property_key_in_different_transactions_should_end_up_with_same_key_id() throws Exception
     {
         // GIVEN
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         OtherThreadExecutor<WorkerState> worker1 = new OtherThreadExecutor<>( "w1", new WorkerState( db ) );
         OtherThreadExecutor<WorkerState> worker2 = new OtherThreadExecutor<>( "w2", new WorkerState( db ) );
@@ -116,9 +116,9 @@ class ManyPropertyKeysIT
 
     private GraphDatabaseAPI database()
     {
-        managementService = new TestDatabaseManagementServiceBuilder()
-                .newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
-                .setConfig( GraphDatabaseSettings.fail_on_missing_files, Settings.FALSE ).newDatabaseManagementService();
+        managementService =
+                new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).setConfig( GraphDatabaseSettings.fail_on_missing_files, Settings.FALSE )
+                        .build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 

@@ -97,8 +97,8 @@ public class CheckPointerConstraintCreationDeadlockIT
     {
         List<TransactionRepresentation> transactions = createConstraintCreatingTransactions();
         Monitors monitors = new Monitors();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
-                .setMonitors( monitors ).newImpermanentService();
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder().setMonitors( monitors ).impermanent().build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         Barrier.Control controller = new Barrier.Control();
         boolean success = false;
@@ -206,7 +206,7 @@ public class CheckPointerConstraintCreationDeadlockIT
 
     private static List<TransactionRepresentation> createConstraintCreatingTransactions() throws Exception
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

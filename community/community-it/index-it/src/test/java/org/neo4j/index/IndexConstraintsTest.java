@@ -49,7 +49,7 @@ public class IndexConstraintsTest
     @Before
     public void setup()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         graphDb = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

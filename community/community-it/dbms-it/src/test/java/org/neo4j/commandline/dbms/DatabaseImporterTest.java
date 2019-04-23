@@ -95,7 +95,7 @@ class DatabaseImporterTest
         File databaseDirectory;
         try
         {
-            managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( storeDir );
+            managementService = new TestDatabaseManagementServiceBuilder( storeDir ).build();
             db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
             databaseDirectory = db.databaseLayout().databaseDirectory();
             try ( Transaction transaction = db.beginTx() )

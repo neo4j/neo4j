@@ -66,7 +66,7 @@ public abstract class Neo4jAlgoTestCase
     @BeforeClass
     public static void setUpGraphDb()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         graphDb = managementService.database( DEFAULT_DATABASE_NAME );
         graph = new SimpleGraphBuilder( graphDb, MyRelTypes.R1 );
     }

@@ -41,7 +41,7 @@ public class CypherLoggingTest
     @Before
     public void setUp()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().setUserLogProvider( logProvider ).newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().setUserLogProvider( logProvider ).impermanent().build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

@@ -59,8 +59,10 @@ class PropertyKeyTest
         long nodeId = inserter.createNode( mapWithManyProperties( count /* larger than initial property index load threshold */ ) );
         inserter.shutdown();
 
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder().setFileSystem( fs ).newImpermanentService( testDirectory.storeDir() );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+                .setFileSystem( fs )
+                .impermanent()
+                .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         // When

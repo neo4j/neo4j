@@ -190,11 +190,12 @@ public class BatchInsertIndexTest
 
     private GraphDatabaseService graphDatabaseService( Config config )
     {
-        TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
+        TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() );
         factory.setFileSystem( fileSystemRule.get() );
-        managementService = factory.newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
-                // Shouldn't be necessary to set dense node threshold since it's a stick config
-                .setConfig( config.getRaw() ).newDatabaseManagementService();
+
+        // Shouldn't be necessary to set dense node threshold since it's a stick config
+        managementService = factory.setConfigRaw( config.getRaw() ).build();
+
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 

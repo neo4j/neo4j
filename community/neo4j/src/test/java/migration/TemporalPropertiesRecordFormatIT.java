@@ -113,9 +113,8 @@ class TemporalPropertiesRecordFormatIT
 
     private static DatabaseManagementService startDatabaseServiceWithUpgrade( File storeDir, String formatName )
     {
-        return new DatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( record_format, formatName )
-                .setConfig( allow_upgrade, TRUE ).newDatabaseManagementService();
+        return new DatabaseManagementServiceBuilder( storeDir ).setConfig( record_format, formatName )
+                .setConfig( allow_upgrade, TRUE ).build();
     }
 
     private static GraphDatabaseService getDefaultDatabase( DatabaseManagementService managementService )

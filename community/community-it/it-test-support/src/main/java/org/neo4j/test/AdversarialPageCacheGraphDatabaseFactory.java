@@ -45,12 +45,12 @@ public class AdversarialPageCacheGraphDatabaseFactory
         throw new AssertionError( "Not for instantiation!" );
     }
 
-    public static DatabaseManagementServiceBuilder create( FileSystemAbstraction fs, Adversary adversary )
+    public static DatabaseManagementServiceBuilder create( File databaseRootDir, FileSystemAbstraction fs, Adversary adversary )
     {
-        return new TestDatabaseManagementServiceBuilder()
+        return new TestDatabaseManagementServiceBuilder( databaseRootDir )
         {
             @Override
-            protected DatabaseManagementService newEmbeddedDatabase( File dir, Config config, ExternalDependencies dependencies, boolean impermanent )
+            protected DatabaseManagementService newDatabaseManagementService( File dir, Config config, ExternalDependencies dependencies )
             {
                 return new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 {

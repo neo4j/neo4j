@@ -242,10 +242,9 @@ class ConsistencyCheckToolTest
 
     private void createGraphDbAndKillIt( Config config ) throws IOException
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
                 .setFileSystem( fs )
-                .newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
-                .setConfig( config.getRaw()  ).newDatabaseManagementService();
+                .setConfigRaw( config.getRaw()  ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
         try ( Transaction tx = db.beginTx() )

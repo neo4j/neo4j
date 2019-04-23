@@ -28,23 +28,23 @@ import org.neo4j.dbms.database.DatabaseManagementService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
-class Edition[CONTEXT <: RuntimeContext](graphDatabaseFactory: TestDatabaseManagementServiceBuilder,
+class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabaseManagementServiceBuilder,
                                          runtimeContextCreatorFun: (CypherRuntimeConfiguration, DependencyResolver) => RuntimeContextCreator[CONTEXT],
                                          configs: (Setting[_], String)*) {
 
   import scala.collection.JavaConverters._
 
   def newGraphManagementService(): DatabaseManagementService = {
-    val graphBuilder = graphDatabaseFactory.newImpermanentDatabaseBuilder
+    val graphBuilder = graphBuilderFactory().impermanent
     configs.foreach{
       case (setting, value) => graphBuilder.setConfig(setting, value)
     }
-    graphBuilder.newDatabaseManagementService()
+    graphBuilder.build()
   }
 
   def copyWith(additionalConfigs: (Setting[_], String)*): Edition[CONTEXT] = {
     val newConfigs = configs ++ additionalConfigs
-    new Edition(graphDatabaseFactory, runtimeContextCreatorFun, newConfigs: _*)
+    new Edition(graphBuilderFactory, runtimeContextCreatorFun, newConfigs: _*)
   }
 
   def runtimeContextCreator(resolver: DependencyResolver): RuntimeContextCreator[CONTEXT] =
@@ -59,7 +59,7 @@ class Edition[CONTEXT <: RuntimeContext](graphDatabaseFactory: TestDatabaseManag
 
 object COMMUNITY {
   val EDITION = new Edition(
-    new TestDatabaseManagementServiceBuilder,
+    () => new TestDatabaseManagementServiceBuilder,
     (runtimeConfig, _) => CommunityRuntimeContextCreator(runtimeConfig),
     GraphDatabaseSettings.cypher_hints_error -> "true")
 }

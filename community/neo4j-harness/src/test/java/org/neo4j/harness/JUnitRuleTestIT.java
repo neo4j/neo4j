@@ -130,8 +130,9 @@ public class JUnitRuleTestIT
         File oldDir = testDirectory.directory( "old" );
         Config config = Config.defaults( data_directory, oldDir.toPath().toString() );
         File rootDirectory = config.get( databases_root_path );
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( rootDirectory )
-                .setConfig( transaction_logs_root_path, new File( oldDir, DEFAULT_TX_LOGS_ROOT_DIR_NAME ).getAbsolutePath() ).newDatabaseManagementService();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( rootDirectory )
+                .setConfig( transaction_logs_root_path, new File( oldDir, DEFAULT_TX_LOGS_ROOT_DIR_NAME ).getAbsolutePath() )
+                .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         try

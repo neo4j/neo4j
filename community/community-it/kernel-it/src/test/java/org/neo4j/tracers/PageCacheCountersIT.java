@@ -66,7 +66,7 @@ public class PageCacheCountersIT
     @Before
     public void setUp()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
         numberOfWorkers = Runtime.getRuntime().availableProcessors();
         executors = Executors.newFixedThreadPool( numberOfWorkers );

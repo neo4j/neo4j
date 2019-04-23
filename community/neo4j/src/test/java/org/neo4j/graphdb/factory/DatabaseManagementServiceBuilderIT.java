@@ -58,7 +58,7 @@ class DatabaseManagementServiceBuilderIT
     @Test
     void startSystemAndDefaultDatabase()
     {
-        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder().newDatabaseManagementService( testDirectory.storeDir() );
+        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -80,9 +80,8 @@ class DatabaseManagementServiceBuilderIT
         File factoryDir = testDirectory.storeDir();
         File databasesDir = testDirectory.directory( "my_databases" );
 
-        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder()
-                .newEmbeddedDatabaseBuilder( factoryDir )
-                .setConfig( databases_root_path, databasesDir.toString() ).newDatabaseManagementService();
+        DatabaseManagementService managementService =
+                new DatabaseManagementServiceBuilder( factoryDir ).setConfig( databases_root_path, databasesDir.toString() ).build();
         try
         {
             assertTrue( isEmptyOrNonExistingDirectory( fs, new File( factoryDir, DEFAULT_DATABASE_NAME ) ) );
@@ -102,7 +101,7 @@ class DatabaseManagementServiceBuilderIT
     {
         File factoryDir = testDirectory.storeDir();
 
-        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder().newDatabaseManagementService( factoryDir );
+        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder( factoryDir ).build();
         try
         {
             assertFalse( isEmptyOrNonExistingDirectory( fs, new File( factoryDir, DEFAULT_DATABASE_NAME ) ) );

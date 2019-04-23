@@ -42,7 +42,7 @@ class TestShutdownSequence
     @BeforeEach
     void createGraphDb()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
     }
 
     @Test

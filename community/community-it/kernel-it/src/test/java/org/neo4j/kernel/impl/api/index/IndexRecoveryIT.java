@@ -299,12 +299,14 @@ class IndexRecoveryIT
             managementService.shutdown();
         }
 
-        TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
-        factory.setFileSystem( fs );
-        factory.setExtensions( singletonList( mockedIndexProviderFactory ) );
-        factory.setMonitors( monitors );
-        managementService = factory.newImpermanentDatabaseBuilder( testDirectory.storeDir() )
-                .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+                .setFileSystem( fs )
+                .setExtensions( singletonList( mockedIndexProviderFactory ) )
+                .setMonitors( monitors )
+                .impermanent()
+                .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() )
+                .build();
+
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 

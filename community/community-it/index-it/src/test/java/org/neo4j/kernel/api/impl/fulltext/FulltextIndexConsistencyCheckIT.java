@@ -102,8 +102,7 @@ class FulltextIndexConsistencyCheckIT
     @BeforeEach
     void before()
     {
-        DatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
-        builder = factory.newEmbeddedDatabaseBuilder( testDirectory.storeDir() );
+        builder = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() );
     }
 
     @AfterEach
@@ -542,10 +541,12 @@ class FulltextIndexConsistencyCheckIT
 
         // Remove the property without updating the index
         managementService.shutdown();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( NullLogProvider.getInstance() ).setFileSystem( fs )
-                .removeExtensions( INDEX_PROVIDERS_FILTER )
-                .addExtension( new FailingGenericNativeIndexProviderFactory( SKIP_ONLINE_UPDATES ) )
-                .newDatabaseManagementService( testDirectory.storeDir() );
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+                        .setFileSystem( fs )
+                        .removeExtensions( INDEX_PROVIDERS_FILTER )
+                        .addExtension( new FailingGenericNativeIndexProviderFactory( SKIP_ONLINE_UPDATES ) )
+                        .build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
@@ -630,7 +631,7 @@ class FulltextIndexConsistencyCheckIT
 
     private GraphDatabaseService createDatabase()
     {
-        managementService = builder.newDatabaseManagementService();
+        managementService = builder.build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
         return database;
     }

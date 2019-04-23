@@ -96,8 +96,8 @@ public class DatabaseActionsTest
     @BeforeClass
     public static void createDb()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" ).newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent()
+                .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" ).build();
         graph = (GraphDatabaseFacade) managementService.database( DEFAULT_DATABASE_NAME );
         database = new WrappedDatabase( graph );
         graphdbHelper = new GraphDbHelper( database );

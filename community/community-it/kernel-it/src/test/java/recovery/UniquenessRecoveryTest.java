@@ -292,7 +292,7 @@ public class UniquenessRecoveryTest
 
     private static GraphDatabaseService graphdb( File path )
     {
-        managementService = new TestDatabaseManagementServiceBuilder().newEmbeddedDatabaseBuilder( path ).newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder( path ).build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 

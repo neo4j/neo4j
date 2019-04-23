@@ -55,7 +55,7 @@ public class NestedTransactionLocksIT
     @Before
     public void before()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

@@ -224,12 +224,13 @@ class RebuildCountsTest
         }
 
         fs.mkdirs( storeDir );
-        TestDatabaseManagementServiceBuilder dbFactory = new TestDatabaseManagementServiceBuilder();
-        managementService = dbFactory.setUserLogProvider( userLogProvider )
-                      .setInternalLogProvider( internalLogProvider )
-                      .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
-                      .newImpermanentDatabaseBuilder( storeDir )
-                      .setConfig( index_background_sampling_enabled, "false" ).newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder(  storeDir )
+                .setUserLogProvider( userLogProvider )
+                .setInternalLogProvider( internalLogProvider )
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+                .impermanent()
+                .setConfig( index_background_sampling_enabled, "false" )
+                .build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

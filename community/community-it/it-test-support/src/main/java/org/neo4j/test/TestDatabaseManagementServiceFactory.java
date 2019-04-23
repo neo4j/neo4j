@@ -29,7 +29,6 @@ import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
-import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -43,21 +42,18 @@ import org.neo4j.time.SystemNanoClock;
 public class TestDatabaseManagementServiceFactory extends DatabaseManagementServiceFactory
 {
     private final boolean impermanent;
-    // TODO: bind all 3
-    private FileSystemAbstraction fs;
+    private FileSystemAbstraction fileSystem;
     private LogProvider internalLogProvider;
-    private SystemNanoClock clock;
+    private final SystemNanoClock clock;
 
-    protected TestDatabaseManagementServiceFactory( boolean impermanent )
-    {
-        this( impermanent, DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
-    }
-
-    public TestDatabaseManagementServiceFactory( boolean impermanent,
-            DatabaseInfo databaseInfo, Function<GlobalModule,AbstractEditionModule> editionFactory )
+    public TestDatabaseManagementServiceFactory( DatabaseInfo databaseInfo, Function<GlobalModule,AbstractEditionModule> editionFactory, boolean impermanent,
+            FileSystemAbstraction fileSystem, SystemNanoClock clock, LogProvider internalLogProvider )
     {
         super( databaseInfo, editionFactory );
         this.impermanent = impermanent;
+        this.fileSystem = fileSystem;
+        this.clock = clock;
+        this.internalLogProvider = internalLogProvider;
     }
 
     @Override
@@ -89,9 +85,9 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
         @Override
         protected FileSystemAbstraction createFileSystemAbstraction()
         {
-            if ( fs != null )
+            if ( fileSystem != null )
             {
-                return fs;
+                return fileSystem;
             }
             else
             {

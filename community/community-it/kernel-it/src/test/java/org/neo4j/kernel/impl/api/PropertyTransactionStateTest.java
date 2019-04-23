@@ -41,7 +41,7 @@ public class PropertyTransactionStateTest
     @Before
     public void setUp()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentService();
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

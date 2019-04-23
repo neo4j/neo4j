@@ -155,7 +155,7 @@ public class TestGraphDescription implements GraphHolder
     @BeforeClass
     public static void startDatabase()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentDatabaseBuilder().newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         graphdb = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

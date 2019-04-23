@@ -264,8 +264,8 @@ class DatabaseRecoveryIT
             adversary.disable();
 
             File storeDir = directory.storeDir();
-            DatabaseManagementService managementService = AdversarialPageCacheGraphDatabaseFactory.create( fileSystem, adversary )
-                    .newEmbeddedDatabaseBuilder( storeDir ).newDatabaseManagementService();
+            DatabaseManagementService managementService =
+                    AdversarialPageCacheGraphDatabaseFactory.create( storeDir, fileSystem, adversary ).build();
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             try
             {
@@ -391,7 +391,10 @@ class DatabaseRecoveryIT
     {
         // given
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fs ).newImpermanentService( directory.storeDir() );
+        managementService = new TestDatabaseManagementServiceBuilder( directory.storeDir() )
+                .setFileSystem( fs )
+                .impermanent()
+                .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         produceRandomGraphUpdates( db, 100 );
         checkPoint( db );
@@ -430,11 +433,9 @@ class DatabaseRecoveryIT
                 reversedFs.set( crashedFs.snapshot() );
             }
         } );
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
-                .setFileSystem( crashedFs )
-                .setExternalDependencies( dependencies )
-                .setMonitors( monitors )
-                .newImpermanentService( directory.storeDir() );
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder( directory.storeDir() ).setFileSystem( crashedFs ).setExternalDependencies( dependencies ).setMonitors(
+                        monitors ).impermanent().build();
 
         managementService.shutdown();
 
@@ -790,11 +791,9 @@ class DatabaseRecoveryIT
 
     private GraphDatabaseAPI startDatabase( File storeDir, EphemeralFileSystemAbstraction fs, UpdateCapturingIndexProvider indexProvider )
     {
-        managementService = new TestDatabaseManagementServiceBuilder()
-                .setFileSystem( fs )
-                .setExtensions( singletonList( new IndexExtensionFactory( indexProvider ) ) )
-                .newImpermanentDatabaseBuilder( storeDir )
-                .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() ).newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder( storeDir ).setFileSystem( fs ).setExtensions(
+                singletonList( new IndexExtensionFactory( indexProvider ) ) ).impermanent()
+                .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() ).build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -806,8 +805,7 @@ class DatabaseRecoveryIT
 
     private DatabaseManagementService getManagementService( File storeDir )
     {
-        return new TestDatabaseManagementServiceBuilder().setInternalLogProvider( logProvider )
-                .newDatabaseManagementService( storeDir );
+        return new TestDatabaseManagementServiceBuilder( storeDir ).setInternalLogProvider( logProvider ).build();
     }
 
     public class UpdateCapturingIndexProvider extends IndexProvider

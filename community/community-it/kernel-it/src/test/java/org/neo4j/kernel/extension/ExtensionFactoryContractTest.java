@@ -59,7 +59,7 @@ public abstract class ExtensionFactoryContractTest
     protected GraphDatabaseAPI graphDb( int instance )
     {
         Map<String, String> config = configuration( instance );
-        managementService = new TestDatabaseManagementServiceBuilder().newImpermanentDatabaseBuilder().setConfig( config ).newDatabaseManagementService();
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().setConfigRaw( config ).build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
