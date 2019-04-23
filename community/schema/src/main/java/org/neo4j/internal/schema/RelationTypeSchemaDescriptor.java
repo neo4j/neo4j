@@ -19,6 +19,12 @@
  */
 package org.neo4j.internal.schema;
 
+import org.neo4j.util.MarkerInterface;
+
+/**
+ * Schema descriptors of this sub-type are guaranteed to have exactly one relationship type.
+ */
+@MarkerInterface
 public interface RelationTypeSchemaDescriptor extends SchemaDescriptor
 {
 }

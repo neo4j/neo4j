@@ -17,14 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.schema;
-
-import org.neo4j.util.MarkerInterface;
+package org.neo4j.util;
 
 /**
- * Schema descriptors of this sub-type are guaranteed to have exactly one label.
+ * This annotation signals that an interface is only used for marking types, and that the interface should <em>not</em> define any methods.
  */
-@MarkerInterface
-public interface LabelSchemaDescriptor extends SchemaDescriptor
+public @interface MarkerInterface
 {
 }
