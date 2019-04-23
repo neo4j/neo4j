@@ -389,9 +389,9 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public DatabaseHealth getDatabaseHealth()
+        public Factory<DatabaseHealth> getDatabaseHealthFactory()
         {
-            return databaseHealth;
+            return () -> databaseHealth;
         }
 
         @Override

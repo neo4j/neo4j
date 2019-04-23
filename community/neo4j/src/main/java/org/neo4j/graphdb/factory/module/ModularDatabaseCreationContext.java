@@ -82,7 +82,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final StatementLocksFactory statementLocksFactory;
     private final FileSystemAbstraction fs;
     private final DatabaseTransactionStats transactionStats;
-    private final DatabaseHealth databaseHealth;
+    private final Factory<DatabaseHealth> databaseHealthFactory;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final CommitProcessFactory commitProcessFactory;
     private final PageCache pageCache;
@@ -131,7 +131,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.fs = globalModule.getFileSystem();
         this.transactionStats = perEditionComponents.getTransactionMonitor();
         this.eventListeners = globalModule.getDatabaseEventListeners();
-        this.databaseHealth = globalModule.getGlobalHealthService()
+        this.databaseHealthFactory = () -> globalModule.getGlobalHealthService()
                 .createDatabaseHealth( new DatabasePanicEventGenerator( eventListeners, databaseId.name() ),
                         logService.getInternalLog( DatabaseHealth.class ) );
         this.transactionHeaderInformationFactory = perEditionComponents.getHeaderInformationFactory();
@@ -247,9 +247,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public DatabaseHealth getDatabaseHealth()
+    public Factory<DatabaseHealth> getDatabaseHealthFactory()
     {
-        return databaseHealth;
+        return databaseHealthFactory;
     }
 
     @Override

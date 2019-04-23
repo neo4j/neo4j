@@ -180,6 +180,7 @@ public class GlobalModule
         globalLife.setLast( globalAvailabilityGuard );
 
         globalHealthService = new CompositeDatabaseHealth();
+        globalDependencies.satisfyDependency( globalHealthService );
 
         String desiredImplementationName = globalConfig.get( GraphDatabaseSettings.tracer );
         tracers = globalDependencies.satisfyDependency( new Tracers( desiredImplementationName,

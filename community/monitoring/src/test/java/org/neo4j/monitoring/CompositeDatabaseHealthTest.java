@@ -22,13 +22,9 @@ package org.neo4j.monitoring;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.helpers.collection.CollectorsUtil;
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -47,7 +43,7 @@ class CompositeDatabaseHealthTest
     void shouldPanicAllDatabasesTogether()
     {
         // given
-        List<DatabaseHealth> dbHealths = Stream.generate( this::mockDBHealth ).limit( 5 ).collect( Collectors.toList() );
+        List<DatabaseHealth> dbHealths = Stream.generate( CompositeDatabaseHealthTest::mockDBHealth ).limit( 5 ).collect( Collectors.toList() );
         CompositeDatabaseHealth compositeDatabaseHealth = new CompositeDatabaseHealth( dbHealths );
 
         // when
@@ -66,7 +62,7 @@ class CompositeDatabaseHealthTest
     void shouldAssertHealthyOnAllDatabasesTogether()
     {
         // given
-        List<DatabaseHealth> dbHealths = Stream.generate( this::mockDBHealth ).limit( 5 ).collect( Collectors.toList() );
+        List<DatabaseHealth> dbHealths = Stream.generate( CompositeDatabaseHealthTest::mockDBHealth ).limit( 5 ).collect( Collectors.toList() );
         CompositeDatabaseHealth compositeDatabaseHealth = new CompositeDatabaseHealth( dbHealths );
 
         // when
@@ -84,7 +80,7 @@ class CompositeDatabaseHealthTest
     {
         // given
         int numUnhealthyDBs = 5;
-        List<DatabaseHealth> unhealthyDBs = Stream.generate( this::mockDBHealth )
+        List<DatabaseHealth> unhealthyDBs = Stream.generate( CompositeDatabaseHealthTest::mockDBHealth )
                 .peek( dbHealth -> dbHealth.panic( new Exception( "Error" ) ) )
                 .limit( numUnhealthyDBs ).collect( Collectors.toList() );
         DatabaseHealth healthyDB = mockDBHealth();
@@ -101,7 +97,7 @@ class CompositeDatabaseHealthTest
 
     //TODO: Test that a databaseHealth removes itself when stopped.
 
-    private DatabaseHealth mockDBHealth()
+    private static DatabaseHealth mockDBHealth()
     {
         DatabasePanicEventGenerator generator = mock( DatabasePanicEventGenerator.class );
         return spy( new DatabaseHealth( generator, NullLogProvider.getInstance().getLog( DatabaseHealth.class ) ) );

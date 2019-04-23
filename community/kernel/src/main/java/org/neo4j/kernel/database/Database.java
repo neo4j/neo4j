@@ -185,7 +185,6 @@ public class Database extends LifecycleAdapter
     private final LockService lockService;
     private final FileSystemAbstraction fs;
     private final DatabaseTransactionStats transactionStats;
-    private final DatabaseHealth databaseHealth;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final CommitProcessFactory commitProcessFactory;
     private final ConstraintSemantics constraintSemantics;
@@ -202,6 +201,7 @@ public class Database extends LifecycleAdapter
     private LifeSupport life;
     private IndexProviderMap indexProviderMap;
     private DatabaseConfig config;
+    private DatabaseHealth databaseHealth;
     private DatabaseAvailabilityGuard databaseAvailabilityGuard;
     private DatabaseAvailability databaseAvailability;
     private final DatabaseId databaseId;
@@ -218,6 +218,7 @@ public class Database extends LifecycleAdapter
     private DatabaseKernelModule kernelModule;
     private final Iterable<ExtensionFactory<?>> extensionFactories;
     private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
+    private final Factory<DatabaseHealth> databaseHealthFactory;
     private final Factory<DatabaseAvailabilityGuard> availabilityGuardFactory;
     private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
@@ -245,7 +246,7 @@ public class Database extends LifecycleAdapter
         this.transactionEventListeners = context.getTransactionEventListeners();
         this.fs = context.getFs();
         this.transactionStats = context.getTransactionStats();
-        this.databaseHealth = context.getDatabaseHealth();
+        this.databaseHealthFactory = context.getDatabaseHealthFactory();
         this.transactionHeaderInformationFactory = context.getTransactionHeaderInformationFactory();
         this.constraintSemantics = context.getConstraintSemantics();
         this.globalMonitors = context.getMonitors();
@@ -291,6 +292,7 @@ public class Database extends LifecycleAdapter
             life = new LifeSupport();
             life.add( config );
 
+            databaseHealth = databaseHealthFactory.newInstance();
             databaseAvailabilityGuard = availabilityGuardFactory.newInstance();
             databaseAvailability = new DatabaseAvailability( databaseAvailabilityGuard, transactionStats, clock, getAwaitActiveTransactionDeadlineMillis() );
 

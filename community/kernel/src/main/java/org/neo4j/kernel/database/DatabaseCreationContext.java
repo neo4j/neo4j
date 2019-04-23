@@ -93,7 +93,7 @@ public interface DatabaseCreationContext
 
     DatabaseTransactionStats getTransactionStats();
 
-    DatabaseHealth getDatabaseHealth();
+    Factory<DatabaseHealth> getDatabaseHealthFactory();
 
     TransactionHeaderInformationFactory getTransactionHeaderInformationFactory();
 
