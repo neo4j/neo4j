@@ -113,39 +113,4 @@ public interface IndexProgressor extends AutoCloseable
          */
         boolean acceptNode( long reference, LabelSet labels );
     }
-
-    /**
-     * Client which accepts graph entities (nodes and relationships) and a fuzzy score.
-     */
-    interface ExplicitClient
-    {
-        /**
-         * Setup the client for progressing using the supplied progressor. Called by index implementation.
-         * @param progressor the progressor
-         * @param expectedSize expected number of entries this progressor will feed the client.
-         */
-        void initialize( IndexProgressor progressor, int expectedSize );
-
-        /**
-         * Accept the entity id and a score. Return true if the entry is accepted, false otherwise
-         * @param reference the node id of the candidate index entry
-         * @param score score of the candidate index entry
-         * @return true if the entry is accepted, false otherwise
-         */
-        boolean acceptEntity( long reference, float score );
-    }
-
-    IndexProgressor EMPTY = new IndexProgressor()
-    {
-        @Override
-        public boolean next()
-        {
-            return false;
-        }
-
-        @Override
-        public void close()
-        {   // no-op
-        }
-    };
 }
