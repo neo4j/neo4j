@@ -623,14 +623,12 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description(
             "Index provider to use for newly created schema indexes. " +
             "An index provider may store different value types in separate physical indexes. " +
-            "lucene-1.0: Spatial and temporal value types are stored in native indexes, remaining value types in Lucene index. " +
-            "lucene+native-1.0: Spatial, temporal and number value types are stored in native indexes and remaining value types in Lucene index. " +
-            "lucene+native-2.0: Spatial, temporal, number and string value types are stored in native indexes and remaining value types in Lucene index. " +
             "native-btree-1.0: All value types and arrays of all value types, even composite keys, are stored in one native index. " +
+            "lucene+native-3.0: Like native-btree-1.0 but single property strings are stored in Lucene. " +
             "A native index has faster updates, less heap and CPU usage compared to a Lucene index. " +
-            "A native index has these limitations: " +
-            "Index key (be it single or composite) size limit of 4039 bytes - transaction resulting in index key surpassing that will fail. " +
-            "Reduced performance of CONTAINS and ENDS WITH string index queries, compared to a Lucene index." )
+            "A native index has some limitations around key size and reduced performance of CONTAINS and ENDS WITH string index queries, " +
+            "compared to a Lucene index. " +
+            "A more detailed description about the different index providers can be found in documentation." )
     public static final Setting<String> default_schema_provider = setting( "dbms.index.default_schema_provider", STRING, NATIVE_BTREE10.providerName() );
 
     // Store settings
