@@ -43,6 +43,24 @@ class DefaultRelationTypeSchemaDescriptor implements RelationTypeSchemaDescripto
     }
 
     @Override
+    public LabelSchemaDescriptor asLabelSchemaDescriptor()
+    {
+        throw new IllegalStateException( "RelationshipTypeSchemaDescriptor is not a LabelSchemaDescriptor." );
+    }
+
+    @Override
+    public RelationTypeSchemaDescriptor asRelationshipTypeSchemaDescriptor()
+    {
+        return this;
+    }
+
+    @Override
+    public FulltextSchemaDescriptor asFulltextSchemaDescriptor()
+    {
+        throw new IllegalStateException( "RelationshipTypeSchemaDescriptor is not a FulltextSchemaDescriptor." );
+    }
+
+    @Override
     public boolean isAffected( long[] entityTokenIds )
     {
         return ArrayUtils.contains( entityTokenIds, relTypeId );

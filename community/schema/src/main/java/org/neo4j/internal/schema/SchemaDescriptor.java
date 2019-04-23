@@ -40,6 +40,24 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
     SchemaDescriptor NO_SCHEMA = new SchemaDescriptor()
     {
         @Override
+        public LabelSchemaDescriptor asLabelSchemaDescriptor()
+        {
+            throw new IllegalStateException( "NO_SCHEMA cannot be cast to a LabelSchemaDescriptor." );
+        }
+
+        @Override
+        public RelationTypeSchemaDescriptor asRelationshipTypeSchemaDescriptor()
+        {
+            throw new IllegalStateException( "NO_SCHEMA cannot be cast to a RelationTypeSchemaDescriptor." );
+        }
+
+        @Override
+        public FulltextSchemaDescriptor asFulltextSchemaDescriptor()
+        {
+            throw new IllegalStateException( "NO_SCHEMA cannot be cast to a FulltextSchemaDescriptor." );
+        }
+
+        @Override
         public boolean isAffected( long[] entityIds )
         {
             return false;
@@ -117,6 +135,24 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
         }
         return lockingIds;
     }
+
+    /**
+     * If this schema descriptor matches the structure required by {@link LabelSchemaDescriptor}, then return this descriptor as that type.
+     * Otherwise, throw an {@link IllegalStateException}.
+     */
+    LabelSchemaDescriptor asLabelSchemaDescriptor();
+
+    /**
+     * If this schema descriptor matches the structure required by {@link RelationTypeSchemaDescriptor}, then return this descriptor as that type.
+     * Otherwise, throw an {@link IllegalStateException}.
+     */
+    RelationTypeSchemaDescriptor asRelationshipTypeSchemaDescriptor();
+
+    /**
+     * If this schema descriptor matches the structure required by {@link FulltextSchemaDescriptor}, then return this descriptor as that type.
+     * Otherwise, throw an {@link IllegalStateException}.
+     */
+    FulltextSchemaDescriptor asFulltextSchemaDescriptor();
 
     /**
      * Returns true if any of the given entity token ids are part of this schema unit.

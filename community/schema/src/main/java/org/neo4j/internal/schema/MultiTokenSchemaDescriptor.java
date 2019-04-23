@@ -30,7 +30,7 @@ import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.token.api.TokenIdPrettyPrinter;
 
-public class MultiTokenSchemaDescriptor implements SchemaDescriptor
+public class MultiTokenSchemaDescriptor implements SchemaDescriptor, FulltextSchemaDescriptor
 {
     private final IndexType indexType;
     private final int[] entityTokens;
@@ -43,6 +43,24 @@ public class MultiTokenSchemaDescriptor implements SchemaDescriptor
         this.entityTokens = entityTokens;
         this.entityType = entityType;
         this.propertyIds = propertyIds;
+    }
+
+    @Override
+    public LabelSchemaDescriptor asLabelSchemaDescriptor()
+    {
+        throw new IllegalStateException( "MultiTokenSchemaDescriptor is not a LabelSchemaDescriptor." );
+    }
+
+    @Override
+    public RelationTypeSchemaDescriptor asRelationshipTypeSchemaDescriptor()
+    {
+        throw new IllegalStateException( "MultiTokenSchemaDescriptor is not a RelationshipTypeSchemaDescriptor." );
+    }
+
+    @Override
+    public FulltextSchemaDescriptor asFulltextSchemaDescriptor()
+    {
+        return this;
     }
 
     @Override

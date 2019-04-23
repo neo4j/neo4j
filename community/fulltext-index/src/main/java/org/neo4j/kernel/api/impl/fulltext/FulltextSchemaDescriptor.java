@@ -24,13 +24,15 @@ import java.util.Properties;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
+import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaComputer;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaProcessor;
 import org.neo4j.lock.ResourceType;
 
-class FulltextSchemaDescriptor implements SchemaDescriptor
+class FulltextSchemaDescriptor implements SchemaDescriptor, org.neo4j.internal.schema.FulltextSchemaDescriptor
 {
     private final SchemaDescriptor schema;
     private final Properties indexConfiguration;
@@ -39,6 +41,24 @@ class FulltextSchemaDescriptor implements SchemaDescriptor
     {
         this.schema = schema;
         this.indexConfiguration = indexConfiguration;
+    }
+
+    @Override
+    public LabelSchemaDescriptor asLabelSchemaDescriptor()
+    {
+        throw new IllegalStateException( "FulltextSchemaDescriptor cannot be cast to a LabelSchemaDescriptor." );
+    }
+
+    @Override
+    public RelationTypeSchemaDescriptor asRelationshipTypeSchemaDescriptor()
+    {
+        throw new IllegalStateException( "FulltextSchemaDescriptor cannot be cast to a RelationTypeSchemaDescriptor." );
+    }
+
+    @Override
+    public org.neo4j.internal.schema.FulltextSchemaDescriptor asFulltextSchemaDescriptor()
+    {
+        return this;
     }
 
     @Override
