@@ -878,7 +878,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         AccessMode accessMode = securityContext.mode();
         if ( !accessMode.allowsTokenReads() )
         {
-            throw accessMode.onViolation( format( "Token read operations are not allowed for %s.", securityContext().description() ) );
+            throw accessMode.onViolation( format( "Read operations are not allowed for %s.", securityContext().description() ) );
         }
     }
 
