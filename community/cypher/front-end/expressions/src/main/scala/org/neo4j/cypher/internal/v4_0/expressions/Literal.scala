@@ -77,6 +77,10 @@ case class Null()(val position: InputPosition) extends Literal {
   override def asCanonicalStringVal = "NULL"
 }
 
+object Null {
+  val NULL: Null = Null()(InputPosition.NONE)
+}
+
 sealed trait BooleanLiteral extends Literal
 
 case class True()(val position: InputPosition) extends BooleanLiteral {
