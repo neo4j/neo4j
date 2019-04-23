@@ -41,7 +41,7 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.internal.schema.DefaultLabelSchemaDescriptor;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -139,7 +139,6 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         RawIterator<AnyValue[],ProcedureException> stream = procs().procedureCallRead( procedures.id(), new AnyValue[0] );
 
         // Then
-        //noinspection unchecked
         assertThat( asList( stream ), containsInAnyOrder(
                 proc( "dbms.listConfig", "(searchString =  :: STRING?) :: (name :: STRING?, description :: STRING?, value :: STRING?, dynamic :: BOOLEAN?)",
                         "List the currently active config of Neo4j.", "DBMS" ),
@@ -272,9 +271,9 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         int labelId2 = transaction.tokenWrite().labelGetOrCreateForName( "Age" );
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
         int propertyKeyId2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "bar" );
-        DefaultLabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
-        DefaultLabelSchemaDescriptor ageFooDescriptor = forLabel( labelId2, propertyKeyId1 );
-        DefaultLabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
+        LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
+        LabelSchemaDescriptor ageFooDescriptor = forLabel( labelId2, propertyKeyId1 );
+        LabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
         transaction.schemaWrite().indexCreate( personFooDescriptor );
         transaction.schemaWrite().uniquePropertyConstraintCreate( ageFooDescriptor );
         transaction.schemaWrite().indexCreate( personFooBarDescriptor );
@@ -425,7 +424,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     @SuppressWarnings( {"unchecked", "SameParameterValue"} )
     private Matcher<AnyValue[]> proc( String procName, String procSignature, Matcher<String> description, String mode )
     {
-        Matcher<AnyValue> desc = new TypeSafeMatcher<AnyValue>()
+        Matcher<AnyValue> desc = new TypeSafeMatcher<>()
         {
             @Override
             public void describeTo( Description description )

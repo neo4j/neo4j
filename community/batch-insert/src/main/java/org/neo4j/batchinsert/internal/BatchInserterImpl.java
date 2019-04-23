@@ -77,7 +77,6 @@ import org.neo4j.internal.recordstorage.SchemaCache;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.DefaultLabelSchemaDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.SchemaRule;
@@ -438,7 +437,7 @@ public class BatchInserterImpl implements BatchInserter
         propertyCreator.primitiveSetProperty( primitiveRecord, propertyKey, ValueUtils.asValue( propertyValue ), propertyRecords );
     }
 
-    private void validateIndexCanBeCreated( DefaultLabelSchemaDescriptor schemaDescriptor )
+    private void validateIndexCanBeCreated( LabelSchemaDescriptor schemaDescriptor )
     {
         verifyIndexOrUniquenessConstraintCanBeCreated( schemaDescriptor, "Index for given {label;property} already exists" );
     }
@@ -1159,7 +1158,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             int labelId = getOrCreateLabelId( label.name() );
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( propertyKeys );
-            DefaultLabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
+            LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
 
             validateIndexCanBeCreated( schema );
 

@@ -29,7 +29,7 @@ import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.token.api.TokenIdPrettyPrinter;
 
-public class DefaultLabelSchemaDescriptor implements LabelSchemaDescriptor
+class DefaultLabelSchemaDescriptor implements LabelSchemaDescriptor
 {
     private final IndexType indexType;
     private final int labelId;

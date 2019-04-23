@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.exceptions.index;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.internal.schema.DefaultLabelSchemaDescriptor;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -37,7 +37,7 @@ class IndexPopulationFailedKernelExceptionTest
     void shouldHandleMultiplePropertiesInConstructor1()
     {
         // Given
-        DefaultLabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 42, 43, 44 );
+        LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 42, 43, 44 );
 
         // When
         IndexPopulationFailedKernelException index = new IndexPopulationFailedKernelException(
@@ -52,7 +52,7 @@ class IndexPopulationFailedKernelExceptionTest
     void shouldHandleMultiplePropertiesInConstructor2()
     {
         // Given
-        DefaultLabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 42, 43, 44 );
+        LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 42, 43, 44 );
 
         // When
         IndexPopulationFailedKernelException index = new IndexPopulationFailedKernelException(

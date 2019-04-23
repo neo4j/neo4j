@@ -52,7 +52,6 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaCache;
-import org.neo4j.internal.schema.DefaultLabelSchemaDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
@@ -656,8 +655,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         @Override
         public void run()
         {
-            DefaultLabelSchemaDescriptor descriptor =
-                    SchemaDescriptorFactory.forLabel( labelIdToDropIndexFor, propertyId );
+            LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelIdToDropIndexFor, propertyId );
             StoreIndexDescriptor rule = findRuleForLabel( descriptor );
             indexService.dropIndex( rule );
         }

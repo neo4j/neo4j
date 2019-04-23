@@ -29,7 +29,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.schema.DefaultLabelSchemaDescriptor;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -67,7 +67,7 @@ public class DbIndexesFailureMessageIT extends KernelIntegrationTest
         int failedLabel = transaction.tokenWrite().labelGetOrCreateForName( "Fail" );
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
         failNextIndexPopulation.set( true );
-        DefaultLabelSchemaDescriptor descriptor = forLabel( failedLabel, propertyKeyId1 );
+        LabelSchemaDescriptor descriptor = forLabel( failedLabel, propertyKeyId1 );
         transaction.schemaWrite().indexCreate( descriptor );
         commit();
 

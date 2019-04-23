@@ -49,8 +49,8 @@ import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.DefaultLabelSchemaDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.SchemaRule;
@@ -291,7 +291,7 @@ public class AllStoreHolder extends Read
     {
         ktx.assertOpen();
 
-        DefaultLabelSchemaDescriptor descriptor;
+        LabelSchemaDescriptor descriptor;
         try
         {
             descriptor = SchemaDescriptorFactory.forLabel( label, properties );

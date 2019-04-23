@@ -22,8 +22,6 @@ package org.neo4j.kernel.api.schema;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.internal.schema.DefaultLabelSchemaDescriptor;
-import org.neo4j.internal.schema.DefaultRelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;

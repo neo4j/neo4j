@@ -28,12 +28,12 @@ public class SchemaDescriptorFactory
     {
     }
 
-    public static DefaultLabelSchemaDescriptor forLabel( int labelId, int... propertyIds )
+    public static LabelSchemaDescriptor forLabel( int labelId, int... propertyIds )
     {
         return forLabelOfType( IndexType.ANY_GENERAL, labelId, propertyIds );
     }
 
-    public static DefaultLabelSchemaDescriptor forLabelFulltext( int labelId, int... propertyIds )
+    public static LabelSchemaDescriptor forLabelFulltext( int labelId, int... propertyIds )
     {
         return forLabelOfType( IndexType.FULLTEXT, labelId, propertyIds );
     }
@@ -43,7 +43,7 @@ public class SchemaDescriptorFactory
         return forLabelOfType( IndexType.NOT_AN_INDEX, labelId, propertyIds );
     }
 
-    public static DefaultLabelSchemaDescriptor forLabelOfType( IndexType indexType, int labelId, int... propertyIds )
+    public static LabelSchemaDescriptor forLabelOfType( IndexType indexType, int labelId, int... propertyIds )
     {
         validateLabelIds( labelId );
         validatePropertyIds( propertyIds );

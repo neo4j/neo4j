@@ -33,8 +33,8 @@ import java.util.function.LongPredicate;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.kernel.api.PopulationProgress;
-import org.neo4j.internal.schema.DefaultLabelSchemaDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -64,7 +64,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 public class BlockBasedIndexPopulatorTest
 {
-    private static final DefaultLabelSchemaDescriptor SCHEMA_DESCRIPTOR = SchemaDescriptorFactory.forLabelOfType( IndexType.TREE, 1, 1 );
+    private static final LabelSchemaDescriptor SCHEMA_DESCRIPTOR = SchemaDescriptorFactory.forLabelOfType( IndexType.TREE, 1, 1 );
     private static final StoreIndexDescriptor INDEX_DESCRIPTOR = IndexDescriptorFactory.forSchema( SCHEMA_DESCRIPTOR ).withId( 1 );
 
     @Rule
