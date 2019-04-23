@@ -144,18 +144,15 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
         {
             // They had the same seed. Need to look at entire array
             int maxLength = Math.min( left.bytes.length, right.bytes.length );
-            int lastEqualIndex = 0;
-            for ( ; lastEqualIndex < maxLength; lastEqualIndex++ )
+            int firstIndexToDiffer = 0;
+            for ( ; firstIndexToDiffer < maxLength; firstIndexToDiffer++ )
             {
-                if ( left.bytes[lastEqualIndex] != right.bytes[lastEqualIndex] )
+                if ( left.bytes[firstIndexToDiffer] != right.bytes[firstIndexToDiffer] )
                 {
-                    lastEqualIndex--;
                     break;
                 }
             }
-            // Convert from last equal index to first that differ
-            int firstIndexToDiffer = lastEqualIndex + 1;
-            // Convert to index to length
+            // Convert from index to length
             int targetLength = firstIndexToDiffer + 1;
             copyKey( right, into, targetLength );
         }
