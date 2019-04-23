@@ -119,7 +119,7 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
     {
         long leftSeed = keySeed( left );
         long rightSeed = keySeed( right );
-        if ( leftSeed != rightSeed )
+        if ( useFirstLongAsSeed && leftSeed != rightSeed )
         {
             // Minimal splitter is first 8B (seed)
             copyKey( right, into, Long.BYTES );
@@ -128,16 +128,16 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
         {
             // They had the same seed. Need to look at entire array
             int maxLength = Math.min( left.bytes.length, right.bytes.length );
-            int targetLength = 0;
-            for ( ; targetLength < maxLength; targetLength++ )
+            int firstIndexToDiffer = 0;
+            for ( ; firstIndexToDiffer < maxLength; firstIndexToDiffer++ )
             {
-                if ( left.bytes[targetLength] != right.bytes[targetLength] )
+                if ( left.bytes[firstIndexToDiffer] != right.bytes[firstIndexToDiffer] )
                 {
-                    // Convert to length from array index
-                    targetLength++;
                     break;
                 }
             }
+            // Convert from index to length
+            int targetLength = firstIndexToDiffer + 1;
             copyKey( right, into, targetLength );
         }
     }
