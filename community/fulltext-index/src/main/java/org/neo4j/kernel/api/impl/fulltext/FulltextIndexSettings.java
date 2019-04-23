@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.eclipse.collections.api.tuple.Pair;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
@@ -42,6 +44,7 @@ import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
+import org.neo4j.values.storable.Value;
 
 class FulltextIndexSettings
 {
@@ -53,15 +56,19 @@ class FulltextIndexSettings
     static FulltextIndexDescriptor readOrInitialiseDescriptor( StorageIndexReference descriptor, String defaultAnalyzerName,
             TokenHolder propertyKeyTokenHolder, PartitionedIndexStorage indexStorage, FileSystemAbstraction fileSystem )
     {
-        Properties indexConfiguration = new Properties();
+        Properties properties = new Properties();
         if ( descriptor.schema() instanceof FulltextSchemaDescriptor )
         {
             FulltextSchemaDescriptor schema = (FulltextSchemaDescriptor) descriptor.schema();
-            indexConfiguration.putAll( schema.getIndexConfiguration() );
+            IndexConfig indexConfig = schema.getIndexConfiguration();
+            for ( Pair<String,Value> entry : indexConfig.entries() )
+            {
+                properties.put( entry.getOne(), String.valueOf( entry.getTwo().asObject() ) );
+            }
         }
-        loadPersistedSettings( indexConfiguration, indexStorage, fileSystem );
-        boolean eventuallyConsistent = Boolean.parseBoolean( indexConfiguration.getProperty( INDEX_CONFIG_EVENTUALLY_CONSISTENT ) );
-        String analyzerName = indexConfiguration.getProperty( INDEX_CONFIG_ANALYZER, defaultAnalyzerName );
+        loadPersistedSettings( properties, indexStorage, fileSystem );
+        boolean eventuallyConsistent = Boolean.parseBoolean( properties.getProperty( INDEX_CONFIG_EVENTUALLY_CONSISTENT ) );
+        String analyzerName = properties.getProperty( INDEX_CONFIG_ANALYZER, defaultAnalyzerName );
         Analyzer analyzer = createAnalyzer( analyzerName );
         List<String> names = new ArrayList<>();
         for ( int propertyKeyId : descriptor.schema().getPropertyIds() )

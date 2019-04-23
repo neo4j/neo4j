@@ -28,7 +28,6 @@ import org.junit.rules.RuleChain;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Arrays;
-import java.util.Properties;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -45,6 +44,7 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -74,7 +74,7 @@ public class LuceneFulltextTestSupport
     @Rule
     public RuleChain rules = RuleChain.outerRule( repeatRule ).around( db );
 
-    Properties settings;
+    IndexConfig indexConfig;
     FulltextAdapter fulltextAdapter;
 
     protected RepeatRule createRepeatRule()
@@ -85,7 +85,7 @@ public class LuceneFulltextTestSupport
     @Before
     public void setUp()
     {
-        settings = new Properties();
+        indexConfig = IndexConfig.empty();
         fulltextAdapter = getAccessor();
     }
 

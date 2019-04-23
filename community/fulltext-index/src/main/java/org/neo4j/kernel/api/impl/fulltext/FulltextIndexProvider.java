@@ -34,6 +34,7 @@ import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -60,8 +61,11 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.api.exceptions.Status.General.InvalidArguments;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CONFIG_ANALYZER;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.readOrInitialiseDescriptor;
 
 class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
@@ -265,7 +269,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     }
 
     @Override
-    public SchemaDescriptor schemaFor( EntityType type, String[] entityTokens, Properties indexConfiguration, String... properties )
+    public SchemaDescriptor schemaFor( EntityType type, String[] entityTokens, IndexConfig indexConfig, String... properties )
     {
         if ( entityTokens.length == 0 )
         {
@@ -296,9 +300,9 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
             tokenHolders.propertyKeyTokens().getOrCreateIds( properties, propertyIds );
 
             SchemaDescriptor schema = SchemaDescriptorFactory.multiToken( entityTokenIds, type, propertyIds );
-            indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_ANALYZER, defaultAnalyzerName );
-            indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT, defaultEventuallyConsistentSetting );
-            return new FulltextSchemaDescriptor( schema, indexConfiguration );
+            indexConfig = indexConfig.withIfAbsent( INDEX_CONFIG_ANALYZER, Values.stringValue( defaultAnalyzerName ) );
+            indexConfig = indexConfig.withIfAbsent( INDEX_CONFIG_EVENTUALLY_CONSISTENT, Values.stringValue( defaultEventuallyConsistentSetting ) );
+            return new FulltextSchemaDescriptor( schema, indexConfig );
         }
         catch ( KernelException e )
         {

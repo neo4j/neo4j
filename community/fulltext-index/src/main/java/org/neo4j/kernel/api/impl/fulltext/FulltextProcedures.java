@@ -22,10 +22,10 @@ package org.neo4j.kernel.api.impl.fulltext;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Spliterator;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -49,6 +49,7 @@ import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -62,6 +63,8 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.builtin.IndexProcedures;
 import org.neo4j.util.FeatureToggles;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProviderFactory.DESCRIPTOR;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CONFIG_ANALYZER;
@@ -133,12 +136,11 @@ public class FulltextProcedures
             @Name( "indexName" ) String name,
             @Name( "labels" ) List<String> labels,
             @Name( "propertyNames" ) List<String> properties,
-            @Name( value = "config", defaultValue = "{}" ) Map<String,String> indexConfigurationMap )
+            @Name( value = "config", defaultValue = "{}" ) Map<String,String> config )
             throws InvalidTransactionTypeKernelException, SchemaKernelException
     {
-        Properties indexConfiguration = new Properties();
-        indexConfiguration.putAll( indexConfigurationMap );
-        SchemaDescriptor schemaDescriptor = accessor.schemaFor( EntityType.NODE, stringArray( labels ), indexConfiguration, stringArray( properties ) );
+        IndexConfig indexConfig = createIndexConfig( config );
+        SchemaDescriptor schemaDescriptor = accessor.schemaFor( EntityType.NODE, stringArray( labels ), indexConfig, stringArray( properties ) );
         tx.schemaWrite().indexCreate( schemaDescriptor, DESCRIPTOR.name(), Optional.of( name ) );
     }
 
@@ -162,10 +164,19 @@ public class FulltextProcedures
             @Name( value = "config", defaultValue = "{}" ) Map<String,String> config )
             throws InvalidTransactionTypeKernelException, SchemaKernelException
     {
-        Properties settings = new Properties();
-        settings.putAll( config );
-        SchemaDescriptor schemaDescriptor = accessor.schemaFor( EntityType.RELATIONSHIP, stringArray( relTypes ), settings, stringArray( properties ) );
+        IndexConfig indexConfig = createIndexConfig( config );
+        SchemaDescriptor schemaDescriptor = accessor.schemaFor( EntityType.RELATIONSHIP, stringArray( relTypes ), indexConfig, stringArray( properties ) );
         tx.schemaWrite().indexCreate( schemaDescriptor, DESCRIPTOR.name(), Optional.of( name ) );
+    }
+
+    private IndexConfig createIndexConfig( @Name( value = "config", defaultValue = "{}" ) Map<String,String> config )
+    {
+        Map<String,Value> mappedConfig = new HashMap<>();
+        for ( Map.Entry<String,String> entry : config.entrySet() )
+        {
+            mappedConfig.put( entry.getKey(), Values.stringValue( entry.getValue() ) );
+        }
+        return IndexConfig.with( mappedConfig );
     }
 
     @Description( "Drop the specified index." )
@@ -192,7 +203,7 @@ public class FulltextProcedures
         IndexReadSession indexSession = tx.dataRead().indexReadSession( indexReference );
         tx.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( query ) );
 
-        Spliterator<NodeOutput> spliterator = new SpliteratorAdaptor<NodeOutput>()
+        Spliterator<NodeOutput> spliterator = new SpliteratorAdaptor<>()
         {
             @Override
             public boolean tryAdvance( Consumer<? super NodeOutput> action )
@@ -231,7 +242,7 @@ public class FulltextProcedures
         RelationshipIndexCursor cursor = tx.cursors().allocateRelationshipIndexCursor();
         tx.dataRead().relationshipIndexSeek( indexReference, cursor, IndexQuery.fulltextSearch( query ) );
 
-        Spliterator<RelationshipOutput> spliterator = new SpliteratorAdaptor<RelationshipOutput>()
+        Spliterator<RelationshipOutput> spliterator = new SpliteratorAdaptor<>()
         {
             @Override
             public boolean tryAdvance( Consumer<? super RelationshipOutput> action )

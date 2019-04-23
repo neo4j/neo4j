@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import java.util.Properties;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
@@ -31,13 +30,14 @@ import org.neo4j.internal.schema.SchemaComputer;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaProcessor;
 import org.neo4j.lock.ResourceType;
+import org.neo4j.values.storable.BooleanValue;
 
 class FulltextSchemaDescriptor implements SchemaDescriptor, org.neo4j.internal.schema.FulltextSchemaDescriptor
 {
     private final SchemaDescriptor schema;
-    private final Properties indexConfiguration;
+    private final IndexConfig indexConfiguration;
 
-    FulltextSchemaDescriptor( SchemaDescriptor schema, Properties indexConfiguration )
+    FulltextSchemaDescriptor( SchemaDescriptor schema, IndexConfig indexConfiguration )
     {
         this.schema = schema;
         this.indexConfiguration = indexConfiguration;
@@ -149,13 +149,13 @@ class FulltextSchemaDescriptor implements SchemaDescriptor, org.neo4j.internal.s
         return schema.equals( obj );
     }
 
-    Properties getIndexConfiguration()
+    IndexConfig getIndexConfiguration()
     {
         return indexConfiguration;
     }
 
     boolean isEventuallyConsistent()
     {
-        return Boolean.parseBoolean( indexConfiguration.getProperty( FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT ) );
+        return indexConfiguration.get( FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT ).eq( BooleanValue.TRUE );
     }
 }

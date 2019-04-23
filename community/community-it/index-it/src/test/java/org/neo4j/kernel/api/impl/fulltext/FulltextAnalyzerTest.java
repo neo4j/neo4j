@@ -35,15 +35,15 @@ import static org.neo4j.common.EntityType.NODE;
 
 public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 {
-    public static final String ENGLISH = "english";
-    public static final String SWEDISH = "swedish";
+    private static final String ENGLISH = "english";
+    static final String SWEDISH = "swedish";
 
     @Test
     public void shouldBeAbleToSpecifyEnglishAnalyzer() throws Exception
     {
         applySetting( FulltextConfig.fulltext_default_analyzer, ENGLISH );
 
-        SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, settings, PROP );
+        SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
         IndexReference nodes;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
@@ -78,7 +78,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     public void shouldBeAbleToSpecifySwedishAnalyzer() throws Exception
     {
         applySetting( FulltextConfig.fulltext_default_analyzer, SWEDISH );
-        SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, settings, PROP );
+        SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
         IndexReference nodes;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
@@ -112,10 +112,9 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     @Test
     public void shouldNotReindexNodesWhenDefaultAnalyzerIsChanged() throws Exception
     {
-        long firstID;
         long secondID;
         applySetting( FulltextConfig.fulltext_default_analyzer, ENGLISH );
-        SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, settings, PROP );
+        SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
         IndexReference nodes;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
