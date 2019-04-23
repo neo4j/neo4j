@@ -141,23 +141,13 @@ public class DefaultPropertyCursor implements PropertyCursor
         accessMode = read.ktx.securityContext().mode();
     }
 
-    @Override
-    public boolean next()
-    {
-        boolean hasNext;
-        do
-        {
-            hasNext = innerNext();
-        } while ( hasNext && !allowed( propertyKey() ) );
-        return hasNext;
-    }
-
     boolean allowed( int propertyKey )
     {
         return allowPropertiesForLabel && accessMode.allowsPropertyReads( propertyKey );
     }
 
-    private boolean innerNext()
+    @Override
+    public boolean next()
     {
         if ( txStateChangedProperties != null )
         {
@@ -176,7 +166,7 @@ public class DefaultPropertyCursor implements PropertyCursor
         while ( storeCursor.next() )
         {
             boolean skip = propertiesState != null && propertiesState.isPropertyChangedOrRemoved( storeCursor.propertyKey() );
-            if ( !skip )
+            if ( !skip && allowed( propertyKey() ) )
             {
                 return true;
             }
