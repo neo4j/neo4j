@@ -68,7 +68,7 @@ public class IndexEntryConflictException extends KernelException
 
         String labelName = Arrays.stream( schema.getEntityTokenIds() )
                 .mapToObj( tokenNameLookup::labelGetName )
-                .collect( Collectors.joining( "', '", "'", "'") );
+                .collect( Collectors.joining( "`, `", "`", "`") );
         if ( addedNodeId == NO_SUCH_NODE )
         {
             return format( "Node(%d) already exists with label %s and %s",
@@ -76,7 +76,7 @@ public class IndexEntryConflictException extends KernelException
         }
         else
         {
-            return format( "Both Node(%d) and Node(%d) have the label `%s` and %s",
+            return format( "Both Node(%d) and Node(%d) have the label %s and %s",
                     existingNodeId, addedNodeId, labelName, propertyString( tokenNameLookup, schema.getPropertyIds() ) );
         }
     }
