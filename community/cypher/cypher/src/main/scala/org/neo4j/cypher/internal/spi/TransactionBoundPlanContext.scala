@@ -109,7 +109,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
             case api.IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
           }
         }
-        if (reference.getIndexType.getKind == IndexKind.GENERAL || reference.isEventuallyConsistent) {
+        if (reference.getIndexType.getKind != IndexKind.GENERAL || reference.isEventuallyConsistent) {
           // Ignore IndexKind.SPECIAL indexes, because we don't know how to correctly plan for and query them. Not yet, anyway.
           // Also, ignore eventually consistent indexes. Those are for explicit querying via procedures.
           None
