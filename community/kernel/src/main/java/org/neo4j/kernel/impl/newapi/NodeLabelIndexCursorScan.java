@@ -23,12 +23,10 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 
-import org.neo4j.collection.PrimitiveLongResourceCollections;
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.index.label.LabelScan;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.impl.index.labelscan.LabelScanValueIndexProgressor;
 
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
 
@@ -64,15 +62,15 @@ class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,Label
     {
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( read );
-        PrimitiveLongResourceIterator ids = storageScan.initializeBatch( sizeHint );
+        IndexProgressor indexProgressor = storageScan.initializeBatch( indexCursor, sizeHint );
 
-        if ( ids == PrimitiveLongResourceCollections.emptyIterator() && !addedItems.hasNext() )
+        if ( indexProgressor == IndexProgressor.EMPTY && !addedItems.hasNext() )
         {
             return false;
         }
         else
         {
-            indexCursor.scan( new LabelScanValueIndexProgressor( ids, indexCursor ), addedItems, removed );
+            indexCursor.scan( indexProgressor, addedItems, removed );
             return true;
         }
     }

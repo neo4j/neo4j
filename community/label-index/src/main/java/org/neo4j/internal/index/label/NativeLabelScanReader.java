@@ -27,10 +27,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
+import org.neo4j.kernel.api.index.IndexProgressor;
 
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
 import static org.neo4j.internal.index.label.NativeLabelScanWriter.rangeOf;
@@ -145,29 +145,29 @@ class NativeLabelScanReader implements LabelScanReader
         }
 
         @Override
-        public PrimitiveLongResourceIterator initialize()
+        public IndexProgressor initialize( IndexProgressor.NodeLabelClient client )
         {
-            return init( 0L, Long.MAX_VALUE );
+            return init( client, 0L, Long.MAX_VALUE );
         }
 
         @Override
-        public PrimitiveLongResourceIterator initializeBatch( int sizeHint )
+        public IndexProgressor initializeBatch( IndexProgressor.NodeLabelClient client, int sizeHint )
         {
             if ( sizeHint == 0 )
             {
-                return PrimitiveLongResourceCollections.emptyIterator();
+                return IndexProgressor.EMPTY;
             }
             long size = roundUp( sizeHint );
             long start = nextStart.getAndAdd( size );
             long stop = Math.min( start + size, max );
             if ( start >= max )
             {
-                return PrimitiveLongResourceCollections.emptyIterator();
+                return IndexProgressor.EMPTY;
             }
-            return init( start, stop );
+            return init( client, start, stop );
         }
 
-        private PrimitiveLongResourceIterator init( long start, long stop )
+        private IndexProgressor init( IndexProgressor.NodeLabelClient client, long start, long stop )
         {
             Seeker<LabelScanKey,LabelScanValue> cursor;
             try
@@ -178,7 +178,8 @@ class NativeLabelScanReader implements LabelScanReader
             {
                 throw new UncheckedIOException( e );
             }
-            return new LabelScanValueIterator( cursor, LabelScanReader.NO_ID );
+
+            return new LabelScanValueIndexProgressor( cursor, client );
         }
 
         private long roundUp( long sizeHint )

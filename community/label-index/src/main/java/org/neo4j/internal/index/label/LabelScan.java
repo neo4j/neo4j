@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.index.label;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.kernel.api.index.IndexProgressor;
 
 /**
  * LabelScans are used for accessing nodes with a given label.
@@ -29,15 +29,17 @@ public interface LabelScan
     /**
      * Initialize the client for scanning for label
      *
-     * @return an iterator used for reading data
+     * @param client the client used for consuming data
+     * @return a progressor used for reading data
      */
-    PrimitiveLongResourceIterator initialize();
+    IndexProgressor initialize( IndexProgressor.NodeLabelClient client );
 
     /**
      * Initialize the client for reading a batch of labels.
      *
+     * @param client the client used for consuming data
      * @param sizeHint the approximate size of the batch
      * @return an iterator used for reading data
      */
-    PrimitiveLongResourceIterator initializeBatch( int sizeHint );
+    IndexProgressor initializeBatch( IndexProgressor.NodeLabelClient client, int sizeHint );
 }

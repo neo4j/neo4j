@@ -50,7 +50,6 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.index.labelscan.LabelScanValueIndexProgressor;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
@@ -281,7 +280,7 @@ abstract class Read implements TxStateHolder,
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
         LabelScan labelScan = labelScanReader().nodeLabelScan( label );
-        indexCursor.scan( new LabelScanValueIndexProgressor( labelScan.initialize(), indexCursor ), label );
+        indexCursor.scan( labelScan.initialize( indexCursor ), label );
     }
 
     @Override
