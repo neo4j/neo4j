@@ -23,15 +23,15 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext}
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper._
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.values.virtual.RelationshipValue
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper._
 
 class ExpandAllPipeTest extends CypherFunSuite {
 
@@ -56,7 +56,7 @@ class ExpandAllPipeTest extends CypherFunSuite {
       row("a" -> startNode))
 
     // when
-    val result = ExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
+    val result = ExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, RelationshipTypes.empty)().createResults(queryState).toList
 
     // then
     val single :: Nil = result
@@ -84,7 +84,7 @@ class ExpandAllPipeTest extends CypherFunSuite {
       }
     })
 
-    val pipe = ExpandAllPipe(newMockedPipe("a", row("a"-> startNode)), "a", "r", "b", SemanticDirection.OUTGOING, new LazyTypes(Array("FOO", "BAR")))()
+    val pipe = ExpandAllPipe(newMockedPipe("a", row("a"-> startNode)), "a", "r", "b", SemanticDirection.OUTGOING, RelationshipTypes(Array("FOO", "BAR")))()
 
     // when
     when(query.getOptRelTypeId("FOO")).thenReturn(None)
@@ -115,7 +115,7 @@ class ExpandAllPipeTest extends CypherFunSuite {
       row("a" -> startNode))
 
     // when
-    val result = ExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
+    val result = ExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, RelationshipTypes.empty)().createResults(queryState).toList
 
     // then
     val first :: second :: Nil = result
@@ -135,7 +135,7 @@ class ExpandAllPipeTest extends CypherFunSuite {
       row("a" -> startNode))
 
     // when
-    val result = ExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
+    val result = ExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, RelationshipTypes.empty)().createResults(queryState).toList
 
     // then
     val first :: second :: Nil = result
@@ -150,7 +150,7 @@ class ExpandAllPipeTest extends CypherFunSuite {
     val left = newMockedPipe("a", row("a" -> null))
 
     // when
-    val result = ExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
+    val result = ExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, RelationshipTypes.empty)().createResults(queryState).toList
 
     // then
     result should be (empty)
@@ -168,7 +168,7 @@ class ExpandAllPipeTest extends CypherFunSuite {
       row("a" -> startNode))
 
     // when
-    val result = ExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
+    val result = ExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, RelationshipTypes.empty)().createResults(queryState).toList
 
     // then
     val single :: Nil = result

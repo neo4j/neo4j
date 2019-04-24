@@ -32,7 +32,7 @@ import org.neo4j.values.storable.Values.longValue
 class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with ImplicitDummyPos {
 
   test("should return a count for relationships without a type or any labels") {
-    val pipe = RelationshipCountFromCountStorePipe("count(r)", None, LazyTypes.empty, None)()
+    val pipe = RelationshipCountFromCountStorePipe("count(r)", None, RelationshipTypes.empty, None)()
 
     val queryContext = mock[QueryContext]
     when(queryContext.relationshipCountByCountStore(WILDCARD, WILDCARD, WILDCARD)).thenReturn(42L)
@@ -44,7 +44,7 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with Implic
     implicit val table = new SemanticTable()
     table.resolvedRelTypeNames.put("X", RelTypeId(22))
 
-    val pipe = RelationshipCountFromCountStorePipe("count(r)", None, LazyTypes(Array(RelTypeName("X")(pos))), None)()
+    val pipe = RelationshipCountFromCountStorePipe("count(r)", None, RelationshipTypes(Array(RelTypeName("X")(pos))), None)()
 
     val queryContext = mock[QueryContext]
     when(queryContext.relationshipCountByCountStore(WILDCARD, 22, WILDCARD)).thenReturn(42L)
@@ -57,7 +57,7 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with Implic
     table.resolvedRelTypeNames.put("X", RelTypeId(22))
     table.resolvedLabelNames.put("A", LabelId(12))
 
-    val pipe = RelationshipCountFromCountStorePipe("count(r)", Some(LazyLabel(LabelName("A") _)), LazyTypes(Array(RelTypeName("X")(pos))), None)()
+    val pipe = RelationshipCountFromCountStorePipe("count(r)", Some(LazyLabel(LabelName("A") _)), RelationshipTypes(Array(RelTypeName("X")(pos))), None)()
 
     val queryContext = mock[QueryContext]
     when(queryContext.relationshipCountByCountStore(12, 22, WILDCARD)).thenReturn(42L)
@@ -68,7 +68,7 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with Implic
   test("should return zero if rel-type is missing") {
     implicit val table = new SemanticTable()
 
-    val pipe = RelationshipCountFromCountStorePipe("count(r)", None, new LazyTypes(Array("X")), Some(LazyLabel(LabelName("A") _)))()
+    val pipe = RelationshipCountFromCountStorePipe("count(r)", None, RelationshipTypes(Array("X")), Some(LazyLabel(LabelName("A") _)))()
 
     val mockedContext: QueryContext = mock[QueryContext]
     // try to guarantee that the mock won't be the reason for the exception

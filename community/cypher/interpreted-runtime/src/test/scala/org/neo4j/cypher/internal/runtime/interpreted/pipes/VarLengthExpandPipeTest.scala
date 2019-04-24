@@ -26,12 +26,12 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper._
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthExpandPipeTest.createVarLengthPredicate
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.SymbolTable
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.symbols._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthExpandPipeTest.createVarLengthPredicate
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -58,7 +58,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)()
+      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, RelationshipTypes.empty, 1, None, nodeInScope = false)()
       .createResults(queryState).toList
 
     // then
@@ -87,7 +87,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
+      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, RelationshipTypes.empty, 1, None, nodeInScope = true)()
       .createResults(queryState).toList
 
     // then
@@ -116,7 +116,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
+      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, RelationshipTypes.empty, 1, None, nodeInScope = true)()
       .createResults(queryState).toList
 
     // then
@@ -142,7 +142,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
+      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, RelationshipTypes.empty, 1, None, nodeInScope = true)()
       .createResults(queryState).toList
 
     // then
@@ -171,7 +171,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
+      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, RelationshipTypes.empty, 1, None, nodeInScope = true)()
       .createResults(queryState).toList
 
     // then
@@ -206,7 +206,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)().
+      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, RelationshipTypes.empty, 1, None, nodeInScope = false)().
         createResults(queryState).toList
 
     // then
@@ -244,7 +244,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)().
+      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, RelationshipTypes.empty, 1, None, nodeInScope = false)().
         createResults(queryState).toList
 
     // then
@@ -283,7 +283,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)().
+      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, RelationshipTypes.empty, 1, None, nodeInScope = true)().
         createResults(queryState).toList
 
     // then
@@ -315,7 +315,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     })
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, RelationshipTypes.empty, 1, None, nodeInScope = false)().
       createResults(queryState).toList
 
     // then
@@ -359,7 +359,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     })
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, RelationshipTypes.empty, 1, None, nodeInScope = true)().
       createResults(queryState).toList
 
     // then
@@ -398,7 +398,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     })
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, RelationshipTypes.empty, 1, None, nodeInScope = true)().
       createResults(queryState).toList
 
     // then
@@ -430,7 +430,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     })
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, Some(1), nodeInScope = false)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, RelationshipTypes.empty, 1, Some(1), nodeInScope = false)().
       createResults(queryState).toList
 
     // then
@@ -469,7 +469,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     })
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, Some(1), nodeInScope = true)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, RelationshipTypes.empty, 1, Some(1), nodeInScope = true)().
       createResults(queryState).toList
 
     // then
@@ -504,7 +504,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     })
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, RelationshipTypes.empty, 2, Some(2), nodeInScope = false)().
       createResults(queryState).toList
 
     // then
@@ -546,7 +546,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     })
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = true)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, RelationshipTypes.empty, 2, Some(2), nodeInScope = true)().
       createResults(queryState).toList
 
     // then
@@ -589,7 +589,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     })
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(3), nodeInScope = false)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, RelationshipTypes.empty, 2, Some(3), nodeInScope = false)().
       createResults(queryState).toList
 
     // then
@@ -641,7 +641,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     })
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(3), nodeInScope = true)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, RelationshipTypes.empty, 2, Some(3), nodeInScope = true)().
       createResults(queryState).toList
 
     // then
@@ -679,7 +679,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     // (b)-[r]->(a)
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.INCOMING, LazyTypes.empty, 1, None, nodeInScope = false)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.INCOMING, RelationshipTypes.empty, 1, None, nodeInScope = false)().
       createResults(queryState).toList
 
     // then
@@ -733,7 +733,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING,
-                                     LazyTypes.empty, 3, None, nodeInScope = false, filteringStep)().createResults(queryState).toList
+                                     RelationshipTypes.empty, 3, None, nodeInScope = false, filteringStep)().createResults(queryState).toList
 
     // then
     val single :: Nil = result
@@ -769,7 +769,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     })
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.OUTGOING, /* projectedDir */ SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.OUTGOING, /* projectedDir */ SemanticDirection.OUTGOING, RelationshipTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
     val single :: Nil = result
@@ -805,7 +805,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     })
 
     // when
-    val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.INCOMING, /* projectedDir */ SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.INCOMING, /* projectedDir */ SemanticDirection.OUTGOING, RelationshipTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
     val single :: Nil = result
@@ -841,7 +841,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     })
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.INCOMING, /* projectedDir */ SemanticDirection.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.INCOMING, /* projectedDir */ SemanticDirection.INCOMING, RelationshipTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
     val single :: Nil = result
@@ -877,7 +877,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     })
 
     // when
-    val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.OUTGOING, /* projectedDir */ SemanticDirection.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.OUTGOING, /* projectedDir */ SemanticDirection.INCOMING, RelationshipTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
     val single :: Nil = result
@@ -916,7 +916,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     })
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.OUTGOING, RelationshipTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
     val single :: Nil = result
@@ -951,7 +951,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     })
 
     // when
-    val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.INCOMING, RelationshipTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
     val single :: Nil = result
@@ -986,7 +986,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     })
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.OUTGOING, RelationshipTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
     val single :: Nil = result
@@ -1021,7 +1021,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     })
 
     // when
-    val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.INCOMING, RelationshipTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
     val single :: Nil = result
@@ -1039,7 +1039,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(source.createResults(queryState)).thenReturn(Iterator(row("a" -> Values.NO_VALUE)))
 
     // when
-    val result = VarLengthExpandPipe(source, "a", "r", "b", SemanticDirection.BOTH, SemanticDirection.INCOMING, LazyTypes.empty, 1, None, nodeInScope = false)().createResults(queryState).toList
+    val result = VarLengthExpandPipe(source, "a", "r", "b", SemanticDirection.BOTH, SemanticDirection.INCOMING, RelationshipTypes.empty, 1, None, nodeInScope = false)().createResults(queryState).toList
 
     // then
     val single :: Nil = result
@@ -1060,7 +1060,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     })
 
     // when
-    val result = VarLengthExpandPipe(source, "a", "r", "b", SemanticDirection.BOTH, SemanticDirection.INCOMING, LazyTypes.empty, 1, None, nodeInScope = true)().createResults(queryState).toList
+    val result = VarLengthExpandPipe(source, "a", "r", "b", SemanticDirection.BOTH, SemanticDirection.INCOMING, RelationshipTypes.empty, 1, None, nodeInScope = true)().createResults(queryState).toList
 
     // then
     val single :: Nil = result
@@ -1075,7 +1075,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val pred2 = True()
     val filteringStep = createVarLengthPredicate(pred1, pred2)
     val pipe = VarLengthExpandPipe(src, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING,
-      LazyTypes.empty, 3, None, nodeInScope = false, filteringStep)()
+                                   RelationshipTypes.empty, 3, None, nodeInScope = false, filteringStep)()
 
     pipe.filteringStep.predicateExpressions.foreach(_.owningPipe should equal(pipe))
     pred1.owningPipe should equal(pipe)

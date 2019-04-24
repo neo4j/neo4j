@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.runtime
 import java.net.URL
 
 import org.eclipse.collections.api.iterator.LongIterator
+import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.planner.spi.{IdempotentResult, KernelStatisticProvider, TokenContext}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.v4_0.util.EntityNotFoundException
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api._
@@ -72,11 +72,11 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getOrCreateRelTypeId(relTypeName: String): Int
 
-  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[RelationshipValue]
+  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): Iterator[RelationshipValue]
 
-  def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipIterator
+  def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): RelationshipIterator
 
-  def getRelationshipsCursor(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipSelectionCursor
+  def getRelationshipsCursor(node: Long, dir: SemanticDirection, types: Array[Int]): RelationshipSelectionCursor
 
   def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipValue
 

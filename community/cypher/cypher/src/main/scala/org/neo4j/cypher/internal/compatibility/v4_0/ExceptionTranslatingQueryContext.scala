@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compatibility.v4_0
 import java.net.URL
 
 import org.eclipse.collections.api.iterator.LongIterator
+import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.planner.spi.IdempotentResult
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryTransactionalContext}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
@@ -201,13 +201,13 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getOrCreateRelTypeId(relTypeName: String): Int =
     translateException(inner.getOrCreateRelTypeId(relTypeName))
 
-  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[RelationshipValue] =
+  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): Iterator[RelationshipValue] =
     translateException(inner.getRelationshipsForIds(node, dir, types))
 
-  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipIterator =
+  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): RelationshipIterator =
     translateException(inner.getRelationshipsForIdsPrimitive(node, dir, types))
 
-  override def getRelationshipsCursor(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipSelectionCursor =
+  override def getRelationshipsCursor(node: Long, dir: SemanticDirection, types: Array[Int]): RelationshipSelectionCursor =
     translateException(inner.getRelationshipsCursor(node, dir, types))
 
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipValue =

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, RelationshipContainer}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, RelationshipContainer}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
@@ -49,7 +49,7 @@ case class VarLengthExpandPipe(source: Pipe,
                                toName: String,
                                dir: SemanticDirection,
                                projectedDir: SemanticDirection,
-                               types: LazyTypes,
+                               types: RelationshipTypes,
                                min: Int,
                                max: Option[Int],
                                nodeInScope: Boolean,
@@ -67,8 +67,7 @@ case class VarLengthExpandPipe(source: Pipe,
       def next(): (NodeValue, RelationshipContainer) = {
         val (node, rels) = stack.pop()
         if (rels.size < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row,state)(node)) {
-          val relationships: Iterator[RelationshipValue] = state.query.getRelationshipsForIds(node.id(), dir,
-                                                                                      types.types(state.query))
+          val relationships: Iterator[RelationshipValue] = state.query.getRelationshipsForIds(node.id(), dir, types.types(state.query))
 
           relationships.filter(filteringStep.filterRelationship(row, state)).foreach { rel =>
             val otherNode = rel.otherNode(node)

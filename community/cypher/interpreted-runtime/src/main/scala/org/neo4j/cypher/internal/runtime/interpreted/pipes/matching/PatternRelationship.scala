@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.matching
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyTypes, QueryState}
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState, RelationshipTypes}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.graphdb.Path
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 import scala.collection.JavaConverters._
 
@@ -39,7 +39,7 @@ class PatternRelationship(key: String,
                           val properties: Map[KeyToken, Expression] = Map.empty,
                           val dir: SemanticDirection)
   extends PatternElement(key) {
-  private val types = new LazyTypes(relTypes.toArray)
+  private val types = RelationshipTypes(relTypes.toArray)
 
   def variables2: Map[String, CypherType] = Map(startNode.key -> CTNode, endNode.key -> CTNode, key -> CTRelationship)
 

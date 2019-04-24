@@ -34,7 +34,7 @@ abstract class OptionalExpandAllPipe(source: Pipe,
                                      fromName: String,
                                      relName: String, toName: String,
                                      dir: SemanticDirection,
-                                     types: LazyTypes,
+                                     types: RelationshipTypes,
                                      val id: Id)
   extends PipeWithSource(source) {
 
@@ -80,7 +80,7 @@ object OptionalExpandAllPipe {
             relName: String,
             toName: String,
             dir: SemanticDirection,
-            types: LazyTypes,
+            types: RelationshipTypes,
             maybePredicate: Option[Expression])(id: Id = Id.INVALID_ID): OptionalExpandAllPipe = maybePredicate match {
     case Some(predicate) => new FilteringOptionalExpandAllPipe(source, fromName, relName, toName, dir, types, id, predicate)
     case None => new NonFilteringOptionalExpandAllPipe(source, fromName, relName, toName, dir, types, id)
@@ -92,9 +92,9 @@ class NonFilteringOptionalExpandAllPipe(source: Pipe,
                                         relName: String,
                                         toName: String,
                                         dir: SemanticDirection,
-                                        types: LazyTypes,
+                                        types: RelationshipTypes,
                                         id: Id)
-  extends OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: SemanticDirection, types: LazyTypes, id) {
+  extends OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: SemanticDirection, types: RelationshipTypes, id) {
 
   override def findMatchIterator(row: ExecutionContext,
                                  ignore: QueryState,
@@ -112,10 +112,10 @@ class FilteringOptionalExpandAllPipe(source: Pipe,
                                      relName: String,
                                      toName: String,
                                      dir: SemanticDirection,
-                                     types: LazyTypes,
+                                     types: RelationshipTypes,
                                      id: Id,
                                      predicate: Expression)
-  extends OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: SemanticDirection, types: LazyTypes, id) {
+  extends OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: SemanticDirection, types: RelationshipTypes, id) {
 
   predicate.registerOwningPipe(this)
 

@@ -30,7 +30,7 @@ import org.neo4j.values.virtual.{RelationshipValue, VirtualNodeValue}
 case class PruningVarLengthExpandPipe(source: Pipe,
                                       fromName: String,
                                       toName: String,
-                                      types: LazyTypes,
+                                      types: RelationshipTypes,
                                       dir: SemanticDirection,
                                       min: Int,
                                       max: Int,

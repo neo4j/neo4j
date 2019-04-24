@@ -33,7 +33,7 @@ import org.neo4j.values.virtual.{NodeReference, NodeValue, RelationshipValue}
 case class LegacyPruningVarLengthExpandPipe(source: Pipe,
                                             fromName: String,
                                             toName: String,
-                                            types: LazyTypes,
+                                            types: RelationshipTypes,
                                             dir: SemanticDirection,
                                             min: Int,
                                             max: Int,

@@ -31,7 +31,7 @@ case class ExpandAllPipe(source: Pipe,
                          relName: String,
                          toName: String,
                          dir: SemanticDirection,
-                         types: LazyTypes)
+                         types: RelationshipTypes)
                         (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {

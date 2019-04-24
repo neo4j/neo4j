@@ -29,7 +29,7 @@ import org.neo4j.values.virtual.NodeValue
 import scala.collection.mutable.ListBuffer
 
 case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: String, toName: String,
-                                  dir: SemanticDirection, types: LazyTypes, predicate: Option[Expression])
+                                  dir: SemanticDirection, types: RelationshipTypes, predicate: Option[Expression])
                                  (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) with CachingExpandInto {
   private final val CACHE_SIZE = 100000

@@ -149,8 +149,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // WHEN
-    val iteratorA = context.getRelationshipsForIds(node.getId, SemanticDirection.BOTH, None)
-    val iteratorB = context.getRelationshipsForIds(node.getId, SemanticDirection.BOTH, None)
+    val iteratorA = context.getRelationshipsForIds(node.getId, SemanticDirection.BOTH, null)
+    val iteratorB = context.getRelationshipsForIds(node.getId, SemanticDirection.BOTH, null)
 
     // THEN
     iteratorA should not equal iteratorB

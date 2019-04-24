@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.helpers.collection.PrefetchingIterator
@@ -52,7 +51,7 @@ trait CachingExpandInto {
                                   toNode: NodeValue,
                                   relCache: RelationshipsCache,
                                   dir: SemanticDirection,
-                                  relTypes: => Option[Array[Int]]): Iterator[RelationshipValue] = {
+                                  relTypes: => Array[Int]): Iterator[RelationshipValue] = {
 
     val fromNodeIsDense = state.query.nodeIsDense(fromNode.id(), state.cursors.nodeCursor)
     val toNodeIsDense = state.query.nodeIsDense(toNode.id(), state.cursors.nodeCursor)
@@ -91,7 +90,7 @@ trait CachingExpandInto {
   }
 
   private def relIterator(query: QueryContext, fromNode: NodeValue,  toNode: NodeValue, preserveDirection: Boolean,
-                          relTypes: Option[Array[Int]], relCache: RelationshipsCache, dir: SemanticDirection) = {
+                          relTypes: Array[Int], relCache: RelationshipsCache, dir: SemanticDirection) = {
     val (start, localDirection, end) = if(preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reversed, fromNode)
     val relationships = query.getRelationshipsForIds(start.id(), localDirection, relTypes)
     new PrefetchingIterator[RelationshipValue] {
@@ -113,14 +112,14 @@ trait CachingExpandInto {
     }.asScala
   }
 
-  private def getDegree(node: NodeValue, relTypes: Option[Array[Int]], direction: SemanticDirection, state: QueryState) = {
-    relTypes.map {
-      case rels if rels.isEmpty     => state.query.nodeGetDegree(node.id(), direction, state.cursors.nodeCursor)
-      case rels if rels.length == 1 => state.query.nodeGetDegree(node.id(), direction, rels.head, state.cursors.nodeCursor)
-      case rels                     => rels.foldLeft(0)(
-        (acc, rel)                  => acc + state.query.nodeGetDegree(node.id(), direction, rel, state.cursors.nodeCursor)
-      )
-    }.getOrElse(state.query.nodeGetDegree(node.id(), direction, state.cursors.nodeCursor))
+  private def getDegree(node: NodeValue, relTypes: Array[Int], direction: SemanticDirection, state: QueryState) = {
+    if (relTypes == null) state.query.nodeGetDegree(node.id(), direction, state.cursors.nodeCursor)
+    else if (relTypes.length == 1) state.query.nodeGetDegree(node.id(), direction, relTypes(0), state.cursors.nodeCursor)
+    else {
+      relTypes.foldLeft(0)(
+        (acc, rel) => acc + state.query.nodeGetDegree(node.id(), direction, rel, state.cursors.nodeCursor)
+        )
+    }
   }
 
   @inline

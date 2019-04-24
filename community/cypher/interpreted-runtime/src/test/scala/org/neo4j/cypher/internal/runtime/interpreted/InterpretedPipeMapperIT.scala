@@ -137,14 +137,14 @@ class InterpretedPipeMapperIT extends CypherFunSuite with LogicalPlanningTestSup
     val logicalPlan = Expand(AllNodesScan("a", Set.empty), "a", SemanticDirection.INCOMING, Seq(), "b", "r1")(idGen)
     val pipe = build(logicalPlan)
 
-    pipe should equal(ExpandAllPipe( AllNodesScanPipe("a")(), "a", "r1", "b", SemanticDirection.INCOMING, LazyTypes.empty)())
+    pipe should equal(ExpandAllPipe(AllNodesScanPipe("a")(), "a", "r1", "b", SemanticDirection.INCOMING, RelationshipTypes.empty)())
   }
 
   test("simple expand into existing variable MATCH a-[r]->a ") {
     val logicalPlan = Expand(AllNodesScan("a", Set.empty), "a", SemanticDirection.INCOMING, Seq(), "a", "r", ExpandInto)(idGen)
     val pipe = build(logicalPlan)
 
-    val inner: Pipe = ExpandIntoPipe( AllNodesScanPipe("a")(), "a", "r", "a", SemanticDirection.INCOMING, LazyTypes.empty)()
+    val inner: Pipe = ExpandIntoPipe(AllNodesScanPipe("a")(), "a", "r", "a", SemanticDirection.INCOMING, RelationshipTypes.empty)()
 
     pipe should equal(inner)
   }
@@ -154,7 +154,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with LogicalPlanningTestSup
     val pipe = build(logicalPlan)
 
     pipe should equal(
-      OptionalExpandIntoPipe(AllNodesScanPipe("a")(), "a", "r", "a", SemanticDirection.INCOMING, LazyTypes.empty, None)())
+      OptionalExpandIntoPipe(AllNodesScanPipe("a")(), "a", "r", "a", SemanticDirection.INCOMING, RelationshipTypes.empty, None)())
   }
 
   test("simple hash join") {
@@ -168,9 +168,9 @@ class InterpretedPipeMapperIT extends CypherFunSuite with LogicalPlanningTestSup
 
     pipe should equal(NodeHashJoinPipe(
       Set("b"),
-      ExpandAllPipe( AllNodesScanPipe("a")(), "a", "r1", "b", SemanticDirection.INCOMING, LazyTypes.empty)(),
-      ExpandAllPipe( AllNodesScanPipe("c")(), "c", "r2", "b", SemanticDirection.INCOMING, LazyTypes.empty)()
-    )())
+      ExpandAllPipe(AllNodesScanPipe("a")(), "a", "r1", "b", SemanticDirection.INCOMING, RelationshipTypes.empty)(),
+      ExpandAllPipe(AllNodesScanPipe("c")(), "c", "r2", "b", SemanticDirection.INCOMING, RelationshipTypes.empty)()
+      )())
   }
 
   test("Aggregation with no aggregating columns => DistinctPipe with resolved expressions") {

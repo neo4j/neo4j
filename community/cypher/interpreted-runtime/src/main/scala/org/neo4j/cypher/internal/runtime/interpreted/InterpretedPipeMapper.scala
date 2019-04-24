@@ -67,7 +67,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case RelationshipCountFromCountStore(ident, startLabel, typeNames, endLabel, _) =>
         RelationshipCountFromCountStorePipe(ident, startLabel.map(LazyLabel.apply),
-                                            new LazyTypes(typeNames.map(_.name).toArray), endLabel.map(LazyLabel.apply))(id = id)
+                                            RelationshipTypes(typeNames.map(_.name).toArray, tokenContext), endLabel.map(LazyLabel.apply))(id = id)
 
       case NodeByLabelScan(ident, label, _) =>
         queryIndexes.registerLabelScan()
@@ -117,9 +117,9 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case ProjectEndpoints(_, rel, start, startInScope, end, endInScope, types, directed, length) =>
         ProjectEndpointsPipe(source, rel,
-          start, startInScope,
-          end, endInScope,
-          types.map(_.toArray).map(LazyTypes.apply), directed, length.isSimple)(id = id)
+                             start, startInScope,
+                             end, endInScope,
+                             types.map(_.toArray).map(RelationshipTypes.apply).getOrElse(RelationshipTypes.empty), directed, length.isSimple)(id = id)
 
       case EmptyResult(_) =>
         EmptyResultPipe(source)(id = id)
@@ -133,19 +133,19 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         FilterPipe(source, predicateExpression)(id = id)
 
       case Expand(_, fromName, dir, types: Seq[RelTypeName], toName, relName, ExpandAll) =>
-        ExpandAllPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray))(id = id)
+        ExpandAllPipe(source, fromName, relName, toName, dir, RelationshipTypes(types.toArray))(id = id)
 
       case Expand(_, fromName, dir, types: Seq[RelTypeName], toName, relName, ExpandInto) =>
-        ExpandIntoPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray))(id = id)
+        ExpandIntoPipe(source, fromName, relName, toName, dir, RelationshipTypes(types.toArray))(id = id)
 
       case LockNodes(_, nodesToLock) =>
         LockNodesPipe(source, nodesToLock)(id = id)
 
       case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandAll, predicate) =>
-        OptionalExpandAllPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray), predicate.map(buildExpression))(id = id)
+        OptionalExpandAllPipe(source, fromName, relName, toName, dir, RelationshipTypes(types.toArray), predicate.map(buildExpression))(id = id)
 
       case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandInto, predicate) =>
-        OptionalExpandIntoPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray), predicate.map(buildExpression))(id = id)
+        OptionalExpandIntoPipe(source, fromName, relName, toName, dir, RelationshipTypes(types.toArray), predicate.map(buildExpression))(id = id)
 
       case VarExpand(_,
                      fromName,
@@ -166,7 +166,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         }
 
         VarLengthExpandPipe(source, fromName, relName, toName, dir, projectedDir,
-          LazyTypes(types.toArray), min, max, nodeInScope, predicate)(id = id)
+                            RelationshipTypes(types.toArray), min, max, nodeInScope, predicate)(id = id)
 
       case Optional(inner, protectedSymbols) =>
         OptionalPipe(inner.availableSymbols -- protectedSymbols, source)(id = id)
@@ -181,7 +181,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
                             nodePredicate,
                             relationshipPredicate) =>
         val predicate = varLengthPredicate(id, nodePredicate, relationshipPredicate)
-        PruningVarLengthExpandPipe(source, from, toName, LazyTypes(types.toArray), dir, minLength, maxLength, predicate)(id = id)
+        PruningVarLengthExpandPipe(source, from, toName, RelationshipTypes(types.toArray), dir, minLength, maxLength, predicate)(id = id)
 
       case Sort(_, sortItems) =>
         SortPipe(source, InterpretedExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder)))(id = id)

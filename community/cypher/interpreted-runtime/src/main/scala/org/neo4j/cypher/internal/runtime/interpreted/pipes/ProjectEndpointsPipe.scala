@@ -27,7 +27,9 @@ import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipReference, Re
 case class ProjectEndpointsPipe(source: Pipe, relName: String,
                                 start: String, startInScope: Boolean,
                                 end: String, endInScope: Boolean,
-                                relTypes: Option[LazyTypes], directed: Boolean, simpleLength: Boolean)
+                                relTypes: RelationshipTypes,
+                                directed: Boolean,
+                                simpleLength: Boolean)
                                (val id: Id = Id.INVALID_ID) extends PipeWithSource(source)
   with ListSupport  {
   type Projector = ExecutionContext => Iterator[ExecutionContext]
@@ -81,8 +83,11 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
         case relValue: RelationshipValue => relValue
         case relRef: RelationshipReference => qtx.relationshipOps.getById(relRef.id())
       }
-      val rel = Some(relValue).filter(hasAllowedType)
-    rel.flatMap( rel => pickStartAndEnd(rel, rel, context, qtx) )
+      if (!hasAllowedType(qtx.relationshipType(relValue.`type`().stringValue()), qtx )) {
+        None
+      } else {
+        pickStartAndEnd(relValue, relValue, context, qtx)
+      }
   }
 
   private def findVarLengthRelEndpoints(context: ExecutionContext,
@@ -111,13 +116,13 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
         case relValue: RelationshipValue => relValue
         case relRef: RelationshipReference => qtx.relationshipOps.getById(relRef.id())
       }
-      if (!hasAllowedType(next)) return false
+      if (!hasAllowedType(qtx.relationshipType(next.`type`().stringValue()), qtx)) return false
     }
     true
   }
 
-  private def hasAllowedType(rel: RelationshipValue): Boolean =
-    relTypes.forall(_.names.contains(rel.`type`().stringValue()))
+  private def hasAllowedType(rel: Int, qtx: QueryContext): Boolean =
+    relTypes.types(qtx).contains(rel)
 
   private def pickStartAndEnd(relStart: RelationshipValue, relEnd: RelationshipValue,
                               context: ExecutionContext, qtx: QueryContext): Option[StartAndEnd] = {

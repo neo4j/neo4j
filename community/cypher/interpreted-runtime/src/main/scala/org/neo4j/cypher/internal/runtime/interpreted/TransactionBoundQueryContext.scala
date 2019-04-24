@@ -140,8 +140,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     else tokenWrite.labelGetOrCreateForName(labelName)
   }
 
-  def getRelationshipsForIds(node: Long, dir: SemanticDirection,
-                             types: Option[Array[Int]]): Iterator[RelationshipValue] = {
+  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): Iterator[RelationshipValue] = {
 
     val cursor = allocateNodeCursor()
     val cursors = transactionalContext.cursors
@@ -152,9 +151,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       if (!cursor.next()) Iterator.empty
       else {
         val selectionCursor = dir match {
-          case OUTGOING => outgoingCursor(cursors, cursor, types.orNull)
-          case INCOMING => incomingCursor(cursors, cursor, types.orNull)
-          case BOTH => allCursor(cursors, cursor, types.orNull)
+          case OUTGOING => outgoingCursor(cursors, cursor, types)
+          case INCOMING => incomingCursor(cursors, cursor, types)
+          case BOTH => allCursor(cursors, cursor, types)
         }
         val ids = new CursorIterator[RelationshipValue] {
           override protected def close(): Unit = selectionCursor.close()
@@ -175,8 +174,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection,
-                                               types: Option[Array[Int]]): RelationshipIterator = {
+  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): RelationshipIterator = {
 
     val cursor = allocateNodeCursor()
     try {
@@ -186,9 +184,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       if (!cursor.next()) RelationshipIterator.EMPTY
       else {
         val selectionCursor = dir match {
-          case OUTGOING => outgoingCursor(cursors, cursor, types.orNull)
-          case INCOMING => incomingCursor(cursors, cursor, types.orNull)
-          case BOTH => allCursor(cursors, cursor, types.orNull)
+          case OUTGOING => outgoingCursor(cursors, cursor, types)
+          case INCOMING => incomingCursor(cursors, cursor, types)
+          case BOTH => allCursor(cursors, cursor, types)
         }
         resources.trace(selectionCursor)
         val iterator = new RelationshipCursorIterator(selectionCursor)
@@ -200,8 +198,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def getRelationshipsCursor(node: Long, dir: SemanticDirection,
-                                      types: Option[Array[Int]]): RelationshipSelectionCursor = {
+  override def getRelationshipsCursor(node: Long, dir: SemanticDirection, types: Array[Int]): RelationshipSelectionCursor = {
 
     val cursor = allocateNodeCursor()
     try {
@@ -211,9 +208,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       if (!cursor.next()) RelationshipSelectionCursor.EMPTY
       else {
         dir match {
-          case OUTGOING => outgoingCursor(cursors, cursor, types.orNull)
-          case INCOMING => incomingCursor(cursors, cursor, types.orNull)
-          case BOTH => allCursor(cursors, cursor, types.orNull)
+          case OUTGOING => outgoingCursor(cursors, cursor, types)
+          case INCOMING => incomingCursor(cursors, cursor, types)
+          case BOTH => allCursor(cursors, cursor, types)
         }
       }
     } finally {
