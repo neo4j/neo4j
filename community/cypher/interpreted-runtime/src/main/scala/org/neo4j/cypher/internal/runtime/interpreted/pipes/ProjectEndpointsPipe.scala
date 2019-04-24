@@ -121,14 +121,17 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
     true
   }
 
-  private def hasAllowedType(rel: Int, qtx: QueryContext): Boolean =
-    relTypes.types(qtx).contains(rel)
+  private def hasAllowedType(rel: Int, qtx: QueryContext): Boolean = {
+    val types = relTypes.types(qtx)
+    types == null || types.contains(rel)
+  }
 
   private def pickStartAndEnd(relStart: RelationshipValue, relEnd: RelationshipValue,
                               context: ExecutionContext, qtx: QueryContext): Option[StartAndEnd] = {
     val s = relStart.startNode()
     val e = relEnd.endNode()
 
+    val a = Some(3)
     if (!startInScope && !endInScope) Some(NotInScope(s, e))
     else if ((!startInScope || context.getByName(start) == s) && (!endInScope || context.getByName(end) == e))
       Some(InScope(s, e))

@@ -73,15 +73,10 @@ class ExpandAllPipeTest extends CypherFunSuite {
     val endNode2 = newMockedNode(3)
     val relationship1 = newMockedRelationship(1, startNode, endNode1)
     val relationship2 = newMockedRelationship(2, startNode, endNode2)
-    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[RelationshipValue]]{
-      override def answer(invocationOnMock: InvocationOnMock): Iterator[RelationshipValue] = {
-        val arg = invocationOnMock.getArgument[Option[Array[Int]]](2)
-        arg match {
-          case None => Iterator.empty
-          case Some(array) if array.isEmpty => Iterator.empty
-          case _ => Iterator(fromRelationshipProxy(relationship1), fromRelationshipProxy(relationship2))
-        }
-      }
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer((invocationOnMock: InvocationOnMock) => {
+      val arg = invocationOnMock.getArgument[Array[Int]](2)
+      if (arg == null || arg.isEmpty) Iterator.empty
+      else Iterator(fromRelationshipProxy(relationship1), fromRelationshipProxy(relationship2))
     })
 
     val pipe = ExpandAllPipe(newMockedPipe("a", row("a"-> startNode)), "a", "r", "b", SemanticDirection.OUTGOING, RelationshipTypes(Array("FOO", "BAR")))()
