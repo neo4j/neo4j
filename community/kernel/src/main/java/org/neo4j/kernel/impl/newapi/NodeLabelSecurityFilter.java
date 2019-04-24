@@ -63,7 +63,7 @@ class NodeLabelSecurityFilter implements IndexProgressor.EntityValueClient, Inde
             boolean indexIncludesTransactionState )
     {
         this.progressor = progressor;
-        target.initialize( descriptor, progressor, query, indexOrder, needsValues, indexIncludesTransactionState );
+        target.initialize( descriptor, this, query, indexOrder, needsValues, indexIncludesTransactionState );
     }
 
     @Override

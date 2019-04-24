@@ -269,7 +269,6 @@ public class Operations implements Write, SchemaWrite
             return false;
         }
 
-        // TODO to add label, must be allowed to read this node and allowed to create labels of type `nodeLabel`
         checkConstraintsAndAddLabelToNode( node, nodeLabel );
         return true;
     }

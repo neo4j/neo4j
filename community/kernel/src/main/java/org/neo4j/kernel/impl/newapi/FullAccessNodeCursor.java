@@ -38,7 +38,6 @@ public class FullAccessNodeCursor extends DefaultNodeCursor
     @Override
     public LabelSet labels()
     {
-        // TODO check if it's possible to make the DefaultNodeCursor version of this one cheaper for the case when security isn't checked
         if ( currentAddedInTx != NO_ID )
         {
             //Node added in tx-state, no reason to go down to store and check
