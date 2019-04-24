@@ -103,7 +103,7 @@ public class PageCacheRule extends ExternalResource
 
     protected void initializeJobScheduler()
     {
-        jobScheduler = new ThreadPoolJobScheduler();
+        jobScheduler = new ThreadPoolJobScheduler( "PageCacheRule-" );
     }
 
     protected static <T> T selectConfig( T base, T overridden, T defaultValue )

@@ -44,7 +44,12 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
 
     public ThreadPoolJobScheduler()
     {
-        executor = newCachedThreadPool( new DaemonThreadFactory( "ThreadPoolScheduler" ) );
+        this( "ThreadPoolScheduler" );
+    }
+
+    public ThreadPoolJobScheduler( String prefix )
+    {
+        executor = newCachedThreadPool( new DaemonThreadFactory( prefix ) );
     }
 
     public ThreadPoolJobScheduler( ExecutorService executor )
