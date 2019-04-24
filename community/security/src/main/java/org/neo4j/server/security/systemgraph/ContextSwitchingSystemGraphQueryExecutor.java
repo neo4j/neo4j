@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.javacompat.QueryResultProvider;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.SystemDatabaseInnerAccessor;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Result;
@@ -33,7 +34,6 @@ import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
@@ -44,7 +44,7 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
 {
     private final DatabaseManager<?> databaseManager;
     private final String defaultDbName;
-    private DatabaseManager.SystemDatabaseInnerAccessor<?> systemDb;
+    private SystemDatabaseInnerAccessor<?> systemDb;
     private ThreadToStatementContextBridge threadToStatementContextBridge;
 
     public ContextSwitchingSystemGraphQueryExecutor( DatabaseManager<?> databaseManager, String defaultDbName )
@@ -185,12 +185,13 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
         return threadToStatementContextBridge;
     }
 
-    private DatabaseManager.SystemDatabaseInnerAccessor<?> getSystemDb()
+    private SystemDatabaseInnerAccessor<?> getSystemDb()
     {
         // Resolve systemDb on the first call
         if ( systemDb == null )
         {
-            systemDb = databaseManager.getSystemDatabaseInnerAccessor();
+            DatabaseContext activeDb = getDb( SYSTEM_DATABASE_NAME );
+            systemDb = activeDb.dependencies().resolveDependency( SystemDatabaseInnerAccessor.class );
         }
         return systemDb;
     }

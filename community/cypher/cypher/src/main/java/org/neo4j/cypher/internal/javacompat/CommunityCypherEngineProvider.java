@@ -30,16 +30,14 @@ import org.neo4j.cypher.internal.CypherConfiguration;
 import org.neo4j.cypher.internal.CypherRuntimeConfiguration;
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.graphdb.Result;
+import org.neo4j.dbms.database.SystemDatabaseInnerAccessor;
+import org.neo4j.dbms.database.SystemDatabaseInnerAccessor.SystemDatabaseInnerEngine;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.values.virtual.MapValue;
 
 @ServiceProvider
 public class CommunityCypherEngineProvider extends QueryEngineProvider
@@ -84,16 +82,11 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
             CypherPlannerConfiguration innerPlannerConfig = cypherConfig.toCypherPlannerConfiguration( config, false );
             CommunityCompilerFactory innerCompilerFactory =
                     new CommunityCompilerFactory( queryService, monitors, logProvider, innerPlannerConfig, runtimeConfig );
-            DatabaseManager databaseManager = resolver.resolveDependency( DatabaseManager.class );
             ExecutionEngine inner = new ExecutionEngine( queryService, logProvider, innerCompilerFactory );
-            databaseManager.setInnerSystemExecutionEngine( new DatabaseManager.SystemDatabaseInnerEngine()
-            {
-                @Override
-                public Result execute( String query, MapValue parameters, TransactionalContext context ) throws QueryExecutionKernelException
-                {
-                    return inner.executeQuery( query, parameters, context, false );
-                }
-            } );
+            DatabaseManager databaseManager = resolver.resolveDependency( DatabaseManager.class );
+            SystemDatabaseInnerEngine innerEngine = ( query, parameters, context ) -> inner.executeQuery( query, parameters, context, false );
+            SystemDatabaseInnerAccessor innerAccessor = new SystemDatabaseInnerAccessor( databaseManager, innerEngine );
+            ((Dependencies) resolver).satisfyDependency( innerAccessor );
             return new SystemExecutionEngine( queryService, logProvider, compilerFactory, innerCompilerFactory );
         }
         else if ( config.get( GraphDatabaseSettings.snapshot_query ) )
