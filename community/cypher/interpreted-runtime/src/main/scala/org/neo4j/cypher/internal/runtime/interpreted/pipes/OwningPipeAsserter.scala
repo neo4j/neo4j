@@ -21,20 +21,22 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.v3_5.util.Foldable._
-import org.neo4j.cypher.internal.v3_5.util.InternalException
+import org.neo4j.cypher.internal.v3_5.util.{AssertionRunner, InternalException}
 
 object OwningPipeAsserter {
 
   def assertAllExpressionsHaveAnOwningPipe(pipe: Pipe): Unit = {
-    pipe.treeFold(()) {
-      case e:Expression =>
-        try {
-          e.owningPipe
-        } catch {
-          case exp: InternalException =>
-            throw new InternalException(s"${exp.getMessage}\nTop level pipe: $pipe\nExpression: $e")
-        }
-        acc => (acc, Some(identity))
-    }
+    AssertionRunner.runUnderAssertion(() =>
+      pipe.treeFold(()) {
+        case e: Expression =>
+          try {
+            e.owningPipe
+          } catch {
+            case exp: InternalException =>
+              throw new InternalException(s"${exp.getMessage}\nTop level pipe: $pipe\nExpression: $e")
+          }
+          acc => (acc, Some(identity))
+      }
+    )
   }
 }
