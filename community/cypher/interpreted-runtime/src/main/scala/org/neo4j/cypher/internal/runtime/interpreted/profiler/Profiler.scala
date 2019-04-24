@@ -194,8 +194,8 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
     override protected def manyDbHits[A](value: LongIterator): LongIterator = self.manyDbHits(value)
   }
 
-  override def nodeOps: NodeOperations = new ProfilerOperations(inner.nodeOps) with NodeOperations
-  override def relationshipOps: RelationshipOperations = new ProfilerOperations(inner.relationshipOps) with RelationshipOperations
+  override val nodeOps: NodeOperations = new ProfilerOperations(inner.nodeOps) with NodeOperations
+  override val relationshipOps: RelationshipOperations = new ProfilerOperations(inner.relationshipOps) with RelationshipOperations
 }
 
 class ProfilingIterator(inner: Iterator[ExecutionContext], startValue: Long, pipeId: Id,

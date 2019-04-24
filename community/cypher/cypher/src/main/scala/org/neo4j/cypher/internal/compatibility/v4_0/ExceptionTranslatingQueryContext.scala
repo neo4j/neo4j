@@ -70,10 +70,10 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getOrCreateLabelId(labelName: String): Int =
     translateException(inner.getOrCreateLabelId(labelName))
 
-  override def nodeOps: NodeOperations =
+  override val nodeOps: NodeOperations =
     new ExceptionTranslatingOperations[NodeValue, NodeCursor](inner.nodeOps) with NodeOperations
 
-  override def relationshipOps: RelationshipOperations =
+  override val relationshipOps: RelationshipOperations =
     new ExceptionTranslatingOperations[RelationshipValue, RelationshipScanCursor](inner.relationshipOps) with RelationshipOperations
 
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int =
