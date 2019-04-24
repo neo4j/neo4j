@@ -41,7 +41,7 @@ class LazyPropertyKeyTest extends CypherFunSuite {
     val id = LazyPropertyKey(PROPERTY_KEY_NAME).id(context)
 
     // THEN
-    id should equal(Some(PROPERTY_KEY_ID))
+    id should equal(PROPERTY_KEY_ID.id)
     verifyZeroInteractions(context)
   }
 
@@ -56,7 +56,7 @@ class LazyPropertyKeyTest extends CypherFunSuite {
     val id = LazyPropertyKey(PROPERTY_KEY_NAME).id(context)
 
     // THEN
-    id should equal(Some(PROPERTY_KEY_ID))
+    id should equal(PROPERTY_KEY_ID.id)
     verify(context).getOptPropertyKeyId("foo")
     verifyNoMoreInteractions(context)
   }

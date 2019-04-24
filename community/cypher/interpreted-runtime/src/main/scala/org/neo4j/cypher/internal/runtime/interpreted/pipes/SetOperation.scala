@@ -92,9 +92,10 @@ abstract class AbstractSetPropertyOperation extends SetOperation {
                                        expression: Expression): Unit = {
 
     val queryContext = state.query
-    val maybePropertyKey = propertyKey.id(queryContext).map(_.id) // if the key was already looked up
-    val propertyId = maybePropertyKey
-      .getOrElse(queryContext.getOrCreatePropertyKeyId(propertyKey.name)) // otherwise create it
+    val maybePropertyKey = propertyKey.id(queryContext) // if the key was already looked up
+    val propertyId = if (maybePropertyKey == LazyPropertyKey.UNINITIALIZED) {
+      queryContext.getOrCreatePropertyKeyId(propertyKey.name)
+    } else maybePropertyKey
 
     val value = makeValueNeoSafe(expression(context, state))
 

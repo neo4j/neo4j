@@ -19,23 +19,24 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.spi.TokenContext
-import org.neo4j.cypher.internal.v4_0.util.PropertyKeyId
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyPropertyKey.UNINITIALIZED
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
 
 case class LazyPropertyKey(name: String) {
-  private var id: Option[PropertyKeyId] = None
+  private var id: Int = UNINITIALIZED
 
-  def id(context: TokenContext): Option[PropertyKeyId] = id match {
-    case None =>
-      id = context.getOptPropertyKeyId(name).map(PropertyKeyId)
-      id
-    case x => x
+  def id(context: TokenContext): Int = {
+    if (id == UNINITIALIZED) {
+      id = context.getOptPropertyKeyId(name).getOrElse(UNINITIALIZED)
+    }
+    id
   }
 }
 
 object LazyPropertyKey {
+  val UNINITIALIZED: Int = -1
 
   def apply(name: PropertyKeyName)(implicit table: SemanticTable): LazyPropertyKey = {
     val property = new LazyPropertyKey(name.name)
