@@ -37,6 +37,8 @@ import org.neo4j.values.storable.ValueCategory;
  */
 public final class IndexConfig
 {
+    private static final IndexConfig EMPTY = new IndexConfig( Maps.immutable.empty() );
+
     private final ImmutableMap<String,Value> map;
 
     private IndexConfig( ImmutableMap<String,Value> map )
@@ -46,7 +48,7 @@ public final class IndexConfig
 
     public static IndexConfig empty()
     {
-        return new IndexConfig( Maps.immutable.empty() );
+        return EMPTY;
     }
 
     public static IndexConfig with( Map<String,Value> map )
@@ -91,9 +93,10 @@ public final class IndexConfig
         return new IndexConfig( map.newWithKeyValue( key, value ) );
     }
 
-    public Value get( String key )
+    @SuppressWarnings( "unchecked" )
+    public <T extends Value> T get( String key )
     {
-        return map.get( key );
+        return (T) map.get( key );
     }
 
     public RichIterable<Pair<String, Value>> entries()

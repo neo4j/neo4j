@@ -121,6 +121,12 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
         {
             return IndexType.NOT_AN_INDEX;
         }
+
+        @Override
+        public IndexConfig getIndexConfig()
+        {
+            return IndexConfig.empty();
+        }
     };
 
     private static long[] schemaTokenLockingIds( SchemaDescriptor schema )
@@ -287,6 +293,11 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
      * @return the {@link IndexType} that is defined by this schema. If this schema does not define an index, then {@link IndexType#NOT_AN_INDEX} is returned.
      */
     IndexType getIndexType();
+
+    /**
+     * @return the {@link IndexConfig}, if any
+     */
+    IndexConfig getIndexConfig();
 
     /**
      * Create a predicate that checks whether a schema descriptor Supplier supplies the given schema descriptor.

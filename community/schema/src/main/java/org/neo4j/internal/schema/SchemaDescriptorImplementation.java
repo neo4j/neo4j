@@ -43,6 +43,7 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     private final IndexType indexType;
     private final EntityType entityType;
     private final PropertySchemaType propertySchemaType;
+    private final IndexConfig indexConfig;
     private final int[] entityTokens;
     private final int[] propertyIds;
     /**
@@ -58,13 +59,15 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
      */
     private final boolean archetypalFulltextSchema;
 
-    SchemaDescriptorImplementation( IndexType indexType, EntityType entityType, PropertySchemaType propertySchemaType, int[] entityTokens, int[] propertyIds )
+    SchemaDescriptorImplementation( IndexType indexType, EntityType entityType, PropertySchemaType propertySchemaType, IndexConfig indexConfig,
+            int[] entityTokens, int[] propertyIds )
     {
         this.indexType = requireNonNull( indexType, "IndexType cannot be null." );
         this.entityType = requireNonNull( entityType, "EntityType cannot be null." );
         this.propertySchemaType = requireNonNull( propertySchemaType, "PropertySchemaType cannot be null." );
         this.entityTokens = requireNonNull( entityTokens, "Entity tokens array cannot be null." );
         this.propertyIds = requireNonNull( propertyIds, "Property key ids array cannot be null." );
+        this.indexConfig = requireNonNull( indexConfig, "IndexConfig cannot be null." );
         if ( entityTokens.length == 0 )
         {
             throw new IllegalArgumentException( "Schema descriptor must have at least one " + (entityType == NODE ? "label." : "relationship type.") );
@@ -213,6 +216,12 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     public IndexType getIndexType()
     {
         return indexType;
+    }
+
+    @Override
+    public IndexConfig getIndexConfig()
+    {
+        return indexConfig;
     }
 
     @Override

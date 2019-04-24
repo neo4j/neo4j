@@ -128,6 +128,12 @@ class DefaultRelationTypeSchemaDescriptor implements RelationTypeSchemaDescripto
     }
 
     @Override
+    public IndexConfig getIndexConfig()
+    {
+        return IndexConfig.empty();
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( o instanceof RelationTypeSchemaDescriptor )

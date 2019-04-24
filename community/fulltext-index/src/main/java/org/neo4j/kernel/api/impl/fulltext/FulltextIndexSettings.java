@@ -60,7 +60,7 @@ class FulltextIndexSettings
         if ( descriptor.schema() instanceof FulltextSchemaDescriptor )
         {
             FulltextSchemaDescriptor schema = (FulltextSchemaDescriptor) descriptor.schema();
-            IndexConfig indexConfig = schema.getIndexConfiguration();
+            IndexConfig indexConfig = schema.getIndexConfig();
             for ( Pair<String,Value> entry : indexConfig.entries() )
             {
                 properties.put( entry.getOne(), String.valueOf( entry.getTwo().asObject() ) );

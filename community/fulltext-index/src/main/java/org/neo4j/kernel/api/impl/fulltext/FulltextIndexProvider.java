@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
@@ -61,6 +60,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.api.exceptions.Status.General.InvalidArguments;
@@ -147,7 +147,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
             // This could be the situation where the index creation is about to be committed.
             // In that case, the schema descriptor is our own legit type, but the StoreIndexDescriptor is generic.
             FulltextSchemaDescriptor fulltextSchemaDescriptor = (FulltextSchemaDescriptor) schema;
-            return new FulltextIndexCapability( fulltextSchemaDescriptor.isEventuallyConsistent() );
+            return new FulltextIndexCapability( isEventuallyConsistent( fulltextSchemaDescriptor ) );
         }
         // The schema descriptor is probably a generic multi-token descriptor.
         // This happens if it was loaded from the schema store instead of created by our provider.
@@ -164,6 +164,12 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         fulltextIndexDescriptor = readOrInitialiseDescriptor( descriptor, defaultAnalyzerName, tokenHolders.propertyKeyTokens(),
                 indexStorage, fileSystem );
         return new FulltextIndexCapability( fulltextIndexDescriptor.isEventuallyConsistent() );
+    }
+
+    private boolean isEventuallyConsistent( FulltextSchemaDescriptor schema )
+    {
+        BooleanValue eventuallyConsistent = schema.getIndexConfig().get( INDEX_CONFIG_EVENTUALLY_CONSISTENT );
+        return eventuallyConsistent.booleanValue();
     }
 
     @Override

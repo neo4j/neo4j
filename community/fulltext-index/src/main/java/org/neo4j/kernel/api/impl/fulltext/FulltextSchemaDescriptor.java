@@ -30,17 +30,16 @@ import org.neo4j.internal.schema.SchemaComputer;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaProcessor;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.values.storable.BooleanValue;
 
 class FulltextSchemaDescriptor implements SchemaDescriptor, org.neo4j.internal.schema.FulltextSchemaDescriptor
 {
     private final SchemaDescriptor schema;
-    private final IndexConfig indexConfiguration;
+    private final IndexConfig indexConfig;
 
-    FulltextSchemaDescriptor( SchemaDescriptor schema, IndexConfig indexConfiguration )
+    FulltextSchemaDescriptor( SchemaDescriptor schema, IndexConfig indexConfig )
     {
         this.schema = schema;
-        this.indexConfiguration = indexConfiguration;
+        this.indexConfig = indexConfig;
     }
 
     @Override
@@ -149,13 +148,9 @@ class FulltextSchemaDescriptor implements SchemaDescriptor, org.neo4j.internal.s
         return schema.equals( obj );
     }
 
-    IndexConfig getIndexConfiguration()
+    @Override
+    public IndexConfig getIndexConfig()
     {
-        return indexConfiguration;
-    }
-
-    boolean isEventuallyConsistent()
-    {
-        return indexConfiguration.get( FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT ).eq( BooleanValue.TRUE );
+        return indexConfig;
     }
 }

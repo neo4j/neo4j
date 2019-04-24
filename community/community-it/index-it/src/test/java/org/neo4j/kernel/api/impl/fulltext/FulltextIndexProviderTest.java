@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.common.EntityType;
@@ -54,6 +53,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -148,7 +148,7 @@ public class FulltextIndexProviderTest
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             MultiTokenSchemaDescriptor multiTokenSchemaDescriptor = multiToken( new int[]{0, 1, 2}, EntityType.RELATIONSHIP, 0, 1, 2, 3 );
-            FulltextSchemaDescriptor schema = new FulltextSchemaDescriptor( multiTokenSchemaDescriptor, new Properties() );
+            FulltextSchemaDescriptor schema = new FulltextSchemaDescriptor( multiTokenSchemaDescriptor, IndexConfig.empty() );
             indexReference = transaction.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), Optional.of( "fulltext" ) );
             transaction.success();
         }
@@ -164,11 +164,11 @@ public class FulltextIndexProviderTest
         IndexReference indexReference;
         indexReference = createIndex( new int[]{0, 1, 2}, new int[]{0, 1, 2, 3} );
         await( indexReference );
-        long thirdNodeid;
-        thirdNodeid = createTheThirdNode();
-        verifyNodeData( thirdNodeid );
+        long thirdNodeId;
+        thirdNodeId = createTheThirdNode();
+        verifyNodeData( thirdNodeId );
         db.restartDatabase( DbmsRule.RestartAction.EMPTY );
-        verifyNodeData( thirdNodeid );
+        verifyNodeData( thirdNodeId );
     }
 
     @Test
@@ -178,7 +178,7 @@ public class FulltextIndexProviderTest
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             MultiTokenSchemaDescriptor multiTokenSchemaDescriptor = multiToken( new int[]{0, 1, 2}, EntityType.RELATIONSHIP, 0, 1, 2, 3 );
-            FulltextSchemaDescriptor schema = new FulltextSchemaDescriptor( multiTokenSchemaDescriptor, new Properties() );
+            FulltextSchemaDescriptor schema = new FulltextSchemaDescriptor( multiTokenSchemaDescriptor, IndexConfig.empty() );
             indexReference = transaction.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), Optional.of( "fulltext" ) );
             transaction.success();
         }
@@ -220,6 +220,7 @@ public class FulltextIndexProviderTest
                     assertThat( index.getLabels(), containsInAnyOrder( Label.label( "Label1" ), Label.label( "Label2" ) ) );
                     try
                     {
+                        //noinspection deprecation
                         index.getLabel();
                         fail( "index.getLabel() on multi-token IndexDefinition should have thrown." );
                     }
@@ -242,6 +243,7 @@ public class FulltextIndexProviderTest
                             containsInAnyOrder( RelationshipType.withName( "RelType1" ), RelationshipType.withName( "RelType2" ) ) );
                     try
                     {
+                        //noinspection deprecation
                         index.getRelationshipType();
                         fail( "index.getRelationshipType() on multi-token IndexDefinition should have thrown." );
                     }
@@ -399,7 +401,7 @@ public class FulltextIndexProviderTest
                 public boolean acceptEntity( long reference, float score, Value... values )
                 {
                     this.nodeReference = reference;
-                    assertTrue( "score should not be NaN", !Float.isNaN( score ) );
+                    assertFalse( "score should not be NaN", Float.isNaN( score ) );
                     assertThat( "score must be positive", score, greaterThan( 0.0f ) );
                     acceptedEntities.add( "reference = " + reference + ", score = " + score + ", " + Arrays.toString( values ) );
                     return true;
@@ -442,7 +444,7 @@ public class FulltextIndexProviderTest
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             MultiTokenSchemaDescriptor multiTokenSchemaDescriptor = multiToken( entityTokens, EntityType.NODE, propertyIds );
-            FulltextSchemaDescriptor schema = new FulltextSchemaDescriptor( multiTokenSchemaDescriptor, new Properties() );
+            FulltextSchemaDescriptor schema = new FulltextSchemaDescriptor( multiTokenSchemaDescriptor, IndexConfig.empty() );
             fulltext = transaction.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), Optional.of( NAME ) );
             transaction.success();
         }
@@ -474,7 +476,7 @@ public class FulltextIndexProviderTest
         return nodeId;
     }
 
-    private void verifyNodeData( long thirdNodeid ) throws Exception
+    private void verifyNodeData( long thirdNodeId ) throws Exception
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -489,13 +491,13 @@ public class FulltextIndexProviderTest
 
                 ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, fulltextSearch( "villa" ) );
                 assertTrue( cursor.next() );
-                assertEquals( thirdNodeid, cursor.nodeReference() );
+                assertEquals( thirdNodeId, cursor.nodeReference() );
                 assertFalse( cursor.next() );
 
                 ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, fulltextSearch( "value3" ) );
                 MutableLongSet ids = LongSets.mutable.empty();
                 ids.add( 0L );
-                ids.add( thirdNodeid );
+                ids.add( thirdNodeId );
                 assertTrue( cursor.next() );
                 assertTrue( ids.remove( cursor.nodeReference() ) );
                 assertTrue( cursor.next() );
