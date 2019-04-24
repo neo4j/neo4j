@@ -32,11 +32,13 @@ case class NodeCountFromCountStorePipe(ident: String, labels: List[Option[LazyLa
     val it = labels.iterator
     while (it.hasNext) {
       it.next() match {
-        case Some(lazyLabel) => lazyLabel.getOptId(state.query) match {
-          case Some(idOfLabel) =>
-            count = count * state.query.nodeCountByCountStore(idOfLabel)
-          case _ => count = 0
-        }
+        case Some(lazyLabel) =>
+            val idOfLabel = lazyLabel.getId(state.query)
+            if (idOfLabel == LazyLabel.UNINITIALIZED) {
+              count = 0
+            } else {
+              count = count * state.query.nodeCountByCountStore(idOfLabel)
+            }
         case _ =>
           count *= state.query.nodeCountByCountStore(NameId.WILDCARD)
       }

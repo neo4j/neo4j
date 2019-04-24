@@ -26,33 +26,26 @@ import org.neo4j.cypher.internal.v4_0.util.LabelId
 import org.neo4j.cypher.internal.v4_0.expressions.LabelName
 
 case class LazyLabel(name: String) {
-  private var id: Option[LabelId] = None
+  private var id: Int =  LazyLabel.UNINITIALIZED
 
-  def getOptId(context: TokenContext): Option[LabelId] = id match {
-    case None =>
-      id = context.getOptLabelId(name).map(LabelId)
-      id
-    case x => x
+  def getId(context: TokenContext): Int = {
+    if (id == LazyLabel.UNINITIALIZED) {
+      id = context.getOptLabelId(name).getOrElse(LazyLabel.UNINITIALIZED)
+    }
+    id
   }
 
-  def getOrCreateId(context: QueryContext): LabelId = id match {
-    case None =>
-      val labelId = LabelId(context.getOrCreateLabelId(name))
-      id = Some(labelId)
-      labelId
-    case Some(x) => x
-  }
-
-  // yuck! this is only used by tests...
-  def id(table: SemanticTable): Option[LabelId] = id match {
-    case None =>
-      id = table.resolvedLabelNames.get(name)
-      id
-    case x => x
+  def getOrCreateId(context: QueryContext): Int = {
+    if (id == LazyLabel.UNINITIALIZED) {
+      id = context.getOrCreateLabelId(name)
+    }
+    id
   }
 }
 
 object LazyLabel {
+  val UNINITIALIZED: Int = -1
+
   def apply(name: LabelName)(implicit table: SemanticTable): LazyLabel = {
     val label = new LazyLabel(name.name)
     label.id = table.id(name)
