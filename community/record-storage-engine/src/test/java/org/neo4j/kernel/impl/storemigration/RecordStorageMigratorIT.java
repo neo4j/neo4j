@@ -40,7 +40,6 @@ import java.util.stream.Stream;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.RandomSchema;
@@ -78,7 +77,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 @PageCacheExtension
 class RecordStorageMigratorIT
@@ -135,7 +133,7 @@ class RecordStorageMigratorIT
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory(
-                databaseLayout, CONFIG, new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache, fs, logService.getInternalLogProvider() );
+                databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, pageCache ), pageCache, fs, logService.getInternalLogProvider() );
         storeFactory.openAllNeoStores().close();
     }
 
@@ -164,7 +162,7 @@ class RecordStorageMigratorIT
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory(
-                databaseLayout, CONFIG, new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache, fs,
+                databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, pageCache ), pageCache, fs,
                 logService.getInternalLogProvider() );
         storeFactory.openAllNeoStores().close();
         logProvider.rawMessageMatcher().assertNotContains( "ERROR" );
@@ -197,7 +195,7 @@ class RecordStorageMigratorIT
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory =
-                new StoreFactory( databaseLayout, CONFIG, new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache, fs,
+                new StoreFactory( databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, pageCache ), pageCache, fs,
                         logService.getInternalLogProvider() );
         storeFactory.openAllNeoStores().close();
     }
@@ -266,7 +264,9 @@ class RecordStorageMigratorIT
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
 
-        IdGeneratorFactory igf = new DefaultIdGeneratorFactory( fs, pageCache, immediate() );
+        // Uses this special scan-on-open IGF because when the new IndexedIdGenerator was introduced this test would break
+        // when trying to open an older store, before doing migration.
+        IdGeneratorFactory igf = new ScanOnOpenOverwritingIdGeneratorFactory( fs, pageCache );
         LogProvider logProvider = logService.getInternalLogProvider();
         File storeFile = databaseLayout.schemaStore();
         File idFile = databaseLayout.idSchemaStore();

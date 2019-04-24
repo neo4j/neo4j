@@ -34,7 +34,7 @@ import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 {
     private final EnumMap<IdType, IdGenerator> generators = new EnumMap<>( IdType.class );
-    private final FileSystemAbstraction fs;
+    protected final FileSystemAbstraction fs;
     private final PageCache pageCache;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
 

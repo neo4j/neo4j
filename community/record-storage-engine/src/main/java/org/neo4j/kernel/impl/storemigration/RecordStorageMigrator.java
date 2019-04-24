@@ -58,7 +58,6 @@ import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
@@ -88,7 +87,6 @@ import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore35;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.RangeLogVersionVisitor;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
@@ -437,8 +435,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private NeoStores instantiateLegacyStore( RecordFormats format, DatabaseLayout directoryStructure )
     {
-        return new StoreFactory( directoryStructure, config, new ReadOnlyIdGeneratorFactory(
-                new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() ) ), pageCache, fileSystem,
+        return new StoreFactory( directoryStructure, config, new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, fileSystem,
                 format, NullLogProvider.getInstance() ).openAllNeoStores( true );
     }
 
@@ -483,37 +480,21 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
             migrator.migrate( sourceDirectoryStructure, oldFormat, migrationStrcuture, newFormat, progressReporter, storesToMigrate, StoreType.NODE );
         }
+
+        // Since we'll be using these stores in the batch importer where we don't have this fine control over IdGeneratorFactory
+        // it's easier to just figure out highId and create simple id files of the current format at that highId.
+        createStoreFactory( migrationStrcuture, newFormat, new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem, pageCache ) ).openAllNeoStores().close();
     }
 
     private void createStore( DatabaseLayout migrationDirectoryStructure, RecordFormats newFormat )
     {
-        StoreFactory storeFactory = createStoreFactory( migrationDirectoryStructure, newFormat, true );
-        try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
-        {
-            neoStores.getMetaDataStore();
-            neoStores.getLabelTokenStore();
-            neoStores.getNodeStore();
-            neoStores.getPropertyStore();
-            neoStores.getRelationshipGroupStore();
-            neoStores.getRelationshipStore();
-        }
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() );
+        createStoreFactory( migrationDirectoryStructure, newFormat, idGeneratorFactory ).openAllNeoStores( true ).close();
     }
 
-    private StoreFactory createStoreFactory( DatabaseLayout databaseLayout, RecordFormats formats, boolean readOnlyIds )
+    private StoreFactory createStoreFactory( DatabaseLayout databaseLayout, RecordFormats formats, IdGeneratorFactory idGeneratorFactory )
     {
-        NullLogProvider logProvider = NullLogProvider.getInstance();
-        return createStoreFactory( databaseLayout, formats, readOnlyIds, config, pageCache, fileSystem, logProvider );
-    }
-
-    public static StoreFactory createStoreFactory( DatabaseLayout databaseLayout, RecordFormats formats, boolean readOnlyIds, Config config,
-            PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider )
-    {
-        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, pageCache, immediate() );
-        if ( readOnlyIds )
-        {
-            idGeneratorFactory = new ReadOnlyIdGeneratorFactory( idGeneratorFactory );
-        }
-        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, formats, logProvider );
+        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, formats, NullLogProvider.getInstance() );
     }
 
     private static AdditionalInitialIds readAdditionalIds( final long lastTxId, final long lastTxChecksum, final long lastTxLogVersion,
@@ -648,8 +629,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     private void migrateSchemaStore( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat, RecordFormats newFormat )
             throws IOException, KernelException
     {
-        StoreFactory srcFactory = createStoreFactory( directoryLayout, oldFormat, true );
-        StoreFactory dstFactory = createStoreFactory( migrationLayout, newFormat, false );
+        IdGeneratorFactory srcIdGeneratorFactory = new ScanOnOpenReadOnlyIdGeneratorFactory();
+        StoreFactory srcFactory = createStoreFactory( directoryLayout, oldFormat, srcIdGeneratorFactory );
+        StoreFactory dstFactory = createStoreFactory( migrationLayout, newFormat, new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem, pageCache ) );
 
         if ( newFormat.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE ) )
         {
@@ -659,7 +641,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                           directoryLayout.idSchemaStore(),
                           config,
                           org.neo4j.internal.id.IdType.SCHEMA,
-                          new ReadOnlyIdGeneratorFactory( new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() ) ),
+                          srcIdGeneratorFactory,
                           pageCache,
                           NullLogProvider.getInstance(),
                           oldFormat );

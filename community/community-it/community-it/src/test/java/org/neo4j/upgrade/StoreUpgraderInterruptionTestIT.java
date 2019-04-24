@@ -44,6 +44,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
+import org.neo4j.kernel.impl.storemigration.IdGeneratorMigrator;
 import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
@@ -63,6 +64,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
+import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -154,8 +156,9 @@ public class StoreUpgraderInterruptionTestIT
         }
 
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
+        IdGeneratorMigrator idMigrator = new IdGeneratorMigrator( fs, pageCache, CONFIG );
         SchemaIndexMigrator indexMigrator = createIndexMigrator();
-        newUpgrader( versionCheck, progressMonitor, indexMigrator, migrator ).migrateIfNeeded( workingDatabaseLayout );
+        newUpgrader( versionCheck, progressMonitor, indexMigrator, migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout );
 
         assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
 
@@ -189,10 +192,11 @@ public class StoreUpgraderInterruptionTestIT
                 throw new RuntimeException( "This upgrade is failing" );
             }
         };
+        IdGeneratorMigrator idMigrator = new IdGeneratorMigrator( fs, pageCache, CONFIG );
 
         try
         {
-            newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), failingStoreMigrator )
+            newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), failingStoreMigrator, idMigrator )
                     .migrateIfNeeded( workingDatabaseLayout );
             fail( "Should throw exception" );
         }
@@ -204,8 +208,7 @@ public class StoreUpgraderInterruptionTestIT
         assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
 
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
-        newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator )
-                .migrateIfNeeded( workingDatabaseLayout );
+        newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout );
 
         assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
 
@@ -216,8 +219,8 @@ public class StoreUpgraderInterruptionTestIT
         assertConsistentStore( workingDatabaseLayout );
     }
 
-    private StoreUpgrader newUpgrader( StoreVersionCheck versionCheck, MigrationProgressMonitor progressMonitor, SchemaIndexMigrator indexMigrator,
-            RecordStorageMigrator migrator ) throws IOException
+    private StoreUpgrader newUpgrader( StoreVersionCheck versionCheck, MigrationProgressMonitor progressMonitor, StoreMigrationParticipant... participants )
+            throws IOException
     {
         Config allowUpgrade = Config.defaults( allow_upgrade, "true" );
 
@@ -226,8 +229,10 @@ public class StoreUpgraderInterruptionTestIT
         LogTailScanner logTailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
         StoreUpgrader upgrader = new StoreUpgrader( versionCheck, progressMonitor, allowUpgrade, fs, NullLogProvider.getInstance(), logTailScanner,
                 legacyTransactionLogsLocator );
-        upgrader.addParticipant( indexMigrator );
-        upgrader.addParticipant( migrator );
+        for ( StoreMigrationParticipant participant : participants )
+        {
+            upgrader.addParticipant( participant );
+        }
         return upgrader;
     }
 

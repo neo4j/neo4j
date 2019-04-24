@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
@@ -70,7 +71,12 @@ public enum RecordStorageCapability implements Capability
      * <p>
      * This has {@link CapabilityType#STORE} because it is a format addition, and not a format change per se. We just use a record header bit that was free.
      */
-    INTERNAL_TOKENS( true, CapabilityType.STORE );
+    INTERNAL_TOKENS( true, CapabilityType.STORE ),
+
+    /**
+     * ID files (neostore.xyz.id) are backed by {@link GBPTree}, transactional and recoverable.
+     */
+    GBPTREE_ID_FILES( false, CapabilityType.STORE );
 
     private final CapabilityType[] types;
     private boolean additive;

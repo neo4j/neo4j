@@ -65,7 +65,7 @@ class DirectRecordStoreMigrator
         progressReporter.start( storesToOpen.length );
 
         try (
-                NeoStores fromStores = new StoreFactory( fromDirectoryStructure, config, new DefaultIdGeneratorFactory( fs, pageCache, immediate() ),
+                NeoStores fromStores = new StoreFactory( fromDirectoryStructure, config, new ScanOnOpenReadOnlyIdGeneratorFactory(),
                     pageCache, fs, fromFormat, NullLogProvider.getInstance() )
                         .openNeoStores( true, storesToOpen );
                 NeoStores toStores = new StoreFactory( toDirectoryStructure, withPersistedStoreHeadersAsConfigFrom( fromStores, storesToOpen ),

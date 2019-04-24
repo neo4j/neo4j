@@ -37,4 +37,10 @@ public abstract class AbstractStoreMigrationParticipant implements StoreMigratio
     {
         return name;
     }
+
+    @Override
+    public Order getOrder()
+    {
+        return Order.UNSPECIFIED;
+    }
 }

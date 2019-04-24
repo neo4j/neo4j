@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -51,6 +50,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.storemigration.IdGeneratorMigrator;
 import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersion;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
@@ -76,11 +76,11 @@ import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
+import static java.util.Arrays.asList;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
-import static org.neo4j.kernel.impl.storemigration.RecordStorageMigrator.createStoreFactory;
 
 @ServiceProvider
 public class RecordStorageEngineFactory implements StorageEngineFactory
@@ -103,7 +103,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             JobScheduler jobScheduler, LogService logService )
     {
         RecordStorageMigrator recordStorageMigrator = new RecordStorageMigrator( fs, pageCache, config, logService, jobScheduler );
-        return Collections.singletonList( recordStorageMigrator );
+        IdGeneratorMigrator idGeneratorMigrator = new IdGeneratorMigrator( fs, pageCache, config );
+        return asList( recordStorageMigrator, idGeneratorMigrator );
     }
 
     @Override
@@ -168,7 +169,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             LogService logService, String recordFormats )
     {
         RecordFormats formats = selectForVersion( recordFormats );
-        StoreFactory factory = createStoreFactory( databaseLayout, formats, false, config, pageCache, fs, logService.getInternalLogProvider() );
+        StoreFactory factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache, fs, formats,
+                logService.getInternalLogProvider() );
         NeoStores stores = factory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
         return createMigrationTargetSchemaRuleAccess( stores );
     }

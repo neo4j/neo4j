@@ -31,7 +31,7 @@ public interface StoreMigrationParticipant
     /**
      * Default empty implementation of StoreMigrationParticipant
      */
-    StoreMigrationParticipant NOT_PARTICIPATING = new StoreMigrationParticipant()
+    StoreMigrationParticipant NOT_PARTICIPATING = new AbstractStoreMigrationParticipant( "Nothing" )
     {
         @Override
         public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress, String versionToMigrateFrom,
@@ -50,12 +50,6 @@ public interface StoreMigrationParticipant
         public void cleanup( DatabaseLayout migrationLayout )
         {
             // nop
-        }
-
-        @Override
-        public String getName()
-        {
-            return "Nothing";
         }
     };
 
@@ -101,4 +95,32 @@ public interface StoreMigrationParticipant
      * @return descriptive name of this migration participant.
      */
     String getName();
+
+    /**
+     * @return if there's an particular order concern that this migration participant has, like being last or first.
+     */
+    Order getOrder();
+
+    enum Order
+    {
+        /**
+         * Put this participant before all other participants.
+         */
+        FIRST,
+
+        /**
+         * Put this participant after all other store related migration participants.
+         */
+        AFTER_STORE,
+
+        /**
+         * Put this participant after all other participants.
+         */
+        LAST,
+
+        /**
+         * Not specified how this participant should be ordered.
+         */
+        UNSPECIFIED
+    }
 }
