@@ -25,7 +25,11 @@ import org.neo4j.values.storable.Value;
 /**
  * Used by the {@link IndexPopulator} for verifying constraints, if need be.
  */
-public interface PropertyAccessor
+public interface PropertyAccessor extends AutoCloseable
 {
     Value getPropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
+
+    default void close()
+    {
+    }
 }
