@@ -657,7 +657,7 @@ class GenericKeyStateTest
             break;
         case GEOMETRY_ARRAY:
             arrayOverhead = geometryArrayOverhead;
-            arrayElementSize = getGeometryArrayElementSize( value );
+            arrayElementSize = getGeometryArrayElementSize( value, arrayLength );
             break;
         case TEXT_ARRAY:
             assertTextArraySize( value, actualSizeOfData, normalArrayOverhead, typeName );
@@ -1024,8 +1024,12 @@ class GenericKeyStateTest
         }
     }
 
-    private int getGeometryArrayElementSize( Value value )
+    private int getGeometryArrayElementSize( Value value, int arrayLength )
     {
+        if ( arrayLength < 1 )
+        {
+            return 0;
+        }
         int arrayElementSize;
         int dimensions;
         if ( value instanceof PointArray )
