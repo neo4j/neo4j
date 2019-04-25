@@ -34,7 +34,7 @@ case class NodeCountFromCountStorePipe(ident: String, labels: List[Option[LazyLa
       it.next() match {
         case Some(lazyLabel) =>
             val idOfLabel = lazyLabel.getId(state.query)
-            if (idOfLabel == LazyLabel.UNINITIALIZED) {
+            if (idOfLabel == LazyLabel.UNKNOWN) {
               count = 0
             } else {
               count = count * state.query.nodeCountByCountStore(idOfLabel)

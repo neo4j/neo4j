@@ -20,23 +20,23 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.planner.spi.TokenContext
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyPropertyKey.UNINITIALIZED
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyPropertyKey.UNKNOWN
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
 
 case class LazyPropertyKey(name: String) {
-  private var id: Int = UNINITIALIZED
+  private var id: Int = UNKNOWN
 
   def id(context: TokenContext): Int = {
-    if (id == UNINITIALIZED) {
-      id = context.getOptPropertyKeyId(name).getOrElse(UNINITIALIZED)
+    if (id == UNKNOWN) {
+      id = context.getOptPropertyKeyId(name).getOrElse(UNKNOWN)
     }
     id
   }
 }
 
 object LazyPropertyKey {
-  val UNINITIALIZED: Int = -1
+  val UNKNOWN: Int = -1
 
   def apply(name: PropertyKeyName)(implicit table: SemanticTable): LazyPropertyKey = {
     val property = new LazyPropertyKey(name.name)

@@ -25,18 +25,19 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.v4_0.util.LabelId
 import org.neo4j.cypher.internal.v4_0.expressions.LabelName
 
-case class LazyLabel(name: String) {
-  private var id: Int =  LazyLabel.UNINITIALIZED
+class LazyLabel(name: String) {
+
+  private var id: Int = LazyLabel.UNKNOWN
 
   def getId(context: TokenContext): Int = {
-    if (id == LazyLabel.UNINITIALIZED) {
-      id = context.getOptLabelId(name).getOrElse(LazyLabel.UNINITIALIZED)
+    if (id == LazyLabel.UNKNOWN) {
+      id = context.getOptLabelId(name).getOrElse(LazyLabel.UNKNOWN)
     }
     id
   }
 
   def getOrCreateId(context: QueryContext): Int = {
-    if (id == LazyLabel.UNINITIALIZED) {
+    if (id == LazyLabel.UNKNOWN) {
       id = context.getOrCreateLabelId(name)
     }
     id
@@ -44,7 +45,7 @@ case class LazyLabel(name: String) {
 }
 
 object LazyLabel {
-  val UNINITIALIZED: Int = -1
+  val UNKNOWN: Int = -1
 
   def apply(name: LabelName)(implicit table: SemanticTable): LazyLabel = {
     val label = new LazyLabel(name.name)

@@ -83,7 +83,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
         case relValue: RelationshipValue => relValue
         case relRef: RelationshipReference => qtx.relationshipOps.getById(relRef.id())
       }
-      if (!hasAllowedType(qtx.relationshipType(relValue.`type`().stringValue()), qtx )) {
+      if (!isAllowedType(qtx.relationshipType(relValue.`type`().stringValue()), qtx )) {
         None
       } else {
         pickStartAndEnd(relValue, relValue, context, qtx)
@@ -116,12 +116,12 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
         case relValue: RelationshipValue => relValue
         case relRef: RelationshipReference => qtx.relationshipOps.getById(relRef.id())
       }
-      if (!hasAllowedType(qtx.relationshipType(next.`type`().stringValue()), qtx)) return false
+      if (!isAllowedType(qtx.relationshipType(next.`type`().stringValue()), qtx)) return false
     }
     true
   }
 
-  private def hasAllowedType(rel: Int, qtx: QueryContext): Boolean = {
+  private def isAllowedType(rel: Int, qtx: QueryContext): Boolean = {
     val types = relTypes.types(qtx)
     types == null || types.contains(rel)
   }
@@ -131,7 +131,6 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
     val s = relStart.startNode()
     val e = relEnd.endNode()
 
-    val a = Some(3)
     if (!startInScope && !endInScope) Some(NotInScope(s, e))
     else if ((!startInScope || context.getByName(start) == s) && (!endInScope || context.getByName(end) == e))
       Some(InScope(s, e))

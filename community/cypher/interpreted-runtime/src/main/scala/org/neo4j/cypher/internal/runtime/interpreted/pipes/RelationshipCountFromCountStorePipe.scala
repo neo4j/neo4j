@@ -47,20 +47,24 @@ case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option
   }
 
   private def getLabelId(lazyLabel: Option[LazyLabel], state: QueryState): Option[Int] = lazyLabel match {
-      case Some(label) =>
-        val id = label.getId(state.query)
-        if (id == LazyLabel.UNINITIALIZED) None
-        else Some(id)
-      case _ => Some(NameId.WILDCARD)
-    }
+    case Some(label) =>
+      val id = label.getId(state.query)
+      if (id == LazyLabel.UNKNOWN) None
+      else Some(id)
+    case _ => Some(NameId.WILDCARD)
+  }
 
   private def countOneDirection(state: QueryState, startLabelId: Int, endLabelId: Int) = {
     val  ts = types.types(state.query)
     if (ts == null) state.query.relationshipCountByCountStore(startLabelId, NameId.WILDCARD, endLabelId)
     else {
-      ts.foldLeft(0L) { (count, typeId) =>
-        count + state.query.relationshipCountByCountStore(startLabelId, typeId, endLabelId)
+      var i = 0
+      var count = 0L
+      while (i < ts.length) {
+        count +=  state.query.relationshipCountByCountStore(startLabelId, ts(i), endLabelId)
+        i += 1
       }
+      count
     }
   }
 }

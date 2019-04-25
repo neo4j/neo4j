@@ -39,7 +39,7 @@ case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])
   }
 
   private def removeLabels(context: ExecutionContext, state: QueryState, nodeId: Long) = {
-    val labelIds = labels.map(_.getId(state.query)).filter(_ != LazyLabel.UNINITIALIZED)
+    val labelIds = labels.map(_.getId(state.query)).filter(_ != LazyLabel.UNKNOWN)
     state.query.removeLabelsFromNode(nodeId, labelIds.iterator)
   }
 }

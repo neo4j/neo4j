@@ -93,7 +93,7 @@ abstract class AbstractSetPropertyOperation extends SetOperation {
 
     val queryContext = state.query
     val maybePropertyKey = propertyKey.id(queryContext) // if the key was already looked up
-    val propertyId = if (maybePropertyKey == LazyPropertyKey.UNINITIALIZED) {
+    val propertyId = if (maybePropertyKey == LazyPropertyKey.UNKNOWN) {
       queryContext.getOrCreatePropertyKeyId(propertyKey.name)
     } else maybePropertyKey
 
