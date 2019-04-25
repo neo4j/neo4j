@@ -65,6 +65,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -77,6 +78,51 @@ public class TestTransactionEvents
     public final DbmsRule dbRule = new ImpermanentDbmsRule();
     private static final TimeUnit AWAIT_INDEX_UNIT = TimeUnit.SECONDS;
     private static final int AWAIT_INDEX_DURATION = 60;
+
+    @Test
+    public void forbidToRegisterTransactionEventListenerOnSystemDatabase()
+    {
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        try
+        {
+            managementService.registerTransactionEventListener( SYSTEM_DATABASE_NAME, new DummyTransactionEventListener<>( 0 ) );
+            fail( "Shouldn't be able to do unregister on a unregistered listener" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // expected
+        }
+    }
+
+    @Test
+    public void forbidToRegisterNullTransactionEventListener()
+    {
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        try
+        {
+            managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, null );
+            fail( "Should fail" );
+        }
+        catch ( NullPointerException e )
+        {
+            // expected
+        }
+    }
+
+    @Test
+    public void forbidToRegisterTransactionEventListenerForDatabaseNull()
+    {
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        try
+        {
+            managementService.registerTransactionEventListener( null, new DummyTransactionEventListener<>( 0 ) );
+            fail( "Should fail" );
+        }
+        catch ( NullPointerException e )
+        {
+            // expected
+        }
+    }
 
     @Test
     public void testRegisterUnregisterListeners()
@@ -658,7 +704,7 @@ public class TestTransactionEvents
             tx.success();
         }
         // -- register a tx listener which will override a property
-        TransactionEventListener<Void> listener = new TransactionEventListenerAdapter<Void>()
+        TransactionEventListener<Void> listener = new TransactionEventListenerAdapter<>()
         {
             @Override
             public Void beforeCommit( TransactionData data, GraphDatabaseService databaseService )
@@ -696,7 +742,7 @@ public class TestTransactionEvents
         }
 
         // ... and a transaction event listener that likes to add the indexed property on nodes
-        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<Object>()
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<>()
         {
             @Override
             public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService )
@@ -742,7 +788,7 @@ public class TestTransactionEvents
         }
 
         // ... and a transaction event listener that likes to add the indexed property on nodes
-        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<Object>()
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<>()
         {
             @Override
             public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService )
@@ -1248,7 +1294,7 @@ public class TestTransactionEvents
             return null;
         }
 
-        private void check( Map<Node, Set<String>> expected, String change, Iterable<LabelEntry> changes )
+        private static void check( Map<Node,Set<String>> expected, String change, Iterable<LabelEntry> changes )
         {
             for ( LabelEntry entry : changes )
             {
@@ -1282,13 +1328,13 @@ public class TestTransactionEvents
             put( removed, node, label );
         }
 
-        private void put( Map<Node, Set<String>> changes, Node node, String label )
+        private static void put( Map<Node,Set<String>> changes, Node node, String label )
         {
             Set<String> labels = changes.computeIfAbsent( node, k -> new HashSet<>() );
             labels.add( label );
         }
 
-        public void activate()
+        void activate()
         {
             assertFalse( isEmpty() );
             active = true;
