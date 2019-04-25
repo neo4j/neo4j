@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
@@ -31,6 +33,8 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils.{asListOfEdges, fromNodeProxy}
 import org.neo4j.values.AnyValue
+
+import scala.collection.mutable
 
 class ProjectEndpointsPipeTest extends CypherFunSuite {
 
@@ -437,22 +441,25 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     when(relationship.getEndNode).thenReturn(endNode)
     when(relationship.getOtherNode(startNode)).thenReturn(endNode)
     when(relationship.getOtherNode(endNode)).thenReturn(startNode)
-    val relationshipType = relType.map(newMockRelationshipType).orNull
+    val relationshipType = relType.map(newMockRelationshipType).getOrElse(newMockRelationshipType("TYPE"))
     when(relationship.getType).thenReturn(relationshipType)
     relationship
   }
 
+  private val count = new AtomicInteger(11)
+  private val types = mutable.Map.empty[String, Int]
   private def newMockRelationshipType(relType: String) = {
     val relationshipType = mock[org.neo4j.graphdb.RelationshipType]
     when(relationshipType.name()).thenReturn(relType)
+    val typeToken = types.getOrElseUpdate(relType, count.getAndIncrement())
+    when(query.relationshipType(relType)).thenReturn(typeToken)
+    when(query.getOptRelTypeId(relType)).thenReturn(Some(typeToken))
     relationshipType
   }
 
   private def newMockedPipe(rel: String, rows: ExecutionContext*): Pipe = {
     val pipe = mock[Pipe]
-    when(pipe.createResults(any())).thenAnswer(new Answer[Iterator[ExecutionContext]] {
-      def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = rows.iterator
-    })
+    when(pipe.createResults(any())).thenAnswer((_: InvocationOnMock) => rows.iterator)
 
     pipe
   }

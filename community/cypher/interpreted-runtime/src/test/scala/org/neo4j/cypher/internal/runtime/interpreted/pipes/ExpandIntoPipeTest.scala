@@ -62,23 +62,20 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
   test("should return no relationships for types that have not been defined yet") {
     // given
-    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[RelationshipValue]] {
-      override def answer(invocationOnMock: InvocationOnMock): Iterator[RelationshipValue] = {
-        val arg = invocationOnMock.getArgument[Option[Array[Int]]](2)
-        arg match {
-          case None => Iterator.empty
-          case Some(array) if array.isEmpty => Iterator.empty
-          case _ =>
-            val nodeId = invocationOnMock.getArgument[Long](0)
-            val dir = invocationOnMock.getArgument[SemanticDirection](1)
-            (nodeId, dir) match {
-              case (0, SemanticDirection.INCOMING) => Iterator.empty
-              case (0, _) => Iterator(fromRelationshipProxy(relationship1), fromRelationshipProxy(relationship2),
-                                      fromRelationshipProxy(relationship3), fromRelationshipProxy(selfRelationship))
-              case (2, SemanticDirection.OUTGOING) => Iterator.empty
-              case (2, _) => Iterator(fromRelationshipProxy(relationship1))
-              case (id, d)=> throw new AssertionError(s"I am only a mocked hack, not a real database. I have no clue about $id and $d")
-            }
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer((invocationOnMock: InvocationOnMock) => {
+      val arg = invocationOnMock.getArgument[Array[Int]](2)
+      if (arg == null || arg.isEmpty) Iterator.empty
+      else {
+        val nodeId = invocationOnMock.getArgument[Long](0)
+        val dir = invocationOnMock.getArgument[SemanticDirection](1)
+        (nodeId, dir) match {
+          case (0, SemanticDirection.INCOMING) => Iterator.empty
+          case (0, _) => Iterator(fromRelationshipProxy(relationship1), fromRelationshipProxy(relationship2),
+                                  fromRelationshipProxy(relationship3), fromRelationshipProxy(selfRelationship))
+          case (2, SemanticDirection.OUTGOING) => Iterator.empty
+          case (2, _) => Iterator(fromRelationshipProxy(relationship1))
+          case (id, d) => throw new AssertionError(
+            s"I am only a mocked hack, not a real database. I have no clue about $id and $d")
         }
       }
     })
