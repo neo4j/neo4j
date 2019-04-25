@@ -23,9 +23,10 @@ import java.time.Duration
 import java.time.temporal.ChronoUnit
 import java.util.Collections
 
-import org.neo4j.cypher.internal.runtime.spec.Rows.ANY_VALUE_ORDERING
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.v4_0.expressions.CountStar
+import org.neo4j.cypher.internal.v4_0.expressions.{CountStar, FunctionInvocation}
+import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{DoubleValue, DurationValue, StringValue, Values}
@@ -197,6 +198,55 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("c").withSingleRow((0 until sizeHint by 2).sum)
+  }
+
+  test("should fail sum() on mixed numbers and durations I") {
+    assertFailOnMixedNumberAndDuration(sum(varFor("x")))
+  }
+
+  test("should fail avg() on mixed numbers and durations I") {
+    assertFailOnMixedNumberAndDuration(avg(varFor("x")))
+  }
+
+  private def assertFailOnMixedNumberAndDuration(aggregatingFunction: FunctionInvocation) {
+    // when
+    val NUMBER: Array[Any] = Array(1.0)
+    val DURATION: Array[Any] = Array(Duration.of(1, ChronoUnit.NANOS))
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Map.empty, Map("c" -> aggregatingFunction))
+      .input(variables = Seq("x"))
+      .build()
+
+    // then I
+    intercept[CypherTypeException] {
+      val input = inputValues(NUMBER, DURATION)
+      consume(execute(logicalQuery, runtime, input))
+    }
+
+    // then II
+    intercept[CypherTypeException] {
+      val input = inputValues(DURATION, NUMBER)
+      consume(execute(logicalQuery, runtime, input))
+    }
+
+    val batchSize = edition.getSetting(GraphDatabaseSettings.cypher_morsel_size).getOrElse("10").toInt
+    val numberBatches = (0 until batchSize * 10).map(_ => NUMBER)
+    val durationBatches= (0 until batchSize * 10).map(_ => DURATION)
+
+    // then III
+    intercept[CypherTypeException] {
+      val batches: Seq[Array[Any]] = numberBatches ++ durationBatches
+      val input = batchedInputValues(batchSize, batches:_*)
+      consume(execute(logicalQuery, runtime, input))
+    }
+
+    // then IV
+    intercept[CypherTypeException] {
+      val batches: Seq[Array[Any]] = durationBatches ++ numberBatches
+      val input = batchedInputValues(batchSize, batches:_*)
+      consume(execute(logicalQuery, runtime, input))
+    }
   }
 
   test("should min(n.prop)") {

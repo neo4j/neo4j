@@ -47,6 +47,10 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
     new Edition(graphBuilderFactory, runtimeContextCreatorFun, newConfigs: _*)
   }
 
+  def getSetting(setting: Setting[_]): Option[String] = {
+    configs.collectFirst { case (key, value) if key == setting => value }
+  }
+
   def runtimeContextCreator(resolver: DependencyResolver): RuntimeContextCreator[CONTEXT] =
     runtimeContextCreatorFun(runtimeConfig(), resolver)
 
