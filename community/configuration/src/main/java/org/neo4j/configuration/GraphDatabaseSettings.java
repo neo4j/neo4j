@@ -447,7 +447,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "Debug log level threshold." )
     @Dynamic
     public static final Setting<Level> store_internal_log_level = setting( "dbms.logs.debug.level",
-            optionsObeyCase( Level.class ), "INFO" );
+            optionsObeyCase( Level.class ), Level.INFO.toString() );
 
     @Description( "Database timezone. Among other things, this setting influences which timezone the logs and monitoring procedures use." )
     public static final Setting<LogTimeZone> db_timezone =
