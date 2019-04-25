@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.{LogicalPlanningContext, patternExpressionRewriter}
-import org.neo4j.cypher.internal.ir.{QueryGraph, InterestingOrder}
+import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Exists
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{PatternExpressionPatternElementNamer, projectNamedPaths}
 import org.neo4j.cypher.internal.v4_0.util.{FreshIdNameGenerator, Rewriter, UnNamedNameGenerator, topDown}
 
-import scala.collection.mutable
 import scala.reflect.ClassTag
 
 /*
@@ -53,91 +52,59 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
 
   import PatternExpressionSolver.{solvePatternComprehensions, solvePatternExpressions}
 
-  def apply(source: LogicalPlan, expressions: Seq[Expression], interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, Seq[Expression]) = {
-    val expressionBuild = mutable.ListBuffer[Expression]()
-    val patternExpressionSolver = solvePatternExpressions(source.availableSymbols, interestingOrder, context, pathStepBuilder)
-    val patternComprehensionSolver = solvePatternComprehensions(source.availableSymbols, interestingOrder, context, pathStepBuilder)
+  // TODO make object
+  // TODO support leaf plans
 
-    val finalPlan = expressions.foldLeft(source) {
-      case (planAcc, expression: PatternExpression) =>
-        val (newPlan, newExpression) = patternExpressionSolver.solveUsingRollUpApply(planAcc, expression, None, context)
-        expressionBuild += newExpression
-        newPlan
-
-      case (planAcc, expression: PatternComprehension) =>
-        val (newPlan, newExpression) = patternComprehensionSolver.solveUsingRollUpApply(planAcc, expression, None, context)
-        expressionBuild += newExpression
-        context.planningAttributes.solveds.copy(source.id, newPlan.id)
-        newPlan
-
-      case (planAcc, inExpression) =>
-        val expression = solveUsingGetDegree(inExpression)
-        val (firstStepPlan, firstStepExpression) = patternExpressionSolver.rewriteInnerExpressions(planAcc, expression, context)
-        val (newPlan, newExpression) = patternComprehensionSolver.rewriteInnerExpressions(firstStepPlan, firstStepExpression, context)
-        expressionBuild += newExpression
-        newPlan
-    }
-
-    (finalPlan, expressionBuild)
-  }
-
-  def apply(source: LogicalPlan, expression: Expression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, Expression) = {
-    val patternExpressionSolver = solvePatternExpressions(source.availableSymbols, interestingOrder, context, pathStepBuilder)
-    val patternComprehensionSolver = solvePatternComprehensions(source.availableSymbols, interestingOrder, context, pathStepBuilder)
-
-    expression match {
-      case expression: PatternExpression =>
-        patternExpressionSolver.solveUsingRollUpApply(source, expression, None, context)
-
-      case expression: PatternComprehension =>
-        patternComprehensionSolver.solveUsingRollUpApply(source, expression, None, context)
-
-      case inExpression =>
-        val expression = solveUsingGetDegree(inExpression)
-        val (firstStepPlan, firstStepExpression) = patternExpressionSolver.rewriteInnerExpressions(source, expression, context)
-        patternComprehensionSolver.rewriteInnerExpressions(firstStepPlan, firstStepExpression, context)
-    }
-  }
-
-  def apply(source: LogicalPlan, projectionsMap: Map[String, Expression], interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, Map[String, Expression]) = {
-    val newProjections = Map.newBuilder[String, Expression]
-    val patternExpressionSolver = solvePatternExpressions(source.availableSymbols, interestingOrder, context, pathStepBuilder)
-    val patternComprehensionSolver = solvePatternComprehensions(source.availableSymbols, interestingOrder, context, pathStepBuilder)
-
-    val plan = projectionsMap.foldLeft(source) {
-
-      // RETURN (a)-->() as X - The top-level expression is a pattern expression
-      case (planAcc, (key, expression: PatternExpression)) =>
-        val (newPlan, newExpression) = patternExpressionSolver.solveUsingRollUpApply(planAcc, expression, Some(key), context)
-        newProjections += (key -> newExpression)
-        newPlan
-
-      // RETURN [(a)-->() | a.foo] - the top-level expression is a pattern comprehension
-      case (planAcc, (key, expression: PatternComprehension)) =>
-        val (newPlan, newExpression) = patternComprehensionSolver.solveUsingRollUpApply(planAcc, expression, None, context)
-        newProjections += (key -> newExpression)
-        newPlan
-
-
-      // Any other expression, that might contain an inner PatternExpression
-      case (planAcc, (key, inExpression)) =>
-        val expression = solveUsingGetDegree(inExpression)
-        val (firstStepPlan, firstStepExpression) = patternComprehensionSolver.rewriteInnerExpressions(planAcc, expression, context)
-        val (newPlan, newExpression) = patternExpressionSolver.rewriteInnerExpressions(firstStepPlan, firstStepExpression, context)
-
-        newProjections += (key -> newExpression)
-        newPlan
-    }
-
-    (plan, newProjections.result())
-  }
+  /**
+    * Get a Solver to solve multiple expressions and finally return a rewritten plan of the given source.
+    */
+  def solverFor(source: LogicalPlan,
+                interestingOrder: InterestingOrder,
+                context: LogicalPlanningContext): SolverForPlan = new SolverForPlan(source, interestingOrder, context)
 
   private def solveUsingGetDegree(exp: Expression): Expression =
     exp.endoRewrite(getDegreeRewriter)
+
+  class SolverForPlan(source: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext) {
+    private val patternExpressionSolver = solvePatternExpressions(source.availableSymbols, interestingOrder, context, pathStepBuilder)
+    private val patternComprehensionSolver = solvePatternComprehensions(source.availableSymbols, interestingOrder, context, pathStepBuilder)
+    private var result = source
+
+    def solve(expression: Expression, maybeKey: Option[String] = None): Expression = {
+      if (result == null) {
+        throw new IllegalArgumentException("You cannot solve more expressions after obtaining the rewritten plan.")
+      }
+
+      val (rPlan, rExpression) = expression match {
+        case expression: PatternExpression =>
+          patternExpressionSolver.solveUsingRollUpApply(result, expression, maybeKey, context)
+
+        case expression: PatternComprehension =>
+          patternComprehensionSolver.solveUsingRollUpApply(result, expression, maybeKey, context)
+
+        case inExpression =>
+          val expression = solveUsingGetDegree(inExpression)
+          val (firstStepPlan, firstStepExpression) = patternExpressionSolver.rewriteInnerExpressions(result, expression, context)
+          patternComprehensionSolver.rewriteInnerExpressions(firstStepPlan, firstStepExpression, context)
+      }
+      result = rPlan
+      rExpression
+    }
+
+    def rewrittenPlan(): LogicalPlan = {
+      val result = this.result
+      this.result = null
+      result
+    }
+  }
+
 }
 
 object PatternExpressionSolver {
-  def solvePatternExpressions(availableSymbols: Set[String], interestingOrder: InterestingOrder, context: LogicalPlanningContext, pathStepBuilder: EveryPath => PathStep): ListSubQueryExpressionSolver[PatternExpression] = {
+  def solvePatternExpressions(availableSymbols: Set[String],
+                              interestingOrder: InterestingOrder,
+                              context: LogicalPlanningContext,
+                              pathStepBuilder: EveryPath => PathStep): ListSubQueryExpressionSolver[PatternExpression] = {
 
     def extractQG(source: LogicalPlan, namedExpr: PatternExpression): QueryGraph = {
       import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
@@ -173,7 +140,10 @@ object PatternExpressionSolver {
       lastDitch = patternExpressionRewriter(availableSymbols, interestingOrder, context))
   }
 
-  def solvePatternComprehensions(availableSymbols: Set[String], interestingOrder: InterestingOrder, context: LogicalPlanningContext, pathStepBuilder: EveryPath => PathStep): ListSubQueryExpressionSolver[PatternComprehension] = {
+  def solvePatternComprehensions(availableSymbols: Set[String],
+                                 interestingOrder: InterestingOrder,
+                                 context: LogicalPlanningContext,
+                                 pathStepBuilder: EveryPath => PathStep): ListSubQueryExpressionSolver[PatternComprehension] = {
     def extractQG(source: LogicalPlan, namedExpr: PatternComprehension) = {
       import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
 
@@ -206,7 +176,8 @@ case class ListSubQueryExpressionSolver[T <: Expression](namer: T => (T, Map[Pat
                                                          projectionCreator: T => Expression,
                                                          lastDitch: Rewriter,
                                                          interestingOrder: InterestingOrder,
-                                                         pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression)(implicit m: ClassTag[T]) {
+                                                         pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression)
+                                                        (implicit m: ClassTag[T]) {
 
   def solveUsingRollUpApply(source: LogicalPlan, expr: T, maybeKey: Option[String], context: LogicalPlanningContext): (LogicalPlan, Expression) = {
 
@@ -228,15 +199,16 @@ case class ListSubQueryExpressionSolver[T <: Expression](namer: T => (T, Map[Pat
         val rewriter = rewriteButStopAtInnerScopes(patternExpression, introducedVariable)
         val rewrittenExpression = expressionAcc.endoRewrite(rewriter)
 
-        if (rewrittenExpression == expressionAcc)
+        if (rewrittenExpression == expressionAcc) {
           (planAcc, expressionAcc.endoRewrite(lastDitch))
-        else
+        } else {
           (newPlan, rewrittenExpression)
+        }
     }
   }
 
   case class PlannedSubQuery(columnName: String, innerPlan: LogicalPlan, nullableIdentifiers: Set[String]) {
-    def variableToCollect = columnName
+    def variableToCollect: String = columnName
   }
 
   private def planSubQuery(source: LogicalPlan, expr: T, context: LogicalPlanningContext) = {

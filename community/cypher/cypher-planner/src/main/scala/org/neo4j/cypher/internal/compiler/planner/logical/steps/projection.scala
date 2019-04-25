@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryProjection}
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.expressions._
 
 object projection {
@@ -33,7 +33,9 @@ object projection {
             interestingOrder: InterestingOrder,
             context: LogicalPlanningContext): LogicalPlan = {
     val stillToSolveProjection = projectionsLeft(in, projectionsToPlan, context.planningAttributes.solveds)
-    val (plan, projectionsMap) = PatternExpressionSolver()(in, stillToSolveProjection, interestingOrder, context)
+    val solver = PatternExpressionSolver().solverFor(in, interestingOrder, context)
+    val projectionsMap = stillToSolveProjection.map{ case (k,v) => (k, solver.solve(v, Some(k))) }
+    val plan = solver.rewrittenPlan()
 
     val ids = plan.availableSymbols
     val projections: Seq[(String, Expression)] = projectionsMap.toIndexedSeq

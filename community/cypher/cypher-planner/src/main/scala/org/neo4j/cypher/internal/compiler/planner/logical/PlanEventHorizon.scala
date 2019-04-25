@@ -46,7 +46,9 @@ case object PlanEventHorizon extends EventHorizonPlanner {
           limited
         } else {
           val predicates = aggregatingProjection.selections.flatPredicates
-          val (rewrittenSorted, rewrittenPredicates) = PatternExpressionSolver()(limited, predicates, query.interestingOrder, context)
+          val solver = PatternExpressionSolver().solverFor(limited, query.interestingOrder, context)
+          val rewrittenPredicates = predicates.map(solver.solve(_))
+          val rewrittenSorted = solver.rewrittenPlan()
           context.logicalPlanProducer.planHorizonSelection(rewrittenSorted, rewrittenPredicates, predicates, context)
         }
 
@@ -63,7 +65,9 @@ case object PlanEventHorizon extends EventHorizonPlanner {
           projected
         } else {
           val predicates = regularProjection.selections.flatPredicates
-          val (rewrittenProjected, rewrittenPredicates) = PatternExpressionSolver()(projected, predicates, query.interestingOrder, context)
+          val solver = PatternExpressionSolver().solverFor(limited, query.interestingOrder, context)
+          val rewrittenPredicates = predicates.map(solver.solve(_))
+          val rewrittenProjected = solver.rewrittenPlan()
           context.logicalPlanProducer.planHorizonSelection(rewrittenProjected, rewrittenPredicates, predicates, context)
         }
 
@@ -75,13 +79,17 @@ case object PlanEventHorizon extends EventHorizonPlanner {
           limited
         } else {
           val predicates = distinctProjection.selections.flatPredicates
-          val (rewrittenSorted, rewrittenPredicates) = PatternExpressionSolver()(limited, predicates, query.interestingOrder, context)
+          val solver = PatternExpressionSolver().solverFor(limited, query.interestingOrder, context)
+          val rewrittenPredicates = predicates.map(solver.solve(_))
+          val rewrittenSorted = solver.rewrittenPlan()
           context.logicalPlanProducer.planHorizonSelection(rewrittenSorted, rewrittenPredicates, predicates, context)
         }
 
       case UnwindProjection(variable, expression) =>
-        val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, Seq(expression), query.interestingOrder, context)
-        val projected = context.logicalPlanProducer.planUnwind(inner, variable, projectionsMap.head, expression, context)
+        val solver = PatternExpressionSolver().solverFor(selectedPlan, query.interestingOrder, context)
+        val collectionExpression = solver.solve(expression)
+        val inner = solver.rewrittenPlan()
+        val projected = context.logicalPlanProducer.planUnwind(inner, variable, collectionExpression, expression, context)
         SortPlanner.ensureSortedPlanWithSolved(projected, query.interestingOrder, context)
 
       case ProcedureCallProjection(call) =>

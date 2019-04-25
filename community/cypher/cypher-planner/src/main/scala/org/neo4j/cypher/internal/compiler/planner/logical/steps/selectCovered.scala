@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.{CandidateGenerator, LogicalPlanningContext}
 import org.neo4j.cypher.internal.compiler.planner.unsolvedPreds
-import org.neo4j.cypher.internal.ir.{QueryGraph, InterestingOrder}
+import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case object selectCovered extends CandidateGenerator[LogicalPlan] {
@@ -32,7 +32,9 @@ case object selectCovered extends CandidateGenerator[LogicalPlan] {
     if (unsolvedPredicates.isEmpty)
       Seq()
     else {
-      val (plan, predicates) = patternExpressionSolver(in, unsolvedPredicates, interestingOrder, context)
+      val solver = patternExpressionSolver.solverFor(in, interestingOrder, context)
+      val predicates = unsolvedPredicates.map(solver.solve(_))
+      val plan = solver.rewrittenPlan()
       Seq(context.logicalPlanProducer.planSelection(plan, predicates, unsolvedPredicates, context))
     }
   }

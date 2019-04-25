@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.v4_0.util.DummyPosition
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
   test("Rewrites single pattern expression") {
     // given MATCH (a) RETURN (a)-->() as x
     val strategy = mock[QueryGraphSolver]
@@ -45,7 +46,9 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val source = newMockedLogicalPlan(context.planningAttributes, "a")
 
     // when
-    val (resultPlan, expressions) = expressionSolver(source, Map("x" -> patExpr1), InterestingOrder.empty, context)
+    val solver = expressionSolver.solverFor(source, InterestingOrder.empty, context)
+    val expressions = Map("x" -> patExpr1).map{ case (k,v) => (k, solver.solve(v, Some(k))) }
+    val resultPlan = solver.rewrittenPlan()
 
     // then
     val expectedInnerPlan = Projection(otherSide, Map("  FRESHID0" -> PathExpression(pathStep)(pos)))
@@ -77,7 +80,9 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     // when
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep1, namedPatExpr2 -> pathStep2))
 
-    val (resultPlan, expressions) = expressionSolver(source, Map("x" -> patExpr1, "y" -> patExpr2), InterestingOrder.empty, context)
+    val solver = expressionSolver.solverFor(source, InterestingOrder.empty, context)
+    val expressions = Map("x" -> patExpr1, "y" -> patExpr2).map{ case (k,v) => (k, solver.solve(v, Some(k))) }
+    val resultPlan = solver.rewrittenPlan()
 
     // then
     val expectedInnerPlan1 = Projection(b1, Map("  FRESHID0" -> PathExpression(pathStep1)(pos)))
@@ -105,7 +110,9 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep1, namedPatExpr2 -> pathStep2))
 
     val stringToEquals1 = Map("x" -> equals(patExpr1, patExpr2))
-    val (resultPlan, expressions) = expressionSolver(source, stringToEquals1, InterestingOrder.empty, context)
+    val solver = expressionSolver.solverFor(source, InterestingOrder.empty, context)
+    val expressions = stringToEquals1.map{ case (k,v) => (k, solver.solve(v, Some(k))) }
+    val resultPlan = solver.rewrittenPlan()
 
     // then
     val expectedInnerPlan1 = Projection(b1, Map("  FRESHID0" -> PathExpression(pathStep1)(pos)))
@@ -133,7 +140,9 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep1, namedPatExpr2 -> pathStep2))
 
     val predicate = equals(patExpr1, patExpr2)
-    val (resultPlan, expressions) = expressionSolver(source, Seq(predicate), InterestingOrder.empty, context)
+    val solver = expressionSolver.solverFor(source, InterestingOrder.empty, context)
+    val expression = solver.solve(predicate)
+    val resultPlan = solver.rewrittenPlan()
 
     // then
     val expectedInnerPlan1 = Projection(b1, Map("  FRESHID0" -> PathExpression(pathStep1)(pos)))
@@ -143,9 +152,8 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val rollUp2 = RollUpApply(rollUp1, expectedInnerPlan2, "  FRESHID4", "  FRESHID3", Set("a"))
 
     resultPlan should equal(rollUp2)
-    expressions should equal(Seq(equals(varFor("  FRESHID1"), varFor("  FRESHID4"))))
+    expression should equal(equals(varFor("  FRESHID1"), varFor("  FRESHID4")))
   }
-
 
   private def logicalPlanningContext(strategy: QueryGraphSolver): LogicalPlanningContext =
     newMockedLogicalPlanningContext(newMockedPlanContext(), semanticTable = new SemanticTable(), strategy = strategy)
@@ -162,8 +170,8 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
   private def newPatExpr(left: String, position: Int, rightOffset: Int, relOffset: Int, dir: SemanticDirection): PatternExpression =
     newPatExpr(left, position, Left(rightOffset), Left(relOffset), dir)
-  private def newPatExpr(left: String, position: Int, rightE: Either[Int, String], relNameE: Either[Int, String], dir: SemanticDirection): PatternExpression = {
 
+  private def newPatExpr(left: String, position: Int, rightE: Either[Int, String], relNameE: Either[Int, String], dir: SemanticDirection): PatternExpression = {
     def getNameAndPosition(rightE: Either[Int, String]) = rightE match {
       case Left(i) => (None, DummyPosition(i))
       case Right(name) => (Some(varFor(name)), pos)

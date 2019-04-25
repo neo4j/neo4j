@@ -171,7 +171,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(Selection(coercePredicatesWithAnds(predicates), left), solveds.get(left.id), providedOrders.get(left.id), context)
   }
 
-  def planNodeByIdSeek(idName: String, nodeIds: SeekableArgs,
+  def planNodeByIdSeek(idName: String,
+                       nodeIds: SeekableArgs,
                        solvedPredicates: Seq[Expression] = Seq.empty,
                        argumentIds: Set[String], context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
@@ -183,8 +184,12 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(NodeByIdSeek(idName, nodeIds, argumentIds), solved, ProvidedOrder.empty, context)
   }
 
-  def planNodeByLabelScan(idName: String, label: LabelName, solvedPredicates: Seq[Expression],
-                          solvedHint: Option[UsingScanHint] = None, argumentIds: Set[String], context: LogicalPlanningContext): LogicalPlan = {
+  def planNodeByLabelScan(idName: String,
+                          label: LabelName,
+                          solvedPredicates: Seq[Expression],
+                          solvedHint: Option[UsingScanHint] = None,
+                          argumentIds: Set[String],
+                          context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)

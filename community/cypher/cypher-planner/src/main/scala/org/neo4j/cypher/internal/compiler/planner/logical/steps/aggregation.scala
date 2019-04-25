@@ -30,8 +30,10 @@ object aggregation {
   def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
 
     val expressionSolver = PatternExpressionSolver()
-    val (step1, groupingExpressions) = expressionSolver(plan, aggregation.groupingExpressions, interestingOrder, context)
-    val (rewrittenPlan, aggregations) = expressionSolver(step1, aggregation.aggregationExpressions, interestingOrder, context)
+    val solver = expressionSolver.solverFor(plan, interestingOrder, context)
+    val groupingExpressions = aggregation.groupingExpressions.map{ case (k,v) => (k, solver.solve(v, Some(k))) }
+    val aggregations = aggregation.aggregationExpressions.map{ case (k,v) => (k, solver.solve(v, Some(k))) }
+    val rewrittenPlan = solver.rewrittenPlan()
 
     val projectionMapForLimit: Map[String, Expression] =
       if (groupingExpressions.isEmpty && aggregations.size == 1) {
