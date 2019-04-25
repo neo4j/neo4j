@@ -25,14 +25,13 @@ import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case object selectCovered extends CandidateGenerator[LogicalPlan] {
-  val patternExpressionSolver = PatternExpressionSolver()
   def apply(in: LogicalPlan, queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Seq[LogicalPlan] = {
     val unsolvedPredicates = unsolvedPreds(context.planningAttributes.solveds)(queryGraph.selections, in)
 
-    if (unsolvedPredicates.isEmpty)
+    if (unsolvedPredicates.isEmpty) {
       Seq()
-    else {
-      val solver = patternExpressionSolver.solverFor(in, interestingOrder, context)
+    } else {
+      val solver = PatternExpressionSolver.solverFor(in, interestingOrder, context)
       val predicates = unsolvedPredicates.map(solver.solve(_))
       val plan = solver.rewrittenPlan()
       Seq(context.logicalPlanProducer.planSelection(plan, predicates, unsolvedPredicates, context))

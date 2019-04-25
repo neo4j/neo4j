@@ -30,8 +30,6 @@ import org.neo4j.cypher.internal.v4_0.util.InternalException
  */
 case object PlanUpdates extends UpdatesPlanner {
 
-  private val patternExpressionSolver = PatternExpressionSolver()
-
   private def computePlan(plan: LogicalPlan, query: PlannerQuery, firstPlannerQuery: Boolean, context: LogicalPlanningContext) = {
     var updatePlan = plan
     val iterator = query.queryGraph.mutatingPatterns.iterator
@@ -72,7 +70,7 @@ case object PlanUpdates extends UpdatesPlanner {
     pattern match {
       //FOREACH
       case foreach: ForeachPattern =>
-        val solver = patternExpressionSolver.solverFor(source, interestingOrder, context)
+        val solver = PatternExpressionSolver.solverFor(source, interestingOrder, context)
         val newExpression = solver.solve(foreach.expression)
         val updatedSource = solver.rewrittenPlan()
 
@@ -99,7 +97,7 @@ case object PlanUpdates extends UpdatesPlanner {
 
       //SET n.prop = 42
       case pattern@SetNodePropertyPattern(_, _, expression) =>
-        val solver = patternExpressionSolver.solverFor(source, interestingOrder, context)
+        val solver = PatternExpressionSolver.solverFor(source, interestingOrder, context)
         val newExpression = solver.solve(expression)
         val updatedSource = solver.rewrittenPlan()
         val updatedPattern = pattern.copy(expression = newExpression)
@@ -107,7 +105,7 @@ case object PlanUpdates extends UpdatesPlanner {
 
       //SET r.prop = 42
       case pattern@SetRelationshipPropertyPattern(_, _ , expression) =>
-        val solver = patternExpressionSolver.solverFor(source, interestingOrder, context)
+        val solver = PatternExpressionSolver.solverFor(source, interestingOrder, context)
         val newExpression = solver.solve(expression)
         val updatedSource = solver.rewrittenPlan()
         val updatedPattern = pattern.copy(expression = newExpression)
@@ -115,7 +113,7 @@ case object PlanUpdates extends UpdatesPlanner {
 
       //SET x.prop = 42
       case pattern@SetPropertyPattern(_, _, expression) =>
-        val solver = patternExpressionSolver.solverFor(source, interestingOrder, context)
+        val solver = PatternExpressionSolver.solverFor(source, interestingOrder, context)
         val newExpression = solver.solve(expression)
         val updatedSource = solver.rewrittenPlan()
         val updatedPattern = pattern.copy(expression = newExpression)
@@ -123,7 +121,7 @@ case object PlanUpdates extends UpdatesPlanner {
 
       //SET n += {p1: ..., p2: ...}
       case pattern@SetNodePropertiesFromMapPattern(_, expression, _) =>
-        val solver = patternExpressionSolver.solverFor(source, interestingOrder, context)
+        val solver = PatternExpressionSolver.solverFor(source, interestingOrder, context)
         val newExpression = solver.solve(expression)
         val updatedSource = solver.rewrittenPlan()
         val updatedPattern = pattern.copy(expression = newExpression)
@@ -131,7 +129,7 @@ case object PlanUpdates extends UpdatesPlanner {
 
       //SET r += {p1: ..., p2: ...}
       case pattern@SetRelationshipPropertiesFromMapPattern(_, expression, _) =>
-        val solver = patternExpressionSolver.solverFor(source, interestingOrder, context)
+        val solver = PatternExpressionSolver.solverFor(source, interestingOrder, context)
         val newExpression = solver.solve(expression)
         val updatedSource = solver.rewrittenPlan()
         val updatedPattern = pattern.copy(expression = newExpression)

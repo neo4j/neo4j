@@ -48,11 +48,9 @@ Would be solved with a plan such as
 |
 +(LHS) AllNodesScan(n)
 */
-case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression) {
+object PatternExpressionSolver {
+  private val pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression
 
-  import PatternExpressionSolver.{solvePatternComprehensions, solvePatternExpressions}
-
-  // TODO make object
   // TODO support leaf plans
 
   /**
@@ -62,12 +60,9 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
                 interestingOrder: InterestingOrder,
                 context: LogicalPlanningContext): SolverForPlan = new SolverForPlan(source, interestingOrder, context)
 
-  private def solveUsingGetDegree(exp: Expression): Expression =
-    exp.endoRewrite(getDegreeRewriter)
-
   class SolverForPlan(source: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext) {
-    private val patternExpressionSolver = solvePatternExpressions(source.availableSymbols, interestingOrder, context, pathStepBuilder)
-    private val patternComprehensionSolver = solvePatternComprehensions(source.availableSymbols, interestingOrder, context, pathStepBuilder)
+    private val patternExpressionSolver = solvePatternExpressions(source.availableSymbols, interestingOrder, context)
+    private val patternComprehensionSolver = solvePatternComprehensions(source.availableSymbols, interestingOrder, context)
     private var result = source
 
     def solve(expression: Expression, maybeKey: Option[String] = None): Expression = {
@@ -98,13 +93,12 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
     }
   }
 
-}
+  private def solveUsingGetDegree(exp: Expression): Expression =
+    exp.endoRewrite(getDegreeRewriter)
 
-object PatternExpressionSolver {
-  def solvePatternExpressions(availableSymbols: Set[String],
+  private def solvePatternExpressions(availableSymbols: Set[String],
                               interestingOrder: InterestingOrder,
-                              context: LogicalPlanningContext,
-                              pathStepBuilder: EveryPath => PathStep): ListSubQueryExpressionSolver[PatternExpression] = {
+                              context: LogicalPlanningContext): ListSubQueryExpressionSolver[PatternExpression] = {
 
     def extractQG(source: LogicalPlan, namedExpr: PatternExpression): QueryGraph = {
       import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
@@ -140,10 +134,9 @@ object PatternExpressionSolver {
       lastDitch = patternExpressionRewriter(availableSymbols, interestingOrder, context))
   }
 
-  def solvePatternComprehensions(availableSymbols: Set[String],
+  private def solvePatternComprehensions(availableSymbols: Set[String],
                                  interestingOrder: InterestingOrder,
-                                 context: LogicalPlanningContext,
-                                 pathStepBuilder: EveryPath => PathStep): ListSubQueryExpressionSolver[PatternComprehension] = {
+                                 context: LogicalPlanningContext): ListSubQueryExpressionSolver[PatternComprehension] = {
     def extractQG(source: LogicalPlan, namedExpr: PatternComprehension) = {
       import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
 

@@ -26,8 +26,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 object distinct {
   def apply(plan: LogicalPlan, distinctQueryProjection: DistinctQueryProjection, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
 
-    val expressionSolver = PatternExpressionSolver()
-    val solver = expressionSolver.solverFor(plan, interestingOrder, context)
+    val solver = PatternExpressionSolver.solverFor(plan, interestingOrder, context)
     val groupingExpressions = distinctQueryProjection.groupingExpressions.map{ case (k,v) => (k, solver.solve(v, Some(k))) }
     val rewrittenPlan = solver.rewrittenPlan()
 
