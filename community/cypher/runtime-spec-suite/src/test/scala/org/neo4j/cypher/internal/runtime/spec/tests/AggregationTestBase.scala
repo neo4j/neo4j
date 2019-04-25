@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.v4_0.expressions.{CountStar, FunctionInvocation}
 import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
-import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{DoubleValue, DurationValue, StringValue, Values}
 import org.neo4j.values.virtual.ListValue
 
@@ -338,7 +337,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       "bob9" -> (theMiddle + 5)
     )
     runtimeResult should beColumns("name", "c").withRows(matching {
-      case rows:Seq[Array[AnyValue]] if rows.size == expectedBobCounts.size && rows.forall {
+      case rows: Seq[_] if rows.size == expectedBobCounts.size && rows.forall {
         case Array(s:StringValue, d:DoubleValue) => tolerantEquals(expectedBobCounts(s.stringValue()), d.value())
       } =>
     })
