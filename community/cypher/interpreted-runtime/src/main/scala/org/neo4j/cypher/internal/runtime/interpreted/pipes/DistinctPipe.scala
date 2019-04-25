@@ -37,24 +37,16 @@ case class DistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])
 
   protected def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
-    // Run the return item expressions, and replace the execution context's with their values
-    val result = input.map(ctx => {
-      val newCtx = executionContextFactory.newExecutionContext()
-      groupingColumns.foreach {
-        case GroupingCol(key, expression, _) => newCtx.set(key, expression(ctx, state))
-      }
-      newCtx.copyCachedFrom(ctx)
-      newCtx.setLinenumber(ctx.getLinenumber)
-      newCtx
-    })
-
     /*
      * The filtering is done by extracting from the context the values of all return expressions, and keeping them
      * in a set.
      */
     val seen = mutable.Set[AnyValue]()
 
-    result.filter { ctx =>
+    input.filter { ctx =>
+      groupingColumns.foreach {
+        case GroupingCol(key, expression, _) => ctx.set(key, expression(ctx, state))
+      }
       val groupingValue = VirtualValues.list(keyNames.map(ctx.getByName): _*)
       seen.add(groupingValue)
     }

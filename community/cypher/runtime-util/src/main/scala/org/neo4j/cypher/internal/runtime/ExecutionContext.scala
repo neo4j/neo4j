@@ -47,7 +47,6 @@ trait ExecutionContext {
 
   def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit
   def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit
-  def copyCachedFrom(input: ExecutionContext): Unit
   def setLongAt(offset: Int, value: Long): Unit
   def getLongAt(offset: Int): Long
 
@@ -123,22 +122,6 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
 
   override def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = fail()
 
-  override def copyCachedFrom(input: ExecutionContext): Unit = input match {
-    case context : MapExecutionContext =>
-      val oldCachedProperties = context.cachedProperties
-      if (oldCachedProperties == null) cachedProperties = null
-      else
-      {
-        cachedProperties = oldCachedProperties.clone()
-        oldCachedProperties.foreach {
-          case (CachedNodeProperty(varName,_),_) =>
-            set(varName, context.getByName(varName))
-        }
-      }
-
-    case _ =>
-      fail()
-  }
   def remove(name: String): Option[AnyValue] = m.remove(name)
   //used for testing
   def toMap: Map[String, AnyValue] = m.toMap
