@@ -22,10 +22,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.v4_0.util.LabelId
 import org.neo4j.cypher.internal.v4_0.expressions.LabelName
 
-class LazyLabel(name: String) {
+class LazyLabel(val name: String) {
 
   private var id: Int = LazyLabel.UNKNOWN
 
@@ -41,6 +40,20 @@ class LazyLabel(name: String) {
       id = context.getOrCreateLabelId(name)
     }
     id
+  }
+
+  def canEqual(other: Any): Boolean = other.isInstanceOf[LazyLabel]
+
+  override def equals(other: Any): Boolean = other match {
+    case that: LazyLabel =>
+      (that canEqual this) &&
+        name == that.name
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    val state = Seq(name)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 }
 
