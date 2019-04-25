@@ -47,6 +47,8 @@ class LazyLabel(name: String) {
 object LazyLabel {
   val UNKNOWN: Int = -1
 
+  def apply(name: String): LazyLabel = new LazyLabel(name)
+
   def apply(name: LabelName)(implicit table: SemanticTable): LazyLabel = {
     val label = new LazyLabel(name.name)
     label.id = table.id(name)
