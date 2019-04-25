@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_5.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, RegularPlannerQuery}
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.v3_5.expressions._
 import org.neo4j.cypher.internal.v3_5.logical.plans.{NestedPlanExpression, _}
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -168,6 +168,28 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
                 Not(In(Property(Variable("n"), PropertyKeyName("prop") ), ListLiteral(List(SignedDecimalIntegerLiteral("1337")))))))), _) => ()
 
     }
+  }
+
+  test("should solve pattern comprehensions as part of VarExpand") {
+    val q =
+      """
+        |MATCH p= ( (b) -[:REL*0..]- (c) )
+        |WHERE
+        | ALL(n in nodes(p) where
+        |   n.prop <= 1 < n.prop2
+        |   AND coalesce(
+        |     head( [ (n)<--(d) WHERE d.prop3 <= 1 < d.prop2 | d.prop4 = true ] ),
+        |     head( [ (n)<--(e) WHERE e.prop3 <= 1 < e.prop2 | e.prop5 = '0'] ),
+        |     true)
+        | )
+        | AND ALL(r in relationships(p) WHERE r.prop <= 1 < r.prop2)
+        |RETURN c
+      """.stripMargin
+
+    planFor(q) // Should not fail
+    // The plan that solves the predicates as part of VarExpand is not chosen, but considered, thus we cannot assert on _that_ plan here.
+    // Nevertheless the assertion LogicalPlanProducer.assertNoBadExpressionsExists should never fail, even for plans that do not get chosen.
+
   }
 
   private def containsArgumentOnly(queryGraph: QueryGraph): Boolean =

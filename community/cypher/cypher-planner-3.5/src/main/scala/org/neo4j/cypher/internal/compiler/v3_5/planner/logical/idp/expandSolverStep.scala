@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.PatternExpressionSolver
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.v3_5.logical.plans.{ExpandAll, ExpandInto, LogicalPlan}
 import org.neo4j.cypher.internal.v3_5.expressions.{Ands, Expression, LogicalVariable}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{ExpandAll, ExpandInto, LogicalPlan}
 
 case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
 
@@ -98,21 +99,26 @@ object expandSolverStep {
             tempNode = tempNode,
             originalNodeName = nodeId)
         val nodePredicate = Ands.create(nodePredicates.toSet)
-        val relationshipPredicate = Ands.create(edgePredicates.toSet)
+        val edgePredicate = Ands.create(edgePredicates.toSet)
+
+        val (rewrittenSource, rewrittenPredicates) =
+          PatternExpressionSolver().apply(sourcePlan, expressions = Seq(nodePredicate,  edgePredicate) ++ legacyPredicates.map(_._2), interestingOrder = InterestingOrder.empty, context)
+        val rewrittenNodePredicate :: rewrittenEdgePredicate :: rewrittenLegacyPredicateExpressions = rewrittenPredicates.toList
+        val rewrittenLegacyPredicates = legacyPredicates.map(_._1).zip(rewrittenLegacyPredicateExpressions)
 
         context.logicalPlanProducer.planVarExpand(
-          source = sourcePlan,
+          source = rewrittenSource,
           from = nodeId,
           dir = dir,
           to = otherSide,
           pattern = patternRel,
           temporaryNode = tempNode,
           temporaryEdge = tempEdge,
-          edgePredicate = relationshipPredicate,
-          nodePredicate = nodePredicate,
+          edgePredicate = rewrittenEdgePredicate,
+          nodePredicate = rewrittenNodePredicate,
           solvedPredicates = solvedPredicates,
           mode = mode,
-          legacyPredicates = legacyPredicates,
+          legacyPredicates = rewrittenLegacyPredicates,
           context = context)
     }
   }
