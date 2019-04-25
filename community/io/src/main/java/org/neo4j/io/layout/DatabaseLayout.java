@@ -20,7 +20,7 @@
 package org.neo4j.io.layout;
 
 import java.io.File;
-import java.io.FilenameFilter;
+import java.io.FileFilter;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
@@ -230,7 +230,12 @@ public class DatabaseLayout
         return Iterables.stream( names ).map( this::file );
     }
 
-    public File[] listDatabaseFiles( FilenameFilter filter )
+    public Stream<File> allFiles( DatabaseFile databaseFile )
+    {
+        return Stream.concat( idFile( databaseFile ).stream(), file( databaseFile ) );
+    }
+
+    public File[] listDatabaseFiles( FileFilter filter )
     {
         File[] files = databaseDirectory.listFiles( filter );
         return files != null ? files : EMPTY_FILES_ARRAY;

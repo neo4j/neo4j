@@ -453,7 +453,7 @@ public class StoreUpgraderTest
         return new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), getTuningConfig() );
     }
 
-    private StoreMigrationParticipant participantThatWillFailWhenMoving( final String failureMessage )
+    private static StoreMigrationParticipant participantThatWillFailWhenMoving( final String failureMessage )
     {
         return new AbstractStoreMigrationParticipant( "Failing" )
         {
@@ -518,9 +518,9 @@ public class StoreUpgraderTest
 
     private List<File> migrationHelperDirs()
     {
-        File[] tmpDirs = databaseLayout.listDatabaseFiles( ( file, name ) -> file.isDirectory() &&
-                                                          (name.equals( StoreUpgrader.MIGRATION_DIRECTORY ) ||
-                name.startsWith( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY )) );
+        File[] tmpDirs = databaseLayout.listDatabaseFiles( ( file ) -> file.isDirectory() &&
+                                            (file.getName().equals( StoreUpgrader.MIGRATION_DIRECTORY ) ||
+                                                    file.getName().startsWith( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY )) );
         assertNotNull( "Some IO errors occurred", tmpDirs );
         return Arrays.asList( tmpDirs );
     }
@@ -528,11 +528,6 @@ public class StoreUpgraderTest
     private Config getTuningConfig()
     {
         return Config.defaults( GraphDatabaseSettings.record_format, getRecordFormatsName() );
-    }
-
-    protected RecordFormats getRecordFormats()
-    {
-        return Standard.LATEST_RECORD_FORMATS;
     }
 
     protected String getRecordFormatsName()

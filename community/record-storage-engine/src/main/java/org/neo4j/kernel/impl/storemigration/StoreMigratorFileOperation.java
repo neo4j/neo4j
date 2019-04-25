@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.stream.Stream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
@@ -43,7 +42,7 @@ class StoreMigratorFileOperation
     {
         for ( DatabaseFile databaseStore : databaseFiles )
         {
-            File[] files = Stream.concat( fromLayout.file( databaseStore ), fromLayout.idFile( databaseStore ).stream() ).toArray( File[]::new );
+            File[] files = fromLayout.allFiles( databaseStore ).toArray( File[]::new );
             perform( operation, fs, fromLayout, toLayout, allowSkipNonExistentFiles, existingTargetStrategy, files );
         }
     }

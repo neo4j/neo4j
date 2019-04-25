@@ -216,7 +216,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
     }
 
-    private void addRecursively( ZipOutputStream output, File input ) throws IOException
+    private static void addRecursively( ZipOutputStream output, File input ) throws IOException
     {
         if ( input.isFile() )
         {
@@ -315,7 +315,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         return directories.contains( file ) || files.containsKey( file );
     }
 
-    private File canonicalFile( File file )
+    private static File canonicalFile( File file )
     {
         try
         {
@@ -486,7 +486,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         return found.toArray( new File[found.size()] );
     }
 
-    private File constructPath( List<String> pathItems, List<String> base )
+    private static File constructPath( List<String> pathItems, List<String> base )
     {
         File file = null;
         if ( base.size() > 0 )
@@ -617,7 +617,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         return checksum.getValue();
     }
 
-    private ByteBuffer newCopyBuffer()
+    private static ByteBuffer newCopyBuffer()
     {
         return ByteBuffer.allocate( (int) ByteUnit.mebiBytes( 1 ) );
     }

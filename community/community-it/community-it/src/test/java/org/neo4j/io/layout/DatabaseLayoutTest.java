@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -33,9 +34,11 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -167,6 +170,26 @@ class DatabaseLayoutTest
         assertThat( files, hasItem( "neostore.relationshiptypestore.db" ) );
         assertThat( files, hasItem( "neostore.relationshiptypestore.db.names" ) );
         assertThat( files, hasItem( "neostore.schemastore.db" ) );
+    }
+
+    @Test
+    void allFilesContainsStoreFiles()
+    {
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+        DatabaseFile nodeStore = DatabaseFile.NODE_STORE;
+        List<File> allNodeStoreFile = databaseLayout.allFiles( nodeStore ).collect( toList() );
+        File[] nodeStoreStoreFiles = databaseLayout.file( nodeStore ).toArray( File[]::new );
+        assertThat( allNodeStoreFile, hasItems( nodeStoreStoreFiles ) );
+    }
+
+    @Test
+    void allFilesContainsIdFileIfPresent()
+    {
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+        DatabaseFile nodeStore = DatabaseFile.NODE_STORE;
+        List<File> allNodeStoreFile = databaseLayout.allFiles( nodeStore ).collect( toList() );
+        File nodeStoreIdFile = databaseLayout.idFile( nodeStore ).get();
+        assertThat( allNodeStoreFile, hasItems( nodeStoreIdFile ) );
     }
 
     @Test

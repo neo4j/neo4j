@@ -19,14 +19,17 @@
  */
 package org.neo4j.kernel.database;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Clock;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.Dependencies;
@@ -47,6 +50,7 @@ import org.neo4j.internal.index.label.LoggingMonitor;
 import org.neo4j.internal.index.label.NativeLabelScanStore;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -159,8 +163,11 @@ import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.kernel.database.DatabaseFileHelper.filesToDeleteOnTruncation;
+import static org.neo4j.kernel.database.DatabaseFileHelper.filesToKeepOnTruncation;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 
@@ -277,7 +284,7 @@ public class Database extends LifecycleAdapter
     }
 
     @Override
-    public void start()
+    public synchronized void start()
     {
         if ( started )
         {
@@ -693,23 +700,48 @@ public class Database extends LifecycleAdapter
         started = false;
     }
 
-    public void drop()
+    public synchronized void drop()
     {
-        prepareForDrop();
-        stop();
-        dropDatabaseFiles();
+        if ( started )
+        {
+            prepareStop( alwaysTrue() );
+            stop();
+        }
+        deleteDatabaseFiles( List.of( databaseLayout.databaseDirectory(), databaseLayout.getTransactionLogsDirectory() ) );
     }
 
-    private void dropDatabaseFiles()
+    public synchronized void truncate()
+    {
+        boolean truncateStartedDatabase = started;
+        List<File> filesToKeep = filesToKeepOnTruncation( databaseLayout );
+        //TODO: this log files can be empty if db is not started
+        LogFiles logFiles = databaseDependencies.resolveDependency( LogFiles.class );
+        if ( truncateStartedDatabase )
+        {
+            prepareStop( pagedFile -> !filesToKeep.contains( pagedFile.file() ) );
+            stop();
+        }
+
+        List<File> filesToDelete = filesToDeleteOnTruncation( filesToKeep, databaseLayout, logFiles );
+        deleteDatabaseFiles( filesToDelete );
+        if ( truncateStartedDatabase )
+        {
+            start();
+        }
+    }
+
+    private void deleteDatabaseFiles( List<File> files )
     {
         try
         {
-            fs.deleteRecursively( databaseLayout.databaseDirectory() );
-            fs.deleteRecursively( databaseLayout.getTransactionLogsDirectory() );
+            for ( File fileToDelete : files )
+            {
+                FileSystemUtils.deleteFile( fs, fileToDelete );
+            }
         }
         catch ( IOException e )
         {
-            logService.getInternalLog( Database.class ).warn( format( "Failed to remove dropped database '%s' files.", databaseId ), e );
+            logService.getInternalLog( Database.class ).error( format( "Failed to delete database '%s' files.", databaseId.name() ), e );
             throw new UncheckedIOException( e );
         }
     }
@@ -824,12 +856,11 @@ public class Database extends LifecycleAdapter
         return databaseHealth;
     }
 
-    private void prepareForDrop()
+    private void prepareStop( Predicate<PagedFile> deleteFilePredicate )
     {
-        for ( PagedFile pagedFile : databasePageCache.listExistingMappings() )
-        {
-            pagedFile.setDeleteOnClose( true );
-        }
+        databasePageCache.listExistingMappings()
+                .stream().filter( deleteFilePredicate )
+                .forEach( file -> file.setDeleteOnClose( true ) );
         checkpointerLifecycle.setCheckpointOnShutdown( false );
     }
 

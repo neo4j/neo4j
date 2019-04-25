@@ -21,9 +21,9 @@ package org.neo4j.internal.recordstorage;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
@@ -117,12 +117,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             throw new IOException( "No storage present at " + databaseLayout + " on " + fileSystem );
         }
 
-        List<File> files = new ArrayList<>();
-        for ( StoreType type : StoreType.values() )
-        {
-            databaseLayout.file( type.getDatabaseFile() ).filter( fileSystem::fileExists ).forEach( files::add );
-        }
-        return files;
+        return Arrays.stream( StoreType.values() ).flatMap( t -> databaseLayout.file( t.getDatabaseFile() ) )
+                                            .filter( fileSystem::fileExists ).collect( Collectors.toList() );
     }
 
     @Override

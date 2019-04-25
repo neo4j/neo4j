@@ -94,7 +94,7 @@ public class FileUtils
 
     public static void deletePathRecursively( Path path ) throws IOException
     {
-        Files.walkFileTree( path, new SimpleFileVisitor<Path>()
+        Files.walkFileTree( path, new SimpleFileVisitor<>()
         {
             @Override
             public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
@@ -126,7 +126,7 @@ public class FileUtils
             {
                 try ( Stream<Path> list = Files.list( dir ) )
                 {
-                    return list.map( p -> String.valueOf( p.getFileName() ) ).collect( Collectors.joining("', '", "'", "'." ) );
+                    return list.map( p -> String.valueOf( p.getFileName() ) ).collect( Collectors.joining( "', '", "'", "'." ) );
                 }
                 catch ( Exception e )
                 {

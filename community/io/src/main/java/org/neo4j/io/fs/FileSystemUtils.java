@@ -100,4 +100,16 @@ public class FileSystemUtils
             return fs.getFileSize( file );
         }
     }
+
+    public static void deleteFile( FileSystemAbstraction fs, File fileToDelete ) throws IOException
+    {
+        if ( fileToDelete.isDirectory() )
+        {
+            fs.deleteRecursively( fileToDelete );
+        }
+        else
+        {
+            fs.deleteFile( fileToDelete );
+        }
+    }
 }

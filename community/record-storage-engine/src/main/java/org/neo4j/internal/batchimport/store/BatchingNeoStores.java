@@ -217,8 +217,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             if ( !storesToKeep.test( type ) )
             {
                 DatabaseFile databaseFile = type.getDatabaseFile();
-                databaseLayout.file( databaseFile ).forEach( fileSystem::deleteFile );
-                databaseLayout.idFile( databaseFile ).ifPresent( fileSystem::deleteFile );
+                databaseLayout.allFiles( databaseFile ).forEach( fileSystem::deleteFile );
             }
         }
     }

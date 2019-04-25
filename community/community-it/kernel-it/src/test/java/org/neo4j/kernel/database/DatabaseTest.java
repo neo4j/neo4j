@@ -25,8 +25,11 @@ import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
@@ -34,6 +37,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
@@ -49,14 +53,17 @@ import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.PageCacheConfig;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Optional.of;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
+import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItems;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -71,12 +78,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.database.DatabaseFileHelper.filesToKeepOnTruncation;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class DatabaseTest
 {
     @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    public DefaultFileSystemRule fs = new DefaultFileSystemRule();
     @Rule
     public TestDirectory directory = TestDirectory.testDirectory( fs.get() );
     @Rule
@@ -111,6 +119,101 @@ public class DatabaseTest
                 database.stop();
             }
         }
+    }
+
+    @Test
+    public void dropDataOfNotStartedDatabase()
+    {
+        File customTxLogsRoot = directory.directory( "customTxLogs" );
+        DatabaseLayout databaseLayout = directory.databaseLayout( () -> of( customTxLogsRoot ) );
+        Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCacheRule.getPageCache( fs.get() ) );
+
+        database.start();
+        database.stop();
+
+        assertNotEquals( databaseLayout.databaseDirectory(), databaseLayout.getTransactionLogsDirectory() );
+        assertTrue( fs.fileExists( databaseLayout.databaseDirectory() ) );
+        assertTrue( fs.fileExists( databaseLayout.getTransactionLogsDirectory() ) );
+
+        database.drop();
+
+        assertFalse( fs.fileExists( databaseLayout.databaseDirectory() ) );
+        assertFalse( fs.fileExists( databaseLayout.getTransactionLogsDirectory() ) );
+    }
+
+    @Test
+    public void truncateNotStartedDatabase()
+    {
+        File customTxLogsRoot = directory.directory( "truncateCustomTxLogs" );
+        DatabaseLayout databaseLayout = directory.databaseLayout( () -> of( customTxLogsRoot ) );
+        Database database = databaseRule.getDatabase( databaseLayout, fs, pageCacheRule.getPageCache( fs ) );
+
+        database.start();
+        database.stop();
+
+        File databaseDirectory = databaseLayout.databaseDirectory();
+        File transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
+        assertTrue( fs.fileExists( databaseDirectory ) );
+        assertTrue( fs.fileExists( transactionLogsDirectory ) );
+
+        File[] databaseFilesShouldExist = filesToKeepOnTruncation( databaseLayout ).stream().filter( File::exists ).toArray( File[]::new );
+
+        database.truncate();
+
+        assertTrue( fs.fileExists( databaseDirectory ) );
+        assertTrue( fs.fileExists( transactionLogsDirectory ) );
+        File[] currentDatabaseFiles = databaseDirectory.listFiles();
+        assertThat( currentDatabaseFiles, arrayContainingInAnyOrder( databaseFilesShouldExist ) );
+    }
+
+    @Test
+    public void doNotFlushDataFilesOnDatabaseTruncate()
+    {
+        FilesCollectionPageCache pageCache = new FilesCollectionPageCache( pageCacheRule, fs );
+        Database database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(), pageCache );
+
+        database.start();
+        database.truncate();
+
+        List<File> removedFiles = pageCache.getPagedFiles().stream().filter( PagedFile::isDeleteOnClose )
+                .map( PagedFile::file )
+                .collect( Collectors.toList() );
+
+        DatabaseLayout databaseLayout = database.getDatabaseLayout();
+        Set<File> files = databaseLayout.storeFiles();
+        files.removeAll( filesToKeepOnTruncation( databaseLayout ) );
+        File[] filesShouldBeDeleted = files.stream().filter( File::exists ).toArray( File[]::new );
+        assertThat( removedFiles, hasItems( filesShouldBeDeleted ) );
+    }
+
+    @Test
+    public void filesRecreatedAfterTruncate()
+    {
+        File customTxLogsRoot = directory.directory( "truncateCustomTxLogs" );
+        DatabaseLayout databaseLayout = directory.databaseLayout( () -> of( customTxLogsRoot ) );
+        Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCacheRule.getPageCache( fs.get() ) );
+
+        database.start();
+
+        File databaseDirectory = databaseLayout.databaseDirectory();
+        File transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
+        assertTrue( fs.fileExists( databaseDirectory ) );
+        assertTrue( fs.fileExists( transactionLogsDirectory ) );
+
+        File[] databaseFilesBeforeTruncate = fs.listFiles( databaseDirectory );
+        File[] logFilesBeforeTruncate = fs.listFiles( transactionLogsDirectory );
+
+        database.truncate();
+
+        assertTrue( fs.fileExists( databaseDirectory ) );
+        assertTrue( fs.fileExists( transactionLogsDirectory ) );
+
+        File[] databaseFiles = fs.listFiles( databaseDirectory );
+        File[] logFiles = fs.listFiles( transactionLogsDirectory );
+
+        // files are equal by name - every store file is recreated as result
+        assertThat( databaseFilesBeforeTruncate, arrayContainingInAnyOrder( databaseFiles ) );
+        assertThat( logFilesBeforeTruncate, arrayContainingInAnyOrder( logFiles ) );
     }
 
     @Test
@@ -309,6 +412,29 @@ public class DatabaseTest
         {
             // Then
             assertEquals( ex, e.getCause() );
+        }
+    }
+
+    private class FilesCollectionPageCache extends DelegatingPageCache
+    {
+        private final List<PagedFile> pagedFiles = new ArrayList<>();
+
+        FilesCollectionPageCache( PageCacheRule pageCacheRule, DefaultFileSystemRule fs )
+        {
+            super( pageCacheRule.getPageCache( fs ) );
+        }
+
+        @Override
+        public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
+        {
+            PagedFile pagedFile = super.map( file, pageSize, openOptions );
+            pagedFiles.add( pagedFile );
+            return pagedFile;
+        }
+
+        List<PagedFile> getPagedFiles()
+        {
+            return pagedFiles;
         }
     }
 }
