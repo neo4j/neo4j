@@ -245,7 +245,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     context.nodeOps.all
 
     // THEN
-    context.resources.allResources should have size initSize + 1
+    context.resources.allResources should have size initSize + 2
+    context.resources.close(true)
+
     tx.close()
   }
 
@@ -260,7 +262,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     context.nodeOps.allPrimitive
 
     // THEN
-    context.resources.allResources should have size initSize + 1
+    context.resources.allResources should have size initSize + 2
+    context.resources.close(true)
     tx.close()
   }
 
@@ -273,7 +276,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
     // WHEN
     context.nodeOps.all
-    context.resources.allResources should have size initSize + 1
+    context.resources.allResources should have size initSize + 2
     context.resources.close(success = true)
 
     // THEN

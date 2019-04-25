@@ -195,7 +195,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
         case INCOMING => incomingCursor(txContext.kernelTransaction.cursors(), cursor, types.map(_.toArray).orNull)
         case BOTH => allCursor(txContext.kernelTransaction.cursors(), cursor, types.map(_.toArray).orNull)
       }
-      new CursorIterator[Relationship] {
+      val relationships = new CursorIterator[Relationship] {
         override protected def close(): Unit = selectionCursor.close()
         override protected def fetchNext(): Relationship =
           if (selectionCursor.next()) entityAccessor.newRelationshipProxy(selectionCursor.relationshipReference(),
@@ -204,6 +204,8 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
                                                                     selectionCursor.targetNodeReference())
           else null
       }
+      resources.trace(relationships)
+      relationships
     }
   }
 
@@ -226,7 +228,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
   private def seek(index: IndexReference, query: IndexQuery*) = {
     val nodeCursor = allocateAndTraceNodeValueIndexCursor()
     reads().nodeIndexSeek(index, nodeCursor, IndexOrder.NONE, query:_*)
-    new CursorIterator[Node] {
+    val nodes = new CursorIterator[Node] {
       override protected def fetchNext(): Node = {
         if (nodeCursor.next()) entityAccessor.newNodeProxy(nodeCursor.nodeReference())
         else null
@@ -234,6 +236,8 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
 
       override protected def close(): Unit = nodeCursor.close()
     }
+    resources.trace(nodes)
+    nodes
   }
 
   private def scan(index: IndexReference) = {
@@ -354,13 +358,15 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
   override def indexScan(index: IndexDescriptor) = {
     val cursor = allocateAndTraceNodeValueIndexCursor()
     reads().nodeIndexScan(DefaultIndexReference.general(index.labelId, index.propertyId), cursor, IndexOrder.NONE)
-    new CursorIterator[Node] {
+    val nodes = new CursorIterator[Node] {
       override protected def fetchNext(): Node = {
         if (cursor.next()) entityAccessor.newNodeProxy(cursor.nodeReference())
         else null
       }
       override protected def close(): Unit = cursor.close()
     }
+    resources.trace(nodes)
+    nodes
   }
 
   override def indexScanByContains(index: IndexDescriptor, value: String) =
@@ -383,13 +389,15 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
   override def getNodesByLabel(id: Int): Iterator[Node] ={
     val cursor = allocateAndTraceNodeLabelIndexCursor()
     reads().nodeLabelScan(id, cursor)
-    new CursorIterator[Node] {
+    val nodes = new CursorIterator[Node] {
       override protected def fetchNext(): Node = {
         if (cursor.next()) entityAccessor.newNodeProxy(cursor.nodeReference())
         else null
       }
       override protected def close(): Unit = cursor.close()
     }
+    resources.trace(nodes)
+    nodes
   }
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int = {
@@ -507,7 +515,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
     override def all: Iterator[Node] = {
       val nodeCursor = allocateAndTraceNodeCursor()
       reads().allNodesScan(nodeCursor)
-      new CursorIterator[Node] {
+      val nodes = new CursorIterator[Node] {
         override protected def fetchNext(): Node = {
           if (nodeCursor.next()) entityAccessor.newNodeProxy(nodeCursor.nodeReference())
           else null
@@ -515,12 +523,14 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
 
         override protected def close(): Unit = nodeCursor.close()
       }
+      resources.trace(nodes)
+      nodes
     }
 
     override def indexGet(name: String, key: String, value: Any): Iterator[Node] ={
       val cursor = allocateAndTraceNodeExplicitIndexCursor()
       txContext.kernelTransaction.indexRead().nodeExplicitIndexLookup(cursor, name, key, value )
-      new CursorIterator[Node] {
+      val nodes = new CursorIterator[Node] {
         override protected def fetchNext(): Node = {
           while (cursor.next() ) {
             if (reads().nodeExists(cursor.nodeReference())) {
@@ -531,12 +541,14 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
         }
         override protected def close(): Unit = cursor.close()
       }
+      resources.trace(nodes)
+      nodes
     }
 
     override def indexQuery(name: String, query: Any): Iterator[Node] ={
       val cursor = allocateAndTraceNodeExplicitIndexCursor()
       txContext.kernelTransaction.indexRead().nodeExplicitIndexQuery(cursor, name, query)
-      new CursorIterator[Node] {
+      val nodes = new CursorIterator[Node] {
         override protected def fetchNext(): Node = {
           while (cursor.next() ) {
             if (reads().nodeExists(cursor.nodeReference())) {
@@ -547,6 +559,8 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
         }
         override protected def close(): Unit = cursor.close()
       }
+      resources.trace(nodes)
+      nodes
     }
 
     override def isDeletedInThisTx(n: Node): Boolean = isDeletedInThisTx(n.getId)
@@ -651,7 +665,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
     override def all: Iterator[Relationship] = {
       val relCursor = allocateAndTraceRelationshipScanCursor()
       reads().allRelationshipsScan(relCursor)
-      new CursorIterator[Relationship] {
+      val relationships = new CursorIterator[Relationship] {
         override protected def fetchNext(): Relationship = {
           if (relCursor.next())
             entityAccessor.newRelationshipProxy(relCursor.relationshipReference(),
@@ -662,12 +676,14 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
 
         override protected def close(): Unit = relCursor.close()
       }
+      resources.trace(relationships)
+      relationships
     }
 
     def indexGet(name: String, key: String, value: Any): Iterator[Relationship] = {
       val cursor = allocateAndTraceRelationshipExplicitIndexCursor()
       txContext.kernelTransaction.indexRead().relationshipExplicitIndexLookup(cursor, name, key, value, -1, -1)
-      new CursorIterator[Relationship] {
+      val relationships = new CursorIterator[Relationship] {
         override protected def fetchNext(): Relationship = {
           while (cursor.next() ) {
             if (reads().relationshipExists(cursor.relationshipReference())) {
@@ -679,12 +695,14 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
         }
         override protected def close(): Unit = cursor.close()
       }
+      resources.trace(relationships)
+      relationships
     }
 
     def indexQuery(name: String, query: Any): Iterator[Relationship] = {
       val cursor = allocateAndTraceRelationshipExplicitIndexCursor()
       txContext.kernelTransaction.indexRead().relationshipExplicitIndexQuery(cursor, name, query, -1, -1)
-      new CursorIterator[Relationship] {
+      val relationships = new CursorIterator[Relationship] {
         override protected def fetchNext(): Relationship = {
           while (cursor.next() ) {
             if (reads().relationshipExists(cursor.relationshipReference())) {
@@ -697,6 +715,8 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
 
         override protected def close(): Unit = cursor.close()
       }
+      resources.trace(relationships)
+      relationships
     }
 
     override def isDeletedInThisTx(r: Relationship): Boolean = isDeletedInThisTx(r.getId)

@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator
 
 import scala.collection.Iterator
 
-abstract class CursorIterator[T] extends Iterator[T] {
+abstract class CursorIterator[T] extends Iterator[T] with AutoCloseable{
   private var _next: T = _
   private var intialzed = false
 
