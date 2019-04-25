@@ -143,10 +143,22 @@ class SpatialIndexPopulator extends SpatialIndexCache<WorkSyncedNativeIndexPopul
         return combineSamples( samples );
     }
 
+    @Override
+    public Map<String,Value> indexConfig()
+    {
+        Map<String,Value> indexConfig = new HashMap<>();
+        for ( IndexPopulator part : this )
+        {
+            indexConfig.putAll( part.indexConfig() );
+        }
+        return indexConfig;
+    }
+
     static class PartPopulator extends NativeIndexPopulator<SpatialIndexKey,NativeIndexValue>
     {
         private final SpaceFillingCurveConfiguration configuration;
         private final SpaceFillingCurveSettings settings;
+        private final CoordinateReferenceSystem crs;
 
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout, IndexProvider.Monitor monitor,
                 StoreIndexDescriptor descriptor, SpaceFillingCurveConfiguration configuration )
@@ -154,6 +166,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<WorkSyncedNativeIndexPopul
             super( pageCache, fs, fileLayout.getIndexFile(), fileLayout.layout, monitor, descriptor, NO_HEADER_WRITER );
             this.configuration = configuration;
             this.settings = fileLayout.settings;
+            this.crs = fileLayout.spatialFile.crs;
         }
 
         @Override
@@ -194,6 +207,14 @@ class SpatialIndexPopulator extends SpatialIndexCache<WorkSyncedNativeIndexPopul
         void markTreeAsOnline()
         {
             tree.checkpoint( IOLimiter.UNLIMITED, settings.headerWriter( BYTE_ONLINE ) );
+        }
+
+        @Override
+        public Map<String,Value> indexConfig()
+        {
+            Map<String,Value> map = new HashMap<>();
+            SpatialIndexConfig.addSpatialConfig( map, crs, settings );
+            return map;
         }
     }
 

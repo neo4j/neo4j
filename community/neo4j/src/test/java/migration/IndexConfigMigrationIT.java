@@ -25,6 +25,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -43,29 +45,36 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.LUCENE10;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE10;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE20;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
-import static org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings.space_filling_curve_bottom_threshold;
-import static org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings.space_filling_curve_extra_levels;
+import static org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings.makeCRSRangeSetting;
 import static org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings.space_filling_curve_max_bits;
-import static org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings.space_filling_curve_top_threshold;
 import static org.neo4j.test.Unzip.unzip;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.all;
+import static org.neo4j.values.storable.Values.COMPARATOR;
 
 /**
  * This test should verify that index configurations from a 3.5 store stay intact when opened again, with migration if needed.
@@ -73,31 +82,75 @@ import static org.neo4j.test.Unzip.unzip;
 @ExtendWith( TestDirectoryExtension.class )
 class IndexConfigMigrationIT
 {
+    private enum MinMaxSetting
+    {
+        wgs84MinX( makeCRSRangeSetting( WGS84, 0, "min" ), "-1" ),
+        wgs84MinY( makeCRSRangeSetting( WGS84, 1, "min" ), "-2" ),
+        wgs84MaxX( makeCRSRangeSetting( WGS84, 0, "max" ), "3" ),
+        wgs84MaxY( makeCRSRangeSetting( WGS84, 1, "max" ), "4" ),
+        wgs84_3DMinX( makeCRSRangeSetting( WGS84_3D, 0, "min" ), "-5" ),
+        wgs84_3DMinY( makeCRSRangeSetting( WGS84_3D, 1, "min" ), "-6" ),
+        wgs84_3DMinZ( makeCRSRangeSetting( WGS84_3D, 2, "min" ), "-7" ),
+        wgs84_3DMaxX( makeCRSRangeSetting( WGS84_3D, 0, "max" ), "8" ),
+        wgs84_3DMaxY( makeCRSRangeSetting( WGS84_3D, 1, "max" ), "9" ),
+        wgs84_3DMaxZ( makeCRSRangeSetting( WGS84_3D, 2, "max" ), "10" ),
+        cartesianMinX( makeCRSRangeSetting( Cartesian, 0, "min" ), "-11" ),
+        cartesianMinY( makeCRSRangeSetting( Cartesian, 1, "min" ), "-12" ),
+        cartesianMaxX( makeCRSRangeSetting( Cartesian, 0, "max" ), "13" ),
+        cartesianMaxY( makeCRSRangeSetting( Cartesian, 1, "max" ), "14" ),
+        cartesian_3DMinX( makeCRSRangeSetting( Cartesian_3D, 0, "min" ), "-15" ),
+        cartesian_3DMinY( makeCRSRangeSetting( Cartesian_3D, 1, "min" ), "-16" ),
+        cartesian_3DMinZ( makeCRSRangeSetting( Cartesian_3D, 2, "min" ), "-17" ),
+        cartesian_3DMaxX( makeCRSRangeSetting( Cartesian_3D, 0, "max" ), "18" ),
+        cartesian_3DMaxY( makeCRSRangeSetting( Cartesian_3D, 1, "max" ), "19" ),
+        cartesian_3DMaxZ( makeCRSRangeSetting( Cartesian_3D, 2, "max" ), "20" );
+
+        private final Setting<Double> setting;
+        private final String settingValue;
+
+        MinMaxSetting( Setting<Double> setting, String settingValue )
+        {
+            this.setting = setting;
+            this.settingValue = settingValue;
+        }
+    }
+
+    private static final String space_filling_curve_max_bits_value = "30";
+    private static final Map<String,Value> staticExpectedIndexConfig = new HashMap<>();
+
+    static
+    {
+        staticExpectedIndexConfig.put( "spatial.wgs-84.tableId", Values.intValue( 1 ) );
+        staticExpectedIndexConfig.put( "spatial.wgs-84.code", Values.intValue( 4326 ) );
+        staticExpectedIndexConfig.put( "spatial.wgs-84.dimensions", Values.intValue( 2 ) );
+        staticExpectedIndexConfig.put( "spatial.wgs-84.maxLevels", Values.intValue( 15 ) );
+        staticExpectedIndexConfig.put( "spatial.wgs-84.min", Values.doubleArray( new double[]{-1.0, -2.0} ) );
+        staticExpectedIndexConfig.put( "spatial.wgs-84.max", Values.doubleArray( new double[]{3.0, 4.0} ) );
+
+        staticExpectedIndexConfig.put( "spatial.wgs-84-3d.tableId", Values.intValue( 1 ) );
+        staticExpectedIndexConfig.put( "spatial.wgs-84-3d.code", Values.intValue( 4979 ) );
+        staticExpectedIndexConfig.put( "spatial.wgs-84-3d.dimensions", Values.intValue( 3 ) );
+        staticExpectedIndexConfig.put( "spatial.wgs-84-3d.maxLevels", Values.intValue( 10 ) );
+        staticExpectedIndexConfig.put( "spatial.wgs-84-3d.min", Values.doubleArray( new double[]{-5.0, -6.0, -7.0} ) );
+        staticExpectedIndexConfig.put( "spatial.wgs-84-3d.max", Values.doubleArray( new double[]{8.0, 9.0, 10.0} ) );
+
+        staticExpectedIndexConfig.put( "spatial.cartesian.tableId", Values.intValue( 2 ) );
+        staticExpectedIndexConfig.put( "spatial.cartesian.code", Values.intValue( 7203 ) );
+        staticExpectedIndexConfig.put( "spatial.cartesian.dimensions", Values.intValue( 2 ) );
+        staticExpectedIndexConfig.put( "spatial.cartesian.maxLevels", Values.intValue( 15 ) );
+        staticExpectedIndexConfig.put( "spatial.cartesian.min", Values.doubleArray( new double[]{-11.0, -12.0} ) );
+        staticExpectedIndexConfig.put( "spatial.cartesian.max", Values.doubleArray( new double[]{13.0, 14.0} ) );
+
+        staticExpectedIndexConfig.put( "spatial.cartesian-3d.tableId", Values.intValue( 2 ) );
+        staticExpectedIndexConfig.put( "spatial.cartesian-3d.code", Values.intValue( 9157 ) );
+        staticExpectedIndexConfig.put( "spatial.cartesian-3d.dimensions", Values.intValue( 3 ) );
+        staticExpectedIndexConfig.put( "spatial.cartesian-3d.maxLevels", Values.intValue( 10 ) );
+        staticExpectedIndexConfig.put( "spatial.cartesian-3d.min", Values.doubleArray( new double[]{-15.0, -16.0, -17.0} ) );
+        staticExpectedIndexConfig.put( "spatial.cartesian-3d.max", Values.doubleArray( new double[]{18.0, 19.0, 20.0} ) );
+    }
+
     private static final String ZIP_FILE_3_5 = "IndexConfigMigrationIT-3_5-db.zip";
-    private static final Setting<Double> wgs84MinX = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.WGS84, 0, "min" );
-    private static final Setting<Double> wgs84MinY = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.WGS84, 1, "min" );
-    private static final Setting<Double> wgs84MaxX = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.WGS84, 0, "max" );
-    private static final Setting<Double> wgs84MaxY = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.WGS84, 1, "max" );
-    private static final Setting<Double> wgs84_3DMinX = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.WGS84_3D, 0, "min" );
-    private static final Setting<Double> wgs84_3DMinY = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.WGS84_3D, 1, "min" );
-    private static final Setting<Double> wgs84_3DMinZ = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.WGS84_3D, 2, "min" );
-    private static final Setting<Double> wgs84_3DMaxX = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.WGS84_3D, 0, "max" );
-    private static final Setting<Double> wgs84_3DMaxY = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.WGS84_3D, 1, "max" );
-    private static final Setting<Double> wgs84_3DMaxZ = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.WGS84_3D, 2, "max" );
-    private static final Setting<Double> cartesianMinX = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.Cartesian, 0, "min" );
-    private static final Setting<Double> cartesianMinY = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.Cartesian, 1, "min" );
-    private static final Setting<Double> cartesianMaxX = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.Cartesian, 0, "max" );
-    private static final Setting<Double> cartesianMaxY = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.Cartesian, 1, "max" );
-    private static final Setting<Double> cartesian_3DMinX = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.Cartesian_3D, 0, "min" );
-    private static final Setting<Double> cartesian_3DMinY = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.Cartesian_3D, 1, "min" );
-    private static final Setting<Double> cartesian_3DMinZ = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.Cartesian_3D, 2, "min" );
-    private static final Setting<Double> cartesian_3DMaxX = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.Cartesian_3D, 0, "max" );
-    private static final Setting<Double> cartesian_3DMaxY = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.Cartesian_3D, 1, "max" );
-    private static final Setting<Double> cartesian_3DMaxZ = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.Cartesian_3D, 2, "max" );
-    private static final String value_wgs84_min = "-30";
-    private static final String value_wgs84_max = "30";
-    private static final String value_cartesian_min = "-100";
-    private static final String value_cartesian_max = "100";
+
     private static final String propKey = "key";
     private static final Label label1 = Label.label( "label1" );
     private static final Label label2 = Label.label( "label2" );
@@ -148,7 +201,7 @@ class IndexConfigMigrationIT
                 .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
                 .newGraphDatabase();
 
-        Set<CoordinateReferenceSystem> allCRS = Iterables.asSet( CoordinateReferenceSystem.all() );
+        Set<CoordinateReferenceSystem> allCRS = Iterables.asSet( all() );
         try ( Transaction tx = db.beginTx() )
         {
             hasIndexCount( db, 4 );
@@ -169,9 +222,37 @@ class IndexConfigMigrationIT
 
     private static void assertIndexConfiguration( GraphDatabaseAPI db ) throws IndexNotFoundKernelException
     {
-        // todo implement
+        for ( Label label : labels )
+        {
+            Map<String,Value> actualIndexConfig = getIndexConfig( db, label, propKey );
+            Map<String,Value> expectedIndexConfig = new HashMap<>( staticExpectedIndexConfig );
+            for ( Map.Entry<String,Value> entry : actualIndexConfig.entrySet() )
+            {
+                String actualKey = entry.getKey();
+                Value actualValue = entry.getValue();
+                Value expectedValue = expectedIndexConfig.remove( actualKey );
+                assertNotNull( expectedValue, "Actual index config had map entry that was not among expected " + entry );
+                assertEquals( 0, COMPARATOR.compare( expectedValue, actualValue ),
+                        String.format( "Expected and actual index config value differed for %s, expected %s but was %s.", actualKey, expectedValue,
+                                actualValue ) );
+            }
+            assertTrue( expectedIndexConfig.isEmpty(), "Actual index config was missing some values: " + expectedIndexConfig );
+        }
     }
 
+    @SuppressWarnings( "SameParameterValue" )
+    private static Map<String,Value> getIndexConfig( GraphDatabaseAPI db, Label label, String propKey )
+            throws IndexNotFoundKernelException
+    {
+        TokenRead tokenRead = tokenRead( db );
+        IndexingService indexingService = getIndexingService( db );
+        int labelId = tokenRead.nodeLabel( label.name() );
+        int propKeyId = tokenRead.propertyKey( propKey );
+        IndexProxy indexProxy = indexingService.getIndexProxy( SchemaDescriptorFactory.forLabel( labelId, propKeyId ) );
+        return indexProxy.indexConfig();
+    }
+
+    @SuppressWarnings( "SameParameterValue" )
     private static void hasIndexCount( GraphDatabaseAPI db, int expectedIndexCount )
     {
         Iterable<IndexDefinition> indexes = db.schema().getIndexes();
@@ -187,12 +268,11 @@ class IndexConfigMigrationIT
         }
     }
 
-
     private static void createSpatialData( GraphDatabaseService db, Label... labels )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
+            for ( CoordinateReferenceSystem crs : all() )
             {
                 Node node = db.createNode( labels );
                 int dim = crs.getDimension();
@@ -221,30 +301,11 @@ class IndexConfigMigrationIT
 
     private static void setSpatialConfig( GraphDatabaseBuilder builder )
     {
-        builder.setConfig( space_filling_curve_extra_levels, "5" );
-        builder.setConfig( space_filling_curve_bottom_threshold, "0.5" );
-        builder.setConfig( space_filling_curve_top_threshold, "0.99" );
-        builder.setConfig( space_filling_curve_max_bits, "30" );
-        builder.setConfig( wgs84MinX, value_wgs84_min );
-        builder.setConfig( wgs84MinY, value_wgs84_min );
-        builder.setConfig( wgs84MaxX, value_wgs84_max );
-        builder.setConfig( wgs84MaxY, value_wgs84_max );
-        builder.setConfig( wgs84_3DMinX, value_wgs84_min );
-        builder.setConfig( wgs84_3DMinY, value_wgs84_min );
-        builder.setConfig( wgs84_3DMinZ, value_wgs84_min );
-        builder.setConfig( wgs84_3DMaxX, value_wgs84_max );
-        builder.setConfig( wgs84_3DMaxY, value_wgs84_max );
-        builder.setConfig( wgs84_3DMaxZ, value_wgs84_max );
-        builder.setConfig( cartesianMinX, value_cartesian_min );
-        builder.setConfig( cartesianMinY, value_cartesian_min );
-        builder.setConfig( cartesianMaxX, value_cartesian_max );
-        builder.setConfig( cartesianMaxY, value_cartesian_max );
-        builder.setConfig( cartesian_3DMinX, value_cartesian_min );
-        builder.setConfig( cartesian_3DMinY, value_cartesian_min );
-        builder.setConfig( cartesian_3DMinZ, value_cartesian_min );
-        builder.setConfig( cartesian_3DMaxX, value_cartesian_max );
-        builder.setConfig( cartesian_3DMaxY, value_cartesian_max );
-        builder.setConfig( cartesian_3DMaxZ, value_cartesian_max );
+        builder.setConfig( space_filling_curve_max_bits, space_filling_curve_max_bits_value );
+        for ( MinMaxSetting minMaxSetting : MinMaxSetting.values() )
+        {
+            builder.setConfig( minMaxSetting.setting, minMaxSetting.settingValue );
+        }
     }
 
     private static IndexingService getIndexingService( GraphDatabaseAPI db )

@@ -23,6 +23,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.UncheckedIOException;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
@@ -40,7 +41,7 @@ import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 /**
  * Used for online operation of an index.
  */
-public interface IndexAccessor extends Closeable
+public interface IndexAccessor extends Closeable, IndexConfigProvider
 {
     IndexAccessor EMPTY = new Adapter();
 
@@ -261,6 +262,12 @@ public interface IndexAccessor extends Closeable
         public ResourceIterator<File> snapshotFiles()
         {
             return delegate.snapshotFiles();
+        }
+
+        @Override
+        public Map<String,Value> indexConfig()
+        {
+            return delegate.indexConfig();
         }
 
         @Override

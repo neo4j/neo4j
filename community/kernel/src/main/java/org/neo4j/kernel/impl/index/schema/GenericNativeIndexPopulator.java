@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -31,6 +33,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsWriter;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
+import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexes.deleteIndex;
 
@@ -85,5 +88,13 @@ class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,Native
     NativeIndexReader<GenericKey,NativeIndexValue> newReader()
     {
         return new GenericNativeIndexReader( tree, layout, descriptor, spatialSettings, configuration );
+    }
+
+    @Override
+    public Map<String,Value> indexConfig()
+    {
+        Map<String,Value> map = new HashMap<>();
+        spatialSettings.visitIndexSpecificSettings( new SpatialConfigExtractor( map ) );
+        return map;
     }
 }

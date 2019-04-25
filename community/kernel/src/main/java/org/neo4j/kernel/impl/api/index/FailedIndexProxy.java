@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.ResourceIterator;
@@ -102,5 +103,11 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     public ResourceIterator<File> snapshotFiles()
     {
         return emptyResourceIterator();
+    }
+
+    @Override
+    public Map<String,Value> indexConfig()
+    {
+        return populator.indexConfig();
     }
 }

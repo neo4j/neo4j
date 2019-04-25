@@ -35,7 +35,7 @@ import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 /**
  * Used for initial population of an index.
  */
-public interface IndexPopulator
+public interface IndexPopulator extends IndexConfigProvider
 {
     /**
      * Remove all data in the index and paves the way for populating an index.

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -342,6 +343,20 @@ public class FlippableIndexProxy implements IndexProxy
         try
         {
             return delegate.snapshotFiles();
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+
+    @Override
+    public Map<String,Value> indexConfig()
+    {
+        lock.readLock().lock();
+        try
+        {
+            return delegate.indexConfig();
         }
         finally
         {
