@@ -124,7 +124,7 @@ public interface IndexReference extends IndexCapability, SchemaDescriptorSupplie
         @Override
         public SchemaDescriptor schema()
         {
-            return SchemaDescriptor.NO_SCHEMA;
+            return SchemaDescriptor.noSchema();
         }
 
         @Override
@@ -148,7 +148,7 @@ public interface IndexReference extends IndexCapability, SchemaDescriptorSupplie
         @Override
         public String userDescription( TokenNameLookup tokenNameLookup )
         {
-            return SchemaDescriptor.NO_SCHEMA.userDescription( tokenNameLookup );
+            return SchemaDescriptor.noSchema().userDescription( tokenNameLookup );
         }
 
         @Override

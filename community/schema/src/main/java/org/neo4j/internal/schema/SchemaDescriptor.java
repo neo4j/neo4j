@@ -37,97 +37,10 @@ import org.neo4j.lock.ResourceType;
  */
 public interface SchemaDescriptor extends SchemaDescriptorSupplier
 {
-    SchemaDescriptor NO_SCHEMA = new SchemaDescriptor()
+    static SchemaDescriptor noSchema()
     {
-        @Override
-        public LabelSchemaDescriptor asLabelSchemaDescriptor()
-        {
-            throw new IllegalStateException( "NO_SCHEMA cannot be cast to a LabelSchemaDescriptor." );
-        }
-
-        @Override
-        public RelationTypeSchemaDescriptor asRelationshipTypeSchemaDescriptor()
-        {
-            throw new IllegalStateException( "NO_SCHEMA cannot be cast to a RelationTypeSchemaDescriptor." );
-        }
-
-        @Override
-        public FulltextSchemaDescriptor asFulltextSchemaDescriptor()
-        {
-            throw new IllegalStateException( "NO_SCHEMA cannot be cast to a FulltextSchemaDescriptor." );
-        }
-
-        @Override
-        public boolean isAffected( long[] entityIds )
-        {
-            return false;
-        }
-
-        @Override
-        public <R> R computeWith( SchemaComputer<R> computer )
-        {
-            return null;
-        }
-
-        @Override
-        public void processWith( SchemaProcessor processor )
-        {
-        }
-
-        @Override
-        public String userDescription( TokenNameLookup tokenNameLookup )
-        {
-            return "NO_SCHEMA";
-        }
-
-        @Override
-        public int[] getPropertyIds()
-        {
-            return new int[0];
-        }
-
-        @Override
-        public int[] getEntityTokenIds()
-        {
-            return new int[0];
-        }
-
-        @Override
-        public ResourceType keyType()
-        {
-            return null;
-        }
-
-        @Override
-        public EntityType entityType()
-        {
-            return null;
-        }
-
-        @Override
-        public PropertySchemaType propertySchemaType()
-        {
-            return null;
-        }
-
-        @Override
-        public SchemaDescriptor schema()
-        {
-            return null;
-        }
-
-        @Override
-        public IndexType getIndexType()
-        {
-            return IndexType.NOT_AN_INDEX;
-        }
-
-        @Override
-        public IndexConfig getIndexConfig()
-        {
-            return IndexConfig.empty();
-        }
-    };
+        return NoSchemaDescriptor.NO_SCHEMA;
+    }
 
     private static long[] schemaTokenLockingIds( SchemaDescriptor schema )
     {
