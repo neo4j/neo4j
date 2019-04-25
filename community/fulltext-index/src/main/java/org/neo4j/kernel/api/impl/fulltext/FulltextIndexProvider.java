@@ -34,8 +34,8 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
@@ -75,7 +75,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     private final TokenHolders tokenHolders;
     private final OperationalMode operationalMode;
     private final String defaultAnalyzerName;
-    private final String defaultEventuallyConsistentSetting;
+    private final boolean defaultEventuallyConsistentSetting;
     private final Log log;
     private final IndexUpdateSink indexUpdateSink;
     private final ConcurrentMap<StorageIndexReference,FulltextIndexAccessor> openOnlineAccessors;
@@ -93,7 +93,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         this.log = log;
 
         defaultAnalyzerName = config.get( FulltextConfig.fulltext_default_analyzer );
-        defaultEventuallyConsistentSetting = Boolean.toString( config.get( FulltextConfig.eventually_consistent ) );
+        defaultEventuallyConsistentSetting = config.get( FulltextConfig.eventually_consistent );
         indexUpdateSink = new IndexUpdateSink( scheduler, config.get( FulltextConfig.eventually_consistent_index_update_queue_max_length ) );
         openOnlineAccessors = new ConcurrentHashMap<>();
         indexStorageFactory = buildIndexStorageFactory( fileSystem, directoryFactory );
@@ -141,13 +141,12 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
             return new FulltextIndexCapability( fulltextIndexDescriptor.isEventuallyConsistent() );
         }
         SchemaDescriptor schema = descriptor.schema();
-        if ( schema instanceof FulltextSchemaDescriptor )
+        if ( schema.getIndexType() == IndexType.FULLTEXT )
         {
             // The fulltext schema descriptor is readily available with our settings.
             // This could be the situation where the index creation is about to be committed.
             // In that case, the schema descriptor is our own legit type, but the StoreIndexDescriptor is generic.
-            FulltextSchemaDescriptor fulltextSchemaDescriptor = (FulltextSchemaDescriptor) schema;
-            return new FulltextIndexCapability( isEventuallyConsistent( fulltextSchemaDescriptor ) );
+            return new FulltextIndexCapability( isEventuallyConsistent( schema ) );
         }
         // The schema descriptor is probably a generic multi-token descriptor.
         // This happens if it was loaded from the schema store instead of created by our provider.
@@ -166,20 +165,21 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         return new FulltextIndexCapability( fulltextIndexDescriptor.isEventuallyConsistent() );
     }
 
-    private boolean isEventuallyConsistent( FulltextSchemaDescriptor schema )
+    private boolean isEventuallyConsistent( SchemaDescriptor schema )
     {
-        BooleanValue eventuallyConsistent = schema.getIndexConfig().get( INDEX_CONFIG_EVENTUALLY_CONSISTENT );
+        BooleanValue eventuallyConsistent = schema.getIndexConfig().getOrDefault( INDEX_CONFIG_EVENTUALLY_CONSISTENT, BooleanValue.FALSE );
         return eventuallyConsistent.booleanValue();
     }
 
     @Override
     public IndexDescriptor bless( IndexDescriptor index ) throws MisconfiguredIndexException
     {
-        if ( !(index.schema() instanceof FulltextSchemaDescriptor) )
+        if ( index.schema().getIndexType() != IndexType.FULLTEXT )
         {
             // The fulltext index provider only support fulltext indexes.
             throw new MisconfiguredIndexException( InvalidArguments, "The index provider '" + getProviderDescriptor() + "' only supports fulltext index " +
-                    "descriptors. Make sure that fulltext indexes are created using the relevant fulltext index procedures." );
+                    "descriptors. Make sure that fulltext indexes are created using the relevant fulltext index procedures. " +
+                    "Refused to bless the index descriptor: " + index + "." );
         }
         return super.bless( index );
     }
@@ -305,10 +305,9 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
             int[] propertyIds = new int[properties.length];
             tokenHolders.propertyKeyTokens().getOrCreateIds( properties, propertyIds );
 
-            SchemaDescriptor schema = SchemaDescriptorFactory.multiToken( entityTokenIds, type, propertyIds );
             indexConfig = indexConfig.withIfAbsent( INDEX_CONFIG_ANALYZER, Values.stringValue( defaultAnalyzerName ) );
-            indexConfig = indexConfig.withIfAbsent( INDEX_CONFIG_EVENTUALLY_CONSISTENT, Values.stringValue( defaultEventuallyConsistentSetting ) );
-            return new FulltextSchemaDescriptor( schema, indexConfig );
+            indexConfig = indexConfig.withIfAbsent( INDEX_CONFIG_EVENTUALLY_CONSISTENT, Values.booleanValue( defaultEventuallyConsistentSetting ) );
+            return SchemaDescriptor.fulltext( type, indexConfig, entityTokenIds, propertyIds );
         }
         catch ( KernelException e )
         {

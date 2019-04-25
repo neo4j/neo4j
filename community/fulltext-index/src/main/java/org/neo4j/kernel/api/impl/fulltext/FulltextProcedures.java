@@ -171,12 +171,7 @@ public class FulltextProcedures
 
     private IndexConfig createIndexConfig( @Name( value = "config", defaultValue = "{}" ) Map<String,String> config )
     {
-        Map<String,Value> mappedConfig = new HashMap<>();
-        for ( Map.Entry<String,String> entry : config.entrySet() )
-        {
-            mappedConfig.put( entry.getKey(), Values.stringValue( entry.getValue() ) );
-        }
-        return IndexConfig.with( mappedConfig );
+        return FulltextIndexSettings.toIndexConfig( config );
     }
 
     @Description( "Drop the specified index." )

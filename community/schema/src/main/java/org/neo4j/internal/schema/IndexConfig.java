@@ -25,6 +25,7 @@ import org.eclipse.collections.api.tuple.Pair;
 import org.eclipse.collections.impl.factory.Maps;
 
 import java.util.Map;
+import java.util.Objects;
 
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
@@ -86,7 +87,7 @@ public final class IndexConfig
     public IndexConfig withIfAbsent( String key, Value value )
     {
         validate( value );
-        if ( map.contains( key ) )
+        if ( map.containsKey( key ) )
         {
             return this;
         }
@@ -99,8 +100,51 @@ public final class IndexConfig
         return (T) map.get( key );
     }
 
+    public <T extends Value> T getOrDefault( String key, T defaultValue )
+    {
+        T value = get( key );
+        return value != null ? value : defaultValue;
+    }
+
     public RichIterable<Pair<String, Value>> entries()
     {
         return map.keyValuesView();
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( !(o instanceof IndexConfig) )
+        {
+            return false;
+        }
+        IndexConfig that = (IndexConfig) o;
+        return map.equals( that.map );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( map );
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder( "IndexConfig[" );
+        for ( Pair<String,Value> entry : entries() )
+        {
+            sb.append( entry.getOne() ).append( " -> " ).append( entry.getTwo() ).append( ", " );
+        }
+        if ( !map.isEmpty() )
+        {
+            sb.setLength( sb.length() - 2 );
+        }
+        sb.append( ']' );
+        return sb.toString();
     }
 }

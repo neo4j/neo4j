@@ -31,11 +31,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -45,6 +47,7 @@ import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 class FulltextIndexSettings
 {
@@ -57,21 +60,18 @@ class FulltextIndexSettings
             TokenHolder propertyKeyTokenHolder, PartitionedIndexStorage indexStorage, FileSystemAbstraction fileSystem )
     {
         Properties properties = new Properties();
-        if ( descriptor.schema() instanceof FulltextSchemaDescriptor )
+        FulltextSchemaDescriptor schema = descriptor.schema().asFulltextSchemaDescriptor();
+        IndexConfig indexConfig = schema.getIndexConfig();
+        for ( Pair<String,Value> entry : indexConfig.entries() )
         {
-            FulltextSchemaDescriptor schema = (FulltextSchemaDescriptor) descriptor.schema();
-            IndexConfig indexConfig = schema.getIndexConfig();
-            for ( Pair<String,Value> entry : indexConfig.entries() )
-            {
-                properties.put( entry.getOne(), String.valueOf( entry.getTwo().asObject() ) );
-            }
+            properties.put( entry.getOne(), String.valueOf( entry.getTwo().asObject() ) );
         }
         loadPersistedSettings( properties, indexStorage, fileSystem );
         boolean eventuallyConsistent = Boolean.parseBoolean( properties.getProperty( INDEX_CONFIG_EVENTUALLY_CONSISTENT ) );
         String analyzerName = properties.getProperty( INDEX_CONFIG_ANALYZER, defaultAnalyzerName );
         Analyzer analyzer = createAnalyzer( analyzerName );
         List<String> names = new ArrayList<>();
-        for ( int propertyKeyId : descriptor.schema().getPropertyIds() )
+        for ( int propertyKeyId : schema.getPropertyIds() )
         {
             try
             {
@@ -134,5 +134,26 @@ class FulltextIndexSettings
             writer.flush();
             channel.force( true );
         }
+    }
+
+    static IndexConfig toIndexConfig( Map<String,String> map )
+    {
+        IndexConfig config = IndexConfig.empty();
+
+        String analyzer = map.remove( INDEX_CONFIG_ANALYZER );
+        if ( analyzer != null )
+        {
+            config = config.with( INDEX_CONFIG_ANALYZER, Values.stringValue( analyzer ) );
+        }
+
+        String eventuallyConsistent = map.remove( INDEX_CONFIG_EVENTUALLY_CONSISTENT );
+        if ( eventuallyConsistent != null )
+        {
+            config = config.with( INDEX_CONFIG_EVENTUALLY_CONSISTENT, Values.booleanValue( Boolean.parseBoolean( eventuallyConsistent ) ) );
+        }
+
+        // Ignore any other entries that the map might contain.
+
+        return config;
     }
 }

@@ -25,6 +25,9 @@ import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.lock.ResourceType;
 
+import static org.neo4j.internal.schema.IndexType.FULLTEXT;
+import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
+
 /**
  * Internal representation of one schema unit, for example a label-property pair.
  *
@@ -40,6 +43,11 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
     static SchemaDescriptor noSchema()
     {
         return NoSchemaDescriptor.NO_SCHEMA;
+    }
+
+    static FulltextSchemaDescriptor fulltext( EntityType entityType, IndexConfig indexConfig, int[] entityTokenIds, int[] propertyKeyIds )
+    {
+        return new SchemaDescriptorImplementation( FULLTEXT, entityType, PARTIAL_ANY_TOKEN, indexConfig, entityTokenIds, propertyKeyIds );
     }
 
     private static long[] schemaTokenLockingIds( SchemaDescriptor schema )

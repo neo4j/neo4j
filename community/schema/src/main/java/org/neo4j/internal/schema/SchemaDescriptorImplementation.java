@@ -231,13 +231,13 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
         {
             return true;
         }
-        if ( !(o instanceof SchemaDescriptorImplementation) )
+        if ( !(o instanceof SchemaDescriptor) )
         {
             return false;
         }
-        SchemaDescriptorImplementation that = (SchemaDescriptorImplementation) o;
-        return indexType == that.indexType && entityType == that.entityType && propertySchemaType == that.propertySchemaType &&
-                Arrays.equals( entityTokens, that.entityTokens ) && Arrays.equals( propertyIds, that.propertyIds );
+        SchemaDescriptor that = (SchemaDescriptor) o;
+        return indexType == that.getIndexType() && entityType == that.entityType() && propertySchemaType == that.propertySchemaType() &&
+                Arrays.equals( entityTokens, that.getEntityTokenIds() ) && Arrays.equals( propertyIds, that.getPropertyIds() );
     }
 
     @Override
