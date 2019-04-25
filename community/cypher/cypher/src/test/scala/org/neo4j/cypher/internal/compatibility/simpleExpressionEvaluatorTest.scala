@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility
 
+import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.v4_0.expressions.{FunctionInvocation, FunctionName}
 import org.neo4j.cypher.internal.v4_0.util.DummyPosition
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite

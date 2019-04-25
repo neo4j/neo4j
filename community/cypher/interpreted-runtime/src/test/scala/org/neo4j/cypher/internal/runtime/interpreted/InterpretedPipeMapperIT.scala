@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.mockito.Mockito.{atLeastOnce, verify, when}
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.{PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.{PlanContext, TokenContext}
@@ -30,16 +29,19 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken.Re
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => legacy}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
+import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.RelTypeId
+import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 import scala.collection.mutable
 
-class InterpretedPipeMapperIT extends CypherFunSuite with LogicalPlanningTestSupport {
+class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSupport  {
+  private implicit val idGen: SequentialIdGen = new SequentialIdGen()
 
-  val planContext: PlanContext = newMockedPlanContext()
+  val planContext: PlanContext = mock[PlanContext]
   val semanticTable = new SemanticTable(resolvedRelTypeNames =
     mutable.Map("existing1" -> RelTypeId(1),
       "existing2" -> RelTypeId(2),

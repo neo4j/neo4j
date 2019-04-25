@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{Community
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, expressionVariableAllocation}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
-import org.neo4j.cypher.internal.v4_0.parser.{CypherParser, Expressions}
+import org.neo4j.cypher.internal.v4_0.parser.Expressions
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.values.AnyValue
@@ -34,8 +34,6 @@ import org.parboiled.scala.{ReportingParseRunner, Rule1}
 class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
 
   import SimpleInternalExpressionEvaluator.CONVERTERS
-
-  private val parser = new CypherParser()
 
   override def evaluate(expression: String): AnyValue = {
     try {
