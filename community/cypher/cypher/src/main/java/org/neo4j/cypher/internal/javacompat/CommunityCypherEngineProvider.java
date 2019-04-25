@@ -61,7 +61,7 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
     }
 
     @Override
-    protected QueryExecutionEngine createEngine( Dependencies deps, GraphDatabaseAPI graphAPI )
+    protected QueryExecutionEngine createEngine( Dependencies deps, GraphDatabaseAPI graphAPI, boolean isSystemDatabase )
     {
         GraphDatabaseCypherService queryService = new GraphDatabaseCypherService( graphAPI );
         deps.satisfyDependency( queryService );
@@ -70,7 +70,6 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
         LogService logService = resolver.resolveDependency( LogService.class );
         Monitors monitors = resolver.resolveDependency( Monitors.class );
         Config config = resolver.resolveDependency( Config.class );
-        boolean isSystemDatabase = graphAPI.databaseLayout().getDatabaseName().startsWith( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
         CypherConfiguration cypherConfig = CypherConfiguration.fromConfig( config );
         CypherPlannerConfiguration plannerConfig = cypherConfig.toCypherPlannerConfiguration( config, isSystemDatabase );
         CypherRuntimeConfiguration runtimeConfig = cypherConfig.toCypherRuntimeConfiguration();

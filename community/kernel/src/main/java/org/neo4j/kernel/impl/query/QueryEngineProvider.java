@@ -33,12 +33,12 @@ import static org.neo4j.helpers.collection.Iterables.asList;
 @Service
 public abstract class QueryEngineProvider implements NamedService
 {
-    protected abstract QueryExecutionEngine createEngine( Dependencies deps, GraphDatabaseAPI graphAPI );
+    protected abstract QueryExecutionEngine createEngine( Dependencies deps, GraphDatabaseAPI graphAPI, boolean isSystemDatabase );
 
     protected abstract int enginePriority();
 
     public static QueryExecutionEngine initialize( Dependencies deps, GraphDatabaseAPI graphAPI,
-            Iterable<QueryEngineProvider> providers )
+            Iterable<QueryEngineProvider> providers, boolean isSystemDatabase )
     {
         List<QueryEngineProvider> engineProviders = asList( providers );
         engineProviders.sort( Comparator.comparingInt( QueryEngineProvider::enginePriority ) );
@@ -48,7 +48,7 @@ public abstract class QueryEngineProvider implements NamedService
         {
             return noEngine();
         }
-        QueryExecutionEngine engine = provider.createEngine( deps, graphAPI );
+        QueryExecutionEngine engine = provider.createEngine( deps, graphAPI, isSystemDatabase );
         return deps.satisfyDependency( engine );
     }
 

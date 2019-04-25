@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -46,8 +47,9 @@ public class SystemDatabaseInnerAccessor<DB extends DatabaseContext> implements 
 
     public SystemDatabaseInnerAccessor( DatabaseManager<DB> databases, SystemDatabaseInnerEngine engine )
     {
-        assert databases.getDatabaseContext( SYSTEM_DATABASE_NAME ).isPresent();
-        this.systemDb = databases.getDatabaseContext( SYSTEM_DATABASE_NAME ).get().databaseFacade();
+        DatabaseId systemDatabaseId = new DatabaseId( SYSTEM_DATABASE_NAME );
+        assert databases.getDatabaseContext( systemDatabaseId ).isPresent();
+        this.systemDb = databases.getDatabaseContext( systemDatabaseId ).get().databaseFacade();
         this.engine = engine;
         ThreadToStatementContextBridge txBridge = this.systemDb.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         this.contextFactory = Neo4jTransactionalContextFactory.create( systemDb, this, txBridge );

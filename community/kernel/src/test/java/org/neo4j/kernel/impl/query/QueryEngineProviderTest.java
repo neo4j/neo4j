@@ -44,12 +44,12 @@ class QueryEngineProviderTest
         GraphDatabaseAPI graphAPI = mock( GraphDatabaseAPI.class );
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
         QueryExecutionEngine executionEngine2 = mock( QueryExecutionEngine.class );
-        when( provider1.createEngine( any(), any() ) ).thenReturn( executionEngine );
-        when( provider2.createEngine( any(), any() ) ).thenReturn( executionEngine2 );
+        when( provider1.createEngine( any(), any(), any() ) ).thenReturn( executionEngine );
+        when( provider2.createEngine( any(), any(), any() ) ).thenReturn( executionEngine2 );
 
         // When
         Iterable<QueryEngineProvider> providers = Iterables.asIterable( provider1, provider2 );
-        QueryExecutionEngine engine = QueryEngineProvider.initialize( deps, graphAPI, providers );
+        QueryExecutionEngine engine = QueryEngineProvider.initialize( deps, graphAPI, providers, false );
 
         // Then
         assertSame( executionEngine, engine );
@@ -64,11 +64,11 @@ class QueryEngineProviderTest
         Dependencies deps = new Dependencies();
         GraphDatabaseAPI graphAPI = mock( GraphDatabaseAPI.class );
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
-        when( provider.createEngine( any(), any() ) ).thenReturn( executionEngine );
+        when( provider.createEngine( any(), any(), any() ) ).thenReturn( executionEngine );
 
         // When
         Iterable<QueryEngineProvider> providers = Iterables.asIterable( provider );
-        QueryExecutionEngine engine = QueryEngineProvider.initialize( deps, graphAPI, providers );
+        QueryExecutionEngine engine = QueryEngineProvider.initialize( deps, graphAPI, providers, false );
 
         // Then
         assertSame( executionEngine, engine );

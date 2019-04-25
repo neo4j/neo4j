@@ -19,17 +19,11 @@
  */
 package org.neo4j.dbms.database;
 
-import org.eclipse.collections.impl.block.factory.Comparators;
-
-import java.util.Comparator;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
 
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
 public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
 {
@@ -80,46 +74,4 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
      * @return a Map from database names to database objects.
      */
     SortedMap<DatabaseId,DB> registeredDatabases();
-
-    /**
-     * This is a custom comparator for databases, which always places the system database to be the first (lowest) in any sorted order.
-     * A custom ordering may be provided for the rest of the managed databases, in the form of a wrapped "delegate" comparator. However,
-     * regardless of what comparator is provided, system database will always sort lower than every other database.
-     *
-     * If no custom comparator is provided then the databases are sorted lexicographically by their name.
-     */
-    class DatabasesComparator implements Comparator<String>
-    {
-        private final Comparator<String> delegate;
-
-        public DatabasesComparator( Comparator<String> delegate )
-        {
-            this.delegate = delegate;
-        }
-
-        public DatabasesComparator()
-        {
-            this.delegate = Comparators.naturalOrder();
-        }
-
-        @Override
-        public int compare( String left, String right )
-        {
-            boolean leftIsSystem = isSystemDatabase( left );
-            boolean rightIsSystem = isSystemDatabase( right );
-            if ( leftIsSystem || rightIsSystem )
-            {
-                return Boolean.compare( rightIsSystem, leftIsSystem );
-            }
-            else
-            {
-                return delegate.compare( left, right );
-            }
-        }
-
-        private boolean isSystemDatabase( String name )
-        {
-            return Objects.equals( name, SYSTEM_DATABASE_NAME );
-        }
-    }
 }
