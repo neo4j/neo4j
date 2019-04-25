@@ -33,7 +33,7 @@ import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
-import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
+import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySubscriber}
 import org.neo4j.kernel.impl.query.QuerySubscriber.NOT_A_SUBSCRIBER
 import org.neo4j.kernel.impl.util.DefaultValueMapper
 import org.neo4j.monitoring.Monitors
@@ -66,18 +66,20 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val managementService: Datab
   def run[RESULT](logicalQuery: LogicalQuery,
                   runtime: CypherRuntime[CONTEXT],
                   input: InputDataStream,
-                  resultMapper: (CONTEXT, RuntimeResult) => RESULT): RESULT = {
-    run(compile(logicalQuery, runtime), input, resultMapper)
+                  resultMapper: (CONTEXT, RuntimeResult) => RESULT,
+                  subscriber: QuerySubscriber): RESULT = {
+    run(compile(logicalQuery, runtime), input, resultMapper, subscriber)
   }
 
   def run[RESULT](executableQuery: ExecutionPlan,
                   input: InputDataStream,
-                  resultMapper: (CONTEXT, RuntimeResult) => RESULT): RESULT = {
+                  resultMapper: (CONTEXT, RuntimeResult) => RESULT,
+                  subscriber: QuerySubscriber): RESULT = {
     val tx = cypherGraphDb.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
     val queryContext = newQueryContext(tx)
     val runtimeContext = newRuntimeContext(tx)
 
-    val result = executableQuery.run(queryContext, doProfile = false, VirtualValues.EMPTY_MAP, prePopulateResults = true, input, NOT_A_SUBSCRIBER)
+    val result = executableQuery.run(queryContext, doProfile = false, VirtualValues.EMPTY_MAP, prePopulateResults = true, input, subscriber)
     resultMapper(runtimeContext, result)
   }
 

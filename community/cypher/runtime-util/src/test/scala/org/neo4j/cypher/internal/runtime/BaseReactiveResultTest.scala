@@ -28,7 +28,7 @@ import org.neo4j.values.storable.Values.{longValue, stringValue}
 
 import scala.collection.mutable.ArrayBuffer
 
-abstract class BaseReactiveResultTest extends CypherFunSuite{
+trait BaseReactiveResultTest extends CypherFunSuite{
   test("should handle requesting one record at a time") {
     //Given
     val subscriber = new TestSubscriber

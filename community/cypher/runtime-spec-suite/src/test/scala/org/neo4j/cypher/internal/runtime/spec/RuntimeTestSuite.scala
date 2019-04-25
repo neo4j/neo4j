@@ -33,6 +33,7 @@ import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
 import org.neo4j.dbms.database.DatabaseManagementService
 import org.neo4j.graphdb._
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.{AnyValue, AnyValues}
@@ -116,26 +117,30 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   }
 
   // EXECUTE
+  def execute(logicalQuery: LogicalQuery,
+              runtime: CypherRuntime[CONTEXT],
+              input: InputValues): RuntimeResult =
+    runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (_, result) => result, QuerySubscriber.NOT_A_SUBSCRIBER)
 
   def execute(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT],
-              input: InputValues
-             ): RuntimeResult =
-    runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (_, result) => result)
+              input: InputValues,
+              subscriber: QuerySubscriber): RuntimeResult =
+    runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (_, result) => result, subscriber)
 
   def execute(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT],
-              inputStream: InputDataStream
+              inputStream: InputDataStream,
              ): RuntimeResult =
-    runtimeTestSupport.run(logicalQuery, runtime, inputStream, (_, result) => result)
+    runtimeTestSupport.run(logicalQuery, runtime, inputStream, (_, result) => result, QuerySubscriber.NOT_A_SUBSCRIBER)
 
   def execute(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT]
              ): RuntimeResult =
-    runtimeTestSupport.run(logicalQuery, runtime, NoInput, (_, result) => result)
+    runtimeTestSupport.run(logicalQuery, runtime, NoInput, (_, result) => result, QuerySubscriber.NOT_A_SUBSCRIBER)
 
   def execute(executablePlan: ExecutionPlan): RuntimeResult =
-    runtimeTestSupport.run(executablePlan, NoInput, (_, result) => result)
+    runtimeTestSupport.run(executablePlan, NoInput, (_, result) => result, QuerySubscriber.NOT_A_SUBSCRIBER)
 
   def buildPlan(logicalQuery: LogicalQuery,
                 runtime: CypherRuntime[CONTEXT]): ExecutionPlan =
@@ -145,7 +150,8 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
                         runtime: CypherRuntime[CONTEXT],
                         input: InputValues
                        ): (RuntimeResult, CONTEXT) =
-    runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (context, result) => (result, context))
+    runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (context, result) => (result, context),
+                           QuerySubscriber.NOT_A_SUBSCRIBER)
 
   def executeAndAssertCondition(logicalQuery: LogicalQuery,
                                 input: InputValues,
@@ -164,7 +170,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   val NO_INPUT = new InputValues
 
-  def inputValues(rows: Array[Any]*): InputValues =
+  def inputValues(rows: Array[_]*): InputValues =
     new InputValues().and(rows: _*)
 
   def batchedInputValues(batchSize: Int, rows: Array[Any]*): InputValues = {
@@ -184,17 +190,20 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   }
 
   class InputValues() {
-    val batches = new ArrayBuffer[IndexedSeq[Array[Any]]]
+    val batches = new ArrayBuffer[IndexedSeq[Array[_]]]
 
-    def and(rows: Array[Any]*): InputValues = {
+    def and(rows: Array[_]*): InputValues = {
       batches += rows.toIndexedSeq
       this
     }
 
-    def flatten: IndexedSeq[Array[Any]] =
+    def flatten: IndexedSeq[Array[_]] =
       batches.flatten
 
-    def stream(): BufferInputStream = new BufferInputStream(batches.map(_.map(row => row.map(ValueUtils.of))))
+    def stream(): BufferInputStream = new BufferInputStream(batches.map(_.map(row => row.map {
+      case anyValue: AnyValue => anyValue
+      case any => ValueUtils.of(any)
+    })))
   }
 
   class BufferInputStream(data: ArrayBuffer[IndexedSeq[Array[AnyValue]]]) extends InputDataStream {
