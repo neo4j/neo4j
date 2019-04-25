@@ -57,17 +57,25 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
 
   override def notifications: Set[InternalNotification] = Set.empty
 
-  private val customSubscriber = new QuerySubscriber() {
-    override def onResult(numberOfFields: Int): Unit = {}
-    override def onRecord(): Unit = {}
-    override def onField(offset: Int, value: AnyValue): Unit = {}
-    override def onRecordCompleted(): Unit = {}
+  /**
+    * A version of NOT_A_SUBSCRIBER that will throw whenever it is being called,
+    * either a new error or by passing along occurring errors.
+    */
+  private val customSubscriber: QuerySubscriber = new QuerySubscriber() {
+    override def onResult(numberOfFields: Int): Unit = throwError()
+    override def onRecord(): Unit = throwError()
+    override def onField(offset: Int, value: AnyValue): Unit = throwError()
+    override def onRecordCompleted(): Unit = throwError()
     override def onError(throwable: Throwable): Unit = {
       if (throwable.getMessage.contains(s" already exists with label `Database` and property `name` = "))
         throw new IllegalStateException("Can't create already existing database")
       else
         throw throwable
     }
-    override def onResultCompleted(statistics: QueryStatistics): Unit = {}
+    override def onResultCompleted(statistics: QueryStatistics): Unit = throwError()
+    private def throwError(): Unit = {
+      throw new UnsupportedOperationException("Invalid operation, can't use this as a subscriber")
+    }
+    override def equals(obj: Any): Boolean = QuerySubscriber.NOT_A_SUBSCRIBER.equals(obj)
   }
 }

@@ -54,7 +54,7 @@ class StandardInternalExecutionResult(context: QueryContext,
     // OBS: check before materialization
     val consumedBeforeInit = runtimeResult.consumptionState == ConsumptionState.EXHAUSTED
     //NOTE: for now we never materialize when using reactive API
-    val notReactive = subscriber == QuerySubscriber.NOT_A_SUBSCRIBER
+    val notReactive = subscriber.equals(QuerySubscriber.NOT_A_SUBSCRIBER)
 
     // By policy we materialize the result directly unless it's a read only query.
     if (queryType != READ_ONLY && notReactive) {

@@ -19,12 +19,17 @@ package org.neo4j.cypher.internal.v4_0.ast.semantics
 sealed trait SemanticFeature
 
 sealed trait FeatureToString {
-  override def toString: String = this.getClass.getSimpleName.toLowerCase.replace("multiple","multiple ").replace("$","")
+  override def toString: String = name
+  def name: String
 }
 
 object SemanticFeature {
-  case object MultipleDatabases extends SemanticFeature with FeatureToString
-  case object MultipleGraphs extends SemanticFeature with FeatureToString
+  case object MultipleDatabases extends SemanticFeature with FeatureToString {
+    override def name: String = "multiple databases"
+  }
+  case object MultipleGraphs extends SemanticFeature with FeatureToString {
+    override def name: String = "multiple graphs"
+  }
   case object WithInitialQuerySignature extends SemanticFeature
   case object Cypher10Support extends SemanticFeature
   case object Cypher9Comparability extends SemanticFeature

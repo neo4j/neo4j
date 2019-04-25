@@ -32,7 +32,7 @@ import org.neo4j.logging.LogProvider;
  */
 public class SystemExecutionEngine extends ExecutionEngine
 {
-    private org.neo4j.cypher.internal.ExecutionEngine normalExecutionEngine;
+    private org.neo4j.cypher.internal.ExecutionEngine innerCypherExecutionEngine; // doesn't understand ddl
 
     /**
      * Creates an execution engine around the given graph database wrapping an internal compiler factory for two level Cypher runtime.
@@ -42,12 +42,14 @@ public class SystemExecutionEngine extends ExecutionEngine
     public SystemExecutionEngine( GraphDatabaseQueryService queryService, LogProvider logProvider, CompilerFactory systemCompilerFactory,
             CompilerFactory normalCompilerFactory )
     {
-        normalExecutionEngine = makeExecutionEngine( queryService, logProvider, new CompilerLibrary( normalCompilerFactory, this::normalExecutionEngine ) );
-        cypherExecutionEngine = makeExecutionEngine( queryService, logProvider, new CompilerLibrary( systemCompilerFactory, this::normalExecutionEngine ) );
+        innerCypherExecutionEngine =
+                makeExecutionEngine( queryService, logProvider, new CompilerLibrary( normalCompilerFactory, this::normalExecutionEngine ) );
+        cypherExecutionEngine = // only understands ddl
+                makeExecutionEngine( queryService, logProvider, new CompilerLibrary( systemCompilerFactory, this::normalExecutionEngine ) );
     }
 
     protected org.neo4j.cypher.internal.ExecutionEngine normalExecutionEngine()
     {
-        return normalExecutionEngine;
+        return innerCypherExecutionEngine;
     }
 }
