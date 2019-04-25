@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, MutableMaps, ValuePopulation}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, MapExecutionContext, MutableMaps, ValuePopulation}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.values.AnyValue
 
 case class ProduceResultsPipe(source: Pipe, columns: Seq[String])
                              (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[MapExecutionContext] = {
     // do not register this pipe as parent as it does not do anything except filtering of already fetched
     // key-value pairs and thus should not have any stats
 

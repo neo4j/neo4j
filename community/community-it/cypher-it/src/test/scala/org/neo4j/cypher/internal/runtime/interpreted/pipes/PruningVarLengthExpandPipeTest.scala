@@ -367,7 +367,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val sourcePipe2 = new FakePipe(Iterator(Map("from" -> startNode)))
     val pipeUnderTest = createPipe(sourcePipe, min, max, SemanticDirection.BOTH)
     val pipe = VarLengthExpandPipe(sourcePipe2, "from", "r", "to", SemanticDirection.BOTH, SemanticDirection.BOTH, types, min, Some(max), nodeInScope = false)()
-    val comparison = DistinctPipe(pipe, Array(DistinctPipe.GroupingCol("from", Variable("from")), DistinctPipe.GroupingCol("to", Variable("to"))))()
+    val comparison = ProduceResultsPipe(DistinctPipe(pipe, Array(DistinctPipe.GroupingCol("from", Variable("from")), DistinctPipe.GroupingCol("to", Variable("to"))))(), Seq("from", "to"))()
 
     val distinctExpand = graph.withTx { tx =>
       withQueryState(graph, tx, Array.empty, { queryState =>
@@ -422,10 +422,6 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
   private def createPipe(src: FakePipe, min: Int, max: Int, outgoing: SemanticDirection) = {
     PruningVarLengthExpandPipe(src, "from", "to", types, outgoing, min, max)()
-  }
-
-  private def createReferencePipe(src: FakePipe, min: Int, max: Int, outgoing: SemanticDirection) = {
-    LegacyPruningVarLengthExpandPipe(src, "from", "to", types, outgoing, min, max)()
   }
 
   private def createPipe(src: FakePipe,
