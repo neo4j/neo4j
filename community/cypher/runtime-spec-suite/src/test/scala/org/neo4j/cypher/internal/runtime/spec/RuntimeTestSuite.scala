@@ -368,14 +368,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       } else if (maybeStatisticts.exists(_ != left.queryStatistics())) {
         MatchResult(matches = false, s"Expected statistics ${left.queryStatistics()}, got ${maybeStatisticts.get}", "")
       } else {
-        val rows = new ArrayBuffer[Array[AnyValue]]
-        left.accept(new QueryResult.QueryResultVisitor[Exception] {
-          override def visit(row: QueryResult.Record): Boolean = {
-            val valueArray = row.fields()
-            rows += util.Arrays.copyOf(valueArray, valueArray.length)
-            true
-          }
-        })
+        val rows = consume(left)
         MatchResult(
           rowsMatcher.matches(columns, rows),
           s"""Expected:
@@ -389,6 +382,16 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
         )
       }
     }
+  }
+
+  def consume(left: RuntimeResult): ArrayBuffer[Array[AnyValue]] = {
+    val rows = new ArrayBuffer[Array[AnyValue]]
+    left.accept((row: QueryResult.Record) => {
+      val valueArray = row.fields()
+      rows += util.Arrays.copyOf(valueArray, valueArray.length)
+      true
+    })
+    rows
   }
 
   def inOrder(rows: Iterable[Array[_]]): RowsMatcher = {
