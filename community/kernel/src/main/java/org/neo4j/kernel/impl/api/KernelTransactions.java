@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
+import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.resources.CpuClock;
@@ -88,7 +89,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final StatementOperationParts statementOperations;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final TransactionCommitProcess transactionCommitProcess;
-    private final TransactionHooks hooks;
+    private final DatabaseTransactionEventListeners eventListeners;
     private final TransactionMonitor transactionMonitor;
     private final AvailabilityGuard databaseAvailabilityGuard;
     private final Tracers tracers;
@@ -143,7 +144,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
 
     public KernelTransactions( Config config, StatementLocksFactory statementLocksFactory, ConstraintIndexCreator constraintIndexCreator,
             StatementOperationParts statementOperations, TransactionHeaderInformationFactory txHeaderFactory,
-            TransactionCommitProcess transactionCommitProcess, TransactionHooks hooks, TransactionMonitor transactionMonitor,
+            TransactionCommitProcess transactionCommitProcess, DatabaseTransactionEventListeners eventListeners, TransactionMonitor transactionMonitor,
             AvailabilityGuard databaseAvailabilityGuard, Tracers tracers, StorageEngine storageEngine, GlobalProcedures globalProcedures,
             TransactionIdStore transactionIdStore, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef,
             AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability, VersionContextSupplier versionContextSupplier,
@@ -157,7 +158,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.statementOperations = statementOperations;
         this.transactionHeaderInformationFactory = txHeaderFactory;
         this.transactionCommitProcess = transactionCommitProcess;
-        this.hooks = hooks;
+        this.eventListeners = eventListeners;
         this.transactionMonitor = transactionMonitor;
         this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.tracers = tracers;
@@ -392,7 +393,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         public KernelTransactionImplementation newInstance()
         {
             KernelTransactionImplementation tx =
-                    new KernelTransactionImplementation( config, statementOperations, hooks,
+                    new KernelTransactionImplementation( config, statementOperations, eventListeners,
                             constraintIndexCreator, globalProcedures, transactionHeaderInformationFactory,
                             transactionCommitProcess, transactionMonitor, localTxPool, clock, cpuClockRef, heapAllocationRef,
                             tracers.getTransactionTracer(),

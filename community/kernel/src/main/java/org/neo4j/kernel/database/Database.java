@@ -69,7 +69,6 @@ import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.StackingQueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -129,7 +128,7 @@ import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
-import org.neo4j.kernel.internal.DatabaseTransactionEventListeners;
+import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -607,11 +606,11 @@ public class Database extends LifecycleAdapter
         StatementOperationParts statementOperationParts = databaseDependencies.satisfyDependency(
                 buildStatementOperations( cpuClockRef, heapAllocationRef ) );
 
-        TransactionHooks hooks = new TransactionHooks();
-
+        DatabaseTransactionEventListeners databaseTransactionEventListeners =
+                new DatabaseTransactionEventListeners( facade, transactionEventListeners, databaseId );
         KernelTransactions kernelTransactions = life.add(
-                new KernelTransactions( config, statementLocksFactory, constraintIndexCreator, statementOperationParts,
-                        transactionHeaderInformationFactory, transactionCommitProcess, hooks, transactionStats, databaseAvailabilityGuard, globalTracers,
+                new KernelTransactions( config, statementLocksFactory, constraintIndexCreator, statementOperationParts, transactionHeaderInformationFactory,
+                        transactionCommitProcess, databaseTransactionEventListeners, transactionStats, databaseAvailabilityGuard, globalTracers,
                         storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
                         heapAllocationRef, accessCapability, versionContextSupplier, collectionsFactorySupplier,
                         constraintSemantics, databaseSchemaState, tokenHolders, getDatabaseId(), indexingService, labelScanStore, indexStatisticsStore,
@@ -619,10 +618,8 @@ public class Database extends LifecycleAdapter
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 
-        final KernelImpl kernel = new KernelImpl( kernelTransactions, hooks, databaseHealth, transactionStats, globalProcedures,
-                config, storageEngine );
+        KernelImpl kernel = new KernelImpl( kernelTransactions, databaseHealth, transactionStats, globalProcedures, config, storageEngine );
 
-        kernel.registerTransactionHook( new DatabaseTransactionEventListeners( facade, transactionEventListeners, databaseId ) );
         life.add( kernel );
 
         final DatabaseFileListing fileListing = new DatabaseFileListing( databaseLayout, logFiles, labelScanStore, indexingService, storageEngine );

@@ -97,6 +97,8 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
+import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
+import org.neo4j.kernel.internal.event.TransactionListenersState;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
@@ -137,7 +139,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final CollectionsFactory collectionsFactory;
 
     // Logic
-    private final TransactionHooks hooks;
+    private final DatabaseTransactionEventListeners eventListeners;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final StorageEngine storageEngine;
     private final TransactionTracer transactionTracer;
@@ -160,7 +162,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
     private TxState txState;
     private volatile TransactionWriteState writeState;
-    private TransactionHooks.TransactionHooksState hooksState;
     private final KernelStatement currentStatement;
     private final List<CloseListener> closeListeners = new ArrayList<>( 2 );
     private SecurityContext securityContext;
@@ -199,7 +200,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final Lock terminationReleaseLock = new ReentrantLock();
 
     public KernelTransactionImplementation( Config config, StatementOperationParts statementOperations,
-            TransactionHooks hooks, ConstraintIndexCreator constraintIndexCreator, GlobalProcedures globalProcedures,
+            DatabaseTransactionEventListeners eventListeners, ConstraintIndexCreator constraintIndexCreator, GlobalProcedures globalProcedures,
             TransactionHeaderInformationFactory headerInformationFactory, TransactionCommitProcess commitProcess, TransactionMonitor transactionMonitor,
             Pool<KernelTransactionImplementation> pool, Clock clock,
             AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, TransactionTracer transactionTracer,
@@ -209,7 +210,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
             AvailabilityGuard databaseAvailabilityGuard )
     {
-        this.hooks = hooks;
+        this.eventListeners = eventListeners;
         this.constraintIndexCreator = constraintIndexCreator;
         this.headerInformationFactory = headerInformationFactory;
         this.commitProcess = commitProcess;
@@ -570,7 +571,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             if ( failure || !success || isTerminated() )
             {
-                rollback();
+                rollback( null );
                 failOnNonExplicitRollbackIfNeeded();
                 return ROLLBACK;
             }
@@ -646,18 +647,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         boolean success = false;
         long txId = READ_ONLY;
-
+        TransactionListenersState listenersState = null;
         try ( CommitEvent commitEvent = transactionEvent.beginCommitEvent() )
         {
-            // Trigger transaction "before" hooks.
+            // Trigger transaction "before" event listeners.
             if ( hasDataChanges() )
             {
                 try
                 {
-                    hooksState = hooks.beforeCommit( txState, this, storageReader );
-                    if ( hooksState != null && hooksState.failed() )
+                    listenersState = eventListeners.beforeCommit( txState, this, storageReader );
+                    if ( listenersState != null && listenersState.isFailed() )
                     {
-                        Throwable cause = hooksState.failure();
+                        Throwable cause = listenersState.failure();
                         throw new TransactionFailureException( Status.Transaction.TransactionHookFailed, cause, "" );
                     }
                 }
@@ -728,16 +729,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             if ( !success )
             {
-                rollback();
+                rollback( listenersState );
             }
             else
             {
-                afterCommit( txId );
+                afterCommit( txId, listenersState );
             }
         }
     }
 
-    private void rollback() throws KernelException
+    private void rollback( TransactionListenersState listenersState ) throws KernelException
     {
         try
         {
@@ -780,7 +781,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
         finally
         {
-            afterRollback();
+            afterRollback( listenersState );
         }
     }
 
@@ -918,14 +919,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private void afterCommit( long txId )
+    private void afterCommit( long txId, TransactionListenersState listenersState )
     {
         try
         {
             markAsClosed( txId );
             if ( beforeHookInvoked )
             {
-                hooks.afterCommit( txState, this, hooksState );
+                eventListeners.afterCommit( txState, this, listenersState );
             }
         }
         finally
@@ -934,14 +935,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private void afterRollback()
+    private void afterRollback( TransactionListenersState listenersState )
     {
         try
         {
             markAsClosed( ROLLBACK );
             if ( beforeHookInvoked )
             {
-                hooks.afterRollback( txState, this, hooksState );
+                eventListeners.afterRollback( txState, this, listenersState );
             }
         }
         finally
@@ -976,7 +977,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             transactionEvent = null;
             txState = null;
             collectionsFactory.release();
-            hooksState = null;
             closeListeners.clear();
             reuseCount++;
             userMetaData = emptyMap();

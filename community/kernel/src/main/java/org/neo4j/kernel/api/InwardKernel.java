@@ -53,13 +53,6 @@ public interface InwardKernel extends Kernel
             throws TransactionFailureException;
 
     /**
-     * Registers a {@link TransactionHook} that will receive notifications about committing transactions
-     * and the changes they commit.
-     * @param hook {@link TransactionHook} for receiving notifications about transactions to commit.
-     */
-    void registerTransactionHook( TransactionHook hook );
-
-    /**
      * Register a procedure that should be available from this kernel. This is not a transactional method, the procedure is not
      * durably stored, and is not propagated in a cluster.
      *

@@ -461,208 +461,6 @@ public class TestTransactionEvents
         assertEquals( 3, intArray[2] );
     }
 
-    private static class MyTxEventListener implements TransactionEventListener<Object>
-    {
-        Map<String,Object> nodeProps = new HashMap<>();
-        Map<String,Object> relProps = new HashMap<>();
-
-        @Override
-        public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
-        {
-            for ( PropertyEntry<Node> entry : data.removedNodeProperties() )
-            {
-                String key = entry.key();
-                Object value = entry.previouslyCommittedValue();
-                nodeProps.put( key, value );
-            }
-            for ( PropertyEntry<Relationship> entry : data.removedRelationshipProperties() )
-            {
-                relProps.put( entry.key(), entry.previouslyCommittedValue() );
-            }
-        }
-
-        @Override
-        public void afterRollback( TransactionData data, Object state, GraphDatabaseService databaseService )
-        {
-        }
-
-        @Override
-        public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService )
-        {
-            return null;
-        }
-    }
-
-    private static void verifyListenerCalls( List<TransactionEventListener<Object>> listeners, boolean txSuccess )
-    {
-        for ( TransactionEventListener<Object> listener : listeners )
-        {
-            DummyTransactionEventListener<Object> realListener =
-                    (DummyTransactionEventListener<Object>) ((FailingEventListener<Object>) listener).source;
-            if ( txSuccess )
-            {
-                assertEquals( Integer.valueOf( 0 ), realListener.beforeCommit );
-                assertEquals( Integer.valueOf( 1 ), realListener.afterCommit );
-            }
-            else
-            {
-                if ( realListener.counter > 0 )
-                {
-                    assertEquals( Integer.valueOf( 0 ), realListener.beforeCommit );
-                    assertEquals( Integer.valueOf( 1 ), realListener.afterRollback );
-                }
-            }
-        }
-    }
-
-    private enum RelTypes implements RelationshipType
-    {
-        TXEVENT
-    }
-
-    private static class FailingEventListener<T> implements TransactionEventListener<T>
-    {
-        private final TransactionEventListener<T> source;
-        private final boolean willFail;
-
-        FailingEventListener( TransactionEventListener<T> source, boolean willFail )
-        {
-            this.source = source;
-            this.willFail = willFail;
-        }
-
-        @Override
-        public void afterCommit( TransactionData data, T state, GraphDatabaseService databaseService )
-        {
-            source.afterCommit( data, state, databaseService );
-        }
-
-        @Override
-        public void afterRollback( TransactionData data, T state, GraphDatabaseService databaseService )
-        {
-            source.afterRollback( data, state, databaseService );
-        }
-
-        @Override
-        public T beforeCommit( TransactionData data, GraphDatabaseService databaseService ) throws Exception
-        {
-            try
-            {
-                return source.beforeCommit( data, databaseService );
-            }
-            finally
-            {
-                if ( willFail )
-                {
-                    throw new Exception( "Just failing commit, that's all" );
-                }
-            }
-        }
-    }
-
-    private static class ExceptionThrowingEventListener implements TransactionEventListener<Object>
-    {
-        private final Exception beforeCommitException;
-        private final Exception afterCommitException;
-        private final Exception afterRollbackException;
-
-        ExceptionThrowingEventListener( Exception exceptionForAll )
-        {
-            this( exceptionForAll, exceptionForAll, exceptionForAll );
-        }
-
-        ExceptionThrowingEventListener( Exception beforeCommitException, Exception afterCommitException,
-                Exception afterRollbackException )
-        {
-            this.beforeCommitException = beforeCommitException;
-            this.afterCommitException = afterCommitException;
-            this.afterRollbackException = afterRollbackException;
-        }
-
-        @Override
-        public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService ) throws Exception
-        {
-            if ( beforeCommitException != null )
-            {
-                throw beforeCommitException;
-            }
-            return null;
-        }
-
-        @Override
-        public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
-        {
-            if ( afterCommitException != null )
-            {
-                throw new RuntimeException( afterCommitException );
-            }
-        }
-
-        @Override
-        public void afterRollback( TransactionData data, Object state, GraphDatabaseService databaseService )
-        {
-            if ( afterRollbackException != null )
-            {
-                throw new RuntimeException( afterRollbackException );
-            }
-        }
-    }
-
-    private static class DummyTransactionEventListener<T> implements TransactionEventListener<T>
-    {
-        private final T object;
-        private TransactionData receivedTransactionData;
-        private T receivedState;
-        private int counter;
-        private Integer beforeCommit;
-        private Integer afterCommit;
-        private Integer afterRollback;
-
-        DummyTransactionEventListener( T object )
-        {
-            this.object = object;
-        }
-
-        @Override
-        public void afterCommit( TransactionData data, T state, GraphDatabaseService databaseService )
-        {
-            assertNotNull( data );
-            this.receivedState = state;
-            this.afterCommit = counter++;
-        }
-
-        @Override
-        public void afterRollback( TransactionData data, T state, GraphDatabaseService databaseService )
-        {
-            assertNotNull( data );
-            this.receivedState = state;
-            this.afterRollback = counter++;
-        }
-
-        @Override
-        public T beforeCommit( TransactionData data, GraphDatabaseService databaseService )
-        {
-            assertNotNull( data );
-            this.receivedTransactionData = data;
-            this.beforeCommit = counter++;
-            if ( this.beforeCommit == 2 )
-            {
-                new Exception( "blabla" ).printStackTrace();
-            }
-            return object;
-        }
-
-        void reset()
-        {
-            receivedTransactionData = null;
-            receivedState = null;
-            counter = 0;
-            beforeCommit = null;
-            afterCommit = null;
-            afterRollback = null;
-        }
-    }
-
     @Test
     public void makeSureListenerIsntCalledWhenTxRolledBack()
     {
@@ -1235,6 +1033,208 @@ public class TestTransactionEvents
         assertTrue( otherWorkingListener.beforeCommitCalled );
         assertTrue( otherWorkingListener.afterRollbackCalled );
         assertEquals( 10, otherWorkingListener.afterRollbackState.intValue() );
+    }
+
+    private static class MyTxEventListener implements TransactionEventListener<Object>
+    {
+        Map<String,Object> nodeProps = new HashMap<>();
+        Map<String,Object> relProps = new HashMap<>();
+
+        @Override
+        public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
+        {
+            for ( PropertyEntry<Node> entry : data.removedNodeProperties() )
+            {
+                String key = entry.key();
+                Object value = entry.previouslyCommittedValue();
+                nodeProps.put( key, value );
+            }
+            for ( PropertyEntry<Relationship> entry : data.removedRelationshipProperties() )
+            {
+                relProps.put( entry.key(), entry.previouslyCommittedValue() );
+            }
+        }
+
+        @Override
+        public void afterRollback( TransactionData data, Object state, GraphDatabaseService databaseService )
+        {
+        }
+
+        @Override
+        public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService )
+        {
+            return null;
+        }
+    }
+
+    private static void verifyListenerCalls( List<TransactionEventListener<Object>> listeners, boolean txSuccess )
+    {
+        for ( TransactionEventListener<Object> listener : listeners )
+        {
+            DummyTransactionEventListener<Object> realListener =
+                    (DummyTransactionEventListener<Object>) ((FailingEventListener<Object>) listener).source;
+            if ( txSuccess )
+            {
+                assertEquals( Integer.valueOf( 0 ), realListener.beforeCommit );
+                assertEquals( Integer.valueOf( 1 ), realListener.afterCommit );
+            }
+            else
+            {
+                if ( realListener.counter > 0 )
+                {
+                    assertEquals( Integer.valueOf( 0 ), realListener.beforeCommit );
+                    assertEquals( Integer.valueOf( 1 ), realListener.afterRollback );
+                }
+            }
+        }
+    }
+
+    private enum RelTypes implements RelationshipType
+    {
+        TXEVENT
+    }
+
+    private static class FailingEventListener<T> implements TransactionEventListener<T>
+    {
+        private final TransactionEventListener<T> source;
+        private final boolean willFail;
+
+        FailingEventListener( TransactionEventListener<T> source, boolean willFail )
+        {
+            this.source = source;
+            this.willFail = willFail;
+        }
+
+        @Override
+        public void afterCommit( TransactionData data, T state, GraphDatabaseService databaseService )
+        {
+            source.afterCommit( data, state, databaseService );
+        }
+
+        @Override
+        public void afterRollback( TransactionData data, T state, GraphDatabaseService databaseService )
+        {
+            source.afterRollback( data, state, databaseService );
+        }
+
+        @Override
+        public T beforeCommit( TransactionData data, GraphDatabaseService databaseService ) throws Exception
+        {
+            try
+            {
+                return source.beforeCommit( data, databaseService );
+            }
+            finally
+            {
+                if ( willFail )
+                {
+                    throw new Exception( "Just failing commit, that's all" );
+                }
+            }
+        }
+    }
+
+    private static class ExceptionThrowingEventListener implements TransactionEventListener<Object>
+    {
+        private final Exception beforeCommitException;
+        private final Exception afterCommitException;
+        private final Exception afterRollbackException;
+
+        ExceptionThrowingEventListener( Exception exceptionForAll )
+        {
+            this( exceptionForAll, exceptionForAll, exceptionForAll );
+        }
+
+        ExceptionThrowingEventListener( Exception beforeCommitException, Exception afterCommitException,
+                Exception afterRollbackException )
+        {
+            this.beforeCommitException = beforeCommitException;
+            this.afterCommitException = afterCommitException;
+            this.afterRollbackException = afterRollbackException;
+        }
+
+        @Override
+        public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService ) throws Exception
+        {
+            if ( beforeCommitException != null )
+            {
+                throw beforeCommitException;
+            }
+            return null;
+        }
+
+        @Override
+        public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
+        {
+            if ( afterCommitException != null )
+            {
+                throw new RuntimeException( afterCommitException );
+            }
+        }
+
+        @Override
+        public void afterRollback( TransactionData data, Object state, GraphDatabaseService databaseService )
+        {
+            if ( afterRollbackException != null )
+            {
+                throw new RuntimeException( afterRollbackException );
+            }
+        }
+    }
+
+    private static class DummyTransactionEventListener<T> implements TransactionEventListener<T>
+    {
+        private final T object;
+        private TransactionData receivedTransactionData;
+        private T receivedState;
+        private int counter;
+        private Integer beforeCommit;
+        private Integer afterCommit;
+        private Integer afterRollback;
+
+        DummyTransactionEventListener( T object )
+        {
+            this.object = object;
+        }
+
+        @Override
+        public void afterCommit( TransactionData data, T state, GraphDatabaseService databaseService )
+        {
+            assertNotNull( data );
+            this.receivedState = state;
+            this.afterCommit = counter++;
+        }
+
+        @Override
+        public void afterRollback( TransactionData data, T state, GraphDatabaseService databaseService )
+        {
+            assertNotNull( data );
+            this.receivedState = state;
+            this.afterRollback = counter++;
+        }
+
+        @Override
+        public T beforeCommit( TransactionData data, GraphDatabaseService databaseService )
+        {
+            assertNotNull( data );
+            this.receivedTransactionData = data;
+            this.beforeCommit = counter++;
+            if ( this.beforeCommit == 2 )
+            {
+                new Exception( "blabla" ).printStackTrace();
+            }
+            return object;
+        }
+
+        void reset()
+        {
+            receivedTransactionData = null;
+            receivedState = null;
+            counter = 0;
+            beforeCommit = null;
+            afterCommit = null;
+            afterRollback = null;
+        }
     }
 
     private Node createNode( String... properties )

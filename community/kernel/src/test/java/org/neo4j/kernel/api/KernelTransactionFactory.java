@@ -37,7 +37,6 @@ import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
-import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -50,6 +49,7 @@ import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
+import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
@@ -93,8 +93,8 @@ public class KernelTransactionFactory
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( mock( DefaultValueMapper.class ) );
         KernelTransactionImplementation transaction =
-                new KernelTransactionImplementation( Config.defaults(), mock( StatementOperationParts.class ),
-                        new TransactionHooks(), mock( ConstraintIndexCreator.class ), mock( GlobalProcedures.class ), headerInformationFactory,
+                new KernelTransactionImplementation( Config.defaults(), mock( StatementOperationParts.class ), mock( DatabaseTransactionEventListeners.class ),
+                        mock( ConstraintIndexCreator.class ), mock( GlobalProcedures.class ), headerInformationFactory,
                         mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),
                         mock( Pool.class ), Clocks.systemClock(), new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                         new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), NULL, LockTracer.NONE, PageCursorTracerSupplier.NULL, storageEngine,

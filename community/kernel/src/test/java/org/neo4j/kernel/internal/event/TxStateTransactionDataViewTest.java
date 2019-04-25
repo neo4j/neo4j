@@ -17,15 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.coreapi;
+package org.neo4j.kernel.internal.event;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -53,18 +52,18 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 
-public class TxStateTransactionDataViewTest
+class TxStateTransactionDataViewTest
 {
-    private static final long[] NO_LABELS = new long[0];
     private final ThreadToStatementContextBridge bridge = mock( ThreadToStatementContextBridge.class );
     private final Statement stmt = mock( Statement.class );
     private final StubStorageCursors ops = new StubStorageCursors();
@@ -73,8 +72,8 @@ public class TxStateTransactionDataViewTest
 
     private final TransactionState state = new TxState();
 
-    @Before
-    public void setup() throws PropertyKeyIdNotFoundKernelException
+    @BeforeEach
+    void setup() throws PropertyKeyIdNotFoundKernelException
     {
         when( transaction.tokenRead() ).thenReturn( tokenRead );
         when( bridge.get() ).thenReturn( stmt );
@@ -86,7 +85,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void showsCreatedNodes()
+    void showsCreatedNodes()
     {
         // Given
         state.nodeDoCreate( 1 );
@@ -97,7 +96,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void showsDeletedNodes() throws Exception
+    void showsDeletedNodes() throws Exception
     {
         // Given
         state.nodeDoDelete( 1L );
@@ -117,7 +116,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void showsAddedRelationships()
+    void showsAddedRelationships()
     {
         // Given
         state.relationshipDoCreate( 1, 1, 1L, 2L );
@@ -128,7 +127,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void showsRemovedRelationships() throws Exception
+    void showsRemovedRelationships()
     {
         // Given
         state.relationshipDoDelete( 1L, 1, 1L, 2L );
@@ -144,7 +143,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void correctlySaysNodeIsDeleted()
+    void correctlySaysNodeIsDeleted()
     {
         // Given
         state.nodeDoDelete( 1L );
@@ -157,7 +156,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void correctlySaysRelIsDeleted()
+    void correctlySaysRelIsDeleted()
     {
         // Given
         state.relationshipDoDelete( 1L, 1, 1L, 2L );
@@ -171,7 +170,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void shouldListAddedNodePropertiesProperties() throws Exception
+    void shouldListAddedNodePropertiesProperties() throws Exception
     {
         // Given
         int propertyKeyId = ops.propertyKeyTokenHolder().getOrCreateId( "theKey" );
@@ -191,7 +190,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void shouldListRemovedNodeProperties() throws Exception
+    void shouldListRemovedNodeProperties() throws Exception
     {
         // Given
         int propertyKeyId = ops.propertyKeyTokenHolder().getOrCreateId( "theKey" );
@@ -210,7 +209,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void shouldListRemovedRelationshipProperties() throws Exception
+    void shouldListRemovedRelationshipProperties() throws Exception
     {
         // Given
         int propertyKeyId = ops.propertyKeyTokenHolder().getOrCreateId( "theKey" );
@@ -229,7 +228,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void shouldListAddedRelationshipProperties() throws Exception
+    void shouldListAddedRelationshipProperties() throws Exception
     {
         // Given
         Value prevValue = Values.of( "prevValue" );
@@ -249,7 +248,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void shouldListAddedLabels() throws Exception
+    void shouldListAddedLabels() throws Exception
     {
         // Given
         int labelId = 2;
@@ -266,7 +265,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void shouldListRemovedLabels() throws Exception
+    void shouldListRemovedLabels() throws Exception
     {
         // Given
         int labelId = 2;
@@ -283,7 +282,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void accessTransactionIdAndCommitTime()
+    void accessTransactionIdAndCommitTime()
     {
         long committedTransactionId = 7L;
         long commitTime = 10L;
@@ -296,17 +295,16 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void shouldGetEmptyUsernameForAnonymousContext()
+    void shouldGetEmptyUsernameForAnonymousContext()
     {
-        when( transaction.securityContext() ).thenReturn( AnonymousContext.read().authorize(
-                LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ) );
+        when( transaction.securityContext() ).thenReturn( AnonymousContext.read().authorize( LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME ) );
 
         TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
         assertEquals( "", transactionDataSnapshot.username() );
     }
 
     @Test
-    public void shouldAccessUsernameFromAuthSubject()
+    void shouldAccessUsernameFromAuthSubject()
     {
         AuthSubject authSubject = mock( AuthSubject.class );
         when( authSubject.username() ).thenReturn( "Christof" );
@@ -318,14 +316,14 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void shouldAccessEmptyMetaData()
+    void shouldAccessEmptyMetaData()
     {
         TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
         assertEquals( 0, transactionDataSnapshot.metaData().size() );
     }
 
     @Test
-    public void shouldAccessExampleMetaData()
+    void shouldAccessExampleMetaData()
     {
         EmbeddedProxySPI spi = mock( EmbeddedProxySPI.class );
         final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
@@ -337,7 +335,7 @@ public class TxStateTransactionDataViewTest
                 equalTo( genericMap( "username", "Igor" ) ) );
     }
 
-    private List<Long> idList( Iterable<? extends PropertyContainer> entities )
+    private static List<Long> idList( Iterable<? extends PropertyContainer> entities )
     {
         List<Long> out = new ArrayList<>();
         for ( PropertyContainer entity : entities )

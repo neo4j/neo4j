@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
+import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.memory.MemoryTracker;
@@ -95,7 +96,6 @@ public class KernelTransactionTestBase
     protected final StorageReader storageReader = mock( StorageReader.class );
     protected final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
     protected final CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
-    protected final TransactionHooks hooks = new TransactionHooks();
     protected final TransactionMonitor transactionMonitor = mock( TransactionMonitor.class );
     protected final CapturingCommitProcess commitProcess = new CapturingCommitProcess();
     protected final TransactionHeaderInformation headerInformation = mock( TransactionHeaderInformation.class );
@@ -177,7 +177,8 @@ public class KernelTransactionTestBase
     {
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( mock( DefaultValueMapper.class ) );
-        return new KernelTransactionImplementation( config, statementOperations, hooks, null, null, headerInformationFactory,
+        return new KernelTransactionImplementation( config, statementOperations, mock( DatabaseTransactionEventListeners.class ),
+                null, null, headerInformationFactory,
                 commitProcess, transactionMonitor, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                 new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), TransactionTracer.NULL, LockTracer.NONE, PageCursorTracerSupplier.NULL, storageEngine,
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,

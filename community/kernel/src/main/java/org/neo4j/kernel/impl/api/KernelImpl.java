@@ -28,7 +28,6 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
@@ -58,7 +57,6 @@ import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.
 public class KernelImpl extends LifecycleAdapter implements InwardKernel
 {
     private final KernelTransactions transactions;
-    private final TransactionHooks hooks;
     private final Health health;
     private final TransactionMonitor transactionMonitor;
     private final GlobalProcedures globalProcedures;
@@ -66,12 +64,11 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
     private final DefaultThreadSafeCursors cursors;
     private volatile boolean isRunning;
 
-    public KernelImpl( KernelTransactions transactionFactory, TransactionHooks hooks, Health health,
+    public KernelImpl( KernelTransactions transactionFactory, Health health,
                        TransactionMonitor transactionMonitor,
                        GlobalProcedures globalProcedures, Config config, StorageEngine storageEngine )
     {
         this.transactions = transactionFactory;
-        this.hooks = hooks;
         this.health = health;
         this.transactionMonitor = transactionMonitor;
         this.globalProcedures = globalProcedures;
@@ -104,12 +101,6 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
         KernelTransaction transaction = transactions.newInstance( type, loginContext, connectionInfo, timeout );
         transactionMonitor.transactionStarted();
         return transaction;
-    }
-
-    @Override
-    public void registerTransactionHook( TransactionHook hook )
-    {
-        hooks.register( hook );
     }
 
     @Override

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.coreapi;
+package org.neo4j.kernel.internal.event;
 
 import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
@@ -77,9 +77,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     private final MutableLongObjectMap<RelationshipProxy> relationshipsReadFromStore = new LongObjectHashMap<>( 16 );
     private final StorageRelationshipScanCursor relationship;
 
-    public TxStateTransactionDataSnapshot(
-            ReadableTransactionState state, EmbeddedProxySPI proxySpi,
-            StorageReader storageReader, KernelTransaction transaction )
+    TxStateTransactionDataSnapshot( ReadableTransactionState state, EmbeddedProxySPI proxySpi, StorageReader storageReader, KernelTransaction transaction )
     {
         this.state = state;
         this.proxySpi = proxySpi;
