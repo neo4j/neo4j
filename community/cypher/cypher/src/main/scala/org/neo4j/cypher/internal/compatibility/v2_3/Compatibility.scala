@@ -97,8 +97,13 @@ trait Compatibility {
   class ExecutionPlanWrapper(inner: ExecutionPlan_v2_3, preParsingNotifications: Set[org.neo4j.graphdb.Notification], offSet: frontend.v2_3.InputPosition)
     extends ExecutionPlan {
 
-    private def queryContext(transactionalContext: TransactionalContextWrapper): QueryContext =
-      new ExceptionTranslatingQueryContext(new TransactionBoundQueryContext(transactionalContext))
+    private def queryContext(transactionalContext: TransactionalContextWrapper): QueryContext = {
+      val context = new TransactionBoundQueryContext(transactionalContext)
+      transactionalContext.statement.registerCloseableResource(new AutoCloseable {
+        override def close(): Unit = context.resources.close(true)
+      })
+      new ExceptionTranslatingQueryContext(context)
+    }
 
     def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult = {
       val innerExecutionMode = executionMode match {
