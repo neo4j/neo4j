@@ -28,6 +28,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintDescriptor.Type;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
@@ -51,6 +52,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
 import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.storageengine.api.ConstraintRule.constraintRule;
@@ -68,8 +70,9 @@ public class SchemaCacheTest
     private SchemaRule schema3_4 = newIndexRule( 10, 3, 4 );
     private SchemaRule schema5_6_7 = newIndexRule( 11, 5, 6, 7 );
     private SchemaRule schema5_8 = newIndexRule( 12, 5, 8 );
-    private SchemaRule node35_8 = new DefaultStorageIndexReference( SchemaDescriptorFactory.multiToken( new int[]{3, 5}, NODE, 8 ), false, 13, null );
-    private SchemaRule rel35_8 = new DefaultStorageIndexReference( SchemaDescriptorFactory.multiToken( new int[] {3,5}, RELATIONSHIP, 8 ), false, 14, null );
+    private SchemaRule node35_8 = new DefaultStorageIndexReference( fulltext( NODE, IndexConfig.empty(), new int[]{3, 5}, new int[]{8} ), false, 13, null );
+    private SchemaRule rel35_8 = new DefaultStorageIndexReference(
+            fulltext( RELATIONSHIP, IndexConfig.empty(), new int[]{3, 5}, new int[]{8} ), false, 14, null );
 
     @Test
     public void should_construct_schema_cache()

@@ -25,6 +25,7 @@ import java.util.Optional;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaComputer;
@@ -353,7 +354,7 @@ public class SchemaRuleSerialization35
         }
         int[] entityTokenIds = readTokenIdList( source );
         int[] propertyIds = readTokenIdList( source );
-        return SchemaDescriptorFactory.multiToken( entityTokenIds, type, propertyIds );
+        return SchemaDescriptor.fulltext( type, IndexConfig.empty(), entityTokenIds, propertyIds );
     }
 
     private static int[] readTokenIdList( ByteBuffer source )

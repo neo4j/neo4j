@@ -28,6 +28,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
+import org.neo4j.token.api.TokenConstants;
 import org.neo4j.token.api.TokenIdPrettyPrinter;
 
 import static java.util.Objects.requireNonNull;
@@ -45,7 +46,7 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     private final PropertySchemaType propertySchemaType;
     private final IndexConfig indexConfig;
     private final int[] entityTokens;
-    private final int[] propertyIds;
+    private final int[] propertyKeyIds;
     /**
      * {@code true} if this schema matches the {@link LabelSchemaDescriptor} structure.
      */
@@ -60,28 +61,75 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     private final boolean archetypalFulltextSchema;
 
     SchemaDescriptorImplementation( IndexType indexType, EntityType entityType, PropertySchemaType propertySchemaType, IndexConfig indexConfig,
-            int[] entityTokens, int[] propertyIds )
+            int[] entityTokens, int[] propertyKeyIds )
     {
         this.indexType = requireNonNull( indexType, "IndexType cannot be null." );
         this.entityType = requireNonNull( entityType, "EntityType cannot be null." );
         this.propertySchemaType = requireNonNull( propertySchemaType, "PropertySchemaType cannot be null." );
         this.entityTokens = requireNonNull( entityTokens, "Entity tokens array cannot be null." );
-        this.propertyIds = requireNonNull( propertyIds, "Property key ids array cannot be null." );
+        this.propertyKeyIds = requireNonNull( propertyKeyIds, "Property key ids array cannot be null." );
         this.indexConfig = requireNonNull( indexConfig, "IndexConfig cannot be null." );
         if ( entityTokens.length == 0 )
         {
             throw new IllegalArgumentException( "Schema descriptor must have at least one " + (entityType == NODE ? "label." : "relationship type.") );
         }
-        if ( propertyIds.length == 0 )
+        if ( propertyKeyIds.length == 0 )
         {
             throw new IllegalArgumentException( "Schema descriptor must have at least one property key id." );
         }
+
+        switch ( entityType )
+        {
+        case NODE:
+            validateLabelIds( entityTokens );
+            break;
+        case RELATIONSHIP:
+            validateRelationshipTypeIds( entityTokens );
+            break;
+        default:
+            throw new IllegalArgumentException( "Unknown entity type: " + entityType + "." );
+        }
+        validatePropertyIds( propertyKeyIds );
 
         boolean generalSingleEntity = indexType.getKind() == GENERAL && entityTokens.length == 1 && propertySchemaType == COMPLETE_ALL_TOKENS;
 
         this.archetypalLabelSchema = entityType == NODE && generalSingleEntity;
         this.archetypalRelationshipTypeSchema = entityType == RELATIONSHIP && generalSingleEntity;
         this.archetypalFulltextSchema = indexType == FULLTEXT && propertySchemaType == PARTIAL_ANY_TOKEN;
+    }
+
+    private static void validatePropertyIds( int[] propertyIds )
+    {
+        for ( int propertyId : propertyIds )
+        {
+            if ( TokenConstants.ANY_PROPERTY_KEY == propertyId )
+            {
+                throw new IllegalArgumentException(
+                        "Index schema descriptor can't be created for non existent property." );
+            }
+        }
+    }
+
+    private static void validateRelationshipTypeIds( int... relTypes )
+    {
+        for ( int relType : relTypes )
+        {
+            if ( TokenConstants.ANY_RELATIONSHIP_TYPE == relType )
+            {
+                throw new IllegalArgumentException( "Index schema descriptor can't be created for non existent relationship type." );
+            }
+        }
+    }
+
+    private static void validateLabelIds( int... labelIds )
+    {
+        for ( int labelId : labelIds )
+        {
+            if ( TokenConstants.ANY_LABEL == labelId )
+            {
+                throw new IllegalArgumentException( "Index schema descriptor can't be created for non existent label." );
+            }
+        }
     }
 
     @Override
@@ -173,13 +221,13 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
         return entityType + ":" + String.join( ", ", tokenNameLookup.entityTokensGetNames( entityType, entityTokens ) ) + "(" +
-                TokenIdPrettyPrinter.niceProperties( tokenNameLookup, propertyIds ) + ")";
+                TokenIdPrettyPrinter.niceProperties( tokenNameLookup, propertyKeyIds ) + ")";
     }
 
     @Override
     public int[] getPropertyIds()
     {
-        return propertyIds;
+        return propertyKeyIds;
     }
 
     @Override
@@ -237,7 +285,7 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
         }
         SchemaDescriptor that = (SchemaDescriptor) o;
         return indexType == that.getIndexType() && entityType == that.entityType() && propertySchemaType == that.propertySchemaType() &&
-                Arrays.equals( entityTokens, that.getEntityTokenIds() ) && Arrays.equals( propertyIds, that.getPropertyIds() );
+                Arrays.equals( entityTokens, that.getEntityTokenIds() ) && Arrays.equals( propertyKeyIds, that.getPropertyIds() );
     }
 
     @Override
@@ -245,7 +293,7 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     {
         int result = Objects.hash( indexType, entityType, propertySchemaType );
         result = 31 * result + Arrays.hashCode( entityTokens );
-        result = 31 * result + Arrays.hashCode( propertyIds );
+        result = 31 * result + Arrays.hashCode( propertyKeyIds );
         return result;
     }
 }

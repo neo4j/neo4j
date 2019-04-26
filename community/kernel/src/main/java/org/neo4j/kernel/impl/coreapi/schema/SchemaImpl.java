@@ -59,6 +59,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -90,10 +91,10 @@ import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.Iterators.addToCollection;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.map;
+import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
 import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabelNoIndex;
 import static org.neo4j.internal.schema.SchemaDescriptorFactory.forRelType;
-import static org.neo4j.internal.schema.SchemaDescriptorFactory.multiToken;
 import static org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl.labelNameList;
 import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getOrCreatePropertyKeyIds;
 
@@ -411,7 +412,7 @@ public class SchemaImpl implements Schema
 
             if ( index.isMultiTokenIndex() )
             {
-                schema = multiToken( labelIds, EntityType.NODE, propertyKeyIds );
+                schema = fulltext( EntityType.NODE, IndexConfig.empty(), labelIds, propertyKeyIds );
             }
             else
             {
@@ -425,7 +426,7 @@ public class SchemaImpl implements Schema
 
             if ( index.isMultiTokenIndex() )
             {
-                schema = multiToken( relTypes, EntityType.RELATIONSHIP, propertyKeyIds );
+                schema = fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), relTypes, propertyKeyIds );
             }
             else
             {

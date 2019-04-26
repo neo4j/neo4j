@@ -38,6 +38,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
@@ -434,8 +435,8 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
             default:
                 throw new MalformedSchemaRuleException( "Unrecognised entity type: " + entityType );
             }
-        case "PARTIAL_ANY_TOKEN": // multitoken index
-            return SchemaDescriptorFactory.multiToken( entityIds, entityType, propertyIds );
+        case "PARTIAL_ANY_TOKEN": // fulltext index, presumably
+            return SchemaDescriptor.fulltext( entityType, IndexConfig.empty(), entityIds, propertyIds );
         default:
             throw new MalformedSchemaRuleException( "Did not recognize property schema type: " + propertySchemaType );
         }

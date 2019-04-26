@@ -25,9 +25,10 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
@@ -229,14 +230,14 @@ public class RandomSchema implements Supplier<SchemaRule>
         return SchemaDescriptorFactory.forRelType( nextRelationshipTypeId(), nextPropertyKeyIdsArray() );
     }
 
-    public MultiTokenSchemaDescriptor nextNodeMultiTokenSchema()
+    public SchemaDescriptor nextNodeMultiTokenSchema()
     {
-        return SchemaDescriptorFactory.multiToken( nextLabelIdsArray(), EntityType.NODE, nextPropertyKeyIdsArray() );
+        return SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), nextLabelIdsArray(), nextPropertyKeyIdsArray() );
     }
 
-    public MultiTokenSchemaDescriptor nextRelationshipMultiTokenSchema()
+    public SchemaDescriptor nextRelationshipMultiTokenSchema()
     {
-        return SchemaDescriptorFactory.multiToken( nextRelationTypeIdsArray(), EntityType.RELATIONSHIP, nextPropertyKeyIdsArray() );
+        return SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), nextRelationTypeIdsArray(), nextPropertyKeyIdsArray() );
     }
 
     public int nextRuleId()
@@ -266,7 +267,7 @@ public class RandomSchema implements Supplier<SchemaRule>
 
     public int[] nextLabelIdsArray( int maxLength )
     {
-        return rng.ints( rng.nextInt( maxLength + 1 ), 1, maxLabelId ).toArray();
+        return rng.ints( rng.nextInt( 1, maxLength ), 1, maxLabelId ).toArray();
     }
 
     public int[] nextRelationTypeIdsArray()
@@ -276,7 +277,7 @@ public class RandomSchema implements Supplier<SchemaRule>
 
     public int[] nextRelationTypeIdsArray( int maxLength )
     {
-        return rng.ints( rng.nextInt( maxLength + 1 ), 1, maxRelTypeId ).toArray();
+        return rng.ints( rng.nextInt( 1, maxLength ), 1, maxRelTypeId ).toArray();
     }
 
     public int[] nextPropertyKeyIdsArray()

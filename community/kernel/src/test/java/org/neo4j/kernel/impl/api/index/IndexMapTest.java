@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
@@ -40,8 +41,8 @@ class IndexMapTest
     private LabelSchemaDescriptor schema3_4 = SchemaDescriptorFactory.forLabel( 3, 4 );
     private LabelSchemaDescriptor schema5_6_7 = SchemaDescriptorFactory.forLabel( 5, 6, 7 );
     private LabelSchemaDescriptor schema5_8 = SchemaDescriptorFactory.forLabel( 5, 8 );
-    private SchemaDescriptor node35_8 = SchemaDescriptorFactory.multiToken( new int[] {3,5}, NODE, 8 );
-    private SchemaDescriptor rel35_8 = SchemaDescriptorFactory.multiToken( new int[] {3,5}, RELATIONSHIP, 8 );
+    private SchemaDescriptor node35_8 = SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[]{3, 5}, new int[]{8} );
+    private SchemaDescriptor rel35_8 = SchemaDescriptor.fulltext( RELATIONSHIP, IndexConfig.empty(), new int[]{3, 5}, new int[]{8} );
 
     @BeforeEach
     void setup()

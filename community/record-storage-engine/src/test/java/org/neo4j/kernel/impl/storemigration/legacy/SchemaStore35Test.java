@@ -36,6 +36,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.pagecache.PageCache;
@@ -52,8 +53,8 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static java.nio.ByteBuffer.wrap;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.asCollection;
+import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
 import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
-import static org.neo4j.internal.schema.SchemaDescriptorFactory.multiToken;
 
 public class SchemaStore35Test
 {
@@ -133,35 +134,13 @@ public class SchemaStore35Test
         int[] propertyIds = {4, 5, 6, 7};
         int[] entityTokens = {2, 3, 4};
         StorageIndexReference indexRule =
-                new DefaultStorageIndexReference( multiToken( entityTokens, EntityType.RELATIONSHIP, propertyIds ), PROVIDER_KEY, PROVIDER_VERSION,
-                        store.nextId(), Optional.empty(), false, null, false );
+                new DefaultStorageIndexReference( fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), entityTokens, propertyIds ),
+                        PROVIDER_KEY, PROVIDER_VERSION, store.nextId(), Optional.empty(), false, null, false );
 
         // WHEN
         StorageIndexReference readIndexRule =
                 (StorageIndexReference) SchemaRuleSerialization35.deserialize( indexRule.getId(),
                         wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
-
-        // THEN
-        assertEquals( indexRule.getId(), readIndexRule.getId() );
-        assertEquals( indexRule.schema(), readIndexRule.schema() );
-        assertEquals( indexRule, readIndexRule );
-        assertEquals( indexRule.providerKey(), readIndexRule.providerKey() );
-        assertEquals( indexRule.providerVersion(), readIndexRule.providerVersion() );
-    }
-
-    @Test
-    public void storeAndLoadAnyTokenMultiTokenSchemaRule() throws Exception
-    {
-        // GIVEN
-        int[] propertyIds = {4, 5, 6, 7};
-        int[] entityTokens = {};
-        StorageIndexReference indexRule =
-                new DefaultStorageIndexReference( multiToken( entityTokens, EntityType.NODE, propertyIds ), PROVIDER_KEY, PROVIDER_VERSION, store.nextId(),
-                        Optional.empty(), false, null, false );
-
-        // WHEN
-        StorageIndexReference readIndexRule = (StorageIndexReference) SchemaRuleSerialization35.deserialize( indexRule.getId(),
-                wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -196,8 +175,8 @@ public class SchemaStore35Test
     {
         // GIVEN
         StorageIndexReference indexRule = new DefaultStorageIndexReference(
-                multiToken( IntStream.range( 1, 200 ).toArray(), EntityType.RELATIONSHIP, IntStream.range( 1, 200 ).toArray() ), PROVIDER_KEY, PROVIDER_VERSION,
-                store.nextId(), Optional.empty(), false, null, false );
+                fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), IntStream.range( 1, 200 ).toArray(), IntStream.range( 1, 200 ).toArray() ),
+                PROVIDER_KEY, PROVIDER_VERSION, store.nextId(), Optional.empty(), false, null, false );
 
         // WHEN
         StorageIndexReference readIndexRule = (StorageIndexReference) SchemaRuleSerialization35.deserialize( indexRule.getId(),

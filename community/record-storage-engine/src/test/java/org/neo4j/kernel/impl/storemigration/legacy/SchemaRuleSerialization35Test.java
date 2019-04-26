@@ -31,6 +31,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.DefaultIndexDescriptor;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.SchemaRule;
@@ -45,7 +46,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.fail;
-import static org.neo4j.internal.schema.SchemaDescriptorFactory.multiToken;
+import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 public class SchemaRuleSerialization35Test
@@ -104,7 +105,8 @@ public class SchemaRuleSerialization35Test
     StorageIndexReference indexCompositeRegular = withId( forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID );
 
     StorageIndexReference indexMultiTokenRegular =
-            withId( new DefaultIndexDescriptor( multiToken( new int[]{LABEL_ID, LABEL_ID_2}, EntityType.NODE, PROPERTY_ID_1, PROPERTY_ID_2 ), PROVIDER_KEY,
+            withId( new DefaultIndexDescriptor(
+                    fulltext( EntityType.NODE, IndexConfig.empty(), new int[]{LABEL_ID, LABEL_ID_2}, new int[]{PROPERTY_ID_1, PROPERTY_ID_2} ), PROVIDER_KEY,
                     PROVIDER_VERSION, Optional.empty(), false, false ), RULE_ID );
 
     StorageIndexReference indexCompositeUnique = withIds( uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID_2, RULE_ID );
@@ -112,7 +114,8 @@ public class SchemaRuleSerialization35Test
     StorageIndexReference indexBigComposite = withId( forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ), RULE_ID );
 
     StorageIndexReference indexBigMultiToken =
-            withId( new DefaultIndexDescriptor( multiToken( IntStream.range( 1, 200 ).toArray(), EntityType.RELATIONSHIP, IntStream.range( 1, 200 ).toArray() ),
+            withId( new DefaultIndexDescriptor(
+                    fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), IntStream.range( 1, 200 ).toArray(), IntStream.range( 1, 200 ).toArray() ),
                     PROVIDER_KEY, PROVIDER_VERSION, Optional.empty(), false, false ), RULE_ID );
 
     ConstraintRule constraintExistsLabel = ConstraintRule.constraintRule( RULE_ID,

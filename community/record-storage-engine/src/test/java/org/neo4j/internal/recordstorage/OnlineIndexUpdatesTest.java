@@ -29,6 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -68,7 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.internal.schema.SchemaDescriptorFactory.multiToken;
+import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
@@ -148,7 +149,8 @@ class OnlineIndexUpdatesTest
         propertyBlocks.setNodeId( nodeId );
         PropertyCommand propertyCommand = new PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), propertyBlocks );
 
-        StorageIndexReference indexDescriptor = new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, NODE, 1, 4, 6 ), false, 0, null );
+        StorageIndexReference indexDescriptor = new DefaultStorageIndexReference(
+                fulltext( NODE, IndexConfig.empty(), ENTITY_TOKENS, new int[]{1, 4, 6} ), false, 0, null );
         createIndexes( indexDescriptor );
 
         onlineIndexUpdates.feed( nodeGroup( nodeCommand, propertyCommand ), relationshipGroup( null ) );
@@ -176,7 +178,8 @@ class OnlineIndexUpdatesTest
         propertyBlocks.setRelId( relId );
         PropertyCommand propertyCommand = new PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), propertyBlocks );
 
-        StorageIndexReference indexDescriptor = new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), false, 0, null );
+        StorageIndexReference indexDescriptor = new DefaultStorageIndexReference(
+                fulltext( RELATIONSHIP, IndexConfig.empty(), ENTITY_TOKENS, new int[]{1, 4, 6} ), false, 0, null );
         createIndexes( indexDescriptor );
 
         onlineIndexUpdates.feed( nodeGroup( null ), relationshipGroup( relationshipCommand, propertyCommand ) );
@@ -205,7 +208,8 @@ class OnlineIndexUpdatesTest
         PropertyCommand nodePropertyCommand =
                 new PropertyCommand( recordAccess.getIfLoaded( nodePropertyId ).forReadingData(), nodePropertyBlocks );
 
-        StorageIndexReference nodeIndexDescriptor = new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, NODE, 1, 4, 6 ), false, 0, null );
+        StorageIndexReference nodeIndexDescriptor = new DefaultStorageIndexReference(
+                fulltext( NODE, IndexConfig.empty(), ENTITY_TOKENS, new int[]{1, 4, 6} ), false, 0, null );
         createIndexes( nodeIndexDescriptor );
 
         long relId = 0;
@@ -222,7 +226,7 @@ class OnlineIndexUpdatesTest
                 new PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), relationshipPropertyBlocks );
 
         StorageIndexReference relationshipIndexDescriptor =
-                new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), false, 1, null );
+                new DefaultStorageIndexReference( fulltext( RELATIONSHIP, IndexConfig.empty(), ENTITY_TOKENS, new int[]{1, 4, 6} ), false, 1, null );
         createIndexes( relationshipIndexDescriptor );
 
         onlineIndexUpdates.feed( nodeGroup( nodeCommand, nodePropertyCommand ), relationshipGroup( relationshipCommand, relationshipPropertyCommand ) );
@@ -256,12 +260,14 @@ class OnlineIndexUpdatesTest
         propertyBlocks2.setRelId( relId );
         PropertyCommand propertyCommand2 = new PropertyCommand( recordAccess.getIfLoaded( propertyId2 ).forReadingData(), propertyBlocks2 );
 
-        StorageIndexReference indexDescriptor0 = new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), false, 0, null );
-        StorageIndexReference indexDescriptor1 = new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, RELATIONSHIP, 2, 4, 6 ), false, 1, null );
-        StorageIndexReference indexDescriptor2 = new DefaultStorageIndexReference( multiToken( new int[]{ENTITY_TOKEN, OTHER_ENTITY_TOKEN}, RELATIONSHIP, 1 ),
-                false, 2, null );
-        StorageIndexReference indexDescriptor3 = new DefaultStorageIndexReference( multiToken( new int[]{OTHER_ENTITY_TOKEN}, RELATIONSHIP, 1 ),
-                false, 3, null );
+        StorageIndexReference indexDescriptor0 = new DefaultStorageIndexReference(
+                fulltext( RELATIONSHIP, IndexConfig.empty(), ENTITY_TOKENS, new int[]{1, 4, 6} ), false, 0, null );
+        StorageIndexReference indexDescriptor1 = new DefaultStorageIndexReference(
+                fulltext( RELATIONSHIP, IndexConfig.empty(), ENTITY_TOKENS, new int[]{2, 4, 6} ), false, 1, null );
+        StorageIndexReference indexDescriptor2 = new DefaultStorageIndexReference(
+                fulltext( RELATIONSHIP, IndexConfig.empty(), new int[]{ENTITY_TOKEN, OTHER_ENTITY_TOKEN}, new int[]{1} ), false, 2, null );
+        StorageIndexReference indexDescriptor3 = new DefaultStorageIndexReference(
+                fulltext( RELATIONSHIP, IndexConfig.empty(), new int[]{OTHER_ENTITY_TOKEN}, new int[]{1} ), false, 3, null );
         createIndexes( indexDescriptor0, indexDescriptor1, indexDescriptor2 );
 
         onlineIndexUpdates.feed( nodeGroup( null ), relationshipGroup( relationshipCommand, propertyCommand, propertyCommand2 ) );

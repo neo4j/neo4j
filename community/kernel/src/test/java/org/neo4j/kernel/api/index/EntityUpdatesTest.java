@@ -27,8 +27,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.MultiTokenSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -66,8 +67,8 @@ class EntityUpdatesTest
     private static final LabelSchemaDescriptor index3 = SchemaDescriptorFactory.forLabel( labelId1, propertyKeyId3 );
     private static final LabelSchemaDescriptor index123 = SchemaDescriptorFactory.forLabel( labelId1, propertyKeyId1, propertyKeyId2, propertyKeyId3 );
     private static final List<LabelSchemaDescriptor> indexes = Arrays.asList( index1, index2, index3, index123 );
-    private static final MultiTokenSchemaDescriptor nonSchemaIndex =
-            SchemaDescriptorFactory.multiToken( new int[]{labelId1, labelId2}, EntityType.NODE, propertyKeyId1, propertyKeyId2, propertyKeyId3 );
+    private static final SchemaDescriptor nonSchemaIndex = SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), new int[]{labelId1, labelId2},
+            new int[]{propertyKeyId1, propertyKeyId2, propertyKeyId3} );
 
     private static final StorageProperty property1 = new PropertyKeyValue( propertyKeyId1, Values.of( "Neo" ) );
     private static final StorageProperty property2 = new PropertyKeyValue( propertyKeyId2, Values.of( 100L ) );

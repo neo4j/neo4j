@@ -29,6 +29,9 @@ import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.token.api.TokenIdPrettyPrinter;
 
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
+
 class DefaultLabelSchemaDescriptor implements LabelSchemaDescriptor
 {
     private final IndexType indexType;
@@ -100,13 +103,13 @@ class DefaultLabelSchemaDescriptor implements LabelSchemaDescriptor
     @Override
     public EntityType entityType()
     {
-        return EntityType.NODE;
+        return NODE;
     }
 
     @Override
     public PropertySchemaType propertySchemaType()
     {
-        return PropertySchemaType.COMPLETE_ALL_TOKENS;
+        return COMPLETE_ALL_TOKENS;
     }
 
     @Override
@@ -136,10 +139,21 @@ class DefaultLabelSchemaDescriptor implements LabelSchemaDescriptor
     @Override
     public boolean equals( Object o )
     {
-        if ( o instanceof LabelSchemaDescriptor )
+        if ( o instanceof SchemaDescriptor )
         {
-            LabelSchemaDescriptor that = (LabelSchemaDescriptor)o;
-            return labelId == that.getLabelId() && Arrays.equals( propertyIds, that.getPropertyIds() );
+            SchemaDescriptor that = (SchemaDescriptor)o;
+            try
+            {
+                return that.entityType() == NODE &&
+                        that.propertySchemaType() == COMPLETE_ALL_TOKENS &&
+                        that.getEntityTokenIds().length == 1 &&
+                        labelId == that.getLabelId() &&
+                        Arrays.equals( propertyIds, that.getPropertyIds() );
+            }
+            catch ( IllegalStateException e )
+            {
+                return false;
+            }
         }
         return false;
     }

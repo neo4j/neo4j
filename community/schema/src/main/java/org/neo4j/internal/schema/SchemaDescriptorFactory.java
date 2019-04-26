@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.schema;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.token.api.TokenConstants;
 
 public class SchemaDescriptorFactory
@@ -65,24 +64,6 @@ public class SchemaDescriptorFactory
         validateRelationshipTypeIds( relTypeId );
         validatePropertyIds( propertyIds );
         return new DefaultRelationTypeSchemaDescriptor( indexType, relTypeId, propertyIds );
-    }
-
-    public static MultiTokenSchemaDescriptor multiToken( int[] entityTokens, EntityType entityType, int... propertyIds )
-    {
-        validatePropertyIds( propertyIds );
-        switch ( entityType )
-        {
-        case NODE:
-            validateLabelIds( entityTokens );
-            break;
-        case RELATIONSHIP:
-            validateRelationshipTypeIds( entityTokens );
-            break;
-        default:
-            throw new IllegalArgumentException( "Cannot create schemadescriptor of type :" + entityType );
-        }
-        IndexType indexType = IndexType.FULLTEXT; // TODO assume FULLTEXT for now.
-        return new MultiTokenSchemaDescriptor( indexType, entityTokens, entityType, propertyIds );
     }
 
     private static void validatePropertyIds( int[] propertyIds )

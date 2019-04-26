@@ -44,8 +44,8 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
@@ -321,8 +321,8 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldListMultiTokenIndexesInTheCoreAPI() throws Exception
     {
         Transaction transaction = newTransaction( AUTH_DISABLED );
-        MultiTokenSchemaDescriptor descriptor = SchemaDescriptorFactory.multiToken(
-                new int[]{labelId, labelId2}, EntityType.NODE, propertyKeyId );
+        SchemaDescriptor descriptor = SchemaDescriptor.fulltext(
+                EntityType.NODE, IndexConfig.empty(), new int[]{labelId, labelId2}, new int[]{propertyKeyId} );
         transaction.schemaWrite().indexCreate( descriptor );
         commit();
 
@@ -455,8 +455,8 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldListCompositeMultiTokenRelationshipIndexesInTheCoreAPI() throws Exception
     {
         Transaction transaction = newTransaction( AUTH_DISABLED );
-        SchemaDescriptor descriptor = SchemaDescriptorFactory.multiToken(
-                new int[]{relType, relType2}, EntityType.RELATIONSHIP, propertyKeyId, propertyKeyId2 );
+        SchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), new int[]{relType, relType2},
+                new int[]{propertyKeyId, propertyKeyId2} );
         transaction.schemaWrite().indexCreate( descriptor );
         commit();
 
