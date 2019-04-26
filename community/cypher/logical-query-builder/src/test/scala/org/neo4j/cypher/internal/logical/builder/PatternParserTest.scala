@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.spec
+package org.neo4j.cypher.internal.logical.builder
 
 import org.neo4j.cypher.internal.ir.{SimplePatternLength, VarPatternLength}
-import org.neo4j.cypher.internal.runtime.spec.PatternParser.Pattern
+import org.neo4j.cypher.internal.logical.builder.PatternParser.Pattern
 import org.neo4j.cypher.internal.v4_0.expressions.RelTypeName
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition.NONE
@@ -28,8 +28,6 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, TestNam
 
 class PatternParserTest extends CypherFunSuite with TestName
 {
-
-
   test("(a)--(b)") {
     PatternParser.parse(testName) should be(Pattern("a", BOTH, Seq.empty, "", "b", SimplePatternLength))
   }

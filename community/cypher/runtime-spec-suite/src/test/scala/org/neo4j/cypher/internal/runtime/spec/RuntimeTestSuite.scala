@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
+import org.neo4j.cypher.internal.logical.builder.TokenResolver
 import org.neo4j.cypher.internal.runtime.{InputCursor, InputDataStream, NoInput, QueryStatistics}
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
