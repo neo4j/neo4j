@@ -217,8 +217,8 @@ public class CommunityEditionModule extends StandaloneEditionModule
         LifeSupport globalLife = globalModule.getGlobalLife();
         if ( globalModule.getGlobalConfig().get( GraphDatabaseSettings.auth_enabled ) )
         {
-            SecurityModule securityModule = setupSecurityModule( globalModule, this,
-                    globalModule.getLogService().getUserLog( getClass() ), globalProcedures, COMMUNITY_SECURITY_MODULE_ID );
+            SecurityModule securityModule = setupSecurityModule( globalModule, globalModule.getLogService().getUserLog( getClass() ), globalProcedures,
+                    COMMUNITY_SECURITY_MODULE_ID );
             globalLife.add( securityModule );
             this.securityProvider = securityModule;
         }

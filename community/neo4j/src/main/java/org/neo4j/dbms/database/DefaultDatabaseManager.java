@@ -21,18 +21,22 @@ package org.neo4j.dbms.database;
 
 import java.util.Optional;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.graphdb.factory.module.GlobalModule;
+import org.neo4j.graphdb.factory.module.ModularDatabaseCreationContext;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
+import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.Log;
+import org.neo4j.monitoring.Monitors;
 
 import static java.util.Objects.requireNonNull;
 
 public final class DefaultDatabaseManager extends AbstractDatabaseManager<StandaloneDatabaseContext>
 {
-
     public DefaultDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Log log )
     {
         super( globalModule, edition, log );
@@ -48,16 +52,31 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     public synchronized StandaloneDatabaseContext createDatabase( DatabaseId databaseId )
     {
         requireNonNull( databaseId );
+        log.info( "Creating '%s' database.", databaseId.name() );
         checkDatabaseLimit( databaseId );
-        StandaloneDatabaseContext databaseContext = createNewDatabaseContext( databaseId );
+        StandaloneDatabaseContext databaseContext = createDatabaseContext( databaseId );
         databaseMap.put( databaseId, databaseContext );
         return databaseContext;
     }
 
     @Override
-    protected StandaloneDatabaseContext createDatabaseContext( Database database, GraphDatabaseFacade facade )
+    protected StandaloneDatabaseContext createDatabaseContext( DatabaseId databaseId )
     {
-        return new StandaloneDatabaseContext( database, facade );
+        Database kernelDatabase = createKernelDatabase( databaseId, globalModule.getGlobalDependencies(), globalModule.getGlobalMonitors() );
+        return new StandaloneDatabaseContext( kernelDatabase );
+    }
+
+    private Database createKernelDatabase( DatabaseId databaseId, Dependencies parentDependencies, Monitors parentMonitors )
+    {
+        DatabaseCreationContext databaseCreationContext = newDatabaseCreationContext( databaseId, parentDependencies, parentMonitors );
+        return new Database( databaseCreationContext );
+    }
+
+    private DatabaseCreationContext newDatabaseCreationContext( DatabaseId databaseId, Dependencies parentDependencies, Monitors parentMonitors )
+    {
+        EditionDatabaseComponents editionDatabaseComponents = edition.createDatabaseComponents( databaseId );
+        GlobalProcedures globalProcedures = edition.getGlobalProcedures();
+        return new ModularDatabaseCreationContext( databaseId, globalModule, parentDependencies, parentMonitors, editionDatabaseComponents, globalProcedures );
     }
 
     @Override

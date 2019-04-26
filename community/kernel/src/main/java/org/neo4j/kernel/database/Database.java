@@ -171,8 +171,8 @@ import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 
 public class Database extends LifecycleAdapter
 {
-    private final Monitors globalMonitors;
-    private final DependencyResolver globalDependencies;
+    private final Monitors parentMonitors;
+    private final DependencyResolver parentDependencies;
     private final PageCache globalPageCache;
     private final Tracers globalTracers;
     private final Config globalConfig;
@@ -236,7 +236,7 @@ public class Database extends LifecycleAdapter
         this.databaseConfig = context.getDatabaseConfig();
         this.idGeneratorFactory = context.getIdGeneratorFactory();
         this.tokenNameLookup = context.getTokenNameLookup();
-        this.globalDependencies = context.getGlobalDependencies();
+        this.parentDependencies = context.getParentDependencies();
         this.scheduler = context.getScheduler();
         this.logService = context.getLogService();
         this.storeCopyCheckPointMutex = context.getStoreCopyCheckPointMutex();
@@ -251,7 +251,7 @@ public class Database extends LifecycleAdapter
         this.databaseHealthFactory = context.getDatabaseHealthFactory();
         this.transactionHeaderInformationFactory = context.getTransactionHeaderInformationFactory();
         this.constraintSemantics = context.getConstraintSemantics();
-        this.globalMonitors = context.getMonitors();
+        this.parentMonitors = context.getMonitors();
         this.globalTracers = context.getTracers();
         this.globalConfig = context.getGlobalConfig();
         this.globalProcedures = context.getGlobalProcedures();
@@ -287,9 +287,9 @@ public class Database extends LifecycleAdapter
         }
         try
         {
-            databaseDependencies = new Dependencies( globalDependencies );
+            databaseDependencies = new Dependencies( parentDependencies );
             databasePageCache = new DatabasePageCache( globalPageCache, versionContextSupplier );
-            databaseMonitors = new Monitors( globalMonitors );
+            databaseMonitors = new Monitors( parentMonitors );
 
             life = new LifeSupport();
             life.add( databaseConfig);

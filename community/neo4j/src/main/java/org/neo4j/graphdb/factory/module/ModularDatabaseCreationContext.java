@@ -22,6 +22,7 @@ package org.neo4j.graphdb.factory.module;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
@@ -80,7 +81,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final LogService logService;
     private final JobScheduler scheduler;
     private final TokenNameLookup tokenNameLookup;
-    private final DependencyResolver globalDependencies;
+    private final DependencyResolver parentDependencies;
     private final TokenHolders tokenHolders;
     private final Locks locks;
     private final StatementLocksFactory statementLocksFactory;
@@ -91,7 +92,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final CommitProcessFactory commitProcessFactory;
     private final PageCache pageCache;
     private final ConstraintSemantics constraintSemantics;
-    private final Monitors globalMonitors;
+    private final Monitors parentMonitors;
     private final Tracers tracers;
     private final GlobalProcedures globalProcedures;
     private final IOLimiter ioLimiter;
@@ -112,8 +113,8 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final StorageEngineFactory storageEngineFactory;
     private final ThreadToStatementContextBridge contextBridge;
 
-    public ModularDatabaseCreationContext( DatabaseId databaseId, GlobalModule globalModule, EditionDatabaseComponents perEditionComponents,
-            GlobalProcedures globalProcedures )
+    public ModularDatabaseCreationContext( DatabaseId databaseId, GlobalModule globalModule, Dependencies parentDependencies,
+            Monitors parentMonitors, EditionDatabaseComponents perEditionComponents, GlobalProcedures globalProcedures )
     {
         this.databaseId = databaseId;
         this.globalConfig = globalModule.getGlobalConfig();
@@ -124,13 +125,13 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.databaseLayout = globalModule.getStoreLayout().databaseLayout( databaseId.name() );
         this.logService = globalModule.getLogService();
         this.scheduler = globalModule.getJobScheduler();
-        this.globalDependencies =  globalModule.getGlobalDependencies();
+        this.parentDependencies =  parentDependencies;
         this.tokenHolders = perEditionComponents.getTokenHolders();
         this.tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
         this.locks = perEditionComponents.getLocks();
         this.statementLocksFactory = perEditionComponents.getStatementLocksFactory();
         this.transactionEventListeners = globalModule.getTransactionEventListeners();
-        this.globalMonitors = globalModule.getGlobalMonitors();
+        this.parentMonitors = parentMonitors;
         this.fs = globalModule.getFileSystem();
         this.transactionStats = perEditionComponents.getTransactionMonitor();
         this.eventListeners = globalModule.getDatabaseEventListeners();
@@ -207,9 +208,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public DependencyResolver getGlobalDependencies()
+    public DependencyResolver getParentDependencies()
     {
-        return globalDependencies;
+        return parentDependencies;
     }
 
     @Override
@@ -281,7 +282,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     @Override
     public Monitors getMonitors()
     {
-        return globalMonitors;
+        return parentMonitors;
     }
 
     @Override

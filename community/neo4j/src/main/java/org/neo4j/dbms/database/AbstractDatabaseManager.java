@@ -26,14 +26,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.graphdb.factory.module.ModularDatabaseCreationContext;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
-import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 
@@ -42,8 +37,8 @@ import static java.util.Collections.unmodifiableNavigableMap;
 public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends LifecycleAdapter implements DatabaseManager<T>
 {
     protected final ConcurrentHashMap<DatabaseId,T> databaseMap;
-    private final GlobalModule globalModule;
-    private final AbstractEditionModule edition;
+    protected final GlobalModule globalModule;
+    protected final AbstractEditionModule edition;
     protected final Log log;
 
     protected AbstractDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Log log )
@@ -60,7 +55,7 @@ public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends
         startAllDatabases();
     }
 
-    protected void startAllDatabases()
+    private void startAllDatabases()
     {
         forEachDatabase( this::startDatabase, false );
     }
@@ -87,17 +82,9 @@ public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends
         return unmodifiableNavigableMap( new TreeMap<>( databaseMap ) );
     }
 
-    protected T createNewDatabaseContext( DatabaseId databaseId )
-    {
-        log.info( "Creating '%s' database.", databaseId.name() );
-        DatabaseCreationContext databaseCreationContext = newDatabaseCreationContext( databaseId );
-        Database database = new Database( databaseCreationContext );
-        return createDatabaseContext( database, database.getDatabaseFacade() );
-    }
+    protected abstract T createDatabaseContext( DatabaseId databaseId );
 
-    protected abstract T createDatabaseContext( Database database, GraphDatabaseFacade facade );
-
-    protected final void forEachDatabase( BiConsumer<DatabaseId,T> consumer, boolean systemDatabaseLast )
+    private void forEachDatabase( BiConsumer<DatabaseId,T> consumer, boolean systemDatabaseLast )
     {
         var snapshot = systemDatabaseLast ? databasesSnapshot().descendingMap().entrySet() : databasesSnapshot().entrySet();
 
@@ -129,12 +116,5 @@ public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends
         log.info( "Stop '%s' database.", databaseId.name() );
         Database database = context.database();
         database.stop();
-    }
-
-    private DatabaseCreationContext newDatabaseCreationContext( DatabaseId databaseId )
-    {
-        EditionDatabaseComponents editionDatabaseComponents = edition.createDatabaseComponents( databaseId );
-        GlobalProcedures globalProcedures = edition.getGlobalProcedures();
-        return new ModularDatabaseCreationContext( databaseId, globalModule, editionDatabaseComponents, globalProcedures );
     }
 }

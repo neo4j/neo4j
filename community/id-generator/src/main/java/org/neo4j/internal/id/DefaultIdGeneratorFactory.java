@@ -39,8 +39,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
         this( fs, new CommunityIdTypeConfigurationProvider() );
     }
 
-    public DefaultIdGeneratorFactory( FileSystemAbstraction fs,
-            IdTypeConfigurationProvider idTypeConfigurationProvider )
+    public DefaultIdGeneratorFactory( FileSystemAbstraction fs, IdTypeConfigurationProvider idTypeConfigurationProvider )
     {
         this.fs = fs;
         this.idTypeConfigurationProvider = idTypeConfigurationProvider;

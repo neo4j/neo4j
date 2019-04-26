@@ -79,7 +79,7 @@ public interface DatabaseCreationContext
 
     TokenNameLookup getTokenNameLookup();
 
-    DependencyResolver getGlobalDependencies();
+    DependencyResolver getParentDependencies();
 
     TokenHolders getTokenHolders();
 

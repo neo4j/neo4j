@@ -25,20 +25,17 @@ import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
-import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 
 class SecurityModuleDependencies implements SecurityModule.Dependencies
 {
     private final GlobalModule globalModule;
-    private final AbstractEditionModule editionModule;
     private final GlobalProcedures globalProcedures;
 
-    SecurityModuleDependencies( GlobalModule globalModule, AbstractEditionModule editionModule, GlobalProcedures globalProcedures )
+    SecurityModuleDependencies( GlobalModule globalModule, GlobalProcedures globalProcedures )
     {
         this.globalModule = globalModule;
-        this.editionModule = editionModule;
         this.globalProcedures = globalProcedures;
     }
 
@@ -76,11 +73,5 @@ class SecurityModuleDependencies implements SecurityModule.Dependencies
     public DependencySatisfier dependencySatisfier()
     {
         return globalModule.getGlobalDependencies();
-    }
-
-    @Override
-    public AccessCapability accessCapability()
-    {
-        return editionModule.accessCapability;
     }
 }

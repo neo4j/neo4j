@@ -91,7 +91,6 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
  */
 public class DatabaseManagementServiceFactory
 {
-
     protected final DatabaseInfo databaseInfo;
     private final Function<GlobalModule,AbstractEditionModule> editionFactory;
 
@@ -296,11 +295,7 @@ public class DatabaseManagementServiceFactory
             AbstractEditionModule edition, Log log )
     {
         DatabaseManager<?> databaseManager = edition.createDatabaseManager( platform, log );
-        if ( !edition.handlesDatabaseManagerLifecycle() )
-        {
-            // only add database manager to the lifecycle when edition doesn't manage it already
-            platform.getGlobalLife().add( databaseManager );
-        }
+        platform.getGlobalLife().add( databaseManager );
         platform.getGlobalDependencies().satisfyDependency( databaseManager );
         return databaseManager;
     }

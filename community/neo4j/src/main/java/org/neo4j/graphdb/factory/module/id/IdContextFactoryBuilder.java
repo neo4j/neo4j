@@ -83,7 +83,7 @@ public class IdContextFactoryBuilder
         if ( idGeneratorFactoryProvider == null )
         {
             requireNonNull( fileSystemAbstraction, "File system is required to build id generator factory." );
-            idGeneratorFactoryProvider = databaseName -> new DefaultIdGeneratorFactory( fileSystemAbstraction, idTypeConfigurationProvider );
+            idGeneratorFactoryProvider = databaseId -> new DefaultIdGeneratorFactory( fileSystemAbstraction, idTypeConfigurationProvider );
         }
         if ( idTypeConfigurationProvider == null )
         {

@@ -24,6 +24,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseExistsException;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.exceptions.KernelException;
@@ -70,6 +71,7 @@ public abstract class AbstractEditionModule
     protected NetworkConnectionTracker connectionTracker;
     protected TransactionHeaderInformationFactory headerInformationFactory;
     protected ConstraintSemantics constraintSemantics;
+    // TODO: Access capability in edition module should be removed.
     protected AccessCapability accessCapability;
     protected IOLimiter ioLimiter;
     protected Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
@@ -114,23 +116,11 @@ public abstract class AbstractEditionModule
 
     public abstract DatabaseManager<?> createDatabaseManager( GlobalModule globalModule, Log msgLog );
 
-    /**
-     * Returns {@code false} because {@link DatabaseManager}'s lifecycle is not managed by any component by default.
-     * So {@link DatabaseManager} needs to be included in the global lifecycle.
-     *
-     * @return always {@code false}.
-     */
-    public boolean handlesDatabaseManagerLifecycle()
-    {
-        return false;
-    }
-
     public abstract void createSecurityModule( GlobalModule globalModule );
 
-    protected static SecurityModule setupSecurityModule( GlobalModule globalModule, AbstractEditionModule editionModule, Log log,
-            GlobalProcedures globalProcedures, String key )
+    protected static SecurityModule setupSecurityModule( GlobalModule globalModule, Log log, GlobalProcedures globalProcedures, String key )
     {
-        SecurityModule.Dependencies securityModuleDependencies = new SecurityModuleDependencies( globalModule, editionModule, globalProcedures );
+        SecurityModule.Dependencies securityModuleDependencies = new SecurityModuleDependencies( globalModule, globalProcedures );
         SecurityModule securityModule = Services.load( SecurityModule.class, key )
                 .orElseThrow( () ->
                 {

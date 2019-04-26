@@ -332,7 +332,7 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public DependencyResolver getGlobalDependencies()
+        public DependencyResolver getParentDependencies()
         {
             return dependencyResolver;
         }

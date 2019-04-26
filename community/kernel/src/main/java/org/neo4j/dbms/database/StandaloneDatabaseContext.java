@@ -30,12 +30,11 @@ public class StandaloneDatabaseContext implements DatabaseContext
     private final GraphDatabaseFacade databaseFacade;
     private volatile Throwable failureCause;
 
-    public StandaloneDatabaseContext( Database database, GraphDatabaseFacade databaseFacade )
+    public StandaloneDatabaseContext( Database database )
     {
         requireNonNull( database );
-        requireNonNull( databaseFacade );
         this.database = database;
-        this.databaseFacade = databaseFacade;
+        this.databaseFacade = database.getDatabaseFacade();
     }
 
     @Override
