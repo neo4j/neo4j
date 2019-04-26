@@ -286,7 +286,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
     private LogProvider createFileSystemUserLogProvider( Config config, FormattedLogProvider.Builder builder )
     {
         BufferingExecutor deferredExecutor = new BufferingExecutor();
-        dependencies.withDeferredExecutor( deferredExecutor, Group.LOG_ROTATION  );
+        dependencies = dependencies.withDeferredExecutor( deferredExecutor, Group.LOG_ROTATION );
 
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         File destination = config.get( GraphDatabaseSettings.store_user_log_path );
