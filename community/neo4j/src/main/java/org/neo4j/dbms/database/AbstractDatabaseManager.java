@@ -30,7 +30,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.facade.spi.ClassicCoreSPI;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.ModularDatabaseCreationContext;
-import org.neo4j.graphdb.factory.module.ProcedureGDSFactory;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -107,7 +106,7 @@ public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends
         CoreAPIAvailabilityGuard coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( globalModule.getGlobalAvailabilityGuard(),
                 edition.getTransactionStartTimeout() );
 
-        registerGraphDatabaseServiceForProcedures( database, coreAPIAvailabilityGuard );
+        edition.getGlobalProcedures().registerComponent( GraphDatabaseService.class, any -> facade, true );
 
         ClassicCoreSPI spi = new ClassicCoreSPI( globalModule.getDatabaseInfo(), database, coreAPIAvailabilityGuard, edition.getThreadToTransactionBridge() );
         facade.init( spi, edition.getThreadToTransactionBridge(), globalConfig, database.getTokenHolders() );
@@ -155,13 +154,5 @@ public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends
         EditionDatabaseComponents editionDatabaseComponents = edition.createDatabaseComponents( databaseId );
         GlobalProcedures globalProcedures = edition.getGlobalProcedures();
         return new ModularDatabaseCreationContext( databaseId, globalModule, editionDatabaseComponents, globalProcedures, facade );
-    }
-
-    private void registerGraphDatabaseServiceForProcedures( Database database, CoreAPIAvailabilityGuard availabilityGuard )
-    {
-        // TODO: this is incorrect, and we should remove procedure specific service and factory
-        //  as soon as we will split database and dbms operations into separate services
-        ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( globalModule, database, availabilityGuard, edition.getThreadToTransactionBridge() );
-        edition.getGlobalProcedures().registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
     }
 }
