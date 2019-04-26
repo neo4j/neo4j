@@ -45,7 +45,12 @@ import org.neo4j.server.web.WebServer;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -73,23 +78,28 @@ public class ServerUserLogTest
         Log logBeforeStart = serverBootstrapper.log;
 
         // when
-        int returnCode = serverBootstrapper.start( dir, Optional.empty(),
-                MapUtil.stringMap(
-                        database_path.name(), homeDir.absolutePath().getAbsolutePath()
-                )
-        );
+        try
+        {
+            int returnCode = serverBootstrapper.start( dir, Optional.empty(),
+                    MapUtil.stringMap(
+                            database_path.name(), homeDir.absolutePath().getAbsolutePath()
+                    )
+            );
 
-        // then no exceptions are thrown and
-        assertEquals( OK, returnCode );
-        assertTrue( serverBootstrapper.getServer().getDatabase().isRunning() );
-        assertThat( serverBootstrapper.log, not( sameInstance( logBeforeStart ) ) );
+            // then no exceptions are thrown and
+            assertEquals( OK, returnCode );
+            assertTrue( serverBootstrapper.getServer().getDatabase().isRunning() );
+            assertThat( serverBootstrapper.log, not( sameInstance( logBeforeStart ) ) );
 
-        assertThat( serverBootstrapper.log, not( sameInstance( logBeforeStart ) ) );
-        assertThat( getStdOut(), not( empty() ) );
-        assertTrue( !Files.exists( getUserLogFileLocation( dir ) ) );
-
-        // stop the server so that resources are released and test teardown isn't flaky
-        serverBootstrapper.stop();
+            assertThat( getStdOut(), not( empty() ) );
+            assertThat( getStdOut(), hasItem(containsString( "Started." ) ) );
+            assertTrue( !Files.exists( getUserLogFileLocation( dir ) ) );
+        }
+        finally
+        {
+            // stop the server so that resources are released and test teardown isn't flaky
+            serverBootstrapper.stop();
+        }
     }
 
     @Test
@@ -101,20 +111,29 @@ public class ServerUserLogTest
         Log logBeforeStart = serverBootstrapper.log;
 
         // when
-        int returnCode = serverBootstrapper.start( dir, Optional.empty(),
-                MapUtil.stringMap( database_path.name(), homeDir.absolutePath().getAbsolutePath(), store_user_log_to_stdout.name(), "false" ) );
+        try
+        {
+            int returnCode = serverBootstrapper.start( dir, Optional.empty(),
+                    MapUtil.stringMap(
+                            database_path.name(), homeDir.absolutePath().getAbsolutePath(),
+                            store_user_log_to_stdout.name(), "false"
+                    )
+            );
+            // then no exceptions are thrown and
+            assertEquals( OK, returnCode );
+            assertTrue( serverBootstrapper.getServer().getDatabase().isRunning() );
+            assertThat( serverBootstrapper.log, not( sameInstance( logBeforeStart ) ) );
 
-        // then no exceptions are thrown and
-        assertEquals( OK, returnCode );
-        assertTrue( serverBootstrapper.getServer().getDatabase().isRunning() );
-        assertThat( serverBootstrapper.log, not( sameInstance( logBeforeStart ) ) );
-
-        assertThat( getStdOut(), empty() );
-        assertTrue( Files.exists( getUserLogFileLocation( dir ) ) );
-        assertThat( readUserLogFile( dir ), not( empty() ) );
-
-        // stop the server so that resources are released and test teardown isn't flaky
-        serverBootstrapper.stop();
+            assertThat( getStdOut(), empty() );
+            assertTrue( Files.exists( getUserLogFileLocation( dir ) ) );
+            assertThat( readUserLogFile( dir ), not( empty() ) );
+            assertThat( readUserLogFile( dir ), hasItem(containsString( "Started." ) ) );
+        }
+        finally
+        {
+            // stop the server so that resources are released and test teardown isn't flaky
+            serverBootstrapper.stop();
+        }
     }
 
     @Test
@@ -128,39 +147,41 @@ public class ServerUserLogTest
         int rotationDelayMs = 1;
 
         // when
-        int returnCode = serverBootstrapper.start( dir, Optional.empty(),
-                MapUtil.stringMap(
-                        database_path.name(), homeDir.absolutePath().getAbsolutePath(),
-                        store_user_log_to_stdout.name(), "false",
-                        store_user_log_rotation_delay.name(), Integer.toString( rotationDelayMs ) + "ms",
-                        store_user_log_rotation_threshold.name(), "16",
-                        store_user_log_max_archives.name(), Integer.toString( maxArchives )
-                )
-        );
-
-        // then
-        assertEquals( OK, returnCode );
-        assertThat( serverBootstrapper.log, not( sameInstance( logBeforeStart ) ) );
-        assertTrue( serverBootstrapper.getServer().getDatabase().isRunning() );
-
-        // when we forcibly log some more stuff
-        for ( int i = 0; i <= maxArchives; i++ )
+        try
         {
-            serverBootstrapper.log.info( "testing 123. This string should contain more than 16 bytes\n" );
-            // TODO: this could be flaky on a busy machine. Can we block or poll until there are no outstanding tasks in the JobScheduler queue?
-            Thread.sleep( 2 * rotationDelayMs );
+            int returnCode = serverBootstrapper.start( dir, Optional.empty(),
+                    MapUtil.stringMap( database_path.name(), homeDir.absolutePath().getAbsolutePath(), store_user_log_to_stdout.name(), "false",
+                            store_user_log_rotation_delay.name(), Integer.toString( rotationDelayMs ) + "ms", store_user_log_rotation_threshold.name(), "16",
+                            store_user_log_max_archives.name(), Integer.toString( maxArchives )
+                    )
+            );
+
+            // then
+            assertEquals( OK, returnCode );
+            assertThat( serverBootstrapper.log, not( sameInstance( logBeforeStart ) ) );
+            assertTrue( serverBootstrapper.getServer().getDatabase().isRunning() );
+
+            // when we forcibly log some more stuff
+            for ( int i = 0; i <= maxArchives; i++ )
+            {
+                serverBootstrapper.log.info( "testing 123. This string should contain more than 16 bytes\n" );
+                // this could be flaky on a busy machine. Can we block or poll until there are no outstanding tasks in the JobScheduler queue?
+                Thread.sleep( 2 * rotationDelayMs );
+            }
+
+            // then no exceptions are thrown and
+            assertThat( getStdOut(), empty() );
+            assertTrue( Files.exists( getUserLogFileLocation( dir ) ) );
+            assertThat( readUserLogFile( dir ), not( empty() ) );
+            List<String> userLogFiles = allUserLogFiles( dir );
+            assertThat( userLogFiles, containsInAnyOrder( "neo4j.log", "neo4j.log.1", "neo4j.log.2", "neo4j.log.3", "neo4j.log.4" ) );
+            assertEquals( maxArchives + 1, userLogFiles.size() );
         }
-
-        // then no exceptions are thrown and
-        assertThat( getStdOut(), empty() );
-        assertTrue( Files.exists( getUserLogFileLocation( dir ) ) );
-        assertThat( readUserLogFile( dir ), not( empty() ) );
-        List<String> userLogFiles = allUserLogFiles( dir );
-        assertThat( userLogFiles, containsInAnyOrder( "neo4j.log", "neo4j.log.1", "neo4j.log.2", "neo4j.log.3", "neo4j.log.4" ) );
-        assertEquals( maxArchives + 1, userLogFiles.size() );
-
-        // stop the server so that resources are released and test teardown isn't flaky
-        serverBootstrapper.stop();
+        finally
+        {
+            // stop the server so that resources are released and test teardown isn't flaky
+            serverBootstrapper.stop();
+        }
     }
 
     private List<String> getStdOut()
@@ -232,7 +253,9 @@ public class ServerUserLogTest
 
     private List<String> allUserLogFiles( File homeDir ) throws IOException
     {
-        return Files.list( Paths.get( homeDir.getAbsolutePath(), "logs" ) ).map( x -> x.getFileName().toString() ).filter(
-                x -> x.contains( "neo4j.log" ) ).collect( Collectors.toList() );
+        return Files.list( Paths.get( homeDir.getAbsolutePath(), "logs" ) )
+                .map( x -> x.getFileName().toString() )
+                .filter( x -> x.contains( "neo4j.log" ) )
+                .collect( Collectors.toList() );
     }
 }
