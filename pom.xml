@@ -442,11 +442,6 @@
                     <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.load_csv_file_url_root</new>
                     <justification>The description annotation contained text that was not strictly correct, and this is therefor an important documentation correction.</justification>
                   </item>
-                  <item>
-                    <code>java.method.defaultMethodAddedToInterface</code>
-                    <classQualifiedName>org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies</classQualifiedName>
-                    <justification>This is a default api method with no implications for binary or source compatibility.</justification>
-                  </item>
               </revapi.ignore>
               <revapi.semver.ignore>
                 <enabled>true</enabled>
