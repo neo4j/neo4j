@@ -50,6 +50,17 @@ final case class ShowUsers()(val position: InputPosition) extends MultiDatabaseD
       SemanticState.recordCurrentScope(this)
 }
 
+final case class CreateUser(userName: String, initialPassword: String, requirePasswordChange: Boolean, suspended: Boolean)(val position: InputPosition) extends MultiDatabaseDDL {
+// TODO should initial password be kept as a clear text string??
+  UserNameValidator.assertValidUsername(userName)
+
+  override def name = "CATALOG CREATE USER"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
 final case class ShowRoles(withUsers: Boolean, showAll: Boolean)(val position: InputPosition) extends MultiDatabaseDDL {
 
   override def name: String = if (showAll) "CATALOG SHOW ALL ROLES" else "CATALOG SHOW POPULATED ROLES"

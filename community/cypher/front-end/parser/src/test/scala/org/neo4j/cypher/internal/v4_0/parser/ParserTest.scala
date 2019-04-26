@@ -58,9 +58,13 @@ trait ParserTest[T, J] extends CypherFunSuite {
   def partiallyParsing(s: String)(implicit p: Rule1[T]): ResultCheck = convertResult(parseRule(p, s), s)
 
   def assertFails(s: String)(implicit p: Rule1[T]) {
-    parseRule(p ~ EOI, s).result match {
-      case None    =>
-      case Some(thing) => fail(s"'$s' should not have been parsed correctly, parsed as $thing")
+    try {
+      parseRule(p ~ EOI, s).result match {
+        case None    =>
+        case Some(thing) => fail(s"'$s' should not have been parsed correctly, parsed as $thing")
+      }
+    } catch {
+      case _: Throwable => // If encountered a parboiled error while parsing, it means the parsing failed
     }
   }
 

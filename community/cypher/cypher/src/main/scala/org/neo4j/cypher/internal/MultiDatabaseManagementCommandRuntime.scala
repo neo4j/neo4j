@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.compiler.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.procs.{SystemCommandExecutionPlan, UpdatingSystemCommandExecutionPlan}
 import org.neo4j.cypher.internal.runtime._
+import org.neo4j.kernel.api.security.UserManager
+import org.neo4j.string.UTF8
 import org.neo4j.values.storable.{TextValue, Values}
 import org.neo4j.values.virtual.VirtualValues
 
@@ -45,6 +47,14 @@ case class MultiDatabaseManagementCommandRuntime(normalExecutionEngine: Executio
     logicalToExecutable.applyOrElse(withSlottedParameters, throwCantCompile).apply(context, parameterMapping)
   }
 
+  private val userManager: UserManager = //TODO this doesn't work since UserManager cannot currently be resolved
+    /*if (normalExecutionEngine != null)
+      normalExecutionEngine.queryService.getDependencyResolver.resolveDependency(classOf[UserManager])
+    // should rather be EnterpriseUserManager
+    else*/ null
+
+
+
   val logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, Map[String, Int]) => ExecutionPlan] = {
     // SHOW USERS
     case ShowUsers() => (_, _) =>
@@ -53,6 +63,22 @@ case class MultiDatabaseManagementCommandRuntime(normalExecutionEngine: Executio
           |OPTIONAL MATCH (u)-[:HAS_ROLE]->(r:Role)
           |RETURN u.name as user, collect(r.name) as roles""".stripMargin,
         VirtualValues.EMPTY_MAP
+      )
+
+    // CREATE USER foo WITH PASSWORD password
+    case CreateUser(userName, initialPassword, requirePasswordChange, suspended) => (_, _) =>
+      // TODO check so we don't log plain passwords
+      val user = userManager.newUser(userName, UTF8.encode(initialPassword),requirePasswordChange)
+      val credentials = user.credentials().serialize()
+      SystemCommandExecutionPlan("CreateUser", normalExecutionEngine,
+        """CREATE (u:User {name:$name,credentials:$credentials,passwordChangeRequired:$requirePasswordChange,suspended:$suspended})
+          |RETURN u.name as name""".stripMargin,
+        VirtualValues.map(Array("name", "credentials", "requirePasswordChange", "suspended"), Array(
+          Values.stringValue(userName),
+          Values.stringValue(credentials),
+          Values.booleanValue(requirePasswordChange),
+          Values.booleanValue(suspended)
+        ))
       )
 
     // SHOW [ ALL | POPULATED ] ROLES [ WITH USERS ]

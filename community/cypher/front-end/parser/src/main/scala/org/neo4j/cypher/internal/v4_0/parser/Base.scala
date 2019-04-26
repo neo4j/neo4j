@@ -109,6 +109,11 @@ trait Base extends Parser {
     ) memoMismatches) ~~> (_.reduce(_ + '`' + _))
   }
 
+  def UserNameString: Rule1[String] = rule("a user name") {
+    // Since the username may include (and start with) quotation marks, they are always part of the username
+    oneOrMore(!ch(' ') ~ ANY) ~> (_.toLowerCase) ~ ch(' ')
+  }
+
   def RoleNameString: Rule1[String] = UnquotedRoleNameString | QuotedRoleNameString
 
   def UnquotedRoleNameString: Rule1[String] = rule("a role name") {

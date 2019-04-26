@@ -35,6 +35,54 @@ class CatalogDDLParserTest
     yields(ast.ShowUsers())
   }
 
+  test("CREATE USER foo WITH PASSWORD 'password'") {
+    yields(ast.CreateUser("foo", "password", requirePasswordChange = true, suspended = false))
+  }
+
+  test("CREATE USER \"foo\" WITH PASSWORD 'password'") {
+    yields(ast.CreateUser("\"foo\"", "password", requirePasswordChange = true, suspended = false))
+  }
+
+  test("CREATE USER !#\"~ WITH PASSWORD 'password'") {
+    yields(ast.CreateUser("!#\"~", "password", requirePasswordChange = true, suspended = false))
+  }
+
+  test("CREATE USER foo WITH PASSWORD 'password' CHANGE REQUIRED") {
+    yields(ast.CreateUser("foo", "password", requirePasswordChange = true, suspended = false))
+  }
+
+  test("CREATE USER foo WITH PASSWORD 'password' CHANGE NOT REQUIRED") {
+    yields(ast.CreateUser("foo", "password", requirePasswordChange = false, suspended = false))
+  }
+
+  test("CREATE USER foo WITH PASSWORD 'password' WITH STATUS SUSPENDED") {
+    yields(ast.CreateUser("foo", "password", requirePasswordChange = true, suspended = true))
+  }
+
+  test("CREATE USER foo WITH PASSWORD 'password' WITH STATUS ACTIVE") {
+    yields(ast.CreateUser("foo", "password", requirePasswordChange = true, suspended = false))
+  }
+
+  test("CREATE USER foo") {
+    failsToParse
+  }
+
+  test("CREATE USER fo,o WITH PASSWORD 'password'") {
+    failsToParse
+  }
+
+  test("CREATE USER f:oo WITH PASSWORD 'password'") {
+    failsToParse
+  }
+
+  test("CREATE USER foo PASSWORD 'password'") {
+    failsToParse
+  }
+
+  test("CREATE USER foo WITH PASSWORD 'password' WITH STAUS ACTIVE") {
+    failsToParse
+  }
+
   test("SHOW ROLES") {
     yields(ast.ShowRoles(withUsers = false, showAll = true))
   }
@@ -65,6 +113,10 @@ class CatalogDDLParserTest
 
   test("CREATE ROLE \"foo\"") {
     yields(ast.CreateRole("foo", None))
+  }
+
+  test("CREATE ROLE f%o") {
+    failsToParse
   }
 
   test("CREATE ROLE foo AS COPY OF bar") {
