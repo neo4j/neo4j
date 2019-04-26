@@ -51,6 +51,7 @@ class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVR
   }
 
   private def commitAndRestartTx() {
+    queryContext.resources.close(true)
     queryContext.transactionalContext.commitAndRestartTx()
     outerLoadCSVIterator.foreach(_.notifyCommit())
   }

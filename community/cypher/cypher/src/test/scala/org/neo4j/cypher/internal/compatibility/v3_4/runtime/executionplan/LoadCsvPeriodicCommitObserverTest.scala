@@ -25,8 +25,9 @@ import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.csv.reader.Configuration
-import org.neo4j.cypher.internal.runtime.{QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.runtime.interpreted.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
+import org.neo4j.cypher.internal.runtime.{QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
 class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
@@ -113,6 +114,8 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
   override protected def beforeEach() {
     val queryContext = mock[QueryContext]
     transactionalContext = mock[QueryTransactionalContext]
+    val manager = new ResourceManager
+    when(queryContext.resources).thenReturn(manager)
     when(queryContext.transactionalContext).thenReturn(transactionalContext)
     resource = mock[ExternalCSVResource]
     resourceUnderTest = new LoadCsvPeriodicCommitObserver(1, resource, queryContext)
