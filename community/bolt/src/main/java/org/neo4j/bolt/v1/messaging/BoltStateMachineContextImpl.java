@@ -137,7 +137,7 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
     @Override
     public void releaseStatementProcessor()
     {
-        connectionState.clearStatementProcessor();
+        connectionState().clearStatementProcessor();
     }
 
     private boolean isCurrentStatementProcessorNotSet( DatabaseId databaseId ) throws BoltProtocolBreachFatality

@@ -29,7 +29,9 @@ import org.neo4j.values.virtual.MapValue;
 
 public final class MessageMetadataParser
 {
-    private static final String DB_NAME = "db";
+    public static final String DB_NAME_KEY = "db";
+    // FIXME: absent id does not make sense.
+    // Absent db name is a bolt protocol concept, it should map to default db's id.
     public static final DatabaseId ABSENT_DB_ID = new DatabaseId( "" );
 
     /**
@@ -37,7 +39,7 @@ public final class MessageMetadataParser
      */
     static DatabaseId parseDatabaseId( MapValue meta ) throws BoltIOException
     {
-        AnyValue anyValue = meta.get( DB_NAME );
+        AnyValue anyValue = meta.get( DB_NAME_KEY );
         if ( anyValue == Values.NO_VALUE )
         {
             return ABSENT_DB_ID;
@@ -45,6 +47,7 @@ public final class MessageMetadataParser
         else if ( anyValue instanceof StringValue )
         {
             var databaseName = ((StringValue) anyValue).stringValue();
+            // FIXME: the mapping from db name to id should not happen here in bolt IO thread.
             return new DatabaseId( databaseName );
         }
         else

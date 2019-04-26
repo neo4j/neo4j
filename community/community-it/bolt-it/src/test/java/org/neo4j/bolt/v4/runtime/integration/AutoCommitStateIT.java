@@ -45,6 +45,7 @@ import org.neo4j.values.storable.BooleanValue;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.bolt.testing.BoltMatchers.containsRecord;
@@ -75,6 +76,7 @@ class AutoCommitStateIT extends BoltStateMachineStateTestBase
         assertTrue( response.hasMetadata( "type" ) );
         assertTrue( response.hasMetadata( "t_last" ) );
         assertTrue( response.hasMetadata( "bookmark" ) );
+        assertTrue( response.hasMetadata( "db" ) );
         assertThat( machine.state(), instanceOf( ReadyState.class ) );
     }
 
@@ -92,6 +94,8 @@ class AutoCommitStateIT extends BoltStateMachineStateTestBase
         RecordedBoltResponse response = recorder.nextResponse();
         assertThat( response, containsRecord( 1L ) );
         assertThat( response, succeededWithMetadata( "has_more", BooleanValue.TRUE ) );
+        assertFalse( response.hasMetadata( "db" ) );
+        assertFalse( response.hasMetadata( "bookmark" ) );
 
         machine.process( newPullMessage( 2L ), recorder );
         response = recorder.nextResponse();
@@ -99,6 +103,7 @@ class AutoCommitStateIT extends BoltStateMachineStateTestBase
         assertTrue( response.hasMetadata( "type" ) );
         assertTrue( response.hasMetadata( "t_last" ) );
         assertTrue( response.hasMetadata( "bookmark" ) );
+        assertTrue( response.hasMetadata( "db" ) );
         assertThat( machine.state(), instanceOf( ReadyState.class ) );
     }
 
@@ -116,6 +121,7 @@ class AutoCommitStateIT extends BoltStateMachineStateTestBase
         RecordedBoltResponse response = recorder.nextResponse();
         assertThat( response, succeeded() );
         assertTrue( response.hasMetadata( "bookmark" ) );
+        assertTrue( response.hasMetadata( "db" ) );
         assertThat( machine.state(), instanceOf( ReadyState.class ) );
     }
 

@@ -63,6 +63,6 @@ public class TransactionStateMachineSPIProviderV4 implements TransactionStateMac
                 .orElseThrow( () -> new BoltIOException( Status.Database.DatabaseNotFound,
                     format( "The database requested does not exist. Requested database name: '%s'.", databaseId.name() ) ) );
 
-        return new TransactionStateMachineV4SPI( databaseContext, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
+        return new TransactionStateMachineV4SPI( databaseContext, boltChannel, txAwaitDuration, clock, resourceReleaseManger, databaseId );
     }
 }

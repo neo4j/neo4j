@@ -111,9 +111,14 @@ public class CypherAdapterStream implements BoltResult
         if ( !hasMore )
         {
             addRecordStreamingTime( clock.millis() - start, recordConsumer );
+            addDatabaseName( recordConsumer );
             addMetadata( querySubscriber.queryStatistics(), recordConsumer );
         }
         return hasMore;
+    }
+
+    protected void addDatabaseName( RecordConsumer recordConsumer )
+    {
     }
 
     protected void addRecordStreamingTime( long time, RecordConsumer recordConsumer )

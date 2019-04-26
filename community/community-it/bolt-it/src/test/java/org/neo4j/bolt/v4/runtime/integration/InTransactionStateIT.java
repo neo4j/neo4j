@@ -97,6 +97,7 @@ class InTransactionStateIT extends BoltStateMachineStateTestBase
         RecordedBoltResponse response = recorder.nextResponse();
         assertThat( response, succeeded() );
         assertFalse( response.hasMetadata( "bookmark" ) );
+        assertFalse( response.hasMetadata( "db" ) );
         assertThat( machine.state(), instanceOf( ReadyState.class ) );
     }
 
@@ -114,6 +115,7 @@ class InTransactionStateIT extends BoltStateMachineStateTestBase
         RecordedBoltResponse response = recorder.nextResponse();
         assertThat( response, succeeded() );
         assertFalse( response.hasMetadata( "bookmark" ) );
+        assertTrue( response.hasMetadata( "db" ) );
         assertThat( machine.state(), instanceOf( InTransactionState.class ) );
     }
 
@@ -131,6 +133,7 @@ class InTransactionStateIT extends BoltStateMachineStateTestBase
         RecordedBoltResponse response = recorder.nextResponse();
         assertThat( response, containsNoRecord() );
         assertThat( response, succeededWithMetadata( "has_more", BooleanValue.TRUE ) );
+        assertFalse( response.hasMetadata( "db" ) );
 
         machine.process( newDiscardMessage( 2 ), recorder );
         response = recorder.nextResponse();
@@ -138,6 +141,7 @@ class InTransactionStateIT extends BoltStateMachineStateTestBase
         assertTrue( response.hasMetadata( "type" ) );
         assertTrue( response.hasMetadata( "t_last" ) );
         assertFalse( response.hasMetadata( "bookmark" ) );
+        assertTrue( response.hasMetadata( "db" ) );
         assertThat( response, succeededWithoutMetadata( "has_more" ) );
         assertThat( machine.state(), instanceOf( InTransactionState.class ) );
     }
@@ -158,6 +162,7 @@ class InTransactionStateIT extends BoltStateMachineStateTestBase
         assertTrue( response.hasMetadata( "type" ) );
         assertTrue( response.hasMetadata( "t_last" ) );
         assertFalse( response.hasMetadata( "bookmark" ) );
+        assertTrue( response.hasMetadata( "db" ) );
         assertThat( machine.state(), instanceOf( InTransactionState.class ) );
     }
 
@@ -175,6 +180,7 @@ class InTransactionStateIT extends BoltStateMachineStateTestBase
         RecordedBoltResponse response = recorder.nextResponse();
         assertThat( response, containsRecord( 1L ) );
         assertThat( response, succeededWithMetadata( "has_more", BooleanValue.TRUE ) );
+        assertFalse( response.hasMetadata( "db" ) );
 
         machine.process( newPullMessage( 2 ), recorder );
         response = recorder.nextResponse();
@@ -182,6 +188,7 @@ class InTransactionStateIT extends BoltStateMachineStateTestBase
         assertTrue( response.hasMetadata( "type" ) );
         assertTrue( response.hasMetadata( "t_last" ) );
         assertFalse( response.hasMetadata( "bookmark" ) );
+        assertTrue( response.hasMetadata( "db" ) );
         assertThat( machine.state(), instanceOf( InTransactionState.class ) );
     }
 
