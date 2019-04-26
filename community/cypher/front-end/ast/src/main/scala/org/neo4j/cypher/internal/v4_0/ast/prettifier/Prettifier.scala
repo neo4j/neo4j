@@ -67,7 +67,10 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case DropRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property) =>
       s"DROP CONSTRAINT ON ()-[$variable:$relType]-() ASSERT exists(${property.asCanonicalStringVal})"
 
-    case x@ShowRoles(withUsers, _) =>
+    case x: ShowUsers =>
+      s"${x.name}"
+
+    case x @ ShowRoles(withUsers, _) =>
       s"${x.name} ${if (withUsers) "WITH USERS" else ""}"
 
     case x @ CreateRole(roleName, _) =>

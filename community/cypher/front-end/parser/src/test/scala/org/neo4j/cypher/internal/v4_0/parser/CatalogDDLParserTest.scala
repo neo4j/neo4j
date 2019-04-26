@@ -31,6 +31,10 @@ class CatalogDDLParserTest
   private val returnGraph: ast.ReturnGraph = ast.ReturnGraph(None)(pos)
   private val returnQuery = ast.SingleQuery(Seq(returnGraph))(pos)
 
+  test("SHOW USERS") {
+    yields(ast.ShowUsers())
+  }
+
   test("SHOW ROLES") {
     yields(ast.ShowRoles(withUsers = false, showAll = true))
   }

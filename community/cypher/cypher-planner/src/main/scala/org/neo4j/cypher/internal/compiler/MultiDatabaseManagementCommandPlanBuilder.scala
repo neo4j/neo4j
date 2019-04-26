@@ -43,6 +43,10 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
   override def process(from: BaseState, context: PlannerContext): LogicalPlanState = {
     implicit val idGen: SequentialIdGen = new SequentialIdGen()
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
+      // SHOW USERS
+      case _: ShowUsers =>
+        Some(plans.ShowUsers())
+
       // SHOW [ ALL | POPULATED ] ROLES [ WITH USERS ]
       case ShowRoles(withUsers, showAll) =>
         Some(plans.ShowRoles(withUsers, showAll))

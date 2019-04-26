@@ -153,6 +153,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case _: DropRelationshipPropertyExistenceConstraint =>
         PlanDescriptionImpl(id, "DropRelationshipPropertyExistenceConstraint", NoChildren, Seq.empty, variables)
 
+      case ShowUsers() =>
+        PlanDescriptionImpl(id, "ShowUsers", NoChildren, Seq.empty, variables)
+
       case ShowRoles(_,_) =>
         PlanDescriptionImpl(id, "ShowRoles", NoChildren, Seq.empty, variables)
 

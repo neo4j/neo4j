@@ -34,7 +34,11 @@ trait Statement extends Parser
   }
 
   def SecurityCommand: Rule1[CatalogDDL] = rule("Security DDL statement") {
-    ShowRoles | CreateRole | DropRole
+    ShowRoles | CreateRole | DropRole | ShowUsers
+  }
+
+  def ShowUsers: Rule1[ShowUsers] = rule("CATALOG SHOW USERS") {
+    group(optional(keyword("CATALOG")) ~~ keyword("SHOW USERS")) ~>>> (_=> ast.ShowUsers())
   }
 
   def ShowRoles: Rule1[ShowRoles] = rule("CATALOG SHOW ROLES") {

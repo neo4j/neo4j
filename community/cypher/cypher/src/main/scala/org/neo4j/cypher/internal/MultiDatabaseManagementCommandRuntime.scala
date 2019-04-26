@@ -46,6 +46,15 @@ case class MultiDatabaseManagementCommandRuntime(normalExecutionEngine: Executio
   }
 
   val logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, Map[String, Int]) => ExecutionPlan] = {
+    // SHOW USERS
+    case ShowUsers() => (_, _) =>
+      SystemCommandExecutionPlan("ShowUsers", normalExecutionEngine,
+        """MATCH (u:User)
+          |OPTIONAL MATCH (u)-[:HAS_ROLE]->(r:Role)
+          |RETURN u.name as user, collect(r.name) as roles""".stripMargin,
+        VirtualValues.EMPTY_MAP
+      )
+
     // SHOW [ ALL | POPULATED ] ROLES [ WITH USERS ]
     case ShowRoles(withUsers, showAll) => (_, _) =>
       // TODO fix the predefined roles to be connected to PredefinedRoles (aka PredefinedRoles.ADMIN)
