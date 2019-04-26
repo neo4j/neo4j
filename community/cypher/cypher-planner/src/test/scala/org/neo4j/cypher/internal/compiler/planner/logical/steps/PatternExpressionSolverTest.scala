@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.DummyPosition
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.Extractors.{MapKeys, SetExtractor}
 
 class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -172,12 +173,4 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
       RelationshipPattern(relName, Seq.empty, None, None, dir)(relPos),
       NodePattern(right, Seq.empty, None)(rightPos)) _)(DummyPosition(position)))
   }
-}
-
-object SetExtractor {
-  def unapplySeq[T](s: Set[T]): Option[Seq[T]] = Some(s.toSeq)
-}
-
-object MapKeys {
-  def unapplySeq[T](s: Map[T, _]): Option[Seq[T]] = Some(s.keys.toSeq)
 }

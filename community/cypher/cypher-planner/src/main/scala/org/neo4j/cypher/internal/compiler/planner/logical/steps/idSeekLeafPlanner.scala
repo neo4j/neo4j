@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical._
 import org.neo4j.cypher.internal.compiler.planner.logical.plans._
-import org.neo4j.cypher.internal.ir.{PatternRelationship, QueryGraph, InterestingOrder}
+import org.neo4j.cypher.internal.ir.{InterestingOrder, PatternRelationship, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, SeekableArgs}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v4_0.expressions._
@@ -47,7 +47,7 @@ object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
             val seekPlan = planRelationshipByIdSeek(relationship, idValues, Seq(predicate), qg.argumentIds, context)
             LeafPlansForVariable(id, Set(planRelTypeFilter(seekPlan, idExpr, types, context)))
           case None =>
-            val plan = context.logicalPlanProducer.planNodeByIdSeek(id, idValues, Seq(predicate), qg.argumentIds, context)
+            val plan = context.logicalPlanProducer.planNodeByIdSeek(id, idValues, Seq(predicate), qg.argumentIds, interestingOrder, context)
             LeafPlansForVariable(id, Set(plan))
         }
     }

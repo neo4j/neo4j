@@ -46,6 +46,39 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   private val cardinalities = planningAttributes.cardinalities
   private val providedOrders = planningAttributes.providedOrders
 
+  /**
+    * This object is simply to group methods that are used by the pattern expression solver, and thus do not need to update `solveds`
+    */
+  object ForPatternExpressionSolver {
+
+    def planArgument(argumentIds: Set[String],
+                     context: LogicalPlanningContext): LogicalPlan = {
+      annotate(Argument(argumentIds), PlannerQuery.empty, ProvidedOrder.empty, context)
+    }
+
+    def planApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
+      // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
+      val providedOrder = providedOrders.get(left.id)
+      // The RHS is the leaf plan we are wrapping under an apply in order to solve the pattern expression.
+      // It has the correct solved
+      val solved = solveds.get(right.id)
+      annotate(Apply(left, right), solved, providedOrder, context)
+    }
+
+    def planRollup(lhs: LogicalPlan,
+                   rhs: LogicalPlan,
+                   collectionName: String,
+                   variableToCollect: String,
+                   nullable: Set[String],
+                   context: LogicalPlanningContext): LogicalPlan = {
+      // The LHS is either the plan we're building on top of, with the correct solved or it is the result of [[planArgument]].
+      // The RHS is the sub-query
+      val solved = solveds.get(lhs.id)
+      annotate(RollUpApply(lhs, rhs, collectionName, variableToCollect, nullable), solved, providedOrders.get(lhs.id), context)
+    }
+
+  }
+
 
   def planLock(plan: LogicalPlan, nodesToLock: Set[String], context: LogicalPlanningContext): LogicalPlan =
     annotate(LockNodes(plan, nodesToLock), solveds.get(plan.id), providedOrders.get(plan.id), context)
@@ -174,14 +207,20 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planNodeByIdSeek(idName: String,
                        nodeIds: SeekableArgs,
                        solvedPredicates: Seq[Expression] = Seq.empty,
-                       argumentIds: Set[String], context: LogicalPlanningContext): LogicalPlan = {
+                       argumentIds: Set[String],
+                       interestingOrder: InterestingOrder,
+                       context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
+    val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, interestingOrder, context)
+    val rewrittenNodeIds = nodeIds.mapValues(solver.solve(_))
+    val newArguments = solver.newArguments
     // Is this ordered by node id?
-    annotate(NodeByIdSeek(idName, nodeIds, argumentIds), solved, ProvidedOrder.empty, context)
+    val leafPlan = annotate(NodeByIdSeek(idName, rewrittenNodeIds, argumentIds ++ newArguments), solved, ProvidedOrder.empty, context)
+    solver.rewriteLeafPlan(leafPlan)
   }
 
   def planNodeByLabelScan(idName: String,
@@ -452,15 +491,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solved = solveds.get(inner.id).updateTailOrSelf(_.withInterestingOrder(interestingOrder))
     val providedOrder = providedOrders.get(inner.id)
     annotate(inner.copyPlanWithIdGen(idGen), solved, providedOrder, context)
-  }
-
-  def planRollup(lhs: LogicalPlan,
-                 rhs: LogicalPlan,
-                 collectionName: String,
-                 variableToCollect: String,
-                 nullable: Set[String],
-                 context: LogicalPlanningContext): LogicalPlan = {
-    annotate(RollUpApply(lhs, rhs, collectionName, variableToCollect, nullable), solveds.get(lhs.id), providedOrders.get(lhs.id), context)
   }
 
   def planCountStoreNodeAggregation(query: PlannerQuery, projectedColumn: String, labels: List[Option[LabelName]], argumentIds: Set[String], context: LogicalPlanningContext): LogicalPlan = {
@@ -767,7 +797,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     *
     * @return the same plan
     */
-  private def annotate(plan: LogicalPlan, solved: PlannerQuery, providedOrder: ProvidedOrder, context: LogicalPlanningContext) = {
+  private def annotate(plan: LogicalPlan, solved: PlannerQuery, providedOrder: ProvidedOrder, context: LogicalPlanningContext): LogicalPlan = {
     assertNoBadExpressionsExists(plan)
     val cardinality = cardinalityModel(solved, context.input, context.semanticTable)
     solveds.set(plan.id, solved)

@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.{LogicalPlanningContext, patternExpressionRewriter}
 import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph}
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.{Argument, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Exists
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{PatternExpressionPatternElementNamer, projectNamedPaths}
 import org.neo4j.cypher.internal.v4_0.util.{FreshIdNameGenerator, Rewriter, UnNamedNameGenerator, topDown}
 
+import scala.collection.mutable
 import scala.reflect.ClassTag
 
 /*
@@ -51,54 +52,89 @@ Would be solved with a plan such as
 object PatternExpressionSolver {
   private val pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression
 
-  // TODO support leaf plans
-
   /**
     * Get a Solver to solve multiple expressions and finally return a rewritten plan of the given source.
     */
   def solverFor(source: LogicalPlan,
                 interestingOrder: InterestingOrder,
-                context: LogicalPlanningContext): SolverForPlan = new SolverForPlan(source, interestingOrder, context)
+                context: LogicalPlanningContext): SolverForInnerPlan = new SolverForInnerPlan(source, interestingOrder, context)
 
-  class SolverForPlan(source: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext) {
-    private val patternExpressionSolver = solvePatternExpressions(source.availableSymbols, interestingOrder, context)
-    private val patternComprehensionSolver = solvePatternComprehensions(source.availableSymbols, interestingOrder, context)
-    private var result = source
+  def solverForLeafPlan(argumentIds: Set[String],
+                        interestingOrder: InterestingOrder,
+                        context: LogicalPlanningContext): SolverForLeafPlan = new SolverForLeafPlan(argumentIds, interestingOrder, context)
+
+  abstract class Solver(initialPlan: LogicalPlan,
+                                interestingOrder: InterestingOrder,
+                                context: LogicalPlanningContext) {
+    private val patternExpressionSolver = solvePatternExpressions(initialPlan.availableSymbols, interestingOrder, context)
+    private val patternComprehensionSolver = solvePatternComprehensions(initialPlan.availableSymbols, interestingOrder, context)
+    protected var resultPlan: LogicalPlan = initialPlan
+    protected var arguments: mutable.Builder[String, Set[String]] = Set.newBuilder[String]
 
     def solve(expression: Expression, maybeKey: Option[String] = None): Expression = {
-      if (result == null) {
+      if (resultPlan == null) {
         throw new IllegalArgumentException("You cannot solve more expressions after obtaining the rewritten plan.")
       }
 
-      val (rPlan, rExpression) = expression match {
+      val RewriteResult(plan, solvedExp, introducedVariables) = expression match {
         case expression: PatternExpression =>
-          patternExpressionSolver.solveUsingRollUpApply(result, expression, maybeKey, context)
+          val (newPlan, newVar) = patternExpressionSolver.solveUsingRollUpApply(resultPlan, expression, maybeKey, context)
+          RewriteResult(newPlan, newVar, Set(newVar.name))
 
         case expression: PatternComprehension =>
-          patternComprehensionSolver.solveUsingRollUpApply(result, expression, maybeKey, context)
+          val (newPlan, newVar) = patternComprehensionSolver.solveUsingRollUpApply(resultPlan, expression, maybeKey, context)
+          RewriteResult(newPlan, newVar, Set(newVar.name))
 
         case inExpression =>
           val expression = solveUsingGetDegree(inExpression)
-          val (firstStepPlan, firstStepExpression) = patternExpressionSolver.rewriteInnerExpressions(result, expression, context)
-          patternComprehensionSolver.rewriteInnerExpressions(firstStepPlan, firstStepExpression, context)
+          val RewriteResult(firstStepPlan, firstStepExpression, firstStepIntroducedVariables) = patternExpressionSolver.rewriteInnerExpressions(resultPlan, expression, context)
+          val RewriteResult(secondStepPlan, secondStepExpression, secondStepintroducedVariables) = patternComprehensionSolver.rewriteInnerExpressions(firstStepPlan, firstStepExpression, context)
+          RewriteResult(secondStepPlan, secondStepExpression, firstStepIntroducedVariables ++ secondStepintroducedVariables)
       }
-      result = rPlan
-      rExpression
+      resultPlan = plan
+      arguments ++= introducedVariables
+      solvedExp
     }
 
+  }
+
+  class SolverForInnerPlan(source: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext)
+    extends Solver(source, interestingOrder, context) {
+
     def rewrittenPlan(): LogicalPlan = {
-      val result = this.result
-      this.result = null
+      val result = this.resultPlan
+      this.resultPlan = null
       result
     }
   }
 
-  private def solveUsingGetDegree(exp: Expression): Expression =
-    exp.endoRewrite(getDegreeRewriter)
+  class SolverForLeafPlan(argumentIds: Set[String], interestingOrder: InterestingOrder, context: LogicalPlanningContext)
+      extends Solver(
+        context.logicalPlanProducer.ForPatternExpressionSolver.planArgument(argumentIds, context), // When we have a leaf plan, we start with a single row on the LHS of the RollupApply
+        interestingOrder,
+        context){
+
+    def newArguments: Set[String] = {
+      arguments.result()
+    }
+
+    def rewriteLeafPlan(leafPlan: LogicalPlan): LogicalPlan = {
+      val lhsOfApply = this.resultPlan
+      this.resultPlan = null
+      if (lhsOfApply.isInstanceOf[Argument]) {
+        // We did not change anything. No need to wrap the leaf plan in an apply.
+        leafPlan
+      } else {
+        context.logicalPlanProducer.ForPatternExpressionSolver.planApply(lhsOfApply, leafPlan, context)
+      }
+    }
+  }
+
+  private def solveUsingGetDegree(exp: Expression): Expression = exp.endoRewrite(getDegreeRewriter)
 
   private def solvePatternExpressions(availableSymbols: Set[String],
-                              interestingOrder: InterestingOrder,
-                              context: LogicalPlanningContext): ListSubQueryExpressionSolver[PatternExpression] = {
+                                      interestingOrder: InterestingOrder,
+                                      context: LogicalPlanningContext): ListSubQueryExpressionSolver[PatternExpression] = {
 
     def extractQG(source: LogicalPlan, namedExpr: PatternExpression): QueryGraph = {
       import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
@@ -131,12 +167,12 @@ object PatternExpressionSolver {
       createPlannerContext = createPlannerContext,
       projectionCreator = createPathExpression,
       interestingOrder = interestingOrder,
-      lastDitch = patternExpressionRewriter(availableSymbols, interestingOrder, context))
+      patternExpressionRewriter = patternExpressionRewriter(availableSymbols, interestingOrder, context))
   }
 
   private def solvePatternComprehensions(availableSymbols: Set[String],
-                                 interestingOrder: InterestingOrder,
-                                 context: LogicalPlanningContext): ListSubQueryExpressionSolver[PatternComprehension] = {
+                                         interestingOrder: InterestingOrder,
+                                         context: LogicalPlanningContext): ListSubQueryExpressionSolver[PatternComprehension] = {
     def extractQG(source: LogicalPlan, namedExpr: PatternComprehension) = {
       import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
 
@@ -159,79 +195,85 @@ object PatternExpressionSolver {
       createPlannerContext = createPlannerContext,
       projectionCreator = createProjectionToCollect,
       interestingOrder = interestingOrder,
-      lastDitch = patternExpressionRewriter(availableSymbols, interestingOrder, context))
-  }
-}
-
-case class ListSubQueryExpressionSolver[T <: Expression](namer: T => (T, Map[PatternElement, Variable]),
-                                                         extractQG: (LogicalPlan, T) => QueryGraph,
-                                                         createPlannerContext: (LogicalPlanningContext, Map[PatternElement, Variable]) => LogicalPlanningContext,
-                                                         projectionCreator: T => Expression,
-                                                         lastDitch: Rewriter,
-                                                         interestingOrder: InterestingOrder,
-                                                         pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression)
-                                                        (implicit m: ClassTag[T]) {
-
-  def solveUsingRollUpApply(source: LogicalPlan, expr: T, maybeKey: Option[String], context: LogicalPlanningContext): (LogicalPlan, Expression) = {
-
-    val key = maybeKey.getOrElse(FreshIdNameGenerator.name(expr.position.bumped()))
-    val subQueryPlan = planSubQuery(source, expr, context)
-    val producedPlan = context.logicalPlanProducer.planRollup(source, subQueryPlan.innerPlan, key,
-      subQueryPlan.variableToCollect, subQueryPlan.nullableIdentifiers, context)
-
-    (producedPlan, Variable(key)(expr.position))
+      patternExpressionRewriter = patternExpressionRewriter(availableSymbols, interestingOrder, context))
   }
 
-  def rewriteInnerExpressions(plan: LogicalPlan, expression: Expression, context: LogicalPlanningContext): (LogicalPlan, Expression) = {
-    val patternExpressions: Seq[T] = expression.findByAllClass[T]
+  private case class RewriteResult(currentPlan: LogicalPlan, currentExpression: Expression, introducedVariables: Set[String])
 
-    patternExpressions.foldLeft(plan, expression) {
-      case ((planAcc, expressionAcc), patternExpression) =>
-        val (newPlan, introducedVariable) = solveUsingRollUpApply(planAcc, patternExpression, None, context)
+  private case class ListSubQueryExpressionSolver[T <: Expression](namer: T => (T, Map[PatternElement, Variable]),
+                                                           extractQG: (LogicalPlan, T) => QueryGraph,
+                                                           createPlannerContext: (LogicalPlanningContext, Map[PatternElement, Variable]) => LogicalPlanningContext,
+                                                           projectionCreator: T => Expression,
+                                                           patternExpressionRewriter: Rewriter,
+                                                           interestingOrder: InterestingOrder,
+                                                           pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression)
+                                                          (implicit m: ClassTag[T]) {
 
-        val rewriter = rewriteButStopAtInnerScopes(patternExpression, introducedVariable)
-        val rewrittenExpression = expressionAcc.endoRewrite(rewriter)
-
-        if (rewrittenExpression == expressionAcc) {
-          (planAcc, expressionAcc.endoRewrite(lastDitch))
-        } else {
-          (newPlan, rewrittenExpression)
-        }
+    case class PlannedSubQuery(columnName: String, innerPlan: LogicalPlan, nullableIdentifiers: Set[String]) {
+      def variableToCollect: String = columnName
     }
-  }
 
-  case class PlannedSubQuery(columnName: String, innerPlan: LogicalPlan, nullableIdentifiers: Set[String]) {
-    def variableToCollect: String = columnName
-  }
+    def solveUsingRollUpApply(source: LogicalPlan, expr: T, maybeKey: Option[String], context: LogicalPlanningContext): (LogicalPlan, Variable) = {
 
-  private def planSubQuery(source: LogicalPlan, expr: T, context: LogicalPlanningContext) = {
-    val (namedExpr, namedMap) = namer(expr)
+      val key = maybeKey.getOrElse(FreshIdNameGenerator.name(expr.position.bumped()))
+      val subQueryPlan = planSubQuery(source, expr, context)
+      val producedPlan = context.logicalPlanProducer.ForPatternExpressionSolver.planRollup(source,
+        subQueryPlan.innerPlan,
+        key,
+        subQueryPlan.variableToCollect,
+        subQueryPlan.nullableIdentifiers,
+        context)
 
-    val qg = extractQG(source, namedExpr)
-    val innerContext = createPlannerContext(context, namedMap)
-
-    val innerPlan = innerContext.strategy.plan(qg, interestingOrder, innerContext)
-    val collectionName = FreshIdNameGenerator.name(expr.position)
-    val projectedPath = projectionCreator(namedExpr)
-    val projectedInner = projection(innerPlan, Map(collectionName -> projectedPath), Map(collectionName -> projectedPath), interestingOrder, innerContext)
-    PlannedSubQuery(columnName = collectionName, innerPlan = projectedInner, nullableIdentifiers = qg.argumentIds)
-  }
-
-  /*
-  It's important to not go use RollUpApply if the expression we are working with is inside a loop, or inside a
-  conditional expression. If that is not honored, RollUpApply can either produce the wrong results by not having the
-  correct scope (when inside a loop), or it can be executed even when not strictly needed (in a conditional)
-   */
-  private def rewriteButStopAtInnerScopes(oldExp: Expression, newExp: Expression) = {
-    val inner = Rewriter.lift {
-      case exp if exp == oldExp =>
-        newExp
+      (producedPlan, Variable(key)(expr.position))
     }
-    topDown(inner, stopper = {
-      case _: PatternComprehension => false
-      case _: ScopeExpression | _: CaseExpression => true
-      case f: FunctionInvocation => f.function == Exists
-      case _ => false
-    })
+
+    def rewriteInnerExpressions(plan: LogicalPlan, expression: Expression, context: LogicalPlanningContext): RewriteResult = {
+      val patternExpressions: Seq[T] = expression.findByAllClass[T]
+
+      patternExpressions.foldLeft(RewriteResult(plan, expression, Set.empty)) {
+        case (RewriteResult(currentPlan, currentExpression, introducedVariables), patternExpression) =>
+          val (newPlan, newVar) = solveUsingRollUpApply(currentPlan, patternExpression, None, context)
+
+          val rewriter = rewriteButStopAtInnerScopes(patternExpression, newVar)
+          val rewrittenExpression = currentExpression.endoRewrite(rewriter)
+
+          if (rewrittenExpression == currentExpression) {
+            RewriteResult(currentPlan, currentExpression.endoRewrite(patternExpressionRewriter), introducedVariables)
+          } else {
+            RewriteResult(newPlan, rewrittenExpression, introducedVariables + newVar.name)
+          }
+      }
+    }
+
+    private def planSubQuery(source: LogicalPlan, expr: T, context: LogicalPlanningContext) = {
+      val (namedExpr, namedMap) = namer(expr)
+
+      val qg = extractQG(source, namedExpr)
+      val innerContext = createPlannerContext(context, namedMap)
+
+      val innerPlan = innerContext.strategy.plan(qg, interestingOrder, innerContext)
+      val collectionName = FreshIdNameGenerator.name(expr.position)
+      val projectedPath = projectionCreator(namedExpr)
+      val projectedInner = projection(innerPlan, Map(collectionName -> projectedPath), Map(collectionName -> projectedPath), interestingOrder, innerContext)
+      PlannedSubQuery(columnName = collectionName, innerPlan = projectedInner, nullableIdentifiers = qg.argumentIds)
+    }
+
+    /*
+    It's important to not go use RollUpApply if the expression we are working with is inside a loop, or inside a
+    conditional expression. If that is not honored, RollUpApply can either produce the wrong results by not having the
+    correct scope (when inside a loop), or it can be executed even when not strictly needed (in a conditional)
+     */
+    private def rewriteButStopAtInnerScopes(oldExp: Expression, newExp: Expression) = {
+      val inner = Rewriter.lift {
+        case exp if exp == oldExp =>
+          newExp
+      }
+      topDown(inner, stopper = {
+        case _: PatternComprehension => false
+        case _: ScopeExpression | _: CaseExpression => true
+        case f: FunctionInvocation => f.function == Exists
+        case _ => false
+      })
+    }
   }
 }

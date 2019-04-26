@@ -22,10 +22,11 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.planner._
 import org.neo4j.cypher.internal.ir.{QueryGraph, RegularPlannerQuery}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.Extractors.SetExtractor
 
 class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -179,6 +180,68 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
                 )),
                 _), _) => ()
 
+    }
+  }
+
+  test("should solve pattern comprehensions as part of VarExpand") {
+    val q =
+      """
+        |MATCH p= ( (b) -[:REL*0..]- (c) )
+        |WHERE
+        | ALL(n in nodes(p) where
+        |   n.prop <= 1 < n.prop2
+        |   AND coalesce(
+        |     head( [ (n)<--(d) WHERE d.prop3 <= 1 < d.prop2 | d.prop4 = true ] ),
+        |     head( [ (n)<--(e) WHERE e.prop3 <= 1 < e.prop2 | e.prop5 = '0'] ),
+        |     true)
+        | )
+        | AND ALL(r in relationships(p) WHERE r.prop <= 1 < r.prop2)
+        |RETURN c
+      """.stripMargin
+
+    planFor(q) // Should not fail
+    // The plan that solves the predicates as part of VarExpand is not chosen, but considered, thus we cannot assert on _that_ plan here.
+    // Nevertheless the assertion LogicalPlanProducer.assertNoBadExpressionsExists should never fail, even for plans that do not get chosen.
+
+  }
+
+  test("should solve pattern comprehension for NodeByIdSeek") {
+    val q =
+      """
+        |MATCH (n)
+        |WHERE id(n) = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
+        |RETURN n
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case Apply(
+                 RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _, _),
+                 NodeByIdSeek("n", _, SetExtractor(argumentName))
+                ) if collectionName == argumentName => ()
+    }
+  }
+
+  test("should name pattern comprehensions in return position") {
+    val q =
+      """
+        |MATCH (n)
+        |RETURN [(n)-->(b) | b.age] AS ages
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "ages", _, _) => ()
+    }
+  }
+
+  test("should name pattern expressions in return position") {
+    val q =
+      """
+        |MATCH (n)
+        |RETURN (n)-->() AS bs
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "bs", _, _) => ()
     }
   }
 
