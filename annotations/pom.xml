@@ -58,7 +58,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-
     <build>
         <plugins>
             <plugin>
@@ -93,9 +92,11 @@
         <dependency>
             <groupId>com.google.truth</groupId>
             <artifactId>truth</artifactId>
-            <!-- this version is required for compile-testing to work, otherwise it fails with NoSuchMethodError -->
-            <version>0.37</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava-testlib</artifactId>
         </dependency>
 
         <dependency>
