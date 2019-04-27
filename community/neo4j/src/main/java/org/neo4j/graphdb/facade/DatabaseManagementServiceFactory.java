@@ -36,6 +36,7 @@ import org.neo4j.dbms.database.DatabaseManagementServiceImpl;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.UnableToStartDatabaseException;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -280,6 +281,8 @@ public class DatabaseManagementServiceFactory
         globalProcedures.registerComponent( org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider(), true );
         globalProcedures.registerComponent( SecurityContext.class, Context::securityContext, true );
         globalProcedures.registerComponent( FulltextAdapter.class, ctx -> ctx.dependencyResolver().resolveDependency( FulltextAdapter.class ), true );
+        globalProcedures.registerComponent( GraphDatabaseService.class, Context::graphDatabaseAPI, true );
+
         globalProcedures.registerComponent( DataCollector.class, ctx -> ctx.dependencyResolver().resolveDependency( DataCollector.class ), false );
 
         // Edition procedures
