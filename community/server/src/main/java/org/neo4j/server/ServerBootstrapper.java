@@ -173,6 +173,11 @@ public abstract class ServerBootstrapper implements Bootstrapper
         return server;
     }
 
+    public Log getLog()
+    {
+        return log;
+    }
+
     private NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies )
     {
         GraphFactory graphFactory = createGraphFactory( config );

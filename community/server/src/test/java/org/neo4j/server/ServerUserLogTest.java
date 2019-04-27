@@ -70,12 +70,12 @@ public class ServerUserLogTest
     public TestDirectory homeDir = TestDirectory.testDirectory();
 
     @Test
-    public void shouldLogToStdOutByDefault() throws Exception
+    public void shouldLogToStdOutByDefault()
     {
         // given
         ServerBootstrapper serverBootstrapper = getServerBootstrapper();
         File dir = homeDir.directory();
-        Log logBeforeStart = serverBootstrapper.log;
+        Log logBeforeStart = serverBootstrapper.getLog();
 
         // when
         try
@@ -89,7 +89,7 @@ public class ServerUserLogTest
             // then no exceptions are thrown and
             assertEquals( OK, returnCode );
             assertTrue( serverBootstrapper.getServer().getDatabase().isRunning() );
-            assertThat( serverBootstrapper.log, not( sameInstance( logBeforeStart ) ) );
+            assertThat( serverBootstrapper.getLog(), not( sameInstance( logBeforeStart ) ) );
 
             assertThat( getStdOut(), not( empty() ) );
             assertThat( getStdOut(), hasItem(containsString( "Started." ) ) );
@@ -108,7 +108,7 @@ public class ServerUserLogTest
         // given
         ServerBootstrapper serverBootstrapper = getServerBootstrapper();
         File dir = homeDir.directory();
-        Log logBeforeStart = serverBootstrapper.log;
+        Log logBeforeStart = serverBootstrapper.getLog();
 
         // when
         try
@@ -122,7 +122,7 @@ public class ServerUserLogTest
             // then no exceptions are thrown and
             assertEquals( OK, returnCode );
             assertTrue( serverBootstrapper.getServer().getDatabase().isRunning() );
-            assertThat( serverBootstrapper.log, not( sameInstance( logBeforeStart ) ) );
+            assertThat( serverBootstrapper.getLog(), not( sameInstance( logBeforeStart ) ) );
 
             assertThat( getStdOut(), empty() );
             assertTrue( Files.exists( getUserLogFileLocation( dir ) ) );
@@ -142,7 +142,7 @@ public class ServerUserLogTest
         // given
         ServerBootstrapper serverBootstrapper = getServerBootstrapper();
         File dir = homeDir.directory();
-        Log logBeforeStart = serverBootstrapper.log;
+        Log logBeforeStart = serverBootstrapper.getLog();
         int maxArchives = 4;
         int rotationDelayMs = 1;
 
@@ -158,13 +158,13 @@ public class ServerUserLogTest
 
             // then
             assertEquals( OK, returnCode );
-            assertThat( serverBootstrapper.log, not( sameInstance( logBeforeStart ) ) );
+            assertThat( serverBootstrapper.getLog(), not( sameInstance( logBeforeStart ) ) );
             assertTrue( serverBootstrapper.getServer().getDatabase().isRunning() );
 
             // when we forcibly log some more stuff
             for ( int i = 0; i <= maxArchives; i++ )
             {
-                serverBootstrapper.log.info( "testing 123. This string should contain more than 16 bytes\n" );
+                serverBootstrapper.getLog().info( "testing 123. This string should contain more than 16 bytes\n" );
                 // this could be flaky on a busy machine. Can we block or poll until there are no outstanding tasks in the JobScheduler queue?
                 Thread.sleep( 2 * rotationDelayMs );
             }
