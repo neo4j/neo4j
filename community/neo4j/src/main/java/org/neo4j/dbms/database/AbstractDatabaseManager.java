@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.graphdb.facade.spi.ClassicCoreSPI;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.ModularDatabaseCreationContext;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
@@ -105,8 +104,7 @@ public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends
         CoreAPIAvailabilityGuard coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( globalModule.getGlobalAvailabilityGuard(),
                 edition.getTransactionStartTimeout() );
 
-        ClassicCoreSPI spi = new ClassicCoreSPI( globalModule.getDatabaseInfo(), database, coreAPIAvailabilityGuard, edition.getThreadToTransactionBridge() );
-        facade.init( spi, edition.getThreadToTransactionBridge(), globalConfig, database.getTokenHolders() );
+        facade.init( database, edition.getThreadToTransactionBridge(), globalConfig, globalModule.getDatabaseInfo(), coreAPIAvailabilityGuard );
         return createDatabaseContext( database, facade );
     }
 

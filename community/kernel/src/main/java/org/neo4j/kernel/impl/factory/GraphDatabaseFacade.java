@@ -67,6 +67,7 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -77,17 +78,20 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.GraphPropertiesProxy;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PlaceboTransaction;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
@@ -109,55 +113,18 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.values.storable.Values.utf8Value;
 
 /**
- * Implementation of the GraphDatabaseService/GraphDatabaseService interfaces - the "Core API". Given an {@link SPI}
- * implementation, this provides users with
- * a clean facade to interact with the database.
+ * Implementation of the GraphDatabaseService/GraphDatabaseService interfaces - the "Core API".
  */
 public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 {
     private Schema schema;
+    private Database database;
     private ThreadToStatementContextBridge statementContext;
-    private SPI spi;
     private TransactionalContextFactory contextFactory;
     private Config config;
     private TokenHolders tokenHolders;
-
-    /**
-     * This is what you need to implement to get your very own {@link GraphDatabaseFacade}. This SPI exists as a thin
-     * layer to make it easy to provide
-     * alternate {@link org.neo4j.graphdb.GraphDatabaseService} instances without having to re-implement this whole API
-     * implementation.
-     */
-    public interface SPI
-    {
-        /**
-         * Check if database is available, waiting up to {@code timeout} if it isn't. If the timeout expires before
-         * database available, this returns false
-         */
-        boolean databaseIsAvailable( long timeout );
-
-        DependencyResolver resolver();
-
-        StoreId storeId();
-
-        DatabaseLayout databaseLayout();
-
-        /** Eg. Neo4j Enterprise HA, Neo4j Community Standalone.. */
-        String name();
-
-        /**
-         * Begin a new kernel transaction with specified timeout in milliseconds.
-         *
-         * @throws org.neo4j.graphdb.TransactionFailureException if unable to begin, or a transaction already exists.
-         * @see GraphDatabaseAPI#beginTransaction(KernelTransaction.Type, LoginContext, ClientConnectionInfo)
-         */
-        KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo, long timeout );
-
-        /** Execute a cypher statement */
-        Result executeQuery( String query, MapValue parameters, TransactionalContext context );
-
-        GraphDatabaseQueryService queryService();
-    }
+    private CoreAPIAvailabilityGuard availability;
+    private DatabaseInfo databaseInfo;
 
     public GraphDatabaseFacade()
     {
@@ -166,14 +133,18 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     /**
      * Create a new Core API facade, backed by the given SPI and using pre-resolved dependencies
      */
-    public void init( SPI spi, ThreadToStatementContextBridge txBridge, Config config, TokenHolders tokenHolders )
+    public void init( Database database, ThreadToStatementContextBridge txBridge, Config config, DatabaseInfo databaseInfo,
+            CoreAPIAvailabilityGuard availabilityGuard )
     {
-        this.spi = spi;
+        this.database = database;
         this.config = config;
         this.schema = new SchemaImpl( () -> txBridge.getKernelTransactionBoundToThisThread( true ) );
         this.statementContext = txBridge;
-        this.tokenHolders = tokenHolders;
-        this.contextFactory = Neo4jTransactionalContextFactory.create( this, spi, txBridge );
+        this.tokenHolders = database.getTokenHolders();
+        this.availability = availabilityGuard;
+        this.databaseInfo = databaseInfo;
+        this.contextFactory = Neo4jTransactionalContextFactory.create( this,
+                () -> getDependencyResolver().resolveDependency( GraphDatabaseQueryService.class ), txBridge );
     }
 
     @Override
@@ -277,7 +248,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public boolean isAvailable( long timeoutMillis )
     {
-        return spi.databaseIsAvailable( timeoutMillis );
+        return database.getDatabaseAvailabilityGuard().isAvailable( timeoutMillis );
     }
 
     @Override
@@ -350,7 +321,15 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             throws QueryExecutionException
     {
         TransactionalContext context = contextFactory.newContext( transaction, query, parameters );
-        return spi.executeQuery( query, parameters, context );
+        try
+        {
+            availability.assertDatabaseAvailable();
+            return database.getExecutionEngine().executeQuery( query, parameters, context, false );
+        }
+        catch ( QueryExecutionKernelException e )
+        {
+            throw e.asUserException();
+        }
     }
 
     @Override
@@ -363,7 +342,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             Statement statement = ktx.acquireStatement();
             NodeCursor cursor = ktx.cursors().allocateNodeCursor();
             ktx.dataRead().allNodesScan( cursor );
-            return new PrefetchingResourceIterator<Node>()
+            return new PrefetchingResourceIterator<>()
             {
                 @Override
                 protected Node fetchNextOrNull()
@@ -399,17 +378,14 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             Statement statement = ktx.acquireStatement();
             RelationshipScanCursor cursor = ktx.cursors().allocateRelationshipScanCursor();
             ktx.dataRead().allRelationshipsScan( cursor );
-            return new PrefetchingResourceIterator<Relationship>()
+            return new PrefetchingResourceIterator<>()
             {
                 @Override
                 protected Relationship fetchNextOrNull()
                 {
                     if ( cursor.next() )
                     {
-                        return newRelationshipProxy(
-                                cursor.relationshipReference(),
-                                cursor.sourceNodeReference(),
-                                cursor.type(),
+                        return newRelationshipProxy( cursor.relationshipReference(), cursor.sourceNodeReference(), cursor.type(),
                                 cursor.targetNodeReference() );
                     }
                     else
@@ -588,7 +564,23 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             // FIXME: perhaps we should check that the new type and access mode are compatible with the current tx
             return new PlaceboTransaction( statementContext.getKernelTransactionBoundToThisThread( true ) );
         }
-        return new TopLevelTransaction( spi.beginTransaction( type, loginContext, connectionInfo, timeoutMillis ) );
+        return new TopLevelTransaction( beginTransaction( type, loginContext, connectionInfo, timeoutMillis ) );
+    }
+
+    private KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo, long timeout )
+    {
+        try
+        {
+            availability.assertDatabaseAvailable();
+            KernelTransaction kernelTx = database.getKernel().beginTransaction( type, loginContext, connectionInfo, timeout );
+            kernelTx.registerCloseListener( txId -> statementContext.unbindTransactionFromCurrentThread() );
+            statementContext.bindTransactionToCurrentThread( kernelTx );
+            return kernelTx;
+        }
+        catch ( TransactionFailureException e )
+        {
+            throw new org.neo4j.graphdb.TransactionFailureException( e.getMessage(), e );
+        }
     }
 
     private ResourceIterator<Node> nodesByLabelAndProperty( KernelTransaction transaction, int labelId, IndexQuery query )
@@ -805,25 +797,25 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public DependencyResolver getDependencyResolver()
     {
-        return spi.resolver();
+        return database.getDependencyResolver();
     }
 
     @Override
     public StoreId storeId()
     {
-        return spi.storeId();
+        return database.getStoreId();
     }
 
     @Override
     public DatabaseLayout databaseLayout()
     {
-        return spi.databaseLayout();
+        return database.getDatabaseLayout();
     }
 
     @Override
     public String toString()
     {
-        return spi.name() + " [" + databaseLayout() + "]";
+        return databaseInfo + " [" + databaseLayout() + "]";
     }
 
     @Override
