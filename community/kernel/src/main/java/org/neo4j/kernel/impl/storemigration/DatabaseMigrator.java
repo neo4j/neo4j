@@ -80,13 +80,14 @@ public class DatabaseMigrator
                 new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigrator.class ) ), config, fs, logService.getInternalLogProvider(),
                 tailScanner, legacyLogsLocator );
 
-        this.indexProviderMap.accept( provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache, storageEngineFactory ) ) );
-
         var storeParticipants = storageEngineFactory.migrationParticipants( fs, config, pageCache, jobScheduler, logService );
         for ( StoreMigrationParticipant participant : storeParticipants )
         {
             storeUpgrader.addParticipant( participant );
         }
+
+        // Do individual index provider migration last because they may delete files that we need in earlier steps.
+        this.indexProviderMap.accept( provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache, storageEngineFactory ) ) );
 
         storeUpgrader.migrateIfNeeded( databaseLayout );
     }
