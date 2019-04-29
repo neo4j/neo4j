@@ -1054,9 +1054,9 @@ public class Operations implements Write, SchemaWrite
         }
     }
 
-    private void exclusiveOptimisticLock( ResourceType resource, long[] resourceId )
+    private void exclusiveOptimisticLock( ResourceType resource, long[] resourceIds )
     {
-        ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), resource, resourceId );
+        ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), resource, resourceIds );
     }
 
     private void acquireExclusiveNodeLock( long node )

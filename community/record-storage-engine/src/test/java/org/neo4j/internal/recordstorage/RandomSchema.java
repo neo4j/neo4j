@@ -158,15 +158,15 @@ public class RandomSchema implements Supplier<SchemaRule>
         case 1: return new DefaultStorageIndexReference( nextNodeSchema(), nextName(), nextName(), ruleId, Optional.empty(), isUnique,
                 owningConstraint, false );
         case 2: return new DefaultStorageIndexReference( nextNodeSchema(), nextName(), nextName(), ruleId, nextNameOpt(), isUnique, owningConstraint, false );
-        case 3: return new DefaultStorageIndexReference( nextNodeMultiTokenSchema(), isUnique, ruleId, owningConstraint );
-        case 4: return new DefaultStorageIndexReference( nextNodeMultiTokenSchema(), nextName(), nextName(), ruleId, Optional.empty(), isUnique,
+        case 3: return new DefaultStorageIndexReference( nextNodeFulltextSchema(), isUnique, ruleId, owningConstraint );
+        case 4: return new DefaultStorageIndexReference( nextNodeFulltextSchema(), nextName(), nextName(), ruleId, Optional.empty(), isUnique,
                 owningConstraint, false );
-        case 5: return new DefaultStorageIndexReference( nextNodeMultiTokenSchema(), nextName(), nextName(), ruleId, nextNameOpt(), isUnique,
+        case 5: return new DefaultStorageIndexReference( nextNodeFulltextSchema(), nextName(), nextName(), ruleId, nextNameOpt(), isUnique,
                 owningConstraint, false );
-        case 6: return new DefaultStorageIndexReference( nextRelationshipMultiTokenSchema(), isUnique, ruleId, owningConstraint );
-        case 7: return new DefaultStorageIndexReference( nextRelationshipMultiTokenSchema(), nextName(), nextName(), ruleId, Optional.empty(), isUnique,
+        case 6: return new DefaultStorageIndexReference( nextRelationshipFulltextSchema(), isUnique, ruleId, owningConstraint );
+        case 7: return new DefaultStorageIndexReference( nextRelationshipFulltextSchema(), nextName(), nextName(), ruleId, Optional.empty(), isUnique,
                 owningConstraint, false );
-        case 8: return new DefaultStorageIndexReference( nextRelationshipMultiTokenSchema(), nextName(), nextName(), ruleId, nextNameOpt(), isUnique,
+        case 8: return new DefaultStorageIndexReference( nextRelationshipFulltextSchema(), nextName(), nextName(), ruleId, nextNameOpt(), isUnique,
                 owningConstraint, false );
         default: throw new RuntimeException( "Bad index choice: " + choice );
         }
@@ -230,12 +230,12 @@ public class RandomSchema implements Supplier<SchemaRule>
         return SchemaDescriptorFactory.forRelType( nextRelationshipTypeId(), nextPropertyKeyIdsArray() );
     }
 
-    public SchemaDescriptor nextNodeMultiTokenSchema()
+    public SchemaDescriptor nextNodeFulltextSchema()
     {
         return SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), nextLabelIdsArray(), nextPropertyKeyIdsArray() );
     }
 
-    public SchemaDescriptor nextRelationshipMultiTokenSchema()
+    public SchemaDescriptor nextRelationshipFulltextSchema()
     {
         return SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), nextRelationTypeIdsArray(), nextPropertyKeyIdsArray() );
     }
