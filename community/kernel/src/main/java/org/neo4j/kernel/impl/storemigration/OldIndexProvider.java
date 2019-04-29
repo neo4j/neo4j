@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -93,6 +94,21 @@ enum OldIndexProvider
                 {
                     File rootDir = providerRootDirectory( layout );
                     return GenericConfigExtractor.indexConfigFromGenericFile( pageCache, rootDir, indexId );
+                }
+            },
+    // todo implement this guy
+    FULLTEXT10( "fulltext", "1.0", null, false )
+            {
+                @Override
+                File providerRootDirectory( DatabaseLayout layout )
+                {
+                    return null;
+                }
+
+                @Override
+                Map<String,Value> extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId )
+                {
+                    return Collections.emptyMap();
                 }
             };
 
