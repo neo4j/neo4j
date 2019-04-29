@@ -49,6 +49,12 @@ enum OldIndexProvider
                     File lucene10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, lucene10Dir, indexId );
                 }
+
+                @Override
+                void bless( Map<String,Value> indexConfig )
+                {
+                    // todo implement me
+                }
             },
     NATIVE10( "lucene+native", "1.0", GraphDatabaseSettings.SchemaIndex.NATIVE30, true )
             {
@@ -64,6 +70,12 @@ enum OldIndexProvider
                     File providerRootDirectory = providerRootDirectory( layout );
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, providerRootDirectory, indexId );
                 }
+
+                @Override
+                void bless( Map<String,Value> indexConfig )
+                {
+                    // todo implement me
+                }
             },
     NATIVE20( "lucene+native", "2.0", GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10, true )
             {
@@ -78,6 +90,12 @@ enum OldIndexProvider
                 {
                     File providerRootDirectory = providerRootDirectory( layout );
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, providerRootDirectory, indexId );
+                }
+
+                @Override
+                void bless( Map<String,Value> indexConfig )
+                {
+                    // todo implement me
                 }
             },
     NATIVE_BTREE10( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerKey(), GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerVersion(),
@@ -95,6 +113,12 @@ enum OldIndexProvider
                     File rootDir = providerRootDirectory( layout );
                     return GenericConfigExtractor.indexConfigFromGenericFile( pageCache, rootDir, indexId );
                 }
+
+                @Override
+                void bless( Map<String,Value> indexConfig )
+                {
+                    // todo implement me
+                }
             },
     // todo implement this guy
     FULLTEXT10( "fulltext", "1.0", null, false )
@@ -109,6 +133,12 @@ enum OldIndexProvider
                 Map<String,Value> extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId )
                 {
                     return Collections.emptyMap();
+                }
+
+                @Override
+                void bless( Map<String,Value> indexConfig )
+                {
+                    // todo implement me
                 }
             };
 
@@ -128,6 +158,8 @@ enum OldIndexProvider
     abstract File providerRootDirectory( DatabaseLayout layout );
 
     abstract Map<String,Value> extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException;
+
+    abstract void bless( Map<String, Value> indexConfig );
 
     /**
      * Returns the base schema index directory, i.e.

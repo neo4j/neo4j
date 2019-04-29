@@ -76,7 +76,6 @@ class SpatialConfigExtractor
     {
         //todo Implement this
         // - Real target index provider needs to be called here so that we use correct name for all config options.
-        // - Real target index provider also need to bless the config before returning.
         System.out.println( "  crs = " + crs );
         System.out.println( "    dimensions = " + dimensions );
         System.out.println( "    max = " + maxLevels );
