@@ -56,11 +56,11 @@ class ArchiveProgressPrinterTest
         printStream.flush();
         String output = bout.toString();
         assertEquals( output,
-                "\nFiles: 1/10, data:  0.5%" +
-                "\nFiles: 2/10, data: 20.5%" +
-                "\nFiles: 2/10, data: 20.5%" +
-                "\nFiles: 3/10, data: 30.5%" +
-                "\nFiles: 3/10, data: 30.5%" +
+                "\nFiles: 1/10, data: " + String.format( "%4.1f%%",  0.5 ) +
+                "\nFiles: 2/10, data: " + String.format( "%4.1f%%", 20.5 ) +
+                "\nFiles: 2/10, data: " + String.format( "%4.1f%%", 20.5 ) +
+                "\nFiles: 3/10, data: " + String.format( "%4.1f%%", 30.5 ) +
+                "\nFiles: 3/10, data: " + String.format( "%4.1f%%", 30.5 ) +
                 "\nDone: 3 files, 305B processed." +
                         System.lineSeparator()
         );
