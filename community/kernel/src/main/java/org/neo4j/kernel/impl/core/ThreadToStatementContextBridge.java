@@ -82,7 +82,7 @@ public class ThreadToStatementContextBridge implements Supplier<Statement>
         return transaction;
     }
 
-    private void assertInUnterminatedTransaction( KernelTransaction transaction )
+    private static void assertInUnterminatedTransaction( KernelTransaction transaction )
     {
         if ( transaction == null )
         {

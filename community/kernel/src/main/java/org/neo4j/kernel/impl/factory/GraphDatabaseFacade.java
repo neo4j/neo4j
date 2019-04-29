@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EntityType;
@@ -106,6 +107,7 @@ import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout;
 import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
@@ -123,15 +125,23 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private TransactionalContextFactory contextFactory;
     private Config config;
     private TokenHolders tokenHolders;
-    private CoreAPIAvailabilityGuard availability;
+    private CoreAPIAvailabilityGuard availabilityGuard;
     private DatabaseInfo databaseInfo;
+    private Function<LoginContext, LoginContext> loginContextTransformer = Function.identity();
 
     public GraphDatabaseFacade()
     {
     }
 
+    public GraphDatabaseFacade( GraphDatabaseFacade facade, Function<LoginContext,LoginContext> loginContextTransformer )
+    {
+        requireNonNull( facade.database );
+        init( facade.database, facade.statementContext, facade.config, facade.databaseInfo, facade.availabilityGuard );
+        this.loginContextTransformer = loginContextTransformer;
+    }
+
     /**
-     * Create a new Core API facade, backed by the given SPI and using pre-resolved dependencies
+     * Create a new Core API facade, backed by the provided database dependencies
      */
     public void init( Database database, ThreadToStatementContextBridge txBridge, Config config, DatabaseInfo databaseInfo,
             CoreAPIAvailabilityGuard availabilityGuard )
@@ -141,7 +151,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         this.schema = new SchemaImpl( () -> txBridge.getKernelTransactionBoundToThisThread( true ) );
         this.statementContext = txBridge;
         this.tokenHolders = database.getTokenHolders();
-        this.availability = availabilityGuard;
+        this.availabilityGuard = availabilityGuard;
         this.databaseInfo = databaseInfo;
         this.contextFactory = Neo4jTransactionalContextFactory.create( this,
                 () -> getDependencyResolver().resolveDependency( GraphDatabaseQueryService.class ), txBridge );
@@ -323,7 +333,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         TransactionalContext context = contextFactory.newContext( transaction, query, parameters );
         try
         {
-            availability.assertDatabaseAvailable();
+            availabilityGuard.assertDatabaseAvailable();
             return database.getExecutionEngine().executeQuery( query, parameters, context, false );
         }
         catch ( QueryExecutionKernelException e )
@@ -564,15 +574,16 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             // FIXME: perhaps we should check that the new type and access mode are compatible with the current tx
             return new PlaceboTransaction( statementContext.getKernelTransactionBoundToThisThread( true ) );
         }
-        return new TopLevelTransaction( beginTransaction( type, loginContext, connectionInfo, timeoutMillis ) );
+        return new TopLevelTransaction( beginKernelTransaction( type, loginContext, connectionInfo, timeoutMillis ) );
     }
 
-    private KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo, long timeout )
+    private KernelTransaction beginKernelTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
+            long timeout )
     {
         try
         {
-            availability.assertDatabaseAvailable();
-            KernelTransaction kernelTx = database.getKernel().beginTransaction( type, loginContext, connectionInfo, timeout );
+            availabilityGuard.assertDatabaseAvailable();
+            KernelTransaction kernelTx = database.getKernel().beginTransaction( type, loginContextTransformer.apply( loginContext ), connectionInfo, timeout );
             kernelTx.registerCloseListener( txId -> statementContext.unbindTransactionFromCurrentThread() );
             statementContext.bindTransactionToCurrentThread( kernelTx );
             return kernelTx;

@@ -66,6 +66,7 @@ import org.neo4j.procedure.ProcedureTransaction;
 import org.neo4j.procedure.builtin.SpecialBuiltInProcedures;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 import org.neo4j.procedure.impl.ProcedureConfig;
+import org.neo4j.procedure.impl.ProcedureLoginContextTransformer;
 import org.neo4j.procedure.impl.ProcedureTransactionProvider;
 import org.neo4j.procedure.impl.TerminationGuardProvider;
 import org.neo4j.values.storable.PointValue;
@@ -281,7 +282,8 @@ public class DatabaseManagementServiceFactory
         globalProcedures.registerComponent( org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider(), true );
         globalProcedures.registerComponent( SecurityContext.class, Context::securityContext, true );
         globalProcedures.registerComponent( FulltextAdapter.class, ctx -> ctx.dependencyResolver().resolveDependency( FulltextAdapter.class ), true );
-        globalProcedures.registerComponent( GraphDatabaseService.class, Context::graphDatabaseAPI, true );
+        globalProcedures.registerComponent( GraphDatabaseService.class,
+                ctx -> new GraphDatabaseFacade( (GraphDatabaseFacade) ctx.graphDatabaseAPI(), new ProcedureLoginContextTransformer( ctx ) ), true );
 
         globalProcedures.registerComponent( DataCollector.class, ctx -> ctx.dependencyResolver().resolveDependency( DataCollector.class ), false );
 
