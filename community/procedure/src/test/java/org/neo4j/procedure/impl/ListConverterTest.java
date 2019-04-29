@@ -26,7 +26,6 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.cypher.internal.evaluator.Evaluator;
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 
 import static java.util.Arrays.asList;

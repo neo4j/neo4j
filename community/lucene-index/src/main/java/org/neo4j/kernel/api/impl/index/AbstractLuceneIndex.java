@@ -48,7 +48,6 @@ import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.apache.lucene.document.Document;
 
-import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 
 /**

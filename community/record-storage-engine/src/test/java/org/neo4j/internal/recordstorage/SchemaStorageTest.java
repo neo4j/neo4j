@@ -40,7 +40,6 @@ import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.test.mockito.matcher.KernelExceptionUserMessageMatcher;
 import org.neo4j.test.rule.NeoStoresRule;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
-import org.neo4j.token.TokenHolders;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

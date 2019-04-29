@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.junit.jupiter.api.Test;
-import java.util.concurrent.ExecutionException;
 
 import org.neo4j.test.OnDemandJobScheduler;
 

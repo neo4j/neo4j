@@ -30,7 +30,6 @@ import org.apache.lucene.search.Weight;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;

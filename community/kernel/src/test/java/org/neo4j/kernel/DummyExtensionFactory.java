@@ -22,7 +22,6 @@ package org.neo4j.kernel;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.internal.KernelData;

@@ -32,7 +32,6 @@ import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.encode;
 import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.newNeo4jPack;

@@ -25,7 +25,6 @@ import java.io.IOException;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;

@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.fulltext;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -63,8 +62,6 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.builtin.IndexProcedures;
 import org.neo4j.util.FeatureToggles;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProviderFactory.DESCRIPTOR;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CONFIG_ANALYZER;

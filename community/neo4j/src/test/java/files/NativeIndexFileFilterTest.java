@@ -27,7 +27,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
 import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;

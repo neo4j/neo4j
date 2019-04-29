@@ -24,7 +24,6 @@ import java.util.function.Predicate;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.token.api.TokenConstants;
 
 import static org.neo4j.internal.schema.IndexType.FULLTEXT;
 import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
