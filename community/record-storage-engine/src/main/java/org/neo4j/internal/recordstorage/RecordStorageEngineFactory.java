@@ -21,12 +21,15 @@ package org.neo4j.internal.recordstorage;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -35,13 +38,19 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.kernel.impl.store.AbstractDynamicStore;
+import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.storemigration.IndexProviderMigrator;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersion;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
@@ -61,11 +70,17 @@ import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.TransactionMetaDataStore;
+import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
+import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.token.api.TokenHolder;
 
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
+import static org.neo4j.kernel.impl.storemigration.RecordStorageMigrator.createStoreFactory;
 
 @ServiceProvider
 public class RecordStorageEngineFactory implements StorageEngineFactory
@@ -88,9 +103,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             JobScheduler jobScheduler, LogService logService )
     {
         RecordStorageMigrator recordStorageMigrator = new RecordStorageMigrator( fs, pageCache, config, logService, jobScheduler );
-        IndexProviderMigrator indexProviderMigrator = new IndexProviderMigrator( fs, config, pageCache, logService );
-        // Make sure that we migrate the store before we update the schema store with index providers.
-        return Arrays.asList( recordStorageMigrator, indexProviderMigrator );
+        return Collections.singletonList( recordStorageMigrator );
     }
 
     @Override
@@ -152,5 +165,46 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     {
         File neoStoreFile = databaseLayout.metadataStore();
         return MetaDataStore.getStoreId( pageCache, neoStoreFile );
+    }
+
+    @Override
+    public SchemaRuleMigrationAccess schemaRuleMigrationAccess( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
+            LogService logService, String recordFormats )
+    {
+        RecordFormats formats = selectForVersion( recordFormats );
+        StoreFactory factory = createStoreFactory( databaseLayout, formats, false, config, pageCache, fs, logService.getInternalLogProvider() );
+        NeoStores stores = factory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
+        return createMigrationTargetSchemaRuleAccess( stores );
+    }
+
+    public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess( NeoStores stores )
+    {
+        SchemaStore dstSchema = stores.getSchemaStore();
+        TokenCreator propertyKeyTokenCreator = ( name, internal ) ->
+        {
+            PropertyKeyTokenStore keyTokenStore = stores.getPropertyKeyTokenStore();
+            DynamicStringStore nameStore = keyTokenStore.getNameStore();
+            byte[] bytes = PropertyStore.encodeString( name );
+            List<DynamicRecord> nameRecords = new ArrayList<>();
+            AbstractDynamicStore.allocateRecordsFromBytes( nameRecords, bytes, nameStore );
+            nameRecords.forEach( nameStore::prepareForCommit );
+            nameRecords.forEach( nameStore::updateRecord );
+            nameRecords.forEach( record -> nameStore.setHighestPossibleIdInUse( record.getId() ) );
+            int nameId = Iterables.first( nameRecords ).getIntId();
+            PropertyKeyTokenRecord keyTokenRecord = keyTokenStore.newRecord();
+            long tokenId = keyTokenStore.nextId();
+            keyTokenRecord.setId( tokenId );
+            keyTokenRecord.initialize( true, nameId );
+            keyTokenRecord.setInternal( internal );
+            keyTokenStore.prepareForCommit( keyTokenRecord );
+            keyTokenStore.updateRecord( keyTokenRecord );
+            keyTokenStore.setHighestPossibleIdInUse( keyTokenRecord.getId() );
+            return Math.toIntExact( tokenId );
+        };
+        TokenHolder propertyKeyTokens = new DelegatingTokenHolder( propertyKeyTokenCreator, TokenHolder.TYPE_PROPERTY_KEY );
+        TokenHolders dstTokenHolders = new TokenHolders( propertyKeyTokens, StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
+                StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+        dstTokenHolders.propertyKeyTokens().setInitialTokens( stores.getPropertyKeyTokenStore().getTokens() );
+        return new SchemaRuleMigrationAccessImpl( stores, new SchemaStorage( dstSchema, dstTokenHolders ) );
     }
 }

@@ -21,34 +21,23 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.internal.recordstorage.SchemaRuleAccess;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.SchemaStore;
-import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.storageengine.api.ConstraintRule;
+import org.neo4j.storageengine.api.DefaultStorageIndexReference;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
-import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
+import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 
 import static org.neo4j.io.fs.FileUtils.path;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
-import static org.neo4j.kernel.impl.storemigration.RecordStorageMigrator.createMigrationTargetSchemaRuleAccess;
-import static org.neo4j.kernel.impl.storemigration.RecordStorageMigrator.createStoreFactory;
 
 public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
 {
@@ -56,25 +45,25 @@ public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
     private final Config config;
     private final PageCache pageCache;
     private final LogService logService;
+    private final StorageEngineFactory storageEngineFactory;
 
-    public IndexProviderMigrator( FileSystemAbstraction fs, Config config, PageCache pageCache, LogService logService )
+    IndexProviderMigrator( FileSystemAbstraction fs, Config config, PageCache pageCache, LogService logService, StorageEngineFactory storageEngineFactory )
     {
         super( "Index providers" );
         this.fs = fs;
         this.config = config;
         this.pageCache = pageCache;
         this.logService = logService;
+        this.storageEngineFactory = storageEngineFactory;
     }
 
     @Override
     public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress, String versionToMigrateFrom,
-            String versionToMigrateTo ) throws KernelException
+            String versionToMigrateTo ) throws KernelException, IOException
     {
-        RecordFormats newFormat = selectForVersion( versionToMigrateTo );
-        StoreFactory dstFactory = createStoreFactory( migrationLayout, newFormat, false, config, pageCache, fs, logService.getInternalLogProvider() );
-        try ( NeoStores stores = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY ) )
+        try ( SchemaRuleMigrationAccess ruleAccess = storageEngineFactory
+                .schemaRuleMigrationAccess( fs, pageCache, config, migrationLayout, logService, versionToMigrateTo ) )
         {
-            SchemaRuleAccess ruleAccess = createMigrationTargetSchemaRuleAccess( stores );
             for ( SchemaRule rule : ruleAccess.getAll() )
             {
                 SchemaRule upgraded = upgradeIndexProvider( rule );
@@ -103,28 +92,26 @@ public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
         // Nothing to clean up.
     }
 
-    private SchemaRule upgradeIndexProvider( SchemaRule rule ) throws MalformedSchemaRuleException
+    private SchemaRule upgradeIndexProvider( SchemaRule rule )
     {
-        if ( rule instanceof ConstraintRule )
+        if ( rule instanceof DefaultStorageIndexReference )
         {
-            return rule;
-        }
-        Map<String,Value> map = SchemaStore.mapifySchemaRule( rule );
-        String currentName = ((TextValue) map.get( SchemaStore.PROP_INDEX_PROVIDER_NAME )).stringValue();
-        String currentVersion = ((TextValue) map.get( SchemaStore.PROP_INDEX_PROVIDER_VERSION )).stringValue();
+            DefaultStorageIndexReference oldIndexReference = (DefaultStorageIndexReference) rule;
 
-        for ( RetiredIndexProvider retired : RetiredIndexProvider.values() )
-        {
-            if ( currentName.equals( retired.providerKey ) && currentVersion.equals( retired.providerVersion ) )
+            String currentKey = oldIndexReference.providerKey();
+            String currentVersion = oldIndexReference.providerVersion();
+
+            for ( RetiredIndexProvider retired : RetiredIndexProvider.values() )
             {
-                SchemaIndex replacement = retired.desiredAlternativeProvider;
-                map.put( SchemaStore.PROP_INDEX_PROVIDER_NAME, Values.stringValue( replacement.providerKey() ) );
-                map.put( SchemaStore.PROP_INDEX_PROVIDER_VERSION, Values.stringValue( replacement.providerVersion() ) );
-                rule = SchemaStore.unmapifySchemaRule( rule.getId(), map );
-                break;
+                if ( currentKey.equals( retired.providerKey ) && currentVersion.equals( retired.providerVersion ) )
+                {
+                    SchemaIndex replacement = retired.desiredAlternativeProvider;
+                    String replacementKey = replacement.providerKey();
+                    String replacementVersion = replacement.providerVersion();
+                    return oldIndexReference.withIndexProvider( new IndexProviderDescriptor( replacementKey, replacementVersion ) );
+                }
             }
         }
-
         return rule;
     }
 

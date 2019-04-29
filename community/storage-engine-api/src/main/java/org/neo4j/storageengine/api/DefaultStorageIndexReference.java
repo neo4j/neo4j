@@ -29,7 +29,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 /**
  * Default implementation of a {@link StorageIndexReference}. Mainly used as data carrier between the storage engine API and kernel.
  */
-public class DefaultStorageIndexReference extends DefaultIndexDescriptor implements StorageIndexReference
+public final class DefaultStorageIndexReference extends DefaultIndexDescriptor implements StorageIndexReference
 {
     private final long indexReference;
     private final Long owningConstraintReference;

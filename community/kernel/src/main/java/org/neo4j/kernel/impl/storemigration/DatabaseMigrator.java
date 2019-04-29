@@ -86,6 +86,9 @@ public class DatabaseMigrator
             storeUpgrader.addParticipant( participant );
         }
 
+        IndexProviderMigrator indexProviderMigrator = new IndexProviderMigrator( fs, config, pageCache, logService, storageEngineFactory );
+        storeUpgrader.addParticipant( indexProviderMigrator );
+
         // Do individual index provider migration last because they may delete files that we need in earlier steps.
         this.indexProviderMap.accept( provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache, storageEngineFactory ) ) );
 

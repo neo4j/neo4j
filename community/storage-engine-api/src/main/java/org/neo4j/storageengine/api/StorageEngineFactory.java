@@ -40,6 +40,7 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
+import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.token.TokenHolders;
 
@@ -117,6 +118,9 @@ public interface StorageEngineFactory
             Config config, PageCache pageCache ) throws IOException;
 
     StoreId storeId( DatabaseLayout databaseLayout, PageCache pageCache ) throws IOException;
+
+    SchemaRuleMigrationAccess schemaRuleMigrationAccess( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
+            LogService logService, String recordFormats );
 
     /**
      * Selects a {@link StorageEngineFactory} among the candidates. How it's done or which it selects isn't important a.t.m.
