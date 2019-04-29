@@ -33,7 +33,7 @@ import org.neo4j.values.storable.Value;
 
 import static org.neo4j.io.fs.FileUtils.path;
 
-enum OldIndexProvider
+enum IndexMigration
 {
     LUCENE( "lucene", "1.0", GraphDatabaseSettings.SchemaIndex.NATIVE30, true )
             {
@@ -147,7 +147,7 @@ enum OldIndexProvider
     final GraphDatabaseSettings.SchemaIndex desiredAlternativeProvider;
     private final boolean retired;
 
-    OldIndexProvider( String providerKey, String providerVersion, GraphDatabaseSettings.SchemaIndex desiredAlternativeProvider, boolean retired )
+    IndexMigration( String providerKey, String providerVersion, GraphDatabaseSettings.SchemaIndex desiredAlternativeProvider, boolean retired )
     {
         this.providerKey = providerKey;
         this.providerVersion = providerVersion;
@@ -199,9 +199,9 @@ enum OldIndexProvider
         return name.replaceAll( "\\+", "_" );
     }
 
-    public static OldIndexProvider getOldProvider( String providerKey, String providerVersion )
+    public static IndexMigration migrationFromOldProvider( String providerKey, String providerVersion )
     {
-        for ( OldIndexProvider provider : values() )
+        for ( IndexMigration provider : values() )
         {
             if ( provider.providerKey.equals( providerKey ) && provider.providerVersion.equals( providerVersion ) )
             {
@@ -211,10 +211,10 @@ enum OldIndexProvider
         throw new IllegalArgumentException( "Can not find old index provider " + providerKey + "-" + providerVersion );
     }
 
-    public static OldIndexProvider[] retiredProviders()
+    public static IndexMigration[] retired()
     {
-        return Arrays.stream( OldIndexProvider.values() )
+        return Arrays.stream( IndexMigration.values() )
                 .filter( p -> p.retired )
-                .toArray( OldIndexProvider[]::new );
+                .toArray( IndexMigration[]::new );
     }
 }
