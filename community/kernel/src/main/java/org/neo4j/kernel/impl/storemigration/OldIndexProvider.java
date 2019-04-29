@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -33,7 +34,7 @@ import static org.neo4j.io.fs.FileUtils.path;
 
 enum OldIndexProvider
 {
-    LUCENE( "lucene", "1.0", GraphDatabaseSettings.SchemaIndex.NATIVE30 )
+    LUCENE( "lucene", "1.0", GraphDatabaseSettings.SchemaIndex.NATIVE30, true )
             {
                 @Override
                 File providerRootDirectory( DatabaseLayout layout )
@@ -48,7 +49,7 @@ enum OldIndexProvider
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, lucene10Dir, indexId );
                 }
             },
-    NATIVE10( "lucene+native", "1.0", GraphDatabaseSettings.SchemaIndex.NATIVE30 )
+    NATIVE10( "lucene+native", "1.0", GraphDatabaseSettings.SchemaIndex.NATIVE30, true )
             {
                 @Override
                 File providerRootDirectory( DatabaseLayout layout )
@@ -63,7 +64,7 @@ enum OldIndexProvider
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, providerRootDirectory, indexId );
                 }
             },
-    NATIVE20( "lucene+native", "2.0", GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 )
+    NATIVE20( "lucene+native", "2.0", GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10, true )
             {
                 @Override
                 File providerRootDirectory( DatabaseLayout layout )
@@ -82,12 +83,14 @@ enum OldIndexProvider
     final String providerKey;
     final String providerVersion;
     final GraphDatabaseSettings.SchemaIndex desiredAlternativeProvider;
+    private final boolean retired;
 
-    OldIndexProvider( String providerKey, String providerVersion, GraphDatabaseSettings.SchemaIndex desiredAlternativeProvider )
+    OldIndexProvider( String providerKey, String providerVersion, GraphDatabaseSettings.SchemaIndex desiredAlternativeProvider, boolean retired )
     {
         this.providerKey = providerKey;
         this.providerVersion = providerVersion;
         this.desiredAlternativeProvider = desiredAlternativeProvider;
+        this.retired = retired;
     }
 
     abstract File providerRootDirectory( DatabaseLayout layout );
@@ -142,5 +145,12 @@ enum OldIndexProvider
             }
         }
         throw new IllegalArgumentException( "Can not find old index provider " + providerKey + "-" + providerVersion );
+    }
+
+    public static OldIndexProvider[] retiredProviders()
+    {
+        return Arrays.stream( OldIndexProvider.values() )
+                .filter( p -> p.retired )
+                .toArray( OldIndexProvider[]::new );
     }
 }

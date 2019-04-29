@@ -98,7 +98,7 @@ public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
             String currentKey = oldIndexReference.providerKey();
             String currentVersion = oldIndexReference.providerVersion();
 
-            for ( OldIndexProvider retired : OldIndexProvider.values() )
+            for ( OldIndexProvider retired : OldIndexProvider.retiredProviders() )
             {
                 if ( currentKey.equals( retired.providerKey ) && currentVersion.equals( retired.providerVersion ) )
                 {
