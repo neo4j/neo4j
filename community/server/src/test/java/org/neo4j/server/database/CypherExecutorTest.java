@@ -28,6 +28,8 @@ import javax.servlet.http.HttpServletRequest;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
+import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -156,8 +158,15 @@ public class CypherExecutorTest
         QueryRegistryOperations registryOperations = mock( QueryRegistryOperations.class );
         when( statement.queryRegistration() ).thenReturn( registryOperations );
         when( statementBridge.get() ).thenReturn( statement );
-        when( kernelTransaction.securityContext() ).thenReturn( loginContext.authorize(
-                LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ) );
+        try
+        {
+            when( kernelTransaction.securityContext() ).thenReturn( loginContext.authorize(
+                    LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ) );
+        }
+        catch ( KernelException e )
+        {
+            throw new TransactionFailureException( "Failed to start transaction.", e );
+        }
         when( kernelTransaction.transactionType() ).thenReturn( type  );
         when( database.getGraph() ).thenReturn( databaseFacade );
         when( databaseFacade.getDependencyResolver() ).thenReturn( resolver );

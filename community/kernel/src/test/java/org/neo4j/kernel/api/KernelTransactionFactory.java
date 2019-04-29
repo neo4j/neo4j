@@ -25,6 +25,8 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.SchemaState;
@@ -78,7 +80,7 @@ public class KernelTransactionFactory
     {
     }
 
-    private static Instances kernelTransactionWithInternals( LoginContext loginContext )
+    private static Instances kernelTransactionWithInternals( LoginContext loginContext ) throws KernelException
     {
         TransactionHeaderInformation headerInformation = new TransactionHeaderInformation( -1, -1, new byte[0] );
         TransactionHeaderInformationFactory headerInformationFactory = mock( TransactionHeaderInformationFactory.class );
@@ -111,6 +113,13 @@ public class KernelTransactionFactory
 
     static KernelTransaction kernelTransaction( LoginContext loginContext )
     {
-        return kernelTransactionWithInternals( loginContext ).transaction;
+        try
+        {
+            return kernelTransactionWithInternals( loginContext ).transaction;
+        }
+        catch ( KernelException e )
+        {
+            throw new TransactionFailureException( "Failed to start transaction.", e );
+        }
     }
 }

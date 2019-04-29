@@ -187,45 +187,52 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     public KernelTransaction newInstance( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, long timeout )
     {
         assertCurrentThreadIsNotBlockingNewTransactions();
-        SecurityContext securityContext = loginContext.authorize( new LoginContext.IdLookup()
-        {
-            @Override
-            public int getOrCreatePropertyKeyId( String name ) throws KernelException
-            {
-                return tokenHolders.propertyKeyTokens().getOrCreateId( name );
-            }
-
-            @Override
-            public int getOrCreateLabelId( String name ) throws KernelException
-            {
-                return tokenHolders.labelTokens().getOrCreateId( name );
-            }
-        }, databaseId.name() );
         try
         {
-            while ( !newTransactionsLock.readLock().tryLock( 1, TimeUnit.SECONDS ) )
+            SecurityContext securityContext = loginContext.authorize( new LoginContext.IdLookup()
             {
-                assertRunning();
-            }
+                @Override
+                public int getOrCreatePropertyKeyId( String name ) throws KernelException
+                {
+                    return tokenHolders.propertyKeyTokens().getOrCreateId( name );
+                }
+
+                @Override
+                public int getOrCreateLabelId( String name ) throws KernelException
+                {
+                    return tokenHolders.labelTokens().getOrCreateId( name );
+                }
+            }, databaseId.name() );
             try
             {
-                assertRunning();
-                TransactionId lastCommittedTransaction = transactionIdStore.getLastCommittedTransaction();
-                KernelTransactionImplementation tx = localTxPool.acquire();
-                StatementLocks statementLocks = statementLocksFactory.newInstance();
-                tx.initialize( lastCommittedTransaction.transactionId(), lastCommittedTransaction.commitTimestamp(),
-                        statementLocks, type, securityContext, timeout, userTransactionIdCounter.incrementAndGet(), clientInfo );
-                return tx;
+                while ( !newTransactionsLock.readLock().tryLock( 1, TimeUnit.SECONDS ) )
+                {
+                    assertRunning();
+                }
+                try
+                {
+                    assertRunning();
+                    TransactionId lastCommittedTransaction = transactionIdStore.getLastCommittedTransaction();
+                    KernelTransactionImplementation tx = localTxPool.acquire();
+                    StatementLocks statementLocks = statementLocksFactory.newInstance();
+                    tx.initialize( lastCommittedTransaction.transactionId(), lastCommittedTransaction.commitTimestamp(),
+                            statementLocks, type, securityContext, timeout, userTransactionIdCounter.incrementAndGet(), clientInfo );
+                    return tx;
+                }
+                finally
+                {
+                    newTransactionsLock.readLock().unlock();
+                }
             }
-            finally
+            catch ( InterruptedException ie )
             {
-                newTransactionsLock.readLock().unlock();
+                Thread.interrupted();
+                throw new TransactionFailureException( "Fail to start new transaction.", ie );
             }
         }
-        catch ( InterruptedException ie )
+        catch ( KernelException ke )
         {
-            Thread.interrupted();
-            throw new TransactionFailureException( "Fail to start new transaction.", ie );
+            throw new TransactionFailureException( "Fail to start new transaction.", ke );
         }
     }
 

@@ -40,7 +40,7 @@ public interface LoginContext
      * @param dbName the name of the database the user should be authorized against
      * @return the security context
      */
-    SecurityContext authorize( IdLookup idLookup, String dbName );
+    SecurityContext authorize( IdLookup idLookup, String dbName ) throws KernelException;
 
     LoginContext AUTH_DISABLED = new LoginContext()
     {
