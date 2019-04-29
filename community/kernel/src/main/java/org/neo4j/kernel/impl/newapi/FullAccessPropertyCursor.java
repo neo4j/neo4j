@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 
-public class FullAccessPropertyCursor extends DefaultPropertyCursor
+class FullAccessPropertyCursor extends DefaultPropertyCursor
 {
     FullAccessPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor )
     {

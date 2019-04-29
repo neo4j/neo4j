@@ -77,7 +77,6 @@ class NodeLabelSecurityFilter implements IndexProgressor.EntityValueClient, Inde
         }
         if ( !accessMode.allowsReadLabels( Arrays.stream( node.labels().all() ).mapToInt( l -> (int) l ) ) )
         {
-            // This node doesn't have a whitelisted label, therefore it cannot be accepted
             return false;
         }
         return target.acceptEntity( reference, score, values );

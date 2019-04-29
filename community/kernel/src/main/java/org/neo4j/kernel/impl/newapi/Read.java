@@ -380,7 +380,6 @@ abstract class Read implements TxStateHolder,
     @Override
     public void relationshipGroups( long nodeReference, long reference, RelationshipGroupCursor cursor )
     {
-        // TODO check label whitelist ?
         RelationshipReferenceEncoding encoding = RelationshipReferenceEncoding.parseEncoding( reference );
         switch ( encoding )
         {

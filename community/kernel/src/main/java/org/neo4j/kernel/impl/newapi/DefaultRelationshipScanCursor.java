@@ -114,14 +114,17 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         {
             return true;
         }
-        NodeCursor nodeCursor = read.cursors().allocateFullAccessNodeCursor();
-        read.singleNode( storeCursor.sourceNodeReference(), nodeCursor );
-        boolean allowed = nodeCursor.next() && mode.allowsTraverseLabels( Arrays.stream( nodeCursor.labels().all() ).mapToInt( l -> (int) l ) );
-
-        if ( allowed )
+        try ( NodeCursor nodeCursor = read.cursors().allocateFullAccessNodeCursor() )
         {
-            read.singleNode( storeCursor.targetNodeReference(), nodeCursor );
-            allowed = nodeCursor.next() && mode.allowsTraverseLabels( Arrays.stream( nodeCursor.labels().all() ).mapToInt( l -> (int) l ) );
+            read.singleNode( storeCursor.sourceNodeReference(), nodeCursor );
+            boolean allowed = nodeCursor.next() && mode.allowsTraverseLabels( Arrays.stream( nodeCursor.labels().all() ).mapToInt( l -> (int) l ) );
+
+            if ( allowed )
+            {
+                read.singleNode( storeCursor.targetNodeReference(), nodeCursor );
+                allowed = nodeCursor.next() && mode.allowsTraverseLabels( Arrays.stream( nodeCursor.labels().all() ).mapToInt( l -> (int) l ) );
+            }
+            return allowed;
         }
     }
 

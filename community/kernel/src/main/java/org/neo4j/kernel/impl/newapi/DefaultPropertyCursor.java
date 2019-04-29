@@ -78,11 +78,13 @@ public class DefaultPropertyCursor implements PropertyCursor
         boolean allowed = true;
         if ( !accessMode.allowsReadAllLabels() )
         {
-            NodeCursor nodeCursor = read.cursors().allocateFullAccessNodeCursor();
-            read.singleNode( nodeReference, nodeCursor );
-            nodeCursor.next();
-            allowed = accessMode.allowsReadLabels( Arrays.stream( nodeCursor.labels().all() ).mapToInt( l -> (int) l ) );
-            nodeCursor.close();
+            try ( NodeCursor nodeCursor = read.cursors().allocateFullAccessNodeCursor() )
+            {
+
+                read.singleNode( nodeReference, nodeCursor );
+                nodeCursor.next();
+                allowed = accessMode.allowsReadLabels( Arrays.stream( nodeCursor.labels().all() ).mapToInt( l -> (int) l ) );
+            }
         }
         return allowed;
     }
@@ -184,6 +186,7 @@ public class DefaultPropertyCursor implements PropertyCursor
             txStateValue = null;
             read = null;
             storeCursor.reset();
+            accessMode = null;
 
             pool.accept( this );
         }

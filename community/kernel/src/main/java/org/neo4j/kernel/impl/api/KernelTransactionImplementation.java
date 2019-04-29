@@ -721,8 +721,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
         catch ( ConstraintValidationException | CreateConstraintFailureException e )
         {
-            TokenRead tokenRead = operations.token(); // Skip checking for privileges here
-            throw new ConstraintViolationTransactionFailureException( e.getUserMessage( new SilentTokenNameLookup( tokenRead ) ), e );
+            throw new ConstraintViolationTransactionFailureException(
+                    e.getUserMessage( new SilentTokenNameLookup( tokenRead() ) ), e );
         }
         finally
         {

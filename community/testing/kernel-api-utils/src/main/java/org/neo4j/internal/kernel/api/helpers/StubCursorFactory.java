@@ -37,9 +37,11 @@ public class StubCursorFactory implements CursorFactory
 {
     private final boolean continueWithLastItem;
     private Queue<NodeCursor> nodeCursors = new LinkedList<>();
+    private Queue<NodeCursor> fullNodeCursors = new LinkedList<>();
     private Queue<RelationshipScanCursor> relationshipScanCursors = new LinkedList<>();
     private Queue<RelationshipTraversalCursor> relationshiTraversalCursors = new LinkedList<>();
     private Queue<PropertyCursor> propertyCursors = new LinkedList<>();
+    private Queue<PropertyCursor> fullPropertyCursors = new LinkedList<>();
     private Queue<RelationshipGroupCursor> groupCursors = new LinkedList<>();
     private Queue<NodeValueIndexCursor> nodeValueIndexCursors = new LinkedList<>();
     private Queue<NodeLabelIndexCursor> nodeLabelIndexCursors = new LinkedList<>();
@@ -64,7 +66,7 @@ public class StubCursorFactory implements CursorFactory
     @Override
     public NodeCursor allocateFullAccessNodeCursor()
     {
-        return poll( nodeCursors );
+        return poll( fullNodeCursors );
     }
 
     @Override
@@ -88,8 +90,7 @@ public class StubCursorFactory implements CursorFactory
     @Override
     public PropertyCursor allocateFullAccessPropertyCursor()
     {
-        // TODO do we need to have real full access here, or is it fine to share with the normal propertyCursors?
-        return poll( propertyCursors );
+        return poll( fullPropertyCursors );
     }
 
     @Override
