@@ -20,9 +20,14 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.Map;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.values.storable.Value;
 
 import static org.neo4j.io.fs.FileUtils.path;
 
@@ -35,6 +40,13 @@ enum OldIndexProvider
                 {
                     return directoryRootByProviderKey( layout.databaseDirectory(), providerKey );
                 }
+
+                @Override
+                Map<String,Value> extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException
+                {
+                    File lucene10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, lucene10Dir, indexId );
+                }
             },
     NATIVE10( "lucene+native", "1.0", GraphDatabaseSettings.SchemaIndex.NATIVE30 )
             {
@@ -43,6 +55,13 @@ enum OldIndexProvider
                 {
                     return directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
                 }
+
+                @Override
+                Map<String,Value> extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException
+                {
+                    File providerRootDirectory = providerRootDirectory( layout );
+                    return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, providerRootDirectory, indexId );
+                }
             },
     NATIVE20( "lucene+native", "2.0", GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 )
             {
@@ -50,6 +69,13 @@ enum OldIndexProvider
                 File providerRootDirectory( DatabaseLayout layout )
                 {
                     return directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                }
+
+                @Override
+                Map<String,Value> extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException
+                {
+                    File providerRootDirectory = providerRootDirectory( layout );
+                    return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, providerRootDirectory, indexId );
                 }
             };
 
@@ -65,6 +91,8 @@ enum OldIndexProvider
     }
 
     abstract File providerRootDirectory( DatabaseLayout layout );
+
+    abstract Map<String,Value> extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException;
 
     /**
      * Returns the base schema index directory, i.e.
@@ -102,5 +130,17 @@ enum OldIndexProvider
     private static String fileNameFriendly( String name )
     {
         return name.replaceAll( "\\+", "_" );
+    }
+
+    public static OldIndexProvider getOldProvider( String providerKey, String providerVersion )
+    {
+        for ( OldIndexProvider provider : values() )
+        {
+            if ( provider.providerKey.equals( providerKey ) && provider.providerVersion.equals( providerVersion ) )
+            {
+                return provider;
+            }
+        }
+        throw new IllegalArgumentException( "Can not find old index provider " + providerKey + "-" + providerVersion );
     }
 }
