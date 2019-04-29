@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.scheduler.BufferingExecutor;
 import org.neo4j.scheduler.Group;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SkipThreadLeakageGuard;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -41,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
 
+@SkipThreadLeakageGuard
 @ExtendWith( TestDirectoryExtension.class )
 class GlobalModuleTest
 {
@@ -48,7 +50,7 @@ class GlobalModuleTest
     private TestDirectory testDirectory;
 
     @Test
-    void shouldRunDeferredExecutors() throws InterruptedException
+    void shouldRunDeferredExecutors() throws Exception
     {
         AtomicInteger counter = new AtomicInteger( 0 );
         Semaphore lock = new Semaphore( 1 );

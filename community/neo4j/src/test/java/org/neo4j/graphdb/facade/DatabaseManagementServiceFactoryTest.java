@@ -37,6 +37,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SkipThreadLeakageGuard;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -53,6 +54,7 @@ import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies
 import static org.neo4j.internal.helpers.Exceptions.rootCause;
 import static org.neo4j.kernel.impl.factory.DatabaseInfo.COMMUNITY;
 
+@SkipThreadLeakageGuard
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 class DatabaseManagementServiceFactoryTest
 {
