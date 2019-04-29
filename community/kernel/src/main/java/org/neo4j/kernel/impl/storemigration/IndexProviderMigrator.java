@@ -77,9 +77,9 @@ public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
     public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToMigrateFrom, String versionToMigrateTo )
             throws IOException
     {
-        for ( RetiredIndexProvider retiredIndexProvider : RetiredIndexProvider.values() )
+        for ( OldIndexProvider oldIndexProvider : OldIndexProvider.values() )
         {
-            fs.deleteRecursively( retiredIndexProvider.providerRootDirectory( directoryLayout ) );
+            fs.deleteRecursively( oldIndexProvider.providerRootDirectory( directoryLayout ) );
         }
     }
 
@@ -98,7 +98,7 @@ public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
             String currentKey = oldIndexReference.providerKey();
             String currentVersion = oldIndexReference.providerVersion();
 
-            for ( RetiredIndexProvider retired : RetiredIndexProvider.values() )
+            for ( OldIndexProvider retired : OldIndexProvider.values() )
             {
                 if ( currentKey.equals( retired.providerKey ) && currentVersion.equals( retired.providerVersion ) )
                 {

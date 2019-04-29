@@ -26,7 +26,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 
 import static org.neo4j.io.fs.FileUtils.path;
 
-enum RetiredIndexProvider
+enum OldIndexProvider
 {
     LUCENE( "lucene", "1.0", GraphDatabaseSettings.SchemaIndex.NATIVE30 )
             {
@@ -57,7 +57,7 @@ enum RetiredIndexProvider
     final String providerVersion;
     final GraphDatabaseSettings.SchemaIndex desiredAlternativeProvider;
 
-    RetiredIndexProvider( String providerKey, String providerVersion, GraphDatabaseSettings.SchemaIndex desiredAlternativeProvider )
+    OldIndexProvider( String providerKey, String providerVersion, GraphDatabaseSettings.SchemaIndex desiredAlternativeProvider )
     {
         this.providerKey = providerKey;
         this.providerVersion = providerVersion;
