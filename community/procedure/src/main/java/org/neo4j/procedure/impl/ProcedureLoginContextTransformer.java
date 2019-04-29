@@ -27,17 +27,17 @@ import org.neo4j.kernel.api.procedure.Context;
 
 public class ProcedureLoginContextTransformer implements Function<LoginContext,LoginContext>
 {
-    private final Context context;
+    private final LoginContext loginContext;
 
     public ProcedureLoginContextTransformer( Context context )
     {
-        this.context = context;
+        KernelTransaction tx = context.kernelTransactionOrNull();
+        loginContext = tx != null ? tx.securityContext() : context.securityContext();
     }
 
     @Override
-    public LoginContext apply( LoginContext loginContext )
+    public LoginContext apply( LoginContext ignored )
     {
-        KernelTransaction tx = context.kernelTransactionOrNull();
-        return tx != null ? tx.securityContext() : context.securityContext();
+        return loginContext;
     }
 }
