@@ -78,6 +78,22 @@ enum OldIndexProvider
                     File providerRootDirectory = providerRootDirectory( layout );
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, providerRootDirectory, indexId );
                 }
+            },
+    NATIVE_BTREE10( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerKey(), GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerVersion(),
+            GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10, false )
+            {
+                @Override
+                File providerRootDirectory( DatabaseLayout layout )
+                {
+                    return directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                }
+
+                @Override
+                Map<String,Value> extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException
+                {
+                    File rootDir = providerRootDirectory( layout );
+                    return GenericConfigExtractor.indexConfigFromGenericFile( pageCache, rootDir, indexId );
+                }
             };
 
     final String providerKey;
