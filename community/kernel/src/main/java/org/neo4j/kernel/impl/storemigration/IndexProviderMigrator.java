@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.common.ProgressReporter;
@@ -36,8 +35,6 @@ import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
-
-import static org.neo4j.io.fs.FileUtils.path;
 
 public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
 {
@@ -113,84 +110,5 @@ public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
             }
         }
         return rule;
-    }
-
-    enum RetiredIndexProvider
-    {
-        LUCENE( "lucene", "1.0", SchemaIndex.NATIVE30 )
-                {
-                    @Override
-                    File providerRootDirectory( DatabaseLayout layout )
-                    {
-                        return directoryRootByProviderKey( layout.databaseDirectory(), providerKey );
-                    }
-                },
-        NATIVE10( "lucene+native", "1.0", SchemaIndex.NATIVE30 )
-                {
-                    @Override
-                    File providerRootDirectory( DatabaseLayout layout )
-                    {
-                        return directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
-                    }
-                },
-        NATIVE20( "lucene+native", "2.0", SchemaIndex.NATIVE_BTREE10 )
-                {
-                    @Override
-                    File providerRootDirectory( DatabaseLayout layout )
-                    {
-                        return directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
-                    }
-                };
-
-        final String providerKey;
-        final String providerVersion;
-        final SchemaIndex desiredAlternativeProvider;
-
-        RetiredIndexProvider( String providerKey, String providerVersion, SchemaIndex desiredAlternativeProvider )
-        {
-            this.providerKey = providerKey;
-            this.providerVersion = providerVersion;
-            this.desiredAlternativeProvider = desiredAlternativeProvider;
-        }
-
-        abstract File providerRootDirectory( DatabaseLayout layout );
-    }
-
-    /**
-     * Returns the base schema index directory, i.e.
-     *
-     * <pre>
-     * &lt;db&gt;/schema/index/
-     * </pre>
-     *
-     * @param databaseStoreDir database store directory, i.e. {@code db} in the example above, where e.g. {@code nodestore} lives.
-     * @return the base directory of schema indexing.
-     */
-    private static File baseSchemaIndexFolder( File databaseStoreDir )
-    {
-        return path( databaseStoreDir, "schema", "index" );
-    }
-
-    /**
-     * @param databaseStoreDir store directory of database, i.e. {@code db} in the example above.
-     * @return The index provider root directory
-     */
-    private static File directoryRootByProviderKey( File databaseStoreDir, String providerKey )
-    {
-        return path( baseSchemaIndexFolder( databaseStoreDir ), fileNameFriendly( providerKey ) );
-    }
-
-    /**
-     * @param databaseStoreDir store directory of database, i.e. {@code db} in the example above.
-     * @return The index provider root directory
-     */
-    private static File directoryRootByProviderKeyAndVersion( File databaseStoreDir, String providerKey, String providerVersion )
-    {
-        return path( baseSchemaIndexFolder( databaseStoreDir ), fileNameFriendly( providerKey + "-" + providerVersion ) );
-    }
-
-    private static String fileNameFriendly( String name )
-    {
-        return name.replaceAll( "\\+", "_" );
     }
 }
