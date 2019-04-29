@@ -1708,6 +1708,7 @@ class GBPTreeTest
 
                 assertFutureFailsWithTreeInconsistencyException( execute1 );
                 assertFutureFailsWithTreeInconsistencyException( execute2 );
+                executor.shutdown();
             } );
         }
     }

@@ -37,40 +37,42 @@ class ThreadAheadReadableTest
         // GIVEN
         TrackingReader actual = new TrackingReader( 23 );
         int bufferSize = 5;
-        CharReadable aheadReader = ThreadAheadReadable.threadAhead( actual, bufferSize );
-        SectionedCharBuffer buffer = new SectionedCharBuffer( bufferSize );
+        try ( CharReadable aheadReader = ThreadAheadReadable.threadAhead( actual, bufferSize ) )
+        {
+            SectionedCharBuffer buffer = new SectionedCharBuffer( bufferSize );
 
-        // WHEN starting it up it should read and fill the buffer to the brim
-        assertEquals( bufferSize, actual.awaitCompletedReadAttempts( 1 ) );
+            // WHEN starting it up it should read and fill the buffer to the brim
+            assertEquals( bufferSize, actual.awaitCompletedReadAttempts( 1 ) );
 
-        // WHEN we read one buffer
-        int read = 0;
-        buffer = aheadReader.read( buffer, buffer.front() );
-        assertBuffer( chars( read, bufferSize ), buffer, 0, bufferSize );
-        read += buffer.available();
+            // WHEN we read one buffer
+            int read = 0;
+            buffer = aheadReader.read( buffer, buffer.front() );
+            assertBuffer( chars( read, bufferSize ), buffer, 0, bufferSize );
+            read += buffer.available();
 
-        // and simulate reading all characters, i.e. back section will be empty in the new buffer
-        buffer = aheadReader.read( buffer, buffer.front() );
-        assertBuffer( chars( read, bufferSize ), buffer, 0, bufferSize );
-        read += buffer.available();
+            // and simulate reading all characters, i.e. back section will be empty in the new buffer
+            buffer = aheadReader.read( buffer, buffer.front() );
+            assertBuffer( chars( read, bufferSize ), buffer, 0, bufferSize );
+            read += buffer.available();
 
-        // then simulate reading some characters, i.e. back section will contain some characters
-        int keep = 2;
-        buffer = aheadReader.read( buffer, buffer.front() - keep );
-        assertBuffer( chars( read - keep, bufferSize + keep ), buffer, keep, bufferSize );
-        read += buffer.available();
+            // then simulate reading some characters, i.e. back section will contain some characters
+            int keep = 2;
+            buffer = aheadReader.read( buffer, buffer.front() - keep );
+            assertBuffer( chars( read - keep, bufferSize + keep ), buffer, keep, bufferSize );
+            read += buffer.available();
 
-        keep = 3;
-        buffer = aheadReader.read( buffer, buffer.front() - keep );
-        assertBuffer( chars( read - keep, bufferSize + keep ), buffer, keep, bufferSize );
-        read += buffer.available();
+            keep = 3;
+            buffer = aheadReader.read( buffer, buffer.front() - keep );
+            assertBuffer( chars( read - keep, bufferSize + keep ), buffer, keep, bufferSize );
+            read += buffer.available();
 
-        keep = 1;
-        buffer = aheadReader.read( buffer, buffer.front() - keep );
-        assertEquals( 3, buffer.available() );
-        assertBuffer( chars( read - keep, buffer.available() + keep ), buffer, keep, 3 );
-        read += buffer.available();
-        assertEquals( 23, read );
+            keep = 1;
+            buffer = aheadReader.read( buffer, buffer.front() - keep );
+            assertEquals( 3, buffer.available() );
+            assertBuffer( chars( read - keep, buffer.available() + keep ), buffer, keep, 3 );
+            read += buffer.available();
+            assertEquals( 23, read );
+        }
     }
 
     @Test
@@ -79,16 +81,18 @@ class ThreadAheadReadableTest
         // GIVEN
         TrackingReader actual = new TrackingReader( 0 );
         int bufferSize = 10;
-        CharReadable aheadReadable = ThreadAheadReadable.threadAhead( actual, bufferSize );
+        try ( CharReadable aheadReadable = ThreadAheadReadable.threadAhead( actual, bufferSize ) )
+        {
 
-        // WHEN
-        actual.awaitCompletedReadAttempts( 1 );
+            // WHEN
+            actual.awaitCompletedReadAttempts( 1 );
 
-        // THEN
-        SectionedCharBuffer buffer = new SectionedCharBuffer( bufferSize );
-        buffer = aheadReadable.read( buffer, buffer.front() );
-        assertEquals( buffer.pivot(), buffer.back() );
-        assertEquals( buffer.pivot(), buffer.front() );
+            // THEN
+            SectionedCharBuffer buffer = new SectionedCharBuffer( bufferSize );
+            buffer = aheadReadable.read( buffer, buffer.front() );
+            assertEquals( buffer.pivot(), buffer.back() );
+            assertEquals( buffer.pivot(), buffer.front() );
+        }
     }
 
     private static void assertBuffer( char[] expectedChars, SectionedCharBuffer buffer, int charsInBack, int charsInFront )

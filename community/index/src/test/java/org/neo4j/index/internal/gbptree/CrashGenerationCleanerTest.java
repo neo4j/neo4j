@@ -21,7 +21,9 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,7 +78,7 @@ class CrashGenerationCleanerTest
     private PagedFile pagedFile;
     private final Layout<MutableLong,MutableLong> layout = longLayout().build();
     private final CorruptibleTreeNode corruptibleTreeNode = new CorruptibleTreeNode( PAGE_SIZE, layout );
-    private final ExecutorService executor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
+    private static ExecutorService executor;
     private final int oldStableGeneration = 9;
     private final int stableGeneration = 10;
     private final int unstableGeneration = 12;
@@ -94,6 +96,18 @@ class CrashGenerationCleanerTest
             crashed( rightSibling() ),
             crashed( successor() )
     );
+
+    @BeforeAll
+    static void setUp()
+    {
+        executor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
+    }
+
+    @AfterAll
+    static void tearDown()
+    {
+        executor.shutdown();
+    }
 
     @BeforeEach
     void setupPagedFile() throws IOException

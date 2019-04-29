@@ -146,6 +146,6 @@ class ConstraintRecoveryIT
             assertEquals( KEY, single( orphanedConstraintIndex.getPropertyKeys() ) );
         }
 
-        managementService.shutdown();
+        secondManagementService.shutdown();
     }
 }

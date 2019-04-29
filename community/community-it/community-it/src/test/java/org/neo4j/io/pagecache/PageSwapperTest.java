@@ -804,6 +804,7 @@ public abstract class PageSwapperTest
         {
             future.get();
         }
+        executor.shutdown();
     }
 
     @Test

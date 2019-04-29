@@ -320,9 +320,10 @@ class BatchingNeoStoresTest
     private void someDataInTheDatabase() throws Exception
     {
         NullLog nullLog = NullLog.getInstance();
-        try ( PageCache pageCache = new ConfiguringPageCacheFactory( fileSystem, Config.defaults(), PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                nullLog, EmptyVersionContextSupplier.EMPTY, JobSchedulerFactory.createInitialisedScheduler() ).getOrCreatePageCache();
-              Lifespan life = new Lifespan() )
+        try ( JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
+                PageCache pageCache = new ConfiguringPageCacheFactory( fileSystem, Config.defaults(), PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
+                        nullLog, EmptyVersionContextSupplier.EMPTY, scheduler ).getOrCreatePageCache();
+                Lifespan life = new Lifespan() )
         {
             // TODO this little dance with TokenHolders is really annoying and must be solved with a better abstraction
             DeferredInitializedTokenCreator propertyKeyTokenCreator = new DeferredInitializedTokenCreator()

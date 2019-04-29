@@ -151,11 +151,12 @@ class DatabaseRecoveryIT
     private DatabaseManagementService managementService;
 
     @AfterEach
-    void tearDown()
+    void cleanUp()
     {
         if ( managementService != null )
         {
             managementService.shutdown();
+            managementService = null;
         }
     }
 
@@ -174,7 +175,6 @@ class DatabaseRecoveryIT
         }
 
         var restoreDbLayout = copyStore();
-        managementService.shutdown();
 
         GraphDatabaseService recoveredDatabase = startDatabase( restoreDbLayout.getStoreLayout().storeDirectory() );
         try ( Transaction tx = recoveredDatabase.beginTx() )
@@ -184,8 +184,6 @@ class DatabaseRecoveryIT
             // Make sure id generator has been rebuilt so this doesn't throw null pointer exception
             recoveredDatabase.createNode();
         }
-
-        managementService.shutdown();
     }
 
     @Test
@@ -211,7 +209,6 @@ class DatabaseRecoveryIT
         logProvider.assertContainsMessageContaining( "10% completed" );
         logProvider.assertContainsMessageContaining( "100% completed" );
 
-        managementService.shutdown();
         recoveredService.shutdown();
     }
 
@@ -258,7 +255,6 @@ class DatabaseRecoveryIT
             assertTrue( node.hasProperty( validPropertyName ) );
         }
 
-        managementService.shutdown();
         recoveredService.shutdown();
     }
 
@@ -802,14 +798,24 @@ class DatabaseRecoveryIT
 
     private GraphDatabaseAPI startDatabase( File storeDir, EphemeralFileSystemAbstraction fs, UpdateCapturingIndexProvider indexProvider )
     {
+
+        if ( managementService != null )
+        {
+            managementService.shutdown();
+        }
         managementService = new TestDatabaseManagementServiceBuilder( storeDir ).setFileSystem( fs ).setExtensions(
                 singletonList( new IndexExtensionFactory( indexProvider ) ) ).impermanent()
                 .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() ).build();
+
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private GraphDatabaseService startDatabase( File storeDir )
     {
+        if ( managementService != null )
+        {
+            managementService.shutdown();
+        }
         managementService = getManagementService( storeDir );
         return managementService.database( DEFAULT_DATABASE_NAME );
     }

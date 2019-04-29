@@ -70,7 +70,7 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
  */
 public class RandomPageCacheTestHarness implements Closeable
 {
-    private static final ExecutorService EXECUTOR_SERVICE = new ThreadPoolExecutor(
+    private final ExecutorService executorService = new ThreadPoolExecutor(
             0, Integer.MAX_VALUE, 1, TimeUnit.SECONDS, new SynchronousQueue<>(), new DaemonThreadFactory() );
 
     private double mischiefRate;
@@ -367,6 +367,7 @@ public class RandomPageCacheTestHarness implements Closeable
     public void close() throws IOException
     {
         fs.close();
+        executorService.shutdown();
     }
 
     @SuppressWarnings( "unchecked" )
@@ -415,7 +416,7 @@ public class RandomPageCacheTestHarness implements Closeable
         Future<Void>[] futures = new Future[concurrencyLevel];
         for ( int i = 0; i < concurrencyLevel; i++ )
         {
-            futures[i] = EXECUTOR_SERVICE.submit( planRunner );
+            futures[i] = executorService.submit( planRunner );
         }
 
         if ( preparation != null )

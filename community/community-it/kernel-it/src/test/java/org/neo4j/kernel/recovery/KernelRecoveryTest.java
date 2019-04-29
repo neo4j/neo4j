@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.recovery;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -59,6 +60,15 @@ class KernelRecoveryTest
     @Inject
     private TestDirectory testDirectory;
     private DatabaseManagementService managementService;
+
+    @AfterEach
+    void cleanUp()
+    {
+        if ( managementService != null )
+        {
+            managementService.shutdown();
+        }
+    }
 
     @Test
     void shouldHandleWritesProperlyAfterRecovery() throws Exception

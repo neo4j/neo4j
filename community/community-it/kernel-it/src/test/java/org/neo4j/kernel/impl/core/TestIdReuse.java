@@ -96,7 +96,7 @@ class TestIdReuse
         {
             setAndRemoveSomeProperties( db, value );
         }
-        managementService.shutdown();
+        impermanentManagement.shutdown();
         assertEquals( sizeBefore, storeFile.length() );
     }
 
