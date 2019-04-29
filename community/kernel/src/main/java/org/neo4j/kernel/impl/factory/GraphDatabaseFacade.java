@@ -115,7 +115,7 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.values.storable.Values.utf8Value;
 
 /**
- * Implementation of the GraphDatabaseService/GraphDatabaseService interfaces - the "Core API".
+ * Implementation of the GraphDatabaseService interfaces - the "Core API".
  */
 public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 {
