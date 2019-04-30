@@ -33,10 +33,4 @@ class FullAccessPropertyCursor extends DefaultPropertyCursor
     {
         return true;
     }
-
-    @Override
-    boolean allowsLabels( long nodeReference )
-    {
-        return true;
-    }
 }

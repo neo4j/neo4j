@@ -56,6 +56,20 @@ public interface QueryExecutor
         return count.getValue();
     }
 
+    default long executeQueryLong( String query, Map<String,Object> params )
+    {
+        MutableLong count = new MutableLong(-1);
+
+        final QueryResult.QueryResultVisitor<RuntimeException> resultVisitor = row ->
+        {
+            count.setValue( ((NumberValue) row.fields()[0]).longValue() );
+            return false;
+        };
+
+        executeQuery( query, params, resultVisitor );
+        return count.getValue();
+    }
+
     default void executeQueryWithConstraint( String query, Map<String,Object> params, String failureMessage ) throws InvalidArgumentsException
     {
         final QueryResult.QueryResultVisitor<RuntimeException> resultVisitor = row -> true;

@@ -194,7 +194,8 @@ public class AllStoreHolder extends Read
     public long countsForNodeWithoutTxState( int labelId )
     {
         AccessMode mode = ktx.securityContext().mode();
-        if ( labelId == TokenRead.ANY_LABEL || mode.allowsReadLabels( IntStream.of( labelId ) ) )
+        // TODO eeeh... way harder to handle now...
+        if ( labelId == TokenRead.ANY_LABEL || mode.allowsTraverseLabels( IntStream.of( labelId ) ) )
         {
             return storageReader.countsForNode( labelId );
         }

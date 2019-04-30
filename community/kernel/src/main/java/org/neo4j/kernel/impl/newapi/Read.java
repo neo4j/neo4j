@@ -148,31 +148,46 @@ abstract class Read implements TxStateHolder,
         {
             if ( !accessMode.allowsPropertyReads( prop ) )
             {
-                return new NodeLabelSecurityFilter( cursor, cursors.allocateFullAccessNodeCursor(), this, AccessMode.Static.NONE );
+                return new NodeLabelSecurityFilter( reference.properties(), cursor, cursors.allocateFullAccessNodeCursor(), this, AccessMode.Static.NONE );
             }
         }
 
         SchemaDescriptor schema = reference.schema();
-        if ( schema.entityType().equals( EntityType.NODE ) && !accessMode.allowsReadAllLabels() )
+
+        boolean allowsForAllLabels = true;
+        for ( int prop : reference.properties() )
+        {
+            allowsForAllLabels &= accessMode.allowsReadPropertyAllLabels( prop );
+        }
+
+        if ( schema.entityType().equals( EntityType.NODE ) && !allowsForAllLabels )
         {
             boolean allowsAll = true;
             boolean allowsSome = false;
-            for ( int label : schema.getEntityTokenIds() )
+            for ( int prop : reference.properties() )
             {
-                boolean allowed = accessMode.allowsReadLabels( IntStream.of( label ) );
-                allowsAll &= allowed;
-                allowsSome |= allowed;
+                boolean allowForAllLabels = true;
+                boolean allowForSomeLabels = false;
+                for ( int label : schema.getEntityTokenIds() )
+                {
+                    boolean allowForLabel = accessMode.allowsReadProperty( () -> new int[]{label}, prop );
+                    allowForAllLabels &= allowForLabel;
+                    allowForSomeLabels = allowForLabel;
+                }
+                allowsAll &= allowForAllLabels;
+                allowsSome |= allowForSomeLabels;
             }
 
             if ( !allowsSome )
             {
                 // nothing matching the whitelist
-                return new NodeLabelSecurityFilter( cursor, cursors.allocateFullAccessNodeCursor(), this, AccessMode.Static.NONE );
+                return new NodeLabelSecurityFilter( reference.properties(), cursor, cursors.allocateFullAccessNodeCursor(), this, AccessMode.Static.NONE );
             }
             else if ( !allowsAll )
             {
                 // only some matching whitelist
-                return new NodeLabelSecurityFilter( cursor, cursors.allocateFullAccessNodeCursor(), this, ktx.securityContext().mode() );
+                return new NodeLabelSecurityFilter( reference.properties(), cursor, cursors.allocateFullAccessNodeCursor(), this,
+                        ktx.securityContext().mode() );
             }
         }
         // everything in this index is whitelisted
@@ -302,7 +317,7 @@ abstract class Read implements TxStateHolder,
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
         IndexProgressor indexProgressor;
-        if ( ktx.securityContext().mode().allowsReadLabels( IntStream.of( label ) ) )
+        if ( ktx.securityContext().mode().allowsTraverseLabels( IntStream.of( label ) ) )
         {
             LabelScan labelScan = labelScanReader().nodeLabelScan( label );
             indexProgressor = labelScan.initialize( indexCursor );

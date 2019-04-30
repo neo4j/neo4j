@@ -32,14 +32,16 @@ import org.neo4j.values.storable.Value;
 
 class NodeLabelSecurityFilter implements IndexProgressor.EntityValueClient, IndexProgressor
 {
+    private final int[] properties;
     private final EntityValueClient target;
     private final NodeCursor node;
     private final Read read;
     private final AccessMode accessMode;
     private IndexProgressor progressor;
 
-    NodeLabelSecurityFilter( EntityValueClient target, NodeCursor node, Read read, AccessMode accessMode )
+    NodeLabelSecurityFilter( int[] properties, EntityValueClient target, NodeCursor node, Read read, AccessMode accessMode )
     {
+        this.properties = properties;
         this.target = target;
         this.node = node;
         this.read = read;
@@ -75,7 +77,14 @@ class NodeLabelSecurityFilter implements IndexProgressor.EntityValueClient, Inde
             // This node doesn't exist, therefore it cannot be accepted
             return false;
         }
-        if ( !accessMode.allowsReadLabels( Arrays.stream( node.labels().all() ).mapToInt( l -> (int) l ) ) )
+
+        boolean allowed = true;
+        for ( int prop : properties )
+        {
+            allowed &= accessMode.allowsReadProperty( () -> Arrays.stream( node.labels().all() ).mapToInt( l -> (int) l ).toArray(), prop );
+        }
+
+        if ( !allowed )
         {
             return false;
         }

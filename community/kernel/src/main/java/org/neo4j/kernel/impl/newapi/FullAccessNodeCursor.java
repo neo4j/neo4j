@@ -19,56 +19,13 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-
-import org.neo4j.internal.kernel.api.LabelSet;
-import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.StorageNodeCursor;
-
-import static org.neo4j.internal.kernel.api.Read.NO_ID;
 
 public class FullAccessNodeCursor extends DefaultNodeCursor
 {
     FullAccessNodeCursor( CursorPool<DefaultNodeCursor> pool, StorageNodeCursor storeCursor )
     {
         super( pool, storeCursor );
-    }
-
-    @Override
-    public LabelSet labels()
-    {
-        if ( currentAddedInTx != NO_ID )
-        {
-            //Node added in tx-state, no reason to go down to store and check
-            TransactionState txState = read.txState();
-            return Labels.from( txState.nodeStateLabelDiffSets( currentAddedInTx ).getAdded() );
-        }
-        else if ( hasChanges() )
-        {
-            //Get labels from store and put in intSet, unfortunately we get longs back
-            TransactionState txState = read.txState();
-            long[] longs = storeCursor.labels();
-            final MutableLongSet labels = new LongHashSet();
-            for ( long labelToken : longs )
-            {
-                labels.add( labelToken );
-            }
-
-            //Augment what was found in store with what we have in tx state
-            return Labels.from( txState.augmentLabels( labels, txState.getNodeState( storeCursor.entityReference() ) ) );
-        }
-        else
-        {
-            //Nothing in tx state, just read the data.
-            return Labels.from( storeCursor.labels() );
-        }
-    }
-
-    @Override
-    boolean allowedLabels( long... labels )
-    {
-        return true;
     }
 
     @Override

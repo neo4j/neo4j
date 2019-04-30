@@ -20,14 +20,12 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.util.Arrays;
-import java.util.stream.LongStream;
 
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -49,7 +47,7 @@ class DefaultNodeCursor implements NodeCursor
     HasChanges hasChanges = HasChanges.MAYBE;
     private LongIterator addedNodes;
     StorageNodeCursor storeCursor;
-    long currentAddedInTx;
+    private long currentAddedInTx;
     private long single;
     private AccessMode accessMode;
 
@@ -114,9 +112,7 @@ class DefaultNodeCursor implements NodeCursor
         {
             //Node added in tx-state, no reason to go down to store and check
             TransactionState txState = read.txState();
-            // Select only allowed labels
-            final LongSet labels = txState.nodeStateLabelDiffSets( currentAddedInTx ).getAdded();
-            return Labels.from( labels.select( this::allowedLabels ) );
+            return Labels.from( txState.nodeStateLabelDiffSets( currentAddedInTx ).getAdded() );
         }
         else if ( hasChanges() )
         {
@@ -130,26 +126,18 @@ class DefaultNodeCursor implements NodeCursor
             }
 
             //Augment what was found in store with what we have in tx state
-            return Labels.from( txState.augmentLabels( labels, txState.getNodeState( storeCursor.entityReference() ) ).select(
-                    this::allowedLabels ) );
+            return Labels.from( txState.augmentLabels( labels, txState.getNodeState( storeCursor.entityReference() ) ) );
         }
         else
         {
             //Nothing in tx state, just read the data.
-            final long[] labels = storeCursor.labels();
-            final LongStream allowedLabels = LongStream.of( labels ).filter( this::allowedLabels );
-            return Labels.from( allowedLabels.toArray() );
+            return Labels.from( storeCursor.labels() );
         }
     }
 
     @Override
     public boolean hasLabel( int label )
     {
-        if ( !allowedLabels( label ) )
-        {
-            return false;
-        }
-
         if ( hasChanges() )
         {
             TransactionState txState = read.txState();
@@ -166,11 +154,6 @@ class DefaultNodeCursor implements NodeCursor
 
         //Get labels from store and put in intSet, unfortunately we get longs back
         return storeCursor.hasLabel( label );
-    }
-
-    boolean allowedLabels( long... labels )
-    {
-        return accessMode.allowsReadLabels( Arrays.stream( labels ).mapToInt( l -> (int) l ) );
     }
 
     @Override

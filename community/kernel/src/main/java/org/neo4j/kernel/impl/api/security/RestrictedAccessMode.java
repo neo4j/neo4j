@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.security;
 
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -77,15 +78,15 @@ public class RestrictedAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsReadAllLabels()
+    public boolean allowsReadPropertyAllLabels( int propertyKey )
     {
-        return original.allowsReadAllLabels() && wrapping.allowsReadAllLabels();
+        return original.allowsReadPropertyAllLabels( propertyKey ) && wrapping.allowsReadPropertyAllLabels( propertyKey );
     }
 
     @Override
-    public boolean allowsReadLabels( IntStream labels )
+    public boolean allowsReadProperty( Supplier<int[]> labels, int propertyKey )
     {
-        return original.allowsReadLabels( labels ) && wrapping.allowsReadLabels( labels );
+        return original.allowsReadProperty( labels, propertyKey ) && wrapping.allowsReadProperty( labels, propertyKey );
     }
 
     @Override

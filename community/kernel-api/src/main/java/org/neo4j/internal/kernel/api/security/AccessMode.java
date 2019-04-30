@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -122,13 +122,13 @@ public interface AccessMode
         }
 
         @Override
-        public boolean allowsReadAllLabels()
+        public boolean allowsReadPropertyAllLabels( int propertyKey )
         {
             return read;
         }
 
         @Override
-        public boolean allowsReadLabels( IntStream labels )
+        public boolean allowsReadProperty( Supplier<int[]> labels, int propertyKey )
         {
             return read;
         }
@@ -161,8 +161,8 @@ public interface AccessMode
     boolean allowsTraverseAllLabels();
     boolean allowsTraverseLabels( IntStream labels );
 
-    boolean allowsReadAllLabels();
-    boolean allowsReadLabels( IntStream labels );
+    boolean allowsReadPropertyAllLabels( int propertyKey );
+    boolean allowsReadProperty( Supplier<int[]> labels, int propertyKey );
 
     boolean allowsPropertyReads( int propertyKey );
 
