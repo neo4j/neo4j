@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexConfigProvider;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -130,7 +131,7 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     public Map<String,Value> indexConfig()
     {
         Map<String,Value> indexConfig = new HashMap<>();
-        instanceSelector.transform( IndexPopulator::indexConfig ).forEach( indexConfig::putAll );
+        instanceSelector.transform( IndexPopulator::indexConfig ).forEach( source -> IndexConfigProvider.putAllNoOverwrite( indexConfig, source ) );
         return indexConfig;
     }
 }

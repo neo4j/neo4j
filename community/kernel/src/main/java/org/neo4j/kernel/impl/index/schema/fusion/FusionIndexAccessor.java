@@ -30,6 +30,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexConfigProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexDropAction;
@@ -141,7 +142,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     public Map<String,Value> indexConfig()
     {
         Map<String,Value> indexConfig = new HashMap<>();
-        instanceSelector.transform( IndexAccessor::indexConfig ).forEach( indexConfig::putAll );
+        instanceSelector.transform( IndexAccessor::indexConfig ).forEach( source -> IndexConfigProvider.putAllNoOverwrite( indexConfig, source ) );
         return indexConfig;
     }
 

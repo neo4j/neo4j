@@ -30,6 +30,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexConfigProvider;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -149,7 +150,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<WorkSyncedNativeIndexPopul
         Map<String,Value> indexConfig = new HashMap<>();
         for ( IndexPopulator part : this )
         {
-            indexConfig.putAll( part.indexConfig() );
+            IndexConfigProvider.putAllNoOverwrite( indexConfig, part.indexConfig() );
         }
         return indexConfig;
     }

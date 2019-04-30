@@ -38,4 +38,24 @@ public interface IndexConfigProvider
     {
         return Collections.emptyMap();
     }
+
+    /**
+     * Add all entries from source to target and make sure
+     * @param target {@link Map} to which entries are added.
+     * @param source {@link Map} from which entries are taken, will not be modified.
+     */
+    static void putAllNoOverwrite( Map<String,Value> target, Map<String,Value> source )
+    {
+        for ( Map.Entry<String,Value> partEntry : source.entrySet() )
+        {
+            String key = partEntry.getKey();
+            Value value = partEntry.getValue();
+            if ( target.containsKey( key ) )
+            {
+                throw new IllegalStateException( String.format( "Adding config would overwrite existing value: key=%s, newValue=%s, oldValue=%s",
+                        key, value, target.get( key ) ) );
+            }
+            target.put( key, value );
+        }
+    }
 }

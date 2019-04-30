@@ -38,6 +38,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexConfigProvider;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -174,7 +175,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
         Map<String,Value> indexConfig = new HashMap<>();
         for ( NativeIndexAccessor<?,?> part : this )
         {
-            indexConfig.putAll( part.indexConfig() );
+            IndexConfigProvider.putAllNoOverwrite( indexConfig, part.indexConfig() );
         }
         return indexConfig;
     }
