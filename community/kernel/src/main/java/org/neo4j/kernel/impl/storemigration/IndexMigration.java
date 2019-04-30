@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -120,19 +119,33 @@ enum IndexMigration
                     // todo implement me
                 }
             },
-    // todo implement this guy
     FULLTEXT10( "fulltext", "1.0", null, false )
             {
                 @Override
                 File providerRootDirectory( DatabaseLayout layout )
                 {
-                    return null;
+                    return directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
                 }
 
                 @Override
                 Map<String,Value> extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId )
                 {
-                    return Collections.emptyMap();
+                    // Fulltext index directory structure.
+                    // └── schema
+                    //    └── index
+                    //        └── fulltext-1.0
+                    //            └── 1
+                    //                ├── fulltext-1.0
+                    //                │   ├── 1
+                    //                │   │   ├── segments_1
+                    //                │   │   └── write.lock
+                    //                │   ├── failure-message
+                    //                │   └── fulltext-index.properties <- Fulltext index settings
+                    //                └── fulltext-1.0.tx               <- Transaction folder
+                    File fulltext10Dir = providerRootDirectory( layout );
+                    File directoryForIndex = path( fulltext10Dir, String.valueOf( indexId ) );
+                    File fulltextIndexDirectory = directoryBySubProvider( directoryForIndex, providerKey, providerVersion );
+                    return FulltextConfigExtractor.indexConfigFromFulltextDirectory( fs, fulltextIndexDirectory );
                 }
 
                 @Override
@@ -192,6 +205,11 @@ enum IndexMigration
     private static File directoryRootByProviderKeyAndVersion( File databaseStoreDir, String providerKey, String providerVersion )
     {
         return path( baseSchemaIndexFolder( databaseStoreDir ), fileNameFriendly( providerKey + "-" + providerVersion ) );
+    }
+
+    private static File directoryBySubProvider( File parentProviderDir, String providerKey, String providerVersion )
+    {
+        return path( parentProviderDir, fileNameFriendly( providerKey + "-" + providerVersion ) );
     }
 
     private static String fileNameFriendly( String name )
