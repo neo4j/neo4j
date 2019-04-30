@@ -31,9 +31,7 @@ import org.neo4j.dbms.database.DefaultDatabaseManager;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.monitoring.Monitors;
@@ -52,6 +50,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
+import static org.neo4j.helpers.Exceptions.rootCause;
 import static org.neo4j.kernel.impl.factory.DatabaseInfo.COMMUNITY;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
@@ -60,7 +59,6 @@ class DatabaseManagementServiceFactoryTest
     @Inject
     private TestDirectory testDirectory;
 
-    private final GraphDatabaseFacade mockFacade = mock( GraphDatabaseFacade.class );
     private final ExternalDependencies deps = mock( ExternalDependencies.class, RETURNS_MOCKS );
 
     @BeforeEach
@@ -76,8 +74,8 @@ class DatabaseManagementServiceFactoryTest
         RuntimeException startupError = new RuntimeException();
         DatabaseManagementServiceFactory db = newFaultyGraphDatabaseFacadeFactory( startupError, null );
         RuntimeException startException =
-                assertThrows( RuntimeException.class, () -> db.initFacade( testDirectory.storeDir(), Collections.emptyMap(), deps, mockFacade ) );
-        assertEquals( startupError, Exceptions.rootCause( startException ) );
+                assertThrows( RuntimeException.class, () -> db.initFacade( testDirectory.storeDir(), Collections.emptyMap(), deps ) );
+        assertEquals( startupError, rootCause( startException ) );
     }
 
     @Test
@@ -88,7 +86,7 @@ class DatabaseManagementServiceFactoryTest
 
         DatabaseManagementServiceFactory db = newFaultyGraphDatabaseFacadeFactory( startupError, shutdownError );
         RuntimeException initException =
-                assertThrows( RuntimeException.class, () -> db.initFacade( testDirectory.storeDir(), Collections.emptyMap(), deps, mockFacade ) );
+                assertThrows( RuntimeException.class, () -> db.initFacade( testDirectory.storeDir(), Collections.emptyMap(), deps ) );
 
         assertTrue( initException.getMessage().startsWith( "Error starting " ) );
         assertEquals( startupError, initException.getCause() );
@@ -101,7 +99,7 @@ class DatabaseManagementServiceFactoryTest
         AbstractEditionModule editionModule = new CommunityEditionModule( globalModule )
         {
         };
-        globalModule.getGlobalDependencies().satisfyDependencies( new DefaultDatabaseManager( globalModule, editionModule, null, this.mockFacade ) );
+        globalModule.getGlobalDependencies().satisfyDependencies( new DefaultDatabaseManager( globalModule, editionModule, null ) );
         return new DatabaseManagementServiceFactory( DatabaseInfo.UNKNOWN, p -> editionModule )
         {
             @Override

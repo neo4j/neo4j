@@ -33,7 +33,6 @@ import org.neo4j.graphdb.event.DatabaseEventContext;
 import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -110,8 +109,7 @@ class DatabaseManagementServiceFactoryIT
     {
         DatabaseManagementServiceFactory databaseManagementServiceFactory =
                 new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
-        return databaseManagementServiceFactory.initFacade( testDirectory.storeDir(), Config.defaults(), GraphDatabaseDependencies.newDependencies(),
-                new GraphDatabaseFacade() );
+        return databaseManagementServiceFactory.initFacade( testDirectory.storeDir(), Config.defaults(), GraphDatabaseDependencies.newDependencies() );
     }
 
     private static class ShutdownListenerDatabaseEventListener extends DatabaseEventListenerAdapter

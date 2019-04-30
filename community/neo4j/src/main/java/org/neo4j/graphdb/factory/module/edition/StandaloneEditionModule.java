@@ -30,7 +30,6 @@ import org.neo4j.graphdb.factory.module.edition.context.StandaloneDatabaseCompon
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.logging.Log;
@@ -76,8 +75,8 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
     }
 
     @Override
-    public DatabaseManager<?> createDatabaseManager( GraphDatabaseFacade graphDatabaseFacade, GlobalModule globalModule, Log msgLog )
+    public DatabaseManager<?> createDatabaseManager( GlobalModule globalModule, Log msgLog )
     {
-        return new DefaultDatabaseManager( globalModule, this, msgLog, graphDatabaseFacade );
+        return new DefaultDatabaseManager( globalModule, this, msgLog );
     }
 }

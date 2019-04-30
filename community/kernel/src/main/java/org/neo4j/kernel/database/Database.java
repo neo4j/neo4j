@@ -809,11 +809,6 @@ public class Database extends LifecycleAdapter
         return tokenHolders;
     }
 
-    public GlobalTransactionEventListeners getTransactionEventListeners()
-    {
-        return transactionEventListeners;
-    }
-
     public DatabaseAvailabilityGuard getDatabaseAvailabilityGuard()
     {
         return databaseAvailabilityGuard;

@@ -112,7 +112,7 @@ public class DatabaseManagementServiceFactory
      */
     public DatabaseManagementService newFacade( File storeDir, Config config, final ExternalDependencies dependencies )
     {
-        return initFacade( storeDir, config, dependencies, new GraphDatabaseFacade() );
+        return initFacade( storeDir, config, dependencies );
     }
 
     /**
@@ -122,13 +122,11 @@ public class DatabaseManagementServiceFactory
      * @param storeDir the directory where the Neo4j data store is located
      * @param params configuration parameters
      * @param dependencies the dependencies required to construct the {@link GraphDatabaseFacade}
-     * @param graphDatabaseFacade the already created facade which needs initialisation
      * @return the initialised {@link GraphDatabaseFacade}
      */
-    public DatabaseManagementService initFacade( File storeDir, Map<String,String> params, final ExternalDependencies dependencies,
-            final GraphDatabaseFacade graphDatabaseFacade )
+    public DatabaseManagementService initFacade( File storeDir, Map<String,String> params, final ExternalDependencies dependencies )
     {
-        return initFacade( storeDir, Config.defaults( params ), dependencies, graphDatabaseFacade );
+        return initFacade( storeDir, Config.defaults( params ), dependencies );
     }
 
     /**
@@ -138,11 +136,9 @@ public class DatabaseManagementServiceFactory
      * @param storeDir the directory where the Neo4j data store is located
      * @param config configuration
      * @param dependencies the dependencies required to construct the {@link GraphDatabaseFacade}
-     * @param graphDatabaseFacade the already created facade which needs initialisation
      * @return the initialised {@link GraphDatabaseFacade}
      */
-    public DatabaseManagementService initFacade( File storeDir, Config config, final ExternalDependencies dependencies,
-            final GraphDatabaseFacade graphDatabaseFacade )
+    public DatabaseManagementService initFacade( File storeDir, Config config, final ExternalDependencies dependencies )
     {
         GlobalModule globalModule = createGlobalModule( storeDir, config, dependencies );
         AbstractEditionModule edition = editionFactory.apply( globalModule );
@@ -151,7 +147,7 @@ public class DatabaseManagementServiceFactory
 
         LogService logService = globalModule.getLogService();
         Log internalLog = logService.getInternalLog( getClass() );
-        DatabaseManager<?> databaseManager = createAndInitializeDatabaseManager( globalModule, edition, graphDatabaseFacade, internalLog );
+        DatabaseManager<?> databaseManager = createAndInitializeDatabaseManager( globalModule, edition, internalLog );
         DatabaseManagementService managementService = new DatabaseManagementServiceImpl( databaseManager, globalModule.getGlobalAvailabilityGuard(),
                 globalLife, globalModule.getDatabaseEventListeners(), globalModule.getTransactionEventListeners(), internalLog );
 
@@ -311,9 +307,9 @@ public class DatabaseManagementServiceFactory
     }
 
     private static DatabaseManager<?> createAndInitializeDatabaseManager( GlobalModule platform,
-            AbstractEditionModule edition, GraphDatabaseFacade facade, Log log )
+            AbstractEditionModule edition, Log log )
     {
-        DatabaseManager<?> databaseManager = edition.createDatabaseManager( facade, platform, log );
+        DatabaseManager<?> databaseManager = edition.createDatabaseManager( platform, log );
         if ( !edition.handlesDatabaseManagerLifecycle() )
         {
             // only add database manager to the lifecycle when edition doesn't manage it already

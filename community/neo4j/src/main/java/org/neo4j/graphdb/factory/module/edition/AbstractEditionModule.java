@@ -44,7 +44,6 @@ import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.AccessCapability;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.GlobalTransactionStats;
@@ -116,8 +115,7 @@ public abstract class AbstractEditionModule
 
     protected abstract BaseRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule, DatabaseManager<?> databaseManager );
 
-    public abstract DatabaseManager<?> createDatabaseManager( GraphDatabaseFacade graphDatabaseFacade,
-            GlobalModule globalModule, Log msgLog );
+    public abstract DatabaseManager<?> createDatabaseManager( GlobalModule globalModule, Log msgLog );
 
     /**
      * Returns {@code false} because {@link DatabaseManager}'s lifecycle is not managed by any component by default.

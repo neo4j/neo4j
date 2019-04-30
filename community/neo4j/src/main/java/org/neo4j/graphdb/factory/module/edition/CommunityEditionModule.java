@@ -212,7 +212,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
         }
     }
 
-    private KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config )
+    private static KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config )
     {
         return new KernelData( fileSystem, pageCache, storeDir, config );
     }

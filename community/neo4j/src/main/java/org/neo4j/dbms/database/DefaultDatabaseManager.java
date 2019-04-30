@@ -33,9 +33,9 @@ import static java.util.Objects.requireNonNull;
 public final class DefaultDatabaseManager extends AbstractDatabaseManager<StandaloneDatabaseContext>
 {
 
-    public DefaultDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Log log, GraphDatabaseFacade graphDatabaseFacade )
+    public DefaultDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Log log )
     {
-        super( globalModule, edition, log, graphDatabaseFacade );
+        super( globalModule, edition, log );
     }
 
     @Override

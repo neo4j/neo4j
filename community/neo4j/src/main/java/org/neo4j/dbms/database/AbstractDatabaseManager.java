@@ -40,22 +40,19 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 
 import static java.util.Collections.unmodifiableNavigableMap;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 
 public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends LifecycleAdapter implements DatabaseManager<T>
 {
     protected final ConcurrentHashMap<DatabaseId,T> databaseMap;
     private final GlobalModule globalModule;
     private final AbstractEditionModule edition;
-    private final GraphDatabaseFacade graphDatabaseFacade;
     protected final Log log;
 
-    protected AbstractDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Log log, GraphDatabaseFacade graphDatabaseFacade )
+    protected AbstractDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Log log )
     {
         this.log = log;
         this.globalModule = globalModule;
         this.edition = edition;
-        this.graphDatabaseFacade = graphDatabaseFacade;
         this.databaseMap = new ConcurrentHashMap<>();
     }
 
@@ -95,8 +92,7 @@ public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends
     {
         log.info( "Creating '%s' database.", databaseId.name() );
         Config globalConfig = globalModule.getGlobalConfig();
-        GraphDatabaseFacade facade =
-                globalConfig.get( default_database ).equals( databaseId.name() ) ? graphDatabaseFacade : new GraphDatabaseFacade();
+        GraphDatabaseFacade facade = new GraphDatabaseFacade();
 
         DatabaseCreationContext databaseCreationContext = newDatabaseCreationContext( databaseId, facade );
         Database database = new Database( databaseCreationContext );
