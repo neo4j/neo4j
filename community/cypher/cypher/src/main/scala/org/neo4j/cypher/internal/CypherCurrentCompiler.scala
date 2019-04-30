@@ -79,7 +79,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                       ): ExecutableQuery = {
 
     val logicalPlanResult =
-      planner.parseAndPlan(preParsedQuery, tracer, transactionalContext, params)
+      planner.parseAndPlan(preParsedQuery, tracer, transactionalContext, params, runtime)  // we only pass in the runtime to be able to support checking against the correct CommandManagementRuntime
 
     val planState = logicalPlanResult.logicalPlanState
     val logicalPlan = planState.logicalPlan
@@ -131,18 +131,19 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
   private def getQueryType(planState: LogicalPlanState): InternalQueryType = {
     // check system and procedure runtimes first, because if this is true solveds will be empty
-    if (MultiDatabaseManagementCommandRuntime.isApplicable(planState))
-      DBMS
-    else {
-      val procedureOrSchema = ProcedureCallOrSchemaCommandRuntime.queryType(planState.logicalPlan)
-      if (procedureOrSchema.isDefined)
-        procedureOrSchema.get
-      else if (planState.planningAttributes.solveds(planState.logicalPlan.id).readOnly)
-        READ_ONLY
-      else if (columnNames(planState.logicalPlan).isEmpty)
-        WRITE
-      else
-        READ_WRITE
+    runtime match {
+      case m:ManagementCommandRuntime if m.isApplicableManagementCommand(planState) =>
+          DBMS
+      case _ =>
+        val procedureOrSchema = ProcedureCallOrSchemaCommandRuntime.queryType(planState.logicalPlan)
+        if (procedureOrSchema.isDefined)
+          procedureOrSchema.get
+        else if (planState.planningAttributes.solveds(planState.logicalPlan.id).readOnly)
+          READ_ONLY
+        else if (columnNames(planState.logicalPlan).isEmpty)
+          WRITE
+        else
+          READ_WRITE
     }
   }
 

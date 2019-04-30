@@ -23,20 +23,19 @@ import java.time.Clock
 import java.util.function.BiFunction
 
 import org.neo4j.cypher.exceptionHandler.runSafely
-import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.notification.LogicalPlanNotifications
-import org.neo4j.cypher.internal.compiler
+import org.neo4j.cypher.internal.{compiler, _}
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory, simpleExpressionEvaluator}
 import org.neo4j.cypher.internal.compiler.{CypherPlanner => _, _}
+import org.neo4j.cypher.internal.logical.plans.{LoadCSV, LogicalPlan}
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.{ExceptionTranslatingPlanContext, TransactionBoundPlanContext}
 import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.expressions.Parameter
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseState, CompilationPhaseTracer, InternalNotificationLogger, RecordingNotificationLogger}
-import org.neo4j.cypher.internal.logical.plans.{LoadCSV, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{GeneratingNamer, InnerVariableNamer}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
@@ -62,7 +61,8 @@ case class Cypher3_5Planner(config: CypherPlannerConfiguration,
   override def parseAndPlan(preParsedQuery: PreParsedQuery,
                             tracer: CompilationPhaseTracer,
                             transactionalContext: TransactionalContext,
-                            params: MapValue
+                            params: MapValue,
+                            runtime: CypherRuntime[_]
                            ): LogicalPlanResult = {
 
     // TODO use 3.5 specific parser
@@ -116,7 +116,7 @@ case class Cypher3_5Planner(config: CypherPlannerConfiguration,
           notificationLogger.log(MissingParametersNotification(missingParameterNames))
         }
 
-        val reusabilityState = createReusabilityState(logicalPlanState, planContext)
+        val reusabilityState = createReusabilityState(logicalPlanState, planContext, maybeManagementRuntime = None)
         CacheableLogicalPlan(logicalPlanState, reusabilityState, notificationLogger.notifications, shouldBeCached)
       }
 

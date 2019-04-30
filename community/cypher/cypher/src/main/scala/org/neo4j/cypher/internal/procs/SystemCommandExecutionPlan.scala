@@ -47,6 +47,10 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
 
     val tc = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
     val newSubscriber = if (subscriber == QuerySubscriber.NOT_A_SUBSCRIBER) CustomSubscriber else subscriber
+    // at THIS point, our controlQuery already shows the user that we want to create...how is that possible?
+    val controlQuery = normalExecutionEngine.execute("MATCH (n:User) RETURN n.name",MapValue.EMPTY,tc,doProfile, prePopulateResults, newSubscriber)
+    println(controlQuery.asInstanceOf[InternalExecutionResult].dumpToString()) //TODO: remove this additional MATCH (n) query
+
     val execution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, newSubscriber)
     SystemCommandRuntimeResult(ctx, subscriber, execution.asInstanceOf[InternalExecutionResult])
   }
@@ -74,6 +78,9 @@ object CustomSubscriber extends QuerySubscriber {
       throw new IllegalStateException("Cannot create already existing database")
     else if (message.contains(" already exists with label `Role` and property `name` = "))
       throw new IllegalStateException("Cannot create already existing role")
+      //TODO: Comment this back in when problem with constraint on :User(name) is fixed
+//    else if (message.contains(" already exists with label `User` and property `name` = "))
+//      throw new IllegalStateException("Cannot create already existing user")
     else
       throw throwable
   }

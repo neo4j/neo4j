@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.compatibility
 
 import org.neo4j.cypher.CypherException
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
-import org.neo4j.cypher.internal.{PreParsedQuery, ReusabilityState}
+import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
+import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.v4_0.util.InternalNotification
+import org.neo4j.cypher.internal.{CypherRuntime, PreParsedQuery, ReusabilityState}
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
-import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
-import org.neo4j.cypher.internal.v4_0.frontend.phases.{CompilationPhaseTracer, InternalNotificationLogger}
-import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 
 /**
   * Cypher planner, which parses and plans a [[PreParsedQuery]] into a [[LogicalPlanResult]].
@@ -46,7 +46,8 @@ trait CypherPlanner {
   def parseAndPlan(preParsedQuery: PreParsedQuery,
                    tracer: CompilationPhaseTracer,
                    transactionalContext: TransactionalContext,
-                   params: MapValue
+                   params: MapValue,
+                   runtime: CypherRuntime[_]
                   ): LogicalPlanResult
 
   def name: PlannerName

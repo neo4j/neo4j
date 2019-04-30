@@ -69,7 +69,8 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
   override def parseAndPlan(preParsedQuery: PreParsedQuery,
                             tracer: CompilationPhaseTracer,
                             transactionalContext: TransactionalContext,
-                            params: MapValue
+                            params: MapValue,
+                            runtime: CypherRuntime[_]
                            ): LogicalPlanResult = {
     runSafely {
       val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
@@ -123,7 +124,10 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
         if (missingParameterNames.nonEmpty) {
           notificationLogger.log(MissingParametersNotification(missingParameterNames))
         }
-        val reusabilityState = createReusabilityState(logicalPlanState, planContext)
+        val reusabilityState = createReusabilityState(logicalPlanState, planContext, runtime match {
+          case m:ManagementCommandRuntime => Some(m)
+          case _ => None
+        })
         CacheableLogicalPlan(logicalPlanState, reusabilityState, notificationLogger.notifications, shouldBeCached)
       }
 

@@ -131,9 +131,15 @@ abstract class BasePlanner[STATEMENT <: AnyRef, PARSED_STATE <: AnyRef](
     }
 
   protected def createReusabilityState(logicalPlanState: LogicalPlanState,
-                                       planContext: PlanContext): ReusabilityState = {
+                                       planContext: PlanContext,
+                                       maybeManagementRuntime : Option[ManagementCommandRuntime]): ReusabilityState = {
 
-    if (ProcedureCallOrSchemaCommandRuntime.isApplicable(logicalPlanState) || MultiDatabaseManagementCommandRuntime.isApplicable(logicalPlanState))
+    val isApplicableManagementCommand = maybeManagementRuntime match {
+      case Some(runtime) => runtime.isApplicableManagementCommand(logicalPlanState)
+      case None => false
+    }
+
+    if (ProcedureCallOrSchemaCommandRuntime.isApplicable(logicalPlanState) || isApplicableManagementCommand)
       FineToReuse
     else {
       val fingerprint = PlanFingerprint.take(clock, planContext.txIdProvider, planContext.statistics)
