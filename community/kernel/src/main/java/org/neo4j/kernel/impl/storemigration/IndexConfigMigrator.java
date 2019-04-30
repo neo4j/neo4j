@@ -63,7 +63,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
         {
             for ( SchemaRule rule : ruleAccess.getAll() )
             {
-                SchemaRule upgraded = migrateIndexConfig( rule, migrationLayout );
+                SchemaRule upgraded = migrateIndexConfig( rule, directoryLayout );
 
                 if ( upgraded != rule )
                 {
@@ -73,7 +73,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private SchemaRule migrateIndexConfig( SchemaRule rule, DatabaseLayout migrationLayout ) throws IOException
+    private SchemaRule migrateIndexConfig( SchemaRule rule, DatabaseLayout directoryLayout ) throws IOException
     {
         if ( rule instanceof DefaultStorageIndexReference )
         {
@@ -82,7 +82,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
 
             IndexMigration indexMigration = IndexMigration.migrationFromOldProvider( oldIndexReference.providerKey(), oldIndexReference.providerVersion() );
 
-            Map<String,Value> indexConfig = indexMigration.extractIndexConfig( fs, pageCache, migrationLayout, indexId );
+            Map<String,Value> indexConfig = indexMigration.extractIndexConfig( fs, pageCache, directoryLayout, indexId );
             indexMigration.bless( indexConfig );
 
             // todo augment old index reference with extracted index config
