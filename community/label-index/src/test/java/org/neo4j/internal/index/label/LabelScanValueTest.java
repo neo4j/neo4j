@@ -19,14 +19,17 @@
  */
 package org.neo4j.internal.index.label;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
-public class LabelScanValueTest
+@Execution( CONCURRENT )
+class LabelScanValueTest
 {
     @Test
-    public void shouldAddBits()
+    void shouldAddBits()
     {
         // GIVEN
         LabelScanValue value = new LabelScanValue();
@@ -42,7 +45,7 @@ public class LabelScanValueTest
     }
 
     @Test
-    public void shouldRemoveBits()
+    void shouldRemoveBits()
     {
         // GIVEN
         LabelScanValue value = new LabelScanValue();

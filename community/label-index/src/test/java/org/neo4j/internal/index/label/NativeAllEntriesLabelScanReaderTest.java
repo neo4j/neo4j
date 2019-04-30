@@ -21,8 +21,8 @@ package org.neo4j.internal.index.label;
 
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -34,24 +34,27 @@ import java.util.function.IntFunction;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.index.internal.gbptree.Seeker;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.Long.max;
 import static java.lang.Math.toIntExact;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
 
-public class NativeAllEntriesLabelScanReaderTest
+@ExtendWith( RandomExtension.class )
+class NativeAllEntriesLabelScanReaderTest
 {
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
 
     @Test
-    public void shouldSeeNonOverlappingRanges() throws Exception
+    void shouldSeeNonOverlappingRanges() throws Exception
     {
         int rangeSize = 4;
         // new ranges at: 0, 4, 8, 12 ...
@@ -63,7 +66,7 @@ public class NativeAllEntriesLabelScanReaderTest
     }
 
     @Test
-    public void shouldSeeOverlappingRanges() throws Exception
+    void shouldSeeOverlappingRanges() throws Exception
     {
         int rangeSize = 4;
         // new ranges at: 0, 4, 8, 12 ...
@@ -75,18 +78,17 @@ public class NativeAllEntriesLabelScanReaderTest
     }
 
     @Test
-    public void shouldSeeRangesFromRandomData() throws Exception
+    void shouldSeeRangesFromRandomData() throws Exception
     {
         List<Labels> labels = randomData();
 
         shouldIterateCorrectlyOver( labels.toArray( new Labels[labels.size()] ) );
     }
 
-    private void shouldIterateCorrectlyOver( Labels... data ) throws Exception
+    private static void shouldIterateCorrectlyOver( Labels... data ) throws Exception
     {
         // GIVEN
-        try ( AllEntriesLabelScanReader reader = new NativeAllEntriesLabelScanReader(
-                store( data ), highestLabelId( data ) ) )
+        try ( AllEntriesLabelScanReader reader = new NativeAllEntriesLabelScanReader( store( data ), highestLabelId( data ) ) )
         {
             // WHEN/THEN
             assertRanges( reader, data );
@@ -133,7 +135,7 @@ public class NativeAllEntriesLabelScanReaderTest
             SortedMap<Long/*nodeId*/,List<Long>/*labelIds*/> expected = rangeOf( data, rangeId );
             if ( expected != null )
             {
-                assertTrue( "Was expecting range " + expected, iterator.hasNext() );
+                assertTrue( iterator.hasNext(), "Was expecting range " + expected );
                 NodeLabelRange range = iterator.next();
 
                 assertEquals( rangeId, range.id() );

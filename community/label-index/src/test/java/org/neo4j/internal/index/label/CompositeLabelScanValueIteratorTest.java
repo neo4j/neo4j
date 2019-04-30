@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.index.label;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,17 +34,19 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.neo4j.collection.PrimitiveLongResourceCollections.emptyIterator;
 import static org.neo4j.collection.PrimitiveLongResourceCollections.iterator;
 
-public class CompositeLabelScanValueIteratorTest
+@Execution( CONCURRENT )
+class CompositeLabelScanValueIteratorTest
 {
     @Test
-    public void mustHandleEmptyListOfIterators()
+    void mustHandleEmptyListOfIterators()
     {
         // given
         List<PrimitiveLongResourceIterator> iterators = emptyList();
@@ -53,19 +56,11 @@ public class CompositeLabelScanValueIteratorTest
 
         // then
         assertFalse( iterator.hasNext() );
-        try
-        {
-            iterator.next();
-            fail( "Expected iterator to throw" );
-        }
-        catch ( NoSuchElementException e )
-        {
-            // Good
-        }
+        assertThrows( NoSuchElementException.class, iterator::next );
     }
 
     @Test
-    public void mustHandleEmptyIterator()
+    void mustHandleEmptyIterator()
     {
         // given
         List<PrimitiveLongResourceIterator> iterators = singletonList( emptyIterator() );
@@ -78,7 +73,7 @@ public class CompositeLabelScanValueIteratorTest
     }
 
     @Test
-    public void mustHandleMultipleEmptyIterators()
+    void mustHandleMultipleEmptyIterators()
     {
         // given
         List<PrimitiveLongResourceIterator> iterators =
@@ -93,7 +88,7 @@ public class CompositeLabelScanValueIteratorTest
 
     /* ALL = FALSE */
     @Test
-    public void mustReportAllFromSingleIterator()
+    void mustReportAllFromSingleIterator()
     {
         // given
         long[] expected = {0L, 1L, Long.MAX_VALUE};
@@ -107,7 +102,7 @@ public class CompositeLabelScanValueIteratorTest
     }
 
     @Test
-    public void mustReportAllFromNonOverlappingMultipleIterators()
+    void mustReportAllFromNonOverlappingMultipleIterators()
     {
         // given
         AtomicInteger closeCounter = new AtomicInteger();
@@ -128,11 +123,11 @@ public class CompositeLabelScanValueIteratorTest
         iterator.close();
 
         // then
-        assertEquals( "expected close count", 2, closeCounter.get() );
+        assertEquals( 2, closeCounter.get(), "expected close count" );
     }
 
     @Test
-    public void mustReportUniqueValuesFromOverlappingIterators()
+    void mustReportUniqueValuesFromOverlappingIterators()
     {
         // given
         AtomicInteger closeCounter = new AtomicInteger();
@@ -155,11 +150,11 @@ public class CompositeLabelScanValueIteratorTest
         iterator.close();
 
         // then
-        assertEquals( "expected close count", 3, closeCounter.get() );
+        assertEquals( 3, closeCounter.get(), "expected close count" );
     }
 
     @Test
-    public void mustReportUniqueValuesFromOverlappingIteratorsWithOneEmpty()
+    void mustReportUniqueValuesFromOverlappingIteratorsWithOneEmpty()
     {
         // given
         AtomicInteger closeCounter = new AtomicInteger();
@@ -184,12 +179,12 @@ public class CompositeLabelScanValueIteratorTest
         iterator.close();
 
         // then
-        assertEquals( "expected close count", 4, closeCounter.get() );
+        assertEquals( 4, closeCounter.get(), "expected close count" );
     }
 
     /* ALL = TRUE */
     @Test
-    public void mustOnlyReportValuesReportedByAll()
+    void mustOnlyReportValuesReportedByAll()
     {
         // given
         AtomicInteger closeCounter = new AtomicInteger();
@@ -212,11 +207,11 @@ public class CompositeLabelScanValueIteratorTest
         iterator.close();
 
         // then
-        assertEquals( "expected close count", 3, closeCounter.get() );
+        assertEquals( 3, closeCounter.get(), "expected close count" );
     }
 
     @Test
-    public void mustOnlyReportValuesReportedByAllWithOneEmpty()
+    void mustOnlyReportValuesReportedByAllWithOneEmpty()
     {
         // given
         AtomicInteger closeCounter = new AtomicInteger();
@@ -241,11 +236,11 @@ public class CompositeLabelScanValueIteratorTest
         iterator.close();
 
         // then
-        assertEquals( "expected close count", 4, closeCounter.get() );
+        assertEquals( 4, closeCounter.get(), "expected close count" );
     }
 
     @SafeVarargs
-    private final <T> List<T> asMutableList( T... objects )
+    private static <T> List<T> asMutableList( T... objects )
     {
         return new ArrayList<>( Arrays.asList( objects ) );
     }

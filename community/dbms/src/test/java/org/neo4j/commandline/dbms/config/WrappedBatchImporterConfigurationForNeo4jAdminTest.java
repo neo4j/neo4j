@@ -20,15 +20,18 @@
 package org.neo4j.commandline.dbms.config;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
 
 import java.util.function.Function;
 
 import org.neo4j.internal.batchimport.Configuration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 
+@Execution( CONCURRENT )
 class WrappedBatchImporterConfigurationForNeo4jAdminTest
 {
     @Test
@@ -149,7 +152,7 @@ class WrappedBatchImporterConfigurationForNeo4jAdminTest
     }
 
     @SafeVarargs
-    private final <T> void shouldDelegate( Function<T,Configuration> configFactory, Function<Configuration,T> getter, T... expectedValues )
+    private static <T> void shouldDelegate( Function<T,Configuration> configFactory, Function<Configuration,T> getter, T... expectedValues )
     {
         for ( T expectedValue : expectedValues )
         {
@@ -168,7 +171,7 @@ class WrappedBatchImporterConfigurationForNeo4jAdminTest
     }
 
     @SafeVarargs
-    private final <T> void shouldOverride( Function<T,Configuration> configFactory, Function<Configuration,T> getter, T... values )
+    private static <T> void shouldOverride( Function<T,Configuration> configFactory, Function<Configuration,T> getter, T... values )
     {
         for ( T value : values )
         {

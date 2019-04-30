@@ -20,7 +20,8 @@
 package org.neo4j.internal.index.label;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
 
 import java.io.IOException;
 
@@ -28,7 +29,8 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -37,13 +39,14 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
 
-public class NativeLabelScanReaderTest
+@Execution( CONCURRENT )
+class NativeLabelScanReaderTest
 {
     private static final int LABEL_ID = 1;
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldFindMultipleNodesInEachRange() throws Exception
+    void shouldFindMultipleNodesInEachRange() throws Exception
     {
         // GIVEN
         GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );
@@ -78,7 +81,7 @@ public class NativeLabelScanReaderTest
     }
 
     @Test
-    public void shouldSupportMultipleOpenCursorsConcurrently() throws Exception
+    void shouldSupportMultipleOpenCursorsConcurrently() throws Exception
     {
         // GIVEN
         GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );
@@ -114,7 +117,7 @@ public class NativeLabelScanReaderTest
     }
 
     @Test
-    public void shouldCloseUnexhaustedCursorsOnReaderClose() throws Exception
+    void shouldCloseUnexhaustedCursorsOnReaderClose() throws Exception
     {
         // GIVEN
         GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );
@@ -142,7 +145,7 @@ public class NativeLabelScanReaderTest
     }
 
     @Test
-    public void shouldStartFromGivenId() throws IOException
+    void shouldStartFromGivenId() throws IOException
     {
         // given
         GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );
@@ -188,7 +191,7 @@ public class NativeLabelScanReaderTest
         return new LabelScanKey( LABEL_ID, idRange );
     }
 
-    private void exhaust( LongIterator iterator )
+    private static void exhaust( LongIterator iterator )
     {
         while ( iterator.hasNext() )
         {

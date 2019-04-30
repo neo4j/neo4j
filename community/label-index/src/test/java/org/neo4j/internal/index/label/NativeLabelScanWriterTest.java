@@ -19,8 +19,9 @@
  */
 package org.neo4j.internal.index.label;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -34,11 +35,15 @@ import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.ValueMergers;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.Integer.max;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
 import static org.neo4j.internal.index.label.LabelScanReader.NO_ID;
@@ -46,17 +51,19 @@ import static org.neo4j.internal.index.label.NativeLabelScanStoreIT.flipRandom;
 import static org.neo4j.internal.index.label.NativeLabelScanStoreIT.getLabels;
 import static org.neo4j.internal.index.label.NativeLabelScanStoreIT.nodesWithLabel;
 
-public class NativeLabelScanWriterTest
+@Execution( CONCURRENT )
+@ExtendWith( RandomExtension.class )
+class NativeLabelScanWriterTest
 {
     private static final int LABEL_COUNT = 5;
     private static final int NODE_COUNT = 10_000;
     private static final Comparator<LabelScanKey> KEY_COMPARATOR = new LabelScanLayout();
 
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
 
     @Test
-    public void shouldAddLabels() throws Exception
+    void shouldAddLabels() throws Exception
     {
         // GIVEN
         ControlledInserter inserter = new ControlledInserter();
@@ -78,33 +85,28 @@ public class NativeLabelScanWriterTest
         {
             long[] expectedNodeIds = nodesWithLabel( expected, i );
             long[] actualNodeIds = asArray( new LabelScanValueIterator( inserter.nodesFor( i ), NO_ID ) );
-            assertArrayEquals( "For label " + i, expectedNodeIds, actualNodeIds );
+            assertArrayEquals( expectedNodeIds, actualNodeIds, "For label " + i );
         }
     }
 
     @Test
-    public void shouldNotAcceptUnsortedLabels() throws Exception
+    void shouldNotAcceptUnsortedLabels()
     {
         // GIVEN
         ControlledInserter inserter = new ControlledInserter();
-        boolean failed = false;
-        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( 1, NativeLabelScanWriter.EMPTY ) )
+        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () ->
         {
-            writer.initialize( inserter );
+            try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( 1, NativeLabelScanWriter.EMPTY ) )
+            {
+                writer.initialize( inserter );
 
-            // WHEN
-            writer.write( NodeLabelUpdate.labelChanges( 0, EMPTY_LONG_ARRAY, new long[] {2, 1} ) );
-            // we can't do the usual "fail( blabla )" here since the actual write will happen
-            // when closing this writer, i.e. in the curly bracket below.
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // THEN
-            assertTrue( e.getMessage().contains( "unsorted" ) );
-            failed = true;
-        }
-
-        assertTrue( failed );
+                // WHEN
+                writer.write( NodeLabelUpdate.labelChanges( 0, EMPTY_LONG_ARRAY, new long[]{2, 1} ) );
+                // we can't do the usual "fail( blabla )" here since the actual write will happen
+                // when closing this writer, i.e. in the curly bracket below.
+            }
+        } );
+        assertTrue( exception.getMessage().contains( "unsorted" ) );
     }
 
     private NodeLabelUpdate randomUpdate( long[] expected )

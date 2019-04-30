@@ -20,14 +20,17 @@
 package org.neo4j.commandline.dbms.config;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
 
 import java.util.function.Function;
 
 import org.neo4j.internal.batchimport.input.csv.Configuration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.neo4j.internal.batchimport.input.csv.Configuration.COMMAS;
 
+@Execution( CONCURRENT )
 class WrappedCsvInputConfigurationForNeo4jAdminTest
 {
     @Test
@@ -135,7 +138,7 @@ class WrappedCsvInputConfigurationForNeo4jAdminTest
     }
 
     @SafeVarargs
-    private final <T> void shouldDelegate( Function<T,Configuration> configFactory, Function<Configuration,T> getter, T... expectedValues )
+    private static <T> void shouldDelegate( Function<T,Configuration> configFactory, Function<Configuration,T> getter, T... expectedValues )
     {
         for ( T expectedValue : expectedValues )
         {
@@ -154,7 +157,7 @@ class WrappedCsvInputConfigurationForNeo4jAdminTest
     }
 
     @SafeVarargs
-    private final <T> void shouldOverride( Function<T,Configuration> configFactory, Function<Configuration,T> getter, T... values )
+    private static <T> void shouldOverride( Function<T,Configuration> configFactory, Function<Configuration,T> getter, T... values )
     {
         for ( T value : values )
         {

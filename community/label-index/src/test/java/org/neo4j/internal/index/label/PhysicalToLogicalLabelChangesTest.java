@@ -19,18 +19,21 @@
  */
 package org.neo4j.internal.index.label;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
 
 import java.util.Arrays;
 
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
-public class PhysicalToLogicalLabelChangesTest
+@Execution( CONCURRENT )
+class PhysicalToLogicalLabelChangesTest
 {
     @Test
-    public void shouldSeeSimpleAddition()
+    void shouldSeeSimpleAddition()
     {
         convertAndAssert(
                 // before/after
@@ -40,7 +43,7 @@ public class PhysicalToLogicalLabelChangesTest
     }
 
     @Test
-    public void shouldSeeSimpleRemoval()
+    void shouldSeeSimpleRemoval()
     {
         convertAndAssert(
                 // before/after
@@ -50,7 +53,7 @@ public class PhysicalToLogicalLabelChangesTest
     }
 
     @Test
-    public void shouldSeeSomeAdded()
+    void shouldSeeSomeAdded()
     {
         convertAndAssert(
                 // before/after
@@ -60,7 +63,7 @@ public class PhysicalToLogicalLabelChangesTest
     }
 
     @Test
-    public void shouldSeeSomeRemoved()
+    void shouldSeeSomeRemoved()
     {
         convertAndAssert(
                 // before/after
@@ -70,7 +73,7 @@ public class PhysicalToLogicalLabelChangesTest
     }
 
     @Test
-    public void shouldSeeSomeAddedAndSomeRemoved()
+    void shouldSeeSomeAddedAndSomeRemoved()
     {
         convertAndAssert(
                 // before/after
@@ -79,7 +82,7 @@ public class PhysicalToLogicalLabelChangesTest
                 ids( 1, 4 ), ids( 0, 2, 5 ) );
     }
 
-    private void convertAndAssert( long[] before, long[] after, long[] expectedRemoved, long[] expectedAdded )
+    private static void convertAndAssert( long[] before, long[] after, long[] expectedRemoved, long[] expectedAdded )
     {
         NodeLabelUpdate update = NodeLabelUpdate.labelChanges( 0, before, after );
         PhysicalToLogicalLabelChanges.convertToAdditionsAndRemovals( update );
@@ -87,13 +90,13 @@ public class PhysicalToLogicalLabelChangesTest
         assertArrayEquals( terminate( update.getLabelsAfter() ), expectedAdded );
     }
 
-    private long[] terminate( long[] labels )
+    private static long[] terminate( long[] labels )
     {
         int length = actualLength( labels );
         return length == labels.length ? labels : Arrays.copyOf( labels, length );
     }
 
-    private int actualLength( long[] labels )
+    private static int actualLength( long[] labels )
     {
         for ( int i = 0; i < labels.length; i++ )
         {
@@ -105,7 +108,7 @@ public class PhysicalToLogicalLabelChangesTest
         return labels.length;
     }
 
-    private long[] ids( long... ids )
+    private static long[] ids( long... ids )
     {
         return ids;
     }
