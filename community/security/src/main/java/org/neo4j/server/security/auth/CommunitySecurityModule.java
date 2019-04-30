@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphInitializer;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphOperations;
@@ -46,6 +47,7 @@ public class CommunitySecurityModule extends SecurityModule
 {
     private BasicSystemGraphRealm authManager;
     private DatabaseManager<?> databaseManager;
+    private ThreadToStatementContextBridge threadToStatementContextBridge;
 
     @Override
     public String getName()
@@ -58,6 +60,7 @@ public class CommunitySecurityModule extends SecurityModule
     {
         org.neo4j.collection.Dependencies platformDependencies = (org.neo4j.collection.Dependencies) dependencies.dependencySatisfier();
         this.databaseManager = platformDependencies.resolveDependency( DatabaseManager.class );
+        threadToStatementContextBridge = platformDependencies.resolveDependency( ThreadToStatementContextBridge.class );
 
         Config config = dependencies.config();
         GlobalProcedures globalProcedures = dependencies.procedures();
@@ -126,8 +129,7 @@ public class CommunitySecurityModule extends SecurityModule
 
     private BasicSystemGraphRealm createBasicSystemGraphRealm( Config config, LogProvider logProvider, FileSystemAbstraction fileSystem )
     {
-        ContextSwitchingSystemGraphQueryExecutor queryExecutor = new ContextSwitchingSystemGraphQueryExecutor( databaseManager,
-                config.get( GraphDatabaseSettings.default_database ) );
+        ContextSwitchingSystemGraphQueryExecutor queryExecutor = new ContextSwitchingSystemGraphQueryExecutor( databaseManager, threadToStatementContextBridge );
 
         SecureHasher secureHasher = new SecureHasher();
         BasicSystemGraphOperations systemGraphOperations = new BasicSystemGraphOperations( queryExecutor, secureHasher );

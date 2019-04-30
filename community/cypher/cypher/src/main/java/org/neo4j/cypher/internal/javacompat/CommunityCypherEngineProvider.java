@@ -29,9 +29,8 @@ import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.CypherConfiguration;
 import org.neo4j.cypher.internal.CypherRuntimeConfiguration;
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration;
-import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.dbms.database.SystemDatabaseInnerAccessor;
-import org.neo4j.dbms.database.SystemDatabaseInnerAccessor.SystemDatabaseInnerEngine;
+import org.neo4j.cypher.internal.javacompat.SystemDatabaseInnerAccessor.SystemDatabaseInnerEngine;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -82,9 +81,8 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
             CommunityCompilerFactory innerCompilerFactory =
                     new CommunityCompilerFactory( queryService, monitors, logProvider, innerPlannerConfig, runtimeConfig );
             ExecutionEngine inner = new ExecutionEngine( queryService, logProvider, innerCompilerFactory );
-            DatabaseManager databaseManager = resolver.resolveDependency( DatabaseManager.class );
             SystemDatabaseInnerEngine innerEngine = ( query, parameters, context ) -> inner.executeQuery( query, parameters, context, false );
-            SystemDatabaseInnerAccessor innerAccessor = new SystemDatabaseInnerAccessor( databaseManager, innerEngine );
+            SystemDatabaseInnerAccessor innerAccessor = new SystemDatabaseInnerAccessor( (GraphDatabaseFacade) graphAPI, innerEngine );
             ((Dependencies) resolver).satisfyDependency( innerAccessor );
             return new SystemExecutionEngine( queryService, logProvider, compilerFactory, innerCompilerFactory );
         }

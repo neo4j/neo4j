@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.dbms.database;
+package org.neo4j.cypher.internal.javacompat;
 
 import java.util.Map;
 import java.util.function.Supplier;
@@ -25,7 +25,6 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -36,23 +35,20 @@ import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
-public class SystemDatabaseInnerAccessor<DB extends DatabaseContext> implements Supplier<GraphDatabaseQueryService>
+public class SystemDatabaseInnerAccessor implements Supplier<GraphDatabaseQueryService>
 {
     private GraphDatabaseFacade systemDb;
     private SystemDatabaseInnerEngine engine;
     private TransactionalContextFactory contextFactory;
 
-    public SystemDatabaseInnerAccessor( DatabaseManager<DB> databases, SystemDatabaseInnerEngine engine )
+    SystemDatabaseInnerAccessor( GraphDatabaseFacade systemDb, SystemDatabaseInnerEngine engine )
     {
-        DatabaseId systemDatabaseId = new DatabaseId( SYSTEM_DATABASE_NAME );
-        assert databases.getDatabaseContext( systemDatabaseId ).isPresent();
-        this.systemDb = databases.getDatabaseContext( systemDatabaseId ).get().databaseFacade();
+        this.systemDb = systemDb;
         this.engine = engine;
         ThreadToStatementContextBridge txBridge = this.systemDb.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        this.contextFactory = Neo4jTransactionalContextFactory.create( systemDb, this, txBridge );
+        this.contextFactory = Neo4jTransactionalContextFactory.create( this.systemDb, this, txBridge );
     }
 
     public InternalTransaction beginTx()

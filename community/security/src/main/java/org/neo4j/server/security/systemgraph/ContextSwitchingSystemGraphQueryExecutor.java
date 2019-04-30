@@ -22,10 +22,9 @@ package org.neo4j.server.security.systemgraph;
 import java.util.Map;
 
 import org.neo4j.cypher.internal.javacompat.QueryResultProvider;
+import org.neo4j.cypher.internal.javacompat.SystemDatabaseInnerAccessor;
 import org.neo4j.cypher.result.QueryResult;
-import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.dbms.database.SystemDatabaseInnerAccessor;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Result;
@@ -43,20 +42,18 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
 {
     private final DatabaseManager<?> databaseManager;
-    private final String defaultDbName;
-    private SystemDatabaseInnerAccessor<?> systemDb;
-    private ThreadToStatementContextBridge threadToStatementContextBridge;
+    private final ThreadToStatementContextBridge threadToStatementContextBridge;
 
-    public ContextSwitchingSystemGraphQueryExecutor( DatabaseManager<?> databaseManager, String defaultDbName )
+    public ContextSwitchingSystemGraphQueryExecutor( DatabaseManager<?> databaseManager, ThreadToStatementContextBridge threadToStatementContextBridge )
     {
         this.databaseManager = databaseManager;
-        this.defaultDbName = defaultDbName;
+        this.threadToStatementContextBridge = threadToStatementContextBridge;
     }
 
     @Override
     public void executeQuery( String query, Map<String,Object> params, QueryResult.QueryResultVisitor resultVisitor )
     {
-        final ThreadToStatementContextBridge statementContext = getThreadToStatementContextBridge();
+        final ThreadToStatementContextBridge statementContext = threadToStatementContextBridge;
 
         // pause outer transaction if there is one
         if ( statementContext.hasTransaction() )
@@ -104,7 +101,7 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
     @Override
     public Transaction beginTx()
     {
-        final ThreadToStatementContextBridge statementContext = getThreadToStatementContextBridge();
+        final ThreadToStatementContextBridge statementContext = threadToStatementContextBridge;
         final Runnable onClose;
 
         // pause outer transaction if there is one
@@ -174,31 +171,10 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
         };
     }
 
-    protected ThreadToStatementContextBridge getThreadToStatementContextBridge()
+    private SystemDatabaseInnerAccessor getSystemDb()
     {
-        // Resolve statementContext of the active database on the first call
-        if ( threadToStatementContextBridge == null )
-        {
-            DatabaseContext activeDb = getDb( defaultDbName );
-            threadToStatementContextBridge = activeDb.dependencies().resolveDependency( ThreadToStatementContextBridge.class );
-        }
-        return threadToStatementContextBridge;
-    }
-
-    private SystemDatabaseInnerAccessor<?> getSystemDb()
-    {
-        // Resolve systemDb on the first call
-        if ( systemDb == null )
-        {
-            DatabaseContext activeDb = getDb( SYSTEM_DATABASE_NAME );
-            systemDb = activeDb.dependencies().resolveDependency( SystemDatabaseInnerAccessor.class );
-        }
-        return systemDb;
-    }
-
-    private DatabaseContext getDb( String dbName )
-    {
-        return databaseManager.getDatabaseContext( new DatabaseId( dbName ) )
-                .orElseThrow( () -> new AuthProviderFailedException( "No database called `" + dbName + "` was found." ) );
+        return databaseManager.getDatabaseContext( new DatabaseId( SYSTEM_DATABASE_NAME ) ).orElseThrow(
+                () -> new AuthProviderFailedException( "No database called `" + SYSTEM_DATABASE_NAME + "` was found." ) )
+                .dependencies().resolveDependency( SystemDatabaseInnerAccessor.class );
     }
 }
