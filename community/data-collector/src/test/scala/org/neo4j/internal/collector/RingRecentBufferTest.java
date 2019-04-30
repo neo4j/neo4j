@@ -170,7 +170,8 @@ class RingRecentBufferTest
         {
             executor.shutdown();
         }
-        assertEquals( 0, buffer.numSilentQueryDrops() );
+        // on some systems thread scheduling variance actually causes ~100 silent drops in this test
+        assertTrue( buffer.numSilentQueryDrops() < 1000, "only a few silent drops expected" );
     }
 
     private <T> Runnable stress( int n, LongConsumer action )
