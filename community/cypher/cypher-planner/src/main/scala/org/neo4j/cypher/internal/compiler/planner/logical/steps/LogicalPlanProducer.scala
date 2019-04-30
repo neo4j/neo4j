@@ -128,14 +128,19 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                                        pattern: PatternRelationship,
                                        argumentIds: Set[String],
                                        solvedPredicates: Seq[Expression] = Seq.empty,
+                                       interestingOrder: InterestingOrder,
                                        context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternRelationship(pattern)
       .addPredicates(solvedPredicates: _*)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
+    val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, interestingOrder, context)
+    val rewrittenRelIds = relIds.mapValues(solver.solve(_))
+    val newArguments = solver.newArguments
     // Is this ordered by relationship id?
-    annotate(DirectedRelationshipByIdSeek(idName, relIds, startNode, endNode, argumentIds), solved, ProvidedOrder.empty, context)
+    val leafPlan = annotate(DirectedRelationshipByIdSeek(idName, rewrittenRelIds, startNode, endNode, argumentIds ++ newArguments), solved, ProvidedOrder.empty, context)
+    solver.rewriteLeafPlan(leafPlan)
   }
 
   def planUndirectedRelationshipByIdSeek(idName: String,
@@ -145,14 +150,19 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                                          pattern: PatternRelationship,
                                          argumentIds: Set[String],
                                          solvedPredicates: Seq[Expression] = Seq.empty,
+                                         interestingOrder: InterestingOrder,
                                          context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternRelationship(pattern)
       .addPredicates(solvedPredicates: _*)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
+    val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, interestingOrder, context)
+    val rewrittenRelIds = relIds.mapValues(solver.solve(_))
+    val newArguments = solver.newArguments
     // Is this ordered by relationship id?
-    annotate(UndirectedRelationshipByIdSeek(idName, relIds, leftNode, rightNode, argumentIds), solved, ProvidedOrder.empty, context)
+    val leafPlan = annotate(UndirectedRelationshipByIdSeek(idName, rewrittenRelIds, leftNode, rightNode, argumentIds ++ newArguments), solved, ProvidedOrder.empty, context)
+    solver.rewriteLeafPlan(leafPlan)
   }
 
   def planSimpleExpand(left: LogicalPlan,

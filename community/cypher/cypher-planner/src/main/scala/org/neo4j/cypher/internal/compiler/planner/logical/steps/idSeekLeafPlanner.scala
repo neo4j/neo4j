@@ -44,7 +44,7 @@ object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
         qg.patternRelationships.find(_.name == id) match {
           case Some(relationship) =>
             val types = relationship.types.toList
-            val seekPlan = planRelationshipByIdSeek(relationship, idValues, Seq(predicate), qg.argumentIds, context)
+            val seekPlan = planRelationshipByIdSeek(relationship, idValues, Seq(predicate), qg.argumentIds, interestingOrder, context)
             LeafPlansForVariable(id, Set(planRelTypeFilter(seekPlan, idExpr, types, context)))
           case None =>
             val plan = context.logicalPlanProducer.planNodeByIdSeek(id, idValues, Seq(predicate), qg.argumentIds, interestingOrder, context)
@@ -56,13 +56,18 @@ object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
   override def apply(queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Seq[LogicalPlan] =
     queryGraph.selections.flatPredicates.flatMap(e => producePlanFor(e, queryGraph, interestingOrder, context).toSeq.flatMap(_.plans))
 
-  private def planRelationshipByIdSeek(relationship: PatternRelationship, idValues: SeekableArgs, predicates: Seq[Expression], argumentIds: Set[String], context: LogicalPlanningContext): LogicalPlan = {
+  private def planRelationshipByIdSeek(relationship: PatternRelationship,
+                                       idValues: SeekableArgs,
+                                       predicates: Seq[Expression],
+                                       argumentIds: Set[String],
+                                       interestingOrder: InterestingOrder,
+                                       context: LogicalPlanningContext): LogicalPlan = {
     val (left, right) = relationship.nodes
     val name = relationship.name
     relationship.dir match {
-      case BOTH     => context.logicalPlanProducer.planUndirectedRelationshipByIdSeek(name, idValues, left, right, relationship, argumentIds, predicates, context)
-      case INCOMING => context.logicalPlanProducer.planDirectedRelationshipByIdSeek(name, idValues, right, left, relationship, argumentIds, predicates, context)
-      case OUTGOING => context.logicalPlanProducer.planDirectedRelationshipByIdSeek(name, idValues, left, right, relationship, argumentIds, predicates, context)
+      case BOTH     => context.logicalPlanProducer.planUndirectedRelationshipByIdSeek(name, idValues, left, right, relationship, argumentIds, predicates, interestingOrder, context)
+      case INCOMING => context.logicalPlanProducer.planDirectedRelationshipByIdSeek(name, idValues, right, left, relationship, argumentIds, predicates, interestingOrder, context)
+      case OUTGOING => context.logicalPlanProducer.planDirectedRelationshipByIdSeek(name, idValues, left, right, relationship, argumentIds, predicates, interestingOrder, context)
     }
   }
 

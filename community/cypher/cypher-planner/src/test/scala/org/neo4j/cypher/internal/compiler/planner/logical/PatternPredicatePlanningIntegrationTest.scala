@@ -221,6 +221,38 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     }
   }
 
+  test("should solve pattern comprehension for DirectedRelationshipByIdSeek") {
+    val q =
+      """
+        |MATCH ()-[r]->()
+        |WHERE id(r) = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
+        |RETURN r
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case Apply(
+                 RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _, _),
+                 DirectedRelationshipByIdSeek("r", _, _, _, SetExtractor(argumentName))
+                ) if collectionName == argumentName => ()
+    }
+  }
+
+  test("should solve pattern comprehension for UndirectedRelationshipByIdSeek") {
+    val q =
+      """
+        |MATCH ()-[r]-()
+        |WHERE id(r) = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
+        |RETURN r
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case Apply(
+                 RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _, _),
+                 UndirectedRelationshipByIdSeek("r", _, _, _, SetExtractor(argumentName))
+                ) if collectionName == argumentName => ()
+    }
+  }
+
   test("should name pattern comprehensions in return position") {
     val q =
       """
