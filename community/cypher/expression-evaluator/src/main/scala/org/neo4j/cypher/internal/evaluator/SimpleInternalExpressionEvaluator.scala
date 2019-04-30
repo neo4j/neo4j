@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.v4_0.parser.Expressions
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.values.AnyValue
-import org.parboiled.scala.{ReportingParseRunner, Rule1}
+import org.parboiled.scala.{EOI, ReportingParseRunner, Rule1}
 
 class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
 
@@ -65,7 +65,7 @@ object SimpleInternalExpressionEvaluator {
   private val CONVERTERS = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
 
   object ExpressionParser extends Expressions {
-    private val parser: Rule1[Expression] = Expression
+    private val parser: Rule1[Expression] = WS ~ Expression ~~ EOI
 
     def parse(text: String): Expression = {
       val res = ReportingParseRunner(parser).run(text)
