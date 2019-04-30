@@ -36,7 +36,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 import java.io.IOException;
-import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -329,7 +328,7 @@ public class Jetty9WebServer implements WebServer
         {
             jetty.start();
         }
-        catch ( BindException e )
+        catch ( IOException e )
         {
             throw new PortBindException( httpAddress, httpsAddress, e );
         }
