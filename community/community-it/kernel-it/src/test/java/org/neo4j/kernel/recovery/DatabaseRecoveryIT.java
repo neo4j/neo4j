@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.recovery;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -149,6 +150,15 @@ class DatabaseRecoveryIT
     private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
     private DatabaseManagementService managementService;
 
+    @AfterEach
+    void tearDown()
+    {
+        if ( managementService != null )
+        {
+            managementService.shutdown();
+        }
+    }
+
     @Test
     void idGeneratorsRebuildAfterRecovery() throws IOException
     {
@@ -164,6 +174,7 @@ class DatabaseRecoveryIT
         }
 
         var restoreDbLayout = copyStore();
+        managementService.shutdown();
 
         GraphDatabaseService recoveredDatabase = startDatabase( restoreDbLayout.getStoreLayout().storeDirectory() );
         try ( Transaction tx = recoveredDatabase.beginTx() )
