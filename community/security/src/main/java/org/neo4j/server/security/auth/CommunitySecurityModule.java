@@ -129,7 +129,8 @@ public class CommunitySecurityModule extends SecurityModule
 
     private BasicSystemGraphRealm createBasicSystemGraphRealm( Config config, LogProvider logProvider, FileSystemAbstraction fileSystem )
     {
-        ContextSwitchingSystemGraphQueryExecutor queryExecutor = new ContextSwitchingSystemGraphQueryExecutor( databaseManager, threadToStatementContextBridge );
+        ContextSwitchingSystemGraphQueryExecutor queryExecutor =
+                new ContextSwitchingSystemGraphQueryExecutor( databaseManager, threadToStatementContextBridge );
 
         SecureHasher secureHasher = new SecureHasher();
         BasicSystemGraphOperations systemGraphOperations = new BasicSystemGraphOperations( queryExecutor, secureHasher );
