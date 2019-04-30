@@ -90,20 +90,20 @@ object expandSolverStep {
         val availablePredicates: Seq[Expression] =
           qg.selections.predicatesGiven(availableSymbols + patternRel.name)
         val tempNode = patternRel.name + "_NODES"
-        val tempEdge = patternRel.name + "_RELS"
-        val (nodePredicates: Seq[Expression], edgePredicates: Seq[Expression], legacyPredicates: Seq[(LogicalVariable,Expression)], solvedPredicates: Seq[Expression]) =
+        val tempRelationship = patternRel.name + "_RELS"
+        val (nodePredicates: Seq[Expression], relationshipPredicates: Seq[Expression], legacyPredicates: Seq[(LogicalVariable,Expression)], solvedPredicates: Seq[Expression]) =
           extractPredicates(
             availablePredicates,
-            originalEdgeName = patternRel.name,
-            tempEdge = tempEdge,
+            originalRelationshipName = patternRel.name,
+            tempRelationship = tempRelationship,
             tempNode = tempNode,
             originalNodeName = nodeId)
         val nodePredicate = Ands.create(nodePredicates.toSet)
-        val edgePredicate = Ands.create(edgePredicates.toSet)
+        val relationshipPredicate = Ands.create(relationshipPredicates.toSet)
 
         val (rewrittenSource, rewrittenPredicates) =
-          PatternExpressionSolver().apply(sourcePlan, expressions = Seq(nodePredicate,  edgePredicate) ++ legacyPredicates.map(_._2), interestingOrder = InterestingOrder.empty, context)
-        val rewrittenNodePredicate :: rewrittenEdgePredicate :: rewrittenLegacyPredicateExpressions = rewrittenPredicates.toList
+          PatternExpressionSolver().apply(sourcePlan, expressions = Seq(nodePredicate,  relationshipPredicate) ++ legacyPredicates.map(_._2), interestingOrder = InterestingOrder.empty, context)
+        val rewrittenNodePredicate :: rewrittenRelationshipPredicate :: rewrittenLegacyPredicateExpressions = rewrittenPredicates.toList
         val rewrittenLegacyPredicates = legacyPredicates.map(_._1).zip(rewrittenLegacyPredicateExpressions)
 
         context.logicalPlanProducer.planVarExpand(
@@ -113,8 +113,8 @@ object expandSolverStep {
           to = otherSide,
           pattern = patternRel,
           temporaryNode = tempNode,
-          temporaryEdge = tempEdge,
-          edgePredicate = rewrittenEdgePredicate,
+          temporaryRelationship = tempRelationship,
+          relationshipPredicate = rewrittenRelationshipPredicate,
           nodePredicate = rewrittenNodePredicate,
           solvedPredicates = solvedPredicates,
           mode = mode,

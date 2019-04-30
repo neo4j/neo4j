@@ -19,23 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp
 
-import org.neo4j.cypher.internal.v3_5.util.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.util.{Rewriter, bottomUp}
 
 object extractPredicates {
 
   // Using type predicates to make this more readable.
   type NodePredicates = List[Expression] // for slotted runtime
-  type EdgePredicates = List[Expression] // for slotted runtime
+  type RelationshipPredicates = List[Expression] // for slotted runtime
   type LegacyPredicates = List[(LogicalVariable, Expression)] // for interpreted runtime
   type SolvedPredicates = List[Expression] // for marking predicates as solved
 
   def apply(availablePredicates: Seq[Expression],
-            originalEdgeName: String,
-            tempEdge: String,
+            originalRelationshipName: String,
+            tempRelationship: String,
             tempNode: String,
             originalNodeName: String)
-    : (NodePredicates, EdgePredicates, LegacyPredicates, SolvedPredicates) = {
+    : (NodePredicates, RelationshipPredicates, LegacyPredicates, SolvedPredicates) = {
 
     /*
     We extract predicates that we can evaluate eagerly during the traversal, which allows us to abort traversing
@@ -44,11 +44,11 @@ object extractPredicates {
 
     During the folding, we also accumulate the original predicate, which we can mark as solved by this plan.
      */
-    val seed: (NodePredicates, EdgePredicates, LegacyPredicates, SolvedPredicates) =
+    val seed: (NodePredicates, RelationshipPredicates, LegacyPredicates, SolvedPredicates) =
       (List.empty, List.empty, List.empty, List.empty)
 
     /**
-      * Checks if an inner predicate depends on the path (i.e. the original start node or edge). In that case
+      * Checks if an inner predicate depends on the path (i.e. the original start node or relationship). In that case
       * we cannot solve the predicates during the traversal.
       *
       * We don't need to check for dependencies on the end node, since such predicates are not even suggested as
@@ -56,7 +56,7 @@ object extractPredicates {
       */
     def pathDependent(innerPredicate: Expression) = {
       val names = innerPredicate.dependencies.map(_.name)
-      names.contains(originalEdgeName)
+      names.contains(originalRelationshipName)
     }
 
     availablePredicates.foldLeft(seed) {
@@ -64,36 +64,36 @@ object extractPredicates {
       //MATCH ()-[r* {prop:1337}]->()
       case (
           (n, e, l, s),
-          p @ AllRelationships(variable, `originalEdgeName`, innerPredicate)) =>
-        val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempEdge))
+          p @ AllRelationships(variable, `originalRelationshipName`, innerPredicate)) =>
+        val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempRelationship))
         (n, e :+ rewrittenPredicate, l :+ (variable -> innerPredicate), s :+ p)
 
       //MATCH p = (a)-[x*]->(b) WHERE ALL(r in rels(p) WHERE r.prop > 5)
       case ((n, e, l, s),
-            p @ AllRelationshipsInPath(`originalNodeName`, `originalEdgeName`, variable, innerPredicate))
+            p @ AllRelationshipsInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate))
             if !pathDependent(innerPredicate) =>
-        val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempEdge))
+        val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempRelationship))
         (n, e :+ rewrittenPredicate, l :+ (variable -> innerPredicate), s :+ p)
 
       //MATCH p = ()-[*]->() WHERE NONE(r in rels(p) WHERE <innerPredicate>)
       case ((n, e, l, s),
-            p @ NoRelationshipInPath(`originalNodeName`, `originalEdgeName`, variable, innerPredicate))
+            p @ NoRelationshipInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate))
             if !pathDependent(innerPredicate) =>
-        val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempEdge))
+        val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempRelationship))
         val negatedLegacyPredicate = Not(innerPredicate)(innerPredicate.position)
         val negatedPredicate = Not(rewrittenPredicate)(innerPredicate.position)
         (n, e :+ negatedPredicate, l :+ (variable -> negatedLegacyPredicate), s :+ p)
 
       //MATCH p = ()-[*]->() WHERE ALL(r in nodes(p) WHERE <innerPredicate>)
       case ((n, e, l, s),
-            p @ AllNodesInPath(`originalNodeName`, `originalEdgeName`, variable, innerPredicate))
+            p @ AllNodesInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate))
             if !pathDependent(innerPredicate) =>
         val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempNode))
         (n :+ rewrittenPredicate, e, l :+ (variable -> innerPredicate), s :+ p)
 
       //MATCH p = ()-[*]->() WHERE NONE(r in nodes(p) WHERE <innerPredicate>)
       case ((n, e, l, s),
-            p @ NoNodeInPath(`originalNodeName`, `originalEdgeName`, variable, innerPredicate))
+            p @ NoNodeInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate))
             if !pathDependent(innerPredicate) =>
         val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempNode))
         val negatedLegacyPredicate = Not(innerPredicate)(innerPredicate.position)

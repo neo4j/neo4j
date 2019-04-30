@@ -26,11 +26,11 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningCo
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes
-import org.neo4j.cypher.internal.v3_5.logical.plans
-import org.neo4j.cypher.internal.v3_5.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.v3_5.ast
 import org.neo4j.cypher.internal.v3_5.ast._
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans
+import org.neo4j.cypher.internal.v3_5.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.v3_5.util.AssertionRunner.Thunk
 import org.neo4j.cypher.internal.v3_5.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.v3_5.util.attribution.{Attributes, IdGen}
@@ -41,13 +41,12 @@ import org.neo4j.cypher.internal.v3_5.util.{AssertionRunner, ExhaustiveShortestP
  * No other functionality or logic should live here - this is supposed to be a very simple class that does not need
  * much testing
  */
-case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttributes: PlanningAttributes, idGen : IdGen) extends ListSupport {
+case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttributes: PlanningAttributes, idGen: IdGen) extends ListSupport {
 
   implicit val implicitIdGen: IdGen = idGen
   private val solveds = planningAttributes.solveds
   private val cardinalities = planningAttributes.cardinalities
   private val providedOrders = planningAttributes.providedOrders
-
 
   def planLock(plan: LogicalPlan, nodesToLock: Set[String], context: LogicalPlanningContext): LogicalPlan =
     annotate(LockNodes(plan, nodesToLock), solveds.get(plan.id), providedOrders.get(plan.id), context)
@@ -142,8 +141,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                     to: String,
                     pattern: PatternRelationship,
                     temporaryNode: String,
-                    temporaryEdge: String,
-                    edgePredicate: Expression,
+                    temporaryRelationship: String,
+                    relationshipPredicate: Expression,
                     nodePredicate: Expression,
                     solvedPredicates: Seq[Expression],
                     legacyPredicates: Seq[(LogicalVariable, Expression)] = Seq.empty,
@@ -157,20 +156,20 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
         .addPredicates(solvedPredicates: _*)
       )
       annotate(VarExpand(
-              source = source,
-              from = from,
-              dir = dir,
-              projectedDir = projectedDir,
-              types = pattern.types,
-              to = to,
-              relName = pattern.name,
-              length = l,
-              mode = mode,
-              tempNode = temporaryNode,
-              tempEdge = temporaryEdge,
-              nodePredicate = nodePredicate,
-              edgePredicate = edgePredicate,
-              legacyPredicates = legacyPredicates), solved, providedOrders.get(source.id), context)
+        source = source,
+        from = from,
+        dir = dir,
+        projectedDir = projectedDir,
+        types = pattern.types,
+        to = to,
+        relName = pattern.name,
+        length = l,
+        mode = mode,
+        tempNode = temporaryNode,
+        tempRelationship = temporaryRelationship,
+        nodePredicate = nodePredicate,
+        relationshipPredicate = relationshipPredicate,
+        legacyPredicates = legacyPredicates), solved, providedOrders.get(source.id), context)
 
     case _ => throw new InternalException("Expected a varlength path to be here")
   }
@@ -581,7 +580,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planDistinct(left: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
     val solved: PlannerQuery = solveds.get(left.id).updateTailOrSelf(_.updateQueryProjection(_ => DistinctQueryProjection(reported)))
     val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(left.id).columns, expressions)
-    val providedOrder =  ProvidedOrder(columnsWithRenames)
+    val providedOrder = ProvidedOrder(columnsWithRenames)
     annotate(Distinct(left, expressions), solved, providedOrder, context)
   }
 
