@@ -228,8 +228,11 @@ public class ChunkedOutput implements PackOutput
             finally
             {
                 closed = true;
-                buffer.release();
-                buffer = null;
+                if (buffer != null)
+                {
+                    buffer.release();
+                    buffer = null;
+                }
             }
         }
     }
