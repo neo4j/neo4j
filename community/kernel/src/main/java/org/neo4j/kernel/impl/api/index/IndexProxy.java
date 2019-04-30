@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.ResourceIterator;
@@ -33,6 +32,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexConfigProvider;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
@@ -59,7 +59,7 @@ import org.neo4j.values.storable.Value;
  *
  * @see ContractCheckingIndexProxy
  */
-public interface IndexProxy
+public interface IndexProxy extends IndexConfigProvider
 {
     void start();
 
@@ -116,13 +116,6 @@ public interface IndexProxy
     void validateBeforeCommit( Value[] tuple );
 
     ResourceIterator<File> snapshotFiles() throws IOException;
-
-    /**
-     * Get index configurations used by this index at runtime.
-     *
-     * @return {@link Map} describing index configurations for this index.
-     */
-    Map<String,Value> indexConfig();
 
     default void verifyDeferredConstraints( NodePropertyAccessor accessor )  throws IndexEntryConflictException, IOException
     {
