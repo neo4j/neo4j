@@ -48,8 +48,10 @@ case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol]
     var currentOrderedGroupingValue: AnyValue = null
 
     input.filter { ctx =>
-      groupingColumns.foreach {
-        case GroupingCol(key, expression, _) => ctx.set(key, expression(ctx, state))
+      var i = 0
+      while (i < groupingColumns.length) {
+        ctx.set(groupingColumns(i).key, groupingColumns(i).expression(ctx, state))
+        i += 1
       }
       val groupingValue = VirtualValues.list(keyNames.map(ctx.getByName): _*)
       val orderedGroupingValue = groupingValue.take(numberOfSortedColumns)
@@ -88,8 +90,10 @@ case class AllOrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingC
     var currentOrderedGroupingValue: AnyValue = null
 
     input.filter { ctx =>
-      groupingColumns.foreach {
-        case GroupingCol(key, expression, _) => ctx.set(key, expression(ctx, state))
+      var i = 0
+      while (i < groupingColumns.length) {
+        ctx.set(groupingColumns(i).key, groupingColumns(i).expression(ctx, state))
+        i += 1
       }
       val groupingValue = VirtualValues.list(keyNames.map(ctx.getByName): _*)
 

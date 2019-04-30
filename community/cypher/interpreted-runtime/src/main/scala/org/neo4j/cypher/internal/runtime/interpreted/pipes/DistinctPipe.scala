@@ -44,8 +44,10 @@ case class DistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])
     val seen = mutable.Set[AnyValue]()
 
     input.filter { ctx =>
-      groupingColumns.foreach {
-        case GroupingCol(key, expression, _) => ctx.set(key, expression(ctx, state))
+      var i = 0
+      while (i < groupingColumns.length) {
+        ctx.set(groupingColumns(i).key, groupingColumns(i).expression(ctx, state))
+        i += 1
       }
       val groupingValue = VirtualValues.list(keyNames.map(ctx.getByName): _*)
       seen.add(groupingValue)
