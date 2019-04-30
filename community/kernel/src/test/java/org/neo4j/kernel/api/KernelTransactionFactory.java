@@ -111,15 +111,8 @@ public class KernelTransactionFactory
         return new Instances( transaction );
     }
 
-    static KernelTransaction kernelTransaction( LoginContext loginContext )
+    static KernelTransaction kernelTransaction( LoginContext loginContext ) throws KernelException
     {
-        try
-        {
-            return kernelTransactionWithInternals( loginContext ).transaction;
-        }
-        catch ( KernelException e )
-        {
-            throw new TransactionFailureException( "Failed to start transaction.", e );
-        }
+        return kernelTransactionWithInternals( loginContext ).transaction;
     }
 }

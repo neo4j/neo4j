@@ -58,18 +58,12 @@ public class CypherExecutorTest
     private static final String QUERY = "create (n)";
 
     private Database database;
-    private GraphDatabaseFacade databaseFacade;
-    private DependencyResolver resolver;
-    private QueryExecutionEngine executionEngine;
-    private ThreadToStatementContextBridge statementBridge;
     private GraphDatabaseQueryService databaseQueryService;
-    private KernelTransaction kernelTransaction;
-    private Statement statement;
     private HttpServletRequest request;
     private AssertableLogProvider logProvider;
 
     @Before
-    public void setUp()
+    public void setUp() throws KernelException
     {
         setUpMocks();
         initLogProvider();
@@ -139,17 +133,17 @@ public class CypherExecutorTest
         logProvider = new AssertableLogProvider( true );
     }
 
-    private void setUpMocks()
+    private void setUpMocks() throws KernelException
     {
         database = mock( Database.class );
-        databaseFacade = mock( GraphDatabaseFacade.class );
-        resolver = mock( DependencyResolver.class );
-        executionEngine = mock( ExecutionEngine.class );
-        statementBridge = mock( ThreadToStatementContextBridge.class );
         databaseQueryService = mock( GraphDatabaseQueryService.class );
-        kernelTransaction = mock( KernelTransaction.class );
-        statement = mock( Statement.class );
         request = mock( HttpServletRequest.class );
+        GraphDatabaseFacade databaseFacade = mock( GraphDatabaseFacade.class );
+        DependencyResolver resolver = mock( DependencyResolver.class );
+        QueryExecutionEngine executionEngine = mock( ExecutionEngine.class );
+        ThreadToStatementContextBridge statementBridge = mock( ThreadToStatementContextBridge.class );
+        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
+        Statement statement = mock( Statement.class );
 
         InternalTransaction transaction = new TopLevelTransaction( kernelTransaction );
 
@@ -158,15 +152,8 @@ public class CypherExecutorTest
         QueryRegistryOperations registryOperations = mock( QueryRegistryOperations.class );
         when( statement.queryRegistration() ).thenReturn( registryOperations );
         when( statementBridge.get() ).thenReturn( statement );
-        try
-        {
-            when( kernelTransaction.securityContext() ).thenReturn( loginContext.authorize(
-                    LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ) );
-        }
-        catch ( KernelException e )
-        {
-            throw new TransactionFailureException( "Failed to start transaction.", e );
-        }
+        when( kernelTransaction.securityContext() ).thenReturn( loginContext.authorize(
+                LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ) );
         when( kernelTransaction.transactionType() ).thenReturn( type  );
         when( database.getGraph() ).thenReturn( databaseFacade );
         when( databaseFacade.getDependencyResolver() ).thenReturn( resolver );
