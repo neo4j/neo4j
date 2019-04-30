@@ -257,6 +257,18 @@ public class InternalJettyServletRequest extends Request
     }
 
     @Override
+    public boolean isAsyncSupported()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean isAsyncStarted()
+    {
+        return false;
+    }
+
+    @Override
     public long getDateHeader( String name )
     {
         if ( headers.containsKey( name ) )

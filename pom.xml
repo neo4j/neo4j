@@ -81,7 +81,7 @@
             -Djunit.jupiter.execution.parallel.enabled=true
             -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${test.runner.jvm.settings.additional}
         </test.runner.jvm.settings>
-        <jetty.version>9.4.11.v20180605</jetty.version>
+        <jetty.version>9.4.17.v20190418</jetty.version>
         <findbugs.version>3.0.1</findbugs.version>
         <git.commit>unknown-commit</git.commit>
         <forkCounts>0</forkCounts>
