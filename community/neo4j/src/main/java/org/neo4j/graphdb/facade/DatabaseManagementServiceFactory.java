@@ -103,19 +103,6 @@ public class DatabaseManagementServiceFactory
     }
 
     /**
-     * Instantiate a graph database given configuration and dependencies.
-     *
-     * @param storeDir the directory where the Neo4j data store is located
-     * @param config configuration
-     * @param dependencies the dependencies required to construct the {@link GraphDatabaseFacade}
-     * @return the newly constructed {@link GraphDatabaseFacade}
-     */
-    public DatabaseManagementService newFacade( File storeDir, Config config, final ExternalDependencies dependencies )
-    {
-        return initFacade( storeDir, config, dependencies );
-    }
-
-    /**
      * Instantiate a graph database given configuration, dependencies, and a custom implementation of {@link org
      * .neo4j.kernel.impl.factory.GraphDatabaseFacade}.
      *
@@ -124,9 +111,9 @@ public class DatabaseManagementServiceFactory
      * @param dependencies the dependencies required to construct the {@link GraphDatabaseFacade}
      * @return the initialised {@link GraphDatabaseFacade}
      */
-    public DatabaseManagementService initFacade( File storeDir, Map<String,String> params, final ExternalDependencies dependencies )
+    public DatabaseManagementService build( File storeDir, Map<String,String> params, final ExternalDependencies dependencies )
     {
-        return initFacade( storeDir, Config.defaults( params ), dependencies );
+        return build( storeDir, Config.defaults( params ), dependencies );
     }
 
     /**
@@ -138,7 +125,7 @@ public class DatabaseManagementServiceFactory
      * @param dependencies the dependencies required to construct the {@link GraphDatabaseFacade}
      * @return the initialised {@link GraphDatabaseFacade}
      */
-    public DatabaseManagementService initFacade( File storeDir, Config config, final ExternalDependencies dependencies )
+    public DatabaseManagementService build( File storeDir, Config config, final ExternalDependencies dependencies )
     {
         GlobalModule globalModule = createGlobalModule( storeDir, config, dependencies );
         AbstractEditionModule edition = editionFactory.apply( globalModule );

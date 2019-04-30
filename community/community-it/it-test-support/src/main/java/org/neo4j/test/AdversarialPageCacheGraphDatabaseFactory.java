@@ -75,7 +75,7 @@ public class AdversarialPageCacheGraphDatabaseFactory
                             }
                         };
                     }
-                }.newFacade( dir, config, dependencies );
+                }.build( dir, config, dependencies );
             }
         };
     }

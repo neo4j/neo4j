@@ -82,7 +82,7 @@ public class DatabaseManagementServiceBuilder
     {
         config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
         return new DatabaseManagementServiceFactory( getDatabaseInfo(), getEditionFactory() )
-                .newFacade( storeDir, augmentConfig( config ), dependencies );
+                .build( storeDir, augmentConfig( config ), dependencies );
     }
 
     protected DatabaseInfo getDatabaseInfo()

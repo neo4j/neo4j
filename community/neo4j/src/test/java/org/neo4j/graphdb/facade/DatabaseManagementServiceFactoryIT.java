@@ -109,7 +109,7 @@ class DatabaseManagementServiceFactoryIT
     {
         DatabaseManagementServiceFactory databaseManagementServiceFactory =
                 new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
-        return databaseManagementServiceFactory.initFacade( testDirectory.storeDir(), Config.defaults(), GraphDatabaseDependencies.newDependencies() );
+        return databaseManagementServiceFactory.build( testDirectory.storeDir(), Config.defaults(), GraphDatabaseDependencies.newDependencies() );
     }
 
     private static class ShutdownListenerDatabaseEventListener extends DatabaseEventListenerAdapter

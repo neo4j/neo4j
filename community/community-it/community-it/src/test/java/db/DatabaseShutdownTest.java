@@ -149,7 +149,7 @@ class DatabaseShutdownTest
                     globalLife = globalModule.getGlobalLife();
                     return globalModule;
                 }
-            }.newFacade( storeDir, config, dependencies );
+            }.build( storeDir, config, dependencies );
         }
 
         LifecycleStatus getDatabaseStatus()

@@ -78,7 +78,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     {
         Preconditions.checkArgument( storeDir != null || impermanent, "Database must have a root path or be impermanent." );
         return new TestDatabaseManagementServiceFactory( getDatabaseInfo(), getEditionFactory(), impermanent, fileSystem, clock, internalLogProvider )
-                .newFacade( storeDir, augmentConfig( config ), GraphDatabaseDependencies.newDependencies( dependencies ) );
+                .build( storeDir, augmentConfig( config ), GraphDatabaseDependencies.newDependencies( dependencies ) );
     }
 
     @Override

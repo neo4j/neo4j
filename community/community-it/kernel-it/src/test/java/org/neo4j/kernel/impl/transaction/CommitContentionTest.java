@@ -129,7 +129,7 @@ class CommitContentionTest
             {
                 return new SkipTransactionDatabaseStats();
             }
-        } ).newFacade( testDirectory.storeDir(), Config.defaults(), GraphDatabaseDependencies.newDependencies() );
+        } ).build( testDirectory.storeDir(), Config.defaults(), GraphDatabaseDependencies.newDependencies() );
         return managementService
                 .database( Config.defaults().get( GraphDatabaseSettings.default_database ));
     }

@@ -72,9 +72,9 @@ class DatabaseManagementServiceFactoryTest
     void shouldThrowAppropriateExceptionIfStartFails()
     {
         RuntimeException startupError = new RuntimeException();
-        DatabaseManagementServiceFactory db = newFaultyGraphDatabaseFacadeFactory( startupError, null );
+        DatabaseManagementServiceFactory factory = newFaultyGraphDatabaseFacadeFactory( startupError, null );
         RuntimeException startException =
-                assertThrows( RuntimeException.class, () -> db.initFacade( testDirectory.storeDir(), Collections.emptyMap(), deps ) );
+                assertThrows( RuntimeException.class, () -> factory.build( testDirectory.storeDir(), Collections.emptyMap(), deps ) );
         assertEquals( startupError, rootCause( startException ) );
     }
 
@@ -84,9 +84,9 @@ class DatabaseManagementServiceFactoryTest
         RuntimeException startupError = new RuntimeException();
         RuntimeException shutdownError = new RuntimeException();
 
-        DatabaseManagementServiceFactory db = newFaultyGraphDatabaseFacadeFactory( startupError, shutdownError );
+        DatabaseManagementServiceFactory factory = newFaultyGraphDatabaseFacadeFactory( startupError, shutdownError );
         RuntimeException initException =
-                assertThrows( RuntimeException.class, () -> db.initFacade( testDirectory.storeDir(), Collections.emptyMap(), deps ) );
+                assertThrows( RuntimeException.class, () -> factory.build( testDirectory.storeDir(), Collections.emptyMap(), deps ) );
 
         assertTrue( initException.getMessage().startsWith( "Error starting " ) );
         assertEquals( startupError, initException.getCause() );

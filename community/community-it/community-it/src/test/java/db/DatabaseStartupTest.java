@@ -246,7 +246,7 @@ class DatabaseStartupTest
         @Override
         protected DatabaseManagementService newDatabaseManagementService( File storeDir, Config config, ExternalDependencies dependencies )
         {
-            return factory.newFacade( storeDir, augmentConfig( config ), dependencies );
+            return factory.build( storeDir, augmentConfig( config ), dependencies );
         }
     }
 }
