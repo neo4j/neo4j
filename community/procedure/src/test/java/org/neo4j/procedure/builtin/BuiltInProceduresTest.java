@@ -24,12 +24,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
 
@@ -425,10 +427,18 @@ class BuiltInProceduresTest
         when( schemaRead.indexGetPopulationProgress( any( IndexReference.class) ) ).thenReturn( PopulationProgress.DONE );
         AnyValue[] input = Arrays.stream( args ).map( ValueUtils::of ).toArray( AnyValue[]::new );
         int procId = procs.procedure( ProcedureSignature.procedureName( name.split( "\\." ) ) ).id();
-        List<AnyValue[]> anyValues = Iterators.asList( procs.callProcedure( ctx, procId, input, EMPTY_RESOURCE_MANAGER ) );
-
-        return anyValues.stream().map( vs -> Arrays.stream( vs ).map( v -> v.map( valueMapper ) ).toArray( Object[]::new ) )
-                .collect( Collectors.toList());
-
+        List<AnyValue[]> anyValues =
+                Iterators.asList( procs.callProcedure( ctx, procId, input, EMPTY_RESOURCE_MANAGER ) );
+        ArrayList<Object[]> toReturn = new ArrayList<>( anyValues.size() );
+        for ( AnyValue[] anyValue : anyValues )
+        {
+            Object[] values = new Object[anyValue.length];
+            for ( int i = 0; i < anyValue.length; i++ )
+            {
+                values[i] = anyValue[i].map( valueMapper );
+            }
+            toReturn.add( values );
+        }
+        return toReturn;
     }
 }
