@@ -216,23 +216,20 @@ public class ChunkedOutput implements PackOutput
     @Override
     public void close()
     {
-        if ( buffer != null )
+        try
         {
-            try
+            flush();
+        }
+        catch ( IOException ignore )
+        {
+        }
+        finally
+        {
+            closed = true;
+            if ( buffer != null )
             {
-                flush();
-            }
-            catch ( IOException ignore )
-            {
-            }
-            finally
-            {
-                closed = true;
-                if (buffer != null)
-                {
-                    buffer.release();
-                    buffer = null;
-                }
+                buffer.release();
+                buffer = null;
             }
         }
     }
