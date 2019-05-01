@@ -119,40 +119,32 @@ import static org.neo4j.values.storable.Values.utf8Value;
  */
 public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 {
-    private Schema schema;
-    private Database database;
-    private ThreadToStatementContextBridge statementContext;
-    private TransactionalContextFactory contextFactory;
-    private Config config;
-    private TokenHolders tokenHolders;
-    private CoreAPIAvailabilityGuard availabilityGuard;
-    private DatabaseInfo databaseInfo;
+    private final Schema schema;
+    private final Database database;
+    private final ThreadToStatementContextBridge statementContext;
+    private final TransactionalContextFactory contextFactory;
+    private final Config config;
+    private final TokenHolders tokenHolders;
+    private final CoreAPIAvailabilityGuard availabilityGuard;
+    private final DatabaseInfo databaseInfo;
     private Function<LoginContext, LoginContext> loginContextTransformer = Function.identity();
-
-    public GraphDatabaseFacade()
-    {
-    }
 
     public GraphDatabaseFacade( GraphDatabaseFacade facade, Function<LoginContext,LoginContext> loginContextTransformer )
     {
-        requireNonNull( facade.database );
-        init( facade.database, facade.statementContext, facade.config, facade.databaseInfo, facade.availabilityGuard );
-        this.loginContextTransformer = loginContextTransformer;
+        this( facade.database, facade.statementContext, facade.config, facade.databaseInfo, facade.availabilityGuard );
+        this.loginContextTransformer = requireNonNull( loginContextTransformer );
     }
 
-    /**
-     * Create a new Core API facade, backed by the provided database dependencies
-     */
-    public void init( Database database, ThreadToStatementContextBridge txBridge, Config config, DatabaseInfo databaseInfo,
+    public GraphDatabaseFacade( Database database, ThreadToStatementContextBridge txBridge, Config config, DatabaseInfo databaseInfo,
             CoreAPIAvailabilityGuard availabilityGuard )
     {
-        this.database = database;
-        this.config = config;
+        this.database = requireNonNull( database );
+        this.config = requireNonNull( config );
+        this.statementContext = requireNonNull( txBridge );
+        this.availabilityGuard = requireNonNull( availabilityGuard );
+        this.databaseInfo = requireNonNull( databaseInfo );
         this.schema = new SchemaImpl( () -> txBridge.getKernelTransactionBoundToThisThread( true ) );
-        this.statementContext = txBridge;
         this.tokenHolders = database.getTokenHolders();
-        this.availabilityGuard = availabilityGuard;
-        this.databaseInfo = databaseInfo;
         this.contextFactory = Neo4jTransactionalContextFactory.create( this,
                 () -> getDependencyResolver().resolveDependency( GraphDatabaseQueryService.class ), txBridge );
     }

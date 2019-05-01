@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
 import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.ReadOnly;
@@ -108,8 +107,6 @@ public class CommunityEditionModule extends StandaloneEditionModule
         LocksFactory lockFactory = createLockFactory( globalConfig, logService );
         locksSupplier = () -> createLockManager( lockFactory, globalConfig, globalClock );
         statementLocksFactoryProvider = locks -> createStatementLocksFactory( locks, globalConfig, logService );
-
-        threadToTransactionBridge = globalDependencies.satisfyDependency( new ThreadToStatementContextBridge() );
 
         idContextFactory = tryResolveOrCreate( IdContextFactory.class, externalDependencies, () -> createIdContextFactory( globalModule, fileSystem ) );
 

@@ -80,6 +80,8 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
 import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitorScheduler;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -196,14 +198,15 @@ public class Database extends LifecycleAdapter
     private final Locks locks;
     private final DatabaseEventListeners eventListeners;
     private final DatabaseMigratorFactory databaseMigratorFactory;
+    private final long startTimeoutMillis;
 
     private Dependencies databaseDependencies;
     private LifeSupport life;
     private IndexProviderMap indexProviderMap;
-    private DatabaseConfig config;
     private DatabaseHealth databaseHealth;
     private DatabaseAvailabilityGuard databaseAvailabilityGuard;
     private DatabaseAvailability databaseAvailability;
+    private final DatabaseConfig databaseConfig;
     private final DatabaseId databaseId;
     private final DatabaseLayout databaseLayout;
     private final boolean readOnly;
@@ -211,6 +214,7 @@ public class Database extends LifecycleAdapter
     private final DatabaseInfo databaseInfo;
     private final VersionContextSupplier versionContextSupplier;
     private final AccessCapability accessCapability;
+    private final ThreadToStatementContextBridge contextBridge;
 
     private final StorageEngineFactory storageEngineFactory;
     private StorageEngine storageEngine;
@@ -220,18 +224,18 @@ public class Database extends LifecycleAdapter
     private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     private final Factory<DatabaseHealth> databaseHealthFactory;
     private final Factory<DatabaseAvailabilityGuard> availabilityGuardFactory;
-    private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
     private volatile boolean started;
     private Monitors databaseMonitors;
     private DatabasePageCache databasePageCache;
     private CheckpointerLifecycle checkpointerLifecycle;
+    private GraphDatabaseFacade databaseFacade;
 
     public Database( DatabaseCreationContext context )
     {
         this.databaseId = context.getDatabaseId();
         this.databaseLayout = context.getDatabaseLayout();
-        this.config = context.getDatabaseConfig();
+        this.databaseConfig = context.getDatabaseConfig();
         this.idGeneratorFactory = context.getIdGeneratorFactory();
         this.tokenNameLookup = context.getTokenNameLookup();
         this.globalDependencies = context.getGlobalDependencies();
@@ -264,7 +268,6 @@ public class Database extends LifecycleAdapter
         this.versionContextSupplier = context.getVersionContextSupplier();
         this.extensionFactories = context.getExtensionFactories();
         this.watcherServiceFactory = context.getWatcherServiceFactory();
-        this.facade = context.getFacade();
         this.engineProviders = context.getEngineProviders();
         this.msgLog = logProvider.getLog( getClass() );
         this.lockService = new ReentrantLockService();
@@ -274,6 +277,8 @@ public class Database extends LifecycleAdapter
         this.databaseMigratorFactory = context.getDatabaseMigratorFactory();
         this.availabilityGuardFactory = context.getDatabaseAvailabilityGuardFactory();
         this.storageEngineFactory = context.getStorageEngineFactory();
+        this.contextBridge = context.getContextBridge();
+        this.startTimeoutMillis = context.getStartTimeoutMillis();
     }
 
     @Override
@@ -290,7 +295,7 @@ public class Database extends LifecycleAdapter
             databaseMonitors = new Monitors( globalMonitors );
 
             life = new LifeSupport();
-            life.add( config );
+            life.add( databaseConfig);
 
             databaseHealth = databaseHealthFactory.newInstance();
             databaseAvailabilityGuard = availabilityGuardFactory.newInstance();
@@ -298,12 +303,14 @@ public class Database extends LifecycleAdapter
 
             LogFileCreationMonitor physicalLogMonitor = databaseMonitors.newMonitor( LogFileCreationMonitor.class );
 
+            CoreAPIAvailabilityGuard coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( databaseAvailabilityGuard, startTimeoutMillis );
+            databaseFacade = new GraphDatabaseFacade( this, contextBridge, databaseConfig, databaseInfo, coreAPIAvailabilityGuard );
             databaseDependencies.satisfyDependency( this );
-            databaseDependencies.satisfyDependency( config );
+            databaseDependencies.satisfyDependency( databaseConfig );
             databaseDependencies.satisfyDependency( databaseMonitors );
             databaseDependencies.satisfyDependency( databasePageCache );
             databaseDependencies.satisfyDependency( tokenHolders );
-            databaseDependencies.satisfyDependency( facade );
+            databaseDependencies.satisfyDependency( databaseFacade );
             databaseDependencies.satisfyDependency( databaseHealth );
             databaseDependencies.satisfyDependency( storeCopyCheckPointMutex );
             databaseDependencies.satisfyDependency( transactionStats );
@@ -314,7 +321,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( idController );
             databaseDependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
             databaseDependencies.satisfyDependency( lockService );
-            databaseDependencies.satisfyDependency( new DefaultValueMapper( facade ) );
+            databaseDependencies.satisfyDependency( new DefaultValueMapper( databaseFacade ) );
 
             DefaultLogRotationMonitor logRotationMonitor = new DefaultLogRotationMonitor();
             DefaultCheckPointMonitor checkPointMonitor = new DefaultCheckPointMonitor();
@@ -343,17 +350,17 @@ public class Database extends LifecycleAdapter
 
             LogFiles logFiles =
                     LogFilesBuilder.builder( databaseLayout, fs ).withLogEntryReader( logEntryReader ).withLogFileMonitor( physicalLogMonitor ).withConfig(
-                            config ).withDependencies( databaseDependencies ).build();
+                            databaseConfig ).withDependencies( databaseDependencies ).build();
 
             databaseMonitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
             databaseMonitors.addMonitorListener( new LoggingLogTailScannerMonitor( logService.getInternalLog( LogTailScanner.class ) ) );
             databaseMonitors.addMonitorListener(
                     new ReverseTransactionCursorLoggingMonitor( logService.getInternalLog( ReversedSingleFileTransactionCursor.class ) ) );
             LogTailScanner tailScanner =
-                    new LogTailScanner( logFiles, logEntryReader, databaseMonitors, config.get( GraphDatabaseSettings.fail_on_corrupted_log_files ) );
-            LogVersionUpgradeChecker.check( tailScanner, config );
+                    new LogTailScanner( logFiles, logEntryReader, databaseMonitors, databaseConfig.get( GraphDatabaseSettings.fail_on_corrupted_log_files ) );
+            LogVersionUpgradeChecker.check( tailScanner, databaseConfig );
 
-            performRecovery( fs, databasePageCache, config, databaseLayout, storageEngineFactory, logProvider, databaseMonitors, extensionFactories,
+            performRecovery( fs, databasePageCache, databaseConfig, databaseLayout, storageEngineFactory, logProvider, databaseMonitors, extensionFactories,
                     Optional.of( tailScanner ) );
 
             // Build all modules and their services
@@ -362,7 +369,7 @@ public class Database extends LifecycleAdapter
             Supplier<IdController.ConditionSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
             idController.initialize( transactionsSnapshotSupplier );
 
-            storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, config, databasePageCache, tokenHolders, databaseSchemaState,
+            storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, databaseConfig, databasePageCache, tokenHolders, databaseSchemaState,
                     constraintSemantics, lockService, idGeneratorFactory, idController, databaseHealth, versionContextSupplier, logProvider );
 
             life.add( storageEngine );
@@ -388,7 +395,7 @@ public class Database extends LifecycleAdapter
 
             CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, labelScanStore, storageEngine );
             DatabaseTransactionLogModule transactionLogModule =
-                    buildTransactionLogs( logFiles, config, logProvider, scheduler, forceOperation,
+                    buildTransactionLogs( logFiles, databaseConfig, logProvider, scheduler, forceOperation,
                             logEntryReader, transactionIdStore, databaseMonitors );
             transactionLogModule.satisfyDependencies( databaseDependencies );
 
@@ -402,7 +409,7 @@ public class Database extends LifecycleAdapter
                     transactionIdStore,
                     databaseAvailabilityGuard,
                     clock,
-                    indexStatisticsStore );
+                    indexStatisticsStore, databaseFacade );
 
             kernelModule.satisfyDependencies( databaseDependencies );
 
@@ -419,7 +426,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( indexProviderMap );
             databaseDependencies.satisfyDependency( forceOperation );
 
-            this.executionEngine = QueryEngineProvider.initialize( databaseDependencies, facade, engineProviders );
+            this.executionEngine = QueryEngineProvider.initialize( databaseDependencies, databaseFacade, engineProviders );
             this.checkpointerLifecycle = new CheckpointerLifecycle( transactionLogModule.checkPointer(), databaseHealth );
 
             databaseDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
@@ -462,7 +469,7 @@ public class Database extends LifecycleAdapter
         extensionsLife.add( new DatabaseExtensions( new DatabaseExtensionContext( databaseLayout, databaseInfo, dependencies ), extensionFactories,
                 dependencies, fail() ) );
 
-        indexProviderMap = extensionsLife.add( new DefaultIndexProviderMap( dependencies, config ) );
+        indexProviderMap = extensionsLife.add( new DefaultIndexProviderMap( dependencies, databaseConfig ) );
         dependencies.satisfyDependency( indexProviderMap );
         extensionsLife.init();
         return extensionsLife;
@@ -482,8 +489,8 @@ public class Database extends LifecycleAdapter
             DynamicIndexStoreView indexStoreView,
             IndexStatisticsStore indexStatisticsStore )
     {
-        return life.add( buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore, config, scheduler, indexProviderMap,
-                tokenNameLookup, logProvider, userLogProvider, databaseMonitors.newMonitor( IndexingService.Monitor.class ) ) );
+        return life.add( buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore, databaseConfig, scheduler,
+                indexProviderMap, tokenNameLookup, logProvider, userLogProvider, databaseMonitors.newMonitor( IndexingService.Monitor.class ) ) );
     }
 
     /**
@@ -590,12 +597,12 @@ public class Database extends LifecycleAdapter
             IndexingService indexingService, DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
             StorageEngine storageEngine, TransactionIdStore transactionIdStore,
             AvailabilityGuard databaseAvailabilityGuard, SystemNanoClock clock,
-            IndexStatisticsStore indexStatisticsStore )
+            IndexStatisticsStore indexStatisticsStore, GraphDatabaseFacade facade )
     {
         AtomicReference<CpuClock> cpuClockRef = setupCpuClockAtomicReference();
         AtomicReference<HeapAllocation> heapAllocationRef = setupHeapAllocationAtomicReference();
 
-        TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storageEngine, config );
+        TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storageEngine, databaseConfig );
 
         /*
          * This is used by explicit indexes and constraint indexes whenever a transaction is to be spawned
@@ -611,16 +618,17 @@ public class Database extends LifecycleAdapter
         DatabaseTransactionEventListeners databaseTransactionEventListeners =
                 new DatabaseTransactionEventListeners( facade, transactionEventListeners, databaseId );
         KernelTransactions kernelTransactions = life.add(
-                new KernelTransactions( config, statementLocksFactory, constraintIndexCreator, statementOperationParts, transactionHeaderInformationFactory,
-                        transactionCommitProcess, databaseTransactionEventListeners, transactionStats, databaseAvailabilityGuard, globalTracers,
+                new KernelTransactions( databaseConfig, statementLocksFactory, constraintIndexCreator, statementOperationParts,
+                        transactionHeaderInformationFactory, transactionCommitProcess, databaseTransactionEventListeners, transactionStats,
+                        databaseAvailabilityGuard, globalTracers,
                         storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
                         heapAllocationRef, accessCapability, versionContextSupplier, collectionsFactorySupplier,
                         constraintSemantics, databaseSchemaState, tokenHolders, getDatabaseId(), indexingService, labelScanStore, indexStatisticsStore,
                         databaseDependencies ) );
 
-        buildTransactionMonitor( kernelTransactions, clock, config );
+        buildTransactionMonitor( kernelTransactions, clock, databaseConfig );
 
-        KernelImpl kernel = new KernelImpl( kernelTransactions, databaseHealth, transactionStats, globalProcedures, config, storageEngine );
+        KernelImpl kernel = new KernelImpl( kernelTransactions, databaseHealth, transactionStats, globalProcedures, databaseConfig, storageEngine );
 
         life.add( kernel );
 
@@ -644,8 +652,8 @@ public class Database extends LifecycleAdapter
                 cpuClock.set( CpuClock.NOT_AVAILABLE );
             }
         };
-        cpuClockUpdater.accept( null, config.get( GraphDatabaseSettings.track_query_cpu_time ) );
-        config.registerDynamicUpdateListener( GraphDatabaseSettings.track_query_cpu_time, cpuClockUpdater );
+        cpuClockUpdater.accept( null, databaseConfig.get( GraphDatabaseSettings.track_query_cpu_time ) );
+        databaseConfig.registerDynamicUpdateListener( GraphDatabaseSettings.track_query_cpu_time, cpuClockUpdater );
         return cpuClock;
     }
 
@@ -663,8 +671,8 @@ public class Database extends LifecycleAdapter
                 heapAllocation.set( HeapAllocation.NOT_AVAILABLE );
             }
         };
-        heapAllocationUpdater.accept( null, config.get( GraphDatabaseSettings.track_query_allocation ) );
-        config.registerDynamicUpdateListener( GraphDatabaseSettings.track_query_allocation, heapAllocationUpdater );
+        heapAllocationUpdater.accept( null, databaseConfig.get( GraphDatabaseSettings.track_query_allocation ) );
+        databaseConfig.registerDynamicUpdateListener( GraphDatabaseSettings.track_query_allocation, heapAllocationUpdater );
         return heapAllocation;
     }
 
@@ -727,7 +735,7 @@ public class Database extends LifecycleAdapter
 
     public Config getConfig()
     {
-        return config;
+        return databaseConfig;
     }
 
     public StoreId getStoreId()
@@ -812,6 +820,11 @@ public class Database extends LifecycleAdapter
     public DatabaseAvailabilityGuard getDatabaseAvailabilityGuard()
     {
         return databaseAvailabilityGuard;
+    }
+
+    public GraphDatabaseFacade getDatabaseFacade()
+    {
+        return databaseFacade;
     }
 
     public Health getDatabaseHealth()

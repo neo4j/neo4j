@@ -49,6 +49,7 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
     private final DatabaseTransactionStats transactionMonitor;
     private final DatabaseIdContext idContext;
     private final StatementLocksFactory statementLocksFactory;
+    private final long startTimeoutMillis;
 
     public StandaloneDatabaseComponents( StandaloneEditionModule editionModule, DatabaseId databaseId )
     {
@@ -63,6 +64,7 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
         this.locks = editionModule.getLocksSupplier().get();
         this.statementLocksFactory = editionModule.getStatementLocksFactoryProvider().apply( locks );
         this.transactionMonitor = editionModule.createTransactionMonitor();
+        this.startTimeoutMillis = editionModule.getTransactionStartTimeout();
     }
 
     @Override
@@ -129,5 +131,11 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
     public DatabaseTransactionStats getTransactionMonitor()
     {
         return transactionMonitor;
+    }
+
+    @Override
+    public long getStartTimeoutMillis()
+    {
+        return startTimeoutMillis;
     }
 }

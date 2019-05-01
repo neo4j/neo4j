@@ -57,4 +57,6 @@ public interface EditionDatabaseComponents
     StatementLocksFactory getStatementLocksFactory();
 
     DatabaseTransactionStats getTransactionMonitor();
+
+    long getStartTimeoutMillis();
 }

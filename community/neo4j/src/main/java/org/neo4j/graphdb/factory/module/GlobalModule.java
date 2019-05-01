@@ -52,6 +52,7 @@ import org.neo4j.kernel.extension.GlobalExtensions;
 import org.neo4j.kernel.extension.context.GlobalExtensionContext;
 import org.neo4j.kernel.impl.cache.VmPauseMonitorComponent;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
@@ -126,6 +127,7 @@ public class GlobalModule
     private final FileSystemWatcherService fileSystemWatcher;
     private final DatabaseEventListeners databaseEventListeners;
     private final GlobalTransactionEventListeners transactionEventListeners;
+    private final ThreadToStatementContextBridge threadToTransactionBridge;
     // In the future this may not be a global decision, but for now this is a good central place to make the decision about which storage engine to use
     private final StorageEngineFactory storageEngineFactory;
     private final DependencyResolver externalDependencyResolver;
@@ -219,6 +221,9 @@ public class GlobalModule
 
         connectorPortRegister = new ConnectorPortRegister();
         globalDependencies.satisfyDependency( connectorPortRegister );
+
+        threadToTransactionBridge = new ThreadToStatementContextBridge();
+        globalDependencies.satisfyDependency( threadToTransactionBridge );
 
         // There's no way of actually configuring storage engine right now and this is on purpose since
         // we have neither figured out the surface, use cases nor other storage engines.
@@ -536,5 +541,10 @@ public class GlobalModule
     public DependencyResolver getExternalDependencyResolver()
     {
         return externalDependencyResolver;
+    }
+
+    public ThreadToStatementContextBridge getThreadToTransactionBridge()
+    {
+        return threadToTransactionBridge;
     }
 }

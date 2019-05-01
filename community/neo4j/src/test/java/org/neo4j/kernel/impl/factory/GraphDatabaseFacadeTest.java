@@ -51,7 +51,7 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 class GraphDatabaseFacadeTest
 {
-    private final GraphDatabaseFacade graphDatabaseFacade = new GraphDatabaseFacade();
+    private GraphDatabaseFacade graphDatabaseFacade;
     private GraphDatabaseQueryService queryService;
     private InwardKernel inwardKernel;
 
@@ -73,7 +73,7 @@ class GraphDatabaseFacadeTest
         Config config = Config.defaults();
         when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
 
-        graphDatabaseFacade.init( database, contextBridge, config, DatabaseInfo.COMMUNITY, mock( CoreAPIAvailabilityGuard.class ) );
+        graphDatabaseFacade = new GraphDatabaseFacade( database, contextBridge, config, DatabaseInfo.COMMUNITY, mock( CoreAPIAvailabilityGuard.class ) );
     }
 
     @Test

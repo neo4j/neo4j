@@ -25,7 +25,6 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.ModularDatabaseCreationContext;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
@@ -34,7 +33,6 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -91,17 +89,9 @@ public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends
     protected T createNewDatabaseContext( DatabaseId databaseId )
     {
         log.info( "Creating '%s' database.", databaseId.name() );
-        Config globalConfig = globalModule.getGlobalConfig();
-        GraphDatabaseFacade facade = new GraphDatabaseFacade();
-
-        DatabaseCreationContext databaseCreationContext = newDatabaseCreationContext( databaseId, facade );
+        DatabaseCreationContext databaseCreationContext = newDatabaseCreationContext( databaseId );
         Database database = new Database( databaseCreationContext );
-
-        CoreAPIAvailabilityGuard coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( globalModule.getGlobalAvailabilityGuard(),
-                edition.getTransactionStartTimeout() );
-
-        facade.init( database, edition.getThreadToTransactionBridge(), globalConfig, globalModule.getDatabaseInfo(), coreAPIAvailabilityGuard );
-        return createDatabaseContext( database, facade );
+        return createDatabaseContext( database, database.getDatabaseFacade() );
     }
 
     protected abstract T createDatabaseContext( Database database, GraphDatabaseFacade facade );
@@ -140,10 +130,10 @@ public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends
         database.stop();
     }
 
-    private DatabaseCreationContext newDatabaseCreationContext( DatabaseId databaseId, GraphDatabaseFacade facade )
+    private DatabaseCreationContext newDatabaseCreationContext( DatabaseId databaseId )
     {
         EditionDatabaseComponents editionDatabaseComponents = edition.createDatabaseComponents( databaseId );
         GlobalProcedures globalProcedures = edition.getGlobalProcedures();
-        return new ModularDatabaseCreationContext( databaseId, globalModule, editionDatabaseComponents, globalProcedures, facade );
+        return new ModularDatabaseCreationContext( databaseId, globalModule, editionDatabaseComponents, globalProcedures );
     }
 }

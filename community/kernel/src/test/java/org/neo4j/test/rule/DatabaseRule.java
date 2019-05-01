@@ -56,11 +56,11 @@ import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
@@ -164,8 +164,8 @@ public class DatabaseRule extends ExternalResource
                 new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory, idConfigurationProvider ),
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP,
                 Iterables.iterable( new EmptyIndexExtensionFactory() ),
-                file -> mock( DatabaseLayoutWatcher.class ), new GraphDatabaseFacade(), Iterables.empty(),
-                mockedDatabaseMigratorFactory(), storageEngineFactory ) );
+                file -> mock( DatabaseLayoutWatcher.class ), Iterables.empty(),
+                mockedDatabaseMigratorFactory(), storageEngineFactory, new ThreadToStatementContextBridge(), 0 ) );
         return database;
     }
 
@@ -236,24 +236,25 @@ public class DatabaseRule extends ExternalResource
         private final CollectionsFactorySupplier collectionsFactorySupplier;
         private final Iterable<ExtensionFactory<?>> extensionFactories;
         private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
-        private final GraphDatabaseFacade facade;
         private final Iterable<QueryEngineProvider> engineProviders;
         private final DatabaseEventListeners eventListeners;
         private final DatabaseMigratorFactory databaseMigratorFactory;
         private final StorageEngineFactory storageEngineFactory;
+        private final long startTimeoutMillis;
+        private final ThreadToStatementContextBridge contextBridge;
 
         TestDatabaseCreationContext( String databaseName, DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory,
                 LogService logService, JobScheduler scheduler, TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
-                TokenHolders tokenHolders, StatementLocksFactory statementLocksFactory,
-                GlobalTransactionEventListeners globalTransactionEventListeners, FileSystemAbstraction fs, DatabaseTransactionStats databaseTransactionStats,
-                DatabaseHealth databaseHealth, TransactionHeaderInformationFactory transactionHeaderInformationFactory,
+                TokenHolders tokenHolders, StatementLocksFactory statementLocksFactory, GlobalTransactionEventListeners globalTransactionEventListeners,
+                FileSystemAbstraction fs, DatabaseTransactionStats databaseTransactionStats, DatabaseHealth databaseHealth,
+                TransactionHeaderInformationFactory transactionHeaderInformationFactory,
                 CommitProcessFactory commitProcessFactory, PageCache pageCache, ConstraintSemantics constraintSemantics, Monitors monitors, Tracers tracers,
                 GlobalProcedures globalProcedures, IOLimiter ioLimiter, SystemNanoClock clock, AccessCapability accessCapability,
-                StoreCopyCheckPointMutex storeCopyCheckPointMutex, IdController idController, DatabaseInfo databaseInfo,
-                VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
+                StoreCopyCheckPointMutex storeCopyCheckPointMutex, IdController idController,
+                DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
                 Iterable<ExtensionFactory<?>> extensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
-                GraphDatabaseFacade facade, Iterable<QueryEngineProvider> engineProviders, DatabaseMigratorFactory databaseMigratorFactory,
-                StorageEngineFactory storageEngineFactory )
+                Iterable<QueryEngineProvider> engineProviders, DatabaseMigratorFactory databaseMigratorFactory,
+                StorageEngineFactory storageEngineFactory, ThreadToStatementContextBridge contextBridge, long startTimeoutMillis )
         {
             this.databaseId = new DatabaseId( databaseName );
             this.databaseLayout = databaseLayout;
@@ -287,11 +288,12 @@ public class DatabaseRule extends ExternalResource
             this.collectionsFactorySupplier = collectionsFactorySupplier;
             this.extensionFactories = extensionFactories;
             this.watcherServiceFactory = watcherServiceFactory;
-            this.facade = facade;
             this.engineProviders = engineProviders;
             this.eventListeners = mock( DatabaseEventListeners.class );
             this.databaseMigratorFactory = databaseMigratorFactory;
             this.storageEngineFactory = storageEngineFactory;
+            this.contextBridge = contextBridge;
+            this.startTimeoutMillis = startTimeoutMillis;
         }
 
         @Override
@@ -507,12 +509,6 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public GraphDatabaseFacade getFacade()
-        {
-            return facade;
-        }
-
-        @Override
         public Iterable<QueryEngineProvider> getEngineProviders()
         {
             return engineProviders;
@@ -534,6 +530,18 @@ public class DatabaseRule extends ExternalResource
         public StorageEngineFactory getStorageEngineFactory()
         {
             return storageEngineFactory;
+        }
+
+        @Override
+        public ThreadToStatementContextBridge getContextBridge()
+        {
+            return contextBridge;
+        }
+
+        @Override
+        public long getStartTimeoutMillis()
+        {
+            return startTimeoutMillis;
         }
     }
 

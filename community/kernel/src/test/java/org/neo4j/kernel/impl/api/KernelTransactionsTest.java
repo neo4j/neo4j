@@ -753,7 +753,7 @@ public class KernelTransactionsTest
     private static Dependencies createDependencies()
     {
         Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependency( new DefaultValueMapper( new GraphDatabaseFacade() ) );
+        dependencies.satisfyDependency( new DefaultValueMapper( mock( GraphDatabaseFacade.class ) ) );
         return dependencies;
     }
 

@@ -39,9 +39,9 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
@@ -131,8 +131,6 @@ public interface DatabaseCreationContext
 
     Function<DatabaseLayout,DatabaseLayoutWatcher> getWatcherServiceFactory();
 
-    GraphDatabaseFacade getFacade();
-
     Iterable<QueryEngineProvider> getEngineProviders();
 
     DatabaseEventListeners getDatabaseEventListeners();
@@ -140,4 +138,8 @@ public interface DatabaseCreationContext
     DatabaseMigratorFactory getDatabaseMigratorFactory();
 
     StorageEngineFactory getStorageEngineFactory();
+
+    ThreadToStatementContextBridge getContextBridge();
+
+    long getStartTimeoutMillis();
 }

@@ -42,7 +42,6 @@ import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
@@ -69,7 +68,6 @@ public abstract class AbstractEditionModule
 {
     private final GlobalTransactionStats transactionStatistic = new GlobalTransactionStats();
     protected NetworkConnectionTracker connectionTracker;
-    protected ThreadToStatementContextBridge threadToTransactionBridge;
     protected long transactionStartTimeout;
     protected TransactionHeaderInformationFactory headerInformationFactory;
     protected ConstraintSemantics constraintSemantics;
@@ -212,11 +210,6 @@ public abstract class AbstractEditionModule
     public Function<DatabaseLayout,DatabaseLayoutWatcher> getWatcherServiceFactory()
     {
         return watcherServiceFactory;
-    }
-
-    public ThreadToStatementContextBridge getThreadToTransactionBridge()
-    {
-        return threadToTransactionBridge;
     }
 
     public NetworkConnectionTracker getConnectionTracker()

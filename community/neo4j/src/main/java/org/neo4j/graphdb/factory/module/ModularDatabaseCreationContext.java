@@ -44,9 +44,9 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
@@ -101,16 +101,17 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final Iterable<ExtensionFactory<?>> extensionFactories;
     private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
-    private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
     private final DatabaseLayout databaseLayout;
     private final DatabaseEventListeners eventListeners;
     private final GlobalTransactionEventListeners transactionEventListeners;
     private final DatabaseMigratorFactory databaseMigratorFactory;
     private final StorageEngineFactory storageEngineFactory;
+    private final ThreadToStatementContextBridge contextBridge;
+    private final long startTimeoutMillis;
 
     public ModularDatabaseCreationContext( DatabaseId databaseId, GlobalModule globalModule, EditionDatabaseComponents perEditionComponents,
-            GlobalProcedures globalProcedures, GraphDatabaseFacade facade )
+            GlobalProcedures globalProcedures )
     {
         this.databaseId = databaseId;
         this.globalConfig = globalModule.getGlobalConfig();
@@ -149,11 +150,12 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.collectionsFactorySupplier = globalModule.getCollectionsFactorySupplier();
         this.extensionFactories = globalModule.getExtensionFactories();
         this.watcherServiceFactory = perEditionComponents.getWatcherServiceFactory();
-        this.facade = facade;
         this.engineProviders = globalModule.getQueryEngineProviders();
         this.databaseAvailabilityGuardFactory = () -> globalModule.getGlobalAvailabilityGuard().createDatabaseAvailabilityGuard( databaseId );
         this.databaseMigratorFactory = new DatabaseMigratorFactory( fs, globalConfig, logService, pageCache, scheduler );
         this.storageEngineFactory = globalModule.getStorageEngineFactory();
+        this.contextBridge = globalModule.getThreadToTransactionBridge();
+        this.startTimeoutMillis = perEditionComponents.getStartTimeoutMillis();
     }
 
     @Override
@@ -361,12 +363,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public GraphDatabaseFacade getFacade()
-    {
-        return facade;
-    }
-
-    @Override
     public Iterable<QueryEngineProvider> getEngineProviders()
     {
         return engineProviders;
@@ -388,5 +384,17 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public StorageEngineFactory getStorageEngineFactory()
     {
         return storageEngineFactory;
+    }
+
+    @Override
+    public ThreadToStatementContextBridge getContextBridge()
+    {
+        return contextBridge;
+    }
+
+    @Override
+    public long getStartTimeoutMillis()
+    {
+        return startTimeoutMillis;
     }
 }
