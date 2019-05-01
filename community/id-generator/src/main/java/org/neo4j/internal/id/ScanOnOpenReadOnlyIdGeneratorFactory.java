@@ -17,23 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package org.neo4j.internal.id;
 
 import java.io.File;
 import java.nio.file.OpenOption;
 import java.util.EnumMap;
 import java.util.function.LongSupplier;
 
-import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
-
 /**
  * {@link IdGeneratorFactory} that ignores the underlying id file and only uses the provided highIdScanner in
  * {@link #open(File, IdType, LongSupplier, long, OpenOption...)}, instantiating {@link IdGenerator} that will return that highId
  * and do nothing else. This is of great convenience when migrating between id file formats.
  */
-class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
+public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
 {
     private final EnumMap<IdType,ReadOnlyHighIdGenerator> idGenerators = new EnumMap<>( IdType.class );
 

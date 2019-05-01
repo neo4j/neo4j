@@ -21,8 +21,11 @@ package org.neo4j.graphdb.factory.module.id;
 
 import java.util.function.Function;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.DatabaseId;
@@ -39,6 +42,7 @@ public class IdContextFactoryBuilder
     private JobScheduler jobScheduler;
     private Function<DatabaseId,IdGeneratorFactory> idGeneratorFactoryProvider;
     private Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper;
+    private Config config;
 
     private IdContextFactoryBuilder()
     {
@@ -51,24 +55,19 @@ public class IdContextFactoryBuilder
         return builder;
     }
 
-    public static IdContextFactoryBuilder of( FileSystemAbstraction fileSystemAbstraction, PageCache pageCache, JobScheduler jobScheduler )
+    public static IdContextFactoryBuilder of( FileSystemAbstraction fileSystemAbstraction, PageCache pageCache, JobScheduler jobScheduler, Config config )
     {
         IdContextFactoryBuilder builder = new IdContextFactoryBuilder();
         builder.fileSystemAbstraction = fileSystemAbstraction;
         builder.pageCache = pageCache;
         builder.jobScheduler = jobScheduler;
+        builder.config = config;
         return builder;
     }
 
     public IdContextFactoryBuilder withFileSystem( FileSystemAbstraction fileSystem )
     {
         this.fileSystemAbstraction = fileSystem;
-        return this;
-    }
-
-    public IdContextFactoryBuilder withPageCache( PageCache pageCache )
-    {
-        this.pageCache = pageCache;
         return this;
     }
 
@@ -91,7 +90,9 @@ public class IdContextFactoryBuilder
             requireNonNull( fileSystemAbstraction, "File system is required to build id generator factory." );
             // Note on the RecoveryCleanupWorkCollector: this is just using the immediate() because we aren't
             // expecting any cleanup to be performed on main startup (this is after recovery).
-            idGeneratorFactoryProvider = databaseId -> new DefaultIdGeneratorFactory( fileSystemAbstraction, pageCache, immediate() );
+            idGeneratorFactoryProvider = databaseId -> config.get( GraphDatabaseSettings.rebuild_id_files_on_startup )
+                                                       ? new ScanOnOpenOverwritingIdGeneratorFactory( fileSystemAbstraction, pageCache )
+                                                       : new DefaultIdGeneratorFactory( fileSystemAbstraction, pageCache, immediate() );
         }
         if ( factoryWrapper == null )
         {

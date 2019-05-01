@@ -107,7 +107,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
         locksSupplier = () -> createLockManager( lockFactory, globalConfig, globalClock );
         statementLocksFactoryProvider = locks -> createStatementLocksFactory( locks, globalConfig, logService );
 
-        idContextFactory = tryResolveOrCreate( IdContextFactory.class, externalDependencies, () -> createIdContextFactory( globalModule, fileSystem ) );
+        idContextFactory = tryResolveOrCreate( IdContextFactory.class, externalDependencies, () -> createIdContextFactory( globalModule ) );
 
         tokenHoldersProvider = createTokenHolderProvider( globalModule );
 
@@ -142,9 +142,10 @@ public class CommunityEditionModule extends StandaloneEditionModule
         };
     }
 
-    protected IdContextFactory createIdContextFactory( GlobalModule globalModule, FileSystemAbstraction fileSystem )
+    private IdContextFactory createIdContextFactory( GlobalModule globalModule )
     {
-        return IdContextFactoryBuilder.of( fileSystem, globalModule.getPageCache(), globalModule.getJobScheduler() ).build();
+        return IdContextFactoryBuilder.of( globalModule.getFileSystem(), globalModule.getPageCache(),
+                globalModule.getJobScheduler(), globalModule.getGlobalConfig() ).build();
     }
 
     protected Predicate<String> fileWatcherFileNameFilter()

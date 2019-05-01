@@ -17,10 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package org.neo4j.internal.id;
 
-import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.internal.id.IdRange;
 import org.neo4j.io.pagecache.IOLimiter;
 
 /**

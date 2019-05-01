@@ -17,15 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package org.neo4j.internal.id;
 
 import java.io.File;
 import java.nio.file.OpenOption;
 import java.util.function.LongSupplier;
 
-import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.internal.id.IdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 
@@ -39,9 +36,9 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
  * This is very useful in various id-file migration scenarios, both when migrating from an old format, but also when migrating
  * from a store that has no id files (once upon a time this was accepted).
  */
-class ScanOnOpenOverwritingIdGeneratorFactory extends DefaultIdGeneratorFactory
+public class ScanOnOpenOverwritingIdGeneratorFactory extends DefaultIdGeneratorFactory
 {
-    ScanOnOpenOverwritingIdGeneratorFactory( FileSystemAbstraction fs, PageCache pageCache )
+    public ScanOnOpenOverwritingIdGeneratorFactory( FileSystemAbstraction fs, PageCache pageCache )
     {
         super( fs, pageCache, immediate() );
     }

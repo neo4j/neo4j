@@ -558,6 +558,10 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Integer> index_sampling_update_percentage =
             buildSetting( "dbms.index_sampling.update_percentage", INTEGER, "5" ).constraint( min( 0 ) ).build();
 
+    @Description( "Temporary setting for allowing already created 4.0 dbs with legacy id files to have them rebuilt to new format. " +
+                    "Very useful during development where there are dbs in existence, e.g. benchmark dbs and what-not" )
+    public static final Setting<Boolean> rebuild_id_files_on_startup = setting( "dbms.rebuild_id_files", BOOLEAN, FALSE );
+
     // Lucene settings
     @Description( "The maximum number of open Lucene index searchers." )
     public static final Setting<Integer> lucene_searcher_cache_size = buildSetting( "dbms.index_searcher_cache_size",INTEGER,
