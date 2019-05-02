@@ -39,6 +39,10 @@ class HexIntegerLiteralTest extends SemanticFunSuite {
     assertSemanticError("0xfffffffffffffffff", "integer is too large")
   }
 
+  test("correctly parse hexadecimal Long.MIN_VALUE") {
+    assert(SignedHexIntegerLiteral("-0x8000000000000000")(DummyPosition(0)).value === Long.MinValue)
+  }
+
   private def assertSemanticError(stringValue: String, errorMessage: String) {
     val literal = SignedHexIntegerLiteral(stringValue)(DummyPosition(4))
     val result = SemanticExpressionCheck.check(SemanticContext.Simple, literal)(SemanticState.clean)
