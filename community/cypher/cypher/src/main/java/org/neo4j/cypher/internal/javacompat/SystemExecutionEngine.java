@@ -25,10 +25,10 @@ import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.logging.LogProvider;
 
 /**
- * To run a Cypher query, use this class.
- * <p>
- * This class construct and initialize both the cypher compiler and the cypher runtime, which is a very expensive
- * operation so please make sure this will be constructed only once and properly reused.
+ * This class is a specialized form of the ExecutionEngine containing two internal Cypher engines.
+ * The normal one inherited from the parent will be accessible from the outside and configured to only
+ * accept a specialized subset of commands. The innerCypherExecutionEngine on the other hand will
+ * understand the normal Cypher commands not available on the surface for the System Database.
  */
 public class SystemExecutionEngine extends ExecutionEngine
 {
