@@ -174,7 +174,9 @@ class NativeLabelScanWriter implements LabelScanWriter
         {
             monitor.mergeRemove( existingValue, newValue );
             existingValue.remove( newValue );
-            return ValueMerger.MergeResult.MERGED;
+            return existingValue.isEmpty()
+                   ? ValueMerger.MergeResult.REMOVED
+                   : ValueMerger.MergeResult.MERGED;
         };
         this.monitor = monitor;
     }
@@ -311,9 +313,14 @@ class NativeLabelScanWriter implements LabelScanWriter
         if ( value.bits != 0 )
         {
             // There are changes in the current range, flush them
-            writer.merge( key, value, addition ? addMerger : removeMerger );
-            // TODO: after a remove we could check if the tree value is empty and if so remove it from the index
-            // hmm, or perhaps that could be a feature of ValueAmender?
+            if ( addition )
+            {
+                writer.merge( key, value, addMerger );
+            }
+            else
+            {
+                writer.mergeIfExists( key, value, removeMerger );
+            }
             value.clear();
         }
     }

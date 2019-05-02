@@ -19,31 +19,32 @@
  */
 package org.neo4j.kernel.impl.index.labelscan;
 
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TreeMap;
 
-import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.internal.gbptree.Hit;
-import org.neo4j.index.internal.gbptree.ValueMerger;
-import org.neo4j.index.internal.gbptree.ValueMergers;
-import org.neo4j.index.internal.gbptree.Writer;
+import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
+import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Integer.max;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
+import static org.neo4j.kernel.impl.index.labelscan.LabelScanValue.RANGE_SIZE;
 import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreIT.flipRandom;
 import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreIT.getLabels;
 import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreIT.nodesWithLabel;
@@ -56,17 +57,36 @@ public class NativeLabelScanWriterTest
     private static final Comparator<LabelScanKey> KEY_COMPARATOR = new LabelScanLayout();
 
     @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+    @Rule
+    public final TestDirectory directory = TestDirectory.testDirectory();
+    @Rule
     public final RandomRule random = new RandomRule();
 
+    private PageCache pageCache;
+    private GBPTree<LabelScanKey,LabelScanValue> tree;
+
+    @Before
+    public void openTree()
+    {
+        pageCache = pageCacheRule.getPageCache( directory.getFileSystem() );
+        tree = new GBPTreeBuilder<>( pageCache, directory.file( "file" ), new LabelScanLayout() ).build();
+    }
+
+    @After
+    public void closeTree() throws IOException
+    {
+        tree.close();
+    }
+
     @Test
-    public void shouldAddLabels() throws Exception
+    public void shouldAddAndRemoveLabels() throws Exception
     {
         // GIVEN
-        ControlledInserter inserter = new ControlledInserter();
         long[] expected = new long[NODE_COUNT];
         try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( max( 5, NODE_COUNT / 100 ), NativeLabelScanWriter.EMPTY ) )
         {
-            writer.initialize( inserter );
+            writer.initialize( tree.writer() );
 
             // WHEN
             for ( int i = 0; i < NODE_COUNT * 3; i++ )
@@ -80,7 +100,8 @@ public class NativeLabelScanWriterTest
         for ( int i = 0; i < LABEL_COUNT; i++ )
         {
             long[] expectedNodeIds = nodesWithLabel( expected, i );
-            long[] actualNodeIds = asArray( new LabelScanValueIterator( inserter.nodesFor( i ), new ArrayList<>(), NO_ID ) );
+            long[] actualNodeIds = asArray(
+                    new LabelScanValueIterator( tree.seek( new LabelScanKey( i, 0 ), new LabelScanKey( i, Long.MAX_VALUE ) ), new ArrayList<>(), NO_ID ) );
             assertArrayEquals( "For label " + i, expectedNodeIds, actualNodeIds );
         }
     }
@@ -89,11 +110,10 @@ public class NativeLabelScanWriterTest
     public void shouldNotAcceptUnsortedLabels() throws Exception
     {
         // GIVEN
-        ControlledInserter inserter = new ControlledInserter();
         boolean failed = false;
         try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( 1, NativeLabelScanWriter.EMPTY ) )
         {
-            writer.initialize( inserter );
+            writer.initialize( tree.writer() );
 
             // WHEN
             writer.write( NodeLabelUpdate.labelChanges( 0, EMPTY_LONG_ARRAY, new long[] {2, 1} ) );
@@ -110,6 +130,49 @@ public class NativeLabelScanWriterTest
         assertTrue( failed );
     }
 
+    @Test
+    public void shouldRemoveTreeEmptyTreeEntries() throws IOException
+    {
+        // given
+        int numberOfTreeEntries = 3;
+        int numberOfNodesInEach = 5;
+        int labelId = 1;
+        long[] labels = {labelId};
+        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( max( 5, NODE_COUNT / 100 ), NativeLabelScanWriter.EMPTY ) )
+        {
+            writer.initialize( tree.writer() );
+
+            // a couple of entries with a couple of entries each
+            // concept art: [xxxx          ][xxxx          ][xxxx          ] where x is used node.
+            for ( int i = 0; i < numberOfTreeEntries; i++ )
+            {
+                long baseNodeId = i * RANGE_SIZE;
+                for ( int j = 0; j < numberOfNodesInEach; j++ )
+                {
+                    writer.write( NodeLabelUpdate.labelChanges( baseNodeId + j, EMPTY_LONG_ARRAY, labels ) );
+                }
+            }
+        }
+        assertTreeHasKeysRepresentingIdRanges( setOfRange( 0, numberOfTreeEntries ) );
+
+        // when removing all the nodes from one of the tree nodes
+        int treeEntryToRemoveFrom = 1;
+        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( max( 5, NODE_COUNT / 100 ), NativeLabelScanWriter.EMPTY ) )
+        {
+            writer.initialize( tree.writer() );
+            long baseNodeId = treeEntryToRemoveFrom * RANGE_SIZE;
+            for ( int i = 0; i < numberOfNodesInEach; i++ )
+            {
+                writer.write( NodeLabelUpdate.labelChanges( baseNodeId + i, labels, EMPTY_LONG_ARRAY ) );
+            }
+        }
+
+        // then
+        MutableLongSet expected = setOfRange( 0, numberOfTreeEntries );
+        expected.remove( treeEntryToRemoveFrom );
+        assertTreeHasKeysRepresentingIdRanges( expected );
+    }
+
     private NodeLabelUpdate randomUpdate( long[] expected )
     {
         int nodeId = random.nextInt( expected.length );
@@ -124,98 +187,29 @@ public class NativeLabelScanWriterTest
         return NodeLabelUpdate.labelChanges( nodeId, before, getLabels( labels ) );
     }
 
-    private static class ControlledInserter implements Writer<LabelScanKey,LabelScanValue>
+    private void assertTreeHasKeysRepresentingIdRanges( MutableLongSet expected ) throws IOException
     {
-        private final Map<Integer,Map<LabelScanKey,LabelScanValue>> data = new HashMap<>();
-
-        @Override
-        public void close()
-        {   // Nothing to close
-        }
-
-        @Override
-        public void put( LabelScanKey key, LabelScanValue value )
+        tree.visit( new GBPTreeVisitor.Adaptor<LabelScanKey,LabelScanValue>()
         {
-            merge( key, value, ValueMergers.overwrite() );
-        }
-
-        @Override
-        public void merge( LabelScanKey key, LabelScanValue value, ValueMerger<LabelScanKey,LabelScanValue> amender )
-        {
-            // Clone since these instances are reused between calls, internally in the writer
-            key = clone( key );
-            value = clone( value );
-
-            Map<LabelScanKey,LabelScanValue> forLabel =
-                    data.computeIfAbsent( key.labelId, labelId -> new TreeMap<>( KEY_COMPARATOR ) );
-            LabelScanValue existing = forLabel.get( key );
-            if ( existing == null )
+            @Override
+            public void key( LabelScanKey labelScanKey, boolean isLeaf )
             {
-                forLabel.put( key, value );
-            }
-            else
-            {
-                amender.merge( key, key, existing, value );
-            }
-        }
-
-        @Override
-        public void mergeIfExists( LabelScanKey labelScanKey, LabelScanValue labelScanValue, ValueMerger<LabelScanKey,LabelScanValue> valueMerger )
-        {
-            throw new UnsupportedOperationException( "Should not be called" );
-        }
-
-        private static LabelScanValue clone( LabelScanValue value )
-        {
-            LabelScanValue result = new LabelScanValue();
-            result.bits = value.bits;
-            return result;
-        }
-
-        private static LabelScanKey clone( LabelScanKey key )
-        {
-            return new LabelScanKey( key.labelId, key.idRange );
-        }
-
-        @Override
-        public LabelScanValue remove( LabelScanKey key )
-        {
-            throw new UnsupportedOperationException( "Should not be called" );
-        }
-
-        @SuppressWarnings( "unchecked" )
-        RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> nodesFor( int labelId )
-        {
-            Map<LabelScanKey,LabelScanValue> forLabel = data.get( labelId );
-            if ( forLabel == null )
-            {
-                forLabel = Collections.emptyMap();
-            }
-
-            Map.Entry<LabelScanKey,LabelScanValue>[] entries = forLabel.entrySet().toArray( new Entry[0] );
-            return new RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>()
-            {
-                private int arrayIndex = -1;
-
-                @Override
-                public Hit<LabelScanKey,LabelScanValue> get()
+                if ( isLeaf )
                 {
-                    Entry<LabelScanKey,LabelScanValue> entry = entries[arrayIndex];
-                    return new MutableHit<>( entry.getKey(), entry.getValue() );
+                    assertTrue( expected.remove( labelScanKey.idRange ) );
                 }
+            }
+        } );
+        assertTrue( expected.isEmpty() );
+    }
 
-                @Override
-                public boolean next()
-                {
-                    arrayIndex++;
-                    return arrayIndex < entries.length;
-                }
-
-                @Override
-                public void close()
-                {   // Nothing to close
-                }
-            };
+    private static MutableLongSet setOfRange( long from, long to )
+    {
+        MutableLongSet set = LongSets.mutable.empty();
+        for ( long i = from; i < to; i++ )
+        {
+            set.add( i );
         }
+        return set;
     }
 }

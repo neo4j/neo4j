@@ -21,7 +21,10 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-interface GBPTreeVisitor<KEY,VALUE> extends IdProvider.IdProviderVisitor
+import org.neo4j.util.VisibleForTesting;
+
+@VisibleForTesting
+public interface GBPTreeVisitor<KEY,VALUE> extends IdProvider.IdProviderVisitor
 {
     void meta( Meta meta );
 
