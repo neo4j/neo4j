@@ -137,6 +137,7 @@ public class DatabaseRule extends ExternalResource
         Dependencies mutableDependencies = new Dependencies( otherCustomOverriddenDependencies );
 
         // Satisfy non-satisfied dependencies
+        mutableDependencies.satisfyDependency( mock( CompositeDatabaseAvailabilityGuard.class ) );
         Config config = dependency( mutableDependencies, Config.class, deps -> Config.defaults() );
         config.augment( default_schema_provider, EMPTY.getProviderDescriptor().name() );
         LogService logService = dependency( mutableDependencies, LogService.class,

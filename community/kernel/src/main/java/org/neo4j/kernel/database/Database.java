@@ -56,6 +56,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
+import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
@@ -80,7 +81,6 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
 import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitorScheduler;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -214,7 +214,6 @@ public class Database extends LifecycleAdapter
     private final DatabaseInfo databaseInfo;
     private final VersionContextSupplier versionContextSupplier;
     private final AccessCapability accessCapability;
-    private final ThreadToStatementContextBridge contextBridge;
 
     private final StorageEngineFactory storageEngineFactory;
     private StorageEngine storageEngine;
@@ -229,7 +228,7 @@ public class Database extends LifecycleAdapter
     private Monitors databaseMonitors;
     private DatabasePageCache databasePageCache;
     private CheckpointerLifecycle checkpointerLifecycle;
-    private GraphDatabaseFacade databaseFacade;
+    private final GraphDatabaseFacade databaseFacade;
 
     public Database( DatabaseCreationContext context )
     {
@@ -277,8 +276,13 @@ public class Database extends LifecycleAdapter
         this.databaseMigratorFactory = context.getDatabaseMigratorFactory();
         this.availabilityGuardFactory = context.getDatabaseAvailabilityGuardFactory();
         this.storageEngineFactory = context.getStorageEngineFactory();
-        this.contextBridge = context.getContextBridge();
         this.startTimeoutMillis = context.getStartTimeoutMillis();
+
+        //TODO: switch to local guard here when work with availability guards will be finished.
+        CompositeDatabaseAvailabilityGuard globalGuard =
+                globalDependencies.resolveDependency( CompositeDatabaseAvailabilityGuard.class );
+        CoreAPIAvailabilityGuard coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( globalGuard, startTimeoutMillis );
+        this.databaseFacade = new GraphDatabaseFacade( this, context.getContextBridge(), databaseConfig, databaseInfo, coreAPIAvailabilityGuard );
     }
 
     @Override
@@ -303,8 +307,6 @@ public class Database extends LifecycleAdapter
 
             LogFileCreationMonitor physicalLogMonitor = databaseMonitors.newMonitor( LogFileCreationMonitor.class );
 
-            CoreAPIAvailabilityGuard coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( databaseAvailabilityGuard, startTimeoutMillis );
-            databaseFacade = new GraphDatabaseFacade( this, contextBridge, databaseConfig, databaseInfo, coreAPIAvailabilityGuard );
             databaseDependencies.satisfyDependency( this );
             databaseDependencies.satisfyDependency( databaseConfig );
             databaseDependencies.satisfyDependency( databaseMonitors );
