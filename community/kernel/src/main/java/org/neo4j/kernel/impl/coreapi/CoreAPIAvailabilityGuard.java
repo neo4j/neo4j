@@ -39,11 +39,6 @@ public class CoreAPIAvailabilityGuard
         this.timeout = timeout;
     }
 
-    public boolean isAvailable( long timeoutMillis )
-    {
-        return guard.isAvailable( timeoutMillis );
-    }
-
     public void assertDatabaseAvailable()
     {
         try
