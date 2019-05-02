@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.v4_0.parser
 
 import org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.v4_0.expressions.{Parameter => Param}
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.parboiled.scala.Rule1
 
@@ -35,43 +36,59 @@ class CatalogDDLParserTest
     yields(ast.ShowUsers())
   }
 
-  test("CREATE USER foo WITH PASSWORD 'password'") {
-    yields(ast.CreateUser("foo", "password", requirePasswordChange = true, suspended = false))
+  test("CREATE USER foo SET PASSWORD 'password'") {
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = false))
   }
 
-  test("CREATE USER \"foo\" WITH PASSWORD 'password'") {
-    yields(ast.CreateUser("\"foo\"", "password", requirePasswordChange = true, suspended = false))
+  test("CREATE USER foo SET PASSWORD $password") {
+    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = false))
   }
 
-  test("CREATE USER !#\"~ WITH PASSWORD 'password'") {
-    yields(ast.CreateUser("!#\"~", "password", requirePasswordChange = true, suspended = false))
+  test("CREATE USER \"foo\" SET PASSWORD 'password'") {
+    yields(ast.CreateUser("\"foo\"", Some("password"), None, requirePasswordChange = true, suspended = false))
   }
 
-  test("CREATE USER foo WITH PASSWORD 'password' CHANGE REQUIRED") {
-    yields(ast.CreateUser("foo", "password", requirePasswordChange = true, suspended = false))
+  test("CREATE USER !#\"~ SET PASSWORD 'password'") {
+    yields(ast.CreateUser("!#\"~", Some("password"), None, requirePasswordChange = true, suspended = false))
   }
 
-  test("CREATE USER foo WITH PASSWORD 'password' CHANGE NOT REQUIRED") {
-    yields(ast.CreateUser("foo", "password", requirePasswordChange = false, suspended = false))
+  test("CREATE USER foo SET PASSWORD 'password' CHANGE REQUIRED") {
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = false))
   }
 
-  test("CREATE USER foo WITH PASSWORD 'password' WITH STATUS SUSPENDED") {
-    yields(ast.CreateUser("foo", "password", requirePasswordChange = true, suspended = true))
+  test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE REQUIRED") {
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = false))
   }
 
-  test("CREATE USER foo WITH PASSWORD 'password' WITH STATUS ACTIVE") {
-    yields(ast.CreateUser("foo", "password", requirePasswordChange = true, suspended = false))
+  test("CREATE USER foo SET PASSWORD 'password' CHANGE NOT REQUIRED") {
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = false, suspended = false))
+  }
+
+  test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE NOT REQUIRED") {
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = false, suspended = false))
+  }
+
+  test("CREATE USER foo SET PASSWORD 'password' SET STATUS SUSPENDED") {
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = true))
+  }
+
+  test("CREATE USER foo SET PASSWORD 'password' SET STATUS ACTIVE") {
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = false))
+  }
+
+  test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED") {
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = false, suspended = true))
   }
 
   test("CREATE USER foo") {
     failsToParse
   }
 
-  test("CREATE USER fo,o WITH PASSWORD 'password'") {
+  test("CREATE USER fo,o SET PASSWORD 'password'") {
     failsToParse
   }
 
-  test("CREATE USER f:oo WITH PASSWORD 'password'") {
+  test("CREATE USER f:oo SET PASSWORD 'password'") {
     failsToParse
   }
 
@@ -79,7 +96,7 @@ class CatalogDDLParserTest
     failsToParse
   }
 
-  test("CREATE USER foo WITH PASSWORD 'password' WITH STAUS ACTIVE") {
+  test("CREATE USER foo SET PASSWORD 'password' WITH STAUS ACTIVE") {
     failsToParse
   }
 

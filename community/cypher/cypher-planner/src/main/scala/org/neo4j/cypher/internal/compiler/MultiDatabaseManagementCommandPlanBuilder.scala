@@ -48,8 +48,8 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
         Some(plans.ShowUsers())
 
       // CREATE USER foo
-      case CreateUser(userName, initialPassword, requirePasswordChange, suspended) =>
-        Some(plans.CreateUser(userName, initialPassword, requirePasswordChange, suspended))
+      case user@CreateUser(userName, _, _, requirePasswordChange, suspended) =>
+        Some(plans.CreateUser(userName, user.initialPassword, requirePasswordChange, suspended))
 
       // SHOW [ ALL | POPULATED ] ROLES [ WITH USERS ]
       case ShowRoles(withUsers, showAll) =>

@@ -70,9 +70,9 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case x: ShowUsers =>
       s"${x.name}"
 
-    case x @ CreateUser(userName, initialPassword, requirePasswordChange, suspended) =>
+    case x @ CreateUser(userName, _, _, requirePasswordChange, suspended) =>
       //TODO write out password??
-      val passwordString = s"WITH PASSWORD $initialPassword CHANGE ${if (!requirePasswordChange) "NOT" else ""} REQUIRED"
+      val passwordString = s"WITH PASSWORD ${x.initialPassword} CHANGE ${if (!requirePasswordChange) "NOT" else ""} REQUIRED"
       val statusString = s"WITH STATUS ${if (suspended) "SUSPENDED" else "ACTIVE"}"
       s"${x.name} $userName $passwordString $statusString"
 

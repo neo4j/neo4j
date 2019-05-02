@@ -50,9 +50,18 @@ final case class ShowUsers()(val position: InputPosition) extends MultiDatabaseD
       SemanticState.recordCurrentScope(this)
 }
 
-final case class CreateUser(userName: String, initialPassword: String, requirePasswordChange: Boolean, suspended: Boolean)(val position: InputPosition) extends MultiDatabaseDDL {
+final case class CreateUser(userName: String,
+                            private val initialStringPassword: Option[String],
+                            private val initialParameterPassword: Option[Parameter],
+                            requirePasswordChange: Boolean,
+                            suspended: Boolean)(val position: InputPosition) extends MultiDatabaseDDL {
 // TODO should initial password be kept as a clear text string??
   UserNameValidator.assertValidUsername(userName)
+  assert(initialStringPassword.isDefined || initialParameterPassword.isDefined)
+  assert(!(initialStringPassword.isDefined && initialParameterPassword.isDefined))
+
+  //TODO fix correct parameter password
+  val initialPassword: String = initialStringPassword.getOrElse(initialParameterPassword.get.asCanonicalStringVal)
 
   override def name = "CATALOG CREATE USER"
 

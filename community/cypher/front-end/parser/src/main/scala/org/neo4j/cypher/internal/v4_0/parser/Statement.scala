@@ -26,11 +26,15 @@ trait Statement extends Parser
   with Base {
 
   def Statement: Rule1[ast.Statement] = rule(
-    CatalogCommand | SecurityCommand | Command | Query
+    MultiDatabaseCommand | CatalogCommand | SecurityCommand | Command | Query
   )
 
   def CatalogCommand: Rule1[CatalogDDL] = rule("Catalog DDL statement") {
-    ShowDatabase | ShowDatabases | CreateDatabase | DropDatabase | StartDatabase | StopDatabase | CreateGraph | DropGraph | CreateView | DropView
+    CreateGraph | DropGraph | CreateView | DropView
+  }
+
+  def MultiDatabaseCommand: Rule1[CatalogDDL] = rule("Catalog DDL statement") {
+    optional(keyword("CATALOG")) ~~ (ShowDatabase | ShowDatabases | CreateDatabase | DropDatabase | StartDatabase | StopDatabase)
   }
 
   def SecurityCommand: Rule1[CatalogDDL] = rule("Security DDL statement") {
@@ -41,28 +45,40 @@ trait Statement extends Parser
     keyword("SHOW USERS") ~>>> (_=> ast.ShowUsers())
   }
 
-  def CreateUser: Rule1[CreateUser] = rule("CATALOG CREATE USER") { //TODO should SUSPENDED or ACTIVE be default?
+  def CreateUser: Rule1[CreateUser] = rule("CATALOG CREATE USER") {
     // CREATE USER username WITH PASSWORD stringLiteralPassword CHANGE NOT REQUIRED WITH STATUS SUSPENDED
     group(keyword("CREATE USER") ~~ UserNameString) ~~
-    group(keyword("WITH") ~~ keyword("PASSWORD") ~~ StringLiteral ~~ "CHANGE" ~~ "NOT" ~~ "REQUIRED") ~~
-    group(keyword("WITH") ~~ keyword("STATUS") ~~ "SUSPENDED") ~~>>
-    ((userName, initialPassword) => ast.CreateUser(userName, initialPassword.value, requirePasswordChange = false, suspended = true)) |
+    group(keyword("SET PASSWORD") ~~ StringLiteral ~~ optional(keyword("SET PASSWORD")) ~~ "CHANGE" ~~ "NOT" ~~ "REQUIRED") ~~
+    group(keyword("SET STATUS") ~~ "SUSPENDED") ~~>>
+      ((userName, initialPassword) => ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange = false, suspended = true)) |
     // CREATE USER username WITH PASSWORD stringLiteralPassword CHANGE NOT REQUIRED [ WITH STATUS ACTIVE ]
     group(keyword("CREATE USER") ~~ UserNameString) ~~
-    group(keyword("WITH") ~~ keyword("PASSWORD") ~~ StringLiteral ~~ "CHANGE" ~~ "NOT" ~~ "REQUIRED") ~~
-    optional(group(keyword("WITH") ~~ keyword("STATUS") ~~ "ACTIVE")) ~~>>
-    ((userName, initialPassword) => ast.CreateUser(userName, initialPassword.value, requirePasswordChange = false, suspended = false)) |
+    group(keyword("SET PASSWORD") ~~ StringLiteral ~~ optional(keyword("SET PASSWORD")) ~~ "CHANGE" ~~ "NOT" ~~ "REQUIRED") ~~
+    optional(group(keyword("SET STATUS") ~~ "ACTIVE")) ~~>>
+      ((userName, initialPassword) => ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange = false, suspended = false)) |
     // CREATE USER username WITH PASSWORD stringLiteralPassword [ CHANGE REQUIRED ] WITH STATUS SUSPENDED
     group(keyword("CREATE USER") ~~ UserNameString) ~~
-    group(keyword("WITH") ~~ keyword("PASSWORD") ~~ StringLiteral ~~ optional("CHANGE" ~~ "REQUIRED")) ~~
-    group(keyword("WITH") ~~ keyword("STATUS") ~~ "SUSPENDED") ~~>>
-      ((userName, initialPassword) => ast.CreateUser(userName, initialPassword.value, requirePasswordChange = true, suspended = true)) |
+    group(keyword("SET PASSWORD") ~~ StringLiteral ~~ optional(optional(keyword("SET PASSWORD")) ~~ "CHANGE" ~~ "REQUIRED")) ~~
+    group(keyword("SET STATUS") ~~ "SUSPENDED") ~~>>
+      ((userName, initialPassword) => ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange = true, suspended = true)) |
     // CREATE USER username WITH PASSWORD stringLiteralPassword [ CHANGE REQUIRED ] [ WITH STATUS ACTIVE ]
     group(keyword("CREATE USER") ~~ UserNameString) ~~
-    group(keyword("WITH") ~~ keyword("PASSWORD") ~~ StringLiteral ~~ optional("CHANGE" ~~ "REQUIRED")) ~~
-    optional(group(keyword("WITH") ~~ keyword("STATUS") ~~ "ACTIVE")) ~~>>
-      ((userName, initialPassword) => ast.CreateUser(userName, initialPassword.value, requirePasswordChange = true, suspended = false))
-}
+    group(keyword("SET PASSWORD") ~~ StringLiteral ~~ optional(optional(keyword("SET PASSWORD")) ~~ "CHANGE" ~~ "REQUIRED")) ~~
+    optional(group(keyword("SET STATUS") ~~ "ACTIVE")) ~~>>
+      ((userName, initialPassword) => ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange = true, suspended = false))
+    //
+    //
+    //
+    //
+    //
+    // TODO accept password from parameter
+    // CREATE USER username WITH PASSWORD parameterPassword [ CHANGE REQUIRED ] [ WITH STATUS ACTIVE ]
+//    group(keyword("CREATE USER") ~~ UserNameString ~~
+//      keyword("SET") ~~ keyword("PASSWORD") ~~ Parameter ~~ optional("CHANGE" ~~ "REQUIRED")) ~~
+//      optional(group(keyword("SET") ~~ keyword("STATUS") ~~ "ACTIVE")) ~~>>
+//      ((userName, initialPassword) => ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange = true, suspended = false))
+    //
+  }
 
   def ShowRoles: Rule1[ShowRoles] = rule("CATALOG SHOW ROLES") {
     //SHOW [ ALL | POPULATED ] ROLES WITH USERS
@@ -91,27 +107,27 @@ trait Statement extends Parser
   }
 
   def ShowDatabase: Rule1[ShowDatabase] = rule("CATALOG SHOW DATABASE") {
-    group(optional(keyword("CATALOG")) ~~ keyword("SHOW DATABASE") ~~ DatabaseNameString) ~~>> (ast.ShowDatabase(_))
+    group(keyword("SHOW DATABASE") ~~ DatabaseNameString) ~~>> (ast.ShowDatabase(_))
   }
 
   def ShowDatabases: Rule1[ShowDatabases] = rule("CATALOG SHOW DATABASES") {
-    group(optional(keyword("CATALOG")) ~~ keyword("SHOW DATABASES")) ~>>> (_=> ast.ShowDatabases())
+    keyword("SHOW DATABASES") ~>>> (_=> ast.ShowDatabases())
   }
 
   def CreateDatabase: Rule1[CreateDatabase] = rule("CATALOG CREATE DATABASE") {
-    group(optional(keyword("CATALOG")) ~~ keyword("CREATE DATABASE") ~~ DatabaseNameString) ~~>> (ast.CreateDatabase(_))
+    group(keyword("CREATE DATABASE") ~~ DatabaseNameString) ~~>> (ast.CreateDatabase(_))
   }
 
   def DropDatabase: Rule1[DropDatabase] = rule("CATALOG DROP DATABASE") {
-    group(optional(keyword("CATALOG")) ~~ keyword("DROP DATABASE") ~~ DatabaseNameString) ~~>> (ast.DropDatabase(_))
+    group(keyword("DROP DATABASE") ~~ DatabaseNameString) ~~>> (ast.DropDatabase(_))
   }
 
   def StartDatabase: Rule1[StartDatabase] = rule("CATALOG START DATABASE") {
-    group(optional(keyword("CATALOG")) ~~ keyword("START DATABASE") ~~ DatabaseNameString) ~~>> (ast.StartDatabase(_))
+    group(keyword("START DATABASE") ~~ DatabaseNameString) ~~>> (ast.StartDatabase(_))
   }
 
   def StopDatabase: Rule1[StopDatabase] = rule("CATALOG STOP DATABASE") {
-    group(optional(keyword("CATALOG")) ~~ keyword("STOP DATABASE") ~~ DatabaseNameString) ~~>> (ast.StopDatabase(_))
+    group(keyword("STOP DATABASE") ~~ DatabaseNameString) ~~>> (ast.StopDatabase(_))
   }
 
   def CreateGraph: Rule1[CreateGraph] = rule("CATALOG CREATE GRAPH") {
