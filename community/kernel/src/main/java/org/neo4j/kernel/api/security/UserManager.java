@@ -49,6 +49,11 @@ public interface UserManager
     void setUserPassword( String username, byte[] password, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException;
 
+    /**
+     * NOTE: The initialPassword byte array will be cleared (overwritten with zeroes)
+     */
+    String getCredentialsForPassword( byte[] initialPassword ) throws InvalidArgumentsException, IOException;
+
     Set<String> getAllUsernames();
 
     UserManager NO_AUTH = new UserManager()
@@ -88,6 +93,16 @@ public interface UserManager
             {
                 Arrays.fill( password, (byte) 0 );
             }
+        }
+
+        @Override
+        public String getCredentialsForPassword( byte[] initialPassword )
+        {
+            if ( initialPassword != null )
+            {
+                Arrays.fill( initialPassword, (byte) 0 );
+            }
+            return null;
         }
 
         @Override

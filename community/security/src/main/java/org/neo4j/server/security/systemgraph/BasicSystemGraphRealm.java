@@ -333,6 +333,24 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
     }
 
     @Override
+    public String getCredentialsForPassword( byte[] initialPassword ) throws InvalidArgumentsException
+    {
+        try
+        {
+            passwordPolicy.validatePassword( initialPassword );
+            return SystemGraphCredential.serialize( SystemGraphCredential.createCredentialForPassword( initialPassword, secureHasher ) );
+        }
+        finally
+        {
+            // Clear password
+            if ( initialPassword != null )
+            {
+                Arrays.fill( initialPassword, (byte) 0 );
+            }
+        }
+    }
+
+    @Override
     public Set<String> getAllUsernames()
     {
         return basicSystemGraphOperations.getAllUsernames();
