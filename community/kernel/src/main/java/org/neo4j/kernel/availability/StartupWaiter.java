@@ -27,6 +27,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * This helps users who expect to be able to access the instance after
  * the constructor is run.
  */
+// TODO: do we still need it?
 public class StartupWaiter extends LifecycleAdapter
 {
     private final AvailabilityGuard availabilityGuard;

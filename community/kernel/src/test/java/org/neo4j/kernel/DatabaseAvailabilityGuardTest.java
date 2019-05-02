@@ -32,7 +32,6 @@ import org.neo4j.kernel.availability.AvailabilityRequirement;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DescriptiveAvailabilityRequirement;
-import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -40,10 +39,8 @@ import org.neo4j.time.Clocks;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
@@ -52,7 +49,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.logging.NullLog.getInstance;
 
 class DatabaseAvailabilityGuardTest
 {
@@ -289,7 +285,7 @@ class DatabaseAvailabilityGuardTest
     void givenAccessGuardWithConditionWhenShutdownThenInstantlyDenyAccess()
     {
         // Given
-        Clock clock = Mockito.mock( Clock.class );
+        Clock clock = mock( Clock.class );
         final DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, NullLog.getInstance() );
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
 
@@ -316,25 +312,9 @@ class DatabaseAvailabilityGuardTest
         assertThat( databaseAvailabilityGuard.describe(), equalTo( "2 reasons for blocking: Requirement 1, Requirement 2." ) );
     }
 
-    @Test
-    void shouldExplainBlockersOnCheckAvailable() throws Exception
-    {
-        // GIVEN
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( Clocks.systemClock(), getInstance() );
-        // At this point it should be available
-        databaseAvailabilityGuard.checkAvailable();
-
-        // WHEN
-        databaseAvailabilityGuard.require( REQUIREMENT_1 );
-
-        // THEN
-        UnavailableException unavailableException = assertThrows( UnavailableException.class, databaseAvailabilityGuard::checkAvailable );
-        assertThat( unavailableException.getMessage(), containsString( REQUIREMENT_1.description() ) );
-    }
-
     private static void verifyLogging( Log log, VerificationMode mode )
     {
-        verify( log, mode ).info( anyString(), Mockito.<Object[]>anyVararg() );
+        verify( log, mode ).info( anyString(), Mockito.<Object[]>any() );
     }
 
     private static DatabaseAvailabilityGuard getDatabaseAvailabilityGuard( Clock clock, Log log )

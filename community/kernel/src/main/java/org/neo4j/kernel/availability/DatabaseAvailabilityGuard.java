@@ -141,12 +141,6 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     }
 
     @Override
-    public void checkAvailable() throws UnavailableException
-    {
-        await( 0 );
-    }
-
-    @Override
     public void await( long millis ) throws UnavailableException
     {
         Availability availability = availability( millis );

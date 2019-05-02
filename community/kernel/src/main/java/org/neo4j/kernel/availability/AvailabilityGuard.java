@@ -63,14 +63,6 @@ public interface AvailabilityGuard
     boolean isAvailable( long millis );
 
     /**
-     * Checks if available. If not then an {@link UnavailableException} is thrown describing why.
-     * This methods doesn't wait like {@link #await(long)} does.
-     *
-     * @throws UnavailableException if not available.
-     */
-    void checkAvailable() throws UnavailableException;
-
-    /**
      * Await the database becoming available.
      *
      * @param millis to wait for availability

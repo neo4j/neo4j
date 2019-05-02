@@ -115,19 +115,6 @@ public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter impleme
     }
 
     @Override
-    public void checkAvailable() throws UnavailableException
-    {
-        for ( DatabaseAvailabilityGuard guard : guards )
-        {
-            guard.checkAvailable();
-        }
-        if ( !started )
-        {
-            throw new UnavailableException( getUnavailableMessage() );
-        }
-    }
-
-    @Override
     public void await( long millis ) throws UnavailableException
     {
         long totalWait = 0;
