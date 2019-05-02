@@ -22,20 +22,19 @@ package org.neo4j.test.extension;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 class IncorrectThreadLeakage
 {
 
     private static Thread thread;
-    private static AtomicBoolean stop = new AtomicBoolean( false );
+    private static volatile boolean stop;
 
     @Test
     void leakThreads()
     {
         thread = new Thread( () ->
         {
-            while ( !stop.get() )
+            while ( !stop )
             {
                 try
                 {
@@ -53,7 +52,26 @@ class IncorrectThreadLeakage
 
     public static void cleanUp() throws InterruptedException
     {
-        stop.set( true );
+        stop = true;
+        thread.join();
+    }
+
+    @Test
+    void leakNoThreads() throws InterruptedException
+    {
+        Thread thread = new Thread( () ->
+        {
+            try
+            {
+                TimeUnit.SECONDS.sleep( 1 );
+            }
+            catch ( InterruptedException e )
+            {
+                throw new RuntimeException( e );
+            }
+        } );
+        thread.setName( "Not a leaked thread" );
+        thread.start();
         thread.join();
     }
 }

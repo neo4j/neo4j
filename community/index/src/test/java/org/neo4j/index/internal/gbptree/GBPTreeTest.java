@@ -1681,34 +1681,44 @@ class GBPTreeTest
             {
                 // When seek end up in this corrupt child we should eventually fail with a tree inconsistency exception
                 // even if we have multiple seeker that traverse different part of the tree and both get stuck in start from root loop.
-                ExecutorService executor = Executors.newFixedThreadPool( 2 );
-                CountDownLatch go = new CountDownLatch( 2 );
-                Future<Object> execute1 = executor.submit( () ->
+                ExecutorService executor = null;
+                try
                 {
-                    go.countDown();
-                    go.await();
-                    try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ) ) )
+                    executor = Executors.newFixedThreadPool( 2 );
+                    CountDownLatch go = new CountDownLatch( 2 );
+                    Future<Object> execute1 = executor.submit( () ->
                     {
-                        seek.next();
-                    }
-                    return null;
-                } );
+                        go.countDown();
+                        go.await();
+                        try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ) ) )
+                        {
+                            seek.next();
+                        }
+                        return null;
+                    } );
 
-                Future<Object> execute2 = executor.submit( () ->
+                    Future<Object> execute2 = executor.submit( () ->
+                    {
+                        go.countDown();
+                        go.await();
+                        try ( Seeker<MutableLong,MutableLong> seek = tree
+                                .seek( new MutableLong( MAX_VALUE ), new MutableLong( MAX_VALUE ) ) )
+                        {
+                            seek.next();
+                        }
+                        return null;
+                    } );
+
+                    assertFutureFailsWithTreeInconsistencyException( execute1 );
+                    assertFutureFailsWithTreeInconsistencyException( execute2 );
+                }
+                finally
                 {
-                    go.countDown();
-                    go.await();
-                    try ( Seeker<MutableLong,MutableLong> seek = tree
-                            .seek( new MutableLong( MAX_VALUE ), new MutableLong( MAX_VALUE ) ) )
+                    if ( executor != null )
                     {
-                        seek.next();
+                        executor.shutdown();
                     }
-                    return null;
-                } );
-
-                assertFutureFailsWithTreeInconsistencyException( execute1 );
-                assertFutureFailsWithTreeInconsistencyException( execute2 );
-                executor.shutdown();
+                }
             } );
         }
     }

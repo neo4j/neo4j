@@ -53,22 +53,32 @@ class LatchMapTest
         AtomicReference<Thread> threadRef = new AtomicReference<>();
         BinaryLatch latch = latches.takeOrAwaitLatch( 42 );
         assertThat( latch, is( notNullValue() ) );
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Future<BinaryLatch> future = executor.submit( () ->
+        ExecutorService executor = null;
+        try
         {
-            threadRef.set( Thread.currentThread() );
-            return latches.takeOrAwaitLatch( 42 );
-        } );
-        Thread th;
-        do
-        {
-            th = threadRef.get();
+            executor = Executors.newSingleThreadExecutor();
+            Future<BinaryLatch> future = executor.submit( () ->
+            {
+                threadRef.set( Thread.currentThread() );
+                return latches.takeOrAwaitLatch( 42 );
+            } );
+            Thread th;
+            do
+            {
+                th = threadRef.get();
+            }
+            while ( th == null );
+            ThreadTestUtils.awaitThreadState( th, 10_000, Thread.State.WAITING );
+            latch.release();
+            assertThat( future.get( 1, TimeUnit.SECONDS ), is( nullValue() ) );
         }
-        while ( th == null );
-        ThreadTestUtils.awaitThreadState( th, 10_000, Thread.State.WAITING );
-        latch.release();
-        assertThat( future.get( 1, TimeUnit.SECONDS ), is( nullValue() ) );
-        executor.shutdown();
+        finally
+        {
+            if ( executor != null )
+            {
+                executor.shutdown();
+            }
+        }
     }
 
     @Test
@@ -76,11 +86,21 @@ class LatchMapTest
     {
         BinaryLatch latch = latches.takeOrAwaitLatch( 42 );
         assertThat( latch, is( notNullValue() ) );
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Future<BinaryLatch> future = executor.submit( () -> latches.takeOrAwaitLatch( 33 ) );
-        assertThat( future.get( 1, TimeUnit.SECONDS ), is( notNullValue() ) );
-        latch.release();
-        executor.shutdown();
+        ExecutorService executor = null;
+        try
+        {
+            executor = Executors.newSingleThreadExecutor();
+            Future<BinaryLatch> future = executor.submit( () -> latches.takeOrAwaitLatch( 33 ) );
+            assertThat( future.get( 1, TimeUnit.SECONDS ), is( notNullValue() ) );
+            latch.release();
+        }
+        finally
+        {
+            if ( executor != null )
+            {
+                executor.shutdown();
+            }
+        }
     }
 
     @Test

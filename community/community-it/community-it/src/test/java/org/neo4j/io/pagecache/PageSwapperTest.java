@@ -787,24 +787,34 @@ public abstract class PageSwapperTest
         };
 
         int threads = 8;
-        ExecutorService executor = Executors.newFixedThreadPool( threads, r ->
+        ExecutorService executor = null;
+        try
         {
-            Thread thread = Executors.defaultThreadFactory().newThread( r );
-            thread.setDaemon( true );
-            return thread;
-        } );
-        List<Future<Void>> futures = new ArrayList<>( threads );
-        for ( int i = 0; i < threads; i++ )
-        {
-            futures.add( executor.submit( work ) );
-        }
+            executor = Executors.newFixedThreadPool( threads, r ->
+            {
+                Thread thread = Executors.defaultThreadFactory().newThread( r );
+                thread.setDaemon( true );
+                return thread;
+            } );
+            List<Future<Void>> futures = new ArrayList<>( threads );
+            for ( int i = 0; i < threads; i++ )
+            {
+                futures.add( executor.submit( work ) );
+            }
 
-        startLatch.countDown();
-        for ( Future<Void> future : futures )
-        {
-            future.get();
+            startLatch.countDown();
+            for ( Future<Void> future : futures )
+            {
+                future.get();
+            }
         }
-        executor.shutdown();
+        finally
+        {
+            if ( executor != null )
+            {
+                executor.shutdown();
+            }
+        }
     }
 
     @Test

@@ -29,19 +29,32 @@ import org.junit.platform.commons.util.ExceptionUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
+import static java.util.Arrays.stream;
 
 public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllCallback
 {
     private static final String KEY = "ThreadLeakageExtension";
     private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create( KEY );
     private final StacktraceHolderException stacktraceHolderException = new StacktraceHolderException();
+    private static final List<String> THREAD_NAME_FILTER = Arrays.asList(
+            "ForkJoinPool",
+            "Cleaner",
+            "PageCacheRule",        //Ignoring page cache
+            "MuninnPageCache",      //Ignoring page cache
+            "Attach Listener",      //IDE thread
+            "process reaper",       //Unix system thread
+            "neo4j.BoltNetworkIO",  //Bolt threads use non-blocking exit
+            "globalEventExecutor",  //related to Bolt threads
+            "HttpClient",           //same as bolt, non-blocking exit
+            "Keep-Alive-Timer"      //JVM thread for http-connections
+    );
 
     @Override
     public void afterAll( ExtensionContext context ) throws Exception
@@ -53,8 +66,8 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
 
         List<String> leakedThreads = new ArrayList<>();
 
-        final StringSet startupThreads = getStore( context ).remove( KEY, StringSet.class );
-        for ( Thread thread : getActiveThreads( getUserFilter( context ) ) )
+        final ThreadNamesCollection startupThreads = getStore( context ).remove( KEY, ThreadNamesCollection.class );
+        getActiveThreads().forEach( ( Thread thread ) ->
         {
             if ( !startupThreads.contains( getThreadID( thread ) ) )
             {
@@ -64,7 +77,7 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
                         getThreadGroupName( thread ),
                         StacktraceToString( thread.getStackTrace() ) ) );
             }
-        }
+        } );
 
         if ( !leakedThreads.isEmpty() )
         {
@@ -82,34 +95,19 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
             return;
         }
 
-        Set<String> startupThreads = new StringSet();
-        getActiveThreads( getUserFilter( context )).forEach( ( Thread thread ) ->
-        {
-            startupThreads.add( getThreadID( thread ) );
-        } );
+        Set<String> startupThreads = getActiveThreads().stream()
+                .map( ThreadLeakageGuardExtension::getThreadID )
+                .collect( Collectors.toCollection( ThreadNamesCollection::new ));
+
         getStore( context ).put( KEY, startupThreads );
     }
 
-    private boolean skipThreadLeakageGuard( ExtensionContext context )
+    private static boolean skipThreadLeakageGuard( ExtensionContext context )
     {
-        Optional<SkipThreadLeakageGuard> annotation = AnnotationSupport.findAnnotation( context.getRequiredTestClass(), SkipThreadLeakageGuard.class );
-        if ( annotation.isPresent() )
-        {
-            String[] filter = annotation.get().filter();
-            return filter.length == 0;
-        }
-        return false;
+        return AnnotationSupport.isAnnotated( context.getRequiredTestClass(), SkipThreadLeakageGuard.class );
     }
 
-    private Collection<String> getUserFilter( ExtensionContext context )
-    {
-        Collection<String> filter = new ArrayList<>(  );
-        Optional<SkipThreadLeakageGuard> annotation = AnnotationSupport.findAnnotation( context.getRequiredTestClass(), SkipThreadLeakageGuard.class );
-        annotation.ifPresent( skipThreadLeakageGuard -> filter.addAll( Arrays.asList( skipThreadLeakageGuard.filter() ) ) );
-        return filter;
-    }
-
-    private Collection<Thread> getActiveThreads( Collection<String> userFilter )
+    private static Collection<Thread> getActiveThreads()
     {
         ThreadGroup root = Thread.currentThread().getThreadGroup();
         while ( root.getParent() != null )
@@ -126,44 +124,26 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
         }
         while ( numThreads >= threads.length );
 
-        Set<Thread> threadCollection = new HashSet<>();
-        Collections.addAll( threadCollection, threads );
-        threadCollection.remove( null );
-        threadCollection.removeIf( ( Thread t ) -> !t.isAlive() );
-
-        List<String> filter = new ArrayList<>( Arrays.asList(
-                "ForkJoinPool",
-                "Cleaner",
-                "PageCacheRule",        //Ignoring page cache
-                "MuninnPageCache",      //Ignoring page cache
-                "Attach Listener",      //IDE thread
-                "process reaper",       //Unix system thread
-                "neo4j.BoltNetworkIO",  //Bolt threads use non-blocking exit
-                "globalEventExecutor",  //related to Bolt threads
-                "HttpClient",           //same as bolt, non-blocking exit
-                "Keep-Alive-Timer"      //JVM thread for http-connections
-                ) );
-        filter.addAll( userFilter );
-        filter.forEach( ( String prefix ) ->
-        {
-            threadCollection.removeIf( ( Thread t ) -> t.getName().startsWith( prefix ) );
-        } );
-        return threadCollection;
+        return stream( threads )
+                .filter( Objects::nonNull )
+                .filter( Thread::isAlive )
+                .filter( thread -> THREAD_NAME_FILTER.stream().noneMatch( prefix -> thread.getName().startsWith( prefix ) ) )
+                .collect( Collectors.toSet() );
     }
 
-    private String getThreadID( Thread thread )
+    private static String getThreadID( Thread thread )
     {
         return format( "%s-%d-%s", thread.getName(), thread.getId(), getThreadGroupName( thread ) );
     }
 
-    private String getThreadGroupName( Thread thread )
+    private static String getThreadGroupName( Thread thread )
     {
         ThreadGroup group = thread.getThreadGroup();
         return group != null ? group.getName() : "unknown group";
 
     }
 
-    private ExtensionContext.Store getStore( ExtensionContext context )
+    private static ExtensionContext.Store getStore( ExtensionContext context )
     {
         return context.getStore( NAMESPACE );
     }
@@ -190,7 +170,7 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
         }
     }
 
-    private static class StringSet extends HashSet<String>
+    private static class ThreadNamesCollection extends HashSet<String>
     {
 
     }

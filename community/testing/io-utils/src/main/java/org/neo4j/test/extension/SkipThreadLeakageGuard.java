@@ -28,10 +28,8 @@ import java.lang.annotation.Target;
 @Retention( RetentionPolicy.RUNTIME )
 /**
  * Skips the ThreadLeakageGuard on a specific class.
- * Optionally: Add filter (prefix on thread names) to only allow leakage on specific threads.
  */
 public @interface SkipThreadLeakageGuard
 {
-    String[] filter() default {};
 }
 
