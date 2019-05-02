@@ -65,7 +65,7 @@ class NeoStoreOpenFailureTest
         StoreType[] storeTypes = StoreType.values();
         OpenOption[] openOptions = new OpenOption[0];
         NeoStores neoStores = new NeoStores(
-                databaseLayout, config, idGenFactory, pageCache, logProvider, formats, create, storeTypes,
+                fileSystem, databaseLayout, config, idGenFactory, pageCache, logProvider, formats, create, storeTypes,
                 openOptions );
         File schemaStore = neoStores.getSchemaStore().getStorageFile();
         neoStores.close();
@@ -77,7 +77,7 @@ class NeoStoreOpenFailureTest
         assertThrows( RuntimeException.class, () ->
                 // This should fail due to the permissions we changed above.
                 // And when it fails, the already-opened stores should be closed.
-                new NeoStores( databaseLayout, config, idGenFactory, pageCache, logProvider, formats, create, storeTypes, openOptions ) );
+                new NeoStores( fileSystem, databaseLayout, config, idGenFactory, pageCache, logProvider, formats, create, storeTypes, openOptions ) );
 
         // We verify that the successfully opened stores were closed again by the failed NeoStores open,
         // by closing the page cache, which will throw if not all files have been unmapped.

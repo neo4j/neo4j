@@ -122,7 +122,7 @@ public class StoreFactory
                         "Could not create database directory: " + databaseLayout.databaseDirectory(), e );
             }
         }
-        return new NeoStores( databaseLayout, config, idGeneratorFactory, pageCache, logProvider, recordFormats, createStoreIfNotExists, storeTypes,
-                openOptions );
+        return new NeoStores( fileSystemAbstraction, databaseLayout, config, idGeneratorFactory, pageCache, logProvider, recordFormats, createStoreIfNotExists,
+                storeTypes, openOptions );
     }
 }

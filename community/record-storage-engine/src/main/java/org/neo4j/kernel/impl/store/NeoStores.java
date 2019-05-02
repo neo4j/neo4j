@@ -36,6 +36,7 @@ import org.neo4j.internal.helpers.collection.IteratorWrapper;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -93,6 +94,7 @@ public class NeoStores implements AutoCloseable
         }
     };
 
+    private final FileSystemAbstraction fileSystem;
     private final DatabaseLayout layout;
     private final Config config;
     private final IdGeneratorFactory idGeneratorFactory;
@@ -106,6 +108,7 @@ public class NeoStores implements AutoCloseable
     private final OpenOption[] openOptions;
 
     NeoStores(
+            FileSystemAbstraction fileSystem,
             DatabaseLayout layout,
             Config config,
             IdGeneratorFactory idGeneratorFactory,
@@ -116,6 +119,7 @@ public class NeoStores implements AutoCloseable
             StoreType[] storeTypes,
             OpenOption[] openOptions )
     {
+        this.fileSystem = fileSystem;
         this.layout = layout;
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
@@ -179,6 +183,12 @@ public class NeoStores implements AutoCloseable
     {
         String expectedStoreVersion = recordFormats.storeVersion();
         long existingFormat;
+        if ( !fileSystem.fileExists( layout.metadataStore() ) )
+        {
+            // If the meta data store doesn't even exist then look no further, there's nothing to verify
+            return;
+        }
+
         if ( contains( storeTypes, StoreType.META_DATA ) )
         {
             // We're going to open this store anyway so might as well do it here, like we open the others
@@ -196,9 +206,7 @@ public class NeoStores implements AutoCloseable
             }
             catch ( NoSuchFileException e )
             {
-                // Occurs when there is no file, which is obviously when creating a store.
-                // Caught as an exception because we want to leave as much interaction with files as possible
-                // to the page cache.
+                // Weird that the file isn't here after we passed the exists check above. Regardless, treat this the same way as above.
                 return;
             }
             catch ( IOException e )
