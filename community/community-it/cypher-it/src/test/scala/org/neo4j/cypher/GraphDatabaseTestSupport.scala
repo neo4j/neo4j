@@ -35,6 +35,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.InwardKernel
 import org.neo4j.kernel.api.procedure.{CallableProcedure, CallableUserAggregationFunction, CallableUserFunction, GlobalProcedures}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.logging.{LogProvider, NullLogProvider}
 import org.neo4j.monitoring.Monitors
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -52,13 +53,15 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   def databaseConfig(): Map[Setting[_],String] = Map()
 
+  def logProvider: LogProvider = NullLogProvider.getInstance()
+
   override protected def initTest() {
     super.initTest()
     startGraphDatabase()
   }
 
   protected def startGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): Unit = {
-    managementService = graphDatabaseFactory(new File("test")).impermanent().setConfig(config.asJava).build()
+    managementService = graphDatabaseFactory(new File("test")).impermanent().setConfig(config.asJava).setInternalLogProvider(logProvider).build()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
   }
