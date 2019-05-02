@@ -37,6 +37,7 @@ public abstract class NaiveQuerySubscription implements RuntimeResult
     private List<AnyValue[]> materializedResult;
     private final QuerySubscriber subscriber;
     private Exception error;
+    private boolean cancelled;
 
     protected NaiveQuerySubscription( QuerySubscriber subscriber )
     {
@@ -61,7 +62,7 @@ public abstract class NaiveQuerySubscription implements RuntimeResult
     @Override
     public void cancel()
     {
-        //do nothing
+        cancelled = true;
     }
 
     @Override
@@ -109,6 +110,6 @@ public abstract class NaiveQuerySubscription implements RuntimeResult
                 subscriber.onResultCompleted( queryStatistics() );
             }
         }
-        return hasMore;
+        return hasMore && !cancelled;
     }
 }

@@ -170,7 +170,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   val NO_INPUT = new InputValues
 
-  def inputValues(rows: Array[_]*): InputValues =
+  def inputValues(rows: Array[Any]*): InputValues =
     new InputValues().and(rows: _*)
 
   def batchedInputValues(batchSize: Int, rows: Array[Any]*): InputValues = {
@@ -190,20 +190,17 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   }
 
   class InputValues() {
-    val batches = new ArrayBuffer[IndexedSeq[Array[_]]]
+    val batches = new ArrayBuffer[IndexedSeq[Array[Any]]]
 
-    def and(rows: Array[_]*): InputValues = {
+    def and(rows: Array[Any]*): InputValues = {
       batches += rows.toIndexedSeq
       this
     }
 
-    def flatten: IndexedSeq[Array[_]] =
+    def flatten: IndexedSeq[Array[Any]] =
       batches.flatten
 
-    def stream(): BufferInputStream = new BufferInputStream(batches.map(_.map(row => row.map {
-      case anyValue: AnyValue => anyValue
-      case any => ValueUtils.of(any)
-    })))
+    def stream(): BufferInputStream = new BufferInputStream(batches.map(_.map(row => row.map(ValueUtils.of))))
   }
 
   class BufferInputStream(data: ArrayBuffer[IndexedSeq[Array[AnyValue]]]) extends InputDataStream {
