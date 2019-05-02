@@ -51,7 +51,6 @@ import org.neo4j.kernel.api.impl.fulltext.FulltextAdapter;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
-import org.neo4j.kernel.availability.StartupWaiter;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.dbms.NonTransactionalDbmsOperations;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -150,7 +149,6 @@ public class DatabaseManagementServiceFactory
         globalLife.add( globalModule.getGlobalExtensions() );
         globalLife.add( createBoltServer( globalModule, edition, databaseManager ) );
         globalDependencies.satisfyDependency( edition.globalTransactionCounter() );
-        globalLife.add( new StartupWaiter( globalModule.getGlobalAvailabilityGuard(), edition.getTransactionStartTimeout() ) );
         globalLife.add( new PublishPageCacheTracerMetricsAfterStart( globalModule.getTracers().getPageCursorTracerSupplier() ) );
 
         startDatabaseServer( config, globalModule, edition, globalLife, internalLog, databaseManager, managementService );
