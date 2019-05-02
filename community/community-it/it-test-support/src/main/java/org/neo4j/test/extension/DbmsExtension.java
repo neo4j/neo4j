@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -45,12 +46,12 @@ import org.neo4j.test.rule.TestDirectory;
  *     <li>{@link FileSystemAbstraction} as {@link DefaultFileSystemExtension}.</li>
  *     <li>{@link TestDirectory}.</li>
  *     <li>{@link DatabaseManagementService}.</li>
- *     <li>{@link GraphDatabaseService}, as specified by {@link #defaultDatabase()}.</li>
- *     <li>{@link GraphDatabaseAPI}, as specified by {@link #defaultDatabase()}.</li>
+ *     <li>{@link GraphDatabaseService}, as specified by {@link #injectableDatabase()}.</li>
+ *     <li>{@link GraphDatabaseAPI}, as specified by {@link #injectableDatabase()}.</li>
  * </ul>
  *
  * <p>You can specify a callback with {@link #configurationCallback()}, this callback is invoked just before
- * the {@link DatabaseManagementServiceBuilder} complets, allowing further modifications, e.g. adding additional
+ * the {@link DatabaseManagementServiceBuilder} completes, allowing further modifications, e.g. adding additional
  * dependencies, injecting a monitor or extension etc.
  *
  * <p>The annotation can be added to the entire test class or per test method. If any configuration values is
@@ -58,6 +59,7 @@ import org.neo4j.test.rule.TestDirectory;
  * test class with a configuration, you could then add the annotation to a specific test method and thus override
  * the configuration for that method. The other test methods will not be affected by this.
  */
+@Inherited
 @Target( {ElementType.TYPE, ElementType.METHOD} )
 @Retention( RetentionPolicy.RUNTIME )
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class, DbmsSupportExtension.class} )
@@ -68,7 +70,7 @@ public @interface DbmsExtension
      * A typical use case is to specify {@link GraphDatabaseSettings#SYSTEM_DATABASE_NAME} to execute your test
      * against the system database.
      */
-    String defaultDatabase() default GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+    String injectableDatabase() default GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
     /**
      * Name of a void method that takes a {@link TestDatabaseManagementServiceBuilder} as parameter. The method
@@ -76,6 +78,15 @@ public @interface DbmsExtension
      * builder before it completes. This method will be invoked <strong>BEFORE</strong> any method annotated with
      * {@link BeforeEach}, this is because the injected fields should be available in the BeforeEach context.
      * Setting it to {@code null} or an empty string will disable it.
+     *
+     * <p>One example is to set some additional configuration values:
+     * <pre>{@code
+     *     @ExtensionCallback
+     *     void configuration( TestDatabaseManagementServiceBuilder builder )
+     *     {
+     *         builder.setConfig( ... );
+     *     }
+     * }</pre>
      */
     String configurationCallback() default "";
 }

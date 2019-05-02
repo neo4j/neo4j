@@ -44,7 +44,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallback
 {
     private static final String DBMS = "service";
-    private static final String GRAPH_DATABASE = "db";
     private static final Namespace DBMS_NAMESPACE = Namespace.create( "org", "neo4j", "dbms" );
 
     @Override
@@ -53,19 +52,18 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
         Object testInstance = context.getRequiredTestInstance();
         TestDirectory testDir = getTestDirectory( context );
 
-        // Find closest annotation
-        AnnotationAPI annotation = getAnnotation( context );
+        // Find closest configuration
+        TestConfiguration configuration = getConfiguraitonFromAnnotations( context );
 
         // Make service
         TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( testDir.storeDir() ).setFileSystem( testDir.getFileSystem() );
-        maybeInvokeCallback( testInstance, builder, annotation.configurationCallback );
+        maybeInvokeCallback( testInstance, builder, configuration.configurationCallback );
         DatabaseManagementService dbms = builder.build();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database( annotation.defaultDatabase );
+        GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database( configuration.injectableDatabase );
 
         // Save in context
         Store store = getStore( context );
         store.put( DBMS, dbms );
-        store.put( GRAPH_DATABASE, db );
 
         // Inject
         injectInstance( testInstance, dbms, DatabaseManagementService.class );
@@ -78,10 +76,9 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
     {
         DatabaseManagementService dbms = (DatabaseManagementService) getStore( context ).remove( DBMS );
         dbms.shutdown();
-        getStore( context ).remove( GRAPH_DATABASE );
     }
 
-    private <T> void injectInstance( Object testInstance, T instance, Class<T> clazz )
+    private static <T> void injectInstance( Object testInstance, T instance, Class<T> clazz )
     {
         Class<?> testClass = testInstance.getClass();
         do
@@ -95,7 +92,7 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
         while ( testClass != null );
     }
 
-    private void setField( Object testInstance, Field field, Object db )
+    private static void setField( Object testInstance, Field field, Object db )
     {
         field.setAccessible( true );
         try
@@ -120,7 +117,7 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
         return testDir;
     }
 
-    private void maybeInvokeCallback( Object testInstance, TestDatabaseManagementServiceBuilder builder, String callback )
+    private static void maybeInvokeCallback( Object testInstance, TestDatabaseManagementServiceBuilder builder, String callback )
     {
         if ( callback == null || callback.isEmpty() )
         {
@@ -176,7 +173,7 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
         throw new IllegalArgumentException( "The method with name '" + callback + "' can not be found." );
     }
 
-    private Store getStore( ExtensionContext context )
+    private static Store getStore( ExtensionContext context )
     {
         return context.getStore( DBMS_NAMESPACE );
     }
@@ -184,14 +181,14 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
     /**
      * Since annotations can't be extended we use this internal class to represent the annotated values
      */
-    private static class AnnotationAPI
+    private static class TestConfiguration
     {
-        private final String defaultDatabase;
+        private final String injectableDatabase;
         private final String configurationCallback;
 
-        private AnnotationAPI( String defaultDatabase, String configurationCallback )
+        private TestConfiguration( String injectableDatabase, String configurationCallback )
         {
-            this.defaultDatabase = defaultDatabase;
+            this.injectableDatabase = injectableDatabase;
             this.configurationCallback = configurationCallback;
         }
     }
@@ -201,7 +198,7 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
      * president over the annotation on class level. This way you can add a global value to the test class, and override
      * configuration values etc. on method level.
      */
-    private AnnotationAPI getAnnotation( ExtensionContext context )
+    private static TestConfiguration getConfiguraitonFromAnnotations( ExtensionContext context )
     {
         // Try test method
         List<DbmsExtension> dbmsExtensions = new ArrayList<>();
@@ -220,21 +217,16 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
 
         // Try test class
         Class<?> testClass = context.getRequiredTestClass();
-        do
+        dbmsExtension = testClass.getAnnotation( DbmsExtension.class );
+        if ( dbmsExtension != null )
         {
-            dbmsExtension = testClass.getAnnotation( DbmsExtension.class );
-            if ( dbmsExtension != null )
-            {
-                dbmsExtensions.add( dbmsExtension );
-            }
-            impermanentDbmsExtension = testClass.getAnnotation( ImpermanentDbmsExtension.class );
-            if ( impermanentDbmsExtension != null )
-            {
-                impermanentDbmsExtensions.add( impermanentDbmsExtension );
-            }
-            testClass = testClass.getSuperclass();
+            dbmsExtensions.add( dbmsExtension );
         }
-        while ( testClass != null );
+        impermanentDbmsExtension = testClass.getAnnotation( ImpermanentDbmsExtension.class );
+        if ( impermanentDbmsExtension != null )
+        {
+            impermanentDbmsExtensions.add( impermanentDbmsExtension );
+        }
 
         // Make sure we don't mix annotations
         if ( !dbmsExtensions.isEmpty() && !impermanentDbmsExtensions.isEmpty() )
@@ -247,16 +239,16 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
         if ( !dbmsExtensions.isEmpty() )
         {
             dbmsExtension = dbmsExtensions.get( 0 );
-            return new AnnotationAPI( dbmsExtension.defaultDatabase(), dbmsExtension.configurationCallback() );
+            return new TestConfiguration( dbmsExtension.injectableDatabase(), dbmsExtension.configurationCallback() );
         }
         if ( !impermanentDbmsExtensions.isEmpty() )
         {
             impermanentDbmsExtension = impermanentDbmsExtensions.get( 0 );
-            return new AnnotationAPI( impermanentDbmsExtension.defaultDatabase(), impermanentDbmsExtension.configurationCallback() );
+            return new TestConfiguration( impermanentDbmsExtension.injectableDatabase(), impermanentDbmsExtension.configurationCallback() );
         }
 
         // Nothing found, default values
-        return new AnnotationAPI( DEFAULT_DATABASE_NAME, null );
+        return new TestConfiguration( DEFAULT_DATABASE_NAME, null );
     }
 
 }

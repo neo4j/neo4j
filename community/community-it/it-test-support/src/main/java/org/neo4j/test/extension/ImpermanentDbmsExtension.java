@@ -22,6 +22,7 @@ package org.neo4j.test.extension;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -34,11 +35,12 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
  *
  * <p>The only difference to {@link DbmsExtension} is that this uses {@link EphemeralFileSystemAbstraction}.
  */
+@Inherited
 @Target( {ElementType.TYPE, ElementType.METHOD} )
 @Retention( RetentionPolicy.RUNTIME )
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class, DbmsSupportExtension.class} )
 public @interface ImpermanentDbmsExtension
 {
-    String defaultDatabase() default GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+    String injectableDatabase() default GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
     String configurationCallback() default "";
 }

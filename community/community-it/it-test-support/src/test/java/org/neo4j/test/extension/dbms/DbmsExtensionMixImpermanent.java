@@ -31,7 +31,7 @@ public class DbmsExtensionMixImpermanent
 {
     @Test
     @DbmsExtension
-    void missingExtensionAnnotation()
+    void mixedExtensionAnnotation()
     {
         fail();
     }
