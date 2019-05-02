@@ -43,17 +43,13 @@ case class SignedDecimalIntegerLiteral(stringVal: String)(val position: InputPos
 case class UnsignedDecimalIntegerLiteral(stringVal: String)(val position: InputPosition) extends DecimalIntegerLiteral(stringVal) with UnsignedIntegerLiteral
 
 sealed abstract class OctalIntegerLiteral(stringVal: String) extends IntegerLiteral {
-  lazy val value: java.lang.Long = java.lang.Long.parseLong(stringVal, 8)
+  lazy val value: java.lang.Long = java.lang.Long.decode(stringVal)
 }
 
 case class SignedOctalIntegerLiteral(stringVal: String)(val position: InputPosition) extends OctalIntegerLiteral(stringVal) with SignedIntegerLiteral
 
 sealed abstract class HexIntegerLiteral(stringVal: String) extends IntegerLiteral {
-  lazy val value: java.lang.Long =
-    if (stringVal.charAt(0) == '-')
-      -java.lang.Long.parseLong(stringVal.substring(3), 16)
-    else
-      java.lang.Long.parseLong(stringVal.substring(2), 16)
+  lazy val value: java.lang.Long = java.lang.Long.decode(stringVal)
 }
 
 case class SignedHexIntegerLiteral(stringVal: String)(val position: InputPosition) extends HexIntegerLiteral(stringVal) with SignedIntegerLiteral
