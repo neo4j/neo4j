@@ -27,6 +27,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -44,8 +45,8 @@ class QueryEngineProviderTest
         GraphDatabaseAPI graphAPI = mock( GraphDatabaseAPI.class );
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
         QueryExecutionEngine executionEngine2 = mock( QueryExecutionEngine.class );
-        when( provider1.createEngine( any(), any(), any() ) ).thenReturn( executionEngine );
-        when( provider2.createEngine( any(), any(), any() ) ).thenReturn( executionEngine2 );
+        when( provider1.createEngine( any(), any(), anyBoolean() ) ).thenReturn( executionEngine );
+        when( provider2.createEngine( any(), any(), anyBoolean() ) ).thenReturn( executionEngine2 );
 
         // When
         Iterable<QueryEngineProvider> providers = Iterables.asIterable( provider1, provider2 );
@@ -64,7 +65,7 @@ class QueryEngineProviderTest
         Dependencies deps = new Dependencies();
         GraphDatabaseAPI graphAPI = mock( GraphDatabaseAPI.class );
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
-        when( provider.createEngine( any(), any(), any() ) ).thenReturn( executionEngine );
+        when( provider.createEngine( any(), any(), anyBoolean() ) ).thenReturn( executionEngine );
 
         // When
         Iterable<QueryEngineProvider> providers = Iterables.asIterable( provider );
