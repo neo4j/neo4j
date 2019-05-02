@@ -74,6 +74,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -226,7 +228,7 @@ class TransactionLogsRecoveryTest
 
             InOrder order = inOrder( monitor );
             order.verify( monitor ).recoveryRequired( any( LogPosition.class ) );
-            order.verify( monitor ).recoveryCompleted( 2, 0 );
+            order.verify( monitor ).recoveryCompleted( eq( 2 ), anyLong() );
             assertTrue( recoveryRequired.get() );
         }
         finally
