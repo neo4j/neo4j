@@ -56,6 +56,10 @@ public enum CompressionFormat
                 {
                     ZstdOutputStream zstdout = new ZstdOutputStream( stream );
                     zstdout.setChecksum( true );
+                    if ( Runtime.getRuntime().availableProcessors() > 2 )
+                    {
+                        zstdout.setWorkers( Runtime.getRuntime().availableProcessors() );
+                    }
                     zstdout.write( HEADER );
                     return zstdout;
                 }
