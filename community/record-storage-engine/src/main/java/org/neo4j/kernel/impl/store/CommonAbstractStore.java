@@ -221,6 +221,12 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         }
         catch ( NoSuchFileException | StoreNotFoundException e )
         {
+            if ( pagedFile != null )
+            {
+                pagedFile.close();
+                pagedFile = null;
+            }
+
             if ( createIfNotExists )
             {
                 try
