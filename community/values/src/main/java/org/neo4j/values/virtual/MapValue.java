@@ -706,6 +706,7 @@ public abstract class MapValue extends VirtualValue
         return new CombinedMapValue( this, other );
     }
 
+    @Override
     public String getTypeName()
     {
         return "Map";

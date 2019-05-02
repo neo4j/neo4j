@@ -105,6 +105,7 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     /**
      * Shutdown the guard. After this method is invoked, the database will always be considered unavailable.
      */
+    @Override
     public void shutdown()
     {
         synchronized ( requirementCount )
@@ -220,6 +221,7 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     /**
      * @return a textual description of what components, if any, are blocking access
      */
+    @Override
     public String describe()
     {
         if ( blockingRequirements.size() > 0 || requirementCount.get() > 0 )

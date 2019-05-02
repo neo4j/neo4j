@@ -119,6 +119,7 @@ public class BoltResponseMessageWriterV1 implements BoltResponseMessageWriter
         }
     }
 
+    @Override
     public void beginRecord( int numberOfFields ) throws IOException
     {
         output.beginMessage();
@@ -136,6 +137,7 @@ public class BoltResponseMessageWriterV1 implements BoltResponseMessageWriter
         }
     }
 
+    @Override
     public void consumeField( int offset, AnyValue value ) throws IOException
     {
         try
@@ -152,6 +154,7 @@ public class BoltResponseMessageWriterV1 implements BoltResponseMessageWriter
         }
     }
 
+    @Override
     public void endRecord() throws IOException
     {
         output.messageSucceeded();

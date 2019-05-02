@@ -467,6 +467,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         };
     }
 
+    @Override
     public TransactionIdStore transactionIdStore()
     {
         return neoStores.getMetaDataStore();

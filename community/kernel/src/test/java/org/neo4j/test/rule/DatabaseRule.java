@@ -368,6 +368,7 @@ public class DatabaseRule extends ExternalResource
             return mock( Locks.class );
         }
 
+        @Override
         public StatementLocksFactory getStatementLocksFactory()
         {
             return statementLocksFactory;

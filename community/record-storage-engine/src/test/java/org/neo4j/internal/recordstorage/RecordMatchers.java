@@ -54,6 +54,7 @@ public class RecordMatchers
 
         return new DiffMatcher<RecordChangeSet>()
         {
+            @Override
             String diff( RecordChangeSet actual )
             {
                 String diff;
@@ -101,6 +102,7 @@ public class RecordMatchers
                 Collectors.toMap( AbstractBaseRecord::getId, Functions.identity() ) );
         return new DiffMatcher<Iterable<? extends AbstractBaseRecord>>()
         {
+            @Override
             String diff( Iterable<? extends AbstractBaseRecord> actual )
             {
                 Set<Long> seen = new HashSet<>( expectedById.keySet() );

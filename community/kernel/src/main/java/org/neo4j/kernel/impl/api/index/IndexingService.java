@@ -563,6 +563,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
      * {@link IndexPopulator#verifyDeferredConstraints(NodePropertyAccessor)} will not be called as part of populating these indexes,
      * instead that will be done by code that activates the indexes later.
      */
+    @Override
     public void createIndexes( StorageIndexReference... rules )
     {
         createIndexes( false, rules );
@@ -599,6 +600,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         }
     }
 
+    @Override
     public void dropIndex( StorageIndexReference rule )
     {
         indexMapRef.modify( indexMap ->
@@ -682,6 +684,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         return indexMapRef.getIndexId( descriptor );
     }
 
+    @Override
     public void validateIndex( long indexId )
             throws IndexNotFoundKernelException, IndexPopulationFailedKernelException,
             UniquePropertyValueValidationException

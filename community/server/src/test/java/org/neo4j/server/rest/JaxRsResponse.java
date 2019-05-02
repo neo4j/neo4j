@@ -150,6 +150,7 @@ public class JaxRsResponse extends Response
         return metadata;
     }
 
+    @Override
     public MultivaluedMap<String,Object> getHeaders()
     {
         return (MultivaluedMap) headers;
@@ -173,6 +174,7 @@ public class JaxRsResponse extends Response
     }
 
     // new URI( getHeaders().get( HttpHeaders.LOCATION ).get(0));
+    @Override
     public URI getLocation()
     {
         return location;
@@ -202,6 +204,7 @@ public class JaxRsResponse extends Response
         return null;
     }
 
+    @Override
     public void close()
     {
 

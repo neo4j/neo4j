@@ -139,6 +139,7 @@ public class AuthTokenUtil
             this.wanted = authToken;
         }
 
+        @Override
         public boolean matches( Map<String,Object> actual )
         {
             return AuthTokenUtil.matches( wanted, actual );

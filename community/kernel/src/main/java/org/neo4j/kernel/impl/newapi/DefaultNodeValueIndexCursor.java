@@ -264,6 +264,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         this.values = values;
     }
 
+    @Override
     public void setRead( Read read )
     {
         this.read = read;

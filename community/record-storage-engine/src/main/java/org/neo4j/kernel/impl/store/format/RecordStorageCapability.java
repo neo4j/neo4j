@@ -86,6 +86,7 @@ public enum RecordStorageCapability implements Capability
         this.types = types;
     }
 
+    @Override
     public boolean isType( CapabilityType type )
     {
         return contains( types, type );
@@ -97,6 +98,7 @@ public enum RecordStorageCapability implements Capability
      *
      * @return whether or not this capability is additive.
      */
+    @Override
     public boolean isAdditive()
     {
         return additive;

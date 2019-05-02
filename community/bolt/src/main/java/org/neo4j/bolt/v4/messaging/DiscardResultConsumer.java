@@ -40,6 +40,7 @@ public class DiscardResultConsumer implements ResultConsumer
         hasMore = context.connectionState().getResponseHandler().onDiscardRecords( boltResult, size );
     }
 
+    @Override
     public boolean hasMore()
     {
         return hasMore;

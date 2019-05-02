@@ -39,6 +39,7 @@ public class SingleInstanceRoutingProcedureInstaller extends BaseRoutingProcedur
         this.config = config;
     }
 
+    @Override
     protected CallableProcedure createProcedure( List<String> namespace )
     {
         return new SingleInstanceGetRoutingTableProcedure( namespace, databaseManager, portRegister, config );

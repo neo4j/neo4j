@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -53,11 +52,8 @@ import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicLoginContext;
-import org.neo4j.server.security.auth.BasicPasswordPolicy;
-import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.SecureHasher;
 import org.neo4j.server.security.auth.ShiroAuthToken;
-import org.neo4j.time.Clocks;
 
 import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
 
@@ -232,12 +228,14 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
         return true;
     }
 
+    @Override
     protected Object getAuthenticationCacheKey( AuthenticationToken token )
     {
         Object principal = token != null ? token.getPrincipal() : null;
         return principal != null ? principal : "";
     }
 
+    @Override
     protected Object getAuthenticationCacheKey( PrincipalCollection principals )
     {
         Object principal = getAvailablePrincipal( principals );

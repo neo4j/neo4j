@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
 import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
@@ -67,22 +66,26 @@ class OutputEventStreamImpl implements OutputEventSource, OutputEventStream
         startListener.accept( this );
     }
 
+    @Override
     public Map<String,Object> getParameters()
     {
         return parameters;
     }
 
+    @Override
     public void writeStatementStart( Statement statement, List<String> columns )
     {
         notifyListener( new StatementStartEvent( statement, columns ) );
     }
 
+    @Override
     public void writeStatementEnd( QueryExecutionType queryExecutionType, QueryStatistics queryStatistics, ExecutionPlanDescription executionPlanDescription,
             Iterable<Notification> notifications )
     {
         notifyListener( new StatementEndEvent( queryExecutionType, queryStatistics, executionPlanDescription, notifications ) );
     }
 
+    @Override
     public void writeRecord( List<String> columns, Function<String,Object> valueSupplier )
     {
         notifyListener( new RecordEvent( columns, valueSupplier ) );
@@ -111,6 +114,7 @@ class OutputEventStreamImpl implements OutputEventSource, OutputEventStream
         return uriInfo;
     }
 
+    @Override
     public TransitionalPeriodTransactionMessContainer getTransactionContainer()
     {
         return transactionContainer;

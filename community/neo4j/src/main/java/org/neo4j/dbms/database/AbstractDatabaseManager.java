@@ -76,6 +76,7 @@ public abstract class AbstractDatabaseManager<T extends DatabaseContext> extends
         forEachDatabase( this::stopDatabase, true );
     }
 
+    @Override
     public final SortedMap<DatabaseId,T> registeredDatabases()
     {
         return databasesSnapshot();

@@ -41,6 +41,7 @@ public class PullResultConsumer implements ResultConsumer
         hasMore = context.connectionState().getResponseHandler().onPullRecords( boltResult, size );
     }
 
+    @Override
     public boolean hasMore()
     {
         return hasMore;

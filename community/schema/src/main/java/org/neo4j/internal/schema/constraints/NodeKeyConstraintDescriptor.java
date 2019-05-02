@@ -36,6 +36,7 @@ public class NodeKeyConstraintDescriptor extends IndexBackedConstraintDescriptor
         return "NODE KEY";
     }
 
+    @Override
     protected String formatProperties( int[] propertyIds, TokenNameLookup tokenNameLookup, String nodeName )
     {
         return TokenIdPrettyPrinter.niceProperties( tokenNameLookup, propertyIds, nodeName + ".", true );

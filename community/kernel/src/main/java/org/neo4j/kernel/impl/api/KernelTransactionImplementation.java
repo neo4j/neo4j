@@ -1111,6 +1111,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     /**
      * @return transaction originator information.
      */
+    @Override
     public ClientConnectionInfo clientInfo()
     {
         return clientInfo;

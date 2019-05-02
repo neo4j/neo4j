@@ -141,6 +141,7 @@ public class RecordStorageReader implements StorageReader
         return schemaCache.hasRelatedSchema( labels, propertyKey, entityType );
     }
 
+    @Override
     public boolean hasRelatedSchema( int label, EntityType entityType )
     {
         return schemaCache.hasRelatedSchema( label, entityType );

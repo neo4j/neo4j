@@ -171,6 +171,7 @@ public class LoggingPhaseTracker implements PhaseTracker
             periodCounter.reset();
         }
 
+        @Override
         void log( long timeMillis )
         {
             super.log( timeMillis );

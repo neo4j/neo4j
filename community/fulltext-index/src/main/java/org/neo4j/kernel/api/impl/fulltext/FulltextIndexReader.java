@@ -101,6 +101,7 @@ public class FulltextIndexReader implements IndexReader
         return IndexSampler.EMPTY;
     }
 
+    @Override
     public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... queries )
             throws IndexNotApplicableKernelException
     {

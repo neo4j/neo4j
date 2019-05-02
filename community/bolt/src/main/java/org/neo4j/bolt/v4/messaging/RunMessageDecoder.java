@@ -30,6 +30,7 @@ public class RunMessageDecoder extends org.neo4j.bolt.v3.messaging.decoder.RunMe
         super( responseHandler );
     }
 
+    @Override
     protected RunMessage newRunMessage( String statement, MapValue params, MapValue meta ) throws BoltIOException
     {
         return new RunMessage( statement, params, meta ); // v4 RUN message

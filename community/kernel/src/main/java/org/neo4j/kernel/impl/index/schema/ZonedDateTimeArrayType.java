@@ -61,6 +61,7 @@ class ZonedDateTimeArrayType extends AbstractArrayType<ZonedDateTime>
         System.arraycopy( from.long3Array, 0, to.long3Array, 0, length );
     }
 
+    @Override
     void initializeArray( GenericKey key, int length, ValueWriter.ArrayType arrayType )
     {
         key.long0Array = ensureBigEnough( key.long0Array, length );

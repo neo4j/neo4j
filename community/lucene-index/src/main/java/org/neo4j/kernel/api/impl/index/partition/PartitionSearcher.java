@@ -42,6 +42,7 @@ public class PartitionSearcher implements SearcherReference
         this.indexSearcher.setQueryCache( null );
     }
 
+    @Override
     public IndexSearcher getIndexSearcher()
     {
         return indexSearcher;

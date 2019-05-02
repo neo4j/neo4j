@@ -33,6 +33,7 @@ public interface NodePropertyAccessor extends AutoCloseable
 
     Value getNodePropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 
+    @Override
     default void close()
     {
     }
