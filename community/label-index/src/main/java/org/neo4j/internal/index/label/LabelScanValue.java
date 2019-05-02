@@ -79,6 +79,14 @@ class LabelScanValue
         bits = 0;
     }
 
+    /**
+     * @return whether or not all bits in this range are cleared, i.e. the whole range is empty.
+     */
+    boolean isEmpty()
+    {
+        return bits == 0;
+    }
+
     @Override
     public String toString()
     {
