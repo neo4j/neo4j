@@ -201,10 +201,13 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
   }
 
   private def replaceExistingSlot(key: String, existingSlot: Slot, modifiedSlot: Slot): Unit = {
-    slots.put(key, modifiedSlot)
-    val existingAliases = slotAliases.get(existingSlot).get
+    val existingAliases = slotAliases.getOrElse(existingSlot,
+      throw new InternalError(s"Slot allocation failure - missing slot $existingSlot for $key")
+    )
     assert(existingAliases.contains(key))
     slotAliases.put(modifiedSlot, existingAliases)
+    // Propagate changes to all corresponding entries in the slots map
+    existingAliases.foreach(alias => slots.put(alias, modifiedSlot))
     slotAliases.remove(existingSlot)
   }
 
