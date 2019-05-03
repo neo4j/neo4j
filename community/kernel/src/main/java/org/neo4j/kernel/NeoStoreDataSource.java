@@ -713,7 +713,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
             if ( databaseHealth.isHealthy() )
             {
                 // Flushing of neo stores happens as part of the checkpoint
-                transactionLogModule.checkPointing().forceCheckPoint( new SimpleTriggerInfo( "database shutdown" ) );
+                transactionLogModule.checkPointing().forceCheckPoint( new SimpleTriggerInfo( "Database shutdown" ) );
             }
         } );
     }
