@@ -267,7 +267,7 @@ public abstract class AbstractNeoServer implements NeoServer
         return config;
     }
 
-    private void configureWebServer()
+    protected void configureWebServer()
     {
         webServer.setHttpAddress( httpListenAddress );
         webServer.setHttpsAddress( httpsListenAddress );
@@ -283,7 +283,7 @@ public abstract class AbstractNeoServer implements NeoServer
         }
     }
 
-    private void startWebServer() throws Exception
+    protected void startWebServer() throws Exception
     {
         try
         {
