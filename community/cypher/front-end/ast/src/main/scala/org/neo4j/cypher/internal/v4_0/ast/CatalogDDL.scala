@@ -67,6 +67,15 @@ final case class CreateUser(userName: String,
       SemanticState.recordCurrentScope(this)
 }
 
+final case class DropUser(userName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+
+  override def name = "CATALOG CREATE USER"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
 final case class ShowRoles(withUsers: Boolean, showAll: Boolean)(val position: InputPosition) extends MultiDatabaseDDL {
 
   override def name: String = if (showAll) "CATALOG SHOW ALL ROLES" else "CATALOG SHOW POPULATED ROLES"

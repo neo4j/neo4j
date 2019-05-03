@@ -111,7 +111,7 @@ trait Base extends Parser {
 
   def UserNameString: Rule1[String] = rule("a user name") {
     // Since the username may include (and start with) quotation marks, they are always part of the username
-    oneOrMore(!ch(' ') ~ ANY) ~> (_.toLowerCase) ~ ch(' ')
+    oneOrMore(!ch(' ') ~ ANY) ~> (_.toLowerCase) ~ (ch(' ') | EOI)
   }
 
   def RoleNameString: Rule1[String] = UnquotedRoleNameString | QuotedRoleNameString

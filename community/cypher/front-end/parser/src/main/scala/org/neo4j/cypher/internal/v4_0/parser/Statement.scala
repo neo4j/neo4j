@@ -38,7 +38,7 @@ trait Statement extends Parser
   }
 
   def SecurityCommand: Rule1[CatalogDDL] = rule("Security DDL statement") {
-    optional(keyword("CATALOG")) ~~ (ShowRoles | CreateRole | DropRole | ShowUsers | CreateUser)
+    optional(keyword("CATALOG")) ~~ (ShowRoles | CreateRole | DropRole | ShowUsers | CreateUser | DropUser)
   }
 
   def ShowUsers: Rule1[ShowUsers] = rule("CATALOG SHOW USERS") {
@@ -55,16 +55,19 @@ trait Statement extends Parser
     optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE NOT REQUIRED")) ~~
     group(keyword("SET STATUS") ~~ keyword("SUSPENDED")) ~~>> ((userName, initialPassword) =>
       ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange = false, suspended = true)) |
+    //
     // CREATE USER username SET PASSWORD stringLiteralPassword [ SET PASSWORD ] CHANGE NOT REQUIRED [ SET STATUS ACTIVE ]
     group(keyword("CREATE USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
     optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE NOT REQUIRED")) ~~
     optional(group(keyword("SET STATUS") ~~ keyword("ACTIVE"))) ~~>> ((userName, initialPassword) =>
       ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange = false, suspended = false)) |
+    //
     // CREATE USER username SET PASSWORD stringLiteralPassword [ [ SET PASSWORD ] CHANGE REQUIRED ] SET STATUS SUSPENDED
     group(keyword("CREATE USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
     optional(optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE REQUIRED"))) ~~
     group(keyword("SET STATUS") ~~ keyword("SUSPENDED")) ~~>> ((userName, initialPassword) =>
       ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange = true, suspended = true)) |
+    //
     // CREATE USER username SET PASSWORD stringLiteralPassword [ [ SET PASSWORD ] CHANGE REQUIRED ] [ SET STATUS ACTIVE ]
     group(keyword("CREATE USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
     optional(optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE REQUIRED"))) ~~
@@ -78,21 +81,28 @@ trait Statement extends Parser
     optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE NOT REQUIRED")) ~~
     group(keyword("SET STATUS") ~~ keyword("SUSPENDED")) ~~>> ((userName, initialPassword) =>
       ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange = false, suspended = true)) |
+    //
     // CREATE USER username SET PASSWORD parameterPassword [ SET PASSWORD ] CHANGE NOT REQUIRED [ SET STATUS ACTIVE ]
     group(keyword("CREATE USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
     optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE NOT REQUIRED")) ~~
     optional(group(keyword("SET STATUS") ~~ keyword("ACTIVE"))) ~~>> ((userName, initialPassword) =>
       ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange = false, suspended = false)) |
+    //
     // CREATE USER username SET PASSWORD parameterPassword [ [ SET PASSWORD ] CHANGE REQUIRED ] SET STATUS SUSPENDED
     group(keyword("CREATE USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
     optional(optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE REQUIRED"))) ~~
     group(keyword("SET STATUS") ~~ keyword("SUSPENDED")) ~~>> ((userName, initialPassword) =>
       ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange = true, suspended = true)) |
+    //
     // CREATE USER username SET PASSWORD parameterPassword [ [ SET PASSWORD ] CHANGE REQUIRED ] [ SET STATUS ACTIVE ]
     group(keyword("CREATE USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
     optional(optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE REQUIRED"))) ~~
     optional(group(keyword("SET STATUS") ~~ keyword("ACTIVE"))) ~~>> ((userName, initialPassword) =>
       ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange = true, suspended = false))
+  }
+
+  def DropUser: Rule1[DropUser] = rule("CATALOG DROP USER") {
+    group(keyword("DROP USER") ~~ UserNameString) ~~>> (ast.DropUser(_))
   }
 
   def ShowRoles: Rule1[ShowRoles] = rule("CATALOG SHOW ROLES") {

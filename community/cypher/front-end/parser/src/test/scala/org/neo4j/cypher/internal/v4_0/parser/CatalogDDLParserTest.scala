@@ -36,7 +36,7 @@ class CatalogDDLParserTest
     yields(ast.ShowUsers())
   }
 
-  test("CREATE USER foo SET PASSWORD 'password'") {
+  test("CATALOG CREATE USER foo SET PASSWORD 'password'") {
     yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = false))
   }
 
@@ -56,7 +56,7 @@ class CatalogDDLParserTest
     yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = false))
   }
 
-  test("CREATE USER foo SET PASSWORD $password CHANGE REQUIRED") {
+  test("CATALOG CREATE USER foo SET PASSWORD $password CHANGE REQUIRED") {
     yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = false))
   }
 
@@ -76,7 +76,7 @@ class CatalogDDLParserTest
     yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = false, suspended = false))
   }
 
-  test("CREATE USER foo SET PASSWORD 'password' SET STATUS SUSPENDed") {
+  test("CATALOG CREATE USER foo SET PASSWORD 'password' SET STATUS SUSPENDed") {
     yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = true))
   }
 
@@ -96,7 +96,7 @@ class CatalogDDLParserTest
     failsToParse
   }
 
-  test("CREATE USER fo,o SET PASSWORD 'password'") {
+  test("CATALOG CREATE USER fo,o SET PASSWORD 'password'") {
     failsToParse
   }
 
@@ -112,6 +112,10 @@ class CatalogDDLParserTest
     failsToParse
   }
 
+  test("DROP USER foo") {
+    yields(ast.DropUser("foo"))
+  }
+
   test("SHOW ROLES") {
     yields(ast.ShowRoles(withUsers = false, showAll = true))
   }
@@ -120,7 +124,7 @@ class CatalogDDLParserTest
     yields(ast.ShowRoles(withUsers = false, showAll = true))
   }
 
-  test("SHOW POPULATED ROLES") {
+  test("CATALOG SHOW POPULATED ROLES") {
     yields(ast.ShowRoles(withUsers = false, showAll = false))
   }
 
@@ -128,7 +132,7 @@ class CatalogDDLParserTest
     yields(ast.ShowRoles(withUsers = true, showAll = true))
   }
 
-  test("SHOW ALL ROLES WITH USERS") {
+  test("CATALOG SHOW ALL ROLES WITH USERS") {
     yields(ast.ShowRoles(withUsers = true, showAll = true))
   }
 
@@ -140,7 +144,7 @@ class CatalogDDLParserTest
     yields(ast.CreateRole("foo", None))
   }
 
-  test("CREATE ROLE \"foo\"") {
+  test("CATALOG CREATE ROLE \"foo\"") {
     yields(ast.CreateRole("foo", None))
   }
 

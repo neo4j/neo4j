@@ -160,6 +160,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val userName = User(name)
         PlanDescriptionImpl(id, "CreateUser", NoChildren, Seq(userName), variables)
 
+      case DropUser(name) =>
+        val userName = User(name)
+        PlanDescriptionImpl(id, "DropUser", NoChildren, Seq(userName), variables)
+
       case ShowRoles(_,_) =>
         PlanDescriptionImpl(id, "ShowRoles", NoChildren, Seq.empty, variables)
 

@@ -77,6 +77,9 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
       val statusString = s"WITH STATUS ${if (suspended) "SUSPENDED" else "ACTIVE"}"
       s"${x.name} $userName $passwordString $statusString"
 
+    case x @ DropUser(userName) =>
+      s"${x.name} $userName"
+
     case x @ ShowRoles(withUsers, _) =>
       s"${x.name} ${if (withUsers) "WITH USERS" else ""}"
 
