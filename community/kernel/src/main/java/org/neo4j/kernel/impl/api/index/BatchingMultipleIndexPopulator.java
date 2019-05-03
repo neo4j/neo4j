@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -41,6 +41,7 @@ import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.util.FeatureToggles;
 
 import static java.lang.Integer.min;
+import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
 
@@ -165,13 +166,26 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     void doFlush( IndexPopulation population )
     {
         activeTasks.incrementAndGet();
-        Collection<IndexEntryUpdate<?>> batch = population.takeCurrentBatch();
+        List<IndexEntryUpdate<?>> batch = population.takeCurrentBatch();
 
         executor.execute( () ->
         {
             try
             {
+                String batchDescription = "EMPTY";
+                if ( PRINT_DEBUG )
+                {
+                    if ( !batch.isEmpty() )
+                    {
+                        batchDescription = format( "[%d, %d - %d]", batch.size(), batch.get( 0 ).getEntityId(), batch.get( batch.size() - 1 ).getEntityId() );
+                    }
+                    log.info( "Applying scan batch %s", batchDescription );
+                }
                 population.populator.add( batch );
+                if ( PRINT_DEBUG )
+                {
+                    log.info( "Applied scan batch %s", batchDescription );
+                }
             }
             catch ( Throwable failure )
             {
