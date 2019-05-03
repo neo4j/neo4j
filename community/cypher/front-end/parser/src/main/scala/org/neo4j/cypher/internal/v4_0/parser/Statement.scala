@@ -46,54 +46,65 @@ trait Statement extends Parser
   }
 
   def CreateUser: Rule1[CreateUser] = rule("CATALOG CREATE USER") {
-    // CREATE USER username WITH PASSWORD stringLiteralPassword CHANGE NOT REQUIRED WITH STATUS SUSPENDED
-    group(keyword("CREATE USER") ~~ UserNameString) ~~
-    group(keyword("SET PASSWORD") ~~ StringLiteral ~~ optional(keyword("SET PASSWORD")) ~~ "CHANGE" ~~ "NOT" ~~ "REQUIRED") ~~
-    group(keyword("SET STATUS") ~~ "SUSPENDED") ~~>>
-      ((userName, initialPassword) => ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange = false, suspended = true)) |
-    // CREATE USER username WITH PASSWORD stringLiteralPassword CHANGE NOT REQUIRED [ WITH STATUS ACTIVE ]
-    group(keyword("CREATE USER") ~~ UserNameString) ~~
-    group(keyword("SET PASSWORD") ~~ StringLiteral ~~ optional(keyword("SET PASSWORD")) ~~ "CHANGE" ~~ "NOT" ~~ "REQUIRED") ~~
-    optional(group(keyword("SET STATUS") ~~ "ACTIVE")) ~~>>
-      ((userName, initialPassword) => ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange = false, suspended = false)) |
-    // CREATE USER username WITH PASSWORD stringLiteralPassword [ CHANGE REQUIRED ] WITH STATUS SUSPENDED
-    group(keyword("CREATE USER") ~~ UserNameString) ~~
-    group(keyword("SET PASSWORD") ~~ StringLiteral ~~ optional(optional(keyword("SET PASSWORD")) ~~ "CHANGE" ~~ "REQUIRED")) ~~
-    group(keyword("SET STATUS") ~~ "SUSPENDED") ~~>>
-      ((userName, initialPassword) => ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange = true, suspended = true)) |
-    // CREATE USER username WITH PASSWORD stringLiteralPassword [ CHANGE REQUIRED ] [ WITH STATUS ACTIVE ]
-    group(keyword("CREATE USER") ~~ UserNameString) ~~
-    group(keyword("SET PASSWORD") ~~ StringLiteral ~~ optional(optional(keyword("SET PASSWORD")) ~~ "CHANGE" ~~ "REQUIRED")) ~~
-    optional(group(keyword("SET STATUS") ~~ "ACTIVE")) ~~>>
-      ((userName, initialPassword) => ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange = true, suspended = false))
-    //
-    //
-    //
-    //
-    //
-    // TODO accept password from parameter
-    // CREATE USER username WITH PASSWORD parameterPassword [ CHANGE REQUIRED ] [ WITH STATUS ACTIVE ]
-//    group(keyword("CREATE USER") ~~ UserNameString ~~
-//      keyword("SET") ~~ keyword("PASSWORD") ~~ Parameter ~~ optional("CHANGE" ~~ "REQUIRED")) ~~
-//      optional(group(keyword("SET") ~~ keyword("STATUS") ~~ "ACTIVE")) ~~>>
-//      ((userName, initialPassword) => ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange = true, suspended = false))
-    //
+    CreateUserWithStringPassword | CreateUserWithParameterPassword
+  }
+
+  def CreateUserWithStringPassword: Rule1[CreateUser] = rule("CATALOG CREATE USER") {
+    // CREATE USER username SET PASSWORD stringLiteralPassword [ SET PASSWORD ] CHANGE NOT REQUIRED SET STATUS SUSPENDED
+    group(keyword("CREATE USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
+    optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE NOT REQUIRED")) ~~
+    group(keyword("SET STATUS") ~~ keyword("SUSPENDED")) ~~>> ((userName, initialPassword) =>
+      ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange = false, suspended = true)) |
+    // CREATE USER username SET PASSWORD stringLiteralPassword [ SET PASSWORD ] CHANGE NOT REQUIRED [ SET STATUS ACTIVE ]
+    group(keyword("CREATE USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
+    optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE NOT REQUIRED")) ~~
+    optional(group(keyword("SET STATUS") ~~ keyword("ACTIVE"))) ~~>> ((userName, initialPassword) =>
+      ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange = false, suspended = false)) |
+    // CREATE USER username SET PASSWORD stringLiteralPassword [ [ SET PASSWORD ] CHANGE REQUIRED ] SET STATUS SUSPENDED
+    group(keyword("CREATE USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
+    optional(optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE REQUIRED"))) ~~
+    group(keyword("SET STATUS") ~~ keyword("SUSPENDED")) ~~>> ((userName, initialPassword) =>
+      ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange = true, suspended = true)) |
+    // CREATE USER username SET PASSWORD stringLiteralPassword [ [ SET PASSWORD ] CHANGE REQUIRED ] [ SET STATUS ACTIVE ]
+    group(keyword("CREATE USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
+    optional(optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE REQUIRED"))) ~~
+    optional(group(keyword("SET STATUS") ~~ keyword("ACTIVE"))) ~~>> ((userName, initialPassword) =>
+      ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange = true, suspended = false))
+  }
+
+  def CreateUserWithParameterPassword: Rule1[CreateUser] = rule("CATALOG CREATE USER") {
+    // CREATE USER username SET PASSWORD parameterPassword [ SET PASSWORD ] CHANGE NOT REQUIRED SET STATUS SUSPENDED
+    group(keyword("CREATE USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
+    optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE NOT REQUIRED")) ~~
+    group(keyword("SET STATUS") ~~ keyword("SUSPENDED")) ~~>> ((userName, initialPassword) =>
+      ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange = false, suspended = true)) |
+    // CREATE USER username SET PASSWORD parameterPassword [ SET PASSWORD ] CHANGE NOT REQUIRED [ SET STATUS ACTIVE ]
+    group(keyword("CREATE USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
+    optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE NOT REQUIRED")) ~~
+    optional(group(keyword("SET STATUS") ~~ keyword("ACTIVE"))) ~~>> ((userName, initialPassword) =>
+      ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange = false, suspended = false)) |
+    // CREATE USER username SET PASSWORD parameterPassword [ [ SET PASSWORD ] CHANGE REQUIRED ] SET STATUS SUSPENDED
+    group(keyword("CREATE USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
+    optional(optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE REQUIRED"))) ~~
+    group(keyword("SET STATUS") ~~ keyword("SUSPENDED")) ~~>> ((userName, initialPassword) =>
+      ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange = true, suspended = true)) |
+    // CREATE USER username SET PASSWORD parameterPassword [ [ SET PASSWORD ] CHANGE REQUIRED ] [ SET STATUS ACTIVE ]
+    group(keyword("CREATE USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
+    optional(optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE REQUIRED"))) ~~
+    optional(group(keyword("SET STATUS") ~~ keyword("ACTIVE"))) ~~>> ((userName, initialPassword) =>
+      ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange = true, suspended = false))
   }
 
   def ShowRoles: Rule1[ShowRoles] = rule("CATALOG SHOW ROLES") {
     //SHOW [ ALL | POPULATED ] ROLES WITH USERS
-    group(optional(keyword("CATALOG")) ~~
-      keyword("SHOW") ~~ keyword("POPULATED") ~~ keyword("ROLES") ~~
+    group(keyword("SHOW") ~~ keyword("POPULATED") ~~ keyword("ROLES") ~~
       keyword("WITH USERS")) ~>>> (_ => ast.ShowRoles(withUsers = true, showAll = false)) |
-    group(optional(keyword("CATALOG")) ~~
-      keyword("SHOW") ~~ optional(keyword("ALL")) ~~ keyword("ROLES") ~~
+    group(keyword("SHOW") ~~ optional(keyword("ALL")) ~~ keyword("ROLES") ~~
       keyword("WITH USERS")) ~>>> (_ => ast.ShowRoles(withUsers = true, showAll = true)) |
     // SHOW [ ALL | POPULATED ] ROLES
-    group(optional(keyword("CATALOG")) ~~
-      keyword("SHOW") ~~ keyword("POPULATED") ~~ keyword("ROLES")) ~>>>
+    group(keyword("SHOW") ~~ keyword("POPULATED") ~~ keyword("ROLES")) ~>>>
       (_ => ast.ShowRoles(withUsers = false, showAll = false)) |
-    group(optional(keyword("CATALOG")) ~~
-      keyword("SHOW") ~~ optional(keyword("ALL")) ~~ keyword("ROLES")) ~>>>
+    group(keyword("SHOW") ~~ optional(keyword("ALL")) ~~ keyword("ROLES")) ~>>>
       (_ => ast.ShowRoles(withUsers = false, showAll = true))
   }
 
