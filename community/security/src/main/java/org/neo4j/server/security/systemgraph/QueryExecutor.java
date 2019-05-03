@@ -58,7 +58,7 @@ public interface QueryExecutor
 
     default long executeQueryLong( String query, Map<String,Object> params )
     {
-        MutableLong count = new MutableLong(-1);
+        MutableLong count = new MutableLong( -1 );
 
         final QueryResult.QueryResultVisitor<RuntimeException> resultVisitor = row ->
         {

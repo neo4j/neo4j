@@ -240,7 +240,7 @@ public class DefaultPropertyCursor implements PropertyCursor
     {
         private final long nodeReference;
         private final Read read;
-        private int[] labels = null;
+        private int[] labels;
 
         private NodeLabels( long nodeReference, Read read )
         {
