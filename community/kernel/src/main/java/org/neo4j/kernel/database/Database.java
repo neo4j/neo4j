@@ -198,7 +198,6 @@ public class Database extends LifecycleAdapter
     private final Locks locks;
     private final DatabaseEventListeners eventListeners;
     private final DatabaseMigratorFactory databaseMigratorFactory;
-    private final long startTimeoutMillis;
 
     private Dependencies databaseDependencies;
     private LifeSupport life;
@@ -276,12 +275,12 @@ public class Database extends LifecycleAdapter
         this.databaseMigratorFactory = context.getDatabaseMigratorFactory();
         this.availabilityGuardFactory = context.getDatabaseAvailabilityGuardFactory();
         this.storageEngineFactory = context.getStorageEngineFactory();
-        this.startTimeoutMillis = context.getStartTimeoutMillis();
 
         //TODO: switch to local guard here when work with availability guards will be finished.
         CompositeDatabaseAvailabilityGuard globalGuard =
                 globalDependencies.resolveDependency( CompositeDatabaseAvailabilityGuard.class );
-        CoreAPIAvailabilityGuard coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( globalGuard, startTimeoutMillis );
+        long availabilityGuardTimeout = databaseConfig.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
+        CoreAPIAvailabilityGuard coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( globalGuard, availabilityGuardTimeout );
         this.databaseFacade = new GraphDatabaseFacade( this, context.getContextBridge(), databaseConfig, databaseInfo, coreAPIAvailabilityGuard );
     }
 

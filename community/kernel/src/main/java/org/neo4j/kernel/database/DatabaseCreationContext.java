@@ -140,6 +140,4 @@ public interface DatabaseCreationContext
     StorageEngineFactory getStorageEngineFactory();
 
     ThreadToStatementContextBridge getContextBridge();
-
-    long getStartTimeoutMillis();
 }

@@ -108,7 +108,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final DatabaseMigratorFactory databaseMigratorFactory;
     private final StorageEngineFactory storageEngineFactory;
     private final ThreadToStatementContextBridge contextBridge;
-    private final long startTimeoutMillis;
 
     public ModularDatabaseCreationContext( DatabaseId databaseId, GlobalModule globalModule, EditionDatabaseComponents perEditionComponents,
             GlobalProcedures globalProcedures )
@@ -155,7 +154,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.databaseMigratorFactory = new DatabaseMigratorFactory( fs, globalConfig, logService, pageCache, scheduler );
         this.storageEngineFactory = globalModule.getStorageEngineFactory();
         this.contextBridge = globalModule.getThreadToTransactionBridge();
-        this.startTimeoutMillis = perEditionComponents.getStartTimeoutMillis();
     }
 
     @Override
@@ -390,11 +388,5 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public ThreadToStatementContextBridge getContextBridge()
     {
         return contextBridge;
-    }
-
-    @Override
-    public long getStartTimeoutMillis()
-    {
-        return startTimeoutMillis;
     }
 }

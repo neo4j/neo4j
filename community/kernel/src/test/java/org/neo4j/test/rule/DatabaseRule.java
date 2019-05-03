@@ -166,7 +166,7 @@ public class DatabaseRule extends ExternalResource
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP,
                 Iterables.iterable( new EmptyIndexExtensionFactory() ),
                 file -> mock( DatabaseLayoutWatcher.class ), Iterables.empty(),
-                mockedDatabaseMigratorFactory(), storageEngineFactory, new ThreadToStatementContextBridge(), 0 ) );
+                mockedDatabaseMigratorFactory(), storageEngineFactory, new ThreadToStatementContextBridge() ) );
         return database;
     }
 
@@ -241,7 +241,6 @@ public class DatabaseRule extends ExternalResource
         private final DatabaseEventListeners eventListeners;
         private final DatabaseMigratorFactory databaseMigratorFactory;
         private final StorageEngineFactory storageEngineFactory;
-        private final long startTimeoutMillis;
         private final ThreadToStatementContextBridge contextBridge;
 
         TestDatabaseCreationContext( String databaseName, DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory,
@@ -255,7 +254,7 @@ public class DatabaseRule extends ExternalResource
                 DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
                 Iterable<ExtensionFactory<?>> extensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
                 Iterable<QueryEngineProvider> engineProviders, DatabaseMigratorFactory databaseMigratorFactory,
-                StorageEngineFactory storageEngineFactory, ThreadToStatementContextBridge contextBridge, long startTimeoutMillis )
+                StorageEngineFactory storageEngineFactory, ThreadToStatementContextBridge contextBridge )
         {
             this.databaseId = new DatabaseId( databaseName );
             this.databaseLayout = databaseLayout;
@@ -294,7 +293,6 @@ public class DatabaseRule extends ExternalResource
             this.databaseMigratorFactory = databaseMigratorFactory;
             this.storageEngineFactory = storageEngineFactory;
             this.contextBridge = contextBridge;
-            this.startTimeoutMillis = startTimeoutMillis;
         }
 
         @Override
@@ -538,12 +536,6 @@ public class DatabaseRule extends ExternalResource
         public ThreadToStatementContextBridge getContextBridge()
         {
             return contextBridge;
-        }
-
-        @Override
-        public long getStartTimeoutMillis()
-        {
-            return startTimeoutMillis;
         }
     }
 

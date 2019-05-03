@@ -121,8 +121,6 @@ public class CommunityEditionModule extends StandaloneEditionModule
 
         headerInformationFactory = createHeaderInformationFactory();
 
-        transactionStartTimeout = globalConfig.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
-
         constraintSemantics = createSchemaRuleVerifier();
 
         ioLimiter = IOLimiter.UNLIMITED;

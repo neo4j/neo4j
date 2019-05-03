@@ -68,7 +68,6 @@ public abstract class AbstractEditionModule
 {
     private final GlobalTransactionStats transactionStatistic = new GlobalTransactionStats();
     protected NetworkConnectionTracker connectionTracker;
-    protected long transactionStartTimeout;
     protected TransactionHeaderInformationFactory headerInformationFactory;
     protected ConstraintSemantics constraintSemantics;
     protected AccessCapability accessCapability;
@@ -180,11 +179,6 @@ public abstract class AbstractEditionModule
     {
         databaseManager.createDatabase( new DatabaseId( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) );
         databaseManager.createDatabase( new DatabaseId( config.get( GraphDatabaseSettings.default_database ) ) );
-    }
-
-    public long getTransactionStartTimeout()
-    {
-        return transactionStartTimeout;
     }
 
     public TransactionHeaderInformationFactory getHeaderInformationFactory()
