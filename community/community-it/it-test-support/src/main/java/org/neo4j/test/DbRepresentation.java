@@ -128,9 +128,36 @@ public class DbRepresentation
     }
 
     @Override
-    public boolean equals( Object obj )
+    public boolean equals( Object o )
     {
-        return compareWith( (DbRepresentation) obj ).isEmpty();
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        var other = (DbRepresentation) o;
+        return compareWith( other ).isEmpty();
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( nodes, schemaIndexes, constraints, highestNodeId, highestRelationshipId );
+    }
+
+    @Override
+    public String toString()
+    {
+        return "DbRepresentation{" +
+               "nodes=" + nodes +
+               ", schemaIndexes=" + schemaIndexes +
+               ", constraints=" + constraints +
+               ", highestNodeId=" + highestNodeId +
+               ", highestRelationshipId=" + highestRelationshipId +
+               '}';
     }
 
     // Accessed from HA-robustness, needs to be public
@@ -201,18 +228,6 @@ public class DbRepresentation
                 diff.add( "Other has node " + id + " which I don't" );
             }
         }
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return nodes.hashCode();
-    }
-
-    @Override
-    public String toString()
-    {
-        return nodes.toString();
     }
 
     private static class NodeRep
