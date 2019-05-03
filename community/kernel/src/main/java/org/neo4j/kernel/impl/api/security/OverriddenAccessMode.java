@@ -72,7 +72,7 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsTraverseLabels( IntStream labels )
+    public boolean allowsTraverseLabels( int... labels )
     {
         return wrapping.allowsTraverseLabels( labels );
     }

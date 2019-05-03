@@ -25,8 +25,6 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
-import java.util.Arrays;
-
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -244,8 +242,7 @@ class DefaultNodeCursor implements NodeCursor
 
     boolean allowsTraverse()
     {
-        return accessMode.allowsTraverseAllLabels() ||
-               accessMode.allowsTraverseLabels( Arrays.stream( storeCursor.labels() ).mapToInt( l -> (int) l ) );
+        return accessMode.allowsTraverseAllLabels() || accessMode.allowsTraverseLabels( storeCursor.labels() );
     }
 
     @Override

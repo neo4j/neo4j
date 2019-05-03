@@ -25,7 +25,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.IntStream;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.RawIterator;
@@ -194,14 +193,28 @@ public class AllStoreHolder extends Read
     public long countsForNodeWithoutTxState( int labelId )
     {
         AccessMode mode = ktx.securityContext().mode();
-        // TODO eeeh... way harder to handle now...
-        if ( labelId == TokenRead.ANY_LABEL || mode.allowsTraverseLabels( IntStream.of( labelId ) ) )
+        if ( labelId == TokenRead.ANY_LABEL && mode.allowsTraverseAllLabels() || mode.allowsTraverseLabels( labelId ) )
         {
             return storageReader.countsForNode( labelId );
         }
         else
         {
-            return 0;
+            // We have a restriction on what part of the graph can be traversed. This disables the count store entirely.
+            // We need to calculate the counts through expensive operations. We cannot use a NodeLabelScan because the
+            // label requested might not be allowed for that node, and yet the node might be visible due to Traverse rules.
+            long count = 0;
+            try ( DefaultNodeCursor nodes = cursors.allocateNodeCursor() ) // DefaultNodeCursor already contains traversal checks within next()
+            {
+                this.allNodesScan( nodes );
+                while ( nodes.next() )
+                {
+                    if ( labelId == TokenRead.ANY_LABEL || nodes.labels().contains( labelId ) )
+                    {
+                        count++;
+                    }
+                }
+                return count;
+            }
         }
     }
 

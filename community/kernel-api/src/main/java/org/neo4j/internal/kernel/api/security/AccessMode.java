@@ -20,7 +20,6 @@
 package org.neo4j.internal.kernel.api.security;
 
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -116,7 +115,7 @@ public interface AccessMode
         }
 
         @Override
-        public boolean allowsTraverseLabels( IntStream labels )
+        public boolean allowsTraverseLabels( int... labels )
         {
             return read;
         }
@@ -159,7 +158,16 @@ public interface AccessMode
     boolean allowsSchemaWrites();
 
     boolean allowsTraverseAllLabels();
-    boolean allowsTraverseLabels( IntStream labels );
+    boolean allowsTraverseLabels( int... labels );
+    default boolean allowsTraverseLabels( long... labels )
+    {
+        int[] asInt = new int[labels.length];
+        for ( int i = 0; i < labels.length; i++ )
+        {
+            asInt[i] = (int) labels[i];
+        }
+        return allowsTraverseLabels( asInt );
+    }
 
     boolean allowsReadPropertyAllLabels( int propertyKey );
     boolean allowsReadProperty( Supplier<int[]> labels, int propertyKey );

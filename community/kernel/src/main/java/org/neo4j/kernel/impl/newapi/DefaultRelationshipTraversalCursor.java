@@ -197,7 +197,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         try ( NodeCursor nodeCursor = read.cursors().allocateFullAccessNodeCursor() )
         {
             read.singleNode( storeCursor.neighbourNodeReference(), nodeCursor );
-            boolean allowed = nodeCursor.next() && mode.allowsTraverseLabels( Arrays.stream( nodeCursor.labels().all() ).mapToInt( l -> (int) l ) );
+            boolean allowed = nodeCursor.next() && mode.allowsTraverseLabels( nodeCursor.labels().all() );
             nodeCursor.close();
             return allowed;
         }

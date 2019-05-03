@@ -100,7 +100,6 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
             fullAccessNodeCursor.release();
         }
         fullAccessNodeCursor = (FullAccessNodeCursor) cursor;
-
     }
 
     @Override

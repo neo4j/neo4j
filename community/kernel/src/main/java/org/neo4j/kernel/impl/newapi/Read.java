@@ -81,7 +81,7 @@ abstract class Read implements TxStateHolder,
         QueryContext
 {
     private final StorageReader storageReader;
-    private final DefaultPooledCursors cursors;
+    protected final DefaultPooledCursors cursors;
     final KernelTransactionImplementation ktx;
 
     Read( StorageReader storageReader, DefaultPooledCursors cursors,
@@ -317,7 +317,7 @@ abstract class Read implements TxStateHolder,
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
         IndexProgressor indexProgressor;
-        if ( ktx.securityContext().mode().allowsTraverseLabels( IntStream.of( label ) ) )
+        if ( ktx.securityContext().mode().allowsTraverseLabels( label ) )
         {
             LabelScan labelScan = labelScanReader().nodeLabelScan( label );
             indexProgressor = labelScan.initialize( indexCursor );

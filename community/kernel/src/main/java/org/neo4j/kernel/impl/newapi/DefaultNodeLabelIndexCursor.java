@@ -96,7 +96,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
         }
         else
         {
-            return mode.allowsTraverseAllLabels() || mode.allowsTraverseLabels( Arrays.stream( labels.all() ).mapToInt( l -> (int) l ) );
+            return mode.allowsTraverseAllLabels() || mode.allowsTraverseLabels( labels.all() );
         }
     }
 

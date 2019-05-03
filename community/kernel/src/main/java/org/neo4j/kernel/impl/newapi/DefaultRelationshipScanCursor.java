@@ -117,12 +117,12 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         try ( NodeCursor nodeCursor = read.cursors().allocateFullAccessNodeCursor() )
         {
             read.singleNode( storeCursor.sourceNodeReference(), nodeCursor );
-            boolean allowed = nodeCursor.next() && mode.allowsTraverseLabels( Arrays.stream( nodeCursor.labels().all() ).mapToInt( l -> (int) l ) );
+            boolean allowed = nodeCursor.next() && mode.allowsTraverseLabels( nodeCursor.labels().all() );
 
             if ( allowed )
             {
                 read.singleNode( storeCursor.targetNodeReference(), nodeCursor );
-                allowed = nodeCursor.next() && mode.allowsTraverseLabels( Arrays.stream( nodeCursor.labels().all() ).mapToInt( l -> (int) l ) );
+                allowed = nodeCursor.next() && mode.allowsTraverseLabels( nodeCursor.labels().all() );
             }
             return allowed;
         }

@@ -124,7 +124,7 @@ public class DefaultPropertyCursor implements PropertyCursor
     {
         this.assertOpen = assertOpen;
         this.read = read;
-        accessMode = read.ktx.securityContext().mode();
+        this.accessMode = read.ktx.securityContext().mode();
     }
 
     boolean allowed( int propertyKey )
