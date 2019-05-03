@@ -37,6 +37,8 @@ case class ShowUsers()(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(i
 case class CreateUser(userName: String, initialStringPassword: Option[String], initialParameterPassword: Option[Parameter],
                       requirePasswordChange: Boolean, suspended: Boolean)(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(idGen)
 case class DropUser(userName: String)(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(idGen)
+case class AlterUser(userName: String, initialStringPassword: Option[String], initialParameterPassword: Option[Parameter],
+                      requirePasswordChange: Option[Boolean], suspended: Option[Boolean])(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(idGen)
 case class ShowRoles(withUsers: Boolean, showAll: Boolean)(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(idGen)
 case class CreateRole(roleName: String, from: Option[String])(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(idGen)
 case class DropRole(roleName: String)(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(idGen)

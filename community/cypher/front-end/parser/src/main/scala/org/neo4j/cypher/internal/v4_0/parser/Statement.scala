@@ -38,7 +38,7 @@ trait Statement extends Parser
   }
 
   def SecurityCommand: Rule1[CatalogDDL] = rule("Security DDL statement") {
-    optional(keyword("CATALOG")) ~~ (ShowRoles | CreateRole | DropRole | ShowUsers | CreateUser | DropUser)
+    optional(keyword("CATALOG")) ~~ (ShowRoles | CreateRole | DropRole | ShowUsers | CreateUser | DropUser | AlterUser)
   }
 
   def ShowUsers: Rule1[ShowUsers] = rule("CATALOG SHOW USERS") {
@@ -103,6 +103,88 @@ trait Statement extends Parser
 
   def DropUser: Rule1[DropUser] = rule("CATALOG DROP USER") {
     group(keyword("DROP USER") ~~ UserNameString) ~~>> (ast.DropUser(_))
+  }
+
+  def AlterUser: Rule1[AlterUser] = rule("CATALOG ALTER USER") {
+    AlterUserWithStringPassword | AlterUserWithParameterPassword | AlterUserPasswordMode | AlterUserStatus
+  }
+
+  def AlterUserWithStringPassword: Rule1[AlterUser] = rule("CATALOG ALTER USER") {
+    // ALTER USER username SET PASSWORD stringLiteralPassword SET STATUS SUSPENDED
+    group(keyword("ALTER USER") ~~ UserNameString ~~ keyword("SET") ~~
+    keyword("PASSWORD") ~~ StringLiteral) ~~ keyword("SET STATUS SUSPENDED") ~~>>
+      ((userName, initialPassword) => ast.AlterUser(userName, Some(initialPassword.value), None, None, suspended = Some(true))) |
+    //
+    // ALTER USER username SET PASSWORD stringLiteralPassword SET STATUS ACTIVE
+    group(keyword("ALTER USER") ~~ UserNameString ~~ keyword("SET") ~~
+    keyword("PASSWORD") ~~ StringLiteral) ~~ keyword("SET STATUS ACTIVE") ~~>>
+      ((userName, initialPassword) => ast.AlterUser(userName, Some(initialPassword.value), None, None, suspended = Some(false))) |
+    //
+    // ALTER USER username SET PASSWORD stringLiteralPassword
+    group(keyword("ALTER USER") ~~ UserNameString ~~ keyword("SET") ~~
+    keyword("PASSWORD") ~~ StringLiteral) ~~>> ((userName, initialPassword) =>
+      ast.AlterUser(userName, Some(initialPassword.value), None, None, None))
+  }
+
+  def AlterUserWithParameterPassword: Rule1[AlterUser] = rule("CATALOG ALTER USER") {
+    // ALTER USER username SET PASSWORD parameterPassword SET STATUS SUSPENDED
+    group(keyword("ALTER USER") ~~ UserNameString ~~ keyword("SET") ~~
+    keyword("PASSWORD") ~~ Parameter) ~~ keyword("SET STATUS SUSPENDED") ~~>>
+      ((userName, initialPassword) => ast.AlterUser(userName, None, Some(initialPassword), None, suspended = Some(true))) |
+    //
+    // ALTER USER username SET PASSWORD parameterPassword SET STATUS ACTIVE
+    group(keyword("ALTER USER") ~~ UserNameString ~~ keyword("SET") ~~
+    keyword("PASSWORD") ~~ Parameter) ~~ keyword("SET STATUS ACTIVE") ~~>>
+      ((userName, initialPassword) => ast.AlterUser(userName, None, Some(initialPassword), None, suspended = Some(false))) |
+    //
+    // ALTER USER username SET PASSWORD parameterPassword
+    group(keyword("ALTER USER") ~~ UserNameString ~~ keyword("SET") ~~
+    keyword("PASSWORD") ~~ Parameter) ~~>> ((userName, initialPassword) =>
+      ast.AlterUser(userName, None, Some(initialPassword), None, None))
+  }
+
+  def AlterUserPasswordMode: Rule1[AlterUser] = rule("CATALOG ALTER USER") {
+    // ALTER USER username SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED
+    group(keyword("ALTER USER") ~~ UserNameString ~~ keyword("SET") ~~
+    keyword("PASSWORD CHANGE NOT REQUIRED")) ~~ keyword("SET STATUS SUSPENDED") ~~>>
+      (userName => ast.AlterUser(userName, None, None, requirePasswordChange = Some(false), suspended = Some(true))) |
+    //
+    // ALTER USER username SET PASSWORD CHANGE NOT REQUIRED SET STATUS ACTIVE
+    group(keyword("ALTER USER") ~~ UserNameString ~~ keyword("SET") ~~
+    keyword("PASSWORD CHANGE NOT REQUIRED")) ~~ keyword("SET STATUS ACTIVE") ~~>>
+      (userName => ast.AlterUser(userName, None, None, requirePasswordChange = Some(false), suspended = Some(false))) |
+    //
+    // ALTER USER username SET PASSWORD CHANGE NOT REQUIRED
+    group(keyword("ALTER USER") ~~ UserNameString ~~ keyword("SET") ~~
+    keyword("PASSWORD CHANGE NOT REQUIRED")) ~~>>
+      (userName => ast.AlterUser(userName, None, None, requirePasswordChange = Some(false), None)) |
+    //
+    // ALTER USER username SET PASSWORD CHANGE REQUIRED SET STATUS SUSPENDED
+    group(keyword("ALTER USER") ~~ UserNameString ~~ keyword("SET") ~~
+    keyword("PASSWORD CHANGE REQUIRED")) ~~ keyword("SET STATUS SUSPENDED") ~~>> (userName =>
+      ast.AlterUser(userName, None, None, requirePasswordChange = Some(true), suspended = Some(true))) |
+    //
+    // ALTER USER username SET PASSWORD CHANGE REQUIRED SET STATUS ACTIVE
+    group(keyword("ALTER USER") ~~ UserNameString ~~ keyword("SET") ~~
+    keyword("PASSWORD CHANGE REQUIRED")) ~~ keyword("SET STATUS ACTIVE") ~~>> (userName =>
+      ast.AlterUser(userName, None, None, requirePasswordChange = Some(true), suspended = Some(false))) |
+    //
+    // ALTER USER username SET PASSWORD CHANGE REQUIRED
+    group(keyword("ALTER USER") ~~ UserNameString ~~ keyword("SET") ~~
+    keyword("PASSWORD CHANGE REQUIRED")) ~~>> (userName =>
+      ast.AlterUser(userName, None, None, requirePasswordChange = Some(true), None))
+  }
+
+  def AlterUserStatus: Rule1[AlterUser] = rule("CATALOG ALTER USER") {
+    // ALTER USER username SET STATUS SUSPENDED
+    group(keyword("ALTER USER") ~~ UserNameString ~~ keyword("SET") ~~
+    keyword("STATUS SUSPENDED")) ~~>> (userName =>
+      ast.AlterUser(userName, None, None, None, suspended = Some(true))) |
+    //
+    // ALTER USER username SET STATUS ACTIVE
+    group(keyword("ALTER USER") ~~ UserNameString ~~ keyword("SET") ~~
+    keyword("STATUS ACTIVE")) ~~>> (userName =>
+      ast.AlterUser(userName, None, None, None, suspended = Some(false)))
   }
 
   def ShowRoles: Rule1[ShowRoles] = rule("CATALOG SHOW ROLES") {

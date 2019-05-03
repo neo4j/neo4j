@@ -55,6 +55,10 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
       case DropUser(userName) =>
         Some(plans.DropUser(userName))
 
+      // ALTER USER foo
+      case AlterUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended) =>
+        Some(plans.AlterUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended))
+
       // SHOW [ ALL | POPULATED ] ROLES [ WITH USERS ]
       case ShowRoles(withUsers, showAll) =>
         Some(plans.ShowRoles(withUsers, showAll))

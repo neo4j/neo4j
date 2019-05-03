@@ -73,12 +73,20 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case x @ CreateUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended) =>
       //TODO write out password??
       val password = initialStringPassword.getOrElse(initialParameterPassword.get)
-      val passwordString = s"WITH PASSWORD $password CHANGE ${if (!requirePasswordChange) "NOT" else ""} REQUIRED"
-      val statusString = s"WITH STATUS ${if (suspended) "SUSPENDED" else "ACTIVE"}"
+      val passwordString = s"SET PASSWORD $password CHANGE ${if (!requirePasswordChange) "NOT" else ""} REQUIRED"
+      val statusString = s"SET STATUS ${if (suspended) "SUSPENDED" else "ACTIVE"}"
       s"${x.name} $userName $passwordString $statusString"
 
     case x @ DropUser(userName) =>
       s"${x.name} $userName"
+
+    case x @ AlterUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended) =>
+      //TODO write out password??
+      val password = initialStringPassword.getOrElse(initialParameterPassword.orNull)
+      val passwordString = if (password != null) s" SET PASSWORD $password" else ""
+      val passwordModeString = if (requirePasswordChange.isDefined) s" SET PASSWORD CHANGE ${if (!requirePasswordChange.get) "NOT" else ""} REQUIRED" else ""
+      val statusString = if(suspended.isDefined) s" SET STATUS ${if (suspended.get) "SUSPENDED" else "ACTIVE"}" else ""
+      s"${x.name} $userName$passwordString$passwordModeString$statusString"
 
     case x @ ShowRoles(withUsers, _) =>
       s"${x.name} ${if (withUsers) "WITH USERS" else ""}"
