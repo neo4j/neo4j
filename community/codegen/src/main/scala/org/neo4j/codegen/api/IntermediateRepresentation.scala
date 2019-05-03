@@ -502,6 +502,8 @@ object IntermediateRepresentation {
 
   def load(variable: String): IntermediateRepresentation = Load(variable)
 
+  def load(variable: LocalVariable): IntermediateRepresentation = Load(variable.name)
+
   def cast[TO](expression: IntermediateRepresentation)(implicit to: Manifest[TO]) = Cast(typeRef(to), expression)
 
   def instanceOf[T](expression: IntermediateRepresentation)(implicit t: Manifest[T]) = InstanceOf(typeRef(t), expression)
@@ -578,6 +580,8 @@ object IntermediateRepresentation {
   def declare(typeReference: codegen.TypeReference, name: String) = DeclareLocalVariable(typeReference, name)
 
   def assign(name: String, value: IntermediateRepresentation) = AssignToLocalVariable(name, value)
+
+  def assign(variable: LocalVariable, value: IntermediateRepresentation) = AssignToLocalVariable(variable.name, value)
 
   def declareAndAssign(typeReference: TypeReference, name: String, value: IntermediateRepresentation): IntermediateRepresentation =
     block(declare(typeReference, name), assign(name, value))
