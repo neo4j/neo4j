@@ -33,10 +33,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.CommunityGraphFactory;
 import org.neo4j.server.database.GraphFactory;
 import org.neo4j.server.modules.ServerModule;
@@ -52,13 +50,15 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_user_log_to_stdout;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_user_log_max_archives;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_user_log_rotation_delay;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_user_log_rotation_threshold;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_user_log_max_archives;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_user_log_to_stdout;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerBootstrapper.OK;
 
 public class ServerUserLogTest
@@ -81,7 +81,7 @@ public class ServerUserLogTest
         try
         {
             int returnCode = serverBootstrapper.start( dir, Optional.empty(),
-                    MapUtil.stringMap(
+                    stringMap(
                             database_path.name(), homeDir.absolutePath().getAbsolutePath()
                     )
             );
@@ -93,13 +93,13 @@ public class ServerUserLogTest
 
             assertThat( getStdOut(), not( empty() ) );
             assertThat( getStdOut(), hasItem(containsString( "Started." ) ) );
-            assertTrue( !Files.exists( getUserLogFileLocation( dir ) ) );
         }
         finally
         {
             // stop the server so that resources are released and test teardown isn't flaky
             serverBootstrapper.stop();
         }
+        assertFalse( Files.exists( getUserLogFileLocation( dir ) ) );
     }
 
     @Test
@@ -114,7 +114,7 @@ public class ServerUserLogTest
         try
         {
             int returnCode = serverBootstrapper.start( dir, Optional.empty(),
-                    MapUtil.stringMap(
+                    stringMap(
                             database_path.name(), homeDir.absolutePath().getAbsolutePath(),
                             store_user_log_to_stdout.name(), "false"
                     )
@@ -124,16 +124,16 @@ public class ServerUserLogTest
             assertTrue( serverBootstrapper.getServer().getDatabase().isRunning() );
             assertThat( serverBootstrapper.getLog(), not( sameInstance( logBeforeStart ) ) );
 
-            assertThat( getStdOut(), empty() );
-            assertTrue( Files.exists( getUserLogFileLocation( dir ) ) );
-            assertThat( readUserLogFile( dir ), not( empty() ) );
-            assertThat( readUserLogFile( dir ), hasItem(containsString( "Started." ) ) );
         }
         finally
         {
             // stop the server so that resources are released and test teardown isn't flaky
             serverBootstrapper.stop();
         }
+        assertThat( getStdOut(), empty() );
+        assertTrue( Files.exists( getUserLogFileLocation( dir ) ) );
+        assertThat( readUserLogFile( dir ), not( empty() ) );
+        assertThat( readUserLogFile( dir ), hasItem(containsString( "Started." ) ) );
     }
 
     @Test
@@ -144,14 +144,17 @@ public class ServerUserLogTest
         File dir = homeDir.directory();
         Log logBeforeStart = serverBootstrapper.getLog();
         int maxArchives = 4;
-        int rotationDelayMs = 1;
+        int rotationDelayMs = 0;
 
         // when
         try
         {
             int returnCode = serverBootstrapper.start( dir, Optional.empty(),
-                    MapUtil.stringMap( database_path.name(), homeDir.absolutePath().getAbsolutePath(), store_user_log_to_stdout.name(), "false",
-                            store_user_log_rotation_delay.name(), Integer.toString( rotationDelayMs ) + "ms", store_user_log_rotation_threshold.name(), "16",
+                    stringMap(
+                            database_path.name(), homeDir.absolutePath().getAbsolutePath(),
+                            store_user_log_to_stdout.name(), "false",
+                            store_user_log_rotation_delay.name(), rotationDelayMs + "0",
+                            store_user_log_rotation_threshold.name(), "16",
                             store_user_log_max_archives.name(), Integer.toString( maxArchives )
                     )
             );
@@ -165,23 +168,21 @@ public class ServerUserLogTest
             for ( int i = 0; i <= maxArchives; i++ )
             {
                 serverBootstrapper.getLog().info( "testing 123. This string should contain more than 16 bytes\n" );
-                // this could be flaky on a busy machine. Can we block or poll until there are no outstanding tasks in the JobScheduler queue?
-                Thread.sleep( 2 * rotationDelayMs );
             }
-
-            // then no exceptions are thrown and
-            assertThat( getStdOut(), empty() );
-            assertTrue( Files.exists( getUserLogFileLocation( dir ) ) );
-            assertThat( readUserLogFile( dir ), not( empty() ) );
-            List<String> userLogFiles = allUserLogFiles( dir );
-            assertThat( userLogFiles, containsInAnyOrder( "neo4j.log", "neo4j.log.1", "neo4j.log.2", "neo4j.log.3", "neo4j.log.4" ) );
-            assertEquals( maxArchives + 1, userLogFiles.size() );
         }
         finally
         {
             // stop the server so that resources are released and test teardown isn't flaky
             serverBootstrapper.stop();
         }
+
+        // then no exceptions are thrown and
+        assertThat( getStdOut(), empty() );
+        assertTrue( Files.exists( getUserLogFileLocation( dir ) ) );
+        assertThat( readUserLogFile( dir ), not( empty() ) );
+        List<String> userLogFiles = allUserLogFiles( dir );
+        assertThat( userLogFiles, containsInAnyOrder( "neo4j.log", "neo4j.log.1", "neo4j.log.2", "neo4j.log.3", "neo4j.log.4" ) );
+        assertEquals( maxArchives + 1, userLogFiles.size() );
     }
 
     private List<String> getStdOut()
@@ -216,13 +217,11 @@ public class ServerUserLogTest
                     @Override
                     protected void configureWebServer()
                     {
-                        return;
                     }
 
                     @Override
                     protected void startWebServer()
                     {
-                        return;
                     }
 
                     @Override
