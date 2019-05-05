@@ -19,6 +19,8 @@
  */
 package org.neo4j.codegen.api
 
+import java.io.PrintStream
+
 import org.neo4j.codegen
 import org.neo4j.codegen.TypeReference
 import org.neo4j.values.storable._
@@ -187,7 +189,6 @@ case class Not(test: IntermediateRepresentation) extends IntermediateRepresentat
   * Checks if expression is null
   */
 case class IsNull(test: IntermediateRepresentation) extends IntermediateRepresentation
-
 
 /**
   * A block is a sequence of operations where the block evaluates to the last expression
@@ -596,7 +597,12 @@ object IntermediateRepresentation {
 
   def and(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) = BooleanAnd(lhs, rhs)
 
-  def or(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) = BooleanOr(lhs, rhs)
+  def or(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation = BooleanOr(lhs, rhs)
+
+  def or(ors: Seq[IntermediateRepresentation]): IntermediateRepresentation = {
+    if (ors.isEmpty) constant(true)
+    else ors.reduceLeft((acc, current) => or(acc, current))
+  }
 
   def isNull(test: IntermediateRepresentation): IntermediateRepresentation = IsNull(test)
 
@@ -607,4 +613,7 @@ object IntermediateRepresentation {
   def not(test: IntermediateRepresentation) = Not(test)
 
   def oneTime(expression: IntermediateRepresentation): IntermediateRepresentation = OneTime(expression)(used = false)
+
+  def print(value: IntermediateRepresentation): IntermediateRepresentation =
+    invokeSideEffect(getStatic[System, PrintStream]("out"), method[PrintStream, Unit, Object]("println"), value )
 }
