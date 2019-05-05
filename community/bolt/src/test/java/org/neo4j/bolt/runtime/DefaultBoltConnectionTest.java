@@ -20,6 +20,7 @@
 package org.neo4j.bolt.runtime;
 
 import io.netty.channel.embedded.EmbeddedChannel;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -308,7 +309,8 @@ public class DefaultBoltConnectionTest
         connection.processNextBatch();
 
         verify( stateMachine ).close();
-        logProvider.assertNone( AssertableLogProvider.inLog( containsString( BoltServer.class.getPackage().getName() ) ).warn( any( String.class ) ) );
+        logProvider.assertNone( AssertableLogProvider.inLog( containsString( BoltServer.class.getPackage().getName() ) )
+                .warn( Matchers.any( String.class ) ) );
     }
 
     @Test
