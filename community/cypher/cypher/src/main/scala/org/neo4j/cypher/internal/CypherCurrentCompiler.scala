@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher._
 import org.neo4j.cypher.exceptionHandler.runSafely
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compatibility._
@@ -34,13 +35,14 @@ import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryConte
 import org.neo4j.cypher.internal.runtime.{ExecutableQuery => _, _}
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, TaskCloser}
-import org.neo4j.cypher.{CypherException, CypherExecutionMode, CypherVersion}
 import org.neo4j.graphdb.{Notification, Result}
 import org.neo4j.kernel.api.query.{CompilerInfo, SchemaIndexUsage}
 import org.neo4j.kernel.impl.query.QuerySubscriber.NOT_A_SUBSCRIBER
 import org.neo4j.kernel.impl.query.{QueryExecution, QueryExecutionMonitor, QuerySubscriber, TransactionalContext}
 import org.neo4j.monitoring.Monitors
+import org.neo4j.values.storable.{NoValue, TextValue}
 import org.neo4j.values.virtual.MapValue
 
 import scala.collection.JavaConverters._
@@ -78,11 +80,32 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                        params: MapValue
                       ): ExecutableQuery = {
 
+    def resolveParameterForManagementCommands(logicalPlan: LogicalPlan): LogicalPlan = {
+      logicalPlan match {
+        case c@CreateUser(_, _, Some(paramPassword), _, _) =>
+          val paramString = params.get(paramPassword.name) match {
+            case param: TextValue => param.stringValue()
+            case NoValue.NO_VALUE => throw new ParameterNotFoundException("Expected parameter(s): " + paramPassword.name)
+            case param => throw new ParameterWrongTypeException("Only string values are accepted as password, got: " + param.getTypeName)
+          }
+          CreateUser(c.userName, Some(paramString), None, c.requirePasswordChange, c.suspended)(new SequentialIdGen(c.id.x + 1))
+        case a@AlterUser(_, _, Some(paramPassword), _, _) =>
+          val paramString = params.get(paramPassword.name) match {
+            case param: TextValue => param.stringValue()
+            case NoValue.NO_VALUE => throw new ParameterNotFoundException("Expected parameter(s): " + paramPassword.name)
+            case param => throw new ParameterWrongTypeException("Only string values are accepted as password, got: " + param.getTypeName)
+          }
+          AlterUser(a.userName, Some(paramString), None, a.requirePasswordChange, a.suspended)(new SequentialIdGen(a.id.x + 1))
+        case _ => // Not a management command that needs resolving, do nothing
+          logicalPlan
+      }
+    }
+
     val logicalPlanResult =
       planner.parseAndPlan(preParsedQuery, tracer, transactionalContext, params, runtime)  // we only pass in the runtime to be able to support checking against the correct CommandManagementRuntime
 
     val planState = logicalPlanResult.logicalPlanState
-    val logicalPlan = planState.logicalPlan
+    val logicalPlan: LogicalPlan = resolveParameterForManagementCommands(planState.logicalPlan)
     val queryType = getQueryType(planState)
 
     val runtimeContext = contextCreator.create(logicalPlanResult.plannerContext.planContext,
@@ -91,7 +114,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                                logicalPlanResult.plannerContext.debugOptions,
                                                preParsedQuery.useCompiledExpressions)
 
-    val logicalQuery = LogicalQuery(planState.logicalPlan,
+    val logicalQuery = LogicalQuery(logicalPlan,
                                     planState.queryText,
                                     queryType == READ_ONLY,
                                     planState.statement().returnColumns.toArray,

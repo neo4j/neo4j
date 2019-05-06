@@ -33,7 +33,7 @@ trait IdGen {
 }
 
 /**
-  * Generates IDs in sequence starting at `initialValuue`
+  * Generates IDs in sequence starting at `initialValue`
   */
 class SequentialIdGen(initialValue: Int = 0) extends IdGen {
   private var i: Int = initialValue

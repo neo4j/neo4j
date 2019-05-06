@@ -96,6 +96,10 @@ class CatalogDDLParserTest
     failsToParse
   }
 
+  test("CREATE USER foo SET PASSWORD null CHANGE REQUIRED") {
+    failsToParse
+  }
+
   test("CATALOG CREATE USER fo,o SET PASSWORD 'password'") {
     failsToParse
   }
@@ -116,7 +120,57 @@ class CatalogDDLParserTest
     yields(ast.DropUser("foo"))
   }
 
-  // TODO ALTER USER tests
+  test("CATALOG ALTER USER foo SET PASSWORD 'password'") {
+    yields(ast.AlterUser("foo", Some("password"), None, None, None))
+  }
+
+  test("ALTER USER foo SET PASSWORD $password") {
+    yields(ast.AlterUser("foo", None, Some(Param("password", CTAny)(_)), None, None))
+  }
+
+  test("CATALOG ALTER USER foo SET PASSWORD CHANGE NOT REQUIRED") {
+    yields(ast.AlterUser("foo", None, None, requirePasswordChange = Some(false), None))
+  }
+
+  test("ALTER USER foo SET STATUS SUSPENDED") {
+    yields(ast.AlterUser("foo", None, None, None, suspended = Some(true)))
+  }
+
+  test("CATALOG ALTER USER foo SET PASSWORD 'password' CHANGE REQUIRED") {
+    yields(ast.AlterUser("foo", Some("password"), None, requirePasswordChange = Some(true), None))
+  }
+
+  test("ALTER USER foo SET PASSWORD $password SET PASSWORD CHANGE NOT REQUIRED") {
+    yields(ast.AlterUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = Some(false), None))
+  }
+
+  test("CATALOG ALTER USER foo SET PASSWORD 'password' SET STATUS ACTIVE") {
+    yields(ast.AlterUser("foo", Some("password"), None, None, suspended = Some(false)))
+  }
+
+  test("ALTER USER foo SET PASSWORD $password SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED") {
+    yields(ast.AlterUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = Some(false), suspended = Some(true)))
+  }
+
+  test("ALTER USER foo SET PASSWORD") {
+    failsToParse
+  }
+
+  test("ALTER USER foo SET STATUS") {
+    failsToParse
+  }
+
+  test("ALTER USER foo SET PASSWORD null") {
+    failsToParse
+  }
+
+  test("ALTER USER foo SET PASSWORD 'password' SET PASSWORD SET STATUS ACTIVE") {
+    failsToParse
+  }
+
+  test("ALTER USER foo SET PASSWORD STATUS ACTIVE") {
+    failsToParse
+  }
 
   test("SHOW ROLES") {
     yields(ast.ShowRoles(withUsers = false, showAll = true))
