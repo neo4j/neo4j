@@ -32,6 +32,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.helpers.collection.Iterators;
@@ -193,6 +194,12 @@ class CheckPointSchedulerTest
             }
 
             @Override
+            public long tryCheckPoint( TriggerInfo triggerInfo, BooleanSupplier timeout )
+            {
+                throw new RuntimeException( "this should have not been called" );
+            }
+
+            @Override
             public long tryCheckPointNoWait( TriggerInfo triggerInfo )
             {
                 throw new RuntimeException( "this should have not been called" );
@@ -345,6 +352,12 @@ class CheckPointSchedulerTest
         }
 
         @Override
+        public long tryCheckPoint( TriggerInfo triggerInfo, BooleanSupplier timeout )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public long tryCheckPointNoWait( TriggerInfo triggerInfo )
         {
             throw new UnsupportedOperationException();
@@ -419,6 +432,12 @@ class CheckPointSchedulerTest
 
         @Override
         public long tryCheckPoint( TriggerInfo triggerInfo )
+        {
+            throw new UnsupportedOperationException( "This should have not been called" );
+        }
+
+        @Override
+        public long tryCheckPoint( TriggerInfo triggerInfo, BooleanSupplier timeout )
         {
             throw new UnsupportedOperationException( "This should have not been called" );
         }

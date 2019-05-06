@@ -62,7 +62,7 @@ public class CheckPointScheduler extends LifecycleAdapter
                 {
                     return;
                 }
-                checkPointer.checkPointIfNeeded( new SimpleTriggerInfo( "scheduler" ) );
+                checkPointer.checkPointIfNeeded( new SimpleTriggerInfo( "Scheduled checkpoint" ) );
 
                 // There were previous unsuccessful attempts, but this attempt was a success
                 // so let's clear those previous errors.

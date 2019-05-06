@@ -25,11 +25,13 @@ import java.io.Flushable;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BooleanSupplier;
 
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -69,7 +71,7 @@ import static org.neo4j.test.ThreadTestUtils.forkFuture;
 
 class CheckPointerImplTest
 {
-    private static final SimpleTriggerInfo INFO = new SimpleTriggerInfo( "test" );
+    private static final SimpleTriggerInfo INFO = new SimpleTriggerInfo( "Test" );
 
     private final TransactionIdStore txIdStore = mock( TransactionIdStore.class );
     private final CheckPointThreshold threshold = mock( CheckPointThreshold.class );
@@ -279,6 +281,7 @@ class CheckPointerImplTest
     {
         // Given
         Lock lock = mock( Lock.class );
+        when( lock.tryLock( anyLong(), any( TimeUnit.class ) ) ).thenReturn( true );
         final CheckPointerImpl checkPointing = checkPointer( mutex( lock ) );
         mockTxIdStore();
 
@@ -395,6 +398,47 @@ class CheckPointerImplTest
         CheckPointerImpl checkPointer = checkPointer();
         checkPointer.tryCheckPoint( INFO );
         assertTrue( doneDisablingLimits.get() );
+    }
+
+    @Test
+    void tryCheckPointMustWaitForOnGoingCheckPointsToCompleteAsLongAsTimeoutPredicateIsFalse() throws Exception
+    {
+        mockTxIdStore();
+        CheckPointerImpl checkPointer = checkPointer();
+        BinaryLatch arriveFlushAndForce = new BinaryLatch();
+        BinaryLatch finishFlushAndForce = new BinaryLatch();
+
+        doAnswer( invocation ->
+        {
+            arriveFlushAndForce.release();
+            finishFlushAndForce.await();
+            return null;
+        } ).when( forceOperation ).flushAndForce( limiter );
+
+        Thread forceCheckPointThread = new Thread( () ->
+        {
+            try
+            {
+                checkPointer.forceCheckPoint( INFO );
+            }
+            catch ( Throwable e )
+            {
+                e.printStackTrace();
+                throw new RuntimeException( e );
+            }
+        } );
+        forceCheckPointThread.start();
+
+        arriveFlushAndForce.await(); // Wait for force-thread to arrive in flushAndForce().
+
+        BooleanSupplier predicate = mock( BooleanSupplier.class );
+        when( predicate.getAsBoolean() ).thenReturn( false, false, true );
+        assertThat( checkPointer.tryCheckPoint( INFO, predicate ), is( -1L ) ); // We decided to not wait for the on-going check point to finish.
+
+        finishFlushAndForce.release(); // Let the flushAndForce complete.
+        forceCheckPointThread.join();
+
+        assertThat( checkPointer.tryCheckPoint( INFO, predicate ), is( this.transactionId ) );
     }
 
     private void verifyAsyncActionCausesConcurrentFlushingRush(

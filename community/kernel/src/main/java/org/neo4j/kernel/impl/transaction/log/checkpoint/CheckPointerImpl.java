@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.io.IOException;
+import java.util.function.BooleanSupplier;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -104,29 +105,17 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @Override
     public long tryCheckPoint( TriggerInfo info ) throws IOException
     {
-        return tryCheckPoint( info, true );
+        return tryCheckPoint( info, () -> false );
     }
 
     @Override
     public long tryCheckPointNoWait( TriggerInfo info ) throws IOException
     {
-        return tryCheckPoint( info, false );
+        return tryCheckPoint( info, () -> true );
     }
 
     @Override
-    public long checkPointIfNeeded( TriggerInfo info ) throws IOException
-    {
-        if ( threshold.isCheckPointingNeeded( transactionIdStore.getLastClosedTransactionId(), info ) )
-        {
-            try ( Resource lock = mutex.checkPoint() )
-            {
-                return doCheckPoint( info );
-            }
-        }
-        return NO_TRANSACTION_ID;
-    }
-
-    private long tryCheckPoint( TriggerInfo info, boolean awaitExistingCheckPoint ) throws IOException
+    public long tryCheckPoint( TriggerInfo info, BooleanSupplier timeout ) throws IOException
     {
         ioLimiter.disableLimit();
         try
@@ -141,16 +130,18 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             }
             else
             {
-                if ( !awaitExistingCheckPoint )
+                try ( Resource lock = mutex.tryCheckPoint( timeout ) )
                 {
-                    return NO_TRANSACTION_ID;
-                }
-
-                try ( Resource lock = mutex.checkPoint() )
-                {
-                    msgLog.info( info.describe( lastCheckPointedTx ) +
-                                 " Check pointing was already running, completed now" );
-                    return lastCheckPointedTx;
+                    if ( lock != null )
+                    {
+                        msgLog.info( info.describe( lastCheckPointedTx ) +
+                                " Check pointing was already running, completed now" );
+                        return lastCheckPointedTx;
+                    }
+                    else
+                    {
+                        return NO_TRANSACTION_ID;
+                    }
                 }
             }
         }
@@ -158,6 +149,19 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         {
             ioLimiter.enableLimit();
         }
+    }
+
+    @Override
+    public long checkPointIfNeeded( TriggerInfo info ) throws IOException
+    {
+        if ( threshold.isCheckPointingNeeded( transactionIdStore.getLastClosedTransactionId(), info ) )
+        {
+            try ( Resource lock = mutex.checkPoint() )
+            {
+                return doCheckPoint( info );
+            }
+        }
+        return NO_TRANSACTION_ID;
     }
 
     private long doCheckPoint( TriggerInfo triggerInfo ) throws IOException

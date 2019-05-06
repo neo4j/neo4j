@@ -40,7 +40,7 @@ public class SimpleTriggerInfo implements TriggerInfo
     public String describe( long transactionId )
     {
         String info = description == null ? triggerName : triggerName + " for " + description;
-        return "Checkpoint triggered by " + info + " @ txId: " + transactionId;
+        return "Checkpoint triggered by \"" + info + "\" @ txId: " + transactionId;
     }
 
     @Override
