@@ -19,7 +19,11 @@
  */
 package org.neo4j.internal.schema;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.token.api.TokenConstants;
+
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
 
 public class SchemaDescriptorFactory
 {
@@ -41,7 +45,7 @@ public class SchemaDescriptorFactory
     {
         validateLabelIds( labelId );
         validatePropertyIds( propertyIds );
-        return new DefaultLabelSchemaDescriptor( indexType, labelId, propertyIds );
+        return new SchemaDescriptorImplementation( indexType, NODE, COMPLETE_ALL_TOKENS, IndexConfig.empty(), new int[]{labelId}, propertyIds );
     }
 
     public static RelationTypeSchemaDescriptor forRelType( int relTypeId, int... propertyIds )
