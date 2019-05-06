@@ -161,10 +161,12 @@ class ServerUserLogTest
             assertTrue( serverBootstrapper.getServer().getDatabase().isRunning() );
 
             // when we forcibly log some more stuff
-            for ( int i = 0; i <= maxArchives; i++ )
+            do
             {
                 serverBootstrapper.getLog().info( "testing 123. This string should contain more than 16 bytes\n" );
+                Thread.sleep( 2000 );
             }
+            while ( allUserLogFiles( dir ).size() <= 4 );
         }
         finally
         {
