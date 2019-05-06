@@ -200,10 +200,9 @@ class IndexConfigMigrationIT
                 .newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
                 .newGraphDatabase();
-
-        Set<CoordinateReferenceSystem> allCRS = Iterables.asSet( all() );
         try ( Transaction tx = db.beginTx() )
         {
+            Set<CoordinateReferenceSystem> allCRS = Iterables.asSet( all() );
             hasIndexCount( db, 4 );
             for ( Node node : db.getAllNodes() )
             {
@@ -217,6 +216,10 @@ class IndexConfigMigrationIT
             assertTrue( allCRS.isEmpty(), "Expected all CRS to be represented in store, but missing " + allCRS );
             assertIndexConfiguration( db );
             tx.success();
+        }
+        finally
+        {
+            db.shutdown();
         }
     }
 
