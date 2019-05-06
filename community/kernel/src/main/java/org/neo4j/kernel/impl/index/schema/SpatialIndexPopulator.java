@@ -30,6 +30,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexConfigProvider;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -147,18 +148,31 @@ class SpatialIndexPopulator extends SpatialIndexCache<WorkSyncedNativeIndexPopul
         return combineSamples( samples );
     }
 
+    @Override
+    public Map<String,Value> indexConfig()
+    {
+        Map<String,Value> indexConfig = new HashMap<>();
+        for ( IndexPopulator part : this )
+        {
+            IndexConfigProvider.putAllNoOverwrite( indexConfig, part.indexConfig() );
+        }
+        return indexConfig;
+    }
+
     static class PartPopulator extends NativeIndexPopulator<SpatialIndexKey,NativeIndexValue>
     {
         private final SpaceFillingCurveConfiguration configuration;
         private final SpaceFillingCurveSettings settings;
+        private final CoordinateReferenceSystem crs;
 
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<SpatialIndexKey,NativeIndexValue> layout,
                 IndexProvider.Monitor monitor, StorageIndexReference descriptor, SpaceFillingCurveConfiguration configuration,
-                SpaceFillingCurveSettings settings )
+                SpaceFillingCurveSettings settings, CoordinateReferenceSystem crs )
         {
             super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER );
             this.configuration = configuration;
             this.settings = settings;
+            this.crs = crs;
         }
 
         @Override
@@ -200,6 +214,14 @@ class SpatialIndexPopulator extends SpatialIndexCache<WorkSyncedNativeIndexPopul
         {
             tree.checkpoint( IOLimiter.UNLIMITED, settings.headerWriter( BYTE_ONLINE ) );
         }
+
+        @Override
+        public Map<String,Value> indexConfig()
+        {
+            Map<String,Value> map = new HashMap<>();
+            SpatialIndexConfig.addSpatialConfig( map, crs, settings );
+            return map;
+        }
     }
 
     static class PartFactory implements Factory<WorkSyncedNativeIndexPopulator<SpatialIndexKey,NativeIndexValue>>
@@ -233,7 +255,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<WorkSyncedNativeIndexPopul
             IndexFiles indexFiles = fileLayout.indexFiles;
             IndexLayout<SpatialIndexKey,NativeIndexValue> layout = fileLayout.layout;
             SpaceFillingCurveSettings settings = fileLayout.settings;
-            PartPopulator populator = new PartPopulator( pageCache, fs, indexFiles, layout, monitor, descriptor, configuration, settings );
+            PartPopulator populator = new PartPopulator( pageCache, fs, indexFiles, layout, monitor, descriptor, configuration, settings, fileLayout.crs );
             populator.create();
             return new WorkSyncedNativeIndexPopulator<>( populator );
         }

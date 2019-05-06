@@ -36,7 +36,7 @@ public class SpatialNonUniqueIndexPopulatorTest extends NativeIndexPopulatorTest
     {
         SpaceFillingCurveSettings settings = configuredSettings.forCRS( crs );
         return new SpatialIndexPopulator.PartPopulator( pageCache, fs, indexFiles, layout, monitor, indexDescriptor,
-                new StandardConfiguration(), settings );
+                new StandardConfiguration(), settings, crs );
     }
 
     @Override

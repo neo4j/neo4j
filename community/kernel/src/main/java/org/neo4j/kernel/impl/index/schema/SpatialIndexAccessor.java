@@ -22,8 +22,10 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.graphdb.ResourceIterator;
@@ -36,14 +38,17 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexConfigProvider;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.Value;
 
 import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
@@ -165,6 +170,17 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
     }
 
     @Override
+    public Map<String,Value> indexConfig()
+    {
+        Map<String,Value> indexConfig = new HashMap<>();
+        for ( NativeIndexAccessor<?,?> part : this )
+        {
+            IndexConfigProvider.putAllNoOverwrite( indexConfig, part.indexConfig() );
+        }
+        return indexConfig;
+    }
+
+    @Override
     public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
     {
         for ( NativeIndexAccessor<?,?> part : this )
@@ -183,14 +199,20 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
     {
         private final StorageIndexReference descriptor;
         private final SpaceFillingCurveConfiguration searchConfiguration;
+        private final CoordinateReferenceSystem crs;
+        private final SpaceFillingCurveSettings settings;
 
         PartAccessor( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<SpatialIndexKey,NativeIndexValue> layout,
-                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StorageIndexReference descriptor,
+                SpaceFillingCurveSettings settings, CoordinateReferenceSystem crs,
+                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+                IndexProvider.Monitor monitor, StorageIndexReference descriptor,
                 SpaceFillingCurveConfiguration searchConfiguration )
         {
             super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER );
             this.descriptor = descriptor;
             this.searchConfiguration = searchConfiguration;
+            this.crs = crs;
+            this.settings = settings;
             instantiateTree( recoveryCleanupWorkCollector, headerWriter );
         }
 
@@ -206,6 +228,14 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
         {
             SpatialVerifyDeferredConstraint.verify( nodePropertyAccessor, layout, tree, descriptor );
             super.verifyDeferredConstraints( nodePropertyAccessor );
+        }
+
+        @Override
+        public Map<String,Value> indexConfig()
+        {
+            Map<String,Value> map = new HashMap<>();
+            SpatialIndexConfig.addSpatialConfig( map, crs, settings );
+            return map;
         }
     }
 
@@ -258,6 +288,8 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                                      fs,
                                      fileLayout.indexFiles,
                                      fileLayout.layout,
+                                     fileLayout.settings,
+                                     fileLayout.crs,
                                      recoveryCleanupWorkCollector,
                                      monitor,
                                      descriptor,
@@ -273,7 +305,8 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                                                                                 monitor,
                                                                                 descriptor,
                                                                                 searchConfiguration,
-                                                                                fileLayout.settings );
+                                                                                fileLayout.settings,
+                                                                                fileLayout.crs );
             populator.create();
             populator.close( true );
         }

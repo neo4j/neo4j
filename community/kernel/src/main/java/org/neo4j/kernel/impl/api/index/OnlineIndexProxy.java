@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.ResourceIterator;
@@ -198,6 +199,12 @@ public class OnlineIndexProxy implements IndexProxy
     public ResourceIterator<File> snapshotFiles()
     {
         return accessor.snapshotFiles();
+    }
+
+    @Override
+    public Map<String,Value> indexConfig()
+    {
+        return accessor.indexConfig();
     }
 
     @Override

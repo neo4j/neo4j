@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -26,6 +29,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsWriter;
 import org.neo4j.storageengine.api.StorageIndexReference;
+import org.neo4j.values.storable.Value;
 
 class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,NativeIndexValue>
 {
@@ -62,5 +66,13 @@ class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,Native
     NativeIndexReader<GenericKey,NativeIndexValue> newReader()
     {
         return new GenericNativeIndexReader( tree, layout, descriptor, spatialSettings, configuration );
+    }
+
+    @Override
+    public Map<String,Value> indexConfig()
+    {
+        Map<String,Value> map = new HashMap<>();
+        spatialSettings.visitIndexSpecificSettings( new SpatialConfigExtractor( map ) );
+        return map;
     }
 }

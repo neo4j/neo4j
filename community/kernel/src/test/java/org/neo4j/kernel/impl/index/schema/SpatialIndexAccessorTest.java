@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
@@ -40,11 +41,12 @@ public class SpatialIndexAccessorTest extends NativeIndexAccessorTests<SpatialIn
 {
     private static final CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
     private static final ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );
+    private static final SpaceFillingCurveSettings spaceFillingCurveSettings = configuredSettings.forCRS( crs );
 
     @Override
     NativeIndexAccessor<SpatialIndexKey,NativeIndexValue> makeAccessor()
     {
-        return new SpatialIndexAccessor.PartAccessor( pageCache, fs, indexFiles, layout, immediate(), monitor, indexDescriptor,
+        return new SpatialIndexAccessor.PartAccessor( pageCache, fs, indexFiles, layout, spaceFillingCurveSettings, crs, immediate(), monitor, indexDescriptor,
                 new StandardConfiguration() );
     }
 
@@ -63,7 +65,7 @@ public class SpatialIndexAccessorTest extends NativeIndexAccessorTests<SpatialIn
     @Override
     IndexLayout<SpatialIndexKey,NativeIndexValue> createLayout()
     {
-        return new SpatialLayout( crs, configuredSettings.forCRS( crs ).curve() );
+        return new SpatialLayout( crs, spaceFillingCurveSettings.curve() );
     }
 
     @Override

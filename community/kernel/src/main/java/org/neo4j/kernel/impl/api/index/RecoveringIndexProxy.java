@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.ResourceIterator;
@@ -69,6 +70,12 @@ public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
     public ResourceIterator<File> snapshotFiles()
     {
         throw unsupportedOperation( "Cannot snapshot a recovering index." );
+    }
+
+    @Override
+    public Map<String,Value> indexConfig()
+    {
+        throw unsupportedOperation( "Cannot get index configuration from recovering index." );
     }
 
     @Override

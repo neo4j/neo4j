@@ -217,7 +217,7 @@ public class SpatialIndexSettingsTest
         SpatialIndexFiles.SpatialFileLayout fileLayout = makeIndexFile( schemaIndexDescriptor.getId(), configuredSettings ).getLayoutForNewIndex();
         SpatialIndexPopulator.PartPopulator populator =
                 new SpatialIndexPopulator.PartPopulator( pageCache, fs, fileLayout.indexFiles, fileLayout.layout, monitor, schemaIndexDescriptor,
-                        new StandardConfiguration(), fileLayout.settings );
+                        new StandardConfiguration(), fileLayout.settings, fileLayout.crs );
         populator.create();
         populator.close( true );
     }

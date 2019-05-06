@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.common.Validator;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -74,4 +77,13 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
         // This accessor needs to use the header writer here because coordinate reference systems may have changed since last checkpoint.
         tree.checkpoint( ioLimiter, headerWriter );
     }
+
+    @Override
+    public Map<String,Value> indexConfig()
+    {
+        Map<String,Value> map = new HashMap<>();
+        spaceFillingCurveSettings.visitIndexSpecificSettings( new SpatialConfigExtractor( map ) );
+        return map;
+    }
+
 }

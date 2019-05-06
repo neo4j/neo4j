@@ -127,11 +127,13 @@ class SpatialIndexFiles
         final SpaceFillingCurveSettings settings;
         final IndexFiles indexFiles;
         final IndexLayout<SpatialIndexKey,NativeIndexValue> layout;
+        final CoordinateReferenceSystem crs;
 
         SpatialFileLayout( IndexFiles indexFiles, SpaceFillingCurveSettings settings, CoordinateReferenceSystem crs )
         {
             this.indexFiles = indexFiles;
             this.settings = settings;
+            this.crs = crs;
             this.layout = new SpatialLayout( crs, settings.curve() );
         }
     }
