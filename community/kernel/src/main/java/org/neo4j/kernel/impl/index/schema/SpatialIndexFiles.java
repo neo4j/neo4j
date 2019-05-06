@@ -93,7 +93,7 @@ class SpatialIndexFiles
     {
         final File indexFile;
         final ConfiguredSpaceFillingCurveSettingsCache configuredSettings;
-        private final CoordinateReferenceSystem crs;
+        final CoordinateReferenceSystem crs;
 
         SpatialFile( CoordinateReferenceSystem crs, ConfiguredSpaceFillingCurveSettingsCache configuredSettings, File indexDirectory )
         {
