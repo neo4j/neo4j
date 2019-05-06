@@ -49,10 +49,9 @@ public interface UserManager
     void setUserPassword( String username, byte[] password, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException;
 
-    /**
-     * NOTE: The initialPassword byte array will be cleared (overwritten with zeroes)
-     */
-    String getCredentialsForPassword( byte[] initialPassword ) throws InvalidArgumentsException, IOException;
+    void setUserRequirePasswordChange( String username, boolean requirePasswordChange ) throws InvalidArgumentsException, IOException;
+
+    void setUserStatus( String username, boolean isSuspended ) throws InvalidArgumentsException, IOException;
 
     Set<String> getAllUsernames();
 
@@ -96,13 +95,13 @@ public interface UserManager
         }
 
         @Override
-        public String getCredentialsForPassword( byte[] initialPassword )
+        public void setUserRequirePasswordChange( String username, boolean requirePasswordChange ) throws InvalidArgumentsException
         {
-            if ( initialPassword != null )
-            {
-                Arrays.fill( initialPassword, (byte) 0 );
-            }
-            return null;
+        }
+
+        @Override
+        public void setUserStatus( String username, boolean isSuspended ) throws InvalidArgumentsException
+        {
         }
 
         @Override

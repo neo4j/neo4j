@@ -30,7 +30,7 @@ import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
 /**
-  * Empty result, as produced by a system command.
+  * Results, as produced by a system command.
   */
 case class SystemCommandRuntimeResult(ctx: QueryContext, subscriber: QuerySubscriber, execution: InternalExecutionResult) extends RuntimeResult {
 

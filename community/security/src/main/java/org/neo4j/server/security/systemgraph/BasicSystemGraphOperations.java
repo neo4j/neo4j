@@ -133,4 +133,21 @@ public class BasicSystemGraphOperations
         queryExecutor.executeQueryWithParamCheck( query, params, errorMsg );
     }
 
+    void setUserRequirePasswordChange( String username, boolean requirePasswordChange ) throws InvalidArgumentsException
+    {
+        String query = "MATCH (u:User {name: $name}) SET u.passwordChangeRequired = $passwordChangeRequired RETURN u.name";
+        Map<String,Object> params = map( "name", username, "passwordChangeRequired", requirePasswordChange );
+        String errorMsg = "User '" + username + "' does not exist.";
+
+        queryExecutor.executeQueryWithParamCheck( query, params, errorMsg );
+    }
+
+    void setUserStatus( String username, boolean isSuspended ) throws InvalidArgumentsException
+    {
+        String query = "MATCH (u:User {name: $name}) SET u.suspended = $suspended RETURN u.name";
+        Map<String,Object> params = map( "name", username, "suspended", isSuspended );
+        String errorMsg = "User '" + username + "' does not exist.";
+
+        queryExecutor.executeQueryWithParamCheck( query, params, errorMsg );
+    }
 }

@@ -51,8 +51,7 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
     case ShowUsers() => (_, _) =>
       SystemCommandExecutionPlan("ShowUsers", normalExecutionEngine,
         """MATCH (u:User)
-          |OPTIONAL MATCH (u)-[:HAS_ROLE]->(r:Role)
-          |RETURN u.name as user, collect(r.name) as roles""".stripMargin,
+          |RETURN u.name as user""".stripMargin,
         VirtualValues.EMPTY_MAP
       )
 
