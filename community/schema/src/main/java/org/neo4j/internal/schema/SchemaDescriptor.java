@@ -54,19 +54,6 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
         return new SchemaDescriptorImplementation( FULLTEXT, entityType, PARTIAL_ANY_TOKEN, indexConfig, entityTokenIds, propertyKeyIds );
     }
 
-    private static long[] schemaTokenLockingIds( SchemaDescriptor schema )
-    {
-        // TODO make getEntityTokenIds produce a long array directly, and avoid this extra copying.
-        int[] tokenIds = schema.getEntityTokenIds();
-        int length = tokenIds.length;
-        long[] lockingIds = new long[length];
-        for ( int i = 0; i < length; i++ )
-        {
-            lockingIds[i] = tokenIds[i];
-        }
-        return lockingIds;
-    }
-
     static LabelSchemaDescriptor forLabel( int labelId, int... propertyIds )
     {
         return forLabelOfType( IndexType.ANY_GENERAL, labelId, propertyIds );
@@ -133,6 +120,19 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
                 throw new IllegalArgumentException( "Index schema descriptor can't be created for non existent label." );
             }
         }
+    }
+
+    private static long[] schemaTokenLockingIds( SchemaDescriptor schema )
+    {
+        // TODO make getEntityTokenIds produce a long array directly, and avoid this extra copying.
+        int[] tokenIds = schema.getEntityTokenIds();
+        int length = tokenIds.length;
+        long[] lockingIds = new long[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            lockingIds[i] = tokenIds[i];
+        }
+        return lockingIds;
     }
 
     /**
