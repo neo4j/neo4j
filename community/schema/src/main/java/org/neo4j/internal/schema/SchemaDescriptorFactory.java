@@ -32,11 +32,6 @@ public class SchemaDescriptorFactory
         return forLabelOfType( IndexType.ANY_GENERAL, labelId, propertyIds );
     }
 
-    public static LabelSchemaDescriptor forLabelFulltext( int labelId, int... propertyIds )
-    {
-        return forLabelOfType( IndexType.FULLTEXT, labelId, propertyIds );
-    }
-
     public static LabelSchemaDescriptor forLabelNoIndex( int labelId, int... propertyIds )
     {
         return forLabelOfType( IndexType.NOT_AN_INDEX, labelId, propertyIds );

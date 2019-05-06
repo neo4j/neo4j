@@ -54,11 +54,6 @@ class SchemaDescriptorFactoryTest
         assertThat( labelDesc.getIndexType(), is( IndexType.NOT_AN_INDEX ) );
         assertArray( labelDesc.getPropertyIds(), 1 );
 
-        labelDesc = SchemaDescriptorFactory.forLabelFulltext( LABEL_ID, 1 );
-        assertThat( labelDesc.getLabelId(), equalTo( LABEL_ID ) );
-        assertThat( labelDesc.getIndexType(), is( IndexType.FULLTEXT ) );
-        assertArray( labelDesc.getPropertyIds(), 1 );
-
         labelDesc = SchemaDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3 );
         assertThat( labelDesc.getLabelId(), equalTo( LABEL_ID ) );
         assertArray( labelDesc.getPropertyIds(), 1, 2, 3 );
