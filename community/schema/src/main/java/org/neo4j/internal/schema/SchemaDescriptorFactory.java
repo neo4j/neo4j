@@ -23,6 +23,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.token.api.TokenConstants;
 
 import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
 
 public class SchemaDescriptorFactory
@@ -62,7 +63,7 @@ public class SchemaDescriptorFactory
     {
         validateRelationshipTypeIds( relTypeId );
         validatePropertyIds( propertyIds );
-        return new DefaultRelationTypeSchemaDescriptor( indexType, relTypeId, propertyIds );
+        return new SchemaDescriptorImplementation( indexType, RELATIONSHIP, COMPLETE_ALL_TOKENS, IndexConfig.empty(), new int[]{relTypeId}, propertyIds );
     }
 
     private static void validatePropertyIds( int[] propertyIds )
