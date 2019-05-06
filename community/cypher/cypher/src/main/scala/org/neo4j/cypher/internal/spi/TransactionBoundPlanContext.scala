@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.spi
 import java.util.Optional
 
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
-import org.neo4j.cypher.internal.planner.spi._
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.{OrderCapability, ValueCapability}
+import org.neo4j.cypher.internal.planner.spi._
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.{CypherExecutionException, LabelId, PropertyKeyId, symbols => types}
 import org.neo4j.exceptions.KernelException
@@ -34,7 +34,7 @@ import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
 import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs, _}
-import org.neo4j.internal.schema.{ConstraintDescriptor, IndexKind, SchemaDescriptor, SchemaDescriptorFactory}
+import org.neo4j.internal.schema.{ConstraintDescriptor, IndexKind, SchemaDescriptor}
 import org.neo4j.procedure.Mode
 import org.neo4j.values.storable.ValueCategory
 

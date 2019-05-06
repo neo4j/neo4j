@@ -29,7 +29,6 @@ import org.neo4j.helpers.Strings;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
@@ -51,7 +50,6 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
             NodeExistenceConstraintDescriptor.class.getCanonicalName(),
             NodeKeyConstraintDescriptor.class.getCanonicalName(),
             SchemaDescriptor.class.getCanonicalName(),
-            SchemaDescriptorFactory.class.getCanonicalName(),
             IndexDescriptor.class.getCanonicalName(),
             IndexDescriptorFactory.class.getCanonicalName()
     );
@@ -114,7 +112,7 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
         else if ( arg instanceof LabelSchemaDescriptor )
         {
             LabelSchemaDescriptor descriptor = (LabelSchemaDescriptor) arg;
-            String className = SchemaDescriptorFactory.class.getSimpleName();
+            String className = SchemaDescriptor.class.getSimpleName();
             int labelId = descriptor.getLabelId();
             builder.append( format( "%s.forLabel( %d, %s )",
                     className, labelId, asString( descriptor.getPropertyIds() ) ) );
