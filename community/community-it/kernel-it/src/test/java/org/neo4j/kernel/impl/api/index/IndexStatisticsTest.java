@@ -136,6 +136,7 @@ public class IndexStatisticsTest
         int batchSize = random.nextInt( 1, 5 );
         FeatureToggles.set( MultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME, batchSize );
         FeatureToggles.set( BatchingMultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME, batchSize );
+        FeatureToggles.set( MultipleIndexPopulator.class, "print_debug", true );
 
         GraphDatabaseAPI graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
         this.db = graphDatabaseAPI;
@@ -151,6 +152,7 @@ public class IndexStatisticsTest
     {
         FeatureToggles.clear( MultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME );
         FeatureToggles.clear( BatchingMultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME );
+        FeatureToggles.clear( MultipleIndexPopulator.class, "print_debug" );
     }
 
     @Test
