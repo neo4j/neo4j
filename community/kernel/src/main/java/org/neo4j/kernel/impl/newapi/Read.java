@@ -157,33 +157,24 @@ abstract class Read implements TxStateHolder,
         boolean allowsForAllLabels = true;
         for ( int prop : reference.properties() )
         {
-            allowsForAllLabels &= accessMode.allowsReadPropertyAllLabels( prop );
+            allowsForAllLabels &= accessMode.allowsReadPropertyAllLabels( prop ) && accessMode.allowsTraverseAllLabels();
         }
 
         if ( schema.entityType().equals( EntityType.NODE ) && !allowsForAllLabels )
         {
             boolean allowsAll = true;
-            boolean allowsSome = false;
             for ( int prop : reference.properties() )
             {
                 boolean allowForAllLabels = true;
-                boolean allowForSomeLabels = false;
                 for ( int label : schema.getEntityTokenIds() )
                 {
-                    boolean allowForLabel = accessMode.allowsReadProperty( () -> new int[]{label}, prop );
+                    boolean allowForLabel = accessMode.allowsTraverseLabels( label ) && accessMode.allowsReadProperty( () -> new int[]{label}, prop );
                     allowForAllLabels &= allowForLabel;
-                    allowForSomeLabels = allowForLabel;
                 }
                 allowsAll &= allowForAllLabels;
-                allowsSome |= allowForSomeLabels;
             }
 
-            if ( !allowsSome )
-            {
-                // nothing matching the whitelist
-                return new NodeLabelSecurityFilter( reference.properties(), cursor, cursors.allocateFullAccessNodeCursor(), this, AccessMode.Static.NONE );
-            }
-            else if ( !allowsAll )
+            if ( !allowsAll )
             {
                 // only some matching whitelist
                 return new NodeLabelSecurityFilter( reference.properties(), cursor, cursors.allocateFullAccessNodeCursor(), this,

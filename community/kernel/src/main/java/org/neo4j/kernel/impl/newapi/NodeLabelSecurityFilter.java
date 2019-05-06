@@ -81,7 +81,9 @@ class NodeLabelSecurityFilter implements IndexProgressor.EntityValueClient, Inde
         boolean allowed = true;
         for ( int prop : properties )
         {
-            allowed &= accessMode.allowsReadProperty( () -> Arrays.stream( node.labels().all() ).mapToInt( l -> (int) l ).toArray(), prop );
+            long[] labels = node.labels().all();
+            allowed &= accessMode.allowsTraverseLabels( labels ) &&
+                    accessMode.allowsReadProperty( () -> Arrays.stream( labels ).mapToInt( l -> (int) l ).toArray(), prop );
         }
 
         if ( !allowed )
