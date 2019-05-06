@@ -93,6 +93,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     final int QUEUE_THRESHOLD = FeatureToggles.getInteger( getClass(), QUEUE_THRESHOLD_NAME, 20_000 );
     final int BATCH_SIZE_SCAN = FeatureToggles.getInteger( BatchingMultipleIndexPopulator.class, BATCH_SIZE_NAME, 10_000 );
+    final boolean PRINT_DEBUG = FeatureToggles.flag( MultipleIndexPopulator.class, "print_debug", false );
 
     // Concurrency queue since multiple concurrent threads may enqueue updates into it. It is important for this queue
     // to have fast #size() method since it might be drained in batches
@@ -406,6 +407,10 @@ public class MultipleIndexPopulator implements IndexPopulator
         int queueSize = concurrentUpdateQueue.size();
         if ( queueSize > 0 && queueSize >= queueThreshold )
         {
+            if ( PRINT_DEBUG )
+            {
+                log.info( "Populating from queue at %d", currentlyIndexedNodeId );
+            }
             // Before applying updates from the updates queue any pending scan updates needs to be applied, i.e. flushed.
             // This is because 'currentlyIndexedNodeId' is based on how far the scan has come.
             flushAll();
@@ -417,8 +422,16 @@ public class MultipleIndexPopulator implements IndexPopulator
                     // no need to check for null as nobody else is emptying this queue
                     IndexEntryUpdate<?> update = concurrentUpdateQueue.poll();
                     storeScan.acceptUpdate( updater, update, currentlyIndexedNodeId );
+                    if ( PRINT_DEBUG )
+                    {
+                        log.info( "Applied %s from queue" + update );
+                    }
                 }
                 while ( !concurrentUpdateQueue.isEmpty() );
+            }
+            if ( PRINT_DEBUG )
+            {
+                log.info( "Done applying updates from queue" );
             }
             return true;
         }
@@ -658,13 +671,13 @@ public class MultipleIndexPopulator implements IndexPopulator
             return batchedUpdatesFromScan.size() >= BATCH_SIZE_SCAN;
         }
 
-        Collection<IndexEntryUpdate<?>> takeCurrentBatchFromScan()
+        List<IndexEntryUpdate<?>> takeCurrentBatchFromScan()
         {
             if ( batchedUpdatesFromScan.isEmpty() )
             {
                 return Collections.emptyList();
             }
-            Collection<IndexEntryUpdate<?>> batch = batchedUpdatesFromScan;
+            List<IndexEntryUpdate<?>> batch = batchedUpdatesFromScan;
             batchedUpdatesFromScan = new ArrayList<>( BATCH_SIZE_SCAN );
             return batch;
         }
@@ -687,6 +700,10 @@ public class MultipleIndexPopulator implements IndexPopulator
         public boolean visit( EntityUpdates updates )
         {
             addFromScan( updates );
+            if ( PRINT_DEBUG )
+            {
+                log.info( "Added scan updates for entity %d", updates.getEntityId() );
+            }
             return applyConcurrentUpdateQueueBatched( updates.getEntityId() );
         }
 
