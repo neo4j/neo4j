@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.QueryStatistics
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
@@ -71,11 +72,11 @@ object CustomSubscriber extends QuerySubscriber {
   override def onError(throwable: Throwable): Unit = {
     val message = throwable.getMessage
     if (message.contains(" already exists with label `Database` and property `name` = "))
-      throw new IllegalStateException("Cannot create already existing database")
+      throw new InvalidArgumentsException("The specified database already exists.") //"The specified database '" + dbName + "' already exists."
     else if (message.contains(" already exists with label `Role` and property `name` = "))
-      throw new IllegalStateException("Cannot create already existing role")
+      throw new InvalidArgumentsException("The specified role already exists.") //"The specified role '" + roleName + "' already exists."
     else if (message.contains(" already exists with label `User` and property `name` = "))
-      throw new IllegalStateException("Cannot create already existing user")
+      throw new InvalidArgumentsException("The specified user already exists.") //"The specified user '" + userName + "' already exists."
     else
       throw throwable
   }

@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.procs.{SystemCommandExecutionPlan, UpdatingSystemCommandExecutionPlan}
 import org.neo4j.cypher.internal.runtime._
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.values.storable.{TextValue, Values}
 import org.neo4j.values.virtual.VirtualValues
 
@@ -86,7 +87,7 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
           )
         ),
         record => {
-          if (record.get("db") == null) throw new IllegalStateException("Cannot start non-existent database '" + dbName + "'")
+          if (record.get("db") == null) throw new InvalidArgumentsException("Database '" + dbName + "' does not exist.")
         }
       )
 
@@ -107,7 +108,7 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
           )
         ),
         record => {
-          if (record.get("db") == null) throw new IllegalStateException("Cannot stop non-existent database '" + dbName + "'")
+          if (record.get("db") == null) throw new InvalidArgumentsException("Database '" + dbName + "' does not exist.")
         }
       )
   }
