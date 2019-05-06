@@ -64,7 +64,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.ArrayUtil.single;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.uniqueForSchema;

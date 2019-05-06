@@ -19,7 +19,7 @@
  */
 package org.neo4j.procedure.builtin;
 
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 
@@ -31,11 +31,11 @@ public class TestIndexDescriptorFactory
 
     public static IndexDescriptor forLabel( int labelId, int... propertyIds )
     {
-        return IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
+        return IndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( labelId, propertyIds ) );
     }
 
     public static IndexDescriptor uniqueForLabel( int labelId, int... propertyIds )
     {
-        return IndexDescriptorFactory.uniqueForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
+        return IndexDescriptorFactory.uniqueForSchema( SchemaDescriptor.forLabel( labelId, propertyIds ) );
     }
 }

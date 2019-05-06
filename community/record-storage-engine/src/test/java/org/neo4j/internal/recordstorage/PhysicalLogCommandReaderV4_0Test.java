@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -526,7 +526,7 @@ class PhysicalLogCommandReaderV4_0Test
             after.setCreated();
         }
 
-        SchemaRule rule = new DefaultStorageIndexReference( SchemaDescriptorFactory.forLabel( 1, 2, 3 ), false, after.getId(), null );
+        SchemaRule rule = new DefaultStorageIndexReference( SchemaDescriptor.forLabel( 1, 2, 3 ), false, after.getId(), null );
         new Command.SchemaRuleCommand( before, after, rule ).serialize( channel );
 
         CommandReader reader = createReader();

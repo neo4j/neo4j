@@ -28,7 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
@@ -50,7 +50,7 @@ class IndexUpdateStorageTest
 {
     private static final IndexSpecificSpaceFillingCurveSettingsCache spatialSettings =
             new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
-    private static final SchemaDescriptorSupplier descriptor = SchemaDescriptorFactory.forLabel( 1, 1 );
+    private static final SchemaDescriptorSupplier descriptor = SchemaDescriptor.forLabel( 1, 1 );
 
     @Inject
     protected TestDirectory directory;

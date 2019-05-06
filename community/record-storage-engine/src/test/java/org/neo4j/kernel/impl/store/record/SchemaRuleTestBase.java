@@ -23,7 +23,7 @@ import java.util.Optional;
 
 import org.neo4j.internal.schema.DefaultIndexDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -50,25 +50,25 @@ abstract class SchemaRuleTestBase
 
     public static IndexDescriptor forLabel( int labelId, int... propertyIds )
     {
-        return new DefaultIndexDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ),
+        return new DefaultIndexDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ),
                 PROVIDER_KEY, PROVIDER_VERSION, Optional.empty(), false, false );
     }
 
     public static IndexDescriptor namedForLabel( String name, int labelId, int... propertyIds )
     {
-        return new DefaultIndexDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ),
+        return new DefaultIndexDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ),
                 PROVIDER_KEY, PROVIDER_VERSION, Optional.of( name ), false, false );
     }
 
     public static IndexDescriptor uniqueForLabel( int labelId, int... propertyIds )
     {
-        return new DefaultIndexDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ),
+        return new DefaultIndexDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ),
                 PROVIDER_KEY, PROVIDER_VERSION, Optional.empty(), true, false );
     }
 
     public static IndexDescriptor namedUniqueForLabel( String name, int labelId, int... propertyIds )
     {
-        return new DefaultIndexDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ),
+        return new DefaultIndexDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ),
                 PROVIDER_KEY, PROVIDER_VERSION, Optional.empty(), true, false );
     }
 }

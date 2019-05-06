@@ -31,7 +31,7 @@ import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
@@ -70,7 +70,7 @@ public class SimpleIndexReaderDistinctValuesTest
     @BeforeEach
     void setup() throws IOException
     {
-        index = LuceneSchemaIndexBuilder.create( IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( 1, 1 ) ), Config.defaults() )
+        index = LuceneSchemaIndexBuilder.create( IndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( 1, 1 ) ), Config.defaults() )
                 .withFileSystem( fs )
                 .withIndexRootFolder( directory.directory() )
                 .build();

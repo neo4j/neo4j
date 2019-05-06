@@ -38,7 +38,7 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -89,7 +89,7 @@ public class FusionIndexAccessorTest
     private EnumMap<IndexSlot,IndexAccessor> accessors;
     private IndexAccessor[] aliveAccessors;
     private StoreIndexDescriptor indexDescriptor =
-            IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( 1, 42 ) ).withId( indexId );
+            IndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( 1, 42 ) ).withId( indexId );
     private FileSystemAbstraction fs;
     private IndexDirectoryStructure directoryStructure;
 

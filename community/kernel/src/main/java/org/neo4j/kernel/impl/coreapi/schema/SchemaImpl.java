@@ -63,7 +63,6 @@ import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
@@ -92,9 +91,9 @@ import static org.neo4j.helpers.collection.Iterators.addToCollection;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.map;
 import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
-import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
-import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabelNoIndex;
-import static org.neo4j.internal.schema.SchemaDescriptorFactory.forRelType;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabelNoIndex;
+import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
 import static org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl.labelNameList;
 import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getOrCreatePropertyKeyIds;
 
@@ -751,7 +750,7 @@ public class SchemaImpl implements Schema
                     int typeId = tokenWrite.relationshipTypeGetOrCreateForName( type.name() );
                     int[] propertyKeyId = getOrCreatePropertyKeyIds( tokenWrite, propertyKey );
                     transaction.schemaWrite().relationshipPropertyExistenceConstraintCreate(
-                            SchemaDescriptorFactory.forRelTypeNoIndex( typeId, propertyKeyId ) );
+                            SchemaDescriptor.forRelTypeNoIndex( typeId, propertyKeyId ) );
                     return new RelationshipPropertyExistenceConstraintDefinition( this, type, propertyKey );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException |

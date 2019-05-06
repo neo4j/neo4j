@@ -52,7 +52,6 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -164,7 +163,7 @@ public class IndexPopulationJobTest
         String value = "Taylor";
         long nodeId = createNode( map( name, value ), FIRST );
         IndexPopulator populator = spy( indexPopulator( false ) );
-        LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
+        LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( 0, 0 );
         IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.NODE, IndexDescriptorFactory.forSchema( descriptor ) );
 
         // WHEN
@@ -187,7 +186,7 @@ public class IndexPopulationJobTest
         String value = "Taylor";
         long nodeId = createNode( map( name, value ), FIRST );
         long relationship = createRelationship( map( name, age ), likes, nodeId, nodeId );
-        IndexDescriptor descriptor = IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forRelType( 0, 0 ) );
+        IndexDescriptor descriptor = IndexDescriptorFactory.forSchema( SchemaDescriptor.forRelType( 0, 0 ) );
         IndexPopulator populator = spy( indexPopulator( descriptor ) );
         IndexPopulationJob job =
                 newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.RELATIONSHIP, descriptor );
@@ -233,7 +232,7 @@ public class IndexPopulationJobTest
         createNode( map( age, 31 ), FIRST );
         long node4 = createNode( map( age, 35, name, value ), FIRST );
         IndexPopulator populator = spy( indexPopulator( false ) );
-        LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
+        LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( 0, 0 );
         IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.NODE, IndexDescriptorFactory.forSchema( descriptor ) );
 
         // WHEN
@@ -266,7 +265,7 @@ public class IndexPopulationJobTest
         createRelationship( map( age, 31 ), likes, node2, node1 );
         long rel4 = createRelationship( map( age, 35, name, value ), likes, node4, node4 );
 
-        IndexDescriptor descriptor = IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forRelType( 0, 0 ) );
+        IndexDescriptor descriptor = IndexDescriptorFactory.forSchema( SchemaDescriptor.forRelType( 0, 0 ) );
         IndexPopulator populator = spy( indexPopulator( descriptor ) );
         IndexPopulationJob job =
                 newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.RELATIONSHIP, descriptor );
@@ -631,7 +630,7 @@ public class IndexPopulationJobTest
             this.nodeToChange = nodeToChange;
             this.previousValue = Values.of( previousValue );
             this.newValue = Values.of( newValue );
-            this.index = SchemaDescriptorFactory.forLabel( label, propertyKeyId );
+            this.index = SchemaDescriptor.forLabel( label, propertyKeyId );
         }
 
         @Override
@@ -697,7 +696,7 @@ public class IndexPopulationJobTest
         {
             this.nodeToDelete = nodeToDelete;
             this.valueToDelete = Values.of( valueToDelete );
-            this.index = SchemaDescriptorFactory.forLabel( label, propertyKeyId );
+            this.index = SchemaDescriptor.forLabel( label, propertyKeyId );
         }
 
         void setJob( IndexPopulationJob job )
@@ -796,7 +795,7 @@ public class IndexPopulationJobTest
         {
             int labelId = tx.tokenWrite().labelGetOrCreateForName( label.name() );
             int propertyKeyId = tx.tokenWrite().propertyKeyGetOrCreateForName( propertyKey );
-            SchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId );
+            SchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyKeyId );
             IndexDescriptor descriptor = constraint ?
                                          IndexDescriptorFactory.uniqueForSchema( schema, PROVIDER_DESCRIPTOR ) :
                                          IndexDescriptorFactory.forSchema( schema, PROVIDER_DESCRIPTOR );

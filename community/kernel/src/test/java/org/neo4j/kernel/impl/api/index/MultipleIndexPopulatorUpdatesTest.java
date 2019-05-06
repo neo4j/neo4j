@@ -32,7 +32,7 @@ import java.util.function.Supplier;
 import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -119,7 +119,7 @@ public class MultipleIndexPopulatorUpdatesTest
         NodeUpdateProcessListener( MultipleIndexPopulator indexPopulator )
         {
             this.indexPopulator = indexPopulator;
-            this.index = SchemaDescriptorFactory.forLabel( 1, 1 );
+            this.index = SchemaDescriptor.forLabel( 1, 1 );
         }
 
         @Override

@@ -45,7 +45,7 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -285,10 +285,10 @@ class NeoStoreIndexStoreViewTest
         EntityUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
         assertNotNull( propertyUpdates, "Visitor should contain container with updates." );
 
-        LabelSchemaDescriptor index1 = SchemaDescriptorFactory.forLabel( 0, 0 );
-        LabelSchemaDescriptor index2 = SchemaDescriptorFactory.forLabel( 0, 1 );
-        LabelSchemaDescriptor index3 = SchemaDescriptorFactory.forLabel( 0, 0, 1 );
-        LabelSchemaDescriptor index4 = SchemaDescriptorFactory.forLabel( 1, 1 );
+        LabelSchemaDescriptor index1 = SchemaDescriptor.forLabel( 0, 0 );
+        LabelSchemaDescriptor index2 = SchemaDescriptor.forLabel( 0, 1 );
+        LabelSchemaDescriptor index3 = SchemaDescriptor.forLabel( 0, 0, 1 );
+        LabelSchemaDescriptor index4 = SchemaDescriptor.forLabel( 1, 1 );
         List<LabelSchemaDescriptor> indexes = Arrays.asList( index1, index2, index3, index4 );
 
         assertThat(
@@ -318,10 +318,10 @@ class NeoStoreIndexStoreViewTest
         EntityUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
         assertNotNull( propertyUpdates, "Visitor should contain container with updates." );
 
-        RelationTypeSchemaDescriptor index1 = SchemaDescriptorFactory.forRelType( 0, 2 );
-        RelationTypeSchemaDescriptor index2 = SchemaDescriptorFactory.forRelType( 0, 3 );
-        RelationTypeSchemaDescriptor index3 = SchemaDescriptorFactory.forRelType( 0, 2, 3 );
-        RelationTypeSchemaDescriptor index4 = SchemaDescriptorFactory.forRelType( 1, 3 );
+        RelationTypeSchemaDescriptor index1 = SchemaDescriptor.forRelType( 0, 2 );
+        RelationTypeSchemaDescriptor index2 = SchemaDescriptor.forRelType( 0, 3 );
+        RelationTypeSchemaDescriptor index3 = SchemaDescriptor.forRelType( 0, 2, 3 );
+        RelationTypeSchemaDescriptor index4 = SchemaDescriptor.forRelType( 1, 3 );
         List<RelationTypeSchemaDescriptor> indexes = Arrays.asList( index1, index2, index3, index4 );
 
         assertThat( Iterables.map( IndexEntryUpdate::indexKey, propertyUpdates.forIndexKeys( indexes ) ), containsInAnyOrder( index1, index2, index3 ) );

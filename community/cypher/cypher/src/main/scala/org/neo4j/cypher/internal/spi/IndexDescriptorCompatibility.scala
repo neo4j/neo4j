@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.planner.spi.{IndexLimitation, SlowContains, Ind
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundTokenContext
 import org.neo4j.internal.kernel
 import org.neo4j.internal.kernel.api.{IndexLimitation => KernelIndexLimitation}
-import org.neo4j.internal.schema.{LabelSchemaDescriptor, SchemaDescriptorFactory}
+import org.neo4j.internal.schema.{LabelSchemaDescriptor, SchemaDescriptor, SchemaDescriptorFactory}
 
 trait IndexDescriptorCompatibility {
   def kernelToCypher(limitation: kernel.api.IndexLimitation): IndexLimitation = {
@@ -34,10 +34,10 @@ trait IndexDescriptorCompatibility {
   }
 
   def cypherToKernelSchema(index: CypherIndexDescriptor): LabelSchemaDescriptor =
-    SchemaDescriptorFactory.forLabel(index.label.id, index.properties.map(_.id):_*)
+    SchemaDescriptor.forLabel(index.label.id, index.properties.map(_.id):_*)
 
   def toLabelSchemaDescriptor(labelId: Int, propertyKeyIds: Seq[Int]): LabelSchemaDescriptor =
-      SchemaDescriptorFactory.forLabel(labelId, propertyKeyIds.toArray:_*)
+      SchemaDescriptor.forLabel(labelId, propertyKeyIds.toArray:_*)
 
   def toLabelSchemaDescriptor(tc: TransactionBoundTokenContext, labelName: String, propertyKeys: Seq[String]): LabelSchemaDescriptor = {
     val labelId: Int = tc.getLabelId(labelName)

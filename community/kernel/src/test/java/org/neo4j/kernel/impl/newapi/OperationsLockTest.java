@@ -43,7 +43,7 @@ import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
@@ -104,7 +104,7 @@ class OperationsLockTest
     private DefaultRelationshipScanCursor relationshipCursor;
     private TransactionState txState;
     private AllStoreHolder allStoreHolder;
-    private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
+    private final LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( 123, 456 );
     private StorageReader storageReader;
     private ConstraintIndexCreator constraintIndexCreator;
     private IndexingService indexingService;

@@ -83,7 +83,7 @@ import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
 import static org.neo4j.helpers.ArrayUtil.single;
 import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 /**
  * This test validates that we count the correct amount of index updates. In the process it also verifies that the populated index has

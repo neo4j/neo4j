@@ -43,7 +43,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -253,7 +253,7 @@ class IndexConfigMigrationIT
         IndexingService indexingService = getIndexingService( db );
         int labelId = tokenRead.nodeLabel( label.name() );
         int propKeyId = tokenRead.propertyKey( propKey );
-        IndexProxy indexProxy = indexingService.getIndexProxy( SchemaDescriptorFactory.forLabel( labelId, propKeyId ) );
+        IndexProxy indexProxy = indexingService.getIndexProxy( SchemaDescriptor.forLabel( labelId, propKeyId ) );
         return indexProxy.indexConfig();
     }
 

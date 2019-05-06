@@ -28,7 +28,7 @@ import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.values.AnyValue;
@@ -82,8 +82,8 @@ public class SchemaProcedureIT extends KernelIntegrationTest
         commit();
 
         SchemaWrite schemaOps = schemaWriteInNewTransaction();
-        schemaOps.indexCreate( SchemaDescriptorFactory.forLabel( labelId, propertyIdName ) );
-        schemaOps.uniquePropertyConstraintCreate( SchemaDescriptorFactory.forLabel( labelId, propertyIdAge ) );
+        schemaOps.indexCreate( SchemaDescriptor.forLabel( labelId, propertyIdName ) );
+        schemaOps.uniquePropertyConstraintCreate( SchemaDescriptor.forLabel( labelId, propertyIdAge ) );
         commit();
 
         // When

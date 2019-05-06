@@ -34,7 +34,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -69,7 +68,7 @@ class NonUniqueDatabaseIndexPopulatorTest
 
     private SchemaIndex index;
     private NonUniqueLuceneIndexPopulator populator;
-    private final SchemaDescriptor labelSchemaDescriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
+    private final SchemaDescriptor labelSchemaDescriptor = SchemaDescriptor.forLabel( 0, 0 );
 
     @BeforeEach
     void setUp()

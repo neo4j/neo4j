@@ -78,7 +78,7 @@ import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
@@ -1158,7 +1158,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             int labelId = getOrCreateLabelId( label.name() );
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( propertyKeys );
-            LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
+            LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyKeyIds );
 
             validateIndexCanBeCreated( schema );
 
@@ -1177,7 +1177,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             int labelId = getOrCreateLabelId( indexDefinition.getLabel().name() );
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( indexDefinition.getPropertyKeys() );
-            LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
+            LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelId, propertyKeyIds );
 
             validateUniquenessConstraintCanBeCreated( descriptor );
             createUniquenessConstraintRule( descriptor );
@@ -1189,7 +1189,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             int labelId = getOrCreateLabelId( indexDefinition.getLabel().name() );
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( indexDefinition.getPropertyKeys() );
-            LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
+            LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelId, propertyKeyIds );
 
             validateNodeKeyConstraintCanBeCreated( descriptor );
             createNodeKeyConstraintRule( descriptor );

@@ -24,7 +24,6 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaComputer;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
 
 import static java.lang.String.format;
 
@@ -36,22 +35,22 @@ public class ConstraintDescriptorFactory
 
     public static NodeExistenceConstraintDescriptor existsForLabel( int labelId, int... propertyIds )
     {
-        return new NodeExistenceConstraintDescriptor( SchemaDescriptorFactory.forLabelNoIndex( labelId, propertyIds ) );
+        return new NodeExistenceConstraintDescriptor( SchemaDescriptor.forLabelNoIndex( labelId, propertyIds ) );
     }
 
     public static RelExistenceConstraintDescriptor existsForRelType( int relTypeId, int... propertyIds )
     {
-        return new RelExistenceConstraintDescriptor( SchemaDescriptorFactory.forRelTypeNoIndex( relTypeId, propertyIds ) );
+        return new RelExistenceConstraintDescriptor( SchemaDescriptor.forRelTypeNoIndex( relTypeId, propertyIds ) );
     }
 
     public static UniquenessConstraintDescriptor uniqueForLabel( int labelId, int... propertyIds )
     {
-        return new UniquenessConstraintDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
+        return new UniquenessConstraintDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ) );
     }
 
     public static NodeKeyConstraintDescriptor nodeKeyForLabel( int labelId, int... propertyIds )
     {
-        return new NodeKeyConstraintDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
+        return new NodeKeyConstraintDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ) );
     }
 
     public static AbstractConstraintDescriptor existsForSchema( SchemaDescriptor schema )

@@ -28,7 +28,6 @@ import java.util.List;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.SchemaProcessor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -78,11 +77,11 @@ class SchemaProcessorTest
 
     private SchemaDescriptor disguisedLabel()
     {
-        return SchemaDescriptorFactory.forLabel( LABEL_ID, 1 );
+        return SchemaDescriptor.forLabel( LABEL_ID, 1 );
     }
 
     private SchemaDescriptor disguisedRelType()
     {
-        return SchemaDescriptorFactory.forRelType( REL_TYPE_ID, 1 );
+        return SchemaDescriptor.forRelType( REL_TYPE_ID, 1 );
     }
 }

@@ -33,7 +33,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -71,7 +71,7 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 @RunWith( MockitoJUnitRunner.class )
 public class MultipleIndexPopulatorTest
 {
-    private final LabelSchemaDescriptor index1 = SchemaDescriptorFactory.forLabel( 1, 1 );
+    private final LabelSchemaDescriptor index1 = SchemaDescriptor.forLabel( 1, 1 );
     private IndexStoreView indexStoreView;
     private LogProvider logProvider;
     private SchemaState schemaState;

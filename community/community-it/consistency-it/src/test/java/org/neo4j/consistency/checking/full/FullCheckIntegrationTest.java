@@ -134,7 +134,7 @@ import static org.neo4j.helpers.collection.Iterables.asIterable;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
-import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.index.IndexProviderDescriptor.from;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.uniqueForSchema;

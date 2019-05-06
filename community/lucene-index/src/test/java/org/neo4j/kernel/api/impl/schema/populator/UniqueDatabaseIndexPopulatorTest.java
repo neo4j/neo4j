@@ -38,7 +38,6 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -464,7 +463,7 @@ public class UniqueDatabaseIndexPopulatorTest
     @Test
     public void sampleIncludedUpdates() throws Exception
     {
-        LabelSchemaDescriptor schemaDescriptor = SchemaDescriptorFactory.forLabel( 1, 1 );
+        LabelSchemaDescriptor schemaDescriptor = SchemaDescriptor.forLabel( 1, 1 );
         populator = newPopulator();
         List<IndexEntryUpdate<?>> updates = Arrays.asList(
                 add( 1, schemaDescriptor, "foo" ),

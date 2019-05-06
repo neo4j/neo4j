@@ -54,7 +54,7 @@ import static java.nio.ByteBuffer.wrap;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.asCollection;
 import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
-import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 public class SchemaStore35Test
 {

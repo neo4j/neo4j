@@ -24,8 +24,12 @@ import java.util.function.Predicate;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.lock.ResourceType;
+import org.neo4j.token.api.TokenConstants;
 
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.IndexType.FULLTEXT;
+import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
 import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
 
 /**
@@ -61,6 +65,74 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
             lockingIds[i] = tokenIds[i];
         }
         return lockingIds;
+    }
+
+    static LabelSchemaDescriptor forLabel( int labelId, int... propertyIds )
+    {
+        return forLabelOfType( IndexType.ANY_GENERAL, labelId, propertyIds );
+    }
+
+    static LabelSchemaDescriptor forLabelNoIndex( int labelId, int... propertyIds )
+    {
+        return forLabelOfType( IndexType.NOT_AN_INDEX, labelId, propertyIds );
+    }
+
+    static LabelSchemaDescriptor forLabelOfType( IndexType indexType, int labelId, int... propertyIds )
+    {
+        validateLabelIds( labelId );
+        validatePropertyIds( propertyIds );
+        return new SchemaDescriptorImplementation( indexType, NODE, COMPLETE_ALL_TOKENS, IndexConfig.empty(), new int[]{labelId}, propertyIds );
+    }
+
+    static RelationTypeSchemaDescriptor forRelType( int relTypeId, int... propertyIds )
+    {
+        return forRelTypeOfType( IndexType.ANY_GENERAL, relTypeId, propertyIds );
+    }
+
+    static RelationTypeSchemaDescriptor forRelTypeNoIndex( int relTypeId, int... propertyIds )
+    {
+        return forRelTypeOfType( IndexType.NOT_AN_INDEX, relTypeId, propertyIds );
+    }
+
+    static RelationTypeSchemaDescriptor forRelTypeOfType( IndexType indexType, int relTypeId, int... propertyIds )
+    {
+        validateRelationshipTypeIds( relTypeId );
+        validatePropertyIds( propertyIds );
+        return new SchemaDescriptorImplementation( indexType, RELATIONSHIP, COMPLETE_ALL_TOKENS, IndexConfig.empty(), new int[]{relTypeId}, propertyIds );
+    }
+
+    private static void validatePropertyIds( int[] propertyIds )
+    {
+        for ( int propertyId : propertyIds )
+        {
+            if ( TokenConstants.ANY_PROPERTY_KEY == propertyId )
+            {
+                throw new IllegalArgumentException(
+                        "Index schema descriptor can't be created for non existent property." );
+            }
+        }
+    }
+
+    private static void validateRelationshipTypeIds( int... relTypes )
+    {
+        for ( int relType : relTypes )
+        {
+            if ( TokenConstants.ANY_RELATIONSHIP_TYPE == relType )
+            {
+                throw new IllegalArgumentException( "Index schema descriptor can't be created for non existent relationship type." );
+            }
+        }
+    }
+
+    private static void validateLabelIds( int... labelIds )
+    {
+        for ( int labelId : labelIds )
+        {
+            if ( TokenConstants.ANY_LABEL == labelId )
+            {
+                throw new IllegalArgumentException( "Index schema descriptor can't be created for non existent label." );
+            }
+        }
     }
 
     /**

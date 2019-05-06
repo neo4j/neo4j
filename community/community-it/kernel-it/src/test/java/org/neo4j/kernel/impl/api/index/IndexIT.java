@@ -47,7 +47,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -99,8 +98,8 @@ public class IndexIT extends KernelIntegrationTest
         relType2 = tokenWrites.relationshipTypeGetOrCreateForName( REL_TYPE2 );
         propertyKeyId = tokenWrites.propertyKeyGetOrCreateForName( PROPERTY_KEY );
         propertyKeyId2 = tokenWrites.propertyKeyGetOrCreateForName( PROPERTY_KEY2 );
-        descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId );
-        descriptor2 = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId2 );
+        descriptor = SchemaDescriptor.forLabel( labelId, propertyKeyId );
+        descriptor2 = SchemaDescriptor.forLabel( labelId, propertyKeyId2 );
         commit();
         executorService = Executors.newCachedThreadPool();
     }
@@ -131,7 +130,7 @@ public class IndexIT extends KernelIntegrationTest
         TokenWrite tokenWrite = tokenWriteInNewTransaction();
         int label2 = tokenWrite.labelGetOrCreateForName( "Label2" );
 
-        LabelSchemaDescriptor anotherLabelDescriptor = SchemaDescriptorFactory.forLabel( label2, propertyKeyId );
+        LabelSchemaDescriptor anotherLabelDescriptor = SchemaDescriptor.forLabel( label2, propertyKeyId );
         schemaWriteInNewTransaction().indexCreate( anotherLabelDescriptor );
 
         Future<?> indexFuture = executorService.submit( createIndex( db, label( LABEL ), PROPERTY_KEY ) );
@@ -166,7 +165,7 @@ public class IndexIT extends KernelIntegrationTest
 
         // WHEN
         Transaction transaction = newTransaction( AUTH_DISABLED );
-        IndexReference addedRule = transaction.schemaWrite().indexCreate( SchemaDescriptorFactory.forLabel( labelId, 10 ) );
+        IndexReference addedRule = transaction.schemaWrite().indexCreate( SchemaDescriptor.forLabel( labelId, 10 ) );
         Set<IndexReference> indexRulesInTx = asSet( transaction.schemaRead().indexesGetForLabel( labelId ) );
         commit();
 
@@ -283,7 +282,7 @@ public class IndexIT extends KernelIntegrationTest
         // given
         Transaction transaction = newTransaction( AUTH_DISABLED );
         transaction.schemaWrite().uniquePropertyConstraintCreate(
-                SchemaDescriptorFactory.forLabel(
+                SchemaDescriptor.forLabel(
                         transaction.tokenWrite().labelGetOrCreateForName( "Label1" ),
                         transaction.tokenWrite().propertyKeyGetOrCreateForName( "property1" )
                 ) );
@@ -371,7 +370,7 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldListCompositeIndexesInTheCoreAPI() throws Exception
     {
         Transaction transaction = newTransaction( AUTH_DISABLED );
-        SchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId, propertyKeyId2 );
+        SchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelId, propertyKeyId, propertyKeyId2 );
         transaction.schemaWrite().indexCreate( descriptor );
         commit();
 
@@ -413,7 +412,7 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldListRelationshipIndexesInTheCoreAPI() throws Exception
     {
         Transaction transaction = newTransaction( AUTH_DISABLED );
-        SchemaDescriptor descriptor = SchemaDescriptorFactory.forRelType( relType, propertyKeyId );
+        SchemaDescriptor descriptor = SchemaDescriptor.forRelType( relType, propertyKeyId );
         transaction.schemaWrite().indexCreate( descriptor );
         commit();
 

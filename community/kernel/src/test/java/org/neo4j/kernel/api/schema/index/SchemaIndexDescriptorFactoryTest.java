@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.schema.index;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 
@@ -43,7 +43,7 @@ class SchemaIndexDescriptorFactoryTest
 
         desc = TestIndexDescriptorFactory.forLabel( LABEL_ID, 1 );
         assertFalse( desc.isUnique() );
-        assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
+        assertThat( desc.schema(), equalTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) ) );
     }
 
     @Test
@@ -53,7 +53,7 @@ class SchemaIndexDescriptorFactoryTest
 
         desc = TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
         assertTrue( desc.isUnique() );
-        assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
+        assertThat( desc.schema(), equalTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) ) );
     }
 
     @Test
@@ -61,13 +61,13 @@ class SchemaIndexDescriptorFactoryTest
     {
         IndexDescriptor desc;
 
-        desc = IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) );
+        desc = IndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( LABEL_ID, 1 ) );
         assertFalse( desc.isUnique() );
-        assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
+        assertThat( desc.schema(), equalTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) ) );
 
-        desc = IndexDescriptorFactory.uniqueForSchema( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) );
+        desc = IndexDescriptorFactory.uniqueForSchema( SchemaDescriptor.forLabel( LABEL_ID, 1 ) );
         assertTrue( desc.isUnique() );
-        assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
+        assertThat( desc.schema(), equalTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) ) );
     }
 
     @Test

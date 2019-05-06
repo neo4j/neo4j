@@ -25,7 +25,7 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -51,7 +51,7 @@ public class GenericNativeIndexPopulatorTest
         IndexDirectoryStructure directoryStructure = IndexDirectoryStructure.directoriesByProvider( root ).forProvider( GenericNativeIndexProvider.DESCRIPTOR );
         long indexId = 8;
         File indexDirectory = directoryStructure.directoryForIndex( indexId );
-        StoreIndexDescriptor descriptor = IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( 1, 1 ) ).withId( indexId );
+        StoreIndexDescriptor descriptor = IndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).withId( indexId );
         IndexSpecificSpaceFillingCurveSettingsCache spatialSettings = mock( IndexSpecificSpaceFillingCurveSettingsCache.class );
         PageCache pageCache = storage.pageCache();
         FileSystemAbstraction fs = storage.fileSystem();

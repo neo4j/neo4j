@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
@@ -171,7 +171,7 @@ public abstract class RecordStorageReaderTestBase
     {
         TxState txState = new TxState();
         txState.indexDoAdd( IndexDescriptorFactory.uniqueForSchema(
-                SchemaDescriptorFactory.forLabel( getOrCreateLabelId( label ), getOrCreatePropertyKeyId( propertyKey ) ) ) );
+                SchemaDescriptor.forLabel( getOrCreateLabelId( label ), getOrCreatePropertyKeyId( propertyKey ) ) ) );
         apply( txState );
     }
 

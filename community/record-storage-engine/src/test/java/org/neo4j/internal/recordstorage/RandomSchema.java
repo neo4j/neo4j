@@ -29,7 +29,6 @@ import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
@@ -222,12 +221,12 @@ public class RandomSchema implements Supplier<SchemaRule>
 
     public LabelSchemaDescriptor nextNodeSchema()
     {
-        return SchemaDescriptorFactory.forLabel( nextLabelId(), nextPropertyKeyIdsArray() );
+        return SchemaDescriptor.forLabel( nextLabelId(), nextPropertyKeyIdsArray() );
     }
 
     public RelationTypeSchemaDescriptor nextRelationshipSchema()
     {
-        return SchemaDescriptorFactory.forRelType( nextRelationshipTypeId(), nextPropertyKeyIdsArray() );
+        return SchemaDescriptor.forRelType( nextRelationshipTypeId(), nextPropertyKeyIdsArray() );
     }
 
     public SchemaDescriptor nextNodeFulltextSchema()

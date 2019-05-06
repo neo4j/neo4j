@@ -24,7 +24,7 @@ import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
@@ -48,7 +48,7 @@ abstract class AbstractNodeValueIndexCursorTest extends NodeValueIndexCursorTest
         SchemaWrite schemaWrite = ktx.schemaWrite();
         TokenWrite token = ktx.tokenWrite();
         schemaWrite.indexCreate(
-                SchemaDescriptorFactory.forLabel( token.labelGetOrCreateForName( "Person" ),
+                SchemaDescriptor.forLabel( token.labelGetOrCreateForName( "Person" ),
                         token.propertyKeyGetOrCreateForName( "firstname" ),
                         token.propertyKeyGetOrCreateForName( "surname" ) ) );
     }

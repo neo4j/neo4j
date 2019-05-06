@@ -28,7 +28,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -159,6 +159,6 @@ class IndexPopulationTest
 
     private IndexEntryUpdate<LabelSchemaDescriptor> someUpdate()
     {
-        return IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 0, 0 ), Values.numberValue( 0 ) );
+        return IndexEntryUpdate.add( 0, SchemaDescriptor.forLabel( 0, 0 ), Values.numberValue( 0 ) );
     }
 }

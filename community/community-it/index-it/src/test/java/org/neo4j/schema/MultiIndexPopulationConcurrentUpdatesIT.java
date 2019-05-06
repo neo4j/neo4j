@@ -54,7 +54,6 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaCache;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
@@ -278,7 +277,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
         try
         {
-            indexService.getIndexProxy( SchemaDescriptorFactory.forLabel( labelToDropId, propertyId ) );
+            indexService.getIndexProxy( SchemaDescriptor.forLabel( labelToDropId, propertyId ) );
             fail( "Index does not exist, we should fail to find it." );
         }
         catch ( IndexNotFoundKernelException infe )
@@ -289,7 +288,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private void checkIndexIsOnline( int labelId ) throws IndexNotFoundKernelException
     {
-        IndexProxy indexProxy = indexService.getIndexProxy( SchemaDescriptorFactory.forLabel( labelId, propertyId ) );
+        IndexProxy indexProxy = indexService.getIndexProxy( SchemaDescriptor.forLabel( labelId, propertyId ) );
         assertSame( indexProxy.getState(), InternalIndexState.ONLINE );
     }
 
@@ -300,7 +299,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private IndexReader getIndexReader( int propertyId, Integer countryLabelId ) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( SchemaDescriptorFactory.forLabel( countryLabelId, propertyId ) )
+        return indexService.getIndexProxy( SchemaDescriptor.forLabel( countryLabelId, propertyId ) )
                 .newReader();
     }
 
@@ -377,7 +376,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             throws IndexNotFoundKernelException, IndexPopulationFailedKernelException, InterruptedException,
             IndexActivationFailedKernelException
     {
-        IndexProxy indexProxy = indexService.getIndexProxy( SchemaDescriptorFactory.forLabel( labelId, propertyId ) );
+        IndexProxy indexProxy = indexService.getIndexProxy( SchemaDescriptor.forLabel( labelId, propertyId ) );
         indexProxy.awaitStoreScanCompleted( 0, TimeUnit.MILLISECONDS );
         while ( indexProxy.getState() != InternalIndexState.ONLINE )
         {
@@ -391,7 +390,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         IndexProvider lookup = getIndexProviderMap().lookup( schemaIndex.providerName() );
         IndexProviderDescriptor providerDescriptor = lookup.getProviderDescriptor();
         return labelNameIdMap.values().stream()
-                .map( index -> IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( index, propertyId ), providerDescriptor ).withId( index ) )
+                .map( index -> IndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( index, propertyId ), providerDescriptor ).withId( index ) )
                 .toArray( StoreIndexDescriptor[]::new );
     }
 
@@ -599,7 +598,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                         Node node = embeddedDatabase.getNodeById( update.getEntityId() );
                         for ( int labelId : labelsNameIdMap.values() )
                         {
-                            LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyId );
+                            LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyId );
                             for ( IndexEntryUpdate<?> indexUpdate :
                                     update.forIndexKeys( Collections.singleton( schema ) ) )
                             {
@@ -655,7 +654,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         @Override
         public void run()
         {
-            LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelIdToDropIndexFor, propertyId );
+            LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelIdToDropIndexFor, propertyId );
             StoreIndexDescriptor rule = findRuleForLabel( descriptor );
             indexService.dropIndex( rule );
         }

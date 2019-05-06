@@ -34,7 +34,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -75,8 +75,8 @@ class AwaitIndexProcedureTest
         tokenRead = mock( TokenRead.class );
         schemaRead = mock( SchemaRead.class );
         procedure = new IndexProcedures( transaction, null );
-        descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
-        anyDescriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
+        descriptor = SchemaDescriptor.forLabel( 123, 456 );
+        anyDescriptor = SchemaDescriptor.forLabel( 0, 0 );
         anyIndex = forSchema( anyDescriptor );
         when( transaction.tokenRead() ).thenReturn( tokenRead );
         when( transaction.schemaRead() ).thenReturn( schemaRead );

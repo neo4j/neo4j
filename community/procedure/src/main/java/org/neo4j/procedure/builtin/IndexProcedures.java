@@ -36,7 +36,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.helpers.Indexes;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -127,7 +127,7 @@ public class IndexProcedures implements AutoCloseable
         try
         {
             SchemaWrite schemaWrite = ktx.schemaWrite();
-            LabelSchemaDescriptor labelSchemaDescriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
+            LabelSchemaDescriptor labelSchemaDescriptor = SchemaDescriptor.forLabel( labelId, propertyKeyIds );
             indexCreator.create( schemaWrite, labelSchemaDescriptor, providerName );
             return Stream.of( new BuiltInProcedures.SchemaIndexInfo( indexSpecification, providerName, statusMessage ) );
         }

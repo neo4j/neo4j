@@ -31,7 +31,7 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -143,7 +143,7 @@ class KernelSchemaStateFlushingTest
         try ( Transaction transaction = beginTransaction() )
         {
             ConstraintDescriptor descriptor = transaction.schemaWrite().uniquePropertyConstraintCreate(
-                    SchemaDescriptorFactory.forLabel( 1, 1 ) );
+                    SchemaDescriptor.forLabel( 1, 1 ) );
             transaction.success();
             return descriptor;
         }
@@ -163,7 +163,7 @@ class KernelSchemaStateFlushingTest
         try ( Transaction transaction = beginTransaction() )
         {
             IndexReference reference = transaction.schemaWrite().indexCreate(
-                    SchemaDescriptorFactory.forLabel( 1, 1 ) );
+                    SchemaDescriptor.forLabel( 1, 1 ) );
             transaction.success();
             return reference;
         }

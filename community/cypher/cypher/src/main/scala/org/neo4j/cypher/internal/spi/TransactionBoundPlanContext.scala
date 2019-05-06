@@ -34,7 +34,7 @@ import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
 import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs, _}
-import org.neo4j.internal.schema.{ConstraintDescriptor, IndexKind, SchemaDescriptorFactory}
+import org.neo4j.internal.schema.{ConstraintDescriptor, IndexKind, SchemaDescriptor, SchemaDescriptorFactory}
 import org.neo4j.procedure.Mode
 import org.neo4j.values.storable.ValueCategory
 
@@ -146,7 +146,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       val labelId = getLabelId(labelName)
       val propertyKeyId = getPropertyKeyId(propertyKey)
 
-      tc.schemaRead.constraintsGetForSchema(SchemaDescriptorFactory.forLabelNoIndex(labelId, propertyKeyId)).hasNext
+      tc.schemaRead.constraintsGetForSchema(SchemaDescriptor.forLabelNoIndex(labelId, propertyKeyId)).hasNext
     } catch {
       case _: KernelException => false
     }

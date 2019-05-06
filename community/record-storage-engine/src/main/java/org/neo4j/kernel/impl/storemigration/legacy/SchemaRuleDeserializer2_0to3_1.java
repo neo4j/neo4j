@@ -24,7 +24,7 @@ import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.SchemaRule.Kind;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
@@ -98,7 +98,7 @@ public class SchemaRuleDeserializer2_0to3_1
         String providerKey = getDecodedStringFrom( serialized );
         String providerVersion = getDecodedStringFrom( serialized );
         int[] propertyKeyIds = readIndexPropertyKeys( serialized );
-        LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( label, propertyKeyIds );
+        LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( label, propertyKeyIds );
         Optional<String> name = Optional.empty();
         Long owningConstraintReference = constraintIndex ? readOwningConstraint( serialized ) : null;
         return new DefaultStorageIndexReference( schema, providerKey, providerVersion, id, name, constraintIndex, owningConstraintReference, false );

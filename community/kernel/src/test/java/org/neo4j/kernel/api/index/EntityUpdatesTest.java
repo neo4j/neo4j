@@ -30,7 +30,6 @@ import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.PropertyKeyValue;
@@ -62,10 +61,10 @@ class EntityUpdatesTest
     private static final long[] allLabels = new long[]{labelId1, labelId2};
     private static final long[] empty = new long[]{};
 
-    private static final LabelSchemaDescriptor index1 = SchemaDescriptorFactory.forLabel( labelId1, propertyKeyId1 );
-    private static final LabelSchemaDescriptor index2 = SchemaDescriptorFactory.forLabel( labelId1, propertyKeyId2 );
-    private static final LabelSchemaDescriptor index3 = SchemaDescriptorFactory.forLabel( labelId1, propertyKeyId3 );
-    private static final LabelSchemaDescriptor index123 = SchemaDescriptorFactory.forLabel( labelId1, propertyKeyId1, propertyKeyId2, propertyKeyId3 );
+    private static final LabelSchemaDescriptor index1 = SchemaDescriptor.forLabel( labelId1, propertyKeyId1 );
+    private static final LabelSchemaDescriptor index2 = SchemaDescriptor.forLabel( labelId1, propertyKeyId2 );
+    private static final LabelSchemaDescriptor index3 = SchemaDescriptor.forLabel( labelId1, propertyKeyId3 );
+    private static final LabelSchemaDescriptor index123 = SchemaDescriptor.forLabel( labelId1, propertyKeyId1, propertyKeyId2, propertyKeyId3 );
     private static final List<LabelSchemaDescriptor> indexes = Arrays.asList( index1, index2, index3, index123 );
     private static final SchemaDescriptor nonSchemaIndex = SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), new int[]{labelId1, labelId2},
             new int[]{propertyKeyId1, propertyKeyId2, propertyKeyId3} );

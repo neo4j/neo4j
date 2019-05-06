@@ -52,7 +52,6 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -294,7 +293,7 @@ public class AllStoreHolder extends Read
         LabelSchemaDescriptor descriptor;
         try
         {
-            descriptor = SchemaDescriptorFactory.forLabel( label, properties );
+            descriptor = SchemaDescriptor.forLabel( label, properties );
         }
         catch ( IllegalArgumentException ignore )
         {
@@ -415,7 +414,7 @@ public class AllStoreHolder extends Read
     @Override
     public IndexReference indexReferenceUnchecked( int label, int... properties )
     {
-        return IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( label, properties ),
+        return IndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( label, properties ),
                                                  Optional.empty(),
                                                  IndexProviderDescriptor.UNDECIDED );
     }

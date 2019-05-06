@@ -31,9 +31,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.IntSupplier;
-import java.util.stream.Collectors;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Edition;
@@ -85,7 +83,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
-import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.ResourceManager.EMPTY_RESOURCE_MANAGER;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;

@@ -30,7 +30,6 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaComputer;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.SchemaProcessor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
@@ -324,11 +323,11 @@ public class SchemaRuleSerialization35
         case SIMPLE_LABEL:
             int labelId = source.getInt();
             propertyIds = readTokenIdList( source );
-            return SchemaDescriptorFactory.forLabel( labelId, propertyIds );
+            return SchemaDescriptor.forLabel( labelId, propertyIds );
         case SIMPLE_REL_TYPE:
             int relTypeId = source.getInt();
             propertyIds = readTokenIdList( source );
-            return SchemaDescriptorFactory.forRelTypeNoIndex( relTypeId, propertyIds );
+            return SchemaDescriptor.forRelTypeNoIndex( relTypeId, propertyIds );
         case GENERIC_MULTI_TOKEN_TYPE:
             return readMultiTokenSchema( source );
         default:

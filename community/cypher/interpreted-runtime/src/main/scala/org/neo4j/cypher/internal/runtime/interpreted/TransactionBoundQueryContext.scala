@@ -43,7 +43,7 @@ import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.{allCursor, incomingCursor, outgoingCursor}
 import org.neo4j.internal.kernel.api.helpers._
 import org.neo4j.internal.kernel.api.{IndexQuery, IndexReadSession, IndexReference, InternalIndexState, NodeCursor, NodeValueIndexCursor, PropertyCursor, Read, RelationshipScanCursor, TokenRead, IndexOrder => KernelIndexOrder}
-import org.neo4j.internal.schema.SchemaDescriptorFactory
+import org.neo4j.internal.schema.{SchemaDescriptor, SchemaDescriptorFactory}
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
@@ -719,7 +719,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): IdempotentResult[IndexReference] = {
     val ktx = transactionalContext.kernelTransaction
     try {
-      IdempotentResult(ktx.schemaWrite().indexCreate(SchemaDescriptorFactory.forLabel(labelId, propertyKeyIds:_*)))
+      IdempotentResult(ktx.schemaWrite().indexCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*)))
     } catch {
       case _: AlreadyIndexedException =>
         val indexReference = ktx.schemaRead().index(labelId, propertyKeyIds:_*)
@@ -737,7 +737,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean = try {
-    transactionalContext.kernelTransaction.schemaWrite().nodeKeyConstraintCreate(SchemaDescriptorFactory.forLabel(labelId, propertyKeyIds:_*))
+    transactionalContext.kernelTransaction.schemaWrite().nodeKeyConstraintCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*))
     true
   } catch {
     case _: AlreadyConstrainedException => false
@@ -745,10 +745,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
-      .constraintDrop(ConstraintDescriptorFactory.nodeKeyForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyIds:_*)))
+      .constraintDrop(ConstraintDescriptorFactory.nodeKeyForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*)))
 
   override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean = try {
-    transactionalContext.kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(SchemaDescriptorFactory.forLabel(labelId, propertyKeyIds:_*))
+    transactionalContext.kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*))
     true
   } catch {
     case _: AlreadyConstrainedException => false
@@ -756,12 +756,12 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
-      .constraintDrop(ConstraintDescriptorFactory.uniqueForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyIds:_*)))
+      .constraintDrop(ConstraintDescriptorFactory.uniqueForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*)))
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean =
     try {
       transactionalContext.kernelTransaction.schemaWrite().nodePropertyExistenceConstraintCreate(
-        SchemaDescriptorFactory.forLabelNoIndex(labelId, propertyKeyId))
+        SchemaDescriptor.forLabelNoIndex(labelId, propertyKeyId))
       true
     } catch {
       case _: AlreadyConstrainedException => false
@@ -774,7 +774,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Boolean =
     try {
       transactionalContext.kernelTransaction.schemaWrite().relationshipPropertyExistenceConstraintCreate(
-        SchemaDescriptorFactory.forRelTypeNoIndex(relTypeId, propertyKeyId))
+        SchemaDescriptor.forRelTypeNoIndex(relTypeId, propertyKeyId))
       true
     } catch {
       case _: AlreadyConstrainedException => false

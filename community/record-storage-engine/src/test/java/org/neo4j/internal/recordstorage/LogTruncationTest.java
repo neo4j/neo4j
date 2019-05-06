@@ -29,7 +29,7 @@ import java.util.Map;
 
 import org.neo4j.internal.recordstorage.Command.NodeCountsCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCountsCommand;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -76,7 +76,7 @@ class LogTruncationTest
         permutations.put( Command.RelationshipGroupCommand.class,
                 new Command[] { new Command.LabelTokenCommand( new LabelTokenRecord( 1 ),
                         createLabelTokenRecord( 1 ) ) } );
-        StorageIndexReference schemaRule = new DefaultStorageIndexReference( SchemaDescriptorFactory.forLabel( 3, 4 ), false, 1, null );
+        StorageIndexReference schemaRule = new DefaultStorageIndexReference( SchemaDescriptor.forLabel( 3, 4 ), false, 1, null );
         permutations.put( Command.SchemaRuleCommand.class, new Command[]{
                 new Command.SchemaRuleCommand( new SchemaRecord( 1 ).initialize( true, 41 ), new SchemaRecord( 1 ).initialize( true, 42 ), schemaRule ),
                 new Command.SchemaRuleCommand( new SchemaRecord( 1 ), new SchemaRecord( 1 ).initialize( true, 42 ), schemaRule ),

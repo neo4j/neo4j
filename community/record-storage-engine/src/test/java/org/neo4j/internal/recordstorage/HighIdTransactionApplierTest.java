@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipGroupCommand;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -74,9 +74,9 @@ public class HighIdTransactionApplierTest
 
         // Schema rules
         tracker.visitSchemaRuleCommand( Commands.createIndexRule(
-                "empty", "1", 10, SchemaDescriptorFactory.forLabel( 0, 1 ) ) );
+                "empty", "1", 10, SchemaDescriptor.forLabel( 0, 1 ) ) );
         tracker.visitSchemaRuleCommand( Commands.createIndexRule(
-                "empty", "1", 20, SchemaDescriptorFactory.forLabel( 1, 2 ) ) );
+                "empty", "1", 20, SchemaDescriptor.forLabel( 1, 2 ) ) );
 
         // Properties
         tracker.visitPropertyCommand( Commands.createProperty( 10, PropertyType.STRING, 0, 6, 7 ) );

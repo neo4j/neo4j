@@ -33,7 +33,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.DefaultIndexDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
@@ -64,7 +64,7 @@ public class SchemaRuleSerialization35Test
 
     private static IndexDescriptor indexDescriptor( boolean isUnique, String name, int labelId, int... propertyIds )
     {
-        return new DefaultIndexDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ), PROVIDER_KEY, PROVIDER_VERSION,
+        return new DefaultIndexDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ), PROVIDER_KEY, PROVIDER_VERSION,
                 Optional.ofNullable( name ), isUnique, false );
     }
 

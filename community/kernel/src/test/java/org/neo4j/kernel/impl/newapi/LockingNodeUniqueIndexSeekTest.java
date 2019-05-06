@@ -26,7 +26,7 @@ import org.mockito.InOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.newapi.LockingNodeUniqueIndexSeek.UniqueNodeIndexSeeker;
@@ -48,7 +48,7 @@ public class LockingNodeUniqueIndexSeekTest
 {
     private final int labelId = 1;
     private final int propertyKeyId = 2;
-    private IndexReference index = IndexDescriptorFactory.uniqueForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
+    private IndexReference index = IndexDescriptorFactory.uniqueForSchema( SchemaDescriptor.forLabel( labelId, propertyKeyId ) );
 
     private final Value value = Values.of( "value" );
     private final IndexQuery.ExactPredicate predicate = exact( propertyKeyId, value );

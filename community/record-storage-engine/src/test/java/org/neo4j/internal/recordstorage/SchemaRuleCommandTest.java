@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.util.function.Predicate;
 
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
@@ -79,7 +79,7 @@ class SchemaRuleCommandTest
             new IndexBatchTransactionApplier( indexUpdateListener, labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
                     neoStores.getRelationshipStore(), propertyStore, storageEngine, schemaCache, new IndexActivator( indexes ) );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV4_0();
-    private final StorageIndexReference rule = new DefaultStorageIndexReference( SchemaDescriptorFactory.forLabel( labelId, propertyKey ), false, id, null );
+    private final StorageIndexReference rule = new DefaultStorageIndexReference( SchemaDescriptor.forLabel( labelId, propertyKey ), false, id, null );
 
     @Test
     void shouldWriteCreatedSchemaRuleToStore() throws Exception

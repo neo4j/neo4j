@@ -41,7 +41,6 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
@@ -429,9 +428,9 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
             switch ( entityType )
             {
             case NODE:
-                return SchemaDescriptorFactory.forLabel( singleEntityId( entityIds ), propertyIds );
+                return SchemaDescriptor.forLabel( singleEntityId( entityIds ), propertyIds );
             case RELATIONSHIP:
-                return SchemaDescriptorFactory.forRelType( singleEntityId( entityIds ), propertyIds );
+                return SchemaDescriptor.forRelType( singleEntityId( entityIds ), propertyIds );
             default:
                 throw new MalformedSchemaRuleException( "Unrecognised entity type: " + entityType );
             }

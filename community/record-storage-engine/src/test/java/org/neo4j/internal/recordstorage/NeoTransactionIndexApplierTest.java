@@ -41,7 +41,7 @@ import org.neo4j.util.concurrent.WorkSync;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 public class NeoTransactionIndexApplierTest
 {

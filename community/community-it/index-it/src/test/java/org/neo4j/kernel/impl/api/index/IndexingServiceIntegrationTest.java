@@ -57,8 +57,8 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
-import static org.neo4j.internal.schema.SchemaDescriptorFactory.forRelType;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
 
 @RunWith( Parameterized.class )
 public class IndexingServiceIntegrationTest

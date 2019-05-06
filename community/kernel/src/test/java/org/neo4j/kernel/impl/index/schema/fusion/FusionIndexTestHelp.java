@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateValue;
@@ -53,8 +53,8 @@ import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 
 class FusionIndexTestHelp
 {
-    private static LabelSchemaDescriptor indexKey = SchemaDescriptorFactory.forLabel( 0, 0 );
-    private static LabelSchemaDescriptor compositeIndexKey = SchemaDescriptorFactory.forLabel( 0, 0, 1 );
+    private static LabelSchemaDescriptor indexKey = SchemaDescriptor.forLabel( 0, 0 );
+    private static LabelSchemaDescriptor compositeIndexKey = SchemaDescriptor.forLabel( 0, 0, 1 );
 
     private static final Value[] stringValues = new Value[]
             {

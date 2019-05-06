@@ -31,7 +31,6 @@ import org.neo4j.internal.schema.ConstraintDescriptor.Type;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.storageengine.api.ConstraintRule;
@@ -53,7 +52,7 @@ import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
-import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.storageengine.api.ConstraintRule.constraintRule;
 
@@ -512,7 +511,7 @@ public class SchemaCacheTest
 
     private StorageIndexReference newIndexRule( long id, int label, int... propertyKeys )
     {
-        return new DefaultStorageIndexReference( SchemaDescriptorFactory.forLabel( label, propertyKeys ), false, id, null );
+        return new DefaultStorageIndexReference( SchemaDescriptor.forLabel( label, propertyKeys ), false, id, null );
     }
 
     private ConstraintRule nodePropertyExistenceConstraintRule( long ruleId, int labelId, int propertyId )

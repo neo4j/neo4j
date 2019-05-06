@@ -55,7 +55,7 @@ class SchemaDescriptorLookupSetTest
     {
         // given
         SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
-        LabelSchemaDescriptor expected = SchemaDescriptorFactory.forLabel( 1, 2 );
+        LabelSchemaDescriptor expected = SchemaDescriptor.forLabel( 1, 2 );
         set.add( expected );
 
         // when
@@ -71,8 +71,8 @@ class SchemaDescriptorLookupSetTest
     {
         // given
         SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
-        LabelSchemaDescriptor expected1 = SchemaDescriptorFactory.forLabel( 1, 2 );
-        LabelSchemaDescriptor expected2 = SchemaDescriptorFactory.forLabel( 1, 2, 3 );
+        LabelSchemaDescriptor expected1 = SchemaDescriptor.forLabel( 1, 2 );
+        LabelSchemaDescriptor expected2 = SchemaDescriptor.forLabel( 1, 2, 3 );
         set.add( expected1 );
         set.add( expected2 );
 
@@ -89,9 +89,9 @@ class SchemaDescriptorLookupSetTest
     {
         // given
         SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
-        LabelSchemaDescriptor descriptor1 = SchemaDescriptorFactory.forLabel( 1, 2, 3 );
-        LabelSchemaDescriptor descriptor2 = SchemaDescriptorFactory.forLabel( 1, 2, 4 );
-        LabelSchemaDescriptor descriptor3 = SchemaDescriptorFactory.forLabel( 1, 2, 5, 6 );
+        LabelSchemaDescriptor descriptor1 = SchemaDescriptor.forLabel( 1, 2, 3 );
+        LabelSchemaDescriptor descriptor2 = SchemaDescriptor.forLabel( 1, 2, 4 );
+        LabelSchemaDescriptor descriptor3 = SchemaDescriptor.forLabel( 1, 2, 5, 6 );
         set.add( descriptor1 );
         set.add( descriptor2 );
         set.add( descriptor3 );
@@ -109,11 +109,11 @@ class SchemaDescriptorLookupSetTest
     {
         // given
         SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
-        LabelSchemaDescriptor descriptor1 = SchemaDescriptorFactory.forLabel( 1, 2, 3 );
-        LabelSchemaDescriptor descriptor2 = SchemaDescriptorFactory.forLabel( 1, 2, 4 );
-        LabelSchemaDescriptor descriptor3 = SchemaDescriptorFactory.forLabel( 1, 2, 5, 6 );
-        LabelSchemaDescriptor descriptor4 = SchemaDescriptorFactory.forLabel( 2, 2, 3 );
-        LabelSchemaDescriptor descriptor5 = SchemaDescriptorFactory.forLabel( 3, 2, 5, 6 );
+        LabelSchemaDescriptor descriptor1 = SchemaDescriptor.forLabel( 1, 2, 3 );
+        LabelSchemaDescriptor descriptor2 = SchemaDescriptor.forLabel( 1, 2, 4 );
+        LabelSchemaDescriptor descriptor3 = SchemaDescriptor.forLabel( 1, 2, 5, 6 );
+        LabelSchemaDescriptor descriptor4 = SchemaDescriptor.forLabel( 2, 2, 3 );
+        LabelSchemaDescriptor descriptor5 = SchemaDescriptor.forLabel( 3, 2, 5, 6 );
         set.add( descriptor1 );
         set.add( descriptor2 );
         set.add( descriptor3 );
@@ -250,7 +250,7 @@ class SchemaDescriptorLookupSetTest
         int[] propertyKeys = randomUniqueUnsortedIntArray( highPropertyKeyId, numberOfPropertyKeys );
         return entityKeys.length > 1
                ? SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), entityKeys, propertyKeys )
-               : SchemaDescriptorFactory.forLabel( entityKeys[0], propertyKeys );
+               : SchemaDescriptor.forLabel( entityKeys[0], propertyKeys );
     }
 
     private int[] randomUniqueUnsortedIntArray( int maxValue, int length )
