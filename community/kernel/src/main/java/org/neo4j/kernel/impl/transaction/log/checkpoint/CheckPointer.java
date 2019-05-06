@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.io.IOException;
+import java.util.function.BooleanSupplier;
 
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
@@ -48,10 +49,24 @@ public interface CheckPointer
      * It is mostly used for testing purpose and to force a check point when shutting down the database.
      *
      * @param triggerInfo the info describing why check pointing has been triggered
-     * @return the transaction id used for the check pointing
+     * @return the transaction id used for the check pointing.
      * @throws IOException if writing the check point fails
      */
     long tryCheckPoint( TriggerInfo triggerInfo ) throws IOException;
+
+    /**
+     * This method tries the write of a check point in the transaction log. If there is no running check pointing it
+     * will check point otherwise it will wait for the running check pointing to complete.
+     *
+     * It is mostly used for testing purpose and to force a check point when shutting down the database.
+     *
+     * @param triggerInfo the info describing why check pointing has been triggered
+     * @param timeout a boolean supplier that, if it returns {@code true}, will signal that we should stop waiting for any on-going checkpoint to complete.
+     * @return the transaction id used for the check pointing, or -1 if we ended up waiting for an on-going checkpoint and the timeout returned {@code false}
+     * telling us to give up waiting.
+     * @throws IOException if writing the check point fails
+     */
+    long tryCheckPoint( TriggerInfo triggerInfo, BooleanSupplier timeout ) throws IOException;
 
     /**
      * This method forces the write of a check point in the transaction log.

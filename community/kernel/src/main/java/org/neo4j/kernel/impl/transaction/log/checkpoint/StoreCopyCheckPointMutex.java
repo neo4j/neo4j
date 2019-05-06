@@ -20,10 +20,12 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BooleanSupplier;
 
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.Resource;
@@ -192,6 +194,28 @@ public class StoreCopyCheckPointMutex
     {
         Lock writeLock = lock.writeLock();
         return writeLock.tryLock() ? writeLock::unlock : null;
+    }
+
+    public Resource tryCheckPoint( BooleanSupplier timeoutPredicate )
+    {
+        Lock writeLock = lock.writeLock();
+
+        try
+        {
+            while ( !writeLock.tryLock( 100, MILLISECONDS ) )
+            {
+                if ( timeoutPredicate.getAsBoolean() )
+                {
+                    return null;
+                }
+            }
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            return null;
+        }
+        return writeLock::unlock;
     }
 
     public Resource checkPoint()

@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
+import org.eclipse.collections.api.block.predicate.primitive.BooleanPredicate;
+
 import java.io.IOException;
+import java.util.function.BooleanSupplier;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -100,6 +103,12 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @Override
     public long tryCheckPoint( TriggerInfo info ) throws IOException
     {
+        return tryCheckPoint( info, () -> false );
+    }
+
+    @Override
+    public long tryCheckPoint( TriggerInfo info, BooleanSupplier timeout ) throws IOException
+    {
         ioLimiter.disableLimit();
         try
         {
@@ -113,11 +122,18 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             }
             else
             {
-                try ( Resource lock = mutex.checkPoint() )
+                try ( Resource lock = mutex.tryCheckPoint( timeout ) )
                 {
-                    msgLog.info( info.describe( lastCheckPointedTx ) +
-                                 " Check pointing was already running, completed now" );
-                    return lastCheckPointedTx;
+                    if ( lock != null )
+                    {
+                        msgLog.info( info.describe( lastCheckPointedTx ) +
+                                " Check pointing was already running, completed now" );
+                        return lastCheckPointedTx;
+                    }
+                    else
+                    {
+                        return -1;
+                    }
                 }
             }
         }

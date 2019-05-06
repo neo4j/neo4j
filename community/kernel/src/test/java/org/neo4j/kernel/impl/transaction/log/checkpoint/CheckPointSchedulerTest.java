@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
+import org.eclipse.collections.api.block.predicate.primitive.BooleanPredicate;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -32,6 +33,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -185,6 +187,12 @@ public class CheckPointSchedulerTest
             }
 
             @Override
+            public long tryCheckPoint( TriggerInfo triggerInfo, BooleanSupplier timeout )
+            {
+                throw new RuntimeException( "this should have not been called" );
+            }
+
+            @Override
             public long forceCheckPoint( TriggerInfo triggerInfo )
             {
                 throw new RuntimeException( "this should have not been called" );
@@ -332,6 +340,12 @@ public class CheckPointSchedulerTest
         }
 
         @Override
+        public long tryCheckPoint( TriggerInfo triggerInfo, BooleanSupplier timeout )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public long forceCheckPoint( TriggerInfo triggerInfo )
         {
             throw new UnsupportedOperationException();
@@ -400,6 +414,12 @@ public class CheckPointSchedulerTest
 
         @Override
         public long tryCheckPoint( TriggerInfo triggerInfo )
+        {
+            throw new UnsupportedOperationException( "This should have not been called" );
+        }
+
+        @Override
+        public long tryCheckPoint( TriggerInfo triggerInfo, BooleanSupplier timeout )
         {
             throw new UnsupportedOperationException( "This should have not been called" );
         }
