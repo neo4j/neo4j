@@ -137,6 +137,7 @@ public class DatabaseManagementServiceFactory
         DatabaseManager<?> databaseManager = createAndInitializeDatabaseManager( globalModule, edition, internalLog );
         DatabaseManagementService managementService = new DatabaseManagementServiceImpl( databaseManager, globalModule.getGlobalAvailabilityGuard(),
                 globalLife, globalModule.getDatabaseEventListeners(), globalModule.getTransactionEventListeners(), internalLog );
+        globalDependencies.satisfyDependencies( managementService );
 
         GlobalProcedures globalProcedures = setupProcedures( globalModule, edition, databaseManager );
         globalDependencies.satisfyDependency( new NonTransactionalDbmsOperations( globalProcedures ) );

@@ -74,13 +74,13 @@ case class MultiDatabaseManagementCommandRuntime(normalExecutionEngine: Executio
       UpdatingSystemCommandExecutionPlan("DeleteDatabase", normalExecutionEngine,
         """OPTIONAL MATCH (d:Database {name:$name})
           |WHERE d.status <> $excluded
-          |OPTIONAL MATCH (d2: Database{name:$name, status:$requiredStatus})
+          |OPTIONAL MATCH (d2: Database{name:$name})
           |SET d2.status = $status
           |RETURN d.name as name, d.status as status, d2.name as db""".stripMargin,
-        VirtualValues.map(Array("name", "requiredStatus", "status", "excluded"), Array(Values.stringValue(dbName),
-          DatabaseStatus.Offline,
-          DatabaseStatus.Deleted,
-          DatabaseStatus.Deleted)),
+        VirtualValues.map(Array("name", "status", "excluded"),
+          Array(Values.stringValue(dbName), // $name
+          DatabaseStatus.Deleted, // $status
+          DatabaseStatus.Deleted)), // $excluded
         record => {
           if (record.get("name") == null) throw new IllegalStateException("Cannot drop non-existent database '" + dbName + "'")
           if (record.get("db") == null) throw new IllegalStateException("Cannot drop database '" + dbName + "' that is not " + DatabaseStatus.Offline.stringValue() + ". It is: " + record.get("status"))

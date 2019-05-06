@@ -32,6 +32,8 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.monitoring.DatabaseEventListeners;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+
 public class DatabaseManagementServiceImpl implements DatabaseManagementService
 {
     private final DatabaseManager<?> databaseManager;
@@ -103,6 +105,7 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
     @Override
     public void registerTransactionEventListener( String databaseName, TransactionEventListener<?> listener )
     {
+        validateDatabaseName( databaseName );
         transactionEventListeners.registerTransactionEventListener( databaseName, listener );
     }
 
@@ -126,6 +129,14 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
             String message = "Shutdown failed";
             log.error( message, throwable );
             throw new RuntimeException( message, throwable );
+        }
+    }
+
+    private static void validateDatabaseName( String databaseName )
+    {
+        if ( SYSTEM_DATABASE_NAME.equals( databaseName ) )
+        {
+            throw new IllegalArgumentException( "Registration of transaction event listeners on " + SYSTEM_DATABASE_NAME + " is not supported." );
         }
     }
 }

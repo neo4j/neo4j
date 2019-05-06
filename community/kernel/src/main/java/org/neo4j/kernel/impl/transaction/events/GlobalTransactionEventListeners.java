@@ -29,7 +29,6 @@ import org.neo4j.graphdb.event.TransactionEventListener;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
 public class GlobalTransactionEventListeners
 {
@@ -48,7 +47,6 @@ public class GlobalTransactionEventListeners
     {
         requireNonNull( databaseName, "Database name is required." );
         requireNonNull( listener, "Transaction event listener is required." );
-        validateDatabaseName( databaseName );
         globalTransactionEventListeners.compute( databaseName, ( s, transactionEventListeners ) ->
         {
             List<TransactionEventListener<?>> listeners = transactionEventListeners != null ? transactionEventListeners : new CopyOnWriteArrayList<>();
@@ -95,13 +93,5 @@ public class GlobalTransactionEventListeners
     public Collection<TransactionEventListener<?>> getDatabaseTransactionEventListeners( String databaseName )
     {
         return globalTransactionEventListeners.getOrDefault( databaseName, Collections.emptyList() );
-    }
-
-    private static void validateDatabaseName( String databaseName )
-    {
-        if ( SYSTEM_DATABASE_NAME.equals( databaseName ) )
-        {
-            throw new IllegalArgumentException( "Registration of transaction event listeners on " + SYSTEM_DATABASE_NAME + " is not supported." );
-        }
     }
 }
