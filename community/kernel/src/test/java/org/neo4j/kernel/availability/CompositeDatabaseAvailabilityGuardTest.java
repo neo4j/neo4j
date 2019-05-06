@@ -44,7 +44,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 
 class CompositeDatabaseAvailabilityGuardTest
 {
-
     private final DescriptiveAvailabilityRequirement requirement = new DescriptiveAvailabilityRequirement( "testRequirement" );
     private CompositeDatabaseAvailabilityGuard compositeGuard;
     private DatabaseAvailabilityGuard defaultGuard;
@@ -58,6 +57,8 @@ class CompositeDatabaseAvailabilityGuardTest
         compositeGuard = new CompositeDatabaseAvailabilityGuard( mockClock, NullLogService.getInstance() );
         defaultGuard = compositeGuard.createDatabaseAvailabilityGuard( new DatabaseId( DEFAULT_DATABASE_NAME ) );
         systemGuard = compositeGuard.createDatabaseAvailabilityGuard( new DatabaseId( SYSTEM_DATABASE_NAME ) );
+        defaultGuard.start();
+        systemGuard.start();
         compositeGuard.start();
     }
 
@@ -150,11 +151,13 @@ class CompositeDatabaseAvailabilityGuardTest
     }
 
     @Test
-    void stopOfAvailabilityGuardDeregisterItInCompositeParent()
+    void stopOfAvailabilityGuardDeregisterItInCompositeParent() throws Exception
     {
         int initialGuards = compositeGuard.getGuards().size();
         DatabaseAvailabilityGuard firstGuard = compositeGuard.createDatabaseAvailabilityGuard( new DatabaseId( "first" ) );
         DatabaseAvailabilityGuard secondGuard = compositeGuard.createDatabaseAvailabilityGuard( new DatabaseId( "second" ) );
+        firstGuard.start();
+        secondGuard.start();
 
         assertEquals( 2, countNewGuards( initialGuards ) );
 

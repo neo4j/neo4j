@@ -34,12 +34,11 @@ import static java.util.concurrent.locks.LockSupport.parkNanos;
  */
 public class DatabaseAvailability extends LifecycleAdapter
 {
-    private static final AvailabilityRequirement AVAILABILITY_REQUIREMENT = new DescriptiveAvailabilityRequirement( "Database available" );
+    private static final AvailabilityRequirement UNAVAILABILITY_REQUIREMENT = new DescriptiveAvailabilityRequirement( "Database unavailable" );
     private final AvailabilityGuard databaseAvailabilityGuard;
     private final TransactionCounters transactionCounters;
     private final Clock clock;
     private final long awaitActiveTransactionDeadlineMillis;
-    private volatile boolean started;
 
     public DatabaseAvailability( AvailabilityGuard databaseAvailabilityGuard, TransactionCounters transactionCounters, Clock clock,
             long awaitActiveTransactionDeadlineMillis )
@@ -50,31 +49,24 @@ public class DatabaseAvailability extends LifecycleAdapter
         this.clock = clock;
 
         // On initial setup, deny availability
-        databaseAvailabilityGuard.require( AVAILABILITY_REQUIREMENT );
+        databaseAvailabilityGuard.require( UNAVAILABILITY_REQUIREMENT );
     }
 
     @Override
     public void start()
     {
-        databaseAvailabilityGuard.fulfill( AVAILABILITY_REQUIREMENT );
-        started = true;
+        databaseAvailabilityGuard.fulfill( UNAVAILABILITY_REQUIREMENT );
     }
 
     @Override
     public void stop()
     {
-        started = false;
         // Database is no longer available for use
         // Deny beginning new transactions
-        databaseAvailabilityGuard.require( AVAILABILITY_REQUIREMENT );
+        databaseAvailabilityGuard.require( UNAVAILABILITY_REQUIREMENT );
 
         // Await transactions stopped
         awaitTransactionsClosedWithinTimeout();
-    }
-
-    public boolean isStarted()
-    {
-        return started;
     }
 
     private void awaitTransactionsClosedWithinTimeout()

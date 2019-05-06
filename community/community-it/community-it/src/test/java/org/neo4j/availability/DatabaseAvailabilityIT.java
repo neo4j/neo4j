@@ -25,30 +25,38 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.AvailabilityRequirement;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
+import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 
 @ExtendWith( TestDirectoryExtension.class )
 class DatabaseAvailabilityIT
 {
+    private static final DatabaseId DEFAULT_DATABASE_ID = new DatabaseId( DEFAULT_DATABASE_NAME );
+    private static final DatabaseId SYSTEM_DATABASE_ID = new DatabaseId( SYSTEM_DATABASE_NAME );
+
     @Inject
     private TestDirectory testDirectory;
     private GraphDatabaseAPI database;
@@ -64,7 +72,7 @@ class DatabaseAvailabilityIT
     @AfterEach
     void tearDown()
     {
-        if ( database != null )
+        if ( managementService != null )
         {
             managementService.shutdown();
         }
@@ -75,13 +83,12 @@ class DatabaseAvailabilityIT
     {
         AvailabilityRequirement outerSpaceRequirement = () -> "outer space";
         DependencyResolver dependencyResolver = database.getDependencyResolver();
-        DatabaseManager<?> databaseManager = dependencyResolver.resolveDependency( DatabaseManager.class );
-        Config config = dependencyResolver.resolveDependency( Config.class );
+        DatabaseManager<?> databaseManager = getDatabaseManager( dependencyResolver );
         CompositeDatabaseAvailabilityGuard compositeGuard = dependencyResolver.resolveDependency( CompositeDatabaseAvailabilityGuard.class );
         assertTrue( compositeGuard.isAvailable() );
 
-        DatabaseContext systemContext = databaseManager.getDatabaseContext( new DatabaseId( SYSTEM_DATABASE_NAME ) ).get();
-        DatabaseContext defaultContext = databaseManager.getDatabaseContext( new DatabaseId( config.get( default_database ) ) ).get();
+        DatabaseContext systemContext = databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ).get();
+        DatabaseContext defaultContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_ID ).get();
 
         AvailabilityGuard systemGuard = systemContext.dependencies().resolveDependency( DatabaseAvailabilityGuard.class );
         systemGuard.require( outerSpaceRequirement );
@@ -96,5 +103,60 @@ class DatabaseAvailabilityIT
 
         defaultGuard.fulfill( outerSpaceRequirement );
         assertTrue( compositeGuard.isAvailable() );
+    }
+
+    @Test
+    void stoppedDatabaseIsNotAvailable()
+    {
+        DependencyResolver dependencyResolver = database.getDependencyResolver();
+        DatabaseManager<?> databaseManager = getDatabaseManager( dependencyResolver );
+        DatabaseContext databaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_ID ).get();
+        databaseContext.database().stop();
+
+        assertThrows( DatabaseShutdownException.class, () -> database.beginTx() );
+    }
+
+    @Test
+    void notConfusingMessageOnDatabaseNonAvailability()
+    {
+        DependencyResolver dependencyResolver = database.getDependencyResolver();
+        DatabaseManager<?> databaseManager = getDatabaseManager( dependencyResolver );
+        DatabaseContext databaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_ID ).get();
+        DatabaseAvailability databaseAvailability = databaseContext.database().getDependencyResolver().resolveDependency( DatabaseAvailability.class );
+        databaseAvailability.stop();
+
+        TransactionFailureException exception = assertThrows( TransactionFailureException.class, () -> database.beginTx() );
+        assertEquals( "Timeout waiting for database to become available and allow new transactions. Waited 1s. 1 reasons for blocking: Database unavailable.",
+                exception.getMessage() );
+    }
+
+    @Test
+    void restartedDatabaseIsAvailable()
+    {
+        DependencyResolver dependencyResolver = database.getDependencyResolver();
+        DatabaseManager<?> databaseManager = getDatabaseManager( dependencyResolver );
+        DatabaseContext databaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_ID ).get();
+        Database database = databaseContext.database();
+
+        executeTransactionOnDefaultDatabase();
+
+        database.stop();
+        assertThrows( DatabaseShutdownException.class, () -> this.database.beginTx() );
+
+        database.start();
+        executeTransactionOnDefaultDatabase();
+    }
+
+    private void executeTransactionOnDefaultDatabase()
+    {
+        try ( Transaction transaction = database.beginTx() )
+        {
+            transaction.success();
+        }
+    }
+
+    private static DatabaseManager<?> getDatabaseManager( DependencyResolver dependencyResolver )
+    {
+        return dependencyResolver.resolveDependency( DatabaseManager.class );
     }
 }

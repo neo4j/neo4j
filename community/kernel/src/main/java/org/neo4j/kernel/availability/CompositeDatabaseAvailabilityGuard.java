@@ -21,8 +21,8 @@ package org.neo4j.kernel.availability;
 
 import java.time.Clock;
 import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -42,7 +42,7 @@ public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter impleme
 {
     private final Clock clock;
     private final LogService logService;
-    private final CopyOnWriteArrayList<DatabaseAvailabilityGuard> guards = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArraySet<DatabaseAvailabilityGuard> guards = new CopyOnWriteArraySet<>();
     private volatile boolean started = true;
 
     public CompositeDatabaseAvailabilityGuard( Clock clock, LogService logService )
@@ -54,9 +54,12 @@ public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter impleme
     public DatabaseAvailabilityGuard createDatabaseAvailabilityGuard( DatabaseId databaseId )
     {
         Log guardLog = logService.getInternalLog( DatabaseAvailabilityGuard.class );
-        DatabaseAvailabilityGuard guard = new DatabaseAvailabilityGuard( databaseId, clock, guardLog, this );
+        return new DatabaseAvailabilityGuard( databaseId, clock, guardLog, this );
+    }
+
+    void addDatabaseAvailabilityGuard( DatabaseAvailabilityGuard guard )
+    {
         guards.add( guard );
-        return guard;
     }
 
     void removeDatabaseAvailabilityGuard( DatabaseAvailabilityGuard guard )
@@ -153,9 +156,9 @@ public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter impleme
     }
 
     @VisibleForTesting
-    public List<DatabaseAvailabilityGuard> getGuards()
+    public Set<DatabaseAvailabilityGuard> getGuards()
     {
-        return Collections.unmodifiableList( guards );
+        return Collections.unmodifiableSet( guards );
     }
 
     private String getUnavailableMessage()
