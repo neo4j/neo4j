@@ -93,6 +93,8 @@ case class ResolvedCall(signature: ProcedureSignature,
     callResults.map(result => result.variable.name -> outputTypes(result.outputName))
   }
 
+  def mapCallArguments(f: Expression => Expression): ResolvedCall = copy(callArguments = callArguments.map(f))(this.position)
+
   override def semanticCheck: SemanticCheck =
     argumentCheck chain resultCheck
 
@@ -146,7 +148,7 @@ case class ResolvedCall(signature: ProcedureSignature,
   private val callOutputTypes: Map[String, CypherType] =
     signature.outputSignature.map { _.map { field => field.name -> field.typ }.toMap }.getOrElse(Map.empty)
 
-  override def containsNoUpdates = signature.accessMode match {
+  override def containsNoUpdates: Boolean = signature.accessMode match {
     case ProcedureReadOnlyAccess(_) => true
     case _ => false
   }

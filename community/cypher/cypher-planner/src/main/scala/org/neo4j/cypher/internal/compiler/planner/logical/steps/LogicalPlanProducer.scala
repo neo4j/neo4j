@@ -572,24 +572,34 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   def planSkip(inner: LogicalPlan, count: Expression, context: LogicalPlanningContext): LogicalPlan = {
+    // `count` is not allowed to be a PatternComprehension or PatternExpression
     val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withSkipExpression(count))))
     annotate(SkipPlan(inner, count), solved, providedOrders.get(inner.id), context)
   }
 
-  def planLoadCSV(inner: LogicalPlan, variableName: String, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral], context: LogicalPlanningContext): LogicalPlan = {
+  def planLoadCSV(inner: LogicalPlan, variableName: String, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral], interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).updateTailOrSelf(_.withHorizon(LoadCSVProjection(variableName, url, format, fieldTerminator)))
-    annotate(LoadCSVPlan(inner, url, variableName, format, fieldTerminator.map(_.value), context.legacyCsvQuoteEscaping,
-                         context.csvBufferSize), solved, providedOrders.get(inner.id), context)
+    val solver = PatternExpressionSolver.solverFor(inner, interestingOrder, context)
+    val rewrittenUrl = solver.solve(url)
+    val rewrittenInner = solver.rewrittenPlan()
+    annotate(LoadCSVPlan(rewrittenInner, rewrittenUrl, variableName, format, fieldTerminator.map(_.value), context.legacyCsvQuoteEscaping,
+                         context.csvBufferSize), solved, providedOrders.get(rewrittenInner.id), context)
   }
 
-  def planUnwind(inner: LogicalPlan, name: String, expression: Expression, reported: Expression, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).updateTailOrSelf(_.withHorizon(UnwindProjection(name, reported)))
-    annotate(UnwindCollection(inner, name, expression), solved, providedOrders.get(inner.id), context)
+  def planUnwind(inner: LogicalPlan, name: String, expression: Expression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inner.id).updateTailOrSelf(_.withHorizon(UnwindProjection(name, expression)))
+    val solver = PatternExpressionSolver.solverFor(inner, interestingOrder, context)
+    val rewrittenExpression = solver.solve(expression)
+    val rewrittenInner = solver.rewrittenPlan()
+    annotate(UnwindCollection(rewrittenInner, name, rewrittenExpression), solved, providedOrders.get(rewrittenInner.id), context)
   }
 
-  def planCallProcedure(inner: LogicalPlan, call: ResolvedCall, reported: ResolvedCall, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).updateTailOrSelf(_.withHorizon(ProcedureCallProjection(reported)))
-    annotate(ProcedureCall(inner, call), solved, providedOrders.get(inner.id), context)
+  def planCallProcedure(inner: LogicalPlan, call: ResolvedCall, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inner.id).updateTailOrSelf(_.withHorizon(ProcedureCallProjection(call)))
+    val solver = PatternExpressionSolver.solverFor(inner, interestingOrder, context)
+    val rewrittenCall = call.mapCallArguments(solver.solve(_))
+    val rewrittenInner = solver.rewrittenPlan()
+    annotate(ProcedureCall(rewrittenInner, rewrittenCall), solved, providedOrders.get(rewrittenInner.id), context)
   }
 
   def planPassAll(inner: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
@@ -601,6 +611,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   def planLimit(inner: LogicalPlan, effectiveCount: Expression, reportedCount: Expression, ties: Ties = DoNotIncludeTies, context: LogicalPlanningContext): LogicalPlan = {
+    // `effectiveCount` is not allowed to be a PatternComprehension or PatternExpression
     val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withLimitExpression(reportedCount))))
     annotate(LimitPlan(inner, effectiveCount, ties), solved, providedOrders.get(inner.id), context)
   }

@@ -77,18 +77,15 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         }
 
       case UnwindProjection(variable, expression) =>
-        val solver = PatternExpressionSolver.solverFor(selectedPlan, query.interestingOrder, context)
-        val collectionExpression = solver.solve(expression)
-        val inner = solver.rewrittenPlan()
-        val projected = context.logicalPlanProducer.planUnwind(inner, variable, collectionExpression, expression, context)
+        val projected = context.logicalPlanProducer.planUnwind(selectedPlan, variable, expression, query.interestingOrder, context)
         SortPlanner.ensureSortedPlanWithSolved(projected, query.interestingOrder, context)
 
       case ProcedureCallProjection(call) =>
-        val projected = context.logicalPlanProducer.planCallProcedure(plan, call, call, context)
+        val projected = context.logicalPlanProducer.planCallProcedure(plan, call, query.interestingOrder, context)
         SortPlanner.ensureSortedPlanWithSolved(projected, query.interestingOrder, context)
 
       case LoadCSVProjection(variableName, url, format, fieldTerminator) =>
-        val projected = context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTerminator, context)
+        val projected = context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTerminator, query.interestingOrder, context)
         SortPlanner.ensureSortedPlanWithSolved(projected, query.interestingOrder, context)
 
       case PassthroughAllHorizon() =>

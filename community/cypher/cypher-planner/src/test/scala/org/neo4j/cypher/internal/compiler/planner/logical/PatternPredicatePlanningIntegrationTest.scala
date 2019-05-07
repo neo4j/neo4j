@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ir.{QueryGraph, RegularPlannerQuery}
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.util.symbols.CTAny
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.Extractors.{MapKeys, SetExtractor}
 
@@ -476,7 +477,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "ages", _, _),
       _,
       _
-      )=> ()
+      ) => ()
     }
   }
 
@@ -492,7 +493,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, _, _, _),
       _,
       _
-      )=> ()
+      ) => ()
     }
   }
 
@@ -507,7 +508,54 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       case Distinct(
       RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "ages", _, _),
       _
-      )=> ()
+      ) => ()
+    }
+  }
+
+  test("should solve pattern comprehensions for LoadCSV") {
+    val q =
+      """
+        |LOAD CSV FROM toString(reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)) AS foo RETURN foo
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case LoadCSV(
+      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _, _),
+      _, _, _, _, _, _
+      ) => ()
+    }
+  }
+
+  test("should solve pattern comprehensions for Unwind") {
+    val q =
+      """
+        |UNWIND [reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)] AS foo RETURN foo
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case UnwindCollection(
+      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _, _),
+      "foo",
+      _
+      ) => ()
+    }
+  }
+
+  test("should solve pattern comprehensions for ProcedureCall") {
+    val q =
+      """
+        |CALL foo([reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)])
+      """.stripMargin
+    val (_, plan, _, _, _) = new given {
+      procedure(ProcedureSignature(QualifiedName(Seq.empty, "foo"), IndexedSeq(FieldSignature("arg", CTAny)), None, None, ProcedureReadOnlyAccess(Array.empty[String]), id = 0))
+    } getLogicalPlanFor q
+
+    plan should beLike {
+      case EmptyResult(
+      ProcedureCall(
+      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _, _),
+      _
+      )) => ()
     }
   }
 
