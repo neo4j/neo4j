@@ -597,6 +597,11 @@ object IntermediateRepresentation {
 
   def and(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) = BooleanAnd(lhs, rhs)
 
+  def and(ands: Seq[IntermediateRepresentation]): IntermediateRepresentation = {
+    if (ands.isEmpty) constant(true)
+    else ands.reduceLeft((acc, current) => and(acc, current))
+  }
+
   def or(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation = BooleanOr(lhs, rhs)
 
   def or(ors: Seq[IntermediateRepresentation]): IntermediateRepresentation = {
