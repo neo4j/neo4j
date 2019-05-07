@@ -42,7 +42,7 @@ public class CommunityDiscoverableURIsTest
     {
         DiscoverableURIs uris = communityDiscoverableURIs( Config.defaults(), null );
 
-        assertEquals( map( "data", "/db/data/", "management", "/db/manage/" ), toMap(uris) );
+        assertEquals( map( "data", "/db/", "management", "/db/manage/" ), toMap(uris) );
     }
 
     @Test

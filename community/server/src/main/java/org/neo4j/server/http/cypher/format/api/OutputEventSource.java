@@ -56,5 +56,5 @@ public interface OutputEventSource
 
     TransitionalPeriodTransactionMessContainer getTransactionContainer();
 
-    UriInfo getUriInfo();
+    TransactionUriScheme getUriInfo();
 }

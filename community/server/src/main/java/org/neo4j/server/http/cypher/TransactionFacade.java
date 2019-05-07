@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 
 /**
  * Transactional actions contains the business logic for executing statements against Neo4j across long-running

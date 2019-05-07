@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.http.cypher;
+package org.neo4j.server.http.cypher.format.api;
 
 import java.net.URI;
 
@@ -26,4 +26,6 @@ public interface TransactionUriScheme
     URI txUri( long id );
 
     URI txCommitUri( long id );
+
+    URI dbUri();
 }

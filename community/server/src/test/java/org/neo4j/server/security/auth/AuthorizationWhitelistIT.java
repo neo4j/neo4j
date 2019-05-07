@@ -78,7 +78,7 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
         server.start();
 
         // Then I should get a unauthorized response for access to the DB
-        HTTP.Response response = HTTP.GET(HTTP.GET( server.baseUri().resolve( "db/data" ).toString()).location() );
+        HTTP.Response response = HTTP.GET(HTTP.GET( server.baseUri().resolve( "db" ).toString()).location() );
         assertThat( response.status(), equalTo( 401 ) );
     }
 

@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
@@ -40,6 +39,7 @@ import org.neo4j.server.http.cypher.format.api.StatementEndEvent;
 import org.neo4j.server.http.cypher.format.api.StatementStartEvent;
 import org.neo4j.server.http.cypher.format.api.TransactionInfoEvent;
 import org.neo4j.server.http.cypher.format.api.TransactionNotificationState;
+import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 
 class OutputEventStreamImpl implements OutputEventSource, OutputEventStream
 {
@@ -47,10 +47,10 @@ class OutputEventStreamImpl implements OutputEventSource, OutputEventStream
     private final Consumer<OutputEventStream> startListener;
     private final Map<String,Object> parameters;
     private final TransitionalPeriodTransactionMessContainer transactionContainer;
-    private final UriInfo uriInfo;
+    private final TransactionUriScheme uriInfo;
     private Consumer<OutputEvent> eventListener;
 
-    OutputEventStreamImpl( Map<String,Object> parameters, TransitionalPeriodTransactionMessContainer transactionContainer, UriInfo uriInfo,
+    OutputEventStreamImpl( Map<String,Object> parameters, TransitionalPeriodTransactionMessContainer transactionContainer, TransactionUriScheme uriInfo,
             Consumer<OutputEventStream> startListener )
     {
         this.parameters = parameters;
@@ -109,7 +109,7 @@ class OutputEventStreamImpl implements OutputEventSource, OutputEventStream
     }
 
     @Override
-    public UriInfo getUriInfo()
+    public TransactionUriScheme getUriInfo()
     {
         return uriInfo;
     }

@@ -20,6 +20,7 @@
 package org.neo4j.server.http.cypher;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -41,12 +42,12 @@ public class TransactionHandleRegistry implements TransactionRegistry
     private final Clock clock;
 
     private final Log log;
-    private final long timeoutMillis;
+    private final Duration transactionTimeout;
 
-    public TransactionHandleRegistry( Clock clock, long timeoutMillis, LogProvider logProvider )
+    public TransactionHandleRegistry( Clock clock, Duration transactionTimeout, LogProvider logProvider )
     {
         this.clock = clock;
-        this.timeoutMillis = timeoutMillis;
+        this.transactionTimeout = transactionTimeout;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -168,7 +169,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
 
     private long computeNewExpiryTime( long lastActiveTimestamp )
     {
-        return  lastActiveTimestamp + timeoutMillis;
+        return  lastActiveTimestamp + transactionTimeout.toMillis();
     }
 
     @Override

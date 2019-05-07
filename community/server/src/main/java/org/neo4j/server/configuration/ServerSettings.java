@@ -184,7 +184,7 @@ public class ServerSettings implements LoadableConfig
     public static final Setting<String> ssl_policy = setting( "https.ssl_policy", STRING, LEGACY_POLICY_NAME );
 
     @Internal
-    public static final Setting<URI> rest_api_path = setting( "unsupported.dbms.uris.rest", NORMALIZED_RELATIVE_URI, "/db/data" );
+    public static final Setting<URI> rest_api_path = setting( "unsupported.dbms.uris.rest", NORMALIZED_RELATIVE_URI, "/db" );
 
     @Internal
     public static final Setting<URI> management_api_path = setting( "unsupported.dbms.uris.management",

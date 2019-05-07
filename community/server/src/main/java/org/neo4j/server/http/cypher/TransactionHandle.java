@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.http.cypher.format.api.Statement;
+import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 
 /**
  * Encapsulates executing statements in a transaction, committing the transaction, or rolling it back.

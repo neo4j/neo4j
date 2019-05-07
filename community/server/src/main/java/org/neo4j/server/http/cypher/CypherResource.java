@@ -35,41 +35,59 @@ import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 import org.neo4j.server.http.cypher.format.api.InputEventStream;
+import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
+import org.neo4j.server.rest.Neo4jError;
 import org.neo4j.server.rest.dbms.AuthorizedRequestWrapper;
 import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 
 import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
 
-@Path( "/transaction" )
+@Path( "/{databaseName}/transaction" )
 public class CypherResource
 {
 
-    private final TransactionFacade facade;
+    private final HttpTransactionManager httpTransactionManager;
     private final TransactionUriScheme uriScheme;
     private final Log log;
-    private final UriInfo uriInfo;
+    private final HttpHeaders headers;
+    private final HttpServletRequest request;
+    private final String databaseName;
 
-    public CypherResource( @Context TransactionFacade facade, @Context UriInfo uriInfo, @Context Log log )
+    public CypherResource( @Context HttpTransactionManager httpTransactionManager,
+            @Context UriInfo uriInfo,
+            @Context Log log,
+            @Context HttpHeaders headers,
+            @Context HttpServletRequest request,
+            @PathParam( "databaseName" ) String databaseName )
     {
-        this.facade = facade;
-        this.uriScheme = new TransactionUriBuilder( uriInfo );
+        this.httpTransactionManager = httpTransactionManager;
+        this.databaseName = databaseName;
+        this.uriScheme = new TransactionUriBuilder( uriInfo, databaseName );
         this.log = log;
-        this.uriInfo = uriInfo;
+        this.headers = headers;
+        this.request = request;
     }
 
     @POST
-    public Response executeStatementsInNewTransaction( @Context HttpHeaders headers, InputEventStream inputEventStream, @Context HttpServletRequest request )
+    public Response executeStatementsInNewTransaction( InputEventStream inputEventStream )
     {
 
         inputEventStream = ensureNotNull( inputEventStream );
 
-        TransactionHandle transactionHandle = createNewTransactionHandle( headers, request, false );
+        TransactionFacade transactionFacade = httpTransactionManager.getTransactionFacade( databaseName );
+        if ( transactionFacade == null )
+        {
+            return createNonExistentDatabaseResponse( inputEventStream.getParameters() );
+        }
+
+        TransactionHandle transactionHandle = createNewTransactionHandle( transactionFacade, headers, request, false );
 
         Invocation invocation = new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), inputEventStream, false );
         OutputEventStreamImpl outputEventStream =
-                new OutputEventStreamImpl( inputEventStream.getParameters(), facade.getTransactionContainer(), uriInfo, invocation::execute );
+                new OutputEventStreamImpl( inputEventStream.getParameters(), transactionFacade.getTransactionContainer(), uriScheme, invocation::execute );
         return Response.created( transactionHandle.uri() ).entity( outputEventStream ).build();
     }
 
@@ -94,11 +112,17 @@ public class CypherResource
     {
         inputEventStream = ensureNotNull( inputEventStream );
 
-        TransactionHandle transactionHandle = createNewTransactionHandle( headers, request, true );
+        TransactionFacade transactionFacade = httpTransactionManager.getTransactionFacade( databaseName );
+        if ( transactionFacade == null )
+        {
+            return createNonExistentDatabaseResponse( inputEventStream.getParameters() );
+        }
+
+        TransactionHandle transactionHandle = createNewTransactionHandle( transactionFacade, headers, request, true );
 
         Invocation invocation = new Invocation( log, transactionHandle, null, inputEventStream, true );
         OutputEventStreamImpl outputEventStream =
-                new OutputEventStreamImpl( inputEventStream.getParameters(), facade.getTransactionContainer(), uriInfo, invocation::execute );
+                new OutputEventStreamImpl( inputEventStream.getParameters(), transactionFacade.getTransactionContainer(), uriScheme, invocation::execute );
         return Response.ok( outputEventStream ).build();
     }
 
@@ -107,54 +131,69 @@ public class CypherResource
     public Response rollbackTransaction( @PathParam( "id" ) final long id )
     {
         TransactionHandle transactionHandle;
+
+        TransactionFacade transactionFacade = httpTransactionManager.getTransactionFacade( databaseName );
+        if ( transactionFacade == null )
+        {
+            return createNonExistentDatabaseResponse( Collections.emptyMap() );
+        }
+
         try
         {
-            transactionHandle = facade.terminate( id );
+            transactionHandle = transactionFacade.terminate( id );
         }
         catch ( TransactionLifecycleException e )
         {
-            return invalidTransaction( e, Collections.emptyMap() );
+            return invalidTransaction( transactionFacade, e, Collections.emptyMap() );
         }
 
         RollbackInvocation invocation = new RollbackInvocation( log, transactionHandle );
 
         OutputEventStreamImpl outputEventStream =
-                new OutputEventStreamImpl( Collections.emptyMap(), facade.getTransactionContainer(), uriInfo, invocation::execute );
+                new OutputEventStreamImpl( Collections.emptyMap(), null, uriScheme, invocation::execute );
         return Response.ok().entity( outputEventStream ).build();
     }
 
-    private TransactionHandle createNewTransactionHandle( @Context HttpHeaders headers, @Context HttpServletRequest request, boolean implicitTransaction )
+    private TransactionHandle createNewTransactionHandle( TransactionFacade transactionFacade, HttpHeaders headers, HttpServletRequest request,
+            boolean implicitTransaction )
     {
         LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest( request );
         long customTransactionTimeout = getTransactionTimeout( headers, log );
         ClientConnectionInfo connectionInfo = HttpConnectionInfoFactory.create( request );
-        return facade.newTransactionHandle( uriScheme, implicitTransaction, loginContext, connectionInfo, customTransactionTimeout );
+        return transactionFacade.newTransactionHandle( uriScheme, implicitTransaction, loginContext, connectionInfo, customTransactionTimeout );
     }
 
     private Response executeInExistingTransaction( long transactionId, InputEventStream inputEventStream, boolean finishWithCommit )
     {
         inputEventStream = ensureNotNull( inputEventStream );
+
+        TransactionFacade transactionFacade = httpTransactionManager.getTransactionFacade( databaseName );
+        if ( transactionFacade == null )
+        {
+            return createNonExistentDatabaseResponse( inputEventStream.getParameters() );
+        }
+
         TransactionHandle transactionHandle;
         try
         {
-            transactionHandle = facade.findTransactionHandle( transactionId );
+            transactionHandle = transactionFacade.findTransactionHandle( transactionId );
         }
         catch ( TransactionLifecycleException e )
         {
-            return invalidTransaction( e, inputEventStream.getParameters() );
+            return invalidTransaction( transactionFacade, e, inputEventStream.getParameters() );
         }
         Invocation invocation =
                 new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), inputEventStream, finishWithCommit );
         OutputEventStreamImpl outputEventStream =
-                new OutputEventStreamImpl( inputEventStream.getParameters(), facade.getTransactionContainer(), uriInfo, invocation::execute );
+                new OutputEventStreamImpl( inputEventStream.getParameters(), transactionFacade.getTransactionContainer(), uriScheme, invocation::execute );
         return Response.ok( outputEventStream ).build();
     }
 
-    private Response invalidTransaction( TransactionLifecycleException e, Map<String,Object> parameters )
+    private Response invalidTransaction( TransactionFacade transactionFacade, TransactionLifecycleException e, Map<String,Object> parameters )
     {
         ErrorInvocation errorInvocation = new ErrorInvocation( e.toNeo4jError() );
         return Response.status( Response.Status.NOT_FOUND ).entity(
-                new OutputEventStreamImpl( parameters, facade.getTransactionContainer(), uriInfo, errorInvocation::execute ) ).build();
+                new OutputEventStreamImpl( parameters, transactionFacade.getTransactionContainer(), uriScheme, errorInvocation::execute ) ).build();
     }
 
     private InputEventStream ensureNotNull( InputEventStream inputEventStream )
@@ -167,30 +206,47 @@ public class CypherResource
         return InputEventStream.EMPTY;
     }
 
+    private Response createNonExistentDatabaseResponse( Map<String,Object> parameters )
+    {
+        ErrorInvocation errorInvocation = new ErrorInvocation( new Neo4jError( Status.Request.Invalid,
+                String.format( "The database requested does not exists. " + "Requested database name: '%s'.", databaseName ) ) );
+        return Response.status( Response.Status.NOT_FOUND ).entity(
+                new OutputEventStreamImpl( parameters, null, uriScheme, errorInvocation::execute ) ).build();
+    }
+
     private static class TransactionUriBuilder implements TransactionUriScheme
     {
-        private final UriInfo uriInfo;
+        private final URI dbUri;
+        private final URI cypherUri;
 
-        TransactionUriBuilder( UriInfo uriInfo )
+        TransactionUriBuilder( UriInfo uriInfo, String databaseName )
         {
-            this.uriInfo = uriInfo;
+            UriBuilder builder = uriInfo.getBaseUriBuilder().path( databaseName );
+            dbUri = builder.build();
+            cypherUri = builder.path( "transaction" ).build();
         }
 
         @Override
         public URI txUri( long id )
         {
-            return builder( id ).build();
+            return transactionBuilder( id ).build();
         }
 
         @Override
         public URI txCommitUri( long id )
         {
-            return builder( id ).path( "/commit" ).build();
+            return transactionBuilder( id ).path( "/commit" ).build();
         }
 
-        private UriBuilder builder( long id )
+        @Override
+        public URI dbUri()
         {
-            return uriInfo.getBaseUriBuilder().path( CypherResource.class ).path( "/" + id );
+            return dbUri;
+        }
+
+        private UriBuilder transactionBuilder( long id )
+        {
+            return UriBuilder.fromUri( cypherUri ).path( "/" + id );
         }
     }
 }

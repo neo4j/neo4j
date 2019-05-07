@@ -21,6 +21,7 @@ package org.neo4j.server.http.cypher;
 
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.logging.AssertableLogProvider;
@@ -44,7 +45,7 @@ public class TransactionHandleRegistryTest
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), 0, logProvider );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), Duration.ofMillis( 0 ), logProvider );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         // when
@@ -61,7 +62,7 @@ public class TransactionHandleRegistryTest
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), 0, logProvider );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), Duration.ofMillis( 0 ), logProvider );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         long id = registry.begin( handle );
@@ -80,7 +81,7 @@ public class TransactionHandleRegistryTest
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), 0, logProvider );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), Duration.ofMillis( 0 ), logProvider );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         long id = registry.begin( handle );
@@ -107,7 +108,7 @@ public class TransactionHandleRegistryTest
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), 0, logProvider );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), Duration.ofMillis( 0 ), logProvider );
 
         long madeUpTransactionId = 1337;
 
@@ -132,7 +133,7 @@ public class TransactionHandleRegistryTest
         // Given
         FakeClock clock = Clocks.fakeClock();
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, 0, logProvider );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, Duration.ofMillis( 0 ), logProvider );
         TransactionHandle oldTx = mock( TransactionHandle.class );
         TransactionHandle newTx = mock( TransactionHandle.class );
         TransactionHandle handle = mock( TransactionHandle.class );
@@ -176,7 +177,7 @@ public class TransactionHandleRegistryTest
         FakeClock clock = Clocks.fakeClock();
         int timeoutLength = 123;
 
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, timeoutLength, logProvider );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, Duration.ofMillis( timeoutLength ), logProvider );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         long id = registry.begin( handle );
@@ -204,7 +205,7 @@ public class TransactionHandleRegistryTest
         FakeClock clock = Clocks.fakeClock();
         int timeoutLength = 123;
 
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, timeoutLength, logProvider );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, Duration.ofMillis( timeoutLength ), logProvider );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         // Active Tx in Registry
@@ -226,7 +227,7 @@ public class TransactionHandleRegistryTest
         FakeClock clock = Clocks.fakeClock();
         int timeoutLength = 123;
 
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, timeoutLength, logProvider );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, Duration.ofMillis( timeoutLength ), logProvider );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         // Suspended Tx in Registry
@@ -249,7 +250,7 @@ public class TransactionHandleRegistryTest
         FakeClock clock = Clocks.fakeClock();
         int timeoutLength = 123;
 
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, timeoutLength, logProvider );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, Duration.ofMillis( timeoutLength ), logProvider );
 
         // When
         registry.terminate( 456 );

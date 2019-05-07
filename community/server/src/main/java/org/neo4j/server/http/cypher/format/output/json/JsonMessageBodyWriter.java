@@ -27,7 +27,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
 
@@ -39,6 +38,7 @@ import org.neo4j.server.http.cypher.format.api.RecordEvent;
 import org.neo4j.server.http.cypher.format.api.StatementEndEvent;
 import org.neo4j.server.http.cypher.format.api.StatementStartEvent;
 import org.neo4j.server.http.cypher.format.api.TransactionInfoEvent;
+import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 import org.neo4j.server.http.cypher.format.input.json.InputStatement;
 import org.neo4j.server.http.cypher.format.input.json.JsonMessageBodyReader;
 
@@ -58,8 +58,8 @@ public class JsonMessageBodyWriter implements MessageBodyWriter<OutputEventSourc
             MultivaluedMap<String,Object> httpHeaders, OutputStream entityStream ) throws WebApplicationException
     {
         TransitionalPeriodTransactionMessContainer transactionContainer = outputEventSource.getTransactionContainer();
-        UriInfo uriInfo = outputEventSource.getUriInfo();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( entityStream, uriInfo.getBaseUri(), transactionContainer );
+        TransactionUriScheme uriInfo = outputEventSource.getUriInfo();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( entityStream, uriInfo.dbUri(), transactionContainer );
 
         outputEventSource.produceEvents( outputEvent -> handleEvent( outputEvent, serializer, outputEventSource.getParameters() ) );
     }

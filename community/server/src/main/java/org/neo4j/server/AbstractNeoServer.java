@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -34,33 +35,28 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpConnector.Encryption;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.internal.helpers.AdvertisedSocketAddress;
 import org.neo4j.internal.helpers.ListenSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
-import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.bind.ComponentsBinder;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.GraphFactory;
 import org.neo4j.server.database.LifecycleManagingDatabase;
-import org.neo4j.server.http.cypher.TransactionFacade;
-import org.neo4j.server.http.cypher.TransactionHandleRegistry;
 import org.neo4j.server.http.cypher.TransactionRegistry;
-import org.neo4j.server.http.cypher.TransitionalPeriodTransactionMessContainer;
+import org.neo4j.server.http.cypher.HttpTransactionManager;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.InputFormatProvider;
@@ -74,8 +70,6 @@ import org.neo4j.ssl.SslPolicy;
 import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.time.Clocks;
 
-import static java.lang.Math.round;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.server.configuration.ServerSettings.http_log_path;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
@@ -113,14 +107,12 @@ public abstract class AbstractNeoServer implements NeoServer
 
     protected final Database database;
     private DependencyResolver dependencyResolver;
-    protected CypherExecutor cypherExecutor;
     protected WebServer webServer;
     protected Supplier<AuthManager> authManagerSupplier;
     protected Supplier<UserManagerSupplier> userManagerSupplier;
     protected Supplier<SslPolicyLoader> sslPolicyFactorySupplier;
-    private TransactionFacade transactionFacade;
+    private HttpTransactionManager httpTransactionManager;
 
-    private TransactionHandleRegistry transactionRegistry;
     private ConnectorPortRegister connectorPortRegister;
     private HttpConnector httpConnector;
     private HttpConnector httpsConnector;
@@ -174,29 +166,12 @@ public abstract class AbstractNeoServer implements NeoServer
         return dependencyResolver;
     }
 
-    private TransactionFacade createTransactionalActions()
+    private HttpTransactionManager createHttpTransactionManager( DatabaseManager databaseManager )
     {
-        final long timeoutMillis = getTransactionTimeoutMillis();
-        final Clock clock = Clocks.systemClock();
-
-        transactionRegistry = new TransactionHandleRegistry( clock, timeoutMillis, userLogProvider );
-
-        // ensure that this is > 0
-        long runEvery = round( timeoutMillis / 2.0 );
-
-        resolveDependency( JobScheduler.class ).scheduleRecurring( Group.SERVER_TRANSACTION_TIMEOUT, () ->
-        {
-            long maxAge = clock.millis() - timeoutMillis;
-            transactionRegistry.rollbackSuspendedTransactionsIdleSince( maxAge );
-        }, runEvery, MILLISECONDS );
-
-        return new TransactionFacade(
-                new TransitionalPeriodTransactionMessContainer( database.getGraph() ),
-                resolveDependency( QueryExecutionEngine.class ),
-                resolveDependency( GraphDatabaseQueryService.class ),
-                transactionRegistry,
-                userLogProvider
-        );
+        JobScheduler jobScheduler = resolveDependency( JobScheduler.class );
+        Clock clock = Clocks.systemClock();
+        Duration transactionTimeout = getTransactionTimeout();
+        return new HttpTransactionManager( databaseManager, config, jobScheduler, clock, transactionTimeout, userLogProvider );
     }
 
     /**
@@ -204,10 +179,10 @@ public abstract class AbstractNeoServer implements NeoServer
      * seconds rounded down, meaning if a user set a 1 second timeout, he would be told there was less than 1 second
      * remaining before he would need to renew the timeout.
      */
-    private long getTransactionTimeoutMillis()
+    private Duration getTransactionTimeout()
     {
         final long timeout = config.get( ServerSettings.transaction_idle_timeout ).toMillis();
-        return Math.max( timeout, MINIMUM_TIMEOUT + ROUNDING_SECOND );
+        return Duration.ofMillis( Math.max( timeout, MINIMUM_TIMEOUT + ROUNDING_SECOND ) );
     }
 
     /**
@@ -368,7 +343,7 @@ public abstract class AbstractNeoServer implements NeoServer
     @Override
     public TransactionRegistry getTransactionRegistry()
     {
-        return transactionRegistry;
+        return httpTransactionManager.getTransactionHandleRegistry();
     }
 
     @Override
@@ -404,8 +379,7 @@ public abstract class AbstractNeoServer implements NeoServer
         binder.addSingletonBinding( new RepresentationFormatRepository( this ), RepresentationFormatRepository.class );
         binder.addLazyBinding( InputFormatProvider.class, InputFormat.class );
         binder.addLazyBinding( OutputFormatProvider.class, OutputFormat.class );
-        binder.addSingletonBinding( cypherExecutor, CypherExecutor.class );
-        binder.addSingletonBinding( transactionFacade, TransactionFacade.class );
+        binder.addSingletonBinding( httpTransactionManager, HttpTransactionManager.class );
         binder.addLazyBinding( authManagerSupplier, AuthManager.class );
         binder.addLazyBinding( userManagerSupplier, UserManagerSupplier.class );
         binder.addSingletonBinding( userLogProvider, LogProvider.class );
@@ -478,13 +452,10 @@ public abstract class AbstractNeoServer implements NeoServer
             serverLog.info( "Starting web server" );
             connectorPortRegister = dependencyResolver.resolveDependency( ConnectorPortRegister.class );
 
-            transactionFacade = createTransactionalActions();
-
-            cypherExecutor = new CypherExecutor( database, userLogProvider );
+            DatabaseManager databaseManager = database.getGraph().getDependencyResolver().resolveDependency( DatabaseManager.class );
+            httpTransactionManager = createHttpTransactionManager(databaseManager);
 
             configureWebServer();
-
-            cypherExecutor.start();
 
             startModules();
 
