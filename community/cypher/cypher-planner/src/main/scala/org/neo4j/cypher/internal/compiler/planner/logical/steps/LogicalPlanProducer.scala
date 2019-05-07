@@ -310,6 +310,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                                 valueExpr: Expression,
                                 argumentIds: Set[String],
                                 providedOrder: ProvidedOrder,
+                                interestingOrder: InterestingOrder,
                                 context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
@@ -317,8 +318,12 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
+    val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, interestingOrder, context)
+    val rewrittenValueExpr = solver.solve(valueExpr)
+    val newArguments = solver.newArguments
     // TODO uses .head at the moment
-    annotate(NodeIndexContainsScan(idName, label, properties.head, valueExpr, argumentIds, toIndexOrder(providedOrder)), solved, providedOrder, context)
+    val plan = annotate(NodeIndexContainsScan(idName, label, properties.head, rewrittenValueExpr, argumentIds ++ newArguments, toIndexOrder(providedOrder)), solved, providedOrder, context)
+    solver.rewriteLeafPlan(plan)
   }
 
   def planNodeIndexEndsWithScan(idName: String,
@@ -329,6 +334,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                                 valueExpr: Expression,
                                 argumentIds: Set[String],
                                 providedOrder: ProvidedOrder,
+                                interestingOrder: InterestingOrder,
                                 context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
@@ -336,8 +342,12 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
+    val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, interestingOrder, context)
+    val rewrittenValueExpr = solver.solve(valueExpr)
+    val newArguments = solver.newArguments
     // TODO uses .head at the moment
-    annotate(NodeIndexEndsWithScan(idName, label, properties.head, valueExpr, argumentIds, toIndexOrder(providedOrder)), solved, providedOrder, context)
+    val plan = annotate(NodeIndexEndsWithScan(idName, label, properties.head, rewrittenValueExpr, argumentIds ++ newArguments, toIndexOrder(providedOrder)), solved, providedOrder, context)
+    solver.rewriteLeafPlan(plan)
   }
 
   def planNodeHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Seq[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {

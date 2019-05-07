@@ -291,6 +291,44 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     }
   }
 
+  test("should solve pattern comprehension for NodeIndexContainsScan") {
+    val q =
+      """
+        |MATCH (n:Label)
+        |WHERE n.prop CONTAINS toString(reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x))
+        |RETURN n
+      """.stripMargin
+    val (_, plan, _, _, _) = new given {
+      indexOn("Label", "prop")
+    } getLogicalPlanFor q
+
+    plan should beLike {
+      case Apply(
+      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _, _),
+      NodeIndexContainsScan("n", _, _, _, SetExtractor(argumentName), _)
+      ) if collectionName == argumentName => ()
+    }
+  }
+
+  test("should solve pattern comprehension for NodeIndexEndsWithScan") {
+    val q =
+      """
+        |MATCH (n:Label)
+        |WHERE n.prop ENDS WITH toString(reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x))
+        |RETURN n
+      """.stripMargin
+    val (_, plan, _, _, _) = new given {
+      indexOn("Label", "prop")
+    } getLogicalPlanFor q
+
+    plan should beLike {
+      case Apply(
+      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _, _),
+      NodeIndexEndsWithScan("n", _, _, _, SetExtractor(argumentName), _)
+      ) if collectionName == argumentName => ()
+    }
+  }
+
   test("should name pattern comprehensions in return position") {
     val q =
       """

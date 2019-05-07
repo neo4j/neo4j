@@ -25,12 +25,12 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderin
 import org.neo4j.cypher.internal.compiler.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.planner.logical.{LeafPlanFromExpression, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
 import org.neo4j.cypher.internal.ir.{InterestingOrder, ProvidedOrder, QueryGraph}
+import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.LabelId
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 
@@ -46,13 +46,13 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
       // MATCH (n:User) WHERE n.prop CONTAINS 'substring' RETURN n
       case predicate@Contains(prop@Property(Variable(name), _), expr) if onlyArgumentDependencies(expr) =>
         val plans = produce(name, qg, interestingOrder, prop, CTString, predicate,
-                            lpp.planNodeIndexContainsScan(_, _, _, _, _, expr, _, _, context), context)
+                            lpp.planNodeIndexContainsScan(_, _, _, _, _, expr, _, _, interestingOrder, context), context)
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE n.prop ENDS WITH 'substring' RETURN n
       case predicate@EndsWith(prop@Property(Variable(name), _), expr) if onlyArgumentDependencies(expr) =>
         val plans = produce(name, qg, interestingOrder, prop, CTString, predicate,
-                            lpp.planNodeIndexEndsWithScan(_, _, _, _, _, expr, _, _, context), context)
+                            lpp.planNodeIndexEndsWithScan(_, _, _, _, _, expr, _, _, interestingOrder, context), context)
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
