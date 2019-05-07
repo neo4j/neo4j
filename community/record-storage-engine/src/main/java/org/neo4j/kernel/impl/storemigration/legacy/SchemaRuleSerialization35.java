@@ -327,7 +327,7 @@ public class SchemaRuleSerialization35
         case SIMPLE_REL_TYPE:
             int relTypeId = source.getInt();
             propertyIds = readTokenIdList( source );
-            return SchemaDescriptor.forRelTypeNoIndex( relTypeId, propertyIds );
+            return SchemaDescriptor.forRelType( relTypeId, propertyIds );
         case GENERIC_MULTI_TOKEN_TYPE:
             return readMultiTokenSchema( source );
         default:

@@ -25,10 +25,6 @@ package org.neo4j.internal.schema;
 public enum IndexType
 {
     /**
-     * For schemas that don't define indexes, such as schemas that define constraints.
-     */
-    NOT_AN_INDEX( IndexKind.SPECIAL ),
-    /**
      * Used for indicating an arbitrary index type of kind {@link IndexKind#GENERAL}. This is used for when the concrete index type is not so important,
      * as long as the index kind is GENERAL. For instance, when creating indexes an no type is explicitly asked for, or when querying for available indexes.
      * <p>

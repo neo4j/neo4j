@@ -154,7 +154,7 @@ public interface IndexReference extends IndexCapability, SchemaDescriptorSupplie
         @Override
         public IndexType getIndexType()
         {
-            return IndexType.NOT_AN_INDEX;
+            return IndexType.ANY_GENERAL;
         }
     };
 }

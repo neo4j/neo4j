@@ -59,11 +59,6 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
         return forLabelOfType( IndexType.ANY_GENERAL, labelId, propertyIds );
     }
 
-    static LabelSchemaDescriptor forLabelNoIndex( int labelId, int... propertyIds )
-    {
-        return forLabelOfType( IndexType.NOT_AN_INDEX, labelId, propertyIds );
-    }
-
     static LabelSchemaDescriptor forLabelOfType( IndexType indexType, int labelId, int... propertyIds )
     {
         validateLabelIds( labelId );
@@ -74,11 +69,6 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
     static RelationTypeSchemaDescriptor forRelType( int relTypeId, int... propertyIds )
     {
         return forRelTypeOfType( IndexType.ANY_GENERAL, relTypeId, propertyIds );
-    }
-
-    static RelationTypeSchemaDescriptor forRelTypeNoIndex( int relTypeId, int... propertyIds )
-    {
-        return forRelTypeOfType( IndexType.NOT_AN_INDEX, relTypeId, propertyIds );
     }
 
     static RelationTypeSchemaDescriptor forRelTypeOfType( IndexType indexType, int relTypeId, int... propertyIds )
@@ -283,7 +273,7 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
     PropertySchemaType propertySchemaType();
 
     /**
-     * @return the {@link IndexType} that is defined by this schema. If this schema does not define an index, then {@link IndexType#NOT_AN_INDEX} is returned.
+     * @return the {@link IndexType} that is defined by this schema.
      */
     IndexType getIndexType();
 

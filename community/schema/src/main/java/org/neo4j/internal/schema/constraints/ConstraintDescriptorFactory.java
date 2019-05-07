@@ -35,12 +35,12 @@ public class ConstraintDescriptorFactory
 
     public static NodeExistenceConstraintDescriptor existsForLabel( int labelId, int... propertyIds )
     {
-        return new NodeExistenceConstraintDescriptor( SchemaDescriptor.forLabelNoIndex( labelId, propertyIds ) );
+        return new NodeExistenceConstraintDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ) );
     }
 
     public static RelExistenceConstraintDescriptor existsForRelType( int relTypeId, int... propertyIds )
     {
-        return new RelExistenceConstraintDescriptor( SchemaDescriptor.forRelTypeNoIndex( relTypeId, propertyIds ) );
+        return new RelExistenceConstraintDescriptor( SchemaDescriptor.forRelType( relTypeId, propertyIds ) );
     }
 
     public static UniquenessConstraintDescriptor uniqueForLabel( int labelId, int... propertyIds )

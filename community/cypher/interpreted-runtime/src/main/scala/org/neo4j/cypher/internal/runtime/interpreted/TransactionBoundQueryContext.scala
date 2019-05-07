@@ -761,7 +761,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean =
     try {
       transactionalContext.kernelTransaction.schemaWrite().nodePropertyExistenceConstraintCreate(
-        SchemaDescriptor.forLabelNoIndex(labelId, propertyKeyId))
+        SchemaDescriptor.forLabel(labelId, propertyKeyId))
       true
     } catch {
       case _: AlreadyConstrainedException => false
@@ -774,7 +774,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Boolean =
     try {
       transactionalContext.kernelTransaction.schemaWrite().relationshipPropertyExistenceConstraintCreate(
-        SchemaDescriptor.forRelTypeNoIndex(relTypeId, propertyKeyId))
+        SchemaDescriptor.forRelType(relTypeId, propertyKeyId))
       true
     } catch {
       case _: AlreadyConstrainedException => false

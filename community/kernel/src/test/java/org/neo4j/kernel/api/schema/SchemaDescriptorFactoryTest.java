@@ -49,18 +49,9 @@ class SchemaDescriptorFactoryTest
         assertThat( labelDesc.propertySchemaType(), is( PropertySchemaType.COMPLETE_ALL_TOKENS ) );
         assertArray( labelDesc.getPropertyIds(), 1 );
 
-        labelDesc = SchemaDescriptor.forLabelNoIndex( LABEL_ID, 1 );
-        assertThat( labelDesc.getLabelId(), equalTo( LABEL_ID ) );
-        assertThat( labelDesc.getIndexType(), is( IndexType.NOT_AN_INDEX ) );
-        assertArray( labelDesc.getPropertyIds(), 1 );
-
         labelDesc = SchemaDescriptor.forLabel( LABEL_ID, 1, 2, 3 );
         assertThat( labelDesc.getLabelId(), equalTo( LABEL_ID ) );
         assertArray( labelDesc.getPropertyIds(), 1, 2, 3 );
-
-        labelDesc = SchemaDescriptor.forLabel( LABEL_ID );
-        assertThat( labelDesc.getLabelId(), equalTo( LABEL_ID ) );
-        assertArray( labelDesc.getPropertyIds() );
     }
 
     @Test
@@ -74,18 +65,9 @@ class SchemaDescriptorFactoryTest
         assertThat( relTypeDesc.propertySchemaType(), is( PropertySchemaType.COMPLETE_ALL_TOKENS ) );
         assertArray( relTypeDesc.getPropertyIds(), 1 );
 
-        relTypeDesc = SchemaDescriptor.forRelTypeNoIndex( REL_TYPE_ID, 1, 2, 3 );
-        assertThat( relTypeDesc.getRelTypeId(), equalTo( REL_TYPE_ID ) );
-        assertThat( relTypeDesc.getIndexType(), is( IndexType.NOT_AN_INDEX ) );
-        assertArray( relTypeDesc.getPropertyIds(), 1, 2, 3 );
-
         relTypeDesc = SchemaDescriptor.forRelType( REL_TYPE_ID, 1, 2, 3 );
         assertThat( relTypeDesc.getRelTypeId(), equalTo( REL_TYPE_ID ) );
         assertArray( relTypeDesc.getPropertyIds(), 1, 2, 3 );
-
-        relTypeDesc = SchemaDescriptor.forRelType( REL_TYPE_ID );
-        assertThat( relTypeDesc.getRelTypeId(), equalTo( REL_TYPE_ID ) );
-        assertArray( relTypeDesc.getPropertyIds() );
     }
 
     @Test

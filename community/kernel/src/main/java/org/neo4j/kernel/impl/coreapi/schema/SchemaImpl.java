@@ -92,7 +92,6 @@ import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.map;
 import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.internal.schema.SchemaDescriptor.forLabelNoIndex;
 import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
 import static org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl.labelNameList;
 import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getOrCreatePropertyKeyIds;
@@ -710,7 +709,7 @@ public class SchemaImpl implements Schema
                     int labelId = tokenWrite.labelGetOrCreateForName( label.name() );
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, propertyKeys );
                     transaction.schemaWrite().nodePropertyExistenceConstraintCreate(
-                            forLabelNoIndex( labelId, propertyKeyIds ) );
+                            forLabel( labelId, propertyKeyIds ) );
                     return new NodePropertyExistenceConstraintDefinition( this, label, propertyKeys );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException |
@@ -750,7 +749,7 @@ public class SchemaImpl implements Schema
                     int typeId = tokenWrite.relationshipTypeGetOrCreateForName( type.name() );
                     int[] propertyKeyId = getOrCreatePropertyKeyIds( tokenWrite, propertyKey );
                     transaction.schemaWrite().relationshipPropertyExistenceConstraintCreate(
-                            SchemaDescriptor.forRelTypeNoIndex( typeId, propertyKeyId ) );
+                            forRelType( typeId, propertyKeyId ) );
                     return new RelationshipPropertyExistenceConstraintDefinition( this, type, propertyKey );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException |
