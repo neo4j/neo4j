@@ -199,7 +199,7 @@ public class DefaultBoltConnection implements BoltConnection
                 }
 
                 // we processed all pending messages, let's flush underlying channel
-                if ( queue.size() == 0 || batchCount == 1 )
+                if ( queue.size() == 0 )
                 {
                     output.flush();
                 }
