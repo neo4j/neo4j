@@ -165,7 +165,6 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
      */
     void matchingDescriptorsForCompleteListOfProperties( Collection<T> into, long[] entityTokenIds, int[] sortedProperties )
     {
-        assert isSortedSet( entityTokenIds );
         assert isSortedSet( sortedProperties );
         for ( long entityTokenId : entityTokenIds )
         {
@@ -190,7 +189,6 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
      */
     void matchingDescriptorsForPartialListOfProperties( Collection<T> into, long[] entityTokenIds, int[] sortedProperties )
     {
-        assert isSortedSet( entityTokenIds );
         assert isSortedSet( sortedProperties );
         for ( long entityTokenId : entityTokenIds )
         {
