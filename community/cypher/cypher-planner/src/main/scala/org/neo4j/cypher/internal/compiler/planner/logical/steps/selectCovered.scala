@@ -31,10 +31,7 @@ case object selectCovered extends CandidateGenerator[LogicalPlan] {
     if (unsolvedPredicates.isEmpty) {
       Seq()
     } else {
-      val solver = PatternExpressionSolver.solverFor(in, interestingOrder, context)
-      val predicates = unsolvedPredicates.map(solver.solve(_))
-      val plan = solver.rewrittenPlan()
-      Seq(context.logicalPlanProducer.planSelection(plan, predicates, unsolvedPredicates, context))
+      Seq(context.logicalPlanProducer.planSelection(in, unsolvedPredicates, interestingOrder, context))
     }
   }
 }

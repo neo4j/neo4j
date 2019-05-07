@@ -46,10 +46,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
           limited
         } else {
           val predicates = aggregatingProjection.selections.flatPredicates
-          val solver = PatternExpressionSolver.solverFor(limited, query.interestingOrder, context)
-          val rewrittenPredicates = predicates.map(solver.solve(_))
-          val rewrittenSorted = solver.rewrittenPlan()
-          context.logicalPlanProducer.planHorizonSelection(rewrittenSorted, rewrittenPredicates, predicates, context)
+          context.logicalPlanProducer.planHorizonSelection(limited, predicates, query.interestingOrder, context)
         }
 
       case regularProjection: RegularQueryProjection =>
@@ -65,10 +62,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
           projected
         } else {
           val predicates = regularProjection.selections.flatPredicates
-          val solver = PatternExpressionSolver.solverFor(limited, query.interestingOrder, context)
-          val rewrittenPredicates = predicates.map(solver.solve(_))
-          val rewrittenProjected = solver.rewrittenPlan()
-          context.logicalPlanProducer.planHorizonSelection(rewrittenProjected, rewrittenPredicates, predicates, context)
+          context.logicalPlanProducer.planHorizonSelection(projected, predicates, query.interestingOrder, context)
         }
 
       case distinctProjection: DistinctQueryProjection =>
@@ -79,10 +73,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
           limited
         } else {
           val predicates = distinctProjection.selections.flatPredicates
-          val solver = PatternExpressionSolver.solverFor(limited, query.interestingOrder, context)
-          val rewrittenPredicates = predicates.map(solver.solve(_))
-          val rewrittenSorted = solver.rewrittenPlan()
-          context.logicalPlanProducer.planHorizonSelection(rewrittenSorted, rewrittenPredicates, predicates, context)
+          context.logicalPlanProducer.planHorizonSelection(limited, predicates, query.interestingOrder, context)
         }
 
       case UnwindProjection(variable, expression) =>

@@ -130,7 +130,7 @@ case object planShortestPaths {
     val rhsProjection = lpp.planRegularProjection(rhsVarExpand, map, map, context)
 
     // Filter using predicates
-    val rhsFiltered = context.logicalPlanProducer.planSelection(rhsProjection, predicates, predicates, context)
+    val rhsFiltered = context.logicalPlanProducer.planSelection(rhsProjection, predicates, InterestingOrder.empty, context)
 
     // Plan Sort and Limit
     val pos = shortestPath.expr.position

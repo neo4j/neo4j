@@ -359,6 +359,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planValueHashJoin(left: LogicalPlan, right: LogicalPlan, join: Equals, originalPredicate: Equals, context: LogicalPlanningContext): LogicalPlan = {
     val plannerQuery = solveds.get(left.id) ++ solveds.get(right.id)
     val solved = plannerQuery.amendQueryGraph(_.addPredicates(originalPredicate))
+    // `join` is an Expression that could go through the PatternExpressionSolver, but a value hash join
+    // is only planned for Expressions such as `lhs.prop = rhs.prop`
     annotate(ValueHashJoin(left, right, join), solved, providedOrders.get(right.id), context)
   }
 
@@ -409,17 +411,23 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(RightOuterHashJoin(nodes, left, right), solved, providedOrders.get(right.id), context)
   }
 
-  def planSelection(left: LogicalPlan, predicates: Seq[Expression], reported: Seq[Expression], context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(left.id).updateTailOrSelf(_.amendQueryGraph(_.addPredicates(reported: _*)))
-    annotate(Selection(coercePredicatesWithAnds(predicates), left), solved, providedOrders.get(left.id), context)
+  def planSelection(source: LogicalPlan, predicates: Seq[Expression], interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(source.id).updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicates: _*)))
+    val solver = PatternExpressionSolver.solverFor(source, interestingOrder, context)
+    val rewrittenPredicates = predicates.map(solver.solve(_))
+    val rewrittenSource = solver.rewrittenPlan()
+    annotate(Selection(coercePredicatesWithAnds(rewrittenPredicates), rewrittenSource), solved, providedOrders.get(source.id), context)
   }
 
-  def planHorizonSelection(left: LogicalPlan, predicates: Seq[Expression], reported: Seq[Expression], context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(left.id).updateTailOrSelf(_.updateHorizon {
-      case p: QueryProjection => p.addPredicates(reported: _*)
+  def planHorizonSelection(source: LogicalPlan, predicates: Seq[Expression], interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(source.id).updateTailOrSelf(_.updateHorizon {
+      case p: QueryProjection => p.addPredicates(predicates: _*)
       case _ => throw new IllegalArgumentException("You can only plan HorizonSelection after a projection")
     })
-    annotate(Selection(coercePredicatesWithAnds(predicates), left), solved, providedOrders.get(left.id), context)
+    val solver = PatternExpressionSolver.solverFor(source, interestingOrder, context)
+    val rewrittenPredicates = predicates.map(solver.solve(_))
+    val rewrittenSource = solver.rewrittenPlan()
+    annotate(Selection(coercePredicatesWithAnds(rewrittenPredicates), rewrittenSource), solved, providedOrders.get(source.id), context)
   }
 
   def planSelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, expr: Expression, context: LogicalPlanningContext): LogicalPlan =

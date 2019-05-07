@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.{CandidateGenerator, LogicalPlanningContext}
-import org.neo4j.cypher.internal.ir.{QueryGraph, InterestingOrder}
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.{Expand, ExpandAll, LogicalPlan, Selection}
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.attribution.SameId
 
@@ -31,9 +31,9 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
   override def apply(in: LogicalPlan, qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Seq[LogicalPlan] =
     unsolvedPredicates(in, qg, context.planningAttributes.solveds).collect {
       // WHERE NOT (a)-[:X]->(c)
-      case predicate@Not(patternExpr: PatternExpression) => findMatchingRelationshipPattern(positivePredicate = false, predicate, patternExpr, in, qg, context)
+      case predicate@Not(patternExpr: PatternExpression) => findMatchingRelationshipPattern(positivePredicate = false, predicate, patternExpr, in, qg, interestingOrder, context)
       // WHERE (a)-[:X]->(c)
-      case patternExpr: PatternExpression => findMatchingRelationshipPattern(positivePredicate = true, patternExpr, patternExpr, in, qg, context)
+      case patternExpr: PatternExpression => findMatchingRelationshipPattern(positivePredicate = true, patternExpr, patternExpr, in, qg, interestingOrder, context)
     }.flatten
 
   def unsolvedPredicates(in: LogicalPlan, qg: QueryGraph, solveds: Solveds) = {
@@ -44,46 +44,64 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
     }
   }
 
-  private def findMatchingRelationshipPattern(positivePredicate: Boolean, triadicPredicate: Expression,
-                                              patternExpression: PatternExpression, in: LogicalPlan, qg: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] = in match {
+  private def findMatchingRelationshipPattern(positivePredicate: Boolean,
+                                              triadicPredicate: Expression,
+                                              patternExpression: PatternExpression,
+                                              in: LogicalPlan,
+                                              qg: QueryGraph,
+                                              interestingOrder: InterestingOrder,
+                                              context: LogicalPlanningContext): Seq[LogicalPlan] = in match {
 
     // MATCH (a)-[:X]->(b)-[:X]->(c) WHERE (predicate involving (a)-[:X]->(c))
-    case Selection(Ands(predicates),exp:Expand) => findMatchingOuterExpand(positivePredicate, triadicPredicate, patternExpression, predicates.toSeq, exp, qg, context)
+    case Selection(Ands(predicates),exp:Expand) => findMatchingOuterExpand(positivePredicate, triadicPredicate, patternExpression, predicates.toSeq, exp, qg, interestingOrder, context)
 
     // MATCH (a)-[:X]->(b)-[:Y]->(c) WHERE (predicate involving (a)-[:X]->(c))
-    case exp:Expand => findMatchingOuterExpand(positivePredicate, triadicPredicate, patternExpression, Seq.empty, exp, qg, context)
+    case exp:Expand => findMatchingOuterExpand(positivePredicate, triadicPredicate, patternExpression, Seq.empty, exp, qg, interestingOrder,context)
 
     case _ => Seq.empty
   }
 
-  private def findMatchingOuterExpand(positivePredicate: Boolean, triadicPredicate: Expression,
-                                              patternExpression: PatternExpression, incomingPredicates: Seq[Expression], expand: Expand, qg: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] = expand match {
+  private def findMatchingOuterExpand(positivePredicate: Boolean,
+                                      triadicPredicate: Expression,
+                                      patternExpression: PatternExpression,
+                                      incomingPredicates: Seq[Expression],
+                                      expand: Expand,
+                                      qg: QueryGraph,
+                                      interestingOrder: InterestingOrder,
+                                      context: LogicalPlanningContext): Seq[LogicalPlan] = expand match {
     case exp2@Expand(exp1: Expand, _, _, _, _, _, ExpandAll) =>
-      findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, Seq.empty, exp1, exp2, qg, context)
+      findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, Seq.empty, exp1, exp2, qg, interestingOrder, context)
 
     case exp2@Expand(Selection(Ands(innerPredicates), exp1: Expand), _, _, _, _, _, ExpandAll) =>
-      findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, innerPredicates.toSeq, exp1, exp2, qg, context)
+      findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, innerPredicates.toSeq, exp1, exp2, qg, interestingOrder, context)
 
     case _ => Seq.empty
   }
 
-  private def findMatchingInnerExpand(positivePredicate: Boolean, triadicPredicate: Expression,
-                                      patternExpression: PatternExpression, incomingPredicates: Seq[Expression],
-                                      leftPredicates: Seq[Expression], exp1: Expand, exp2: Expand, qg: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] =
+  private def findMatchingInnerExpand(positivePredicate: Boolean,
+                                      triadicPredicate: Expression,
+                                      patternExpression: PatternExpression,
+                                      incomingPredicates: Seq[Expression],
+                                      leftPredicates: Seq[Expression],
+                                      exp1: Expand,
+                                      exp2: Expand,
+                                      qg: QueryGraph,
+                                      interestingOrder: InterestingOrder,
+                                      context: LogicalPlanningContext): Seq[LogicalPlan] =
     if (exp1.mode == ExpandAll && exp1.to == exp2.from &&
       matchingLabels(positivePredicate, exp1.to, exp2.to, qg) &&
       leftPredicatesAcceptable(exp1.to, leftPredicates) &&
       matchingRelationshipPattern(patternExpression, exp1.from, exp2.to, exp1.types, exp1.dir)) {
 
       val left = if (leftPredicates.nonEmpty)
-        context.logicalPlanProducer.planSelection(exp1, leftPredicates, leftPredicates, context)
+        context.logicalPlanProducer.planSelection(exp1, leftPredicates, interestingOrder, context)
       else
         exp1
 
       val argument = context.logicalPlanProducer.planArgumentFrom(left, context)
       val newExpand2 = Expand(argument, exp2.from, exp2.dir, exp2.types, exp2.to, exp2.relName, ExpandAll)(SameId(exp2.id))
       val right = if (incomingPredicates.nonEmpty)
-        context.logicalPlanProducer.planSelection(newExpand2, incomingPredicates, incomingPredicates, context)
+        context.logicalPlanProducer.planSelection(newExpand2, incomingPredicates, interestingOrder, context)
       else
         newExpand2
 

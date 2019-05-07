@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.Extractors.SetExtractor
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.Extractors.{MapKeys, SetExtractor}
 
 class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -326,6 +326,39 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _, _),
       NodeIndexEndsWithScan("n", _, _, _, SetExtractor(argumentName), _)
       ) if collectionName == argumentName => ()
+    }
+  }
+
+  test("should solve pattern comprehension for Selection") {
+    val q =
+      """
+        |MATCH (n)
+        |WHERE n.prop = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
+        |RETURN n
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case Selection(
+      Ands(SetExtractor(In(Property(Variable("n"), PropertyKeyName("prop")), _))),
+      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _, _),
+      ) => ()
+    }
+  }
+
+  test("should solve pattern comprehension for Horizon Selection") {
+    val q =
+      """
+        |MATCH (n)
+        |WITH n, 1 AS one
+        |WHERE n.prop = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
+        |RETURN n
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case Selection(
+      Ands(SetExtractor(In(Property(Variable("n"), PropertyKeyName("prop")), _))),
+      RollUpApply(Projection(AllNodesScan("n", SetExtractor()), MapKeys("one")), _/* <- This is the subQuery */, _, _, _),
+      ) => ()
     }
   }
 
