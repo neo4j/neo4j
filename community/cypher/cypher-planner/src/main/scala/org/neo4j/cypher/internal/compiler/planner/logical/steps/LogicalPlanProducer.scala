@@ -186,6 +186,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                     nodePredicate: Option[VariablePredicate],
                     solvedPredicates: Seq[Expression],
                     mode: ExpansionMode,
+                    interestingOrder: InterestingOrder,
                     context: LogicalPlanningContext): LogicalPlan = pattern.length match {
     case l: VarPatternLength =>
       val projectedDir = projectedDirection(pattern, from, dir)
@@ -194,8 +195,12 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
         .addPatternRelationship(pattern)
         .addPredicates(solvedPredicates: _*)
       )
+      val solver = PatternExpressionSolver.solverFor(source, interestingOrder, context)
+      val rewrittenRelationshipPredicate = relationshipPredicate.map { case VariablePredicate(variable, exp) => VariablePredicate(variable, solver.solve(exp, None)) }
+      val rewrittenNodePredicate = nodePredicate.map { case VariablePredicate(variable, exp) => VariablePredicate(variable, solver.solve(exp, None)) }
+      val rewrittenSource = solver.rewrittenPlan()
       annotate(VarExpand(
-              source = source,
+              source = rewrittenSource,
               from = from,
               dir = dir,
               projectedDir = projectedDir,
@@ -204,8 +209,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
               relName = pattern.name,
               length = l,
               mode = mode,
-              nodePredicate = nodePredicate,
-              relationshipPredicate = relationshipPredicate), solved, providedOrders.get(source.id), context)
+              nodePredicate = rewrittenNodePredicate,
+              relationshipPredicate = rewrittenRelationshipPredicate), solved, providedOrders.get(source.id), context)
 
     case _ => throw new InternalException("Expected a varlength path to be here")
   }

@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir._
-import org.neo4j.cypher.internal.v4_0.expressions.{Ands, Expression, Variable}
 import org.neo4j.cypher.internal.logical.plans.{ExpandAll, ExpandInto, LogicalPlan, VariablePredicate}
+import org.neo4j.cypher.internal.v4_0.expressions.{Ands, Expression, Variable}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, InterestingOrder, LogicalPlan, LogicalPlanningContext] {
@@ -32,7 +32,7 @@ case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelatio
   override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan, InterestingOrder], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
     val result: Iterator[Iterator[LogicalPlan]] =
       for {patternId <- goal.iterator
-           (_, plan) <- table(goal - patternId)
+           (interestingOrder, plan) <- table(goal - patternId)
            pattern <- registry.lookup(patternId)
       } yield {
         if (plan.availableSymbols.contains(pattern.name))
@@ -41,8 +41,8 @@ case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelatio
           )
         else
           Iterator(
-            planSinglePatternSide(qg, pattern, plan, pattern.left, context),
-            planSinglePatternSide(qg, pattern, plan, pattern.right, context)
+            planSinglePatternSide(qg, pattern, plan, pattern.left, interestingOrder, context),
+            planSinglePatternSide(qg, pattern, plan, pattern.right, interestingOrder, context)
           ).flatten
       }
 
@@ -63,10 +63,11 @@ object expandSolverStep {
                             patternRel: PatternRelationship,
                             sourcePlan: LogicalPlan,
                             nodeId: String,
+                            interestingOrder: InterestingOrder,
                             context: LogicalPlanningContext): Option[LogicalPlan] = {
     val availableSymbols = sourcePlan.availableSymbols
     if (availableSymbols(nodeId)) {
-      Some(produceLogicalPlan(qg, patternRel, sourcePlan, nodeId, availableSymbols, context))
+      Some(produceLogicalPlan(qg, patternRel, sourcePlan, nodeId, availableSymbols, interestingOrder, context))
     } else {
       None
     }
@@ -77,6 +78,7 @@ object expandSolverStep {
                                  sourcePlan: LogicalPlan,
                                  nodeId: String,
                                  availableSymbols: Set[String],
+                                 interestingOrder: InterestingOrder,
                                  context: LogicalPlanningContext): LogicalPlan = {
     val dir = patternRel.directionRelativeTo(nodeId)
     val otherSide = patternRel.otherSide(nodeId)
@@ -110,6 +112,7 @@ object expandSolverStep {
           relationshipPredicate = variablePredicate(tempRelationship, relationshipPredicates),
           solvedPredicates = solvedPredicates,
           mode = mode,
+          interestingOrder = interestingOrder,
           context = context)
     }
   }

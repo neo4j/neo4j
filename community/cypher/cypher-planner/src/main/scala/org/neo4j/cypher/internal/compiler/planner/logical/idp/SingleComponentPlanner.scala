@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.{
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.leafPlanOptions
 import org.neo4j.cypher.internal.ir.InterestingOrder.FullSatisfaction
 import org.neo4j.cypher.internal.ir.{InterestingOrder, PatternRelationship, QueryGraph}
-import org.neo4j.cypher.internal.v4_0.ast.RelationshipHint
 import org.neo4j.cypher.internal.logical.plans.{Argument, LogicalPlan}
+import org.neo4j.cypher.internal.v4_0.ast.RelationshipHint
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 
 /**
@@ -113,7 +113,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
   private def initTable(qg: QueryGraph, kit: QueryPlannerKit, leaves: Set[LogicalPlan], context: LogicalPlanningContext, interestingOrder: InterestingOrder): Set[((Set[PatternRelationship], InterestingOrder), LogicalPlan)] = {
     for (pattern <- qg.patternRelationships)
       yield {
-        val plans = planSinglePattern(qg, pattern, leaves, context).map(plan => kit.select(plan, qg))
+        val plans = planSinglePattern(qg, pattern, leaves, interestingOrder, context).map(plan => kit.select(plan, qg))
         val best = kit.pickBest(plans).map(p => ((Set(pattern), InterestingOrder.empty), p))
 
         val result: Iterable[((Set[PatternRelationship], InterestingOrder), LogicalPlan)] =
@@ -151,6 +151,7 @@ object SingleComponentPlanner {
   def planSinglePattern(qg: QueryGraph,
                         pattern: PatternRelationship,
                         leaves: Set[LogicalPlan],
+                        interestingOrder: InterestingOrder,
                         context: LogicalPlanningContext): Iterable[LogicalPlan] = {
     val solveds = context.planningAttributes.solveds
     leaves.flatMap {
@@ -162,14 +163,14 @@ object SingleComponentPlanner {
         Set(context.logicalPlanProducer.planEndpointProjection(plan, pattern.nodes._1, startInScope = false, pattern.nodes._2, endInScope = false, pattern, context))
       case plan =>
         val (start, end) = pattern.nodes
-        val leftExpand = planSinglePatternSide(qg, pattern, plan, start, context)
-        val rightExpand = planSinglePatternSide(qg, pattern, plan, end, context)
+        val leftExpand = planSinglePatternSide(qg, pattern, plan, start, interestingOrder, context)
+        val rightExpand = planSinglePatternSide(qg, pattern, plan, end, interestingOrder, context)
 
         val startJoinNodes = Set(start)
         val endJoinNodes = Set(end)
         val maybeStartPlan = leaves.find(leaf => solveds(leaf.id).queryGraph.patternNodes == startJoinNodes && !leaf.isInstanceOf[Argument])
         val maybeEndPlan = leaves.find(leaf => solveds(leaf.id).queryGraph.patternNodes == endJoinNodes && !leaf.isInstanceOf[Argument])
-        val cartesianProduct = planSinglePatternCartesian(qg, pattern, start, maybeStartPlan, maybeEndPlan, context)
+        val cartesianProduct = planSinglePatternCartesian(qg, pattern, start, maybeStartPlan, maybeEndPlan, interestingOrder, context)
         val joins = planSinglePatternJoins(qg, leftExpand, rightExpand, startJoinNodes, endJoinNodes, maybeStartPlan, maybeEndPlan, context)
         leftExpand ++ rightExpand ++ cartesianProduct ++ joins
     }
@@ -180,9 +181,10 @@ object SingleComponentPlanner {
                                  start: String,
                                  maybeStartPlan: Option[LogicalPlan],
                                  maybeEndPlan: Option[LogicalPlan],
+                                 interestingOrder: InterestingOrder,
                                  context: LogicalPlanningContext): Option[LogicalPlan] = (maybeStartPlan, maybeEndPlan) match {
     case (Some(startPlan), Some(endPlan)) =>
-      planSinglePatternSide(qg, pattern, context.logicalPlanProducer.planCartesianProduct(startPlan, endPlan, context), start, context)
+      planSinglePatternSide(qg, pattern, context.logicalPlanProducer.planCartesianProduct(startPlan, endPlan, context), start, interestingOrder, context)
     case _ => None
   }
 

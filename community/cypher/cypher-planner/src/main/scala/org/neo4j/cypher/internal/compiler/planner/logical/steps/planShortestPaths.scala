@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.compiler.ExhaustiveShortestPathForbiddenNotific
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep
 import org.neo4j.cypher.internal.ir.{Predicate, ShortestPathPattern, _}
+import org.neo4j.cypher.internal.logical.plans.{Ascending, DoNotIncludeTies, IncludeTies, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Length
-import org.neo4j.cypher.internal.logical.plans.{Ascending, DoNotIncludeTies, IncludeTies, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.v4_0.util.{ExhaustiveShortestPathForbiddenException, FreshIdNameGenerator, InternalException}
 
@@ -122,7 +122,7 @@ case object planShortestPaths {
     val pathName = shortestPath.name.get
 
     // Plan a fallback branch using VarExpand(Into) (right-hand-side)
-    val rhsVarExpand = expandSolverStep.planSinglePatternSide(queryGraph, pattern, rhsArgument, from, context)
+    val rhsVarExpand = expandSolverStep.planSinglePatternSide(queryGraph, pattern, rhsArgument, from, InterestingOrder.empty, context)
       .getOrElse(throw new InternalException("Expected the nodes needed for this expansion to exist"))
 
     // Projection with path
