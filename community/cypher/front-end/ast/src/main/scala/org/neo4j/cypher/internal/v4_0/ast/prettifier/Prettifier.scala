@@ -70,10 +70,8 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case x: ShowUsers =>
       s"${x.name}"
 
-    case x @ CreateUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended) =>
-      //TODO write out password??
-      val password = initialStringPassword.getOrElse(initialParameterPassword.get)
-      val passwordString = s"SET PASSWORD $password CHANGE ${if (!requirePasswordChange) "NOT" else ""} REQUIRED"
+    case x @ CreateUser(userName, _, _, requirePasswordChange, suspended) =>
+      val passwordString = s"SET PASSWORD ****** CHANGE ${if (!requirePasswordChange) "NOT" else ""} REQUIRED"
       val statusString = s"SET STATUS ${if (suspended) "SUSPENDED" else "ACTIVE"}"
       s"${x.name} $userName $passwordString $statusString"
 
@@ -81,10 +79,11 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
       s"${x.name} $userName"
 
     case x @ AlterUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended) =>
-      //TODO write out password??
-      val password = initialStringPassword.getOrElse(initialParameterPassword.orNull)
-      val passwordString = if (password != null) s" SET PASSWORD $password" else ""
-      val passwordModeString = if (requirePasswordChange.isDefined) s" SET PASSWORD CHANGE ${if (!requirePasswordChange.get) "NOT" else ""} REQUIRED" else ""
+      val password = initialStringPassword.isDefined || initialParameterPassword.isDefined
+      val passwordString = if (password) s" SET PASSWORD ******" else ""
+      val passwordModeString = if (requirePasswordChange.isDefined)
+                                 s" SET PASSWORD CHANGE ${if (!requirePasswordChange.get) "NOT" else ""} REQUIRED"
+                               else ""
       val statusString = if(suspended.isDefined) s" SET STATUS ${if (suspended.get) "SUSPENDED" else "ACTIVE"}" else ""
       s"${x.name} $userName$passwordString$passwordModeString$statusString"
 

@@ -58,31 +58,26 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
     // SHOW DATABASES
     case ShowDatabases() => (_, _) =>
       SystemCommandExecutionPlan("ShowDatabases", normalExecutionEngine,
-        "MATCH (d:Database) WHERE d.status <> $excluded RETURN d.name as name, d.status as status",
-        VirtualValues.map(Array("excluded"), Array(DatabaseStatus.Deleted))
-      )
+        "MATCH (d:Database) RETURN d.name as name, d.status as status", VirtualValues.emptyMap())
 
     // SHOW DATABASE foo
     case ShowDatabase(dbName) => (_, _) =>
       SystemCommandExecutionPlan("ShowDatabase", normalExecutionEngine,
-        "MATCH (d:Database {name:$name}) WHERE d.status <> $excluded RETURN d.name as name, d.status as status",
-        VirtualValues.map(Array("name", "excluded"), Array(Values.stringValue(dbName), DatabaseStatus.Deleted))
-      )
+        "MATCH (d:Database {name: $name}) RETURN d.name as name, d.status as status", VirtualValues.map(Array("name"), Array(Values.stringValue(dbName))))
 
     // START DATABASE foo
     case StartDatabase(dbName) => (_, _) =>
       UpdatingSystemCommandExecutionPlan("StartDatabase", normalExecutionEngine,
-        """OPTIONAL MATCH (d:Database {name:$name})
-          |WHERE d.status <> $excluded
-          |OPTIONAL MATCH (d2:Database {name:$name, status:$oldStatus})
+        """OPTIONAL MATCH (d:Database {name: $name})
+          |OPTIONAL MATCH (d2:Database {name: $name, status: $oldStatus})
           |SET d2.status = $status
+          |SET d2.started_at = datetime()
           |RETURN d2.name as name, d2.status as status, d.name as db""".stripMargin,
         VirtualValues.map(
-          Array("name", "oldStatus", "status", "excluded"),
+          Array("name", "oldStatus", "status"),
           Array(Values.stringValue(dbName),
             DatabaseStatus.Offline,
-            DatabaseStatus.Online,
-            DatabaseStatus.Deleted
+            DatabaseStatus.Online
           )
         ),
         record => {
@@ -93,17 +88,16 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
     // STOP DATABASE foo
     case StopDatabase(dbName) => (_, _) =>
       UpdatingSystemCommandExecutionPlan("StopDatabase", normalExecutionEngine,
-        """OPTIONAL MATCH (d:Database {name:$name})
-          |WHERE d.status <> $excluded
-          |OPTIONAL MATCH (d2:Database {name:$name, status:$oldStatus})
+        """OPTIONAL MATCH (d:Database {name: $name})
+          |OPTIONAL MATCH (d2:Database {name: $name, status: $oldStatus})
           |SET d2.status = $status
+          |SET d2.stopped_at = datetime()
           |RETURN d2.name as name, d2.status as status, d.name as db""".stripMargin,
         VirtualValues.map(
-          Array("name", "oldStatus", "status", "excluded"),
+          Array("name", "oldStatus", "status"),
           Array(Values.stringValue(dbName),
             DatabaseStatus.Online,
-            DatabaseStatus.Offline,
-            DatabaseStatus.Deleted
+            DatabaseStatus.Offline
           )
         ),
         record => {

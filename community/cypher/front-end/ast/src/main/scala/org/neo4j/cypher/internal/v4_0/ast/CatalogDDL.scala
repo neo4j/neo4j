@@ -55,7 +55,6 @@ final case class CreateUser(userName: String,
                             initialParameterPassword: Option[Parameter],
                             requirePasswordChange: Boolean,
                             suspended: Boolean)(val position: InputPosition) extends MultiDatabaseDDL {
-// TODO should initial password be kept as a clear text string??
   UserNameValidator.assertValidUsername(userName)
   assert(initialStringPassword.isDefined || initialParameterPassword.isDefined)
   assert(!(initialStringPassword.isDefined && initialParameterPassword.isDefined))
@@ -81,7 +80,6 @@ final case class AlterUser(userName: String,
                            initialParameterPassword: Option[Parameter],
                            requirePasswordChange: Option[Boolean],
                            suspended: Option[Boolean])(val position: InputPosition) extends MultiDatabaseDDL {
-  // TODO should initial password be kept as a clear text string??
   UserNameValidator.assertValidUsername(userName)
   assert(initialStringPassword.isDefined || initialParameterPassword.isDefined || requirePasswordChange.isDefined || suspended.isDefined)
   assert(!(initialStringPassword.isDefined && initialParameterPassword.isDefined))
