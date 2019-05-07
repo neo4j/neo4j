@@ -82,9 +82,9 @@ case class VarExpand(source: LogicalPlan,
                      length: VarPatternLength,
                      mode: ExpansionMode = ExpandAll,
                      tempNode: String,
-                     tempEdge: String,
+                     tempRelationship: String,
                      nodePredicate: Expression,
-                     edgePredicate: Expression,
+                     relationshipPredicate: Expression,
                      legacyPredicates: Seq[(LogicalVariable, Expression)])
                     (implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
   override val lhs = Some(source)
