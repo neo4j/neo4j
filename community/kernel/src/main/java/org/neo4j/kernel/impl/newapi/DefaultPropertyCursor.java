@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -47,6 +48,7 @@ public class DefaultPropertyCursor implements PropertyCursor
     private AccessMode accessMode;
     private static Supplier<int[]> NO_LABELS = () -> new int[0];
     private Supplier<int[]> labels = NO_LABELS;
+    private IntPredicate allowReadProperty = ignored -> true;
 
     DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor )
     {
@@ -60,6 +62,7 @@ public class DefaultPropertyCursor implements PropertyCursor
 
         init( read, assertOpen );
         storeCursor.initNodeProperties( reference );
+        allowReadProperty = this::allowedForNode;
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -127,7 +130,7 @@ public class DefaultPropertyCursor implements PropertyCursor
         this.accessMode = read.ktx.securityContext().mode();
     }
 
-    boolean allowed( int propertyKey )
+    boolean allowedForNode( int propertyKey )
     {
         return accessMode.allowsPropertyReads( propertyKey ) &&
                 accessMode.allowsReadProperty( labels, propertyKey );
@@ -153,7 +156,7 @@ public class DefaultPropertyCursor implements PropertyCursor
         while ( storeCursor.next() )
         {
             boolean skip = propertiesState != null && propertiesState.isPropertyChangedOrRemoved( storeCursor.propertyKey() );
-            if ( !skip && allowed( propertyKey() ) )
+            if ( !skip && allowReadProperty.test( propertyKey() ) )
             {
                 return true;
             }

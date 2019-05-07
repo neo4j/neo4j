@@ -74,7 +74,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
     @Override
     public boolean acceptNode( long reference, LabelSet labels )
     {
-        if ( isRemoved( reference ) || !allowsLabels( labels ) )
+        if ( isRemoved( reference ) )
         {
             return false;
         }
@@ -84,19 +84,6 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
             this.labels = labels;
 
             return true;
-        }
-    }
-
-    private boolean allowsLabels( LabelSet labels )
-    {
-        AccessMode mode = read.ktx.securityContext().mode();
-        if ( labels == null )
-        {
-            return mode.allowsTraverseAllLabels();
-        }
-        else
-        {
-            return mode.allowsTraverseAllLabels() || mode.allowsTraverseLabels( labels.all() );
         }
     }
 

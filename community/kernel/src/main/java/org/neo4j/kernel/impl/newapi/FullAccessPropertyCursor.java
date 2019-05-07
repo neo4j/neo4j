@@ -29,7 +29,7 @@ class FullAccessPropertyCursor extends DefaultPropertyCursor
     }
 
     @Override
-    boolean allowed( int propertyKey )
+    boolean allowedForNode( int propertyKey )
     {
         return true;
     }
