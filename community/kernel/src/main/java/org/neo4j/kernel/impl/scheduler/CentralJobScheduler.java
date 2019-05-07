@@ -108,7 +108,7 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     @Override
     public Executor executor( Group group )
     {
-        return job -> schedule( group, job );
+        return pools.getThreadPool( group ).getExecutorService();
     }
 
     @Override

@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,6 +47,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
@@ -200,8 +203,7 @@ public class CentralJobSchedulerTest
     public void shouldNotifyCancelListeners()
     {
         // GIVEN
-        CentralJobScheduler centralJobScheduler = new CentralJobScheduler();
-        centralJobScheduler.init();
+        life.start();
 
         // WHEN
         AtomicBoolean halted = new AtomicBoolean();
@@ -212,20 +214,18 @@ public class CentralJobSchedulerTest
                 LockSupport.parkNanos( MILLISECONDS.toNanos( 10 ) );
             }
         };
-        JobHandle handle = centralJobScheduler.schedule( Group.INDEX_POPULATION, job );
+        JobHandle handle = scheduler.schedule( Group.INDEX_POPULATION, job );
         handle.registerCancelListener( mayBeInterrupted -> halted.set( true ) );
         handle.cancel( false );
 
         // THEN
         assertTrue( halted.get() );
-        centralJobScheduler.shutdown();
     }
 
     @Test( timeout = 10_000 )
     public void waitTerminationOnDelayedJobMustWaitUntilJobCompletion() throws Exception
     {
-        CentralJobScheduler scheduler = new CentralJobScheduler();
-        scheduler.init();
+        life.start();
 
         AtomicBoolean triggered = new AtomicBoolean();
         Runnable job = () ->
@@ -243,8 +243,7 @@ public class CentralJobSchedulerTest
     @Test( timeout = 10_000 )
     public void scheduledTasksThatThrowsMustPropagateException() throws Exception
     {
-        CentralJobScheduler scheduler = new CentralJobScheduler();
-        scheduler.init();
+        life.start();
 
         RuntimeException boom = new RuntimeException( "boom" );
         AtomicInteger triggerCounter = new AtomicInteger();
@@ -269,8 +268,7 @@ public class CentralJobSchedulerTest
     @Test( timeout = 10_000 )
     public void scheduledTasksThatThrowsShouldStop() throws Exception
     {
-        CentralJobScheduler scheduler = new CentralJobScheduler();
-        scheduler.init();
+        life.start();
 
         BinaryLatch triggerLatch = new BinaryLatch();
         RuntimeException boom = new RuntimeException( "boom" );
@@ -293,8 +291,7 @@ public class CentralJobSchedulerTest
     @Test( timeout = 10_000 )
     public void shutDownMustKillCancelledJobs()
     {
-        CentralJobScheduler scheduler = new CentralJobScheduler();
-        scheduler.init();
+        life.start();
 
         BinaryLatch startLatch = new BinaryLatch();
         BinaryLatch stopLatch = new BinaryLatch();
@@ -314,6 +311,15 @@ public class CentralJobSchedulerTest
         startLatch.await();
         scheduler.shutdown();
         stopLatch.await();
+    }
+
+    @Test
+    public void schedulerExecutorMustBeOfTypeDefinedByGroup()
+    {
+        life.start();
+        Executor executor = scheduler.executor( Group.CYPHER_WORKER );
+        // The CYPHER_WORKER group configures a ForkJoin pool, so that's what we should get.
+        assertThat( executor, instanceOf( ForkJoinPool.class ) );
     }
 
     private void awaitFirstInvocation() throws InterruptedException

@@ -41,7 +41,12 @@ public interface JobScheduler extends Lifecycle, AutoCloseable
      */
     void setTopLevelGroupName( String name );
 
-    /** Expose a group scheduler as an {@link Executor} */
+    /**
+     * Expose a group scheduler as an {@link Executor}.
+     * <p>
+     * <strong>NOTE:</strong> The returned instance might be an implementation of the {@link ExecutorService} interface. If so, then it is <em>NOT</em> allowed
+     * to shut it down, because the life cycle of the executor is managed by the JobScheduler.
+     **/
     Executor executor( Group group );
 
     /**

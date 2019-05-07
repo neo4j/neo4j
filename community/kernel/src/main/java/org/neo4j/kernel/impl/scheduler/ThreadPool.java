@@ -54,6 +54,11 @@ final class ThreadPool
         return interruptableThreadFactory;
     }
 
+    public ExecutorService getExecutorService()
+    {
+        return executor;
+    }
+
     public JobHandle submit( Runnable job )
     {
         Object registryKey = new Object();
