@@ -93,12 +93,6 @@ public class JobSchedulerAdapter extends LifecycleAdapter implements JobSchedule
     }
 
     @Override
-    public ExecutorService workStealingExecutorAsyncMode( Group group, int parallelism )
-    {
-        return null;
-    }
-
-    @Override
     public void close()
     {
         try

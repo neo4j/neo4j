@@ -112,12 +112,6 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
-    public ExecutorService workStealingExecutorAsyncMode( Group group, int parallelism )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public ThreadFactory threadFactory( Group group )
     {
         throw new UnsupportedOperationException();

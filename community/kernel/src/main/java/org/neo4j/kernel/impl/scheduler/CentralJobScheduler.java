@@ -125,12 +125,6 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
         return workStealingExecutor( group, parallelism, false );
     }
 
-    @Override
-    public ExecutorService workStealingExecutorAsyncMode( Group group, int parallelism )
-    {
-        return workStealingExecutor( group, parallelism, true );
-    }
-
     private ExecutorService workStealingExecutor( Group group, int parallelism, boolean asyncMode )
     {
         return workStealingExecutors.computeIfAbsent( group, g -> createNewWorkStealingExecutor( g, parallelism, asyncMode ) );
