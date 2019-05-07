@@ -54,11 +54,37 @@ object PatternExpressionSolver {
 
   /**
     * Get a Solver to solve multiple expressions and finally return a rewritten plan of the given source.
+    *
+    * The usage pattern is like this:
+    *
+    * {{{
+    * val solver = PatternExpressionSolver.solverFor(source, interestingOrder, context)
+    * val rewrittenExpression = solver.solve(someExpressionForANewPlan)
+    * val rewrittenSource = solver.rewrittenPlan()
+    * // Proceed to plan a new operator using rewrittenExpression instead of someExpressionForANewPlan, and rewrittenSource instead of source
+    * }}}
+    *
+    * @param source the LogicalPlan that a new operator will be put on top of.
     */
   def solverFor(source: LogicalPlan,
                 interestingOrder: InterestingOrder,
                 context: LogicalPlanningContext): SolverForInnerPlan = new SolverForInnerPlan(source, interestingOrder, context)
 
+  /**
+    * Get a Solver to solve multiple expressions and finally rewrite a planned leaf plan.
+    *
+    * The usage pattern is like this:
+    *
+    * {{{
+    * val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, interestingOrder, context)
+    * val rewrittenExpression = solver.solve(someExpressionForANewPlan)
+    * val newArguments = solver.newArguments
+    * val plan = // plan leaf plan using `argumentIds ++ newArguments`
+    * val rewrittenPlan = solver.rewriteLeafPlan(plan)
+    * }}}
+    *
+    * @param argumentIds the argument IDs of the leaf plan that is about to be planned
+    */
   def solverForLeafPlan(argumentIds: Set[String],
                         interestingOrder: InterestingOrder,
                         context: LogicalPlanningContext): SolverForLeafPlan = new SolverForLeafPlan(argumentIds, interestingOrder, context)

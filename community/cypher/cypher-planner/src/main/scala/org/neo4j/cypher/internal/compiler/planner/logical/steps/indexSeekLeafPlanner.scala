@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical._
-import org.neo4j.cypher.internal.ir.ProvidedOrder
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.ir.{InterestingOrder, ProvidedOrder}
 import org.neo4j.cypher.internal.logical.plans.{IndexedProperty, LogicalPlan, QueryExpression}
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LabelToken}
 
@@ -35,6 +35,7 @@ object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
                                        hint: Option[UsingIndexHint],
                                        argumentIds: Set[String],
                                        providedOrder: ProvidedOrder,
+                                       interestingOrder: InterestingOrder,
                                        context: LogicalPlanningContext,
                                        onlyExists: Boolean)
                                       (solvedPredicates: Seq[Expression], predicatesForCardinalityEstimation: Seq[Expression]): LogicalPlan =
@@ -49,6 +50,7 @@ object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
                                                           hint,
                                                           argumentIds,
                                                           providedOrder,
+                                                          interestingOrder,
                                                           context)
     } else {
       context.logicalPlanProducer.planNodeIndexSeek(idName,
@@ -60,6 +62,7 @@ object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
                                                     hint,
                                                     argumentIds,
                                                     providedOrder,
+                                                    interestingOrder,
                                                     context)
     }
 

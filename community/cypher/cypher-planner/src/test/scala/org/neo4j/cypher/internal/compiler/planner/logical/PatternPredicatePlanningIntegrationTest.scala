@@ -253,6 +253,44 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     }
   }
 
+  test("should solve pattern comprehension for NodeIndexSeek") {
+    val q =
+      """
+        |MATCH (n:Label)
+        |WHERE n.prop = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
+        |RETURN n
+      """.stripMargin
+    val (_, plan, _, _, _) = new given {
+      indexOn("Label", "prop")
+    } getLogicalPlanFor q
+
+    plan should beLike {
+      case Apply(
+                 RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _, _),
+                 NodeIndexSeek("n", _, _, _, SetExtractor(argumentName), _)
+                ) if collectionName == argumentName => ()
+    }
+  }
+
+  test("should solve pattern comprehension for NodeUniqueIndexSeek") {
+    val q =
+      """
+        |MATCH (n:Label)
+        |WHERE n.prop = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
+        |RETURN n
+      """.stripMargin
+    val (_, plan, _, _, _) = new given {
+      uniqueIndexOn("Label", "prop")
+    } getLogicalPlanFor q
+
+    plan should beLike {
+      case Apply(
+                 RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _, _),
+                 NodeUniqueIndexSeek("n", _, _, _, SetExtractor(argumentName), _)
+                ) if collectionName == argumentName => ()
+    }
+  }
+
   test("should name pattern comprehensions in return position") {
     val q =
       """

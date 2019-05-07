@@ -263,6 +263,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                         solvedHint: Option[UsingIndexHint] = None,
                         argumentIds: Set[String],
                         providedOrder: ProvidedOrder,
+                        interestingOrder: InterestingOrder,
                         context: LogicalPlanningContext): LogicalPlan = {
     val queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
@@ -273,12 +274,15 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solved = RegularPlannerQuery(queryGraph = queryGraph)
     val solvedForCardinalityEstimation = RegularPlannerQuery(queryGraph.addPredicates(solvedPredicatesForCardinalityEstimation: _*))
 
-    val plan = NodeIndexSeek(idName, label, properties, valueExpr, argumentIds, toIndexOrder(providedOrder))
+    val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, interestingOrder, context)
+    val rewrittenValueExpr = valueExpr.map(solver.solve(_))
+    val newArguments = solver.newArguments
+    val plan = NodeIndexSeek(idName, label, properties, rewrittenValueExpr, argumentIds ++ newArguments, toIndexOrder(providedOrder))
     val cardinality = cardinalityModel(solvedForCardinalityEstimation, context.input, context.semanticTable)
     solveds.set(plan.id, solved)
     cardinalities.set(plan.id, cardinality)
     providedOrders.set(plan.id, providedOrder)
-    plan
+    solver.rewriteLeafPlan(plan)
   }
 
   def planNodeIndexScan(idName: String,
@@ -356,6 +360,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                               solvedHint: Option[UsingIndexHint] = None,
                               argumentIds: Set[String],
                               providedOrder: ProvidedOrder,
+                              interestingOrder: InterestingOrder,
                               context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
@@ -363,7 +368,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    annotate(NodeUniqueIndexSeek(idName, label, properties, valueExpr, argumentIds, toIndexOrder(providedOrder)), solved, providedOrder, context)
+    val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, interestingOrder, context)
+    val rewrittenValueExpr = valueExpr.map(solver.solve(_))
+    val newArguments = solver.newArguments
+    val plan = annotate(NodeUniqueIndexSeek(idName, label, properties, rewrittenValueExpr, argumentIds ++ newArguments, toIndexOrder(providedOrder)), solved, providedOrder, context)
+    solver.rewriteLeafPlan(plan)
   }
 
   def planAssertSameNode(node: String, left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {

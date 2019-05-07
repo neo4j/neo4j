@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderin
 import org.neo4j.cypher.internal.compiler.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.planner.logical.{LeafPlanFromExpressions, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
 import org.neo4j.cypher.internal.ir.{InterestingOrder, ProvidedOrder, QueryGraph}
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions._
@@ -45,6 +45,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                               hint: Option[UsingIndexHint],
                               argumentIds: Set[String],
                               providedOrder: ProvidedOrder,
+                              interestingOrder: InterestingOrder,
                               context: LogicalPlanningContext,
                               onlyExists: Boolean)
                              (solvedPredicates: Seq[Expression], predicatesForCardinalityEstimation: Seq[Expression]): LogicalPlan
@@ -109,7 +110,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
          indexDescriptor: IndexDescriptor <- findIndexesForLabel(labelId, context);
          (predicates, canGetValues, providedOrder) <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates, interestingOrder))
       yield
-        createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, predicates, indexDescriptor.isUnique, canGetValues, providedOrder, context, semanticTable)
+        createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, predicates, indexDescriptor.isUnique, canGetValues, providedOrder, interestingOrder, context, semanticTable)
   }
 
   private def createLogicalPlan(idName: String,
@@ -122,6 +123,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                                 isUnique: Boolean,
                                 canGetValues: Seq[GetValueFromIndexBehavior],
                                 providedOrder: ProvidedOrder,
+                                interestingOrder: InterestingOrder,
                                 context: LogicalPlanningContext,
                                 semanticTable: SemanticTable): LogicalPlan = {
     val hint = {
@@ -146,7 +148,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       case (propertyName, getValue) => IndexedProperty(PropertyKeyToken(propertyName, semanticTable.id(propertyName).head), getValue)
     }
     val entryConstructor: (Seq[Expression], Seq[Expression]) => LogicalPlan =
-      constructPlan(idName, LabelToken(labelName, labelId), properties, isUnique, queryExpression, hint, argumentIds, providedOrder, context, indexedPredicates.head.isExists)
+      constructPlan(idName, LabelToken(labelName, labelId), properties, isUnique, queryExpression, hint, argumentIds, providedOrder, interestingOrder, context, indexedPredicates.head.isExists)
 
     val solvedPredicates = indexedPredicates.zip(indexCompatiblePredicates).filter(p => p._1 == p._2).map(_._1)
                              .filter(_.solvesPredicate).map(p => p.propertyPredicate) :+ labelPredicate
