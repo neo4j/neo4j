@@ -20,35 +20,37 @@
 package org.neo4j.kernel.impl.scheduler;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.scheduler.Group;
-import org.neo4j.scheduler.JobHandle;
 
 final class ThreadPoolManager
 {
     private final ConcurrentHashMap<Group,ThreadPool> pools;
-    private final Function<Group,ThreadPool> poolBuilder;
+    private final ThreadGroup topLevelGroup;
 
     ThreadPoolManager( ThreadGroup topLevelGroup )
     {
+        this.topLevelGroup = topLevelGroup;
         pools = new ConcurrentHashMap<>();
-        poolBuilder = group -> new ThreadPool( group, topLevelGroup );
     }
 
-    ThreadPool getThreadPool( Group group )
+    ThreadPool getThreadPool( Group group, Integer desiredParallelism )
     {
-        return pools.computeIfAbsent( group, poolBuilder );
+        return pools.computeIfAbsent( group, g ->
+        {
+            if ( desiredParallelism == null )
+            {
+                return new ThreadPool( g, topLevelGroup );
+            }
+            else
+            {
+                return new ThreadPool( g, topLevelGroup, desiredParallelism );
+            }
+        } );
     }
 
-    JobHandle submit( Group group, Runnable job )
-    {
-        ThreadPool threadPool = getThreadPool( group );
-        return threadPool.submit( job );
-    }
-
-    public InterruptedException shutDownAll()
+    InterruptedException shutDownAll()
     {
         pools.forEach( ( group, pool ) -> pool.cancelAllJobs() );
         pools.forEach( ( group, pool ) -> pool.shutDown() );

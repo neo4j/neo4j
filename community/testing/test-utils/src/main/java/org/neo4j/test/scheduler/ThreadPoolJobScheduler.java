@@ -59,6 +59,12 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
     }
 
     @Override
+    public void setParallelism( Group group, int parallelism )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Executor executor( Group group )
     {
         return executor;

@@ -37,6 +37,11 @@ public class JobSchedulerAdapter extends LifecycleAdapter implements JobSchedule
     }
 
     @Override
+    public void setParallelism( Group group, int parallelism )
+    {
+    }
+
+    @Override
     public Executor executor( Group group )
     {
         return null;

@@ -44,6 +44,13 @@ final class ThreadPool
         registry = new ConcurrentHashMap<>();
     }
 
+    ThreadPool( Group group, ThreadGroup parentThreadGroup, int paralellism )
+    {
+        threadFactory = new GroupedDaemonThreadFactory( group, parentThreadGroup );
+        executor = group.buildExecutorService( threadFactory, paralellism );
+        registry = new ConcurrentHashMap<>();
+    }
+
     public ThreadFactory getThreadFactory()
     {
         return threadFactory;

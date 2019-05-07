@@ -48,6 +48,7 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     // We also need to remember to shutdown all pools when we shutdown the database to shutdown queries in an orderly
     // fashion.
     private final ConcurrentHashMap<Group,ExecutorService> workStealingExecutors;
+    private final ConcurrentHashMap<Group,Integer> desiredParallelism;
 
     private final TopLevelGroup topLevelGroup;
     private final ThreadPoolManager pools;
@@ -72,6 +73,7 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     protected CentralJobScheduler()
     {
         workStealingExecutors = new ConcurrentHashMap<>( 1 );
+        desiredParallelism = new ConcurrentHashMap<>( 4 );
         topLevelGroup = new TopLevelGroup();
         pools = new ThreadPoolManager( topLevelGroup );
         ThreadFactory threadFactory = new GroupedDaemonThreadFactory( Group.TASK_SCHEDULER, topLevelGroup );
@@ -96,6 +98,12 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     }
 
     @Override
+    public void setParallelism( Group group, int parallelism )
+    {
+        desiredParallelism.putIfAbsent( group, parallelism );
+    }
+
+    @Override
     public void init()
     {
         if ( !started )
@@ -108,7 +116,7 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     @Override
     public Executor executor( Group group )
     {
-        return pools.getThreadPool( group ).getExecutorService();
+        return getThreadPool( group ).getExecutorService();
     }
 
     @Override
@@ -131,7 +139,12 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     @Override
     public ThreadFactory threadFactory( Group group )
     {
-        return pools.getThreadPool( group ).getThreadFactory();
+        return getThreadPool( group ).getThreadFactory();
+    }
+
+    private ThreadPool getThreadPool( Group group )
+    {
+        return pools.getThreadPool( group, desiredParallelism.get( group ) );
     }
 
     @Override
@@ -154,7 +167,7 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
         {
             throw new RejectedExecutionException( "Scheduler is not started" );
         }
-        return pools.submit( group, job );
+        return getThreadPool( group ).submit( job );
     }
 
     @Override

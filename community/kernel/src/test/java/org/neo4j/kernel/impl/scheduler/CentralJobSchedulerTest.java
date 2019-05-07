@@ -322,6 +322,14 @@ public class CentralJobSchedulerTest
         assertThat( executor, instanceOf( ForkJoinPool.class ) );
     }
 
+    @Test
+    public void mustRespectDesiredParallelismSetPriorToPoolCreation()
+    {
+        life.start();
+
+        scheduler.setParallelism( Group.CYPHER_WORKER, 3 );
+    }
+
     private void awaitFirstInvocation() throws InterruptedException
     {
         awaitInvocationCount( 1 );

@@ -42,6 +42,15 @@ public interface JobScheduler extends Lifecycle, AutoCloseable
     void setTopLevelGroupName( String name );
 
     /**
+     * Set the desired parallelism for the given group. This only has an effect if the underlying scheduler for the given group has not already been
+     * started, and a desired parallelism has not already been set.
+     *
+     * @param group The group to set the desired parallelism for.
+     * @param parallelism The desired number of threads in the thread pool for the given group.
+     */
+    void setParallelism( Group group, int parallelism );
+
+    /**
      * Expose a group scheduler as an {@link Executor}.
      * <p>
      * <strong>NOTE:</strong> The returned instance might be an implementation of the {@link ExecutorService} interface. If so, then it is <em>NOT</em> allowed

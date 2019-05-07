@@ -95,6 +95,11 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
+    public void setParallelism( Group group, int parallelism )
+    {
+    }
+
+    @Override
     public Executor executor( Group group )
     {
         return job -> schedule( job, now() );

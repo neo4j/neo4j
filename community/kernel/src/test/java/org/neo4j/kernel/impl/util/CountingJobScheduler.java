@@ -47,6 +47,12 @@ public class CountingJobScheduler implements JobScheduler
     }
 
     @Override
+    public void setParallelism( Group group, int parallelism )
+    {
+        delegate.setParallelism( group, parallelism );
+    }
+
+    @Override
     public Executor executor( Group group )
     {
         return delegate.executor( group );
