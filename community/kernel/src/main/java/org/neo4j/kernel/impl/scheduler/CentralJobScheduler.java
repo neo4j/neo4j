@@ -150,7 +150,7 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     @Override
     public ThreadFactory interruptableThreadFactory( Group group )
     {
-        return pools.getThreadPool( group ).getInterruptableThreadFactory();
+        return getThreadPool( group ).getInterruptableThreadFactory();
     }
 
     private ExecutorService createNewWorkStealingExecutor( Group group, int parallelism, boolean asyncMode )

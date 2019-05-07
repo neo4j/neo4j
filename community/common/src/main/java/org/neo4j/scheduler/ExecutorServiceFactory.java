@@ -136,4 +136,30 @@ interface ExecutorServiceFactory
             }
         };
     }
+
+    /**
+     * Schedules jobs in a work-stealing (ForkJoin) thread pool, configuring to be in an "asynchronous" mode, which is more suitable for event-processing.
+     * <p>
+     * You can read more about asynchronous mode in the {@link ForkJoinPool} documentation.
+     * <p>
+     * {@link java.util.stream.Stream#parallel Parallel streams} and {@link ForkJoinTask}s started from within the scheduled jobs will also run inside the
+     * same {@link ForkJoinPool}.
+     */
+    static ExecutorServiceFactory workStealingAsync()
+    {
+        return new ExecutorServiceFactory()
+        {
+            @Override
+            public ExecutorService build( Group group, SchedulerThreadFactory factory )
+            {
+                return new ForkJoinPool( getRuntime().availableProcessors(), factory, null, true );
+            }
+
+            @Override
+            public ExecutorService build( Group group, SchedulerThreadFactory factory, int threadCount )
+            {
+                return new ForkJoinPool( threadCount, factory, null, true );
+            }
+        };
+    }
 }

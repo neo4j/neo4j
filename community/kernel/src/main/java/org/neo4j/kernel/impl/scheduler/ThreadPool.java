@@ -47,6 +47,7 @@ final class ThreadPool
     ThreadPool( Group group, ThreadGroup parentThreadGroup, int paralellism )
     {
         threadFactory = new GroupedDaemonThreadFactory( group, parentThreadGroup );
+        interruptableThreadFactory = new InterruptableThreadFactory( group, parentThreadGroup );
         executor = group.buildExecutorService( threadFactory, paralellism );
         registry = new ConcurrentHashMap<>();
     }

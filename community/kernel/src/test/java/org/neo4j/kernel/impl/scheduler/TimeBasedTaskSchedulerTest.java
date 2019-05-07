@@ -273,7 +273,7 @@ class TimeBasedTaskSchedulerTest
         // tick will remove cancelled tasks
         assertEquals( 0, scheduler.tasksLeft() );
 
-        pools.getThreadPool( Group.STORAGE_MAINTENANCE ).shutDown();
+        pools.getThreadPool( Group.STORAGE_MAINTENANCE, null ).shutDown();
         assertThat( counter.get(), is( 1 ) );
     }
 

@@ -75,7 +75,7 @@ public enum Group
     RAFT_LOG_PRUNING( "RaftLogPruning" ),
     RAFT_BATCH_HANDLER( "RaftBatchHandler" ),
     RAFT_READER_POOL_PRUNER( "RaftReaderPoolPruner" ),
-    AKKA_TOPOLOGY_WORKER( "AkkaTopologyWorkers", ExecutorServiceFactory.workStealing() ),
+    AKKA_TOPOLOGY_WORKER( "AkkaTopologyWorkers", ExecutorServiceFactory.workStealingAsync() ),
     DOWNLOAD_SNAPSHOT( "DownloadSnapshot" ),
     CATCHUP_CLIENT( "CatchupClient" ),
     CATCHUP_SERVER( "CatchupServer" ),
