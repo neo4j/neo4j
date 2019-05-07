@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
 /**
-  * Like LetSemiApply, but with a precondition 'expr'. If 'expr' is true, 'idName' will to set to true without
+  * Like LetSemiApply, but with a precondition 'expr'. If 'expr' is true, 'idName' will be set to true without
   * executing right.
   *
   * for ( leftRow <- left ) {
@@ -41,7 +41,7 @@ case class LetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: S
   extends AbstractLetSelectOrSemiApply(left, right, idName, expr)(idGen)
 
 /**
-  * Like LetAntiSemiApply, but with a precondition 'expr'. If 'expr' is true, 'idName' will to set to true without
+  * Like LetAntiSemiApply, but with a precondition 'expr'. If 'expr' is true, 'idName' will be set to true without
   * executing right.
   *
   * for ( leftRow <- left ) {

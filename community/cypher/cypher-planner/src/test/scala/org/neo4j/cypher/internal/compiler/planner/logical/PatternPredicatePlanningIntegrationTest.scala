@@ -362,6 +362,84 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     }
   }
 
+  test("should solve pattern comprehension for SelectOrAntiSemiApply") {
+    val q =
+      """
+        |MATCH (n)
+        |WHERE NOT (n)-[:R]->(:M) OR n.prop = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
+        |RETURN n
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case SelectOrAntiSemiApply(
+      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the (a)-->(b) subQuery */, _, _, _),
+      _ /* <- This is the (n)-[:R]->(:M) subQuery */,
+      _
+      ) => ()
+    }
+  }
+
+  test("should solve pattern comprehension for LetSelectOrAntiSemiApply") {
+    val q =
+      """
+        |MATCH (n)
+        |WHERE NOT (n)-[:R]->(:M) OR NOT (n)-[:Q]->(:O) OR n.prop = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
+        |RETURN n
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case SelectOrAntiSemiApply(
+      LetSelectOrAntiSemiApply(
+      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the (a)-->(b) subQuery */, _, _, _),
+      _ /* <- This is the (n)-[:R]->(:M) subQuery */,
+      _,
+      _
+      ),
+      _ /* <- This is the (n)-[:Q]->(:O) subQuery */,
+      _
+      ) => ()
+    }
+  }
+
+  test("should solve pattern comprehension for SelectOrSemiApply") {
+    val q =
+      """
+        |MATCH (n)
+        |WHERE (n)-[:R]->(:M) OR n.prop = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
+        |RETURN n
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case SelectOrSemiApply(
+      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the (a)-->(b) subQuery */, _, _, _),
+      _ /* <- This is the (n)-[:R]->(:M) subQuery */,
+      _
+      ) => ()
+    }
+  }
+
+  test("should solve pattern comprehension for LetSelectOrSemiApply") {
+    val q =
+      """
+        |MATCH (n)
+        |WHERE (n)-[:R]->(:M) OR (n)-[:Q]->(:O) OR n.prop = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
+        |RETURN n
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case SelectOrSemiApply(
+      LetSelectOrSemiApply(
+      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the (a)-->(b) subQuery */, _, _, _),
+      _ /* <- This is the (n)-[:R]->(:M) subQuery */,
+      _,
+      _
+      ),
+      _ /* <- This is the (n)-[:Q]->(:O) subQuery */,
+      _
+      ) => ()
+    }
+  }
+
   test("should name pattern comprehensions in return position") {
     val q =
       """

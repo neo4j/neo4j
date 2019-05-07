@@ -430,17 +430,38 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(Selection(coercePredicatesWithAnds(rewrittenPredicates), rewrittenSource), solved, providedOrders.get(source.id), context)
   }
 
-  def planSelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, expr: Expression, context: LogicalPlanningContext): LogicalPlan =
-    annotate(SelectOrAntiSemiApply(outer, inner, expr), solveds.get(outer.id), providedOrders.get(outer.id), context)
+  // Using the solver for `expr` in all SemiApply-like plans is kinda stupid.
+  // The idea is that `expr` is cheap to evaluate while the subquery (`inner`) is costly.
+  // If `expr` is _also_ a PatternExpression or PatternComprehension, that is not true any longer,
+  // and it could be cheaper to execute the one subquery  (`inner`) instead of the other (`expr`).
 
-  def planLetSelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, id: String, expr: Expression, context: LogicalPlanningContext): LogicalPlan =
-    annotate(LetSelectOrAntiSemiApply(outer, inner, id, expr), solveds.get(outer.id), providedOrders.get(outer.id), context)
+  def planSelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, expr: Expression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
+    val solver = PatternExpressionSolver.solverFor(outer, interestingOrder, context)
+    val rewrittenExpr = solver.solve(expr)
+    val rewrittenOuter = solver.rewrittenPlan()
+    annotate(SelectOrAntiSemiApply(rewrittenOuter, inner, rewrittenExpr), solveds.get(outer.id), providedOrders.get(outer.id), context)
+  }
 
-  def planSelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, expr: Expression, context: LogicalPlanningContext): LogicalPlan =
-    annotate(SelectOrSemiApply(outer, inner, expr), solveds.get(outer.id), providedOrders.get(outer.id), context)
+  def planLetSelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, id: String, expr: Expression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
+    val solver = PatternExpressionSolver.solverFor(outer, interestingOrder, context)
+    val rewrittenExpr = solver.solve(expr)
+    val rewrittenOuter = solver.rewrittenPlan()
+    annotate(LetSelectOrAntiSemiApply(rewrittenOuter, inner, id, rewrittenExpr), solveds.get(outer.id), providedOrders.get(outer.id), context)
+  }
 
-  def planLetSelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, id: String, expr: Expression, context: LogicalPlanningContext): LogicalPlan =
-    annotate(LetSelectOrSemiApply(outer, inner, id, expr), solveds.get(outer.id), providedOrders.get(outer.id), context)
+  def planSelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, expr: Expression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
+    val solver = PatternExpressionSolver.solverFor(outer, interestingOrder, context)
+    val rewrittenExpr = solver.solve(expr)
+    val rewrittenOuter = solver.rewrittenPlan()
+    annotate(SelectOrSemiApply(rewrittenOuter, inner, rewrittenExpr), solveds.get(outer.id), providedOrders.get(outer.id), context)
+  }
+
+  def planLetSelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, id: String, expr: Expression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
+    val solver = PatternExpressionSolver.solverFor(outer, interestingOrder, context)
+    val rewrittenExpr = solver.solve(expr)
+    val rewrittenOuter = solver.rewrittenPlan()
+    annotate(LetSelectOrSemiApply(rewrittenOuter, inner, id, rewrittenExpr), solveds.get(outer.id), providedOrders.get(outer.id), context)
+  }
 
   def planLetAntiSemiApply(left: LogicalPlan, right: LogicalPlan, id: String, context: LogicalPlanningContext): LogicalPlan =
     annotate(LetAntiSemiApply(left, right, id), solveds.get(left.id), providedOrders.get(left.id), context)
@@ -453,8 +474,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(AntiSemiApply(left, right), solved, providedOrders.get(left.id), context)
   }
 
-  def planSemiApply(left: LogicalPlan, right: LogicalPlan, predicate: Expression, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(left.id).updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
+  def planSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(left.id).updateTailOrSelf(_.amendQueryGraph(_.addPredicates(expr)))
     annotate(SemiApply(left, right), solved, providedOrders.get(left.id), context)
   }
 
