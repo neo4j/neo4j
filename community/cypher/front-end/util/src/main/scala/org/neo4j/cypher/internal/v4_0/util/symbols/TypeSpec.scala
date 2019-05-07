@@ -137,6 +137,11 @@ class TypeSpec(val ranges: Seq[TypeRange]) extends Equals {
 
   def unwrapLists: TypeSpec = TypeSpec(ranges.map(_.reparent { case c: ListType => c.innerType }))
 
+  def unwrapPotentialLists: TypeSpec = TypeSpec(ranges.map(_.reparent {
+    case c: ListType => c.innerType
+    case c: CypherType => c
+  }))
+
   def coercions: TypeSpec = {
     val simpleCoercions = ranges.flatMap(_.lower.coercibleTo)
       TypeSpec.exact(simpleCoercions)

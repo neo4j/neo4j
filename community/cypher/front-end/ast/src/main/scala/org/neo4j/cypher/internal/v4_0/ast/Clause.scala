@@ -546,8 +546,8 @@ case class Unwind(
 
   override def semanticCheck: SemanticCheck =
     SemanticExpressionCheck.check(SemanticContext.Results, expression) chain
-      expectType(CTList(CTAny).covariant, expression) ifOkChain {
-      val possibleInnerTypes: TypeGenerator = types(expression)(_).unwrapLists
+      expectType(CTList(CTAny).covariant | CTAny.covariant, expression) ifOkChain {
+      val possibleInnerTypes: TypeGenerator = types(expression)(_).unwrapPotentialLists
       declareVariable(variable, possibleInnerTypes)
     }
 }
