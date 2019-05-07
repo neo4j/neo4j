@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -103,12 +102,6 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     public Executor executor( Group group )
     {
         return job -> schedule( job, now() );
-    }
-
-    @Override
-    public ExecutorService workStealingExecutor( Group group, int parallelism )
-    {
-        throw new UnsupportedOperationException();
     }
 
     @Override

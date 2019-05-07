@@ -20,7 +20,6 @@
 package org.neo4j.test.scheduler;
 
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
@@ -82,12 +81,6 @@ public class JobSchedulerAdapter extends LifecycleAdapter implements JobSchedule
     @Override
     public JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay,
             long period, TimeUnit timeUnit )
-    {
-        return null;
-    }
-
-    @Override
-    public ExecutorService workStealingExecutor( Group group, int parallelism )
     {
         return null;
     }

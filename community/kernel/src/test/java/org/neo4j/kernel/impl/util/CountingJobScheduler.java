@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.util;
 
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -68,12 +67,6 @@ public class CountingJobScheduler implements JobScheduler
     public ThreadFactory interruptableThreadFactory( Group group )
     {
         return delegate.interruptableThreadFactory( group );
-    }
-
-    @Override
-    public ExecutorService workStealingExecutor( Group group, int parallelism )
-    {
-        return delegate.workStealingExecutor( group, parallelism );
     }
 
     @Override

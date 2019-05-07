@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.scheduler;
 import java.lang.reflect.Field;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -42,12 +40,6 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
 
     private final TimeBasedTaskScheduler scheduler;
     private final Thread schedulerThread;
-
-    // Contains workStealingExecutors for each group that have asked for one.
-    // If threads need to be created, they need to be inside one of these pools.
-    // We also need to remember to shutdown all pools when we shutdown the database to shutdown queries in an orderly
-    // fashion.
-    private final ConcurrentHashMap<Group,ExecutorService> workStealingExecutors;
     private final ConcurrentHashMap<Group,Integer> desiredParallelism;
 
     private final TopLevelGroup topLevelGroup;
@@ -72,7 +64,6 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
 
     protected CentralJobScheduler()
     {
-        workStealingExecutors = new ConcurrentHashMap<>( 1 );
         desiredParallelism = new ConcurrentHashMap<>( 4 );
         topLevelGroup = new TopLevelGroup();
         pools = new ThreadPoolManager( topLevelGroup );
@@ -120,17 +111,6 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     }
 
     @Override
-    public ExecutorService workStealingExecutor( Group group, int parallelism )
-    {
-        return workStealingExecutor( group, parallelism, false );
-    }
-
-    private ExecutorService workStealingExecutor( Group group, int parallelism, boolean asyncMode )
-    {
-        return workStealingExecutors.computeIfAbsent( group, g -> createNewWorkStealingExecutor( g, parallelism, asyncMode ) );
-    }
-
-    @Override
     public ThreadFactory threadFactory( Group group )
     {
         return getThreadPool( group ).getThreadFactory();
@@ -145,13 +125,6 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     public ThreadFactory interruptableThreadFactory( Group group )
     {
         return getThreadPool( group ).getInterruptableThreadFactory();
-    }
-
-    private ExecutorService createNewWorkStealingExecutor( Group group, int parallelism, boolean asyncMode )
-    {
-        ForkJoinPool.ForkJoinWorkerThreadFactory factory =
-                new GroupedDaemonThreadFactory( group, topLevelGroup );
-        return new ForkJoinPool( parallelism, factory, null, asyncMode );
     }
 
     @Override
@@ -195,13 +168,6 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
         // so we avoid having to wait the full maximum wait time on the executor service shut-downs.
         exception = Exceptions.chain( exception, pools.shutDownAll() );
 
-        // Finally, we shut the work-stealing executors down.
-        for ( ExecutorService workStealingExecutor : workStealingExecutors.values() )
-        {
-            exception = shutdownPool( workStealingExecutor, exception );
-        }
-        workStealingExecutors.clear();
-
         if ( exception != null )
         {
             throw new RuntimeException( "Unable to shut down job scheduler properly.", exception );
@@ -226,22 +192,5 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
             return e;
         }
         return null;
-    }
-
-    private InterruptedException shutdownPool( ExecutorService pool, InterruptedException exception )
-    {
-        if ( pool != null )
-        {
-            pool.shutdown();
-            try
-            {
-                pool.awaitTermination( 30, TimeUnit.SECONDS );
-            }
-            catch ( InterruptedException e )
-            {
-                return Exceptions.chain( exception, e );
-            }
-        }
-        return exception;
     }
 }

@@ -21,7 +21,6 @@ package org.neo4j.scheduler;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
@@ -57,11 +56,6 @@ public interface JobScheduler extends Lifecycle, AutoCloseable
      * to shut it down, because the life cycle of the executor is managed by the JobScheduler.
      **/
     Executor executor( Group group );
-
-    /**
-     * Creates an {@link ExecutorService} that does works-stealing - read more about this in {@link ForkJoinPool}
-     */
-    ExecutorService workStealingExecutor( Group group, int parallelism );
 
     /**
      * Expose a group scheduler as a {@link java.util.concurrent.ThreadFactory}.
