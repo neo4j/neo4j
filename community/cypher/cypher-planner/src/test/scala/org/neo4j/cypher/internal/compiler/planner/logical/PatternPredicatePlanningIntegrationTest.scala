@@ -440,7 +440,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     }
   }
 
-  test("should name pattern comprehensions in return position") {
+  test("should solve and name pattern comprehensions for Projection") {
     val q =
       """
         |MATCH (n)
@@ -452,7 +452,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     }
   }
 
-  test("should name pattern expressions in return position") {
+  test("should solve and name pattern expressions for Projection") {
     val q =
       """
         |MATCH (n)
@@ -461,6 +461,53 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "bs", _, _) => ()
+    }
+  }
+
+  test("should solve and name pattern comprehensions for Aggregation, grouping expression") {
+    val q =
+      """
+        |MATCH (n)
+        |RETURN [(n)-->(b) | b.age] AS ages, sum(n.foo)
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case Aggregation(
+        RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "ages", _, _),
+      _,
+      _
+      )=> ()
+    }
+  }
+
+  test("should solve pattern comprehensions for Aggregation, aggregation expression") {
+    val q =
+      """
+        |MATCH (n)
+        |RETURN collect([(n)-->(b) | b.age]) AS ages, n.foo
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case Aggregation(
+        RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, _, _, _),
+      _,
+      _
+      )=> ()
+    }
+  }
+
+  test("should solve and name pattern comprehensions for Distinct") {
+    val q =
+      """
+        |MATCH (n)
+        |RETURN DISTINCT [(n)-->(b) | b.age] AS ages
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case Distinct(
+      RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "ages", _, _),
+      _
+      )=> ()
     }
   }
 

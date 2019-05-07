@@ -64,9 +64,10 @@ object aggregation {
       }
 
       if (projectionMapForLimit.nonEmpty) {
-        val projectedPlan = context.logicalPlanProducer.planRegularProjectionWithFakeSolved(
+        val projectedPlan = context.logicalPlanProducer.planRegularProjection(
           rewrittenPlan,
           projectionMapForLimit,
+          Map.empty,
           context
         )
 

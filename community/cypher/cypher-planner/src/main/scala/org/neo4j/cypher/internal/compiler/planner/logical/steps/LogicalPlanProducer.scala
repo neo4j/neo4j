@@ -520,16 +520,20 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(newPlan, newSolved, providedOrders.get(inner.id), context)
   }
 
+  /**
+    * @param expressions must be solved by the PatternExpressionSolver. This is not done here since that can influence the projection list,
+    *                    thus this logic is put into [[projection]] instead.
+    */
   def planRegularProjection(inner: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
     val solved: PlannerQuery = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.withAddedProjections(reported)))
     planRegularProjectionHelper(inner, expressions, context, solved)
   }
 
-  def planRegularProjectionWithFakeSolved(inner: LogicalPlan, expressions: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id)
-    planRegularProjectionHelper(inner, expressions, context, solved)
-  }
-
+  /**
+    * @param grouping    must be solved by the PatternExpressionSolver. This is not done here since that can influence if we plan aggregation or projection, etc,
+    *                    thus this logic is put into [[aggregation]] instead.
+    * @param aggregation must be solved by the PatternExpressionSolver.
+    */
   def planAggregation(left: LogicalPlan,
                       grouping: Map[String, Expression],
                       aggregation: Map[String, Expression],
@@ -657,6 +661,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(Distinct(left, returnAll.toMap), solveds.get(left.id), providedOrders.get(left.id), context)
   }
 
+  /**
+    *
+    * @param expressions must be solved by the PatternExpressionSolver. This is not done here since that can influence how we plan distinct,
+    *                    thus this logic is put into [[distinct]] instead.
+    */
   def planDistinct(left: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
     val solved: PlannerQuery = solveds.get(left.id).updateTailOrSelf(_.updateQueryProjection(_ => DistinctQueryProjection(reported)))
     val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(left.id).columns, expressions)
@@ -664,6 +673,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(Distinct(left, expressions), solved, providedOrder, context)
   }
 
+  /**
+    *
+    * @param expressions must be solved by the PatternExpressionSolver. This is not done here since that can influence how we plan distinct,
+    *                    thus this logic is put into [[distinct]] instead.
+    */
   def planOrderedDistinct(left: LogicalPlan,
                           expressions: Map[String, Expression],
                           orderToLeverage: Seq[Expression],
