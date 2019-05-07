@@ -323,11 +323,41 @@ public class CentralJobSchedulerTest
     }
 
     @Test
-    public void mustRespectDesiredParallelismSetPriorToPoolCreation()
+    public void mustRespectDesiredParallelismSetPriorToPoolCreation() throws Exception
     {
         life.start();
+        AtomicInteger counter = new AtomicInteger();
+        AtomicInteger max = new AtomicInteger();
 
         scheduler.setParallelism( Group.CYPHER_WORKER, 3 );
+
+        Runnable runnable = () ->
+        {
+            counter.getAndIncrement();
+            LockSupport.parkNanos( MILLISECONDS.toNanos( 50 ) );
+            int currentMax;
+            int currentVal;
+            do
+            {
+                currentVal = counter.get();
+                currentMax = max.get();
+            }
+            while ( !max.compareAndSet( currentMax, Math.max( currentMax, currentVal ) ) );
+            LockSupport.parkNanos( MILLISECONDS.toNanos( 50 ) );
+            counter.getAndDecrement();
+        };
+
+        List<JobHandle> handles = new ArrayList<>();
+        for ( int i = 0; i < 10; i++ )
+        {
+            handles.add( scheduler.schedule( Group.CYPHER_WORKER, runnable ) );
+        }
+        for ( JobHandle handle : handles )
+        {
+            handle.waitTermination();
+        }
+
+        assertThat( max.get(), is( 3 ) );
     }
 
     private void awaitFirstInvocation() throws InterruptedException
