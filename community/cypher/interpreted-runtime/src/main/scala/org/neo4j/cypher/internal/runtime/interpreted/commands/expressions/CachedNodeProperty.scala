@@ -71,8 +71,6 @@ abstract class AbstractCachedNodeProperty extends Expression {
 case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, key: plans.CachedNodeProperty)
   extends AbstractCachedNodeProperty
 {
-  override def symbolTableDependencies: Set[String] = Set(nodeName, key.cacheKey)
-
   override def toString: String = key.cacheKey
 
   override def getNodeId(ctx: ExecutionContext): Long =

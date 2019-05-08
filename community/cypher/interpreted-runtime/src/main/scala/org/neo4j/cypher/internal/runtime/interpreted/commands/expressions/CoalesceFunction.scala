@@ -44,7 +44,5 @@ case class CoalesceFunction(override val arguments: Expression*) extends Express
 
   override def rewrite(f: Expression => Expression): Expression = f(CoalesceFunction(arguments.map(e => e.rewrite(f)): _*))
 
-  override  def symbolTableDependencies: Set[String] = arguments.flatMap(_.symbolTableDependencies).toSet
-
   override def children: Seq[AstNode[_]] = arguments
 }

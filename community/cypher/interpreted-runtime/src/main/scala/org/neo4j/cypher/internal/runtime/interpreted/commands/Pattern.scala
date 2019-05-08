@@ -19,18 +19,18 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
+import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
-import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctions
-import org.neo4j.cypher.internal.runtime.interpreted.symbols.TypeSafe
-import org.neo4j.cypher.internal.v4_0.util.UnNamedNameGenerator
-import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.v4_0.util.UnNamedNameGenerator
+import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 import scala.collection.{Map, Seq}
-trait Pattern extends TypeSafe with AstNode[Pattern] {
+
+trait Pattern extends AstNode[Pattern] {
   def possibleStartPoints: Seq[(String,CypherType)]
   def relTypes:Seq[String]
 
@@ -50,8 +50,6 @@ object Pattern {
 
 object RelationshipPattern {
   def unapply(x: Any): Option[(RelationshipPattern, SingleNode, SingleNode)] = x match {
-    case pattern@RelatedTo(left, right, _, _, _, _)                   => Some((pattern, left, right))
-    case pattern@VarLengthRelatedTo(_, left, right, _, _, _, _, _, _) => Some((pattern, left, right))
     case pattern@ShortestPath(_, left, right, _, _, _, _, _, _)          => Some((pattern, left, right))
     case _                                                            => None
   }
@@ -78,57 +76,12 @@ case class SingleNode(name: String,
 
   override def children: Seq[AstNode[_]] = labels ++ properties.values
 
-  override def symbolTableDependencies: Set[String] = properties.symboltableDependencies
-
   override def toString: String = {
     val namePart = if (UnNamedNameGenerator.notNamed(name)) s"${name.drop(9)}" else name
     val labelPart = if (labels.isEmpty) "" else labels.mkString(":", ":", "")
     val props = if (properties.isEmpty) "" else " " + toString(properties)
     s"($namePart$labelPart$props)"
   }
-}
-
-object RelatedTo {
-  def apply(left: String, right: String, relName: String, relType: String, direction: SemanticDirection) =
-    new RelatedTo(SingleNode(left), SingleNode(right), relName, Seq(relType), direction, Map.empty)
-
-  def apply(left: String, right: String, relName: String, types: Seq[String], direction: SemanticDirection) =
-    new RelatedTo(SingleNode(left), SingleNode(right), relName, types, direction, Map.empty)
-}
-
-case class RelatedTo(left: SingleNode,
-                     right: SingleNode,
-                     relName: String,
-                     relTypes: Seq[String],
-                     direction: SemanticDirection,
-                     properties: Map[String, Expression])
-  extends Pattern with RelationshipPattern with GraphElementPropertyFunctions {
-  override def toString: String = left + leftArrow(direction) + relInfo + rightArrow(direction) + right
-
-  private def relInfo: String = {
-    var info = relName
-    if (relTypes.nonEmpty) info += ":" + relTypes.mkString("|")
-    if (properties.nonEmpty) info += toString(properties)
-
-    if (info == "") "" else "[" + info + "]"
-  }
-
-  override val possibleStartPoints: Seq[(String, CypherType)] = left.possibleStartPoints ++ right.possibleStartPoints :+ relName->CTRelationship
-
-  override def rewrite(f: Expression => Expression) =
-    new RelatedTo(left.rewrite(f), right.rewrite(f), relName, relTypes, direction, properties.rewrite(f))
-
-  override def rels: Seq[String] = Seq(relName)
-
-  override def symbolTableDependencies: Set[String] =
-      properties.symboltableDependencies ++
-      left.symbolTableDependencies ++
-      right.symbolTableDependencies
-
-  override def children: Seq[AstNode[_]] = Seq.empty
-
-  def changeEnds(left: SingleNode = this.left, right: SingleNode = this.right): RelatedTo =
-    copy(left = left, right = right)
 }
 
 abstract class PathPattern extends Pattern with RelationshipPattern {
@@ -139,63 +92,6 @@ abstract class PathPattern extends Pattern with RelationshipPattern {
   def relIterator: Option[String]
 }
 
-object VarLengthRelatedTo {
-  def apply(pathName: String, left: String, right: String, minHops: Option[Int], maxHops: Option[Int], relTypes: String,
-            direction: SemanticDirection, relIterator:Option[String]=None) =
-    new VarLengthRelatedTo(pathName, SingleNode(left), SingleNode(right), minHops, maxHops, Seq(relTypes), direction, relIterator, Map.empty)
-}
-
-case class VarLengthRelatedTo(pathName: String,
-                              left: SingleNode,
-                              right: SingleNode,
-                              minHops: Option[Int],
-                              maxHops: Option[Int],
-                              relTypes: Seq[String],
-                              direction: SemanticDirection,
-                              relIterator: Option[String],
-                              properties: Map[String, Expression]) extends PathPattern with GraphElementPropertyFunctions {
-
-  override def toString: String = pathName + "=" + left + leftArrow(direction) + relInfo + rightArrow(direction) + right
-
-  override def symbolTableDependencies: Set[String] =
-    properties.symboltableDependencies ++
-      left.symbolTableDependencies ++
-      right.symbolTableDependencies
-
-  override def cloneWithOtherName(newName: String): PathPattern = copy(pathName = newName)
-
-  private def relInfo: String = {
-    var info = relTypes.mkString("|")
-    val hops = (minHops, maxHops) match {
-      case (None, None)           => "*"
-      case (Some(min), None)      => "*" + min + ".."
-      case (None, Some(max))      => "*" + ".." + max
-      case (Some(min), Some(max)) => "*" + min + ".." + max
-    }
-    if (properties.nonEmpty) info += toString(properties)
-
-    val relName = relIterator.getOrElse("")
-    info = relName + info + hops
-
-    if (info == "") "" else "[" + info + "]"
-  }
-
-  def rewrite(f: Expression => Expression) =
-    new VarLengthRelatedTo(pathName, left.rewrite(f), right.rewrite(f),
-      minHops, maxHops, relTypes, direction, relIterator, properties.rewrite(f))
-
-  lazy val possibleStartPoints: Seq[(String, CypherType)] =
-    left.possibleStartPoints ++
-      right.possibleStartPoints :+
-      pathName -> CTPath
-
-  override def rels: Seq[String] = Seq()
-
-  override def children: Seq[AstNode[_]] = Seq.empty
-
-  override def changeEnds(left: SingleNode = this.left, right: SingleNode = this.right): VarLengthRelatedTo =
-    copy(left = left, right = right)
-}
 
 case class ShortestPath(pathName: String,
                         left: SingleNode,
@@ -213,9 +109,6 @@ case class ShortestPath(pathName: String,
   private def algo = if (single) "singleShortestPath" else "allShortestPath"
 
   override def cloneWithOtherName(newName: String): ShortestPath = copy(pathName = newName)
-
-  override def symbolTableDependencies: Set[String] =
-      Set(left.name, right.name)
 
   private def relInfo: String = {
     var info = "["

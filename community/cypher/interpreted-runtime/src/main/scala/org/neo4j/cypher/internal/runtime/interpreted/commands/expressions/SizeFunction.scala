@@ -36,7 +36,5 @@ case class SizeFunction(inner: Expression)
 
   override def children: Seq[AstNode[_]] = Seq(inner)
 
-  override def symbolTableDependencies: Set[String] = inner.symbolTableDependencies
-
   override def toString = s"size($inner)"
 }

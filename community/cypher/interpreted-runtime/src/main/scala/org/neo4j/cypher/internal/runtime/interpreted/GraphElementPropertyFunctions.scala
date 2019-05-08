@@ -31,7 +31,6 @@ trait GraphElementPropertyFunctions extends ListSupport {
       case (k, v) => k -> v.rewrite(f)
     }
 
-    def symboltableDependencies: Set[String] = m.values.flatMap(_.symbolTableDependencies).toSet
   }
 
   def toString(m: Map[String, Expression]): String = m.map {

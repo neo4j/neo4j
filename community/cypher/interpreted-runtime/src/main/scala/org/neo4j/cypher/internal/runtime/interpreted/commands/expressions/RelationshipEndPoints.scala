@@ -37,6 +37,4 @@ case class RelationshipEndPoints(relExpression: Expression, start: Boolean) exte
   override def children: Seq[AstNode[_]] = Seq(relExpression)
 
   override def rewrite(f: Expression => Expression): Expression = f(RelationshipEndPoints(relExpression.rewrite(f), start))
-
-  override def symbolTableDependencies: Set[String] = relExpression.symbolTableDependencies
 }

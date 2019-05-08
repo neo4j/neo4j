@@ -36,6 +36,4 @@ case class KeysFunction(expr: Expression) extends NullInNullOutExpression(expr) 
   override def arguments: Seq[Expression] = Seq(expr)
 
   override def children: Seq[AstNode[_]] = Seq(expr)
-
-  override def symbolTableDependencies: Set[String] = expr.symbolTableDependencies
 }

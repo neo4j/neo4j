@@ -34,7 +34,4 @@ case class ReverseFunction(argument: Expression) extends NullInNullOutExpression
   override def arguments: Seq[Expression] = Seq(argument)
 
   override def children: Seq[AstNode[_]] = Seq(argument)
-
-  override def symbolTableDependencies: Set[String] = argument.symbolTableDependencies
-
 }

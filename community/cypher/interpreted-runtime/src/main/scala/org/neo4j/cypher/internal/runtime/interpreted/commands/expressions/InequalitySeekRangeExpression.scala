@@ -37,6 +37,4 @@ case class InequalitySeekRangeExpression(range: InequalitySeekRange[Expression])
   override def arguments: Seq[Expression] = Seq.empty
 
   override def children: Seq[AstNode[_]] = range.arguments
-
-  override def symbolTableDependencies: Set[String] = Set.empty
 }

@@ -49,8 +49,6 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
 
   override def arguments: Seq[Expression] = Seq(left, right)
 
-  override def symbolTableDependencies: Set[String] = left.symbolTableDependencies ++ right.symbolTableDependencies
-
   def other(e: Expression): Expression = if (e != left) {
     assert(e == right, "This expression is neither LHS nor RHS")
     left
@@ -90,8 +88,6 @@ case class Equals(a: Expression, b: Expression) extends Predicate {
   override def arguments: Seq[Expression] = Seq(a, b)
 
   override def children: Seq[AstNode[_]] = Seq(a, b)
-
-  override def symbolTableDependencies: Set[String] = a.symbolTableDependencies ++ b.symbolTableDependencies
 }
 
 case class LessThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {

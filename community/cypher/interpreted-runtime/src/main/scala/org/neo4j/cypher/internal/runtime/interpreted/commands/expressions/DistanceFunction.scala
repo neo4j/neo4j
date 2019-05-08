@@ -35,7 +35,5 @@ case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
 
   override def children: Seq[AstNode[_]] = Seq(p1, p2)
 
-  override def symbolTableDependencies: Set[String] = p1.symbolTableDependencies ++ p2.symbolTableDependencies
-
   override def toString: String = "Distance(" + p1 + ", " + p2 + ")"
 }

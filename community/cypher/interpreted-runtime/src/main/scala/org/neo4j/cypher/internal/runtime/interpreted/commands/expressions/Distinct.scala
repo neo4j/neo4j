@@ -33,8 +33,6 @@ case class Distinct(innerAggregator: AggregationExpression, expression: Expressi
     case _                            => f(Distinct(innerAggregator, expression.rewrite(f)))
   }
 
-  override def symbolTableDependencies: Set[String] = innerAggregator.symbolTableDependencies ++ expression.symbolTableDependencies
-
   override def arguments: Seq[Expression] = Seq(expression, innerAggregator)
 
   override def children: Seq[AstNode[_]] = Seq(expression, innerAggregator)

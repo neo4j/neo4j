@@ -26,7 +26,6 @@ import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
 
 case class ToBooleanFunction(a: Expression) extends NullInNullOutExpression(a) {
-  override def symbolTableDependencies: Set[String] = a.symbolTableDependencies
 
   override def arguments: Seq[Expression] = Seq(a)
 

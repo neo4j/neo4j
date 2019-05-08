@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.{Pattern, ShortestPath, SingleNode, _}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.{ShortestPath, SingleNode, _}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, Expander, KernelPredicate}
 import org.neo4j.cypher.internal.v4_0.util.{NonEmptyList, ShortestPathCommonEndNodesForbiddenException, SyntaxException}
@@ -38,8 +38,6 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
                                   withFallBack: Boolean = false,
                                   disallowSameNode: Boolean = true) extends Expression {
 
-  val pathPattern: Seq[Pattern] = Seq(shortestPathPattern)
-  val pathVariables = Set(shortestPathPattern.pathName, shortestPathPattern.relIterator.getOrElse(""))
   val predicates = perStepPredicates ++ fullPathPredicates
 
   def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
@@ -114,9 +112,6 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
   override def arguments: Seq[Expression] = Seq.empty
 
   override def rewrite(f: Expression => Expression): Expression = f(ShortestPathExpression(shortestPathPattern.rewrite(f)))
-
-  override def symbolTableDependencies: Set[String] = shortestPathPattern.symbolTableDependencies + shortestPathPattern.left
-    .name + shortestPathPattern.right.name
 
   private def propertyExistsExpander(name: String) = new KernelPredicate[PropertyContainer] {
     override def test(t: PropertyContainer): Boolean = {

@@ -43,5 +43,4 @@ abstract class AggregationWithInnerExpression(inner:Expression) extends Aggregat
 
   def arguments: Seq[Expression] = Seq(inner)
 
-  override def symbolTableDependencies: Set[String] = inner.symbolTableDependencies
 }

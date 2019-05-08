@@ -36,6 +36,4 @@ case class PrefixSeekRangeExpression(range: PrefixRange[Expression]) extends Exp
   override def arguments: Seq[Expression] = Seq.empty
 
   override def children: Seq[AstNode[_]] = range.arguments
-
-  override def symbolTableDependencies: Set[String] = Set.empty
 }

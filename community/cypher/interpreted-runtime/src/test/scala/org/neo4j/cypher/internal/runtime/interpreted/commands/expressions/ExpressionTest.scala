@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{CoercedPredicate, Not, True}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.runtime.interpreted.commands.{AstNode, ReturnItem}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
@@ -72,17 +72,6 @@ class ExpressionTest extends CypherFunSuite {
 
     //THEN
     aggregates.toList should equal( List(Collect(Property(Variable("n"), PropertyKey("bar")))))
-  }
-
-  test("should_find_inner_aggregations2") {
-    //GIVEN
-    val r = ReturnItem(Avg(Property(Variable("a"), PropertyKey("age"))), "avg(a.age)")
-
-    //WHEN
-    val aggregates = r.expression.filter(e => e.isInstanceOf[AggregationExpression])
-
-    //THEN
-    aggregates.toList should equal( List(Avg(Property(Variable("a"), PropertyKey("age")))))
   }
 
   test("should_handle_rewriting_to_non_predicates") {
@@ -139,8 +128,6 @@ class TestExpression extends Expression {
   override def children: Seq[AstNode[_]] = Seq.empty
 
   override def rewrite(f: Expression => Expression): Expression = null
-
-  override def symbolTableDependencies: Set[String] = Set()
 
   override def apply(v1: ExecutionContext, state: QueryState): AnyValue = null
 }

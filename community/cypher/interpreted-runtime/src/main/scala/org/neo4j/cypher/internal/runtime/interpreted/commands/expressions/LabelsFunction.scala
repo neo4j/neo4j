@@ -35,6 +35,4 @@ case class LabelsFunction(nodeExpr: Expression) extends NullInNullOutExpression(
   override def arguments: Seq[Expression] = Seq(nodeExpr)
 
   override def children: Seq[AstNode[_]] = Seq(nodeExpr)
-
-  override def symbolTableDependencies: Set[String] = nodeExpr.symbolTableDependencies
 }

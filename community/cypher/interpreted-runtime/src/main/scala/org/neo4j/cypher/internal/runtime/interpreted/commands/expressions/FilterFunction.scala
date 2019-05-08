@@ -60,5 +60,4 @@ case class FilterFunction(collection: Expression,
 
   def arguments: Seq[Expression] = Seq(collection)
 
-  def symbolTableDependencies: Set[String] = symbolTableDependencies(collection, predicate, innerVariableName)
 }

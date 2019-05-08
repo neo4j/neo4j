@@ -28,10 +28,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthExpandPipeTest.createVarLengthPredicate
-import org.neo4j.cypher.internal.runtime.interpreted.symbols.SymbolTable
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -51,7 +49,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]] {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode))
     })
@@ -80,7 +78,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]] {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode, "b" -> endNode))
     })
@@ -109,7 +107,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]] {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode, "b" -> newMockedNode(42)))
     })
@@ -135,7 +133,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTInteger)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]] {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode, "b" -> 42))
     })
@@ -161,7 +159,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]] {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(
         row("a" -> startNode, "b" -> newMockedNode(42)),
@@ -199,7 +197,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode))
     })
@@ -237,7 +235,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode, "b" -> endNode))
     })
@@ -275,7 +273,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
+    val left = mock[Pipe]
     val badNode: NodeValue = newMockedNode(42)
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode, "b" -> badNode))
@@ -309,7 +307,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode))
     })
@@ -353,7 +351,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode, "b" -> endNode))
     })
@@ -391,7 +389,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
+    val left = mock[Pipe]
     val badNode = newMockedNode(42)
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode, "b" -> badNode))
@@ -424,7 +422,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode))
     })
@@ -463,7 +461,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode, "b" -> endNode))
     })
@@ -498,7 +496,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode))
     })
@@ -540,7 +538,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     )
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b"-> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode, "b" -> endNode))
     })
@@ -583,7 +581,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     )
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> firstNode))
     })
@@ -635,7 +633,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     )
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> firstNode, "b" -> endNode))
     })
@@ -672,7 +670,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode))
     })
@@ -714,7 +712,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     replyWithMap(query, nodeMapping.withDefaultValue(Seq.empty))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> firstNode))
     })
@@ -763,7 +761,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode))
     })
@@ -799,7 +797,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    val right = mock[Pipe]
     when(right.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("b" -> endNode))
     })
@@ -835,7 +833,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode))
     })
@@ -871,7 +869,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    val right = mock[Pipe]
     when(right.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row( "b" -> endNode))
     })
@@ -910,7 +908,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode))
     })
@@ -945,7 +943,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    val right = mock[Pipe]
     when(right.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("b" -> endNode))
     })
@@ -980,7 +978,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode))
     })
@@ -1015,7 +1013,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    val right = mock[Pipe]
     when(right.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("b" -> endNode))
     })
@@ -1035,7 +1033,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val query = mock[QueryContext]
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val source = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
+    val source = mock[Pipe]
     when(source.createResults(queryState)).thenReturn(Iterator(row("a" -> Values.NO_VALUE)))
 
     // when
@@ -1053,7 +1051,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val query = mock[QueryContext]
     val queryState = QueryStateHelper.emptyWith(query = query)
 
-    val source = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
+    val source = mock[Pipe]
     val toNode = newMockedNode(1)
     when(source.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]] {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> Values.NO_VALUE, "b" -> toNode))
@@ -1115,10 +1113,6 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     })
   }
 
-  private def newMockedPipe(symbolTable: SymbolTable): Pipe = {
-    val pipe = mock[Pipe]
-    pipe
-  }
 }
 
 object VarLengthExpandPipeTest {

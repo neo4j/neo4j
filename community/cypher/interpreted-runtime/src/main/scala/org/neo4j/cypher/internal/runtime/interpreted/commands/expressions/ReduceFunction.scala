@@ -59,6 +59,4 @@ case class ReduceFunction(collection: Expression,
 
   override def children: Seq[Expression] = Seq(collection, expression, init)
 
-  override def symbolTableDependencies: Set[String] =
-    (collection.symbolTableDependencies ++ expression.symbolTableDependencies ++ init.symbolTableDependencies) - innerVariableName - accVariableName
 }

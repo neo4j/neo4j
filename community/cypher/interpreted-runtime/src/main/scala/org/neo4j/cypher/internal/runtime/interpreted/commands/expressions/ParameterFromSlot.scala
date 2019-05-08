@@ -35,6 +35,4 @@ case class ParameterFromSlot(offset: Int, parameterName: String) extends Express
   override def arguments: Seq[Expression] = Seq.empty
 
   override def children: Seq[AstNode[_]] = Seq.empty
-
-  override def symbolTableDependencies: Set[String] = Set()
 }

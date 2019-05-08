@@ -68,7 +68,6 @@ class And(val a: Predicate, val b: Predicate) extends Predicate {
     case _          => false
   }
 
-  override def symbolTableDependencies: Set[String] = a.symbolTableDependencies ++ b.symbolTableDependencies
 }
 
 @deprecated("Use Ands (plural) instead")

@@ -26,8 +26,6 @@ import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values._
 
 case class ToFloatFunction(a: Expression) extends NullInNullOutExpression(a) {
-  override def symbolTableDependencies: Set[String] = a.symbolTableDependencies
-
   override def arguments: Seq[Expression] = Seq(a)
 
   override def rewrite(f: Expression => Expression): Expression = f(ToFloatFunction(a.rewrite(f)))

@@ -34,6 +34,4 @@ case class RelationshipTypeFunction(relationship: Expression) extends NullInNull
   override def arguments: Seq[Expression] = Seq(relationship)
 
   override def children: Seq[AstNode[_]] = Seq(relationship)
-
-  override def symbolTableDependencies: Set[String] = relationship.symbolTableDependencies
 }

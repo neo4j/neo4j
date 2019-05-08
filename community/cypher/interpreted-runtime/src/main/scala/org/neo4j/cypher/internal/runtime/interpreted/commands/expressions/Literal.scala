@@ -36,7 +36,5 @@ case class Literal(v: Any) extends Expression {
 
   override def children: Seq[AstNode[_]] = Seq.empty
 
-  override def symbolTableDependencies: Set[String] = Set()
-
   override def toString: String = "Literal(" + v + ")"
 }

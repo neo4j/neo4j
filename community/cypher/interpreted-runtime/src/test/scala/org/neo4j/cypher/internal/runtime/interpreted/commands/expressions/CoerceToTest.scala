@@ -225,8 +225,6 @@ class CoerceToTest extends CypherFunSuite {
 
         override def children: Seq[AstNode[_]] = Seq.empty
 
-        override def symbolTableDependencies: Set[String] = Set.empty
-
         override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = in
 
       }

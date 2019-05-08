@@ -35,7 +35,6 @@ abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(a
 
   override def arguments: Seq[Expression] = Seq(arg)
 
-  override def symbolTableDependencies: Set[String] = arg.symbolTableDependencies
 }
 
 object StringFunction {
@@ -126,14 +125,6 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
   override def rewrite(f: Expression => Expression): Expression = f(
     SubstringFunction(orig.rewrite(f), start.rewrite(f), length.map(_.rewrite(f))))
 
-  override def symbolTableDependencies: Set[String] = {
-    val a = orig.symbolTableDependencies ++
-      start.symbolTableDependencies
-
-    val b = length.toIndexedSeq.flatMap(_.symbolTableDependencies.toIndexedSeq).toSet
-
-    a ++ b
-  }
 }
 
 case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Expression)
@@ -153,9 +144,6 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
   override def rewrite(f: Expression => Expression): Expression = f(
     ReplaceFunction(orig.rewrite(f), search.rewrite(f), replaceWith.rewrite(f)))
 
-  override def symbolTableDependencies: Set[String] = orig.symbolTableDependencies ++
-    search.symbolTableDependencies ++
-    replaceWith.symbolTableDependencies
 }
 
 case class SplitFunction(orig: Expression, separator: Expression)
@@ -171,8 +159,6 @@ case class SplitFunction(orig: Expression, separator: Expression)
   override def children: Seq[AstNode[_]] = arguments
 
   override def rewrite(f: Expression => Expression): Expression = f(SplitFunction(orig.rewrite(f), separator.rewrite(f)))
-
-  override def symbolTableDependencies: Set[String] = orig.symbolTableDependencies ++ separator.symbolTableDependencies
 }
 
 case class LeftFunction(orig: Expression, length: Expression)
@@ -187,8 +173,6 @@ case class LeftFunction(orig: Expression, length: Expression)
 
   override def rewrite(f: Expression => Expression): Expression = f(LeftFunction(orig.rewrite(f), length.rewrite(f)))
 
-  override def symbolTableDependencies: Set[String] = orig.symbolTableDependencies ++
-    length.symbolTableDependencies
 }
 
 case class RightFunction(orig: Expression, length: Expression)
@@ -203,6 +187,4 @@ case class RightFunction(orig: Expression, length: Expression)
 
   override def rewrite(f: Expression => Expression): Expression = f(RightFunction(orig.rewrite(f), length.rewrite(f)))
 
-  override def symbolTableDependencies: Set[String] = orig.symbolTableDependencies ++
-    length.symbolTableDependencies
 }

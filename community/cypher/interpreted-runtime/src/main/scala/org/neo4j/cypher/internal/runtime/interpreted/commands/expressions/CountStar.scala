@@ -29,7 +29,5 @@ case class CountStar() extends AggregationExpression {
 
   override def arguments: Seq[Expression] = Seq.empty
 
-  override def symbolTableDependencies: Set[String] = Set.empty
-
   override def children: Seq[AstNode[_]] = Seq.empty
 }

@@ -33,6 +33,4 @@ case class Null() extends Expression {
   override def arguments: Seq[Expression] = Seq.empty
 
   override def children: Seq[AstNode[_]] = Seq.empty
-
-  override def symbolTableDependencies: Set[String] = Set()
 }

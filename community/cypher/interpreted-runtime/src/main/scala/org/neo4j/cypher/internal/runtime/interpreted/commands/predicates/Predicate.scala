@@ -24,6 +24,8 @@ import java.util.regex.Pattern
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.{CastSupport, IsList, IsMap}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
+import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.{CastSupport, IsList, IsMap}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AbstractCachedNodeProperty, Expression, Literal}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -63,9 +65,6 @@ abstract class CompositeBooleanPredicate extends Predicate {
   def predicates: NonEmptyList[Predicate]
 
   def shouldExitWhen: Boolean
-
-  override def symbolTableDependencies: Set[String] =
-    predicates.map(_.symbolTableDependencies).reduceLeft(_ ++ _)
 
   override def containsIsNull: Boolean = predicates.exists(_.containsIsNull)
 
@@ -113,7 +112,6 @@ case class Not(a: Predicate) extends Predicate {
   override def rewrite(f: Expression => Expression): Expression = f(Not(a.rewriteAsPredicate(f)))
   override def arguments: Seq[Expression] = Seq(a)
   override def children: Seq[AstNode[_]] = Seq(a)
-  override def symbolTableDependencies: Set[String] = a.symbolTableDependencies
 }
 
 case class Xor(a: Predicate, b: Predicate) extends Predicate {
@@ -131,8 +129,6 @@ case class Xor(a: Predicate, b: Predicate) extends Predicate {
   override def arguments: Seq[Expression] = Seq(a, b)
 
   override def children: Seq[AstNode[_]] = Seq(a, b)
-
-  override def symbolTableDependencies: Set[String] = a.symbolTableDependencies ++ b.symbolTableDependencies
 }
 
 case class IsNull(expression: Expression) extends Predicate {
@@ -146,7 +142,6 @@ case class IsNull(expression: Expression) extends Predicate {
   override def rewrite(f: Expression => Expression): Expression = f(IsNull(expression.rewrite(f)))
   override def arguments: Seq[Expression] = Seq(expression)
   override def children: Seq[AstNode[_]] = Seq(expression)
-  override def symbolTableDependencies: Set[String] = expression.symbolTableDependencies
 }
 
 case class True() extends Predicate {
@@ -156,7 +151,6 @@ case class True() extends Predicate {
   override def rewrite(f: Expression => Expression): Expression = f(this)
   override def arguments: Seq[Expression] = Seq.empty
   override def children: Seq[AstNode[_]] = Seq.empty
-  override def symbolTableDependencies: Set[String] = Set()
 }
 
 case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends Predicate {
@@ -187,8 +181,6 @@ case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends P
   override def arguments: Seq[Expression] = Seq(variable)
 
   override def children: Seq[AstNode[_]] = Seq(variable, propertyKey)
-
-  override def symbolTableDependencies: Set[String] = variable.symbolTableDependencies
 }
 
 case class CachedNodePropertyExists(cachedNodeProperty: Expression) extends Predicate {
@@ -214,8 +206,6 @@ case class CachedNodePropertyExists(cachedNodeProperty: Expression) extends Pred
   override def arguments: Seq[Expression] = Seq(cachedNodeProperty)
 
   override def children: Seq[AstNode[_]] = Seq(cachedNodeProperty)
-
-  override def symbolTableDependencies: Set[String] = cachedNodeProperty.symbolTableDependencies
 }
 
 trait StringOperator {
@@ -230,7 +220,6 @@ trait StringOperator {
   def compare(a: TextValue, b: TextValue): Boolean
   override def containsIsNull = false
   override def arguments: Seq[Expression] = Seq(lhs, rhs)
-  override def symbolTableDependencies: Set[String] = lhs.symbolTableDependencies ++ rhs.symbolTableDependencies
 }
 
 case class StartsWith(lhs: Expression, rhs: Expression) extends Predicate with StringOperator {
@@ -277,9 +266,6 @@ case class LiteralRegularExpression(lhsExpr: Expression, regexExpr: Literal)
   override def arguments: Seq[Expression] = Seq(lhsExpr, regexExpr)
 
   override def children: Seq[AstNode[_]] = Seq(lhsExpr, regexExpr)
-
-  override def symbolTableDependencies: Set[String] = lhsExpr.symbolTableDependencies ++ regexExpr.symbolTableDependencies
-
   override def toString = s"$lhsExpr =~ $regexExpr"
 }
 
@@ -308,8 +294,6 @@ case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)
   override def arguments: Seq[Expression] = Seq(lhsExpr, regexExpr)
 
   override def children: Seq[AstNode[_]] = Seq(lhsExpr, regexExpr)
-
-  override def symbolTableDependencies: Set[String] = lhsExpr.symbolTableDependencies ++ regexExpr.symbolTableDependencies
 }
 
 case class NonEmpty(collection: Expression) extends Predicate {
@@ -330,8 +314,6 @@ case class NonEmpty(collection: Expression) extends Predicate {
   override def arguments: Seq[Expression] = Seq(collection)
 
   override def children: Seq[AstNode[_]] = Seq(collection)
-
-  override def symbolTableDependencies: Set[String] = collection.symbolTableDependencies
 }
 
 case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
@@ -362,8 +344,6 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
 
   override def arguments: Seq[Expression] = Seq(entity)
 
-  override def symbolTableDependencies: Set[String] = entity.symbolTableDependencies ++ label.symbolTableDependencies
-
   override def containsIsNull = false
 }
 
@@ -382,8 +362,6 @@ case class CoercedPredicate(inner: Expression) extends Predicate {
   override def rewrite(f: Expression => Expression): Expression = f(CoercedPredicate(inner.rewrite(f)))
 
   override def containsIsNull = false
-
-  override def symbolTableDependencies: Set[String] = inner.symbolTableDependencies
 
   override def toString: String = inner.toString
 }

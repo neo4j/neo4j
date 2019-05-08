@@ -27,8 +27,6 @@ import org.neo4j.values._
 
 case class ToIntegerFunction(a: Expression) extends NullInNullOutExpression(a) {
 
-  override def symbolTableDependencies: Set[String] = a.symbolTableDependencies
-
   override def arguments: Seq[Expression] = Seq(a)
 
   override def rewrite(f: Expression => Expression): Expression = f(ToIntegerFunction(a.rewrite(f)))

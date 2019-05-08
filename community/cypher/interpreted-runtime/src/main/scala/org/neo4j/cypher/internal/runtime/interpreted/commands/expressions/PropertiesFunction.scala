@@ -34,7 +34,6 @@ case class PropertiesFunction(a: Expression) extends NullInNullOutExpression(a) 
       state.cursors.relationshipScanCursor,
       state.cursors.propertyCursor)
 
-  override def symbolTableDependencies: Set[String] = a.symbolTableDependencies
 
   override def arguments: Seq[Expression] = Seq(a)
 

@@ -36,7 +36,5 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
 
   override def children: Seq[AstNode[_]] = Seq(data)
 
-  override def symbolTableDependencies: Set[String] = data.symbolTableDependencies
-
   override def toString: String = "Point(" + data + ")"
 }

@@ -30,8 +30,6 @@ case class CoerceTo(expr: Expression, typ: CypherType) extends Expression {
 
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = coerce(expr(ctx, state), state, typ)
 
-  override def symbolTableDependencies: Set[String] = expr.symbolTableDependencies
-
   override def rewrite(f: Expression => Expression): Expression = f(CoerceTo(expr.rewrite(f), typ))
 
   override def arguments: Seq[Expression] = Seq(expr)

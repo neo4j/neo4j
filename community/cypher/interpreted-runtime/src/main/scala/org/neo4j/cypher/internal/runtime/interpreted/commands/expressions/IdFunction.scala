@@ -39,6 +39,4 @@ case class IdFunction(inner: Expression) extends Expression {
   override def arguments: Seq[Expression] = Seq(inner)
 
   override def children: Seq[AstNode[_]] = Seq(inner)
-
-  override def symbolTableDependencies: Set[String] = inner.symbolTableDependencies
 }

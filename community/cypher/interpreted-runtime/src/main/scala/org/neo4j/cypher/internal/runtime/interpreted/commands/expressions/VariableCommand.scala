@@ -27,5 +27,4 @@ abstract class VariableCommand(variableName: String) extends Expression {
 
   override def arguments: Seq[Expression] = Seq()
 
-  override def symbolTableDependencies: Set[String] = Set(variableName)
 }

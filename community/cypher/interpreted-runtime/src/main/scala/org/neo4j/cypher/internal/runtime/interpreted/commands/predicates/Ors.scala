@@ -43,5 +43,4 @@ case class Or(a: Predicate, b: Predicate) extends Predicate {
 
   override def children: Seq[AstNode[_]] = Seq(a, b)
 
-  override def symbolTableDependencies: Set[String] = a.symbolTableDependencies ++ b.symbolTableDependencies
 }

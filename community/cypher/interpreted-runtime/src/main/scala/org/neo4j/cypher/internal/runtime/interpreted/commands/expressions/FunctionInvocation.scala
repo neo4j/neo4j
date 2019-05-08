@@ -45,8 +45,6 @@ case class FunctionInvocation(signature: UserFunctionSignature, input: Array[Exp
   protected def call(query: QueryContext, argValues: Array[AnyValue]): AnyValue =
     query.callFunction(signature.id, argValues, signature.allowed)
 
-  override def symbolTableDependencies: Set[String] = input.flatMap(_.symbolTableDependencies).toSet
-
   override def toString = s"${signature.name}(${input.mkString(",")})"
 
   override def rewrite(f: Expression => Expression): Expression =

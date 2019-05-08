@@ -62,7 +62,5 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
 
   override def arguments: Seq[Expression] = Seq(mapExpr)
 
-  override def symbolTableDependencies: Set[String] = mapExpr.symbolTableDependencies
-
   override def toString = s"$mapExpr.${propertyKey.name}"
 }

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Inequ
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedRelType
-import org.neo4j.cypher.internal.runtime.interpreted.commands.{PathExtractorExpression, predicates, expressions => commandexpressions, values => commandvalues}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.{predicates, expressions => commandexpressions, values => commandvalues}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions._
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
@@ -96,13 +96,6 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case e: CachedNodeProperty => commandexpressions.CachedNodeProperty(e.nodeVariableName, getPropertyKey(e.propertyKey), e)
       case ParameterFromSlot(offset, name, _) => commandexpressions.ParameterFromSlot(offset, name)
       case e: ast.CaseExpression => caseExpression(id, e, self)
-      case e: ast.PatternExpression =>
-        val legacyPatterns = e.pattern.asLegacyPatterns(id, self)
-        commands.PathExpression(legacyPatterns, predicates.True(), PathExtractorExpression(legacyPatterns),
-                                allowIntroducingNewIdentifiers = false)
-      case e: ast.PatternComprehension => commands
-        .PathExpression(e.pattern.asLegacyPatterns(id, self), self.toCommandPredicate(id, e.predicate),
-                        self.toCommandExpression(id, e.projection), allowIntroducingNewIdentifiers = true)
       case e: ast.ShortestPathExpression => commandexpressions
         .ShortestPathExpression(e.pattern.asLegacyPatterns(id, None, self).head)
       case e: ast.HasLabels => hasLabels(id, e, self)
@@ -194,6 +187,8 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
         else
           commandexpressions.FunctionInvocation(signature, callArgumentCommands.toArray)
       case _: ast.MapProjection => throw new InternalException("should have been rewritten away")
+      case _: ast.PatternComprehension => throw new InternalException("should have been rewritten away")
+      case _: ast.PatternExpression => throw new InternalException("should have been rewritten away")
       case _: NestedPlanExpression => throw new InternalException("should have been rewritten away")
       case _: ast.Parameter => throw new InternalException("should have been rewritten away")
       case CoerceToPredicate(inner) => predicates.CoercedPredicate(self.toCommandExpression(id, inner))

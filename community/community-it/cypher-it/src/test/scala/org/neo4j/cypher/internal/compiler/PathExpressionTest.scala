@@ -25,11 +25,8 @@ import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateTestSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{NonEmpty, True}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedLabel
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
-import org.neo4j.values.storable.Values.{FALSE, TRUE}
 import org.neo4j.values.virtual.PathValue
 
 class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSupport {
@@ -64,45 +61,5 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
     result.startNode() should equal(fromNodeProxy(a))
     result.endNode() should equal(fromNodeProxy(c))
     result should have size 2
-  }
-
-  test("should handle expressions with labels") {
-    // GIVEN
-    val a = createNode()
-    val b = createLabeledNode("Foo")
-
-    relate(a, b)
-
-    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, SemanticDirection.OUTGOING, Map.empty)
-    val expression = NonEmpty(PathExpression(Seq(pattern), True(), PathExtractorExpression(Seq(pattern))))
-    val m = ExecutionContext.from("a" -> a)
-
-    // WHEN
-    val result = withQueryState { state =>
-      expression(m, state)
-    }
-
-    // THEN
-    result should equal(TRUE)
-  }
-
-  test("should return false if labels are missing") {
-    // GIVEN
-    val a = createNode()
-    val b = createLabeledNode("Bar")
-
-    relate(a, b)
-
-    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, SemanticDirection.OUTGOING, Map.empty)
-    val expression = NonEmpty(PathExpression(Seq(pattern), True(), PathExtractorExpression(Seq(pattern))))
-    val m = ExecutionContext.from("a" -> a)
-
-    // WHEN
-    val result = withQueryState { state =>
-      expression(m, state)
-    }
-
-    // THEN
-    result should equal(FALSE)
   }
 }

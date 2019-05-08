@@ -48,5 +48,4 @@ case class ContainerIndex(expression: Expression, index: Expression) extends Exp
 
   override def rewrite(f: Expression => Expression): Expression = f(ContainerIndex(expression.rewrite(f), index.rewrite(f)))
 
-  override def symbolTableDependencies: Set[String] = expression.symbolTableDependencies ++ index.symbolTableDependencies
 }

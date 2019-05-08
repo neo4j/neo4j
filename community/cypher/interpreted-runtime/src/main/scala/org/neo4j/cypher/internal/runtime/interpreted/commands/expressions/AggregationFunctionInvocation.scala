@@ -53,8 +53,6 @@ case class AggregationFunctionInvocation(signature: UserFunctionSignature, overr
 
   override def children: Seq[AstNode[_]] = arguments
 
-  override def symbolTableDependencies: Set[String] = arguments.flatMap(_.symbolTableDependencies).toSet
-
   protected def call(state: QueryState): UserDefinedAggregator =
     state.query.aggregateFunction(signature.id, signature.allowed)
 

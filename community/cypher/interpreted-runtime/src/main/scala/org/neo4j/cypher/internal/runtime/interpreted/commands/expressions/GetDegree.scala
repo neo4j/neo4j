@@ -49,6 +49,4 @@ case class GetDegree(node: Expression, typ: Option[KeyToken], direction: Semanti
   override def children: Seq[AstNode[_]] = Seq(node) ++ typ
 
   override def rewrite(f: Expression => Expression): Expression = f(GetDegree(node.rewrite(f), typ, direction))
-
-  override def symbolTableDependencies: Set[String] = node.symbolTableDependencies
 }

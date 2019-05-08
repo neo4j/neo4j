@@ -23,13 +23,12 @@ import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{CoercedPredicate, Predicate}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
-import org.neo4j.cypher.internal.runtime.interpreted.symbols.TypeSafe
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-abstract class Expression extends TypeSafe with AstNode[Expression] {
+abstract class Expression extends AstNode[Expression] {
 
   // WARNING: MUTABILITY IN IMMUTABLE CLASSES ...
   private var _owningPipe: Option[Pipe] = None
@@ -49,14 +48,6 @@ abstract class Expression extends TypeSafe with AstNode[Expression] {
     case e               => CoercedPredicate(e)
   }
 
-  def subExpressions: Seq[Expression] = {
-    def expandAll(e: AstNode[_]): Seq[AstNode[_]] = e.children ++ e.children.flatMap(expandAll)
-    expandAll(this).collect {
-      case e:Expression => e
-    }
-  }
-
-  // TODO check overrides here
 
   // Expressions that do not get anything in their context from this expression.
   def arguments: Seq[Expression]
@@ -88,8 +79,6 @@ case class CachedExpression(key:String, typ:CypherType) extends Expression {
 
   override def children: Seq[AstNode[_]] = Seq.empty
 
-  override def symbolTableDependencies: Set[String] = Set(key)
-
   override def toString: String = "Cached(%s of type %s)".format(key, typ)
 }
 
@@ -112,7 +101,6 @@ abstract class Arithmetics(left: Expression, right: Expression) extends Expressi
 
   override def arguments: Seq[Expression] = Seq(left, right)
 
-  override def symbolTableDependencies: Set[String] = left.symbolTableDependencies ++ left.symbolTableDependencies
 }
 
 trait ExtendedExpression extends Expression {

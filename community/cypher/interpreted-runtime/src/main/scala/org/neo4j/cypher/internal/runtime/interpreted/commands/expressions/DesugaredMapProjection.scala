@@ -60,7 +60,5 @@ case class DesugaredMapProjection(variable: VariableCommand, includeAllProps: Bo
 
   override def children: Seq[AstNode[_]] = Seq(variable) ++ arguments
 
-  override def symbolTableDependencies: Set[String] = literalExpressions.symboltableDependencies + variable.toString
-
   override def toString: String = s"$variable{.*, " + literalExpressions.mkString + "}"
 }

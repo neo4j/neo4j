@@ -36,7 +36,5 @@ case class LengthFunction(inner: Expression) extends NullInNullOutExpression(inn
 
   override def children: Seq[AstNode[_]] = Seq(inner)
 
-  override def symbolTableDependencies: Set[String] = inner.symbolTableDependencies
-
   override def toString = s"length($inner)"
 }

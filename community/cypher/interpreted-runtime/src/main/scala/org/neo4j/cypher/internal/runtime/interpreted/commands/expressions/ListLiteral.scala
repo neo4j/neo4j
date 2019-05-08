@@ -40,6 +40,4 @@ case class ListLiteral(override val arguments: Expression*) extends Expression {
   def rewrite(f: Expression => Expression): Expression = f(ListLiteral(arguments.map(f): _*))
 
   override def children: Seq[AstNode[_]] = arguments
-
-  override def symbolTableDependencies: Set[String] = arguments.flatMap(_.symbolTableDependencies).toSet
 }

@@ -44,7 +44,5 @@ case class LiteralMap(data: Map[String, Expression]) extends Expression with Gra
 
   override def children: Seq[AstNode[_]] = arguments
 
-  override def symbolTableDependencies: Set[String] = data.symboltableDependencies
-
   override def toString: String = "LiteralMap(" + data + ")"
 }

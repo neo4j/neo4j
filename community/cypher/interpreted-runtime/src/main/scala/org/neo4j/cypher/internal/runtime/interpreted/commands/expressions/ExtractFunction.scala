@@ -53,5 +53,4 @@ case class ExtractFunction(collection: Expression,
 
   def arguments: Seq[Expression] = Seq(collection)
 
-  def symbolTableDependencies: Set[String] = symbolTableDependencies(collection, expression, innerVariableName)
 }

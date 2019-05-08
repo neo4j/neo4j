@@ -271,7 +271,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
         val commandExpression = ShortestPathExpression(legacyShortestPath, commandPerStepPredicates,
                                                        commandFullPathPredicates, withFallBack, disallowSameNode)
-        ShortestPathPipe(source, commandExpression, withFallBack, disallowSameNode)(id = id)
+        ShortestPathPipe(source, commandExpression)(id = id)
 
       case UnwindCollection(_, variable, collection) =>
         UnwindPipe(source, buildExpression(collection), variable)(id = id)

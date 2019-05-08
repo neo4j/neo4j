@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 
 /*
 KeyTokens are things with name and id. KeyTokens makes it possible to look up the id
@@ -43,8 +45,6 @@ sealed abstract class KeyToken(typ: TokenType) extends Expression {
   override def arguments: Seq[Expression] = Seq.empty
 
   override def rewrite(f: Expression => Expression): KeyToken = f(this).asInstanceOf[KeyToken]
-
-  override def symbolTableDependencies: Set[String] = Set.empty
 
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = throw new NotImplementedError()
 }

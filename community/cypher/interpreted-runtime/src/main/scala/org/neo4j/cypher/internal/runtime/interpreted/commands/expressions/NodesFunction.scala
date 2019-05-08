@@ -35,6 +35,4 @@ case class NodesFunction(path: Expression) extends NullInNullOutExpression(path)
   override def arguments: Seq[Expression] = Seq(path)
 
   override def children: Seq[AstNode[_]] = Seq(path)
-
-  override def symbolTableDependencies: Set[String] = path.symbolTableDependencies
 }

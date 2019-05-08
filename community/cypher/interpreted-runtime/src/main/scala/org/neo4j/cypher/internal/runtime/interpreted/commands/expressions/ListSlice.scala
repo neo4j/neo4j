@@ -72,5 +72,4 @@ case class ListSlice(collection: Expression, from: Option[Expression], to: Optio
   override def rewrite(f: Expression => Expression): Expression =
     f(ListSlice(collection.rewrite(f), from.map(_.rewrite(f)), to.map(_.rewrite(f))))
 
-  override def symbolTableDependencies: Set[String] = arguments.flatMap(_.symbolTableDependencies).toSet
 }
