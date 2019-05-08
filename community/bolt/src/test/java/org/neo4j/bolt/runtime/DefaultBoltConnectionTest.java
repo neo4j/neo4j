@@ -57,6 +57,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -72,6 +73,7 @@ public class DefaultBoltConnectionTest
     private final BoltConnectionLifetimeListener connectionListener = mock( BoltConnectionLifetimeListener.class );
     private final BoltConnectionQueueMonitor queueMonitor = mock( BoltConnectionQueueMonitor.class );
     private final EmbeddedChannel channel = new EmbeddedChannel();
+    private final PackOutput output = mock( PackOutput.class );
 
     private BoltChannel boltChannel;
     private BoltStateMachine stateMachine;
@@ -248,7 +250,7 @@ public class DefaultBoltConnectionTest
         connection.stop();
 
         verify( stateMachine ).markForTermination();
-        verify( queueMonitor ).enqueued( eq( connection ), ArgumentMatchers.any( Job.class ) );
+        verify( queueMonitor ).enqueued( ArgumentMatchers.eq( connection ), any( Job.class ) );
     }
 
     @Test
@@ -260,7 +262,7 @@ public class DefaultBoltConnectionTest
 
         connection.processNextBatch();
 
-        verify( queueMonitor ).enqueued( eq( connection ), ArgumentMatchers.any( Job.class ) );
+        verify( queueMonitor ).enqueued( ArgumentMatchers.eq( connection ), any( Job.class ) );
         verify( stateMachine ).markForTermination();
         verify( stateMachine ).close();
     }
@@ -274,7 +276,7 @@ public class DefaultBoltConnectionTest
         {
             connection.handleSchedulingError( new RejectedExecutionException() );
             return null;
-        } ).when( queueMonitor ).enqueued( eq( connection ), ArgumentMatchers.any( Job.class ) );
+        } ).when( queueMonitor ).enqueued( ArgumentMatchers.eq( connection ), any( Job.class ) );
 
         connection.stop();
 
@@ -401,6 +403,22 @@ public class DefaultBoltConnectionTest
         verify( stateMachine ).close();
     }
 
+    @Test
+    public void shouldFlushErrorAndCloseConnectionIfFailedToSchedule() throws Throwable
+    {
+        // Given
+        BoltConnection connection = newConnection();
+
+        // When
+        RejectedExecutionException error = new RejectedExecutionException( "Failed to schedule" );
+        connection.handleSchedulingError( error );
+
+        // Then
+        verify( stateMachine ).markFailed( argThat( e -> e.status().equals( Status.Request.NoThreadsAvailable ) ) );
+        verify( stateMachine ).close();
+        verify( output ).flush();
+    }
+
     private DefaultBoltConnection newConnection()
     {
         return newConnection( 10 );
@@ -408,7 +426,7 @@ public class DefaultBoltConnectionTest
 
     private DefaultBoltConnection newConnection( int maxBatchSize )
     {
-        return new DefaultBoltConnection( boltChannel, mock( PackOutput.class ), stateMachine, logService, connectionListener, queueMonitor, maxBatchSize,
+        return new DefaultBoltConnection( boltChannel, output, stateMachine, logService, connectionListener, queueMonitor, maxBatchSize,
                 mock( BoltConnectionMetricsMonitor.class ), Clock.systemUTC() );
     }
 
