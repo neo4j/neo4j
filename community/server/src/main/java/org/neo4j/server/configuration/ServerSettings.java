@@ -47,7 +47,6 @@ import static org.neo4j.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.configuration.Settings.PATH;
 import static org.neo4j.configuration.Settings.STRING;
 import static org.neo4j.configuration.Settings.STRING_LIST;
-import static org.neo4j.configuration.Settings.TRUE;
 import static org.neo4j.configuration.Settings.buildSetting;
 import static org.neo4j.configuration.Settings.derivedSetting;
 import static org.neo4j.configuration.Settings.range;
@@ -197,7 +196,4 @@ public class ServerSettings implements LoadableConfig
     @Internal
     public static final Setting<Boolean> wadl_enabled = setting( "unsupported.dbms.wadl_generation_enabled", BOOLEAN,
             FALSE );
-
-    @Internal
-    public static final Setting<Boolean> jmx_module_enabled = setting( "unsupported.dbms.jmx_module.enabled", BOOLEAN, TRUE );
 }
