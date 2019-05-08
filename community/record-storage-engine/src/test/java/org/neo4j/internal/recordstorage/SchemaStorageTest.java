@@ -29,6 +29,7 @@ import org.mockito.Mockito;
 import java.io.IOException;
 import java.util.stream.Stream;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -164,6 +165,8 @@ public class SchemaStorageTest
         when( tokenNameLookup.labelGetName( LABEL1_ID ) ).thenReturn( LABEL1 );
         when( tokenNameLookup.propertyKeyGetName( PROP1_ID ) ).thenReturn( PROP1 );
         when( tokenNameLookup.relationshipTypeGetName( TYPE1_ID ) ).thenReturn( TYPE1 );
+        when( tokenNameLookup.entityTokensGetNames( EntityType.NODE, new int[]{LABEL1_ID} ) ).thenReturn( new String[]{LABEL1} );
+        when( tokenNameLookup.entityTokensGetNames( EntityType.RELATIONSHIP, new int[]{TYPE1_ID} ) ).thenReturn( new String[]{TYPE1} );
         return tokenNameLookup;
     }
 
