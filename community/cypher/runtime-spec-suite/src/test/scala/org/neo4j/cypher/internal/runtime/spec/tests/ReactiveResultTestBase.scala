@@ -22,12 +22,9 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.runtime.spec.{Edition, LogicalQueryBuilder, RuntimeTestSuite}
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.graphdb
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.{longValue, stringValue}
-
-import scala.collection.mutable.ArrayBuffer
 
 abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                                  runtime: CypherRuntime[CONTEXT])
@@ -37,9 +34,9 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
     //Given
     val subscriber = new TestSubscriber
     val result = runtimeResult(subscriber,
-                            Array("1", 1),
-                            Array("2", 2),
-                            Array("3", 3))
+                               Array("1", 1),
+                               Array("2", 2),
+                               Array("3", 3))
 
 
     //request 1
@@ -79,7 +76,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
         List(longValue(1)),
         List(longValue(2)),
         List(longValue(3)))
-    )
+      )
     subscriber.isCompleted shouldBe true
   }
 
@@ -101,7 +98,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
       List(
         List(longValue(1)),
         List(longValue(2)))
-    )
+      )
     subscriber.isCompleted shouldBe false
   }
 
@@ -124,7 +121,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
         List(longValue(1)),
         List(longValue(2)),
         List(longValue(3)))
-    )
+      )
     subscriber.isCompleted shouldBe true
   }
 
@@ -158,41 +155,4 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
 
     execute(logicalQuery, runtime, inputValues(data: _*), subscriber)
   }
-
-  class TestSubscriber extends QuerySubscriber {
-
-    private val records = ArrayBuffer.empty[List[AnyValue]]
-    private var current: Array[AnyValue] = _
-    private var done = false
-
-    override def onResult(numberOfFields: Int): Unit = {
-      current = new Array[AnyValue](numberOfFields)
-    }
-
-    override def onRecord(): Unit = {}
-
-    override def onField(offset: Int, value: AnyValue): Unit = {
-      current(offset) = value
-    }
-
-    override def onRecordCompleted(): Unit = {
-      records.append(current.toList)
-    }
-
-    override def onError(throwable: Throwable): Unit = {
-
-    }
-
-    override def onResultCompleted(statistics: graphdb.QueryStatistics): Unit = {
-      done = true
-    }
-
-    def isCompleted: Boolean = done
-
-    def lastSeen: Seq[AnyValue] = current
-
-    //convert to list since nested array equality doesn't work nicely in tests
-    def allSeen: Seq[Seq[AnyValue]] = records
-  }
-
 }
