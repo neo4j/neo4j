@@ -752,6 +752,21 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     }
   }
 
+  test("should solve pattern comprehensions for ForeachApply") {
+    val q =
+      """
+        |FOREACH (num IN [reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)] |
+        |  CREATE ({foo: num}) )
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case EmptyResult(
+                       ForeachApply(
+                                   RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _, _),
+      _, _, _
+      )) => ()
+    }
+  }
 
   private def containsArgumentOnly(queryGraph: QueryGraph): Boolean =
     queryGraph.argumentIds.nonEmpty && queryGraph.patternNodes.isEmpty && queryGraph.patternRelationships.isEmpty

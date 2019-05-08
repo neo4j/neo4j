@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProducer, PatternExpressionSolver, mergeUniqueIndexSeekLeafPlanner}
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProducer, mergeUniqueIndexSeekLeafPlanner}
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.expressions.{ContainerIndex, PathExpression, Variable}
@@ -70,14 +70,9 @@ case object PlanUpdates extends UpdatesPlanner {
     pattern match {
       //FOREACH
       case foreach: ForeachPattern =>
-        val solver = PatternExpressionSolver.solverFor(source, interestingOrder, context)
-        val newExpression = solver.solve(foreach.expression)
-        val updatedSource = solver.rewrittenPlan()
-
-        val innerLeaf = context.logicalPlanProducer
-          .planArgument(Set.empty, Set.empty, updatedSource.availableSymbols + foreach.variable, context)
+        val innerLeaf = context.logicalPlanProducer.planArgument(Set.empty, Set.empty, source.availableSymbols + foreach.variable, context)
         val innerUpdatePlan = planAllUpdatesRecursively(foreach.innerUpdates, innerLeaf)
-        context.logicalPlanProducer.planForeachApply(updatedSource, innerUpdatePlan, foreach, context, newExpression)
+        context.logicalPlanProducer.planForeachApply(source, innerUpdatePlan, foreach, context, interestingOrder, foreach.expression)
 
       //CREATE ()
       //CREATE (a)-[:R]->(b)
