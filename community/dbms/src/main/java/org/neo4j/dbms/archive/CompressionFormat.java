@@ -84,6 +84,15 @@ public enum CompressionFormat
     public abstract OutputStream compress( OutputStream stream ) throws IOException;
     public abstract InputStream decompress( InputStream stream ) throws IOException;
 
+    /**
+     * @return {@code true} if the given {@link InputStream} is <em>directly</em> a compressed input stream of this format. With "directly" meaning that the
+     * compressed stream is not wrapped in other streams, like buffered or filtering input streams.
+     */
+    public boolean isFormat( InputStream stream )
+    {
+        return (this == ZSTD && stream instanceof ZstdInputStream) || (this == GZIP && stream instanceof GZIPInputStream);
+    }
+
     public static OutputStream compress( ThrowingSupplier<OutputStream, IOException> streamSupplier ) throws IOException
     {
         OutputStream sink = streamSupplier.get();

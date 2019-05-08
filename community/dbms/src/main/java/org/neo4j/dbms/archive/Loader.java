@@ -31,6 +31,7 @@ import java.io.PrintStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -141,31 +142,26 @@ public class Loader
 
     private ArchiveInputStream openArchiveIn( Path archive ) throws IOException, IncorrectFormat
     {
-        InputStream input = Files.newInputStream( archive );
-        InputStream decompressor;
         try
         {
-            decompressor = CompressionFormat.GZIP.decompress( input );
-        }
-        catch ( IOException e )
-        {
-            input.close(); // Reopen to reset file position.
-            input = Files.newInputStream( archive );
-            try
+            InputStream decompressor = CompressionFormat.decompress( () -> Files.newInputStream( archive ) );
+
+            if ( CompressionFormat.ZSTD.isFormat( decompressor ) )
             {
-                decompressor = CompressionFormat.ZSTD.decompress( input );
                 // Important: Only the ZSTD compressed archives have any archive metadata.
                 readArchiveMetadata( decompressor );
             }
-            catch ( IOException ex )
-            {
-                input.close();
-                ex.addSuppressed( e );
-                throw new IncorrectFormat( archive, ex );
-            }
-        }
 
-        return new TarArchiveInputStream( decompressor );
+            return new TarArchiveInputStream( decompressor );
+        }
+        catch ( NoSuchFileException ioe )
+        {
+            throw ioe;
+        }
+        catch ( IOException e )
+        {
+            throw new IncorrectFormat( archive, e );
+        }
     }
 
     /**
