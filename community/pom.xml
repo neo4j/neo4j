@@ -55,7 +55,6 @@
     <module>index</module>
     <module>kernel</module>
     <module>batch-insert</module>
-    <module>jmx</module>
     <module>lucene-index</module>
     <module>fulltext-index</module>
     <module>graph-algo</module>
