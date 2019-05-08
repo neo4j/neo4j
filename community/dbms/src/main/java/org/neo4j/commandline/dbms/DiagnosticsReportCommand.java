@@ -78,7 +78,7 @@ public class DiagnosticsReportCommand implements AdminCommand
 
     private final Path homeDir;
     private final Path configDir;
-    static final String[] DEFAULT_CLASSIFIERS = new String[]{"logs", "config", "plugins", "tree", "metrics", "threads", "env", "sysprop", "ps"};
+    static final String[] DEFAULT_CLASSIFIERS = new String[]{"logs", "config", "plugins", "tree", "metrics", "threads", "sysprop", "ps"};
 
     private JMXDumper jmxDumper;
     private boolean verbose;
@@ -115,7 +115,7 @@ public class DiagnosticsReportCommand implements AdminCommand
         DiagnosticsReporter reporter = createAndRegisterSources();
 
         Optional<Set<String>> classifiers = parseAndValidateArguments( args, reporter );
-        if ( !classifiers.isPresent() )
+        if ( classifiers.isEmpty() )
         {
             return;
         }
@@ -152,7 +152,7 @@ public class DiagnosticsReportCommand implements AdminCommand
         return NO_PID;
     }
 
-    private String getDefaultFilename() throws UnknownHostException
+    private static String getDefaultFilename() throws UnknownHostException
     {
         String hostName = InetAddress.getLocalHost().getHostName();
         String safeFilename = hostName.replaceAll( "[^a-zA-Z0-9._]+", "_" );
@@ -208,7 +208,7 @@ public class DiagnosticsReportCommand implements AdminCommand
         return Optional.of( classifiers );
     }
 
-    private void validateClassifiers( Set<String> availableClassifiers, Set<String> orphans ) throws IncorrectUsage
+    private static void validateClassifiers( Set<String> availableClassifiers, Set<String> orphans ) throws IncorrectUsage
     {
         for ( String classifier : orphans )
         {
@@ -219,7 +219,7 @@ public class DiagnosticsReportCommand implements AdminCommand
         }
     }
 
-    private void addDefaultClassifiers( Set<String> availableClassifiers, Set<String> orphans )
+    private static void addDefaultClassifiers( Set<String> availableClassifiers, Set<String> orphans )
     {
         for ( String classifier : DEFAULT_CLASSIFIERS )
         {
@@ -276,8 +276,6 @@ public class DiagnosticsReportCommand implements AdminCommand
             reporter.registerSource( "threads", jmx.threadDump() );
             reporter.registerSource( "heap", jmx.heapDump() );
             reporter.registerSource( "sysprop", jmx.systemProperties() );
-            reporter.registerSource( "env", jmx.environmentVariables() );
-            reporter.registerSource( "activetxs", jmx.listTransactions() );
         } );
     }
 
@@ -317,16 +315,12 @@ public class DiagnosticsReportCommand implements AdminCommand
             return "include a thread dump of the running instance";
         case "heap":
             return "include a heap dump";
-        case "env":
-            return "include a list of all environment variables";
         case "sysprop":
             return "include a list of java system properties";
         case "raft":
             return "include the raft log";
         case "ccstate":
             return "include the current cluster state";
-        case "activetxs":
-            return "include the output of dbms.listTransactions()";
         case "ps":
             return "include a list of running processes";
         default:

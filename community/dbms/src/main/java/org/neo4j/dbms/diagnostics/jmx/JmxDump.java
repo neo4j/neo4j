@@ -34,7 +34,6 @@ import java.lang.management.ThreadMXBean;
 import java.nio.file.Path;
 import java.util.Properties;
 import javax.management.InstanceNotFoundException;
-import javax.management.JMX;
 import javax.management.MBeanException;
 import javax.management.MBeanServerConnection;
 import javax.management.MalformedObjectNameException;
@@ -204,37 +203,5 @@ public class JmxDump
                 return 0;
             }
         };
-    }
-
-    public DiagnosticsReportSource environmentVariables()
-    {
-        return newReportsBeanSource( "env.prop", Reports::getEnvironmentVariables );
-    }
-
-    public DiagnosticsReportSource listTransactions()
-    {
-        return newReportsBeanSource( "listTransactions.txt", Reports::listTransactions );
-    }
-
-    private DiagnosticsReportSource newReportsBeanSource( String destination, ReportsInvoker reportsInvoker )
-    {
-        return DiagnosticsReportSources.newDiagnosticsString( destination, () ->
-        {
-            try
-            {
-                ObjectName name = new ObjectName( "org.neo4j:instance=kernel#0,name=Reports" );
-                Reports reportsBean = JMX.newMBeanProxy( mBeanServer, name, Reports.class );
-                return reportsInvoker.invoke( reportsBean );
-            }
-            catch ( MalformedObjectNameException ignored )
-            {
-            }
-            return "Unable to invoke ReportsBean";
-        } );
-    }
-
-    private interface ReportsInvoker
-    {
-        String invoke( Reports r );
     }
 }
