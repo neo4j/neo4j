@@ -30,7 +30,7 @@ abstract class BaseAcceptanceTest extends BaseFeatureTest {
   val featureToRun = ""
   val scenarioToRun = ""
 
-  val scenarios: Seq[Scenario] =  filterScenarios(allAcceptanceScenarios, featureToRun, scenarioToRun)
+  lazy val scenarios: Seq[Scenario] =  filterScenarios(BaseFeatureTestHolder.allAcceptanceScenarios, featureToRun, scenarioToRun)
 
   @Test
   def debugTokensNeedToBeEmpty(): Unit = {

@@ -22,23 +22,11 @@ package cypher.features
 import java.io.File
 import java.net.{URI, URL}
 
+import org.junit.jupiter.api.parallel.{Execution, ExecutionMode}
 import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
 
+@Execution(ExecutionMode.CONCURRENT)
 abstract class BaseFeatureTest {
-
-  // When running externally from e.g. TeamCity we will get a jar and can use the same procedure as for allTckScenarios
-  // When running locally we need to use the file system instead
-  def allAcceptanceScenarios: Seq[Scenario] = {
-    val packageURL: URL = classOf[BaseFeatureTest].getProtectionDomain.getCodeSource.getLocation
-    val resourcePath: String = "/acceptance/features"
-
-    if (packageURL.toString.contains("jar"))
-      CypherTCK.parseClasspathFeatures(resourcePath).flatMap(_.scenarios)
-    else {
-      val featuresURI: URI = new URL(packageURL.toString + resourcePath).toURI
-      CypherTCK.parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios)
-    }
-  }
 
   def filterScenarios(allScenarios: Seq[Scenario], featureToRun: String, scenarioToRun: String): Seq[Scenario] = {
     if (featureToRun.nonEmpty) {
@@ -51,5 +39,20 @@ abstract class BaseFeatureTest {
       allScenarios.filter(s => s.name.contains(scenarioToRun))
     } else
       allScenarios
+  }
+}
+
+object BaseFeatureTestHolder {
+  lazy val allTckScenarios: Seq[Scenario] = CypherTCK.allTckScenarios
+  lazy val allAcceptanceScenarios: Seq[Scenario] = {
+    val packageURL: URL = classOf[BaseFeatureTest].getProtectionDomain.getCodeSource.getLocation
+    val resourcePath: String = "/acceptance/features"
+
+    if (packageURL.toString.contains("jar"))
+      CypherTCK.parseClasspathFeatures(resourcePath).flatMap(_.scenarios)
+    else {
+      val featuresURI: URI = new URL(packageURL.toString + resourcePath).toURI
+      CypherTCK.parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios)
+    }
   }
 }

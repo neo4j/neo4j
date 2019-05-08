@@ -21,7 +21,7 @@ package cypher.features
 
 import org.junit.Assert.fail
 import org.junit.jupiter.api.Test
-import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
+import org.opencypher.tools.tck.api.Scenario
 
 abstract class BaseTCKTests extends BaseFeatureTest {
 
@@ -29,7 +29,7 @@ abstract class BaseTCKTests extends BaseFeatureTest {
   val featureToRun = ""
   val scenarioToRun = ""
 
-  val scenarios: Seq[Scenario] = filterScenarios(CypherTCK.allTckScenarios, featureToRun, scenarioToRun)
+  lazy val scenarios: Seq[Scenario] = filterScenarios(BaseFeatureTestHolder.allTckScenarios, featureToRun, scenarioToRun)
 
   @Test
   def debugTokensNeedToBeEmpty(): Unit = {
