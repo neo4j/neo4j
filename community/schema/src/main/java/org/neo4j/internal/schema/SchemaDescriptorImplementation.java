@@ -220,8 +220,10 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     @Override
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
-        return entityType + ":" + String.join( ", ", tokenNameLookup.entityTokensGetNames( entityType, entityTokens ) ) + "(" +
-                TokenIdPrettyPrinter.niceProperties( tokenNameLookup, propertyKeyIds ) + ")";
+        String prefix = entityType == RELATIONSHIP ? "-[" : "";
+        String suffix = entityType == RELATIONSHIP ? "]-" : "";
+        return prefix + ":" + String.join( ", ", tokenNameLookup.entityTokensGetNames( entityType, entityTokens ) ) + "(" +
+                TokenIdPrettyPrinter.niceProperties( tokenNameLookup, propertyKeyIds ) + ")" + suffix;
     }
 
     @Override
