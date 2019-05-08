@@ -20,6 +20,7 @@
 package org.neo4j.graphdb.factory.module;
 
 import java.util.function.Function;
+import java.util.function.LongFunction;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
@@ -57,6 +58,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
@@ -91,7 +93,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final Tracers tracers;
     private final GlobalProcedures globalProcedures;
     private final IOLimiter ioLimiter;
-    private final Factory<DatabaseAvailabilityGuard> databaseAvailabilityGuardFactory;
+    private final LongFunction<DatabaseAvailabilityGuard> databaseAvailabilityGuardFactory;
     private final SystemNanoClock clock;
     private final AccessCapability accessCapability;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
@@ -150,7 +152,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.extensionFactories = globalModule.getExtensionFactories();
         this.watcherServiceFactory = perEditionComponents.getWatcherServiceFactory();
         this.engineProviders = globalModule.getQueryEngineProviders();
-        this.databaseAvailabilityGuardFactory = () -> globalModule.getGlobalAvailabilityGuard().createDatabaseAvailabilityGuard( databaseId );
+        this.databaseAvailabilityGuardFactory = databaseTimeoutMillis -> databaseAvailabilityGuardFactory( databaseId, globalModule, databaseTimeoutMillis );
         this.databaseMigratorFactory = new DatabaseMigratorFactory( fs, globalConfig, logService, pageCache, scheduler );
         this.storageEngineFactory = globalModule.getStorageEngineFactory();
         this.contextBridge = globalModule.getThreadToTransactionBridge();
@@ -301,7 +303,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public Factory<DatabaseAvailabilityGuard> getDatabaseAvailabilityGuardFactory()
+    public LongFunction<DatabaseAvailabilityGuard> getDatabaseAvailabilityGuardFactory()
     {
         return databaseAvailabilityGuardFactory;
     }
@@ -388,5 +390,11 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public ThreadToStatementContextBridge getContextBridge()
     {
         return contextBridge;
+    }
+
+    private DatabaseAvailabilityGuard databaseAvailabilityGuardFactory( DatabaseId databaseId, GlobalModule globalModule, long databaseTimeoutMillis  )
+    {
+        Log guardLog = logService.getInternalLog( DatabaseAvailabilityGuard.class );
+        return new DatabaseAvailabilityGuard( databaseId, clock, guardLog, databaseTimeoutMillis, globalModule.getGlobalAvailabilityGuard() );
     }
 }

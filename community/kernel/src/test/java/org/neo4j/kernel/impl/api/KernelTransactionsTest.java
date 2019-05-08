@@ -144,10 +144,11 @@ public class KernelTransactionsTest
     private static DatabaseAvailabilityGuard databaseAvailabilityGuard;
 
     @Before
-    public void setUp()
+    public void setUp() throws Exception
     {
-        databaseAvailabilityGuard = new DatabaseAvailabilityGuard( new DatabaseId( DEFAULT_DATABASE_NAME ), clock, NullLog.getInstance(),
+        databaseAvailabilityGuard = new DatabaseAvailabilityGuard( new DatabaseId( DEFAULT_DATABASE_NAME ), clock, NullLog.getInstance(), 0,
                 mock( CompositeDatabaseAvailabilityGuard.class ) );
+        databaseAvailabilityGuard.init();
     }
 
     @Test

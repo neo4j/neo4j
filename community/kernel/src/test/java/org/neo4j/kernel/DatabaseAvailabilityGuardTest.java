@@ -20,6 +20,7 @@
 package org.neo4j.kernel;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.mockito.verification.VerificationMode;
 
@@ -33,8 +34,10 @@ import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DescriptiveAvailabilityRequirement;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.NullLog;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.time.Clocks;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -50,18 +53,63 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
+@ExtendWith( LifeExtension.class )
 class DatabaseAvailabilityGuardTest
 {
     private static final AvailabilityRequirement REQUIREMENT_1 = new DescriptiveAvailabilityRequirement( "Requirement 1" );
     private static final AvailabilityRequirement REQUIREMENT_2 = new DescriptiveAvailabilityRequirement( "Requirement 2" );
 
     private final Clock clock = Clocks.systemClock();
+    private final Log log = mock( Log.class );
+
+    @Inject
+    private LifeSupport life;
+
+    @Test
+    void notStartedGuardIsNotAvailable()
+    {
+        DatabaseAvailabilityGuard availabilityGuard = createAvailabilityGuard( clock, log );
+        assertFalse( availabilityGuard.isAvailable() );
+        assertFalse( availabilityGuard.isAvailable( 0 ) );
+        assertTrue( availabilityGuard.isShutdown() );
+    }
+
+    @Test
+    void shutdownAvailabilityGuardIsNotAvailable() throws Exception
+    {
+        DatabaseAvailabilityGuard availabilityGuard = getDatabaseAvailabilityGuard( clock, log );
+        assertTrue( availabilityGuard.isAvailable() );
+        assertFalse( availabilityGuard.isShutdown() );
+
+        availabilityGuard.stop();
+        availabilityGuard.shutdown();
+
+        assertFalse( availabilityGuard.isAvailable() );
+        assertTrue( availabilityGuard.isShutdown() );
+    }
+
+    @Test
+    void restartedAvailabilityGuardIsAvailable() throws Exception
+    {
+        DatabaseAvailabilityGuard availabilityGuard = getDatabaseAvailabilityGuard( clock, log );
+        assertTrue( availabilityGuard.isAvailable() );
+        assertFalse( availabilityGuard.isShutdown() );
+
+        availabilityGuard.stop();
+        availabilityGuard.shutdown();
+
+        availabilityGuard.init();
+        assertFalse( availabilityGuard.isShutdown() );
+        assertTrue( availabilityGuard.isAvailable() );
+
+        availabilityGuard.start();
+        assertFalse( availabilityGuard.isShutdown() );
+        assertTrue( availabilityGuard.isAvailable() );
+    }
 
     @Test
     void logOnAvailabilityChange()
     {
-        // Given
-        Log log = mock( Log.class );
         AvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
 
         // When starting out
@@ -103,7 +151,6 @@ class DatabaseAvailabilityGuardTest
     void givenAccessGuardWith2ConditionsWhenAwaitThenTimeoutAndReturnFalse()
     {
         // Given
-        Log log = mock( Log.class );
         DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
         databaseAvailabilityGuard.require( REQUIREMENT_2 );
@@ -119,7 +166,6 @@ class DatabaseAvailabilityGuardTest
     void givenAccessGuardWith2ConditionsWhenAwaitThenActuallyWaitGivenTimeout()
     {
         // Given
-        Log log = mock( Log.class );
         DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
         databaseAvailabilityGuard.require( REQUIREMENT_2 );
@@ -140,7 +186,6 @@ class DatabaseAvailabilityGuardTest
     void givenAccessGuardWith2ConditionsWhenGrantOnceAndAwaitThenTimeoutAndReturnFalse()
     {
         // Given
-        Log log = mock( Log.class );
         DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
         databaseAvailabilityGuard.require( REQUIREMENT_2 );
@@ -163,7 +208,6 @@ class DatabaseAvailabilityGuardTest
     void givenAccessGuardWith2ConditionsWhenGrantEachAndAwaitThenTrue()
     {
         // Given
-        Log log = mock( Log.class );
         DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
         databaseAvailabilityGuard.require( REQUIREMENT_2 );
@@ -179,7 +223,6 @@ class DatabaseAvailabilityGuardTest
     void givenAccessGuardWith2ConditionsWhenGrantTwiceAndDenyOnceAndAwaitThenTimeoutAndReturnFalse()
     {
         // Given
-        Log log = mock( Log.class );
         DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
         databaseAvailabilityGuard.require( REQUIREMENT_2 );
@@ -204,7 +247,6 @@ class DatabaseAvailabilityGuardTest
     void givenAccessGuardWith2ConditionsWhenGrantOnceAndAwaitAndGrantAgainThenReturnTrue()
     {
         // Given
-        Log log = mock( Log.class );
         final DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
         databaseAvailabilityGuard.require( REQUIREMENT_2 );
@@ -220,7 +262,6 @@ class DatabaseAvailabilityGuardTest
     void givenAccessGuardWithConditionWhenGrantThenNotifyListeners()
     {
         // Given
-        Log log = mock( Log.class );
         final DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
 
@@ -252,7 +293,6 @@ class DatabaseAvailabilityGuardTest
     void givenAccessGuardWithConditionWhenGrantAndDenyThenNotifyListeners()
     {
         // Given
-        Log log = mock( Log.class );
         final DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
 
@@ -286,7 +326,7 @@ class DatabaseAvailabilityGuardTest
     {
         // Given
         Clock clock = mock( Clock.class );
-        final DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, NullLog.getInstance() );
+        final DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
 
         // When
@@ -301,7 +341,6 @@ class DatabaseAvailabilityGuardTest
     void shouldExplainWhoIsBlockingAccess()
     {
         // Given
-        Log log = mock( Log.class );
         DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
 
         // When
@@ -317,8 +356,15 @@ class DatabaseAvailabilityGuardTest
         verify( log, mode ).info( anyString(), Mockito.<Object[]>any() );
     }
 
-    private static DatabaseAvailabilityGuard getDatabaseAvailabilityGuard( Clock clock, Log log )
+    private DatabaseAvailabilityGuard getDatabaseAvailabilityGuard( Clock clock, Log log )
     {
-        return new DatabaseAvailabilityGuard( new DatabaseId( DEFAULT_DATABASE_NAME ), clock, log, mock( CompositeDatabaseAvailabilityGuard.class ) );
+        DatabaseAvailabilityGuard availabilityGuard = createAvailabilityGuard( clock, log );
+        life.add( availabilityGuard );
+        return availabilityGuard;
+    }
+
+    private static DatabaseAvailabilityGuard createAvailabilityGuard( Clock clock, Log log )
+    {
+        return new DatabaseAvailabilityGuard( new DatabaseId( DEFAULT_DATABASE_NAME ), clock, log, 0, mock( CompositeDatabaseAvailabilityGuard.class ) );
     }
 }

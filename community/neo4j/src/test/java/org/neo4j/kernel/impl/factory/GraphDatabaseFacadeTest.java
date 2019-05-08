@@ -33,9 +33,9 @@ import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 
@@ -73,7 +73,7 @@ class GraphDatabaseFacadeTest
         Config config = Config.defaults();
         when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
 
-        graphDatabaseFacade = new GraphDatabaseFacade( database, contextBridge, config, DatabaseInfo.COMMUNITY, mock( CoreAPIAvailabilityGuard.class ) );
+        graphDatabaseFacade = new GraphDatabaseFacade( database, contextBridge, config, DatabaseInfo.COMMUNITY, mock( DatabaseAvailabilityGuard.class ) );
     }
 
     @Test

@@ -70,7 +70,7 @@ public class TransactionStateMachineV1SPITest
         DatabaseAvailabilityGuard guard = new DatabaseAvailabilityGuard(
                 new DatabaseId( DEFAULT_DATABASE_NAME ),
                 clock,
-                NullLog.getInstance(),
+                NullLog.getInstance(), 0,
                  mock( CompositeDatabaseAvailabilityGuard.class ) );
         DatabaseAvailabilityGuard databaseAvailabilityGuard = spy( guard );
         when( databaseAvailabilityGuard.isAvailable() ).then( invocation ->
@@ -129,7 +129,7 @@ public class TransactionStateMachineV1SPITest
     {
         CompositeDatabaseAvailabilityGuard compositeGuard = mock( CompositeDatabaseAvailabilityGuard.class );
         DatabaseAvailabilityGuard databaseAvailabilityGuard =
-                new DatabaseAvailabilityGuard( new DatabaseId( DEFAULT_DATABASE_NAME ), clock, NullLog.getInstance(), compositeGuard );
+                new DatabaseAvailabilityGuard( new DatabaseId( DEFAULT_DATABASE_NAME ), clock, NullLog.getInstance(), 0, compositeGuard );
         return createTxSpi( txIdStore, txAwaitDuration, databaseAvailabilityGuard, clock );
     }
 

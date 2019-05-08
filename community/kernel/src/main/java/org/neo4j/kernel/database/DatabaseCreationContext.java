@@ -20,6 +20,7 @@
 package org.neo4j.kernel.database;
 
 import java.util.function.Function;
+import java.util.function.LongFunction;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
@@ -111,7 +112,7 @@ public interface DatabaseCreationContext
 
     IOLimiter getIoLimiter();
 
-    Factory<DatabaseAvailabilityGuard> getDatabaseAvailabilityGuardFactory();
+    LongFunction<DatabaseAvailabilityGuard> getDatabaseAvailabilityGuardFactory();
 
     SystemNanoClock getClock();
 

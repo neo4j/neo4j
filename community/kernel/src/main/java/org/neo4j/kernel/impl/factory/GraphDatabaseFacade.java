@@ -79,6 +79,8 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
@@ -86,7 +88,6 @@ import org.neo4j.kernel.impl.core.GraphPropertiesProxy;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PlaceboTransaction;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
@@ -125,7 +126,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private final TransactionalContextFactory contextFactory;
     private final Config config;
     private final TokenHolders tokenHolders;
-    private final CoreAPIAvailabilityGuard availabilityGuard;
+    private final DatabaseAvailabilityGuard availabilityGuard;
     private final DatabaseInfo databaseInfo;
     private Function<LoginContext, LoginContext> loginContextTransformer = Function.identity();
 
@@ -136,7 +137,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     }
 
     public GraphDatabaseFacade( Database database, ThreadToStatementContextBridge txBridge, Config config, DatabaseInfo databaseInfo,
-            CoreAPIAvailabilityGuard availabilityGuard )
+            DatabaseAvailabilityGuard availabilityGuard )
     {
         this.database = requireNonNull( database );
         this.config = requireNonNull( config );
@@ -327,6 +328,10 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         {
             availabilityGuard.assertDatabaseAvailable();
             return database.getExecutionEngine().executeQuery( query, parameters, context, false );
+        }
+        catch ( UnavailableException ue )
+        {
+            throw new org.neo4j.graphdb.TransactionFailureException( ue.getMessage(), ue );
         }
         catch ( QueryExecutionKernelException e )
         {
@@ -580,7 +585,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             statementContext.bindTransactionToCurrentThread( kernelTx );
             return kernelTx;
         }
-        catch ( TransactionFailureException e )
+        catch ( UnavailableException | TransactionFailureException e )
         {
             throw new org.neo4j.graphdb.TransactionFailureException( e.getMessage(), e );
         }

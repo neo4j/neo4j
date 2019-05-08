@@ -177,7 +177,7 @@ public class GlobalModule
 
         globalLife.add( new VmPauseMonitorComponent( globalConfig, logService.getInternalLog( VmPauseMonitorComponent.class ), this.jobScheduler ) );
 
-        globalAvailabilityGuard = new CompositeDatabaseAvailabilityGuard( globalClock, logService );
+        globalAvailabilityGuard = new CompositeDatabaseAvailabilityGuard( globalClock );
         globalDependencies.satisfyDependency( globalAvailabilityGuard );
         globalLife.setLast( globalAvailabilityGuard );
 

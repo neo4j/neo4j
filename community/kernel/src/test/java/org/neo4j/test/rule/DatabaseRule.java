@@ -20,6 +20,7 @@
 package org.neo4j.test.rule;
 
 import java.util.function.Function;
+import java.util.function.LongFunction;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
@@ -445,12 +446,13 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public Factory<DatabaseAvailabilityGuard> getDatabaseAvailabilityGuardFactory()
+        public LongFunction<DatabaseAvailabilityGuard> getDatabaseAvailabilityGuardFactory()
         {
-            return () -> new DatabaseAvailabilityGuard(
+            return timeout -> new DatabaseAvailabilityGuard(
                     databaseId,
                     clock,
                     NullLog.getInstance(),
+                    timeout,
                     mock( CompositeDatabaseAvailabilityGuard.class ) );
         }
 

@@ -24,10 +24,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.internal.LogService;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.util.stream.Collectors.joining;
@@ -41,20 +38,12 @@ import static java.util.stream.Collectors.joining;
 public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter implements AvailabilityGuard
 {
     private final Clock clock;
-    private final LogService logService;
     private final CopyOnWriteArraySet<DatabaseAvailabilityGuard> guards = new CopyOnWriteArraySet<>();
     private volatile boolean started = true;
 
-    public CompositeDatabaseAvailabilityGuard( Clock clock, LogService logService )
+    public CompositeDatabaseAvailabilityGuard( Clock clock )
     {
         this.clock = clock;
-        this.logService = logService;
-    }
-
-    public DatabaseAvailabilityGuard createDatabaseAvailabilityGuard( DatabaseId databaseId )
-    {
-        Log guardLog = logService.getInternalLog( DatabaseAvailabilityGuard.class );
-        return new DatabaseAvailabilityGuard( databaseId, clock, guardLog, this );
     }
 
     void addDatabaseAvailabilityGuard( DatabaseAvailabilityGuard guard )

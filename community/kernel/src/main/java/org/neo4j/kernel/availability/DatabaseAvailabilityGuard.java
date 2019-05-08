@@ -22,15 +22,15 @@ package org.neo4j.kernel.availability;
 import java.time.Clock;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Listeners;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * Single database availability guard.
@@ -42,20 +42,22 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     private static final String DATABASE_AVAILABLE_MSG = "Fulfilling of requirement '%s' makes database %s available.";
     private static final String DATABASE_UNAVAILABLE_MSG = "Requirement `%s` makes database %s unavailable.";
 
-    private final AtomicInteger requirementCount = new AtomicInteger( 0 );
     private final Set<AvailabilityRequirement> blockingRequirements = new CopyOnWriteArraySet<>();
-    private final AtomicBoolean isShutdown = new AtomicBoolean( false );
+    private volatile boolean shutdown = true;
     private final Listeners<AvailabilityListener> listeners = new Listeners<>();
     private final DatabaseId databaseId;
     private final Clock clock;
     private final Log log;
+    private final long databaseTimeMillis;
     private final CompositeDatabaseAvailabilityGuard globalGuard;
 
-    public DatabaseAvailabilityGuard( DatabaseId databaseId, Clock clock, Log log, CompositeDatabaseAvailabilityGuard globalGuard )
+    public DatabaseAvailabilityGuard( DatabaseId databaseId, Clock clock, Log log, long databaseTimeMillis,
+            CompositeDatabaseAvailabilityGuard globalGuard )
     {
         this.databaseId = databaseId;
         this.clock = clock;
         this.log = log;
+        this.databaseTimeMillis = databaseTimeMillis;
         this.globalGuard = globalGuard;
         this.listeners.add( new LoggingAvailabilityListener( log, databaseId ) );
     }
@@ -63,7 +65,7 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     @Override
     public void init() throws Exception
     {
-        isShutdown.set( false );
+        shutdown = false;
     }
 
     @Override
@@ -81,36 +83,38 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     @Override
     public void require( AvailabilityRequirement requirement )
     {
+        if ( shutdown )
+        {
+            return;
+        }
         if ( !blockingRequirements.add( requirement ) )
         {
             return;
         }
 
-        synchronized ( requirementCount )
+        if ( blockingRequirements.size() == 1 )
         {
-            if ( requirementCount.getAndIncrement() == 0 && !isShutdown.get() )
-            {
-                log.info( DATABASE_UNAVAILABLE_MSG, requirement.description(), databaseId );
-                listeners.notify( AvailabilityListener::unavailable );
-            }
+            log.info( DATABASE_UNAVAILABLE_MSG, requirement.description(), databaseId.name() );
+            listeners.notify( AvailabilityListener::unavailable );
         }
     }
 
     @Override
     public void fulfill( AvailabilityRequirement requirement )
     {
+        if ( shutdown )
+        {
+            return;
+        }
         if ( !blockingRequirements.remove( requirement ) )
         {
             return;
         }
 
-        synchronized ( requirementCount )
+        if ( blockingRequirements.isEmpty() )
         {
-            if ( requirementCount.getAndDecrement() == 1 && !isShutdown.get() )
-            {
-                log.info( DATABASE_AVAILABLE_MSG, requirement.description(), databaseId );
-                listeners.notify( AvailabilityListener::available );
-            }
+            log.info( DATABASE_AVAILABLE_MSG, requirement.description(), databaseId.name() );
+            listeners.notify( AvailabilityListener::available );
         }
     }
 
@@ -120,18 +124,8 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     @Override
     public void shutdown()
     {
-        synchronized ( requirementCount )
-        {
-            if ( isShutdown.getAndSet( true ) )
-            {
-                return;
-            }
-
-            if ( requirementCount.get() == 0 )
-            {
-                listeners.notify( AvailabilityListener::unavailable );
-            }
-        }
+        shutdown = true;
+        blockingRequirements.clear();
     }
 
     @Override
@@ -152,6 +146,22 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
         return availability( millis ) == Availability.AVAILABLE;
     }
 
+    public void assertDatabaseAvailable() throws UnavailableException
+    {
+        Availability availability = availability( databaseTimeMillis );
+        switch ( availability )
+        {
+        case AVAILABLE:
+            return;
+        case SHUTDOWN:
+            throw new DatabaseShutdownException();
+        case UNAVAILABLE:
+            throwUnavailableException( databaseTimeMillis, availability );
+        default:
+            throw new IllegalStateException( "Unsupported availability mode: " + availability );
+        }
+    }
+
     @Override
     public void await( long millis ) throws UnavailableException
     {
@@ -160,7 +170,11 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
         {
             return;
         }
+        throwUnavailableException( millis, availability );
+    }
 
+    private void throwUnavailableException( long millis, Availability availability ) throws UnavailableException
+    {
         String description = (availability == Availability.UNAVAILABLE)
                 ? "Timeout waiting for database to become available and allow new transactions. Waited " +
                 Format.duration( millis ) + ". " + describe()
@@ -170,20 +184,11 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
 
     private Availability availability()
     {
-        if ( isShutdown.get() )
+        if ( shutdown )
         {
             return Availability.SHUTDOWN;
         }
-
-        int count = requirementCount.get();
-        if ( count == 0 )
-        {
-            return Availability.AVAILABLE;
-        }
-
-        assert count > 0;
-
-        return Availability.UNAVAILABLE;
+        return blockingRequirements.isEmpty() ? Availability.AVAILABLE : Availability.UNAVAILABLE;
     }
 
     private Availability availability( long millis )
@@ -230,10 +235,12 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     @Override
     public String describe()
     {
-        if ( blockingRequirements.size() > 0 || requirementCount.get() > 0 )
+        Set<AvailabilityRequirement> requirementSet = this.blockingRequirements;
+        int requirements = requirementSet.size();
+        if ( requirements > 0 )
         {
-            String causes = Iterables.join( ", ", Iterables.map( AvailabilityRequirement::description, blockingRequirements ) );
-            return requirementCount.get() + " reasons for blocking: " + causes + ".";
+            String causes = requirementSet.stream().map( AvailabilityRequirement::description ).collect( joining( ", " ) );
+            return requirements + " reasons for blocking: " + causes + ".";
         }
         return "No blocking components";
     }

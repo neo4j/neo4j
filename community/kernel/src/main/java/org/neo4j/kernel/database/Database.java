@@ -80,7 +80,6 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
 import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitorScheduler;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -272,11 +271,9 @@ public class Database extends LifecycleAdapter
         this.collectionsFactorySupplier = context.getCollectionsFactorySupplier();
         this.databaseMigratorFactory = context.getDatabaseMigratorFactory();
         this.storageEngineFactory = context.getStorageEngineFactory();
-        this.databaseAvailabilityGuard = context.getDatabaseAvailabilityGuardFactory().newInstance();
-
         long availabilityGuardTimeout = databaseConfig.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
-        CoreAPIAvailabilityGuard coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( databaseAvailabilityGuard, availabilityGuardTimeout );
-        this.databaseFacade = new GraphDatabaseFacade( this, context.getContextBridge(), databaseConfig, databaseInfo, coreAPIAvailabilityGuard );
+        this.databaseAvailabilityGuard = context.getDatabaseAvailabilityGuardFactory().apply( availabilityGuardTimeout );
+        this.databaseFacade = new GraphDatabaseFacade( this, context.getContextBridge(), databaseConfig, databaseInfo, databaseAvailabilityGuard );
     }
 
     @Override
