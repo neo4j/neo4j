@@ -192,7 +192,7 @@ public class ServerSettings implements LoadableConfig
     @Description( "Value of the HTTP Strict-Transport-Security (HSTS) response header. " +
                   "This header tells browsers that a webpage should only be accessed using HTTPS instead of HTTP. It is attached to every HTTPS response. " +
                   "Setting is not set by default so 'Strict-Transport-Security' header is not sent. " +
-                  "Value is expected to contain dirictives like 'max-age', 'includeSubDomains' and 'preload'." )
+                  "Value is expected to contain directives like 'max-age', 'includeSubDomains' and 'preload'." )
     public static final Setting<String> http_strict_transport_security = setting( "dbms.security.http_strict_transport_security", STRING, NO_DEFAULT );
 
     @Internal
