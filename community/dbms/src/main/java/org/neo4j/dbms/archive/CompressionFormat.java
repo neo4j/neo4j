@@ -22,12 +22,16 @@ package org.neo4j.dbms.archive;
 import com.github.luben.zstd.ZstdInputStream;
 import com.github.luben.zstd.ZstdOutputStream;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+
+import org.neo4j.function.ThrowingSupplier;
+import org.neo4j.io.IOUtils;
 
 public enum CompressionFormat
 {
@@ -79,4 +83,42 @@ public enum CompressionFormat
 
     public abstract OutputStream compress( OutputStream stream ) throws IOException;
     public abstract InputStream decompress( InputStream stream ) throws IOException;
+
+    public static OutputStream compress( ThrowingSupplier<OutputStream, IOException> streamSupplier ) throws IOException
+    {
+        OutputStream sink = streamSupplier.get();
+        try
+        {
+            return new BufferedOutputStream( ZSTD.compress( sink ) );
+        }
+        catch ( IOException ioe )
+        {
+            IOUtils.closeAllSilently( sink );
+            throw ioe;
+        }
+    }
+
+    public static InputStream decompress( ThrowingSupplier<InputStream, IOException> streamSupplier ) throws IOException
+    {
+        InputStream source = streamSupplier.get();
+        try
+        {
+            return ZSTD.decompress( source );
+        }
+        catch ( IOException ioe )
+        {
+            IOUtils.closeAllSilently( source );
+            source = streamSupplier.get();
+            try
+            {
+                return GZIP.decompress( source );
+            }
+            catch ( IOException e )
+            {
+                IOUtils.closeAllSilently( source );
+                ioe.addSuppressed( e );
+                throw ioe;
+            }
+        }
+    }
 }
