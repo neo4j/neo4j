@@ -40,6 +40,7 @@ import static java.util.Arrays.stream;
 
 public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllCallback
 {
+    private static final long MAXIMUM_WAIT_TIME_MILLIS = 30_000;
     private static final String KEY = "ThreadLeakageExtension";
     private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create( KEY );
     private final StacktraceHolderException stacktraceHolderException = new StacktraceHolderException();
@@ -67,17 +68,27 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
         List<String> leakedThreads = new ArrayList<>();
 
         final ThreadNamesCollection startupThreads = getStore( context ).remove( KEY, ThreadNamesCollection.class );
-        getActiveThreads().forEach( ( Thread thread ) ->
+        long startTime = System.currentTimeMillis();
+        for ( Thread thread : getActiveThreads() )
         {
             if ( !startupThreads.contains( getThreadID( thread ) ) )
             {
-                leakedThreads.add( format( "%s (ID:%d, Group:%s)\n%s\n",
-                        thread.getName(),
-                        thread.getId(),
-                        getThreadGroupName( thread ),
-                        StacktraceToString( thread.getStackTrace() ) ) );
+                long waitTimeForThread = MAXIMUM_WAIT_TIME_MILLIS - ( System.currentTimeMillis() - startTime );
+                if ( thread.isAlive() && waitTimeForThread > 0 )
+                {
+                    thread.join( waitTimeForThread );
+                }
+
+                if ( thread.isAlive() )
+                {
+                    leakedThreads.add( format( "%s (ID:%d, Group:%s)\n%s\n",
+                            thread.getName(),
+                            thread.getId(),
+                            getThreadGroupName( thread ),
+                            StacktraceToString( thread.getStackTrace() ) ) );
+                }
             }
-        } );
+        }
 
         if ( !leakedThreads.isEmpty() )
         {
