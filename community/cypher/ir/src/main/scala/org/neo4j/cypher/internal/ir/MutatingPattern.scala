@@ -94,6 +94,10 @@ case class CreatePattern(nodes: Seq[CreateNode], relationships: Seq[CreateRelati
     }
     builder.result()
   }
+
+  def mapProperties(f: Expression => Expression): CreatePattern = {
+    copy(nodes = nodes.map(_.mapProperties(f)), relationships = relationships.map(_.mapProperties(f)))
+  }
 }
 
 case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern with NoSymbols {

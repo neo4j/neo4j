@@ -742,26 +742,29 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(TriadicSelection(left, right, positivePredicate, sourceId, seenId, targetId), solved, providedOrders.get(left.id), context)
   }
 
-  def planCreate(inner: LogicalPlan, pattern: CreatePattern, context: LogicalPlanningContext): LogicalPlan = {
-
+  def planCreate(inner: LogicalPlan, pattern: CreatePattern, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(pattern))
-
-    annotate(plans.Create(inner, pattern.nodes, pattern.relationships), solved, providedOrders.get(inner.id), context)
+    val solver = PatternExpressionSolver.solverFor(inner, interestingOrder, context)
+    val rewrittenPattern = pattern.mapProperties(solver.solve(_))
+    val rewrittenInner = solver.rewrittenPlan()
+    annotate(plans.Create(rewrittenInner, rewrittenPattern.nodes, rewrittenPattern.relationships), solved, providedOrders.get(rewrittenInner.id), context)
   }
 
-  def planMergeCreateNode(inner: LogicalPlan, pattern: CreateNode, context: LogicalPlanningContext): LogicalPlan = {
-
+  def planMergeCreateNode(inner: LogicalPlan, pattern: CreateNode, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(CreatePattern(List(pattern), Nil)))
-
-    annotate(MergeCreateNode(inner, pattern.idName, pattern.labels, pattern.properties), solved, providedOrders.get(inner.id), context)
+    val solver = PatternExpressionSolver.solverFor(inner, interestingOrder, context)
+    val rewrittenPattern = pattern.mapProperties(solver.solve(_))
+    val rewrittenInner = solver.rewrittenPlan()
+    annotate(MergeCreateNode(rewrittenInner, rewrittenPattern.idName, rewrittenPattern.labels, rewrittenPattern.properties), solved, providedOrders.get(rewrittenInner.id), context)
   }
 
-  def planMergeCreateRelationship(inner: LogicalPlan, pattern: CreateRelationship, context: LogicalPlanningContext): LogicalPlan = {
+  def planMergeCreateRelationship(inner: LogicalPlan, pattern: CreateRelationship, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(CreatePattern(Nil, List(pattern))))
-
-    annotate(MergeCreateRelationship(inner, pattern.idName, pattern.startNode, pattern.relType,
-      pattern.endNode, pattern.properties), solved, providedOrders.get(inner.id), context)
+    val solver = PatternExpressionSolver.solverFor(inner, interestingOrder, context)
+    val rewrittenPattern = pattern.mapProperties(solver.solve(_))
+    val rewrittenInner = solver.rewrittenPlan()
+    annotate(MergeCreateRelationship(rewrittenInner, rewrittenPattern.idName, rewrittenPattern.startNode, rewrittenPattern.relType, rewrittenPattern.endNode, rewrittenPattern.properties), solved, providedOrders.get(rewrittenInner.id), context)
   }
 
   def planConditionalApply(lhs: LogicalPlan, rhs: LogicalPlan, idNames: Seq[String], context: LogicalPlanningContext): LogicalPlan = {

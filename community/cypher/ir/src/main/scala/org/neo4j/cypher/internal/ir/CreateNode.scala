@@ -26,4 +26,6 @@ import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LabelName}
   */
 case class CreateNode(idName: String, labels: Seq[LabelName], properties: Option[Expression]) {
   def dependencies: Set[String] = properties.map(_.dependencies.map(_.name)).getOrElse(Set.empty)
+
+  def mapProperties(f: Expression => Expression): CreateNode = copy(properties = properties.map(f))
 }

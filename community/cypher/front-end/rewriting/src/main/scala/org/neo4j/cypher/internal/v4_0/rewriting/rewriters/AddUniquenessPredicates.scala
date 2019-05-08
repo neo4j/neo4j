@@ -16,12 +16,10 @@
  */
 package org.neo4j.cypher.internal.v4_0.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.ast.{Clause, Match, Merge}
-import org.neo4j.cypher.internal.v4_0.expressions.Expression
-import org.neo4j.cypher.internal.v4_0.util._
-import org.neo4j.cypher.internal.v4_0.ast.Where
+import org.neo4j.cypher.internal.v4_0.ast.{Clause, Match, Merge, Where}
 import org.neo4j.cypher.internal.v4_0.expressions
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression, _}
+import org.neo4j.cypher.internal.v4_0.util._
 
 case class AddUniquenessPredicates(innerVariableNamer: InnerVariableNamer = SameNameNamer) extends Rewriter {
 
@@ -64,6 +62,9 @@ case class AddUniquenessPredicates(innerVariableNamer: InnerVariableNamer = Same
 
   def collectUniqueRels(pattern: ASTNode): Seq[UniqueRel] =
     pattern.treeFold(Seq.empty[UniqueRel]) {
+      case _:ScopeExpression =>
+        acc => (acc, None)
+
       case _: ShortestPaths =>
         acc => (acc, None)
 

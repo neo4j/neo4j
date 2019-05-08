@@ -36,4 +36,6 @@ case class CreateRelationship(idName: String,
     else (rightNode, leftNode)
 
   def dependencies: Set[String] = properties.map(_.dependencies.map(_.name)).getOrElse(Set.empty) + leftNode + rightNode
+
+  def mapProperties(f: Expression => Expression): CreateRelationship = copy(properties = properties.map(f))
 }

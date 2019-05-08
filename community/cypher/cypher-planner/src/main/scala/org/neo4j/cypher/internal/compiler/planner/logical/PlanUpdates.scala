@@ -82,7 +82,7 @@ case object PlanUpdates extends UpdatesPlanner {
       //CREATE ()
       //CREATE (a)-[:R]->(b)
       //CREATE (), (a)-[:R]->(b), (x)-[:X]->(y)-[:Y]->(z {prop:2})
-      case p: CreatePattern => context.logicalPlanProducer.planCreate(source, p, context)
+      case p: CreatePattern => context.logicalPlanProducer.planCreate(source, p, interestingOrder, context)
 
       //MERGE ()
       case p: MergeNodePattern =>
@@ -232,10 +232,10 @@ case object PlanUpdates extends UpdatesPlanner {
     //      /     mergeCreatePart
     // condApply
     val createNodes = createNodePatterns.foldLeft(producer.planQueryArgument(matchGraph, context): LogicalPlan) {
-      case (acc, current) => producer.planMergeCreateNode(acc, current, context)
+      case (acc, current) => producer.planMergeCreateNode(acc, current, interestingOrder, context)
     }
     val mergeCreatePart = createRelationshipPatterns.foldLeft(createNodes) {
-      case (acc, current) => producer.planMergeCreateRelationship(acc, current, context)
+      case (acc, current) => producer.planMergeCreateRelationship(acc, current, interestingOrder, context)
     }
 
     val onCreate = onCreatePatterns.foldLeft(mergeCreatePart) {

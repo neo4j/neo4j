@@ -57,15 +57,17 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
   * |
   * +<source>         (a)
   */
-case class TriadicSelection(
-                             left: LogicalPlan,
-                             right: LogicalPlan,
-                             positivePredicate: Boolean,
-                             sourceId: String, seenId: String, targetId: String
+case class TriadicSelection(left: LogicalPlan,
+                            right: LogicalPlan,
+                            positivePredicate: Boolean,
+                            sourceId: String,
+                            seenId: String,
+                            targetId: String
                            )(implicit idGen: IdGen)
-extends LogicalPlan(idGen) with ApplyPlan {
+  extends LogicalPlan(idGen) with ApplyPlan {
 
   override def lhs: Option[LogicalPlan] = Some(left)
+
   override def rhs: Option[LogicalPlan] = Some(right)
 
   override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols

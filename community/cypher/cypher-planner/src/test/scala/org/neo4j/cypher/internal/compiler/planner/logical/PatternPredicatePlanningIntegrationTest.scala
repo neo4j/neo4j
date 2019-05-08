@@ -576,6 +576,62 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     }
   }
 
+  test("should solve pattern comprehensions for Create") {
+    val q =
+      """
+        |CREATE (n {foo: reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)}) RETURN n
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case Create(
+      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _, _),
+      _, _
+      ) => ()
+    }
+  }
+
+  test("should solve pattern comprehensions for MergeCreateNode") {
+    val q =
+      """
+        |MERGE (n {foo: reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)}) RETURN n
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case AntiConditionalApply(
+      Optional(
+               Selection(_,
+                         RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _, _) // Match part
+                        ), _
+              ),
+      MergeCreateNode(
+                      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _, _), _,_ ,_ // Create part
+                     ), _
+      ) => ()
+    }
+  }
+
+  test("should solve pattern comprehensions for MergeCreateRelationship") {
+    val q =
+      """
+        |MERGE ()-[r:R {foo: reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)}]->() RETURN r
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case AntiConditionalApply(
+      Optional(
+               Selection(_,
+                         RollUpApply(
+                                     Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _), _/* <- This is the subQuery */, _, _, _) // Match part
+                        ), _
+              ),
+      MergeCreateRelationship(
+                      RollUpApply(
+                                  _: MergeCreateNode, _/* <- This is the subQuery */, _, _, _), _,_ ,_, _, _ // Create part
+                     ), _
+      ) => ()
+    }
+  }
+
   private def containsArgumentOnly(queryGraph: QueryGraph): Boolean =
     queryGraph.argumentIds.nonEmpty && queryGraph.patternNodes.isEmpty && queryGraph.patternRelationships.isEmpty
 }
