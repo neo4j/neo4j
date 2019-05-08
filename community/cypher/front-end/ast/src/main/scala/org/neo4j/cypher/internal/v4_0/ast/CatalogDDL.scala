@@ -118,6 +118,45 @@ final case class DropRole(roleName: String)(val position: InputPosition) extends
       SemanticState.recordCurrentScope(this)
 }
 
+final case class GrantRolesToUsers(roleNames: Seq[String], userNames: Seq[String])(val position: InputPosition) extends MultiDatabaseDDL {
+
+  override def name = "CATALOG GRANT ROLE"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
+sealed trait PrivilegeQualifier
+
+final case class LabelQualifier(label: String) extends PrivilegeQualifier
+
+final case class AllQualifier() extends PrivilegeQualifier
+
+sealed trait GraphScope
+
+final case class NamedGraphScope(database: String) extends GraphScope
+
+final case class AllGraphsScope() extends GraphScope
+
+final case class GrantTraverse(scope: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+
+  override def name = "CATALOG GRANT TRAVERSE"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
+final case class ShowPrivileges(scope: String, grantee: String)(val position: InputPosition) extends MultiDatabaseDDL {
+
+  override def name = "CATALOG SHOW PRIVILEGE"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
 final case class ShowDatabases()(val position: InputPosition) extends MultiDatabaseDDL {
 
   override def name = "CATALOG SHOW DATABASES"

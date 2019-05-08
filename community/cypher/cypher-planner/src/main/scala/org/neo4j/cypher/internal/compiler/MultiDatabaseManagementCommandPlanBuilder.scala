@@ -71,6 +71,18 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
       case DropRole(roleName) =>
         Some(plans.DropRole(roleName))
 
+      // GRANT roles TO users
+      case GrantRolesToUsers(roleNames, userNames) =>
+        Some(plans.GrantRolesToUsers(roleNames, userNames))
+
+      // GRANT TRAVERSE ON GRAPH foo NODES A (*) TO role
+      case GrantTraverse(database, label, roleName) =>
+        Some(plans.GrantTraverse(database, label, roleName))
+
+      // SHOW [ALL | USER user | ROLE role] PRIVILEGES
+      case ShowPrivileges(scope, grantee) =>
+        Some(plans.ShowPrivileges(scope, grantee))
+
       // SHOW DATABASES
       case _: ShowDatabases =>
         Some(plans.ShowDatabases())

@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.QueryStatistics
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
@@ -36,7 +35,7 @@ import org.neo4j.values.virtual.MapValue
 /**
   * Execution plan for performing system commands, i.e. creating databases or showing roles and users.
   */
-case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue)
+case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue, onError: Throwable => {} = e => throw e)
   extends ExecutionPlan {
 
   override def run(ctx: QueryContext,
@@ -47,8 +46,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
                    subscriber: QuerySubscriber): RuntimeResult = {
 
     val tc = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
-    val newSubscriber = if (subscriber == QuerySubscriber.NOT_A_SUBSCRIBER) CustomSubscriber else subscriber
-    val execution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, newSubscriber)
+    val execution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, new SystemCommandQuerySubscriber(subscriber, onError))
     SystemCommandRuntimeResult(ctx, subscriber, execution.asInstanceOf[InternalExecutionResult])
   }
 
@@ -60,28 +58,14 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
 }
 
 /**
-  * A version of NOT_A_SUBSCRIBER that will throw whenever it is being called,
-  * either a new error or by passing along occurring errors.
+  * A wrapping QuerySubscriber that overrides the error handling to allow custom error messages for SystemCommands instead of the inner errors.
   */
-object CustomSubscriber extends QuerySubscriber {
-  override def onResult(numberOfFields: Int): Unit = throwError()
-  override def onResultCompleted(statistics: QueryStatistics): Unit = throwError()
-  override def onRecord(): Unit = throwError()
-  override def onRecordCompleted(): Unit = throwError()
-  override def onField(offset: Int, value: AnyValue): Unit = throwError()
-  override def onError(throwable: Throwable): Unit = {
-    val message = throwable.getMessage
-    if (message.contains(" already exists with label `Database` and property `name` = "))
-      throw new InvalidArgumentsException("The specified database already exists.") //"The specified database '" + dbName + "' already exists."
-    else if (message.contains(" already exists with label `Role` and property `name` = "))
-      throw new InvalidArgumentsException("The specified role already exists.") //"The specified role '" + roleName + "' already exists."
-    else if (message.contains(" already exists with label `User` and property `name` = "))
-      throw new InvalidArgumentsException("The specified user already exists.") //"The specified user '" + userName + "' already exists."
-    else
-      throw throwable
-  }
-  override def equals(obj: Any): Boolean = QuerySubscriber.NOT_A_SUBSCRIBER.equals(obj)
-  private def throwError(): Unit = {
-    throw new UnsupportedOperationException("Invalid operation, can't use this as a subscriber")
-  }
+class SystemCommandQuerySubscriber(inner: QuerySubscriber, doOnError: Throwable => {}) extends QuerySubscriber {
+  override def onResult(numberOfFields: Int): Unit = inner.onResult(numberOfFields)
+  override def onResultCompleted(statistics: QueryStatistics): Unit = inner.onResultCompleted(statistics)
+  override def onRecord(): Unit = inner.onRecord()
+  override def onRecordCompleted(): Unit = inner.onRecordCompleted()
+  override def onField(offset: Int, value: AnyValue): Unit = inner.onField(offset, value)
+  override def onError(throwable: Throwable): Unit = doOnError(throwable)
+  override def equals(obj: Any): Boolean = inner.equals(obj)
 }

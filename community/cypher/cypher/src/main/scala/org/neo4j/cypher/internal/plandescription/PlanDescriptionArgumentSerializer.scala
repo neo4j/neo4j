@@ -72,6 +72,9 @@ object PlanDescriptionArgumentSerializer {
       case Database(name) => name
       case Role(name) => name
       case User(name) => name
+      case Grantee(name) => name
+      case Qualifier(name) => name
+      case Scope(name) => name
       case SourceCode(className, sourceCode) => sourceCode
       case ByteCode(className, byteCode) => byteCode
       case RuntimeImpl(runtimeName) => runtimeName

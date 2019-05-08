@@ -127,6 +127,21 @@ object Arguments {
     override def name = "user"
   }
 
+  case class Grantee(value: String) extends Argument {
+
+    override def name = "grantee"
+  }
+
+  case class Qualifier(value: String) extends Argument {
+
+    override def name = "qualifier"
+  }
+
+  case class Scope(value: String) extends Argument {
+
+    override def name = "scope"
+  }
+
   case class ExpandExpression(from: String, relName: String, relTypes: Seq[String], to: String,
                               direction: SemanticDirection, minLength: Int, maxLength: Option[Int]) extends Argument
 

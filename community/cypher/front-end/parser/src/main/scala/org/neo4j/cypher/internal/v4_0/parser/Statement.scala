@@ -26,7 +26,7 @@ trait Statement extends Parser
   with Base {
 
   def Statement: Rule1[ast.Statement] = rule(
-    MultiDatabaseCommand | CatalogCommand | SecurityCommand | Command | Query
+    MultiDatabaseCommand | CatalogCommand | UserManagementCommand | PrivilegeManagementCommand | Command | Query
   )
 
   def CatalogCommand: Rule1[CatalogDDL] = rule("Catalog DDL statement") {
@@ -37,8 +37,12 @@ trait Statement extends Parser
     optional(keyword("CATALOG")) ~~ (ShowDatabase | ShowDatabases | CreateDatabase | DropDatabase | StartDatabase | StopDatabase)
   }
 
-  def SecurityCommand: Rule1[CatalogDDL] = rule("Security DDL statement") {
+  def UserManagementCommand: Rule1[CatalogDDL] = rule("Security user management statement") {
     optional(keyword("CATALOG")) ~~ (ShowRoles | CreateRole | DropRole | ShowUsers | CreateUser | DropUser | AlterUser)
+  }
+
+  def PrivilegeManagementCommand: Rule1[CatalogDDL] = rule("Security privilege management statement") {
+    optional(keyword("CATALOG")) ~~ (ShowPrivileges | GrantRole | GrantTraverse)
   }
 
   def ShowUsers: Rule1[ShowUsers] = rule("CATALOG SHOW USERS") {
@@ -139,6 +143,31 @@ trait Statement extends Parser
 
   def DropRole: Rule1[DropRole] = rule("CATALOG DROP ROLE") {
     group(keyword("DROP ROLE") ~~ SymbolicNameString) ~~>> (ast.DropRole(_))
+  }
+
+  def GrantRole: Rule1[GrantRolesToUsers] = rule("CATALOG GRANT ROLE") {
+    group(keyword("GRANT") ~~ (keyword("ROLES") | keyword("ROLE")) ~~ RoleNames ~~
+      keyword("TO") ~~ UserNames) ~~>> (ast.GrantRolesToUsers(_, _))
+  }
+
+  //`GRANT TRAVERSE ON DATABASE foo GRAPH NODES A (*) TO role1`
+  def GrantTraverse: Rule1[GrantTraverse] = rule("CATALOG GRANT TRAVERSE") {
+    group(keyword("GRANT TRAVERSE ON GRAPH * NODES * (*) TO") ~~ RoleNameString) ~~>> (ast.GrantTraverse(ast.AllGraphsScope(), ast.AllQualifier(), _)) |
+      group(keyword("GRANT TRAVERSE ON GRAPH * NODES") ~~ SymbolicNameString ~~ keyword("(*) TO") ~~ RoleNameString) ~~>>
+        ((label, role) => ast.GrantTraverse(ast.AllGraphsScope(), ast.LabelQualifier(label), role)) |
+      group(keyword("GRANT TRAVERSE ON GRAPH") ~~ DatabaseNameString ~~ keyword("NODES") ~~ keyword("* (*) TO") ~~ RoleNameString) ~~>>
+        ((db, role) => ast.GrantTraverse(ast.NamedGraphScope(db), ast.AllQualifier(), role)) |
+      group(keyword("GRANT TRAVERSE ON GRAPH") ~~ DatabaseNameString ~~ keyword("NODES") ~~ SymbolicNameString ~~ keyword("(*) TO") ~~
+        RoleNameString) ~~>> ((db, label, role) => ast.GrantTraverse(ast.NamedGraphScope(db), ast.LabelQualifier(label), role))
+  }
+
+  def ShowPrivileges: Rule1[ShowPrivileges] = rule("CATALOG SHOW PRIVILEGES") {
+    //SHOW ALL PRIVILEGES
+    group(keyword("SHOW") ~~ keyword("ALL") ~~ keyword("PRIVILEGES")) ~>>> (_ => ast.ShowPrivileges("ALL", "")) |
+      //SHOW USER joe PRIVILEGES
+      group(keyword("SHOW") ~~ keyword("USER") ~~ UserNameString ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowPrivileges("USER", _)) |
+      //SHOW ROLE role1 PRIVILEGES
+      group(keyword("SHOW") ~~ keyword("ROLE") ~~ RoleNameString ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowPrivileges("ROLE", _))
   }
 
   def ShowDatabase: Rule1[ShowDatabase] = rule("CATALOG SHOW DATABASE") {

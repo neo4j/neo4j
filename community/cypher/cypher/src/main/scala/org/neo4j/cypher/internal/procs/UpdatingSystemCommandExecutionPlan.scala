@@ -37,7 +37,7 @@ import org.neo4j.values.virtual.MapValue
   * Execution plan for performing system commands, i.e. starting, stopping or dropping databases.
   */
 case class UpdatingSystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue,
-                                               resultHandler: Consumer[util.Map[String, AnyRef]])
+                                              resultHandler: Consumer[util.Map[String, AnyRef]], onError: Throwable => {} = t => throw t)
   extends ExecutionPlan {
 
   override def run(ctx: QueryContext,
@@ -48,8 +48,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String, normalExecutionEngin
                    subscriber: QuerySubscriber): RuntimeResult = {
 
     val tc = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
-    val newSubscriber = if (subscriber == QuerySubscriber.NOT_A_SUBSCRIBER) CustomSubscriber else subscriber
-    val execution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, newSubscriber).asInstanceOf[InternalExecutionResult]
+    val execution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, new SystemCommandQuerySubscriber(subscriber, onError)).asInstanceOf[InternalExecutionResult]
 
     execution.javaIterator.stream().forEach(resultHandler)
 

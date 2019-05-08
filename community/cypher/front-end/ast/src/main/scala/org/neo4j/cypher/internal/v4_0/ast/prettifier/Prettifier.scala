@@ -96,6 +96,17 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case x @ DropRole(roleName) =>
       s"${x.name} $roleName"
 
+    case x @ GrantRolesToUsers(roleNames, userNames) =>
+      s"${x.name} ${roleNames.mkString("," )} TO ${userNames.mkString(", ")}"
+
+    case x @ GrantTraverse(database, label, roleName) =>
+      s"${x.name} DATABASE $database NODES $label (*) TO $roleName"
+
+    case x @ ShowPrivileges(scope, grantee) => scope match {
+      case "ALL" => s"${x.name} ALL PRIVILEGES"
+      case _ => s"${x.name} $scope $grantee PRIVILEGES"
+    }
+
     case x: ShowDatabases =>
       s"${x.name}"
 
