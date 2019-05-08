@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
@@ -116,7 +117,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -182,7 +182,7 @@ public class IndexingServiceTest
     private final IndexAccessor accessor = mock( IndexAccessor.class, RETURNS_MOCKS );
     private final IndexStoreView storeView  = mock( IndexStoreView.class );
     private final NodePropertyAccessor propertyAccessor = mock( NodePropertyAccessor.class );
-    private final TokenNameLookup nameLookup = mock( TokenNameLookup.class );
+    private final InMemoryNameLookup nameLookup = new InMemoryNameLookup();
     private final AssertableLogProvider internalLogProvider = new AssertableLogProvider();
     private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
     private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
@@ -395,14 +395,13 @@ public class IndexingServiceTest
         IndexProvider provider = mockIndexProviderWithAccessor( PROVIDER_DESCRIPTOR );
         Config config = Config.defaults( default_schema_provider, PROVIDER_DESCRIPTOR.name() );
         IndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( provider ), config ) );
-        TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
         StoreIndexDescriptor onlineIndex     = storeIndex( 1, 1, 1, PROVIDER_DESCRIPTOR );
         StoreIndexDescriptor populatingIndex = storeIndex( 2, 1, 2, PROVIDER_DESCRIPTOR );
         StoreIndexDescriptor failedIndex     = storeIndex( 3, 2, 2, PROVIDER_DESCRIPTOR );
 
         life.add( IndexingServiceFactory.createIndexingService( config, mock( JobScheduler.class ), providerMap,
-                mock( IndexStoreView.class ), mockLookup, asList( onlineIndex, populatingIndex, failedIndex ),
+                mock( IndexStoreView.class ), nameLookup, asList( onlineIndex, populatingIndex, failedIndex ),
                 internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, schemaState, indexStatisticsStore ) );
 
         when( provider.getInitialState( onlineIndex ) )
@@ -412,10 +411,10 @@ public class IndexingServiceTest
         when( provider.getInitialState( failedIndex ) )
                 .thenReturn( InternalIndexState.FAILED );
 
-        when(mockLookup.labelGetName( 1 )).thenReturn( "LabelOne" );
-        when( mockLookup.labelGetName( 2 ) ).thenReturn( "LabelTwo" );
-        when( mockLookup.propertyKeyGetName( 1 ) ).thenReturn( "propertyOne" );
-        when( mockLookup.propertyKeyGetName( 2 ) ).thenReturn( "propertyTwo" );
+        nameLookup.label( 1, "LabelOne" );
+        nameLookup.label( 2, "LabelTwo" );
+        nameLookup.property( 1, "propertyOne" );
+        nameLookup.property( 2, "propertyTwo" );
 
         // when
         life.init();
@@ -436,14 +435,13 @@ public class IndexingServiceTest
         Config config = Config.defaults( default_schema_provider, PROVIDER_DESCRIPTOR.name() );
         DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( buildIndexDependencies( provider ), config );
         providerMap.init();
-        TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
         StoreIndexDescriptor onlineIndex     = storeIndex( 1, 1, 1, PROVIDER_DESCRIPTOR );
         StoreIndexDescriptor populatingIndex = storeIndex( 2, 1, 2, PROVIDER_DESCRIPTOR );
         StoreIndexDescriptor failedIndex     = storeIndex( 3, 2, 2, PROVIDER_DESCRIPTOR );
 
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
-                mock( JobScheduler.class ), providerMap, storeView, mockLookup,
+                mock( JobScheduler.class ), providerMap, storeView, nameLookup,
                 asList( onlineIndex, populatingIndex, failedIndex ), internalLogProvider, userLogProvider, IndexingService.NO_MONITOR,
                 schemaState, indexStatisticsStore );
 
@@ -454,10 +452,10 @@ public class IndexingServiceTest
 
         indexingService.init();
 
-        when(mockLookup.labelGetName( 1 )).thenReturn( "LabelOne" );
-        when(mockLookup.labelGetName( 2 )).thenReturn( "LabelTwo" );
-        when(mockLookup.propertyKeyGetName( 1 )).thenReturn( "propertyOne" );
-        when(mockLookup.propertyKeyGetName( 2 )).thenReturn( "propertyTwo" );
+        nameLookup.label( 1, "LabelOne" );
+        nameLookup.label( 2, "LabelTwo" );
+        nameLookup.property( 1, "propertyOne" );
+        nameLookup.property( 2, "propertyTwo" );
         when( indexStatisticsStore.indexSample( anyLong(), any( DoubleLongRegister.class ) ) ).thenReturn( newDoubleLongRegister( 32L, 32L ) );
 
         internalLogProvider.clear();
@@ -493,10 +491,9 @@ public class IndexingServiceTest
                 buildIndexDependencies( native30Provider, nativeBtree10Provider );
         DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( dependencies, config );
         providerMap.init();
-        TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
-                mock( JobScheduler.class ), providerMap, storeView, mockLookup,
+                mock( JobScheduler.class ), providerMap, storeView, nameLookup,
                 Collections.singletonList( nativeBtree10Index ),internalLogProvider, userLogProvider, IndexingService.NO_MONITOR,
                 schemaState, indexStatisticsStore );
 
@@ -528,10 +525,9 @@ public class IndexingServiceTest
                 buildIndexDependencies( native30Provider, nativeBtree10Provider, fulltextProvider );
         DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( dependencies, config );
         providerMap.init();
-        TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
-                mock( JobScheduler.class ), providerMap, storeView, mockLookup,
+                mock( JobScheduler.class ), providerMap, storeView, nameLookup,
                 Collections.singletonList( nativeBtree10Index ), internalLogProvider, userLogProvider, IndexingService.NO_MONITOR,
                 schemaState, indexStatisticsStore );
 
@@ -933,8 +929,8 @@ public class IndexingServiceTest
         IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 
         IOException exception = new IOException( "Expected failure" );
-        when( nameLookup.labelGetName( labelId ) ).thenReturn( "TheLabel" );
-        when( nameLookup.propertyKeyGetName( propertyKeyId ) ).thenReturn( "propertyKey" );
+        nameLookup.label( labelId, "TheLabel" );
+        nameLookup.property( propertyKeyId, "propertyKey" );
 
         when( indexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenThrow( exception );
@@ -968,8 +964,8 @@ public class IndexingServiceTest
         IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), indexRule );
 
         IOException exception = new IOException( "Expected failure" );
-        when( nameLookup.labelGetName( labelId ) ).thenReturn( "TheLabel" );
-        when( nameLookup.propertyKeyGetName( propertyKeyId ) ).thenReturn( "propertyKey" );
+        nameLookup.label( labelId, "TheLabel" );
+        nameLookup.property( propertyKeyId, "propertyKey" );
 
         when( indexProvider.getInitialState( indexRule ) ).thenReturn( POPULATING );
         when( indexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
@@ -1061,7 +1057,6 @@ public class IndexingServiceTest
         IndexProvider provider = mockIndexProviderWithAccessor( PROVIDER_DESCRIPTOR );
         Config config = Config.defaults( default_schema_provider, PROVIDER_DESCRIPTOR.name() );
         IndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( provider ), config ) );
-        TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
         List<StorageIndexReference> indexes = new ArrayList<>();
         int nextIndexId = 1;
@@ -1079,14 +1074,14 @@ public class IndexingServiceTest
         }
         for ( int i = 0; i < nextIndexId; i++ )
         {
-            when( mockLookup.labelGetName( i ) ).thenReturn( "Label" + i );
+            nameLookup.label( i, "Label" + i );
         }
 
         life.add( IndexingServiceFactory.createIndexingService( config, mock( JobScheduler.class ), providerMap,
-                mock( IndexStoreView.class ), mockLookup, indexes, internalLogProvider, userLogProvider, IndexingService.NO_MONITOR,
+                mock( IndexStoreView.class ), nameLookup, indexes, internalLogProvider, userLogProvider, IndexingService.NO_MONITOR,
                 schemaState, indexStatisticsStore ) );
 
-        when( mockLookup.propertyKeyGetName( 1 ) ).thenReturn( "prop" );
+        nameLookup.property( 1, "prop" );
 
         // when
         life.init();
@@ -1108,7 +1103,6 @@ public class IndexingServiceTest
         Config config = Config.defaults( default_schema_provider, PROVIDER_DESCRIPTOR.name() );
         DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( buildIndexDependencies( provider ), config );
         providerMap.init();
-        TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
         List<StorageIndexReference> indexes = new ArrayList<>();
         int nextIndexId = 1;
@@ -1127,15 +1121,15 @@ public class IndexingServiceTest
         }
         for ( int i = 0; i < nextIndexId; i++ )
         {
-            when( mockLookup.labelGetName( i ) ).thenReturn( "Label" + i );
+            nameLookup.label( i, "Label" + i );
         }
 
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
-                mock( JobScheduler.class ), providerMap, storeView, mockLookup, indexes,
+                mock( JobScheduler.class ), providerMap, storeView, nameLookup, indexes,
                 internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, schemaState, indexStatisticsStore );
         when( indexStatisticsStore.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )
                 .thenReturn( newDoubleLongRegister( 32L, 32L ) );
-        when( mockLookup.propertyKeyGetName( 1 ) ).thenReturn( "prop" );
+        nameLookup.property( 1, "prop" );
 
         // when
         indexingService.init();
@@ -1378,9 +1372,6 @@ public class IndexingServiceTest
         when( indexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ), any() ) )
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
 
-        when( nameLookup.labelGetName( anyInt() ) ).thenAnswer( new NameLookupAnswer( "label" ) );
-        when( nameLookup.propertyKeyGetName( anyInt() ) ).thenAnswer( new NameLookupAnswer( "property" ) );
-
         Config config = Config.defaults( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, "false" );
         config.augment( GraphDatabaseSettings.default_schema_provider, PROVIDER_DESCRIPTOR.name() );
 
@@ -1479,24 +1470,6 @@ public class IndexingServiceTest
         }
     }
 
-    private static class NameLookupAnswer implements Answer<String>
-    {
-        private final String kind;
-
-        NameLookupAnswer( String kind )
-        {
-
-            this.kind = kind;
-        }
-
-        @Override
-        public String answer( InvocationOnMock invocation )
-        {
-            int id = invocation.getArgument( 0 );
-            return kind + "[" + id + "]";
-        }
-    }
-
     private static class TrackingIndexAccessor extends IndexAccessor.Adapter
     {
         private final IndexUpdater updater = mock( IndexUpdater.class );
@@ -1552,7 +1525,7 @@ public class IndexingServiceTest
     {
         return new IndexingService( mock( IndexProxyCreator.class ), mock( IndexProviderMap.class ),
                 indexMapReference, mock( IndexStoreView.class ), Collections.emptyList(),
-                mock( IndexSamplingController.class ), mock( TokenNameLookup.class ),
+                mock( IndexSamplingController.class ), nameLookup,
                 mock( JobScheduler.class ), mock( SchemaState.class ), mock( MultiPopulatorFactory.class ),
                 internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, mock( IndexStatisticsStore.class ) );
     }
@@ -1583,5 +1556,41 @@ public class IndexingServiceTest
     {
         logProviderAction.accept( internalLogProvider );
         logProviderAction.accept( userLogProvider );
+    }
+
+    private class InMemoryNameLookup implements TokenNameLookup
+    {
+        private final HashMap<Integer,String> labels = new HashMap<>();
+        private final HashMap<Integer,String> properties = new HashMap<>();
+        private String defaultLabel = "label";
+        private String defaultProperty = "property";
+
+        @Override
+        public String labelGetName( int labelId )
+        {
+            return labels.getOrDefault( labelId, defaultLabel );
+        }
+
+        @Override
+        public String relationshipTypeGetName( int relationshipTypeId )
+        {
+            return null;
+        }
+
+        @Override
+        public String propertyKeyGetName( int propertyKeyId )
+        {
+            return properties.getOrDefault( propertyKeyId, defaultProperty );
+        }
+
+        void label( int labelId, String label )
+        {
+            labels.put( labelId, label );
+        }
+
+        void property( int propertyId, String property )
+        {
+            properties.put( propertyId, property );
+        }
     }
 }
