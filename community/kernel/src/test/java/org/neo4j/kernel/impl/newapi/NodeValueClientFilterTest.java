@@ -73,7 +73,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, EntityValueCl
         filter.close();
 
         // then
-        assertEvents( initialize(), Event.NEXT, new Event.Node( 17, score, null ), Event.CLOSE );
+        assertEvents( initialize( 0 ), Event.NEXT, new Event.Node( 17, score, null ), Event.CLOSE );
     }
 
     @Test
@@ -88,7 +88,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, EntityValueCl
         filter.close();
 
         // then
-        assertEvents( initialize(), Event.NEXT, Event.CLOSE );
+        assertEvents( initialize( 12 ), Event.NEXT, Event.CLOSE );
     }
 
     @Test
@@ -104,7 +104,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, EntityValueCl
         filter.close();
 
         // then
-        assertEvents( initialize(), Event.NEXT, Event.CLOSE );
+        assertEvents( initialize( 12 ), Event.NEXT, Event.CLOSE );
     }
 
     @Test
@@ -121,7 +121,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, EntityValueCl
         filter.close();
 
         // then
-        assertEvents( initialize(), Event.NEXT, new Event.Node( 17, score, null ), Event.CLOSE );
+        assertEvents( initialize( 12 ), Event.NEXT, new Event.Node( 17, score, null ), Event.CLOSE );
     }
 
     @Test
@@ -137,7 +137,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, EntityValueCl
         filter.close();
 
         // then
-        assertEvents( initialize(), Event.NEXT, Event.CLOSE );
+        assertEvents( initialize( 12 ), Event.NEXT, Event.CLOSE );
     }
 
     @Test
@@ -216,9 +216,20 @@ public class NodeValueClientFilterTest implements IndexProgressor, EntityValueCl
 
     private NodeValueClientFilter initializeFilter( IndexQuery... filters )
     {
-        NodeValueClientFilter filter = new NodeValueClientFilter(
-                this, node, property, read, filters );
-        filter.initialize( TestIndexDescriptorFactory.forLabel( 11 ), this, null, IndexOrder.NONE, true, false );
+        NodeValueClientFilter filter = new NodeValueClientFilter( this, node, property, read, filters );
+        int[] propKeyIds = new int[filters.length];
+        for ( int i = 0; i < filters.length; i++ )
+        {
+            propKeyIds[i] = filters[i].propertyKeyId();
+        }
+        filter.initialize( TestIndexDescriptorFactory.forLabel( 11, propKeyIds ), this, null, IndexOrder.NONE, true, false );
+        return filter;
+    }
+
+    private NodeValueClientFilter initializeFilter()
+    {
+        NodeValueClientFilter filter = new NodeValueClientFilter( this, node, property, read );
+        filter.initialize( TestIndexDescriptorFactory.forLabel( 11, 0 ), this, null, IndexOrder.NONE, true, false );
         return filter;
     }
 
