@@ -681,6 +681,78 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     }
   }
 
+  test("should solve pattern comprehensions for SetNodeProperty") {
+    val q =
+      """
+        |MATCH (n) SET n.foo = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x) RETURN n
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case SetNodeProperty(
+      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _, _),
+      _, _, _
+      ) => ()
+    }
+  }
+
+  test("should solve pattern comprehensions for SetNodePropertiesFromMap") {
+    val q =
+      """
+        |MATCH (n) SET n = {foo: reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)} RETURN n
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case SetNodePropertiesFromMap(
+      RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _, _),
+      _, _, _
+      ) => ()
+    }
+  }
+
+  test("should solve pattern comprehensions for SetRelationshipProperty") {
+    val q =
+      """
+        |MATCH ()-[r]->() SET r.foo = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x) RETURN r
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case SetRelationshipProperty(
+      RollUpApply(Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _), _/* <- This is the subQuery */, _, _, _),
+      _, _, _
+      ) => ()
+    }
+  }
+
+  test("should solve pattern comprehensions for SetRelationshipPropertiesFromMap") {
+    val q =
+      """
+        |MATCH ()-[r]->() SET r = {foo: reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)} RETURN r
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case SetRelationshipPropertiesFromMap(
+      RollUpApply(Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _), _/* <- This is the subQuery */, _, _, _),
+      _, _, _
+      ) => ()
+    }
+  }
+
+  test("should solve pattern comprehensions for SetProperty") {
+    val q =
+      """
+        |SET $param.foo = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case EmptyResult(
+                       SetProperty(
+                                   RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _, _),
+      _, _, _
+      )) => ()
+    }
+  }
+
+
   private def containsArgumentOnly(queryGraph: QueryGraph): Boolean =
     queryGraph.argumentIds.nonEmpty && queryGraph.patternNodes.isEmpty && queryGraph.patternRelationships.isEmpty
 }

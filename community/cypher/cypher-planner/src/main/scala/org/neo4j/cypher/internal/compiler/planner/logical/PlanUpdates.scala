@@ -96,44 +96,24 @@ case object PlanUpdates extends UpdatesPlanner {
       case pattern: SetLabelPattern => context.logicalPlanProducer.planSetLabel(source, pattern, context)
 
       //SET n.prop = 42
-      case pattern@SetNodePropertyPattern(_, _, expression) =>
-        val solver = PatternExpressionSolver.solverFor(source, interestingOrder, context)
-        val newExpression = solver.solve(expression)
-        val updatedSource = solver.rewrittenPlan()
-        val updatedPattern = pattern.copy(expression = newExpression)
-        context.logicalPlanProducer.planSetNodeProperty(updatedSource, updatedPattern, pattern, context)
+      case pattern:SetNodePropertyPattern =>
+        context.logicalPlanProducer.planSetNodeProperty(source, pattern, interestingOrder, context)
 
       //SET r.prop = 42
-      case pattern@SetRelationshipPropertyPattern(_, _ , expression) =>
-        val solver = PatternExpressionSolver.solverFor(source, interestingOrder, context)
-        val newExpression = solver.solve(expression)
-        val updatedSource = solver.rewrittenPlan()
-        val updatedPattern = pattern.copy(expression = newExpression)
-        context.logicalPlanProducer.planSetRelationshipProperty(updatedSource, updatedPattern, pattern, context)
+      case pattern:SetRelationshipPropertyPattern =>
+        context.logicalPlanProducer.planSetRelationshipProperty(source, pattern, interestingOrder, context)
 
       //SET x.prop = 42
-      case pattern@SetPropertyPattern(_, _, expression) =>
-        val solver = PatternExpressionSolver.solverFor(source, interestingOrder, context)
-        val newExpression = solver.solve(expression)
-        val updatedSource = solver.rewrittenPlan()
-        val updatedPattern = pattern.copy(expression = newExpression)
-        context.logicalPlanProducer.planSetProperty(updatedSource, updatedPattern, pattern, context)
+      case pattern:SetPropertyPattern =>
+        context.logicalPlanProducer.planSetProperty(source,pattern, interestingOrder, context)
 
       //SET n += {p1: ..., p2: ...}
-      case pattern@SetNodePropertiesFromMapPattern(_, expression, _) =>
-        val solver = PatternExpressionSolver.solverFor(source, interestingOrder, context)
-        val newExpression = solver.solve(expression)
-        val updatedSource = solver.rewrittenPlan()
-        val updatedPattern = pattern.copy(expression = newExpression)
-        context.logicalPlanProducer.planSetNodePropertiesFromMap(updatedSource, updatedPattern, pattern, context)
+      case pattern:SetNodePropertiesFromMapPattern =>
+        context.logicalPlanProducer.planSetNodePropertiesFromMap(source, pattern, interestingOrder, context)
 
       //SET r += {p1: ..., p2: ...}
-      case pattern@SetRelationshipPropertiesFromMapPattern(_, expression, _) =>
-        val solver = PatternExpressionSolver.solverFor(source, interestingOrder, context)
-        val newExpression = solver.solve(expression)
-        val updatedSource = solver.rewrittenPlan()
-        val updatedPattern = pattern.copy(expression = newExpression)
-        context.logicalPlanProducer.planSetRelationshipPropertiesFromMap(updatedSource, updatedPattern, pattern, context)
+      case pattern:SetRelationshipPropertiesFromMapPattern =>
+        context.logicalPlanProducer.planSetRelationshipPropertiesFromMap(source, pattern, interestingOrder, context)
 
       //REMOVE n:Foo:Bar
       case pattern: RemoveLabelPattern => context.logicalPlanProducer.planRemoveLabel(source, pattern, context)

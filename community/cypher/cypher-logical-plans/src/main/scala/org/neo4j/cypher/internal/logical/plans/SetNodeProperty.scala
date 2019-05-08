@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.ir.StrictnessMode
-import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, PropertyKeyName}
+import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
 /**
   * for ( row <- source )
@@ -30,11 +30,10 @@ import org.neo4j.cypher.internal.v4_0.expressions.{Expression, PropertyKeyName}
   *
   *   produce row
   */
-case class SetNodeProperty(
-                            source: LogicalPlan,
-                            idName: String,
-                            propertyKey: PropertyKeyName,
-                            value: Expression
+case class SetNodeProperty(source: LogicalPlan,
+                           idName: String,
+                           propertyKey: PropertyKeyName,
+                           value: Expression
                           )(implicit idGen: IdGen)
   extends LogicalPlan(idGen) {
 

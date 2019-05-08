@@ -47,22 +47,27 @@ sealed trait SetMutatingPattern extends MutatingPattern with NoSymbols
 
 case class SetPropertyPattern(entityExpression: Expression, propertyKeyName: PropertyKeyName, expression: Expression) extends SetMutatingPattern {
   override def dependencies: Set[String] = (entityExpression.dependencies ++ expression.dependencies).map(_.name)
+  def mapExpression(f: Expression => Expression): SetPropertyPattern = copy(expression = f(expression))
 }
 
 case class SetRelationshipPropertyPattern(idName: String, propertyKey: PropertyKeyName, expression: Expression) extends SetMutatingPattern {
   override def dependencies: Set[String] = deps(expression) + idName
+  def mapExpression(f: Expression => Expression): SetRelationshipPropertyPattern = copy(expression = f(expression))
 }
 
 case class SetNodePropertiesFromMapPattern(idName: String, expression: Expression, removeOtherProps: Boolean) extends SetMutatingPattern {
   override def dependencies: Set[String] = deps(expression) + idName
+  def mapExpression(f: Expression => Expression): SetNodePropertiesFromMapPattern = copy(expression = f(expression))
 }
 
 case class SetRelationshipPropertiesFromMapPattern(idName: String, expression: Expression, removeOtherProps: Boolean) extends SetMutatingPattern {
   override def dependencies: Set[String] = deps(expression) + idName
+  def mapExpression(f: Expression => Expression): SetRelationshipPropertiesFromMapPattern = copy(expression = f(expression))
 }
 
 case class SetNodePropertyPattern(idName: String, propertyKey: PropertyKeyName, expression: Expression) extends SetMutatingPattern {
   override def dependencies: Set[String] = deps(expression) + idName
+  def mapExpression(f: Expression => Expression): SetNodePropertyPattern = copy(expression = f(expression))
 }
 
 case class SetLabelPattern(idName: String, labels: Seq[LabelName]) extends SetMutatingPattern {
