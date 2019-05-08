@@ -24,7 +24,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
-import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 @ServiceProvider
@@ -33,8 +32,6 @@ public class DummyExtensionFactory extends ExtensionFactory<DummyExtensionFactor
     public interface Dependencies
     {
         Config getConfig();
-
-        KernelData getKernel();
 
         DatabaseManager<?> getDatabaseManager();
     }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb.factory.module.edition;
 
-import java.io.File;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -40,7 +39,6 @@ import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
@@ -59,7 +57,6 @@ import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
-import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.procedure.builtin.routing.BaseRoutingProcedureInstaller;
@@ -91,8 +88,6 @@ public class CommunityEditionModule extends StandaloneEditionModule
         Config globalConfig = globalModule.getGlobalConfig();
         LogService logService = globalModule.getLogService();
         FileSystemAbstraction fileSystem = globalModule.getFileSystem();
-        PageCache pageCache = globalModule.getPageCache();
-        LifeSupport globalLife = globalModule.getGlobalLife();
         SystemNanoClock globalClock = globalModule.getGlobalClock();
         DependencyResolver externalDependencies = globalModule.getExternalDependencyResolver();
 
@@ -112,14 +107,9 @@ public class CommunityEditionModule extends StandaloneEditionModule
 
         tokenHoldersProvider = createTokenHolderProvider( globalModule );
 
-        File kernelContextDirectory = globalModule.getStoreLayout().storeDirectory();
-        KernelData kernelData = createKernelData( fileSystem, pageCache, kernelContextDirectory, globalConfig );
-        globalDependencies.satisfyDependency( kernelData );
-        globalLife.add( kernelData );
-
         commitProcessFactory = new CommunityCommitProcessFactory();
 
-        headerInformationFactory = createHeaderInformationFactory();
+        headerInformationFactory = TransactionHeaderInformationFactory.DEFAULT;
 
         constraintSemantics = createSchemaRuleVerifier();
 
@@ -205,16 +195,6 @@ public class CommunityEditionModule extends StandaloneEditionModule
         {
             return new DefaultLabelIdCreator( kernelSupplier );
         }
-    }
-
-    private static KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config )
-    {
-        return new KernelData( fileSystem, pageCache, storeDir, config );
-    }
-
-    protected TransactionHeaderInformationFactory createHeaderInformationFactory()
-    {
-        return TransactionHeaderInformationFactory.DEFAULT;
     }
 
     @Override

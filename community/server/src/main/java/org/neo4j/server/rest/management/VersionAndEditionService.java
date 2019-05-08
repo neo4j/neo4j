@@ -25,7 +25,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.kernel.internal.KernelData;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.server.NeoServer;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -60,19 +60,18 @@ public class VersionAndEditionService implements AdvertisableService
     public Response getVersionAndEditionData()
     {
         return Response.ok( createJsonFrom( map(
-                        "version", neoDatabaseVersion( neoServer ),
+                        "version", neoDatabaseVersion(),
                         "edition", neoServerEdition( neoServer ) ) ),
                 APPLICATION_JSON )
                 .build();
     }
 
-    private String neoDatabaseVersion( NeoServer neoServer )
+    private static String neoDatabaseVersion()
     {
-        return neoServer.getDatabase().getGraph().getDependencyResolver().resolveDependency( KernelData.class )
-                .version().getReleaseVersion();
+        return Version.getKernel().getReleaseVersion();
     }
 
-    private String neoServerEdition( NeoServer neoServer )
+    private static String neoServerEdition( NeoServer neoServer )
     {
         String serverClassName = neoServer.getClass().getName().toLowerCase();
 
