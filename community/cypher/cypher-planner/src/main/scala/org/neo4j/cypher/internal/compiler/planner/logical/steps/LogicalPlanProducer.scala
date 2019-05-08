@@ -782,25 +782,27 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(AntiConditionalApply(inner, outer, idNames), solved, providedOrder, context)
   }
 
-  def planDeleteNode(inner: LogicalPlan, delete: DeleteExpression, context: LogicalPlanningContext): LogicalPlan = {
-
+  def planDeleteNode(inner: LogicalPlan, delete: DeleteExpression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(delete))
-
+    val solver = PatternExpressionSolver.solverFor(inner, interestingOrder, context)
+    val rewrittenDelete = delete.mapExpression(solver.solve(_))
+    val rewrittenInner = solver.rewrittenPlan()
     if (delete.forced)
-      annotate(DetachDeleteNode(inner, delete.expression), solved, providedOrders.get(inner.id), context)
+      annotate(DetachDeleteNode(rewrittenInner, rewrittenDelete.expression), solved, providedOrders.get(rewrittenInner.id), context)
     else
-      annotate(DeleteNode(inner, delete.expression), solved, providedOrders.get(inner.id), context)
+      annotate(DeleteNode(rewrittenInner, rewrittenDelete.expression), solved, providedOrders.get(rewrittenInner.id), context)
   }
 
-  def planDeleteRelationship(inner: LogicalPlan, delete: DeleteExpression, context: LogicalPlanningContext): LogicalPlan = {
-
+  def planDeleteRelationship(inner: LogicalPlan, delete: DeleteExpression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(delete))
-
-    annotate(DeleteRelationship(inner, delete.expression), solved, providedOrders.get(inner.id), context)
+    val solver = PatternExpressionSolver.solverFor(inner, interestingOrder, context)
+    val rewrittenDelete = delete.mapExpression(solver.solve(_))
+    val rewrittenInner = solver.rewrittenPlan()
+    annotate(DeleteRelationship(rewrittenInner, rewrittenDelete.expression), solved, providedOrders.get(rewrittenInner.id), context)
   }
 
   def planDeletePath(inner: LogicalPlan, delete: DeleteExpression, context: LogicalPlanningContext): LogicalPlan = {
-
+    // `delete.expression` can only be a PathExpression, PatternExpressionSolver not needed
     val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(delete))
 
     if (delete.forced)
@@ -809,13 +811,15 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       annotate(DeletePath(inner, delete.expression), solved, providedOrders.get(inner.id), context)
   }
 
-  def planDeleteExpression(inner: LogicalPlan, delete: DeleteExpression, context: LogicalPlanningContext): LogicalPlan = {
+  def planDeleteExpression(inner: LogicalPlan, delete: DeleteExpression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(delete))
-
+    val solver = PatternExpressionSolver.solverFor(inner, interestingOrder, context)
+    val rewrittenDelete = delete.mapExpression(solver.solve(_))
+    val rewrittenInner = solver.rewrittenPlan()
     if (delete.forced)
-      annotate(DetachDeleteExpression(inner, delete.expression), solved, providedOrders.get(inner.id), context)
+      annotate(DetachDeleteExpression(rewrittenInner, rewrittenDelete.expression), solved, providedOrders.get(rewrittenInner.id), context)
     else
-      annotate(DeleteExpressionPlan(inner, delete.expression), solved, providedOrders.get(inner.id), context)
+      annotate(DeleteExpressionPlan(rewrittenInner, rewrittenDelete.expression), solved, providedOrders.get(rewrittenInner.id), context)
   }
 
   def planSetLabel(inner: LogicalPlan, pattern: SetLabelPattern, context: LogicalPlanningContext): LogicalPlan = {

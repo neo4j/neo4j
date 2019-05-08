@@ -143,27 +143,27 @@ case object PlanUpdates extends UpdatesPlanner {
         val delete = p.expression match {
           //DELETE user
           case Variable(n) if context.semanticTable.isNode(n) =>
-            context.logicalPlanProducer.planDeleteNode(source, p, context)
+            context.logicalPlanProducer.planDeleteNode(source, p, interestingOrder, context)
 
           //DELETE rel
           case Variable(r) if context.semanticTable.isRelationship(r) =>
-            context.logicalPlanProducer.planDeleteRelationship(source, p, context)
+            context.logicalPlanProducer.planDeleteRelationship(source, p, interestingOrder, context)
 
           //DELETE path
-          case PathExpression(e) =>
+          case PathExpression(_) =>
             context.logicalPlanProducer.planDeletePath(source, p, context)
 
           //DELETE users[{i}]
-          case ContainerIndex(Variable(n), indexExpr) if context.semanticTable.isNodeCollection(n) =>
-            context.logicalPlanProducer.planDeleteNode(source, p, context)
+          case ContainerIndex(Variable(n), _) if context.semanticTable.isNodeCollection(n) =>
+            context.logicalPlanProducer.planDeleteNode(source, p, interestingOrder, context)
 
           //DELETE rels[{i}]
-          case ContainerIndex(Variable(r), indexExpr) if context.semanticTable.isRelationshipCollection(r) =>
-            context.logicalPlanProducer.planDeleteRelationship(source, p, context)
+          case ContainerIndex(Variable(r), _) if context.semanticTable.isRelationshipCollection(r) =>
+            context.logicalPlanProducer.planDeleteRelationship(source, p, interestingOrder, context)
 
           //DELETE expr
-          case expr =>
-            context.logicalPlanProducer.planDeleteExpression(source, p, context)
+          case _ =>
+            context.logicalPlanProducer.planDeleteExpression(source, p, interestingOrder, context)
         }
         delete
     }

@@ -102,6 +102,8 @@ case class CreatePattern(nodes: Seq[CreateNode], relationships: Seq[CreateRelati
 
 case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern with NoSymbols {
   override def dependencies: Set[String] = expression.dependencies.map(_.name)
+
+  def mapExpression(f: Expression => Expression): DeleteExpression = copy(expression = f(expression))
 }
 
 sealed trait MergePattern {

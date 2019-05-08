@@ -632,6 +632,55 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     }
   }
 
+  test("should solve pattern comprehensions for DeleteNode") {
+    val q =
+      """
+        |MATCH (n)
+        |WITH [n] AS nodes
+        |DELETE nodes[reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)]
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case EmptyResult(
+      DeleteNode(
+                 Apply(_, RollUpApply(Eager(Argument(SetExtractor("nodes"))), _/* <- This is the subQuery */, _, _, _)), _),
+      ) => ()
+    }
+  }
+
+  test("should solve pattern comprehensions for DeleteRelationship") {
+    val q =
+      """
+        |MATCH ()-[r]->()
+        |WITH [r] AS rels
+        |DELETE rels[reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)]
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case EmptyResult(
+      DeleteRelationship(
+                 Apply(_, RollUpApply(Eager(Argument(SetExtractor("rels"))), _/* <- This is the subQuery */, _, _, _)), _),
+      ) => ()
+    }
+  }
+
+  test("should solve pattern comprehensions for DeleteExpression") {
+    val q =
+      """
+        |MATCH ()-[r]->()
+        |WITH {rel: r} AS rels
+        |DELETE rels[toString(reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x))]
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case EmptyResult(
+      Apply(_,
+            DeleteExpression(
+                             RollUpApply(Eager(Argument(SetExtractor("rels"))), _/* <- This is the subQuery */, _, _, _), _
+      ))) => ()
+    }
+  }
+
   private def containsArgumentOnly(queryGraph: QueryGraph): Boolean =
     queryGraph.argumentIds.nonEmpty && queryGraph.patternNodes.isEmpty && queryGraph.patternRelationships.isEmpty
 }
