@@ -642,10 +642,18 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(PartialSort(inner, alreadySortedPrefix, stillToSortSuffix), solved, providedOrder, context)
   }
 
-  def planShortestPath(inner: LogicalPlan, shortestPaths: ShortestPathPattern, predicates: Seq[Expression],
-                       withFallBack: Boolean, disallowSameNode: Boolean = true, context: LogicalPlanningContext): LogicalPlan = {
+  def planShortestPath(inner: LogicalPlan,
+                       shortestPaths: ShortestPathPattern,
+                       predicates: Seq[Expression],
+                       withFallBack: Boolean,
+                       disallowSameNode: Boolean = true,
+                       interestingOrder: InterestingOrder,
+                       context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).amendQueryGraph(_.addShortestPath(shortestPaths).addPredicates(predicates: _*))
-    annotate(FindShortestPaths(inner, shortestPaths, predicates, withFallBack, disallowSameNode), solved, providedOrders.get(inner.id), context)
+    val solver = PatternExpressionSolver.solverFor(inner, interestingOrder, context)
+    val rewrittenPredicates = predicates.map(solver.solve(_))
+    val rewrittenInner = solver.rewrittenPlan()
+    annotate(FindShortestPaths(rewrittenInner, shortestPaths, rewrittenPredicates, withFallBack, disallowSameNode), solved, providedOrders.get(rewrittenInner.id), context)
   }
 
   def planEndpointProjection(inner: LogicalPlan, start: String, startInScope: Boolean, end: String, endInScope: Boolean, patternRel: PatternRelationship, context: LogicalPlanningContext): LogicalPlan = {

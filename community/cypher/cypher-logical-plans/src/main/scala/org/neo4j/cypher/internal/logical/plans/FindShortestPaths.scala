@@ -19,17 +19,19 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
 /**
   * Find the shortest paths between two nodes, as specified by 'shortestPath'. For each shortest path found produce a
   * row containing the source row and the found path.
   */
-case class FindShortestPaths(source: LogicalPlan, shortestPath: ShortestPathPattern,
+case class FindShortestPaths(source: LogicalPlan,
+                             shortestPath: ShortestPathPattern,
                              predicates: Seq[Expression] = Seq.empty,
-                             withFallBack: Boolean = false, disallowSameNode: Boolean = true)
+                             withFallBack: Boolean = false,
+                             disallowSameNode: Boolean = true)
                             (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 

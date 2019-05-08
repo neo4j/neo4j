@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.{UpdateStrategy, defaultUpdateStrategy}
-import org.neo4j.cypher.internal.ir.{QueryGraph, InterestingOrder}
+import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object QueryPlannerConfiguration {
@@ -84,7 +84,8 @@ case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
   def toKit(interestingOrder: InterestingOrder, context: LogicalPlanningContext) =
     QueryPlannerKit(
       select = (plan: LogicalPlan, qg: QueryGraph) => applySelections(plan, qg, interestingOrder, context),
-      pickBest = pickBestCandidate(context)
+      pickBest = pickBestCandidate(context),
+      interestingOrder = interestingOrder
     )
 
   def withLeafPlanners(leafPlanners: LeafPlannerIterable): QueryPlannerConfiguration = copy(leafPlanners = leafPlanners)
@@ -92,7 +93,9 @@ case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
   def withUpdateStrategy(updateStrategy: UpdateStrategy): QueryPlannerConfiguration = copy(updateStrategy = updateStrategy)
 }
 
-case class QueryPlannerKit(select: (LogicalPlan, QueryGraph) => LogicalPlan, pickBest: CandidateSelector) {
+case class QueryPlannerKit(select: (LogicalPlan, QueryGraph) => LogicalPlan,
+                           pickBest: CandidateSelector,
+                          interestingOrder: InterestingOrder) {
   def select(plans: Iterable[Seq[LogicalPlan]], qg: QueryGraph): Iterable[Seq[LogicalPlan]] =
     plans.map(_.map(plan => select(plan, qg)))
 }

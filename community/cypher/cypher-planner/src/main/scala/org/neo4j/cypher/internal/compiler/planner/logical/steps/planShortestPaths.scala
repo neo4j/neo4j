@@ -34,6 +34,7 @@ case object planShortestPaths {
   def apply(inner: LogicalPlan,
             queryGraph: QueryGraph,
             shortestPaths: ShortestPathPattern,
+            interestingOrder: InterestingOrder,
             context: LogicalPlanningContext): LogicalPlan = {
 
     val variables = Set(shortestPaths.name, Some(shortestPaths.rel.name)).flatten
@@ -58,11 +59,11 @@ case object planShortestPaths {
     }
 
     if (needFallbackPredicates.nonEmpty) {
-      planShortestPathsWithFallback(inner, shortestPaths, predicates, safePredicates, needFallbackPredicates, queryGraph, context)
+      planShortestPathsWithFallback(inner, shortestPaths, predicates, safePredicates, needFallbackPredicates, queryGraph, interestingOrder, context)
     }
     else {
       context.logicalPlanProducer.planShortestPath(inner, shortestPaths, predicates, withFallBack = false,
-                                                   disallowSameNode = context.errorIfShortestPathHasCommonNodesAtRuntime, context = context)
+                                                   disallowSameNode = context.errorIfShortestPathHasCommonNodesAtRuntime, interestingOrder, context = context)
     }
   }
 
@@ -79,6 +80,7 @@ case object planShortestPaths {
                                             safePredicates: Seq[Expression],
                                             unsafePredicates: Seq[Expression],
                                             queryGraph: QueryGraph,
+                                            interestingOrder: InterestingOrder,
                                             context: LogicalPlanningContext) = {
     // create warning for planning a shortest path fallback
     context.notificationLogger.log(ExhaustiveShortestPathForbiddenNotification(shortestPath.expr.position))
@@ -89,7 +91,7 @@ case object planShortestPaths {
     // the graph algorithm does not find anything (left-hand-side)
     val lhsArgument = lpp.planArgumentFrom(inner, context)
     val lhsSp = lpp.planShortestPath(lhsArgument, shortestPath, predicates, withFallBack = true,
-                                     disallowSameNode = context.errorIfShortestPathHasCommonNodesAtRuntime, context = context)
+                                     disallowSameNode = context.errorIfShortestPathHasCommonNodesAtRuntime, interestingOrder, context = context)
     val lhsOption = lpp.planOptional(lhsSp, lhsArgument.availableSymbols, context)
     val lhs = lpp.planApply(inner, lhsOption, context)
 

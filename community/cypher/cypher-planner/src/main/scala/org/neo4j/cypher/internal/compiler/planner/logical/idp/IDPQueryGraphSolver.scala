@@ -70,7 +70,7 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
   private def selectShortestPath(kit: QueryPlannerKit, initialPlan: LogicalPlan, qg: QueryGraph, context: LogicalPlanningContext): LogicalPlan =
     qg.shortestPathPatterns.foldLeft(kit.select(initialPlan, qg)) {
       case (plan, sp) if sp.isFindableFrom(plan.availableSymbols) =>
-        val shortestPath = planShortestPaths(plan, qg, sp, context)
+        val shortestPath = planShortestPaths(plan, qg, sp, kit.interestingOrder, context)
         kit.select(shortestPath, qg)
       case (plan, _) => plan
     }

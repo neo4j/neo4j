@@ -559,6 +559,23 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     }
   }
 
+  test("should solve pattern comprehensions for ShortestPath") {
+    val q =
+      """
+        |MATCH p=shortestPath((n)-[r*..6]-(n2)) WHERE NONE(n in nodes(p) WHERE n.foo = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)) RETURN n, n2
+      """.stripMargin
+
+    // This will be solved with a NestedPlanExpression instead of RollupApply
+    planFor(q)._2 should beLike {
+      case Projection(
+      FindShortestPaths(_, _, Seq(
+      NoneIterablePredicate(FilterScope(_, Some(In(_, ListLiteral(Seq(ReduceExpression(_, _, _:NestedPlanExpression)))))), _)
+      ), _, _),
+      _
+      ) => ()
+    }
+  }
+
   private def containsArgumentOnly(queryGraph: QueryGraph): Boolean =
     queryGraph.argumentIds.nonEmpty && queryGraph.patternNodes.isEmpty && queryGraph.patternRelationships.isEmpty
 }
