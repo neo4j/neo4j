@@ -52,7 +52,7 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
         val lhsRows = table.getOrElse(joinKey, mutable.MutableList.empty)
         lhsRows.map { lhsRow =>
           val outputRow = lhsRow.createClone()
-          outputRow.mergeWith(rhsRow)
+          outputRow.mergeWith(rhsRow, state.query)
           outputRow
         }
       }
