@@ -64,8 +64,22 @@ abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](edition: 
       .allNodeScan("x")
       .build()
 
-   oneAtaTimeCount(logicalQuery) should equal(2 * sizeHint)
-   randomCount(logicalQuery) should equal(2 * sizeHint)
+    oneAtaTimeCount(logicalQuery) should equal(2 * sizeHint)
+    randomCount(logicalQuery) should equal(2 * sizeHint)
+  }
+
+  test("should handle input") {
+    // given
+    circleGraph(sizeHint)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    oneAtaTimeCount(logicalQuery) should equal(sizeHint)
+    randomCount(logicalQuery) should equal(sizeHint)
   }
 
   private def randomCount(logicalQuery: LogicalQuery): Int =
@@ -76,7 +90,8 @@ abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](edition: 
 
   private def count(logicalQuery: LogicalQuery, request: () => Int): Int = {
     val subscriber = new TestSubscriber
-    val runtimeResult = execute(logicalQuery, runtime, subscriber)
+    val data = inputValues((1 to sizeHint).map(Array[Any](_)):_*)
+    val runtimeResult = execute(logicalQuery, runtime, data, subscriber)
     var hasMore = true
     while (hasMore) {
       val requested = request()
