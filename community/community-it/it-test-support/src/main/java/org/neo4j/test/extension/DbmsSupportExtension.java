@@ -43,7 +43,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 
 public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallback
 {
-    private static final String DBMS = "service";
+    protected static final String DBMS = "service";
     private static final Namespace DBMS_NAMESPACE = Namespace.create( "org", "neo4j", "dbms" );
 
     @Override
@@ -53,7 +53,7 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
         TestDirectory testDir = getTestDirectory( context );
 
         // Find closest configuration
-        TestConfiguration configuration = getConfiguraitonFromAnnotations( context );
+        TestConfiguration configuration = getConfigurationFromAnnotations( context );
 
         // Make service
         TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( testDir.storeDir() ).setFileSystem( testDir.getFileSystem() );
@@ -74,11 +74,11 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
     @Override
     public void afterEach( ExtensionContext context )
     {
-        DatabaseManagementService dbms = (DatabaseManagementService) getStore( context ).remove( DBMS );
+        DatabaseManagementService dbms = getStore( context ).remove( DBMS, DatabaseManagementService.class );
         dbms.shutdown();
     }
 
-    private static <T> void injectInstance( Object testInstance, T instance, Class<T> clazz )
+    protected static <T> void injectInstance( Object testInstance, T instance, Class<T> clazz )
     {
         Class<?> testClass = testInstance.getClass();
         do
@@ -105,7 +105,7 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
         }
     }
 
-    private TestDirectory getTestDirectory( ExtensionContext context )
+    protected TestDirectory getTestDirectory( ExtensionContext context )
     {
         TestDirectory testDir =
                 context.getStore( TestDirectoryExtension.TEST_DIRECTORY_NAMESPACE ).get( TestDirectoryExtension.TEST_DIRECTORY, TestDirectory.class );
@@ -117,7 +117,7 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
         return testDir;
     }
 
-    private static void maybeInvokeCallback( Object testInstance, TestDatabaseManagementServiceBuilder builder, String callback )
+    protected static void maybeInvokeCallback( Object testInstance, TestDatabaseManagementServiceBuilder builder, String callback )
     {
         if ( callback == null || callback.isEmpty() )
         {
@@ -173,7 +173,7 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
         throw new IllegalArgumentException( "The method with name '" + callback + "' can not be found." );
     }
 
-    private static Store getStore( ExtensionContext context )
+    protected static Store getStore( ExtensionContext context )
     {
         return context.getStore( DBMS_NAMESPACE );
     }
@@ -198,7 +198,7 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
      * president over the annotation on class level. This way you can add a global value to the test class, and override
      * configuration values etc. on method level.
      */
-    private static TestConfiguration getConfiguraitonFromAnnotations( ExtensionContext context )
+    private static TestConfiguration getConfigurationFromAnnotations( ExtensionContext context )
     {
         // Try test method
         List<DbmsExtension> dbmsExtensions = new ArrayList<>();

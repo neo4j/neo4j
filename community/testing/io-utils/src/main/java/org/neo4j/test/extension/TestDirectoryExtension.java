@@ -26,6 +26,8 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.platform.commons.JUnitException;
 
+import java.io.IOException;
+
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -38,10 +40,15 @@ public class TestDirectoryExtension extends StatefullFieldExtension<TestDirector
     public static final Namespace TEST_DIRECTORY_NAMESPACE = Namespace.create( TEST_DIRECTORY );
 
     @Override
-    public void beforeEach( ExtensionContext context ) throws Exception
+    public void beforeEach( ExtensionContext context ) throws IOException
+    {
+        prepare( context, context.getRequiredTestMethod().getName() );
+    }
+
+    public void prepare( ExtensionContext context, String name ) throws IOException
     {
         TestDirectory testDirectory = getStoredValue( context );
-        testDirectory.prepareDirectory( context.getRequiredTestClass(), context.getRequiredTestMethod().getName() );
+        testDirectory.prepareDirectory( context.getRequiredTestClass(), name );
     }
 
     @Override
