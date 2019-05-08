@@ -431,4 +431,10 @@ public interface GraphDatabaseService
      * @return a new {@link BidirectionalTraversalDescription}
      */
     BidirectionalTraversalDescription bidirectionalTraversalDescription();
+
+    /**
+     * Return name of underlying database
+     * @return database name
+     */
+    String databaseName();
 }

@@ -560,4 +560,10 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     {
         return database.bidirectionalTraversalDescription();
     }
+
+    @Override
+    public String databaseName()
+    {
+        return database.databaseName();
+    }
 }

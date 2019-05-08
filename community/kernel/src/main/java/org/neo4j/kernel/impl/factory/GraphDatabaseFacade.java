@@ -796,6 +796,12 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return new BidirectionalTraversalDescriptionImpl( statementContext );
     }
 
+    @Override
+    public String databaseName()
+    {
+        return database.getDatabaseId().name();
+    }
+
     // GraphDatabaseAPI
     @Override
     public DependencyResolver getDependencyResolver()

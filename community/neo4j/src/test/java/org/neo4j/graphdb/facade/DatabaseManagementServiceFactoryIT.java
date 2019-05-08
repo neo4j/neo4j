@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseManagementException;
 import org.neo4j.dbms.database.DatabaseManagementService;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.DatabaseEventContext;
 import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
@@ -41,6 +42,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
 @ExtendWith( TestDirectoryExtension.class )
@@ -64,6 +66,15 @@ class DatabaseManagementServiceFactoryIT
         {
             managementService.shutdown();
         }
+    }
+
+    @Test
+    void reportCorrectDatabaseNames()
+    {
+        GraphDatabaseService system = managementService.database( SYSTEM_DATABASE_NAME );
+        GraphDatabaseService neo4j = managementService.database( DEFAULT_DATABASE_NAME );
+        assertEquals( SYSTEM_DATABASE_NAME, system.databaseName() );
+        assertEquals( DEFAULT_DATABASE_NAME, neo4j.databaseName() );
     }
 
     @Test
