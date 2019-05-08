@@ -93,7 +93,9 @@ public class IndexSamplingControllerFactory
             @Override
             public boolean test( StoreIndexDescriptor descriptor )
             {
-                boolean result = indexStatisticsStore.indexSample( descriptor.getId(), register ).readSecond() == 0;
+                final long samples = indexStatisticsStore.indexSample( descriptor.getId(), register ).readSecond();
+                final long size = indexStatisticsStore.indexUpdatesAndSize( descriptor.getId(), register ).readSecond();
+                final boolean result = samples == 0 || size == 0;
                 if ( result )
                 {
                     log.debug( "Recovering index sampling for index %s", descriptor.schema().userDescription( tokenNameLookup ) );
