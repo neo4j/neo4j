@@ -199,7 +199,7 @@ public class DefaultBoltConnection implements BoltConnection
                 }
 
                 // we processed all pending messages, let's flush underlying channel
-                if ( queue.size() == 0 || maxBatchSize == 1 )
+                if ( queue.size() == 0 )
                 {
                     output.flush();
                 }
@@ -275,6 +275,9 @@ public class DefaultBoltConnection implements BoltConnection
         // and it will either send a failure response to the client or close the connection and its
         // related resources (if closing)
         processNextBatch( 1, true );
+        // we close the connection directly to enforce the client to stop waiting for
+        // any more messages responses besides the failure message.
+        close();
     }
 
     @Override
