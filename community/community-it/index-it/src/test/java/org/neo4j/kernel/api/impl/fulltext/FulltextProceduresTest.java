@@ -160,7 +160,7 @@ public class FulltextProceduresTest
             result = db.execute( DB_INDEXES );
             assertTrue( result.hasNext() );
             row = result.next();
-            assertEquals( "INDEX ON NODE:Label1, Label2(prop1, prop2)", row.get( "description" ) );
+            assertEquals( "INDEX ON :Label1,Label2(prop1, prop2)", row.get( "description" ) );
             assertEquals( asList( "Label1", "Label2" ), row.get( "tokenNames" ) );
             assertEquals( asList( "prop1", "prop2" ), row.get( "properties" ) );
             assertEquals( "test-index", row.get( "indexName" ) );
@@ -183,7 +183,7 @@ public class FulltextProceduresTest
             result = db.execute( DB_INDEXES );
             assertTrue( result.hasNext() );
             row = result.next();
-            assertEquals( "INDEX ON NODE:Label1, Label2(prop1, prop2)", row.get( "description" ) );
+            assertEquals( "INDEX ON :Label1,Label2(prop1, prop2)", row.get( "description" ) );
             assertEquals( "ONLINE", row.get( "state" ) );
             assertFalse( result.hasNext() );
             //noinspection ConstantConditions
@@ -205,7 +205,7 @@ public class FulltextProceduresTest
             result = db.execute( DB_INDEXES );
             assertTrue( result.hasNext() );
             row = result.next();
-            assertEquals( "INDEX ON RELATIONSHIP:Reltype1, Reltype2(prop1, prop2)", row.get( "description" ) );
+            assertEquals( "INDEX ON -[:Reltype1,Reltype2(prop1, prop2)]-", row.get( "description" ) );
             assertEquals( asList( "Reltype1", "Reltype2" ), row.get( "tokenNames" ) );
             assertEquals( asList( "prop1", "prop2" ), row.get( "properties" ) );
             assertEquals( "test-index", row.get( "indexName" ) );
@@ -228,7 +228,7 @@ public class FulltextProceduresTest
             result = db.execute( DB_INDEXES );
             assertTrue( result.hasNext() );
             row = result.next();
-            assertEquals( "INDEX ON RELATIONSHIP:Reltype1, Reltype2(prop1, prop2)", row.get( "description" ) );
+            assertEquals( "INDEX ON -[:Reltype1,Reltype2(prop1, prop2)]-", row.get( "description" ) );
             assertEquals( "ONLINE", row.get( "state" ) );
             assertFalse( result.hasNext() );
             //noinspection ConstantConditions
