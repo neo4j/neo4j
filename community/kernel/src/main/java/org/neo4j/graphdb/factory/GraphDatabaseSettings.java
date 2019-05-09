@@ -78,10 +78,10 @@ import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.optionsIgnoreCase;
 import static org.neo4j.kernel.configuration.Settings.optionsObeyCase;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
+import static org.neo4j.kernel.configuration.Settings.powerOf2;
 import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
-import static org.neo4j.util.Preconditions.checkArgument;
 
 /**
  * Settings for Neo4j.
@@ -1093,11 +1093,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Long> tx_state_off_heap_max_cacheable_block_size = buildSetting(
             "dbms.tx_state.off_heap.max_cacheable_block_size", BYTES, "512k" )
             .constraint( min( kibiBytes( 4 ) ) )
-            .constraint( ( x, ignore ) ->
-            {
-                checkArgument( Long.bitCount( x ) == 1, "Value must be a power of 2: %d", x );
-                return x;
-            } )
+            .constraint( powerOf2() )
             .build();
 
     @Description( "Defines the size of the off-heap memory blocks cache. The cache will contain this number of blocks for each block size " +
