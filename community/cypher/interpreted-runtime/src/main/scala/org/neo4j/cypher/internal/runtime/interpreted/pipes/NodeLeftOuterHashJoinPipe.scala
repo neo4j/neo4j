@@ -50,7 +50,7 @@ case class NodeLeftOuterHashJoinPipe(nodeVariables: Set[String],
           rhsKeys.add(joinKey)
           lhsRows.map { lhsRow =>
             val outputRow = executionContextFactory.copyWith(lhsRow)
-            outputRow.mergeWith(rhsRow)
+            outputRow.mergeWith(rhsRow, state.query)
             outputRow
           }
         }).flatten

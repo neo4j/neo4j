@@ -183,7 +183,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
             if (ValueUtils.of(m(keys(0))) == context.getByName(keys(0))) {
               val stringToProxy: mutable.Map[String, AnyValue] = collection.mutable.Map(m.mapValues(ValueUtils.of).toSeq: _*)
               val outRow = state.newExecutionContext(CommunityExecutionContextFactory())
-              outRow mergeWith ExecutionContext(stringToProxy)
+              outRow.mergeWith(ExecutionContext(stringToProxy), null)
               Some(outRow)
             }
             else None

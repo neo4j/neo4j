@@ -47,7 +47,7 @@ case class NodeRightOuterHashJoinPipe(nodeVariables: Set[String],
               if(lhsRows.nonEmpty) {
                 lhsRows.map { lhsRow =>
                   val outputRow = executionContextFactory.copyWith(rhsRow)
-                  outputRow.mergeWith(lhsRow)
+                  outputRow.mergeWith(lhsRow, state.query)
                   outputRow
                 }
               } else {

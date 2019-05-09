@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime
 import org.neo4j.cypher.internal.logical.plans.CachedNodeProperty
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.graphdb.NotFoundException
+import org.neo4j.cypher.internal.runtime.EntityById
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual._
@@ -61,7 +62,7 @@ trait ExecutionContext {
   def set(key: String, value: AnyValue): Unit
   def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue): Unit
   def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): Unit
-  def mergeWith(other: ExecutionContext): Unit
+  def mergeWith(other: ExecutionContext, entityById: EntityById): Unit
   def createClone(): ExecutionContext
 
   def setCachedProperty(key: CachedNodeProperty, value: Value): Unit
@@ -154,7 +155,7 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
 
   private def fail(): Nothing = throw new InternalException("Tried using a map context as a slotted context")
 
-  override def mergeWith(other: ExecutionContext): Unit = other match {
+  override def mergeWith(other: ExecutionContext, entityById: EntityById): Unit = other match {
     case otherMapCtx: MapExecutionContext =>
       m ++= otherMapCtx.m
       if (otherMapCtx.cachedProperties != null) {

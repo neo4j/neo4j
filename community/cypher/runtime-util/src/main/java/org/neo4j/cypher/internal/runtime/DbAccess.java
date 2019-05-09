@@ -32,12 +32,8 @@ import org.neo4j.values.virtual.RelationshipValue;
 /**
  * Used to expose db access to expressions
  */
-public interface DbAccess
+public interface DbAccess extends EntityById
 {
-    NodeValue nodeById( long id );
-
-    RelationshipValue relationshipById( long id );
-
     Value nodeProperty( long node, int property, NodeCursor nodeCursor, PropertyCursor propertyCursor );
 
     int[] nodePropertyIds( long node, NodeCursor nodeCursor, PropertyCursor propertyCursor );

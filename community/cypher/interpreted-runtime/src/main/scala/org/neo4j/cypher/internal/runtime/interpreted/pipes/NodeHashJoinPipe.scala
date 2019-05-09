@@ -52,7 +52,7 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
           val lhsRows = table.getOrElse(joinKey, mutable.MutableList.empty)
           lhsRows.map { lhsRow =>
             val output = lhsRow.createClone()
-            output.mergeWith(rhsRow)
+            output.mergeWith(rhsRow, state.query)
             output
           }
         }
