@@ -19,36 +19,37 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import java.util.Arrays.copyOf
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 
 import org.neo4j.graphdb
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.JavaConverters._
 
 class TestSubscriber extends QuerySubscriber {
 
-  private val records = ArrayBuffer.empty[List[AnyValue]]
-  @volatile private var current: Array[AnyValue] = _
-  @volatile private var done = false
-  private var numberOfSeenRecords = 0
+  private val records = new ConcurrentLinkedQueue[Seq[AnyValue]]()
+  private var current: ConcurrentLinkedQueue[AnyValue] = _
+  private val done = new AtomicBoolean(false)
+  private val numberOfSeenRecords = new AtomicInteger(0)
 
   override def onResult(numberOfFields: Int): Unit = {
-    numberOfSeenRecords = 0
-    current = new Array[AnyValue](numberOfFields)
+    numberOfSeenRecords.set(0)
   }
 
   override def onRecord(): Unit = {
-    numberOfSeenRecords += 1
+    current = new ConcurrentLinkedQueue[AnyValue]()
+    numberOfSeenRecords.incrementAndGet()
   }
 
   override def onField(offset: Int, value: AnyValue): Unit = {
-    current(offset) = value
+    current.add(value)
   }
 
   override def onRecordCompleted(): Unit = {
-    records.append(current.toList)
+    records.add(current.asScala.toSeq)
   }
 
   override def onError(throwable: Throwable): Unit = {
@@ -56,15 +57,14 @@ class TestSubscriber extends QuerySubscriber {
   }
 
   override def onResultCompleted(statistics: graphdb.QueryStatistics): Unit = {
-    done = true
+    done.set(true)
   }
 
-  def isCompleted: Boolean = done
+  def isCompleted: Boolean = done.get()
 
-  def lastSeen: Seq[AnyValue] = copyOf(current, current.length)
+  def lastSeen: Seq[AnyValue] = current.asScala.toSeq
 
-  def resultsInLastBatch: Int = numberOfSeenRecords
+  def resultsInLastBatch: Int = numberOfSeenRecords.get()
 
-  //convert to list since nested array equality doesn't work nicely in tests
-  def allSeen: Seq[Seq[AnyValue]] = records
+  def allSeen: Seq[Seq[AnyValue]] = records.asScala.toSeq
 }

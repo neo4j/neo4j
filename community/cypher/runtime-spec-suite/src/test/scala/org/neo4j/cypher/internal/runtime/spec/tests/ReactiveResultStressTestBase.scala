@@ -23,6 +23,7 @@ import org.neo4j.configuration.GraphDatabaseSettings.{cypher_morsel_size, cypher
 import org.neo4j.cypher.internal.runtime.spec.tests.ReactiveResultStressTestBase.{MORSEL_SIZE, WORKERS}
 import org.neo4j.cypher.internal.runtime.spec.{Edition, LogicalQueryBuilder, RuntimeTestSuite}
 import org.neo4j.cypher.internal.{CypherRuntime, LogicalQuery, RuntimeContext}
+import org.scalatest.concurrent.Eventually
 
 import scala.util.Random
 object ReactiveResultStressTestBase {
@@ -35,7 +36,7 @@ abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](edition: 
                                                                        sizeHint: Int)
   extends RuntimeTestSuite[CONTEXT](edition.copyWith(
     cypher_morsel_size -> MORSEL_SIZE.toString,
-    cypher_worker_count -> WORKERS.toString), runtime) {
+    cypher_worker_count -> WORKERS.toString), runtime) with Eventually {
   private val random = new Random(seed = 31)
 
   test("should handle allNodeScan") {
@@ -97,8 +98,15 @@ abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](edition: 
       val requested = request()
       runtimeResult.request(requested)
       hasMore = runtimeResult.await()
-      subscriber.isCompleted should equal(!hasMore)
-      subscriber.resultsInLastBatch should be <= requested
+
+      if (!hasMore) {
+        eventually {
+          subscriber.isCompleted should equal(true)
+        }
+      }
+      eventually {
+        subscriber.resultsInLastBatch should be <= requested
+      }
     }
     subscriber.allSeen.size
   }
