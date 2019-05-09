@@ -125,11 +125,13 @@ public class TransactionStateMachineV1SPITest
         return txIdStore;
     }
 
-    private static TransactionStateMachineV1SPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration, Clock clock )
+    private static TransactionStateMachineV1SPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration, Clock clock ) throws Exception
     {
         CompositeDatabaseAvailabilityGuard compositeGuard = mock( CompositeDatabaseAvailabilityGuard.class );
         DatabaseAvailabilityGuard databaseAvailabilityGuard =
                 new DatabaseAvailabilityGuard( new DatabaseId( DEFAULT_DATABASE_NAME ), clock, NullLog.getInstance(), 0, compositeGuard );
+        databaseAvailabilityGuard.init();
+        databaseAvailabilityGuard.start();
         return createTxSpi( txIdStore, txAwaitDuration, databaseAvailabilityGuard, clock );
     }
 

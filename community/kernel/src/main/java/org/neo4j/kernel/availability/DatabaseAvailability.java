@@ -47,8 +47,11 @@ public class DatabaseAvailability extends LifecycleAdapter
         this.transactionCounters = transactionCounters;
         this.awaitActiveTransactionDeadlineMillis = awaitActiveTransactionDeadlineMillis;
         this.clock = clock;
+    }
 
-        // On initial setup, deny availability
+    @Override
+    public void init() throws Exception
+    {
         databaseAvailabilityGuard.require( UNAVAILABILITY_REQUIREMENT );
     }
 

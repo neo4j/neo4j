@@ -30,9 +30,9 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
@@ -101,7 +101,7 @@ class DatabaseStartupTest
         GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
-            assertThrows( TransactionFailureException.class, databaseService::beginTx );
+            assertThrows( DatabaseShutdownException.class, databaseService::beginTx );
             DatabaseManager<?> databaseManager = getDatabaseManager( (GraphDatabaseAPI) databaseService );
             DatabaseContext databaseContext = databaseManager.getDatabaseContext( new DatabaseId( databaseLayout.getDatabaseName() ) ).get();
             assertTrue( databaseContext.isFailed() );
@@ -146,7 +146,7 @@ class DatabaseStartupTest
         GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
-            assertThrows( TransactionFailureException.class, databaseService::beginTx );
+            assertThrows( DatabaseShutdownException.class, databaseService::beginTx );
             DatabaseManager<?> databaseManager = getDatabaseManager( (GraphDatabaseAPI) databaseService );
             DatabaseContext databaseContext = databaseManager.getDatabaseContext( new DatabaseId( databaseLayout.getDatabaseName() ) ).get();
             assertTrue( databaseContext.isFailed() );
