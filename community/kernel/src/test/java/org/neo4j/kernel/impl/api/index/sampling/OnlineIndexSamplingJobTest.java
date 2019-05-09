@@ -76,7 +76,7 @@ class OnlineIndexSamplingJobTest
         job.run();
 
         // then
-        verify( indexStatisticsStore ).replaceIndexCounts( indexId, indexUniqueValues, indexSize, indexSize );
+        verify( indexStatisticsStore ).replaceStats( indexId, indexUniqueValues, indexSize, indexSize );
         verifyNoMoreInteractions( indexStatisticsStore );
     }
 

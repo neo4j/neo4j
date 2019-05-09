@@ -37,6 +37,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * A simple store for keeping index statistics counts, like number of updates, index size, number of unique values a.s.o.
@@ -48,11 +49,8 @@ import org.neo4j.register.Register.DoubleLongRegister;
 public class IndexStatisticsStore extends LifecycleAdapter implements IndexStatisticsVisitor.Visitable
 {
     // Used in GBPTree.seek. Please don't use for writes
-    private static final IndexStatisticsKey LOWEST_KEY = new IndexStatisticsKey( Byte.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE );
-    private static final IndexStatisticsKey HIGHEST_KEY = new IndexStatisticsKey( Byte.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE );
-
-    private static final byte TYPE_STATISTICS = 1;
-    private static final byte TYPE_SAMPLE = 2;
+    private static final IndexStatisticsKey LOWEST_KEY = new IndexStatisticsKey( Long.MIN_VALUE );
+    private static final IndexStatisticsKey HIGHEST_KEY = new IndexStatisticsKey( Long.MAX_VALUE );
 
     private final PageCache pageCache;
     private final File file;
@@ -96,7 +94,16 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
      */
     public DoubleLongRegister indexUpdatesAndSize( long indexId, DoubleLongRegister target )
     {
-        return read( target, new IndexStatisticsKey( TYPE_STATISTICS, indexId, 0 ) );
+        IndexStatisticsValue value = cache.get( new IndexStatisticsKey( indexId ) );
+        if ( value != null )
+        {
+            target.write( value.getUpdatesCount(), value.getIndexSize() );
+        }
+        else
+        {
+            target.write( 0, 0 );
+        }
+        return target;
     }
 
     /**
@@ -111,15 +118,10 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
      */
     public DoubleLongRegister indexSample( long indexId, DoubleLongRegister target )
     {
-        return read( target, new IndexStatisticsKey( TYPE_SAMPLE, indexId, 0 ) );
-    }
-
-    private DoubleLongRegister read( DoubleLongRegister target, IndexStatisticsKey key )
-    {
-        IndexStatisticsValue value = cache.get( key );
+        IndexStatisticsValue value = cache.get( new IndexStatisticsKey( indexId ) );
         if ( value != null )
         {
-            target.write( value.first, value.second );
+            target.write( value.getSampleUniqueValues(), value.getSampleSize() );
         }
         else
         {
@@ -128,48 +130,38 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         return target;
     }
 
-    void replaceIndexUpdateAndSize( long indexId, long updatesCount, long indexSize )
+    public void replaceStats( long indexId, long numberOfUniqueValuesInSample, long sampleSize, long indexSize )
     {
-        IndexStatisticsKey key = new IndexStatisticsKey( TYPE_STATISTICS, indexId, 0 );
-        IndexStatisticsValue value = new IndexStatisticsValue( updatesCount, indexSize );
-        cache.put( key, value );
+        replaceStats( indexId, numberOfUniqueValuesInSample, sampleSize, 0, indexSize );
     }
 
-    void replaceIndexSample( long indexId, long numberOfUniqueValuesInSample, long sampleSize )
+    @VisibleForTesting
+    void replaceStats( long indexId, long numberOfUniqueValuesInSample, long sampleSize, long updatesCount, long indexSize )
     {
-        IndexStatisticsKey key = new IndexStatisticsKey( TYPE_SAMPLE, indexId, 0 );
-        IndexStatisticsValue value = new IndexStatisticsValue( numberOfUniqueValuesInSample, sampleSize );
+        IndexStatisticsKey key = new IndexStatisticsKey( indexId );
+        IndexStatisticsValue value = new IndexStatisticsValue( numberOfUniqueValuesInSample, sampleSize, updatesCount, indexSize );
         cache.put( key, value );
-    }
-
-    /**
-     * Convenience for setting values for updates, size and sample counts.
-     */
-    public void replaceIndexCounts( long indexId, long numberOfUniqueValuesInSample, long sampleSize, long indexSize )
-    {
-        replaceIndexSample( indexId, numberOfUniqueValuesInSample, sampleSize );
-        replaceIndexUpdateAndSize( indexId, 0L, indexSize );
     }
 
     public void removeIndex( long indexId )
     {
-        cache.remove( new IndexStatisticsKey( TYPE_STATISTICS, indexId, 0 ) );
-        cache.remove( new IndexStatisticsKey( TYPE_SAMPLE, indexId, 0 ) );
+        cache.remove( new IndexStatisticsKey( indexId ) );
     }
 
     public void incrementIndexUpdates( long indexId, long delta )
     {
-        IndexStatisticsKey key = new IndexStatisticsKey( TYPE_STATISTICS, indexId, 0 );
+        IndexStatisticsKey key = new IndexStatisticsKey( indexId );
         boolean replaced;
         do
         {
-            IndexStatisticsValue existingValue = cache.get( key );
-            if ( existingValue == null )
+            IndexStatisticsValue existing = cache.get( key );
+            if ( existing == null )
             {
                 return;
             }
-            IndexStatisticsValue value = new IndexStatisticsValue( existingValue.first + delta, existingValue.second );
-            replaced = cache.replace( key, existingValue, value );
+            IndexStatisticsValue value = new IndexStatisticsValue(
+                    existing.getSampleUniqueValues(), existing.getSampleSize(), existing.getUpdatesCount() + delta, existing.getIndexSize() );
+            replaced = cache.replace( key, existing, value );
         }
         while ( !replaced );
     }
@@ -179,20 +171,8 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     {
         try
         {
-            scanTree( ( key, value ) ->
-            {
-                switch ( key.type )
-                {
-                case TYPE_STATISTICS:
-                    visitor.visitIndexStatistics( key.indexId, value.first, value.second );
-                    break;
-                case TYPE_SAMPLE:
-                    visitor.visitIndexSample( key.indexId, value.first, value.second );
-                    break;
-                default:
-                    throw new IllegalArgumentException( "Unknown type of " + key );
-                }
-            } );
+            scanTree( ( key, value ) -> visitor.visitIndexStatistics( key.getIndexId(),
+                    value.getSampleUniqueValues(), value.getSampleSize(), value.getUpdatesCount(), value.getIndexSize() ) );
         }
         catch ( IOException e )
         {
@@ -215,7 +195,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
             while ( seek.next() )
             {
                 IndexStatisticsKey key = layout.copyKey( seek.key(), new IndexStatisticsKey() );
-                IndexStatisticsValue value = layout.copyValue( seek.value(), new IndexStatisticsValue() );
+                IndexStatisticsValue value = seek.value().copy();
                 consumer.accept( key, value );
             }
         }

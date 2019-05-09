@@ -25,7 +25,6 @@ import org.neo4j.io.pagecache.PageCursor;
 
 /**
  * {@link GBPTree} layout in {@link IndexStatisticsStore}, using {@link IndexStatisticsKey} and {@link IndexStatisticsValue}.
- * Basically a 1B type + 16B key and a 16B value.
  */
 class IndexStatisticsLayout extends Layout.Adapter<IndexStatisticsKey,IndexStatisticsValue>
 {
@@ -38,9 +37,7 @@ class IndexStatisticsLayout extends Layout.Adapter<IndexStatisticsKey,IndexStati
     @Override
     public IndexStatisticsKey copyKey( IndexStatisticsKey key, IndexStatisticsKey into )
     {
-        into.type = key.type;
-        into.indexId = key.indexId;
-        into.additional = key.additional;
+        into.setIndexId( key.getIndexId() );
         return into;
     }
 
@@ -48,13 +45,6 @@ class IndexStatisticsLayout extends Layout.Adapter<IndexStatisticsKey,IndexStati
     public IndexStatisticsValue newValue()
     {
         return new IndexStatisticsValue();
-    }
-
-    IndexStatisticsValue copyValue( IndexStatisticsValue value, IndexStatisticsValue into )
-    {
-        into.first = value.first;
-        into.second = value.second;
-        return into;
     }
 
     @Override
@@ -72,31 +62,31 @@ class IndexStatisticsLayout extends Layout.Adapter<IndexStatisticsKey,IndexStati
     @Override
     public void writeKey( PageCursor cursor, IndexStatisticsKey key )
     {
-        cursor.putByte( key.type );
-        cursor.putLong( key.indexId );
-        cursor.putLong( key.additional );
+        cursor.putLong( key.getIndexId() );
     }
 
     @Override
     public void writeValue( PageCursor cursor, IndexStatisticsValue value )
     {
-        cursor.putLong( value.first );
-        cursor.putLong( value.second );
+        cursor.putLong( value.getSampleUniqueValues() );
+        cursor.putLong( value.getSampleSize() );
+        cursor.putLong( value.getUpdatesCount() );
+        cursor.putLong( value.getIndexSize() );
     }
 
     @Override
     public void readKey( PageCursor cursor, IndexStatisticsKey into, int keySize )
     {
-        into.type = cursor.getByte();
-        into.indexId = cursor.getLong();
-        into.additional = cursor.getLong();
+        into.setIndexId( cursor.getLong() );
     }
 
     @Override
     public void readValue( PageCursor cursor, IndexStatisticsValue into, int valueSize )
     {
-        into.first = cursor.getLong();
-        into.second = cursor.getLong();
+        into.setSampleUniqueValues( cursor.getLong() );
+        into.setSampleSize( cursor.getLong() );
+        into.setUpdatesCount( cursor.getLong() );
+        into.setIndexSize( cursor.getLong() );
     }
 
     @Override
@@ -126,16 +116,6 @@ class IndexStatisticsLayout extends Layout.Adapter<IndexStatisticsKey,IndexStati
     @Override
     public int compare( IndexStatisticsKey o1, IndexStatisticsKey o2 )
     {
-        int typeCompare = Byte.compare( o1.type, o2.type );
-        if ( typeCompare != 0 )
-        {
-            return typeCompare;
-        }
-        int keyCompare = Long.compare( o1.indexId, o2.indexId );
-        if ( keyCompare != 0 )
-        {
-            return keyCompare;
-        }
-        return Long.compare( o1.additional, o2.additional );
+        return Long.compare( o1.getIndexId(), o2.getIndexId() );
     }
 }

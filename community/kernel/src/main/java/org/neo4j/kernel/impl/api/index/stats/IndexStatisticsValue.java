@@ -19,49 +19,110 @@
  */
 package org.neo4j.kernel.impl.api.index.stats;
 
-import java.util.Objects;
-
-/**
- * Values in {@link IndexStatisticsStore}, having 16B of data.
- */
+// this is a necessary evil for GBP tree
+@SuppressWarnings( {"NonFinalFieldReferenceInEquals", "NonFinalFieldReferencedInHashCode"} )
 class IndexStatisticsValue
 {
-    static final int SIZE = Long.SIZE * 2;
+    static final int SIZE = Long.SIZE * 4;
 
-    // Two longs, used for storing arbitrary counts, depending on what type of key this value is paired with.
-    long first;
-    long second;
+    private long sampleUniqueValues;
+    private long sampleSize;
+    private long updatesCount;
+    private long indexSize;
 
     IndexStatisticsValue()
     {
     }
 
-    IndexStatisticsValue( long first, long second )
+    IndexStatisticsValue( long sampleUniqueValues, long sampleSize, long updatesCount, long indexSize )
     {
-        this.first = first;
-        this.second = second;
+        this.sampleUniqueValues = sampleUniqueValues;
+        this.sampleSize = sampleSize;
+        this.updatesCount = updatesCount;
+        this.indexSize = indexSize;
+    }
+
+    long getSampleUniqueValues()
+    {
+        return sampleUniqueValues;
+    }
+
+    void setSampleUniqueValues( long sampleUniqueValues )
+    {
+        this.sampleUniqueValues = sampleUniqueValues;
+    }
+
+    public long getSampleSize()
+    {
+        return sampleSize;
+    }
+
+    public void setSampleSize( long sampleSize )
+    {
+        this.sampleSize = sampleSize;
+    }
+
+    long getUpdatesCount()
+    {
+        return updatesCount;
+    }
+
+    void setUpdatesCount( long updatesCount )
+    {
+        this.updatesCount = updatesCount;
+    }
+
+    public long getIndexSize()
+    {
+        return indexSize;
+    }
+
+    public void setIndexSize( long indexSize )
+    {
+        this.indexSize = indexSize;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( first, second );
+        int result = (int) (sampleUniqueValues ^ (sampleUniqueValues >>> 32));
+        result = 31 * result + (int) (sampleSize ^ (sampleSize >>> 32));
+        result = 31 * result + (int) (updatesCount ^ (updatesCount >>> 32));
+        result = 31 * result + (int) (indexSize ^ (indexSize >>> 32));
+        return result;
     }
 
     @Override
-    public boolean equals( Object obj )
+    public boolean equals( Object o )
     {
-        if ( obj instanceof IndexStatisticsValue )
+        if ( this == o )
         {
-            IndexStatisticsValue other = (IndexStatisticsValue) obj;
-            return first == other.first && second == other.second;
+            return true;
         }
-        return false;
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        final IndexStatisticsValue that = (IndexStatisticsValue) o;
+
+        if ( sampleUniqueValues != that.sampleUniqueValues )
+        {
+            return false;
+        }
+        if ( sampleSize != that.sampleSize )
+        {
+            return false;
+        }
+        if ( updatesCount != that.updatesCount )
+        {
+            return false;
+        }
+        return indexSize == that.indexSize;
     }
 
-    @Override
-    public String toString()
+    public IndexStatisticsValue copy()
     {
-        return "[first:" + first + ",second:" + second + "]";
+        return new IndexStatisticsValue( sampleUniqueValues, sampleSize, updatesCount, indexSize );
     }
 }

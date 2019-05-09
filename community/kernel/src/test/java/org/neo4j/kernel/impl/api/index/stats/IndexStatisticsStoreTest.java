@@ -74,13 +74,13 @@ public class IndexStatisticsStoreTest
         long indexId = 4;
 
         // when
-        store.replaceIndexSample( indexId, 123, 456 );
+        store.replaceStats( indexId, 123, 456, 0, 0 );
 
         // then
         assertRegister( 123, 456, store.indexSample( indexId, newDoubleLongRegister() ) );
 
         // and when
-        store.replaceIndexSample( indexId, 444, 555 );
+        store.replaceStats( indexId, 444, 555, 0, 0 );
 
         // then
         assertRegister( 444, 555, store.indexSample( indexId, newDoubleLongRegister() ) );
@@ -93,13 +93,13 @@ public class IndexStatisticsStoreTest
         long indexId = 4;
 
         // when
-        store.replaceIndexUpdateAndSize( indexId, 123, 456 );
+        store.replaceStats( indexId, 0, 0, 123, 456 );
 
         // then
         assertRegister( 123, 456, store.indexUpdatesAndSize( indexId, newDoubleLongRegister() ) );
 
         // and when
-        store.replaceIndexUpdateAndSize( indexId, 444, 555 );
+        store.replaceStats( indexId, 0, 0, 444, 555 );
 
         // then
         assertRegister( 444, 555, store.indexUpdatesAndSize( indexId, newDoubleLongRegister() ) );
@@ -110,7 +110,7 @@ public class IndexStatisticsStoreTest
     {
         // given
         long indexId = 4;
-        store.replaceIndexUpdateAndSize( indexId, 123, 456 );
+        store.replaceStats( indexId, 0, 0, 123, 456 );
 
         // when
         store.incrementIndexUpdates( indexId, 5 );
@@ -125,10 +125,8 @@ public class IndexStatisticsStoreTest
         // given
         long indexId1 = 1;
         long indexId2 = 2;
-        store.replaceIndexUpdateAndSize( indexId1, 15, 20 );
-        store.replaceIndexUpdateAndSize( indexId2, 25, 35 );
-        store.replaceIndexSample( indexId1, 100, 200 );
-        store.replaceIndexSample( indexId2, 200, 300 );
+        store.replaceStats( indexId1, 100, 200, 15, 20 );
+        store.replaceStats( indexId2, 200, 300, 25, 35 );
 
         // when
         restartStore();
@@ -157,7 +155,7 @@ public class IndexStatisticsStoreTest
         Race race = new Race();
         int contestants = 20;
         int delta = 3;
-        store.replaceIndexUpdateAndSize( indexId, 0, 0 );
+        store.replaceStats( indexId, 0, 0, 0 );
         race.addContestants( contestants, () -> store.incrementIndexUpdates( indexId, delta ), 1 );
 
         // when
@@ -189,7 +187,7 @@ public class IndexStatisticsStoreTest
         for ( int i = 0; i < indexes; i++ )
         {
             int indexId = i;
-            store.replaceIndexUpdateAndSize( indexId, 0, 0 );
+            store.replaceStats( indexId, 0, 0, 0 );
             race.addContestants( contestantsPerIndex, () ->
             {
                 while ( !checkpointDone.get() )

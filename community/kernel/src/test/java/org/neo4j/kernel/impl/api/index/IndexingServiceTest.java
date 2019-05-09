@@ -193,6 +193,8 @@ public class IndexingServiceTest
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
         when( indexStatisticsStore.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )
                 .thenAnswer( invocation -> invocation.getArgument( 1 ) );
+        when( indexStatisticsStore.indexUpdatesAndSize( anyLong(), any( DoubleLongRegister.class ) ) )
+                .thenAnswer( invocation -> invocation.getArgument( 1 ) );
         when( storeView.newPropertyAccessor() ).thenReturn( propertyAccessor );
         when( indexProvider.getCapability( any() ) ).thenReturn( IndexCapability.NO_CAPABILITY );
     }

@@ -26,11 +26,5 @@ public interface IndexStatisticsVisitor
         void visit( IndexStatisticsVisitor visitor );
     }
 
-    default void visitIndexStatistics( long indexId, long updates, long size )
-    {
-    }
-
-    default void visitIndexSample( long indexId, long unique, long size )
-    {
-    }
+    void visitIndexStatistics( long indexId, long sampleUniqueValues, long sampleSize, long updatesCount, long indexSize );
 }

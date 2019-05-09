@@ -19,51 +19,64 @@
  */
 package org.neo4j.kernel.impl.api.index.stats;
 
-import static java.util.Objects.hash;
-
-/**
- * Keys in {@link IndexStatisticsStore}, having a type and 16B key.
- */
-class IndexStatisticsKey
+// this is a necessary evil for GBP tree
+@SuppressWarnings( {"NonFinalFieldReferenceInEquals", "NonFinalFieldReferencedInHashCode"} )
+class IndexStatisticsKey implements Comparable<IndexStatisticsKey>
 {
-    static final int SIZE = Byte.SIZE + Long.SIZE * 2;
+    static final int SIZE = Long.SIZE;
 
-    byte type;
-    long indexId;
-    // used for future expansion of type of keys in the index statistics store.
-    long additional;
+    private long indexId;
 
     IndexStatisticsKey()
     {
     }
 
-    IndexStatisticsKey( byte type, long indexId, long additional )
+    IndexStatisticsKey( long indexId )
     {
-        this.type = type;
         this.indexId = indexId;
-        this.additional = additional;
+    }
+
+    long getIndexId()
+    {
+        return indexId;
+    }
+
+    void setIndexId( long indexId )
+    {
+        this.indexId = indexId;
     }
 
     @Override
     public int hashCode()
     {
-        return hash( type, indexId, additional );
+        return Long.hashCode( indexId );
     }
 
     @Override
-    public boolean equals( Object obj )
+    public boolean equals( Object o )
     {
-        if ( obj instanceof IndexStatisticsKey )
+        if ( this == o )
         {
-            IndexStatisticsKey other = (IndexStatisticsKey) obj;
-            return type == other.type && indexId == other.indexId && additional == other.additional;
+            return true;
         }
-        return false;
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        final IndexStatisticsKey that = (IndexStatisticsKey) o;
+        return indexId == that.indexId;
     }
 
     @Override
     public String toString()
     {
-        return "[type:" + type + ",indexId:" + indexId + ",additional:" + additional + "]";
+        return "[indexId:" + indexId + "]";
+    }
+
+    @Override
+    public int compareTo( IndexStatisticsKey other )
+    {
+        return Long.compare( indexId, other.indexId );
     }
 }
