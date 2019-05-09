@@ -83,7 +83,7 @@ public class CachedThreadPoolExecutorFactory implements ExecutorFactory
         throw new IllegalArgumentException( String.format( "Unsupported queue size %d for thread pool creation.", queueSize ) );
     }
 
-    private class ThreadPool extends ThreadPoolExecutor
+    private static class ThreadPool extends ThreadPoolExecutor
     {
 
         private ThreadPool( int corePoolSize, int maxPoolSize, Duration keepAlive, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory,

@@ -24,14 +24,14 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 
 import javax.annotation.Nullable;
 
-import org.neo4j.collection.PrimitiveLongCollections.PrimitiveLongBaseIterator;
+import org.neo4j.collection.PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
 
 /**
  * Applies a diffset to the provided {@link LongIterator}.
  */
-class DiffApplyingPrimitiveLongIterator extends PrimitiveLongBaseIterator implements PrimitiveLongResourceIterator
+class DiffApplyingPrimitiveLongIterator extends AbstractPrimitiveLongBaseIterator implements PrimitiveLongResourceIterator
 {
     protected enum Phase
     {

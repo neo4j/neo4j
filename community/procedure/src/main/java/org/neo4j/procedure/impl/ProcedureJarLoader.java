@@ -32,7 +32,7 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
-import org.neo4j.collection.PrefetchingRawIterator;
+import org.neo4j.collection.AbstractPrefetchingRawIterator;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
@@ -134,7 +134,7 @@ class ProcedureJarLoader
     {
         ZipInputStream zip = new ZipInputStream( jar.openStream() );
 
-        return new PrefetchingRawIterator<Class<?>,IOException>()
+        return new AbstractPrefetchingRawIterator<Class<?>,IOException>()
         {
             @Override
             protected Class<?> fetchNextOrNull() throws IOException

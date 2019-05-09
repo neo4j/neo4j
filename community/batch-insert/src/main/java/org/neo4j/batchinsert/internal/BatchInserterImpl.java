@@ -84,6 +84,7 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -258,7 +259,7 @@ public class BatchInserterImpl implements BatchInserter
         this.jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         life.add( jobScheduler );
 
-        storeLocker = tryLockStore( fileSystem );
+        storeLocker = tryLockStore( fileSystem, this.databaseLayout.getStoreLayout() );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, NullLog.getInstance(),
                 EmptyVersionContextSupplier.EMPTY, jobScheduler );
@@ -343,9 +344,9 @@ public class BatchInserterImpl implements BatchInserter
         storageReader = new RecordStorageReader( neoStores );
     }
 
-    private StoreLocker tryLockStore( FileSystemAbstraction fileSystem )
+    private static StoreLocker tryLockStore( FileSystemAbstraction fileSystem, StoreLayout storeLayout )
     {
-        StoreLocker storeLocker = new GlobalStoreLocker( fileSystem, this.databaseLayout.getStoreLayout() );
+        StoreLocker storeLocker = new GlobalStoreLocker( fileSystem, storeLayout );
         try
         {
             storeLocker.checkLock();

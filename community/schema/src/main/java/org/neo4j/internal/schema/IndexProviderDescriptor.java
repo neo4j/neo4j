@@ -76,7 +76,7 @@ public class IndexProviderDescriptor
     @Override
     public boolean equals( Object obj )
     {
-        if ( obj instanceof IndexProviderDescriptor )
+        if ( this.getClass() == obj.getClass() )
         {
             IndexProviderDescriptor otherDescriptor = (IndexProviderDescriptor) obj;
             return key.equals( otherDescriptor.getKey() ) && version.equals( otherDescriptor.getVersion() );

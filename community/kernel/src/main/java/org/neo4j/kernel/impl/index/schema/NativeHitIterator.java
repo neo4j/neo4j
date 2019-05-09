@@ -37,7 +37,7 @@ import org.neo4j.values.storable.Value;
  * @param <VALUE> type of {@link NativeIndexValue}.
  */
 public class NativeHitIterator<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
-        extends PrimitiveLongCollections.PrimitiveLongBaseIterator
+        extends PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator
         implements PrimitiveLongResourceIterator
 {
     private final Seeker<KEY,VALUE> seeker;

@@ -29,8 +29,13 @@ import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
  * For set operations (union, intersect, symmetricDifference), input and output arrays
  * are arrays containing unique values in sorted ascending order.
  */
-public class PrimitiveArrays
+public final class PrimitiveArrays
 {
+    private PrimitiveArrays()
+    {
+        // No instances allowed
+    }
+
     /**
      * Compute union of two sets of integers represented as sorted arrays.
      *
@@ -291,7 +296,4 @@ public class PrimitiveArrays
         return true;
     }
 
-    private PrimitiveArrays()
-    {   // No instances allowed
-    }
 }

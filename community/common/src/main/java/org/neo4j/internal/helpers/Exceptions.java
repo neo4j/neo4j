@@ -226,10 +226,10 @@ public class Exceptions
                 " tid=" + thread.getId() +
                 " " + thread.getState().name().toLowerCase() + "\n" );
         builder.append( "   " ).append( State.class.getName() ).append( ": " )
-                .append( thread.getState().name().toUpperCase() ).append( "\n" );
+                .append( thread.getState().name().toUpperCase() ).append( '\n' );
         for ( StackTraceElement element : elements )
         {
-            builder.append( "      at " ).append( element.getClassName() ).append( "." )
+            builder.append( "      at " ).append( element.getClassName() ).append( '.' )
                     .append( element.getMethodName() );
             if ( element.isNativeMethod() )
             {

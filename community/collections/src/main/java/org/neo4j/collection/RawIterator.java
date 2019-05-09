@@ -53,12 +53,12 @@ public interface RawIterator<T,EXCEPTION extends Exception>
 
     static <T, EX extends Exception> RawIterator<T, EX> of( T ... values )
     {
-        return new RawIterator<T,EX>()
+        return new RawIterator<>()
         {
             private int position;
 
             @Override
-            public boolean hasNext() throws EX
+            public boolean hasNext()
             {
                 return position < values.length;
             }
@@ -81,7 +81,7 @@ public interface RawIterator<T,EXCEPTION extends Exception>
      */
     static <T, EX extends Exception> RawIterator<T, EX> from( ThrowingSupplier<T, EX> supplier )
     {
-        return new PrefetchingRawIterator<T,EX>()
+        return new AbstractPrefetchingRawIterator<T,EX>()
         {
             @Override
             protected T fetchNextOrNull() throws EX

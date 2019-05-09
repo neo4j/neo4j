@@ -33,7 +33,7 @@ public interface RelationshipIterator extends RelationshipVisitor.Home, LongIter
     <EXCEPTION extends Exception> boolean relationshipVisit( long relationshipId,
             RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION;
 
-    class Empty extends PrimitiveLongCollections.PrimitiveLongBaseIterator implements RelationshipIterator
+    class Empty extends PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator implements RelationshipIterator
     {
         @Override
         public <EXCEPTION extends Exception> boolean relationshipVisit( long relationshipId,

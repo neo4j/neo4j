@@ -181,7 +181,7 @@ public abstract class IndexFiles
             ensureDirectoryExists( fs, directory );
         }
 
-        private String indexFileName( long indexId )
+        private static String indexFileName( long indexId )
         {
             return "index-" + indexId;
         }

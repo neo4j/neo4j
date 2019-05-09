@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.PriorityQueue;
 
-import org.neo4j.collection.PrimitiveLongCollections.PrimitiveLongBaseIterator;
+import org.neo4j.collection.PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.ResourceUtils;
 
@@ -35,7 +35,7 @@ import org.neo4j.graphdb.ResourceUtils;
  * <p>
  * Source iterators must be sorted in ascending order.
  */
-class CompositeLabelScanValueIterator extends PrimitiveLongBaseIterator implements PrimitiveLongResourceIterator
+class CompositeLabelScanValueIterator extends AbstractPrimitiveLongBaseIterator implements PrimitiveLongResourceIterator
 {
     private final PriorityQueue<IdAndSource> sortedIterators = new PriorityQueue<>();
     private final int atLeastNumberOfLabels;

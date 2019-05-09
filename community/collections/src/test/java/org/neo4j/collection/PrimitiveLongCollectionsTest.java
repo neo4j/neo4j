@@ -33,7 +33,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
-import org.neo4j.collection.PrimitiveLongCollections.PrimitiveLongBaseIterator;
+import org.neo4j.collection.PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator;
 
 import static java.util.Arrays.asList;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
@@ -157,7 +157,7 @@ class PrimitiveLongCollectionsTest
     {
         // GIVEN
         AtomicLong count = new AtomicLong( 2 );
-        LongIterator iterator = new PrimitiveLongBaseIterator()
+        LongIterator iterator = new AbstractPrimitiveLongBaseIterator()
         {
             @Override
             protected boolean fetchNext()

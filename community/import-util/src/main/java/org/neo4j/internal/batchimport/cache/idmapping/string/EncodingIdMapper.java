@@ -890,7 +890,7 @@ public class EncodingIdMapper implements IdMapper
 
         // Scans duplicate marks in tracker cache. There is no bit left in dataCache to store this bit so we use
         // the tracker cache as if each index into it was the node id.
-        return new PrimitiveLongCollections.PrimitiveLongBaseIterator()
+        return new PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator()
         {
             private long nodeId;
 

@@ -43,7 +43,7 @@ import static java.util.Arrays.copyOf;
 /**
  * Basic and common primitive int collection utils and manipulations.
  */
-public class PrimitiveLongCollections
+public final class PrimitiveLongCollections
 {
     public static final long[] EMPTY_LONG_ARRAY = new long[0];
 
@@ -54,14 +54,15 @@ public class PrimitiveLongCollections
 
     public static LongIterator iterator( final long... items )
     {
-        return new PrimitiveLongResourceCollections.PrimitiveLongBaseResourceIterator( Resource.EMPTY )
+        return new PrimitiveLongResourceCollections.AbstractPrimitiveLongBaseResourceIterator( Resource.EMPTY )
         {
             private int index = -1;
 
             @Override
             protected boolean fetchNext()
             {
-                return ++index < items.length && next( items[index] );
+                index++;
+                return index < items.length && next( items[index] );
             }
         };
     }
@@ -79,7 +80,7 @@ public class PrimitiveLongCollections
 
     public static LongIterator filter( LongIterator source, final LongPredicate filter )
     {
-        return new PrimitiveLongFilteringIterator( source )
+        return new AbstractPrimitiveLongFilteringIterator( source )
         {
             @Override
             public boolean test( long item )
@@ -138,33 +139,27 @@ public class PrimitiveLongCollections
     public static int count( LongIterator iterator )
     {
         int count = 0;
-        for ( ; iterator.hasNext(); iterator.next(), count++ )
+        while ( iterator.hasNext() )
         {   // Just loop through this
+            iterator.next();
+            count++;
         }
         return count;
     }
 
     public static int countAndClose( PrimitiveLongResourceIterator iterator )
     {
-        try
+        try ( iterator )
         {
             return count( iterator );
-        }
-        finally
-        {
-            iterator.close();
         }
     }
 
     public static long[] closingAsArray( PrimitiveLongResourceIterator iterator )
     {
-        try
+        try ( iterator )
         {
             return asArray( iterator );
-        }
-        finally
-        {
-            iterator.close();
         }
     }
 
@@ -210,7 +205,7 @@ public class PrimitiveLongCollections
 
     public static LongIterator toPrimitiveIterator( final Iterator<Long> iterator )
     {
-        return new PrimitiveLongBaseIterator()
+        return new AbstractPrimitiveLongBaseIterator()
         {
             @Override
             protected boolean fetchNext()
@@ -222,7 +217,7 @@ public class PrimitiveLongCollections
                     {
                         throw new IllegalArgumentException( "Cannot convert null Long to primitive long" );
                     }
-                    return next( nextValue.longValue() );
+                    return next( nextValue );
                 }
                 return false;
             }
@@ -231,7 +226,7 @@ public class PrimitiveLongCollections
 
     public static <T> Iterator<T> map( final LongFunction<T> mapFunction, final LongIterator source )
     {
-        return new Iterator<T>()
+        return new Iterator<>()
         {
             @Override
             public boolean hasNext()
@@ -271,7 +266,7 @@ public class PrimitiveLongCollections
 
     public static Iterator<Long> toIterator( final LongIterator primIterator )
     {
-        return new Iterator<Long>()
+        return new Iterator<>()
         {
             @Override
             public boolean hasNext()
@@ -288,7 +283,7 @@ public class PrimitiveLongCollections
             @Override
             public void remove()
             {
-                throw new UnsupportedOperationException(  );
+                throw new UnsupportedOperationException();
             }
         };
     }
@@ -395,7 +390,7 @@ public class PrimitiveLongCollections
     /**
      * Base iterator for simpler implementations of {@link LongIterator}s.
      */
-    public abstract static class PrimitiveLongBaseIterator implements LongIterator
+    public abstract static class AbstractPrimitiveLongBaseIterator implements LongIterator
     {
         private boolean hasNextDecided;
         private boolean hasNext;
@@ -450,7 +445,7 @@ public class PrimitiveLongCollections
         }
     }
 
-    public static class PrimitiveLongConcatingIterator extends PrimitiveLongBaseIterator
+    public static class PrimitiveLongConcatingIterator extends AbstractPrimitiveLongBaseIterator
     {
         private final Iterator<? extends LongIterator> iterators;
         private LongIterator currentIterator;
@@ -483,12 +478,12 @@ public class PrimitiveLongCollections
         }
     }
 
-    public abstract static class PrimitiveLongFilteringIterator extends PrimitiveLongBaseIterator
+    public abstract static class AbstractPrimitiveLongFilteringIterator extends AbstractPrimitiveLongBaseIterator
             implements LongPredicate
     {
         protected final LongIterator source;
 
-        PrimitiveLongFilteringIterator( LongIterator source )
+        AbstractPrimitiveLongFilteringIterator( LongIterator source )
         {
             this.source = source;
         }
@@ -506,12 +501,9 @@ public class PrimitiveLongCollections
             }
             return false;
         }
-
-        @Override
-        public abstract boolean test( long testItem );
     }
 
-    public static class PrimitiveLongRangeIterator extends PrimitiveLongBaseIterator
+    public static class PrimitiveLongRangeIterator extends AbstractPrimitiveLongBaseIterator
     {
         private long current;
         private final long end;

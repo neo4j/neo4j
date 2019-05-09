@@ -54,7 +54,7 @@ public interface ValuesIterator extends DocValuesAccess, LongIterator
         }
     };
 
-    abstract class Adapter extends PrimitiveLongCollections.PrimitiveLongBaseIterator implements ValuesIterator
+    abstract class Adapter extends PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator implements ValuesIterator
     {
         protected final int size;
         protected int index;

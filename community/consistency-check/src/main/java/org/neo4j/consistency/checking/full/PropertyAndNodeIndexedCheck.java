@@ -269,7 +269,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
             return indexedNodeIds;
         }
         LongIterator filtered = LookupFilter.exactIndexMatches( propertyReader, indexedNodeIds, query );
-        return new PrimitiveLongResourceCollections.PrimitiveLongBaseResourceIterator( indexedNodeIds )
+        return new PrimitiveLongResourceCollections.AbstractPrimitiveLongBaseResourceIterator( indexedNodeIds )
         {
             @Override
             protected boolean fetchNext()

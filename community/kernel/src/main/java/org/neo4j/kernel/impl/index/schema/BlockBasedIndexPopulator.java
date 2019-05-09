@@ -277,10 +277,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         {
             // Propagating merge exception from other thread
             Throwable executionException = e.getCause();
-            if ( executionException instanceof RuntimeException )
-            {
-                throw (RuntimeException) executionException;
-            }
+            Exceptions.throwIfUnchecked( executionException );
             throw new RuntimeException( executionException );
         }
         finally

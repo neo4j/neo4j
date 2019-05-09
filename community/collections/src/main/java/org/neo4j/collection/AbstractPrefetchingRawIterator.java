@@ -21,10 +21,10 @@ package org.neo4j.collection;
 
 import java.util.NoSuchElementException;
 
-public abstract class PrefetchingRawIterator<T, EXCEPTION extends Exception> implements RawIterator<T, EXCEPTION>
+public abstract class AbstractPrefetchingRawIterator<T, EXCEPTION extends Exception> implements RawIterator<T, EXCEPTION>
 {
-    boolean hasFetchedNext;
-    T nextObject;
+    private boolean hasFetchedNext;
+    private T nextObject;
 
     /**
      * @return {@code true} if there is a next item to be returned from the next
