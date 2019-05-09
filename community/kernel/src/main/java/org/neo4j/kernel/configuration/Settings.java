@@ -969,7 +969,7 @@ public class Settings
             {
                 if ( forbiddenValues.length > 1 )
                 {
-                    return format( "is none of [%s]", Arrays.stream( forbiddenValues ).reduce( ( s1, s2 ) -> String.format( "`%s`, `%s`", s1, s2 ) ).get() );
+                    return format( "is none of %s", Arrays.toString( forbiddenValues ) );
                 }
                 else if ( forbiddenValues.length == 1 )
                 {
