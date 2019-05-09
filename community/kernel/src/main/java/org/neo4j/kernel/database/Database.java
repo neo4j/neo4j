@@ -116,6 +116,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruningImpl;
@@ -714,15 +715,15 @@ public class Database extends LifecycleAdapter
     {
         boolean truncateStartedDatabase = started;
         List<File> filesToKeep = filesToKeepOnTruncation( databaseLayout );
-        //TODO: this log files can be empty if db is not started
-        LogFiles logFiles = databaseDependencies.resolveDependency( LogFiles.class );
+        File[] transactionLogs = databaseDependencies != null ? databaseDependencies.resolveDependency( LogFiles.class ).logFiles()
+                                                              : new TransactionLogFilesHelper( fs, databaseLayout.getTransactionLogsDirectory() ).getLogFiles();
         if ( truncateStartedDatabase )
         {
             prepareStop( pagedFile -> !filesToKeep.contains( pagedFile.file() ) );
             stop();
         }
 
-        List<File> filesToDelete = filesToDeleteOnTruncation( filesToKeep, databaseLayout, logFiles );
+        List<File> filesToDelete = filesToDeleteOnTruncation( filesToKeep, databaseLayout, transactionLogs );
         deleteDatabaseFiles( filesToDelete );
         if ( truncateStartedDatabase )
         {

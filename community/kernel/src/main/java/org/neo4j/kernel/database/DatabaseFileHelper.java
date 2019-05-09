@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 
 class DatabaseFileHelper
 {
@@ -40,14 +39,13 @@ class DatabaseFileHelper
         return Arrays.stream( filesToKeep ).flatMap( databaseLayout::allFiles ).collect( Collectors.toList() );
     }
 
-    static List<File> filesToDeleteOnTruncation( List<File> filesToKeep, DatabaseLayout databaseLayout, LogFiles logFiles )
+    static List<File> filesToDeleteOnTruncation( List<File> filesToKeep, DatabaseLayout databaseLayout, File[] transactionLogs )
     {
         List<File> filesToDelete = new ArrayList<>();
         Collections.addAll( filesToDelete, databaseLayout.listDatabaseFiles( file -> !filesToKeep.contains( file ) ) );
         File transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
         if ( !transactionLogsDirectory.equals( databaseLayout.databaseDirectory() ) )
         {
-            File[] transactionLogs = logFiles.logFiles();
             if ( transactionLogs != null )
             {
                 Collections.addAll( filesToDelete, transactionLogs );
