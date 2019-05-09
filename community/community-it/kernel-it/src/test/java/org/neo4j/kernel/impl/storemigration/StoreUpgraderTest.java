@@ -518,9 +518,8 @@ public class StoreUpgraderTest
 
     private List<File> migrationHelperDirs()
     {
-        File[] tmpDirs = databaseLayout.listDatabaseFiles( ( file ) -> file.isDirectory() &&
-                                            (file.getName().equals( StoreUpgrader.MIGRATION_DIRECTORY ) ||
-                                                    file.getName().startsWith( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY )) );
+        File[] tmpDirs = databaseLayout.listDatabaseFiles( file -> file.isDirectory() &&
+                (file.getName().equals( StoreUpgrader.MIGRATION_DIRECTORY ) || file.getName().startsWith( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY )) );
         assertNotNull( "Some IO errors occurred", tmpDirs );
         return Arrays.asList( tmpDirs );
     }
