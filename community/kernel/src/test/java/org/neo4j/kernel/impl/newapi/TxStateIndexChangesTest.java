@@ -830,10 +830,8 @@ class TxStateIndexChangesTest
         }
     }
 
-    private void assertContains( IndexOrder indexOrder,
-                                 AddedAndRemoved changes,
-                                 AddedWithValuesAndRemoved changesWithValues,
-                                 NodeWithPropertyValues[] expected )
+    private static void assertContains( IndexOrder indexOrder, AddedAndRemoved changes, AddedWithValuesAndRemoved changesWithValues,
+            NodeWithPropertyValues[] expected )
     {
         if ( indexOrder == IndexOrder.DESCENDING )
         {
@@ -859,22 +857,22 @@ class TxStateIndexChangesTest
         return new NodeWithPropertyValues( nodeId, Arrays.stream( values ).map( ValueUtils::of ).toArray( Value[]::new ) );
     }
 
-    private void assertContains( LongIterable iterable, long... nodeIds )
+    private static void assertContains( LongIterable iterable, long... nodeIds )
     {
         assertEquals( newSetWith( nodeIds ), LongSets.immutable.ofAll( iterable ) );
     }
 
-    private void assertContains( Iterable<NodeWithPropertyValues> iterable, NodeWithPropertyValues... expected )
+    private static void assertContains( Iterable<NodeWithPropertyValues> iterable, NodeWithPropertyValues... expected )
     {
         assertEquals( UnifiedSet.newSetWith( expected ), UnifiedSet.newSet( iterable ) );
     }
 
-    private void assertContainsInOrder( LongIterable iterable, long... nodeIds )
+    private static void assertContainsInOrder( LongIterable iterable, long... nodeIds )
     {
-        assertThat( Arrays.asList( iterable.toArray() ), contains( nodeIds ) );
+        assertTrue( iterable.containsAll( nodeIds ), "Expected: " + iterable.toString() + " to contains: " + Arrays.toString( nodeIds ) );
     }
 
-    private void assertContainsInOrder( Iterable<NodeWithPropertyValues> iterable, NodeWithPropertyValues... expected )
+    private static void assertContainsInOrder( Iterable<NodeWithPropertyValues> iterable, NodeWithPropertyValues... expected )
     {
         if ( expected.length == 0 )
         {

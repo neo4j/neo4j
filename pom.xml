@@ -833,7 +833,7 @@
 
     <profiles>
         <profile>
-            <id>errorprone-1.8</id>
+            <id>errorprone</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
@@ -842,34 +842,22 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>default-compile</id>
-                                <phase>compile</phase>
-                                <goals>
-                                    <goal>compile</goal>
-                                </goals>
-                                <configuration>
-                                    <compilerId>javac-with-errorprone</compilerId>
-                                    <forceJavacCompilerUse>true</forceJavacCompilerUse>
-                                    <compilerArgs>
-                                        <arg>-Xep:ReturnValueIgnored:WARN</arg>
-                                    </compilerArgs>
-                                </configuration>
-                            </execution>
-                        </executions>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.codehaus.plexus</groupId>
-                                <artifactId>plexus-compiler-javac-errorprone</artifactId>
-                                <version>2.8.5</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>com.google.errorprone</groupId>
-                                <artifactId>error_prone_core</artifactId>
-                                <version>2.3.2</version>
-                            </dependency>
-                        </dependencies>
+                        <configuration>
+                            <compilerArgs>
+                                <arg>-XDcompilePolicy=simple</arg>
+                                <arg>-Xplugin:ErrorProne
+                                     -Xep:ReturnValueIgnored:WARN
+                                     -Xep:InvalidZoneId:WARN
+                                </arg>
+                            </compilerArgs>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>com.google.errorprone</groupId>
+                                    <artifactId>error_prone_core</artifactId>
+                                    <version>2.3.3</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>
