@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import java.util.Arrays.copyOf
+
 import org.neo4j.graphdb
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
@@ -28,8 +30,8 @@ import scala.collection.mutable.ArrayBuffer
 class TestSubscriber extends QuerySubscriber {
 
   private val records = ArrayBuffer.empty[List[AnyValue]]
-  private var current: Array[AnyValue] = _
-  private var done = false
+  @volatile private var current: Array[AnyValue] = _
+  @volatile private var done = false
   private var numberOfSeenRecords = 0
 
   override def onResult(numberOfFields: Int): Unit = {
@@ -59,7 +61,7 @@ class TestSubscriber extends QuerySubscriber {
 
   def isCompleted: Boolean = done
 
-  def lastSeen: Seq[AnyValue] = current
+  def lastSeen: Seq[AnyValue] = copyOf(current, current.length)
 
   def resultsInLastBatch: Int = numberOfSeenRecords
 

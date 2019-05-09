@@ -25,6 +25,7 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.{longValue, stringValue}
+import org.scalatest.concurrent.Eventually.eventually
 
 abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                                  runtime: CypherRuntime[CONTEXT])
@@ -53,9 +54,23 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
 
     //request 3
     result.request(1)
-    result.await() shouldBe false
+    val lastAwait = result.await()
     subscriber.lastSeen should equal(Seq[AnyValue](stringValue("3"), longValue(3)))
-    subscriber.isCompleted shouldBe true
+
+    //There is no more data so lastAwait should in that regard be false, however
+    //we cannot guarantee that since we are also out of demand. In the next request-await cycle
+    //we should in that case just return false though.
+    if (lastAwait) {
+      result.request(1)
+      result.await() shouldBe false
+      eventually {
+        subscriber.isCompleted shouldBe true
+      }
+    } else {
+      eventually {
+        subscriber.isCompleted shouldBe true
+      }
+    }
   }
 
   test("should handle requesting more data than available") {
