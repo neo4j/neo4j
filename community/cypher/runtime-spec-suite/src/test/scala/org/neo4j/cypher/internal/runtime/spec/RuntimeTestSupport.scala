@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryConte
 import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.dbms.database.DatabaseManagementService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.internal.kernel.api.security.LoginContext
@@ -36,31 +35,36 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySubscriber}
 import org.neo4j.kernel.impl.query.QuerySubscriber.NOT_A_SUBSCRIBER
 import org.neo4j.kernel.impl.util.DefaultValueMapper
+import org.neo4j.kernel.lifecycle.LifeSupport
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.VirtualValues
-import org.scalatest.BeforeAndAfterAll
 
 /**
   * This class contains various ugliness needed to perform physical compilation
   * and then execute a query.
   */
-class RuntimeTestSupport[CONTEXT <: RuntimeContext](val managementService: DatabaseManagementService,
-                                                    val graphDb: GraphDatabaseService,
+class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseService,
                                                     val edition: Edition[CONTEXT]
-                                                   ) extends CypherFunSuite with BeforeAndAfterAll
-{
+                                                   ) extends CypherFunSuite {
+
   private val cypherGraphDb = new GraphDatabaseCypherService(graphDb)
+  private val lifeSupport = new LifeSupport
   private val resolver: DependencyResolver = cypherGraphDb.getDependencyResolver
-  private val runtimeContextCreator = edition.runtimeContextCreator(resolver)
+  private val runtimeContextCreator = edition.runtimeContextCreator(resolver, lifeSupport)
   private val monitors = resolver.resolveDependency(classOf[Monitors])
   private val contextFactory = Neo4jTransactionalContextFactory.create(cypherGraphDb)
   private val spi: EmbeddedProxySPI = resolver.resolveDependency(classOf[EmbeddedProxySPI], DependencyResolver.SelectionStrategy.SINGLE)
 
   val valueMapper = new DefaultValueMapper(spi)
 
-  override def afterAll(): Unit = {
-    managementService.shutdown()
-    super.afterAll()
+  def start(): Unit = {
+    lifeSupport.init()
+    lifeSupport.start()
+  }
+
+  def stop(): Unit = {
+    lifeSupport.stop()
+    lifeSupport.shutdown()
   }
 
   def run[RESULT](logicalQuery: LogicalQuery,

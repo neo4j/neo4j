@@ -426,7 +426,17 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( indexProviderMap );
             databaseDependencies.satisfyDependency( forceOperation );
 
-            this.executionEngine = QueryEngineProvider.initialize( databaseDependencies, databaseFacade, engineProviders, isSystem() );
+            this.executionEngine = QueryEngineProvider.initialize( databaseDependencies,
+                                                                   databaseFacade,
+                                                                   engineProviders,
+                                                                   isSystem(),
+                                                                   QueryEngineProvider.spi( logProvider,
+                                                                                            databaseMonitors,
+                                                                                            scheduler,
+                                                                                            life,
+                                                                                            getKernel(),
+                                                                                            globalConfig ) );
+
             this.checkpointerLifecycle = new CheckpointerLifecycle( transactionLogModule.checkPointer(), databaseHealth );
 
             databaseDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );

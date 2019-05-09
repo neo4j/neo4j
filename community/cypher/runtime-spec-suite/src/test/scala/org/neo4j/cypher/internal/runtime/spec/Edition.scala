@@ -26,10 +26,11 @@ import org.neo4j.configuration.{Config, GraphDatabaseSettings}
 import org.neo4j.cypher.internal._
 import org.neo4j.dbms.database.DatabaseManagementService
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.kernel.lifecycle.LifeSupport
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
 class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabaseManagementServiceBuilder,
-                                         runtimeContextCreatorFun: (CypherRuntimeConfiguration, DependencyResolver) => RuntimeContextCreator[CONTEXT],
+                                         runtimeContextCreatorFun: (CypherRuntimeConfiguration, DependencyResolver, LifeSupport) => RuntimeContextCreator[CONTEXT],
                                          configs: (Setting[_], String)*) {
 
   import scala.collection.JavaConverters._
@@ -51,8 +52,8 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
     configs.collectFirst { case (key, value) if key == setting => value }
   }
 
-  def runtimeContextCreator(resolver: DependencyResolver): RuntimeContextCreator[CONTEXT] =
-    runtimeContextCreatorFun(runtimeConfig(), resolver)
+  def runtimeContextCreator(resolver: DependencyResolver, lifeSupport: LifeSupport): RuntimeContextCreator[CONTEXT] =
+    runtimeContextCreatorFun(runtimeConfig(), resolver, lifeSupport)
 
   private def runtimeConfig() = {
     val javaConfigMap: util.Map[String, String] = configs.map { case (setting, value) => (setting.name(), value) }.toMap.asJava
@@ -64,6 +65,6 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
 object COMMUNITY {
   val EDITION = new Edition(
     () => new TestDatabaseManagementServiceBuilder,
-    (runtimeConfig, _) => CommunityRuntimeContextCreator(runtimeConfig),
+    (runtimeConfig, _, _) => CommunityRuntimeContextCreator(runtimeConfig),
     GraphDatabaseSettings.cypher_hints_error -> "true")
 }

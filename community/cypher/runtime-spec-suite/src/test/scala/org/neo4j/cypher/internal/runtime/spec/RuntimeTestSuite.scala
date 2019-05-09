@@ -72,11 +72,13 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   final override def beforeEach(): Unit = {
     managementService = edition.newGraphManagementService()
     graphDb = managementService.database(DEFAULT_DATABASE_NAME)
-    runtimeTestSupport = new RuntimeTestSupport[CONTEXT](managementService, graphDb, edition)
+    runtimeTestSupport = new RuntimeTestSupport[CONTEXT](graphDb, edition)
+    runtimeTestSupport.start()
     super.beforeEach()
   }
 
   final override def afterEach(): Unit = {
+    runtimeTestSupport.stop()
     managementService.shutdown()
     afterShutdown()
   }

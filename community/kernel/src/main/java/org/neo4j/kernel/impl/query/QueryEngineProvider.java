@@ -24,8 +24,14 @@ import java.util.List;
 
 import org.neo4j.annotations.service.Service;
 import org.neo4j.collection.Dependencies;
+import org.neo4j.configuration.Config;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.monitoring.Monitors;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.NamedService;
 
 import static org.neo4j.helpers.collection.Iterables.asList;
@@ -33,12 +39,18 @@ import static org.neo4j.helpers.collection.Iterables.asList;
 @Service
 public abstract class QueryEngineProvider implements NamedService
 {
-    protected abstract QueryExecutionEngine createEngine( Dependencies deps, GraphDatabaseAPI graphAPI, boolean isSystemDatabase );
+    protected abstract QueryExecutionEngine createEngine( Dependencies deps,
+                                                          GraphDatabaseAPI graphAPI,
+                                                          boolean isSystemDatabase,
+                                                          SPI spi );
 
     protected abstract int enginePriority();
 
-    public static QueryExecutionEngine initialize( Dependencies deps, GraphDatabaseAPI graphAPI,
-            Iterable<QueryEngineProvider> providers, boolean isSystemDatabase )
+    public static QueryExecutionEngine initialize( Dependencies deps,
+                                                   GraphDatabaseAPI graphAPI,
+                                                   Iterable<QueryEngineProvider> providers,
+                                                   boolean isSystemDatabase,
+                                                   SPI spi )
     {
         List<QueryEngineProvider> engineProviders = asList( providers );
         engineProviders.sort( Comparator.comparingInt( QueryEngineProvider::enginePriority ) );
@@ -48,12 +60,74 @@ public abstract class QueryEngineProvider implements NamedService
         {
             return noEngine();
         }
-        QueryExecutionEngine engine = provider.createEngine( deps, graphAPI, isSystemDatabase );
+        QueryExecutionEngine engine = provider.createEngine( deps, graphAPI, isSystemDatabase, spi );
         return deps.satisfyDependency( engine );
     }
 
     public static QueryExecutionEngine noEngine()
     {
         return NoQueryEngine.INSTANCE;
+    }
+
+    public interface SPI
+    {
+        LogProvider logProvider();
+
+        Monitors monitors();
+
+        JobScheduler jobScheduler();
+
+        LifeSupport lifeSupport();
+
+        Kernel kernel();
+
+        Config config();
+    }
+
+    public static SPI spi( LogProvider logProvider,
+                           Monitors monitors,
+                           JobScheduler jobScheduler,
+                           LifeSupport lifeSupport,
+                           Kernel kernel,
+                           Config config )
+    {
+        return new SPI()
+        {
+            @Override
+            public LogProvider logProvider()
+            {
+                return logProvider;
+            }
+
+            @Override
+            public Monitors monitors()
+            {
+                return monitors;
+            }
+
+            @Override
+            public JobScheduler jobScheduler()
+            {
+                return jobScheduler;
+            }
+
+            @Override
+            public LifeSupport lifeSupport()
+            {
+                return lifeSupport;
+            }
+
+            @Override
+            public Kernel kernel()
+            {
+                return kernel;
+            }
+
+            @Override
+            public Config config()
+            {
+                return config;
+            }
+        };
     }
 }

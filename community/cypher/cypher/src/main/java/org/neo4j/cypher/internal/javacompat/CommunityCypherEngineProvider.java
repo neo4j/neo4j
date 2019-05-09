@@ -53,46 +53,46 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
         return 42; // Lower means better. The enterprise version will have a lower number
     }
 
-    protected CompilerFactory makeCompilerFactory( GraphDatabaseCypherService queryService, Monitors monitors, LogProvider logProvider,
-            CypherPlannerConfiguration plannerConfig, CypherRuntimeConfiguration runtimeConfig )
+    protected CompilerFactory makeCompilerFactory( GraphDatabaseCypherService queryService,
+                                                   SPI spi,
+                                                   CypherPlannerConfiguration plannerConfig,
+                                                   CypherRuntimeConfiguration runtimeConfig )
     {
-        return new CommunityCompilerFactory( queryService, monitors, logProvider, plannerConfig, runtimeConfig );
+        return new CommunityCompilerFactory( queryService, spi.monitors(), spi.logProvider(), plannerConfig, runtimeConfig );
     }
 
     @Override
-    protected QueryExecutionEngine createEngine( Dependencies deps, GraphDatabaseAPI graphAPI, boolean isSystemDatabase )
+    protected QueryExecutionEngine createEngine( Dependencies deps,
+                                                 GraphDatabaseAPI graphAPI,
+                                                 boolean isSystemDatabase,
+                                                 SPI spi )
     {
         GraphDatabaseCypherService queryService = new GraphDatabaseCypherService( graphAPI );
         deps.satisfyDependency( queryService );
-
-        DependencyResolver resolver = graphAPI.getDependencyResolver();
-        LogService logService = resolver.resolveDependency( LogService.class );
-        Monitors monitors = resolver.resolveDependency( Monitors.class );
-        Config config = resolver.resolveDependency( Config.class );
-        CypherConfiguration cypherConfig = CypherConfiguration.fromConfig( config );
-        CypherPlannerConfiguration plannerConfig = cypherConfig.toCypherPlannerConfiguration( config, isSystemDatabase );
+        CypherConfiguration cypherConfig = CypherConfiguration.fromConfig( spi.config() );
+        CypherPlannerConfiguration plannerConfig = cypherConfig.toCypherPlannerConfiguration( spi.config(), isSystemDatabase );
         CypherRuntimeConfiguration runtimeConfig = cypherConfig.toCypherRuntimeConfiguration();
-        LogProvider logProvider = logService.getInternalLogProvider();
-        CompilerFactory compilerFactory = makeCompilerFactory( queryService, monitors, logProvider, plannerConfig, runtimeConfig );
+        CompilerFactory compilerFactory = makeCompilerFactory( queryService, spi, plannerConfig, runtimeConfig );
         deps.satisfyDependencies( compilerFactory );
         if ( isSystemDatabase )
         {
-            CypherPlannerConfiguration innerPlannerConfig = cypherConfig.toCypherPlannerConfiguration( config, false );
+            CypherPlannerConfiguration innerPlannerConfig = cypherConfig.toCypherPlannerConfiguration( spi.config(), false );
             CommunityCompilerFactory innerCompilerFactory =
-                    new CommunityCompilerFactory( queryService, monitors, logProvider, innerPlannerConfig, runtimeConfig );
-            ExecutionEngine inner = new ExecutionEngine( queryService, logProvider, innerCompilerFactory );
+                    new CommunityCompilerFactory( queryService,spi.monitors(), spi.logProvider(), innerPlannerConfig, runtimeConfig );
+            ExecutionEngine inner = new ExecutionEngine( queryService, spi.logProvider(), innerCompilerFactory );
             SystemDatabaseInnerEngine innerEngine = ( query, parameters, context ) -> inner.executeQuery( query, parameters, context, false );
             SystemDatabaseInnerAccessor innerAccessor = new SystemDatabaseInnerAccessor( (GraphDatabaseFacade) graphAPI, innerEngine );
+            DependencyResolver resolver = graphAPI.getDependencyResolver();
             ((Dependencies) resolver).satisfyDependency( innerAccessor );
-            return new SystemExecutionEngine( queryService, logProvider, compilerFactory, innerCompilerFactory );
+            return new SystemExecutionEngine( queryService, spi.logProvider(), compilerFactory, innerCompilerFactory );
         }
-        else if ( config.get( GraphDatabaseSettings.snapshot_query ) )
+        else if ( spi.config().get( GraphDatabaseSettings.snapshot_query ) )
         {
-            return new SnapshotExecutionEngine( queryService, config, logProvider, compilerFactory );
+            return new SnapshotExecutionEngine( queryService, spi.config(), spi.logProvider(), compilerFactory );
         }
         else
         {
-            return new ExecutionEngine( queryService, logProvider, compilerFactory );
+            return new ExecutionEngine( queryService, spi.logProvider(), compilerFactory );
         }
     }
 }
