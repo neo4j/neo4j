@@ -53,11 +53,11 @@ import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.harness.internal.InProcessNeo4j;
 import org.neo4j.harness.internal.Neo4jBuilder;
-import org.neo4j.harness.junit.Neo4j;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -67,7 +67,6 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -90,7 +89,6 @@ import static org.neo4j.helpers.collection.Iterables.asIterable;
 import static org.neo4j.helpers.collection.Iterators.single;
 import static org.neo4j.server.ServerTestUtils.connectorAddress;
 import static org.neo4j.server.ServerTestUtils.verifyConnector;
-import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
 class InProcessServerBuilderIT
@@ -153,7 +151,8 @@ class InProcessServerBuilderIT
             // Then
             assertThat( HTTP.GET( neo4j.httpURI().toString() ).status(), equalTo( 200 ) );
             assertThat( HTTP.GET( neo4j.httpsURI().toString() ).status(), equalTo( 200 ) );
-            assertDBConfig( neo4j, "20", GraphDatabaseSettings.dense_node_threshold.name() );
+            Config config = ((GraphDatabaseAPI) neo4j.graph()).getDependencyResolver().resolveDependency( Config.class );
+            assertEquals( 20, config.get( GraphDatabaseSettings.dense_node_threshold ) );
         }
     }
 
@@ -441,17 +440,6 @@ class InProcessServerBuilderIT
             assertEquals( propertyValue, node.getProperty( propertyKey ) );
             tx.success();
         }
-    }
-
-    private void assertDBConfig( Neo4j server, String expected, String key )
-    {
-        String query = "CALL dbms.queryJmx('org.neo4j:*,name=Configuration') YIELD attributes WITH attributes['" + key +
-                "']['value'] AS value RETURN CASE WHEN value = '" + expected + "' THEN 'SUCCESS' ELSE 'FAIL' END AS response";
-
-        HTTP.Response response =
-                HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit", rawPayload( "{\"statements\":[ {\"statement\": \"" + query + "\"}]}" ) );
-
-        assertThat( response.rawContent(), containsString( "SUCCESS" ) );
     }
 
     private void trustAllSSLCerts() throws NoSuchAlgorithmException, KeyManagementException
