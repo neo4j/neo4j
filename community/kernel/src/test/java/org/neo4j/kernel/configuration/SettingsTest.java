@@ -47,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
+import static org.neo4j.kernel.configuration.Settings.LONG;
 import static org.neo4j.kernel.configuration.Settings.NORMALIZED_RELATIVE_URI;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
@@ -58,6 +59,7 @@ import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
+import static org.neo4j.kernel.configuration.Settings.powerOf2;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
@@ -144,6 +146,18 @@ class SettingsTest
 
         Setting<List<String>> setting3 = setting( "apa", STRING_LIST, "" );
         assertEquals( Collections.emptyList(), setting3.apply( map( stringMap() ) ) );
+    }
+
+    @Test
+    void testPowerOf2()
+    {
+        Setting<Long> setting = buildSetting( "foo", LONG, "2" ).constraint( powerOf2() ).build();
+
+        // Ok
+        assertThat( setting.apply( map( stringMap( "foo", "256" ) ) ), equalTo( 256L) );
+
+        // Bad
+        assertThrows( InvalidSettingException.class, () -> setting.apply( map( stringMap( "foo", "255" ) ) ) );
     }
 
     @Test

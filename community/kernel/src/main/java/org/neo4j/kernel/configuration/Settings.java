@@ -51,6 +51,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.helpers.Numbers;
 import org.neo4j.helpers.SocketAddressParser;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.CollectorsUtil;
@@ -946,18 +947,58 @@ public class Settings
         };
     }
 
-    public static BiFunction<String,Function<String,String>,String> except( String... forbiddenValues )
+    public static BiFunction<String,Function<String,String>,String> except( final String... forbiddenValues )
     {
-        return ( value, stringStringFunction ) ->
+        return new BiFunction<String,Function<String,String>,String>()
         {
-            if ( StringUtils.isNotBlank( value ) )
+            @Override
+            public String apply( String value, Function<String,String> stringStringFunction )
             {
-                if ( ArrayUtils.contains( forbiddenValues, value ) )
+                if ( StringUtils.isNotBlank( value ) )
                 {
-                    throw new IllegalArgumentException( format( "not allowed value is: %s", value ) );
+                    if ( ArrayUtils.contains( forbiddenValues, value ) )
+                    {
+                        throw new IllegalArgumentException( format( "not allowed value is: %s", value ) );
+                    }
                 }
+                return value;
             }
-            return value;
+
+            @Override
+            public String toString()
+            {
+                if ( forbiddenValues.length > 1 )
+                {
+                    return format( "is none of %s", Arrays.toString( forbiddenValues ) );
+                }
+                else if ( forbiddenValues.length == 1 )
+                {
+                    return format( "is not `%s`", forbiddenValues[0] );
+                }
+                return "";
+            }
+        };
+    }
+
+    public static BiFunction<Long,Function<String,String>,Long> powerOf2()
+    {
+        return new BiFunction<Long,Function<String,String>,Long>()
+        {
+            @Override
+            public Long apply( Long value, Function<String,String> settings )
+            {
+                if ( value != null && !Numbers.isPowerOfTwo( value ) )
+                {
+                    throw new IllegalArgumentException( "only power of 2 values allowed" );
+                }
+                return value;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "is power of 2";
+            }
         };
     }
 
