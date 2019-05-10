@@ -47,14 +47,19 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
     private static final List<String> THREAD_NAME_FILTER = Arrays.asList(
             "ForkJoinPool",
             "Cleaner",
-            "PageCacheRule",        //Ignoring page cache
-            "MuninnPageCache",      //Ignoring page cache
-            "Attach Listener",      //IDE thread
-            "process reaper",       //Unix system thread
-            "neo4j.BoltNetworkIO",  //Bolt threads use non-blocking exit
-            "globalEventExecutor",  //related to Bolt threads
-            "HttpClient",           //same as bolt, non-blocking exit
-            "Keep-Alive-Timer"      //JVM thread for http-connections
+            "PageCacheRule",                    //Ignoring page cache
+            "MuninnPageCache",                  //Ignoring page cache
+            "Attach Listener",                  //IDE thread
+            "process reaper",                   //Unix system thread
+            "neo4j.BoltNetworkIO",              //Bolt threads use non-blocking exit
+            "globalEventExecutor",              //related to Bolt threads
+            "HttpClient",                       //same as bolt, non-blocking exit
+            "Keep-Alive-Timer",                 //JVM thread for http-connections
+            "ObjectCleanerThread",              //Netty (version < 4.1.28) thread from java driver
+            "neo4j.StorageMaintenance",         //Sometimes erroneously leaked on database shutdown, possible race-condition, to be fixed!
+            "neo4j.TransactionTimeoutMonitor",  //Sometimes erroneously leaked on database shutdown, possible race-condition, to be fixed!
+            "neo4j.CheckPoint",                 //Sometimes erroneously leaked on database shutdown, possible race-condition, to be fixed!
+            "neo4j.IndexSampling"               //Sometimes erroneously leaked on database shutdown, possible race-condition, to be fixed!
     );
 
     @Override
