@@ -86,11 +86,7 @@ class NodeLabelSecurityFilter implements IndexProgressor.EntityValueClient, Inde
                     accessMode.allowsReadProperty( () -> Arrays.stream( labels ).mapToInt( l -> (int) l ).toArray(), prop );
         }
 
-        if ( !allowed )
-        {
-            return false;
-        }
-        return target.acceptEntity( reference, score, values );
+        return allowed && target.acceptEntity( reference, score, values );
     }
 
     @Override

@@ -247,7 +247,6 @@ public class DefaultPropertyCursor implements PropertyCursor
 
         private NodeLabels( long nodeReference, Read read )
         {
-
             this.nodeReference = nodeReference;
             this.read = read;
         }

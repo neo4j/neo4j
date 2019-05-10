@@ -44,16 +44,7 @@ public interface QueryExecutor
 
     default long executeQueryLong( String query )
     {
-        MutableLong count = new MutableLong();
-
-        final QueryResult.QueryResultVisitor<RuntimeException> resultVisitor = row ->
-        {
-            count.setValue( ((NumberValue) row.fields()[0]).longValue() );
-            return false;
-        };
-
-        executeQuery( query, Collections.emptyMap(), resultVisitor );
-        return count.getValue();
+        return executeQueryLong( query, Collections.emptyMap() );
     }
 
     default long executeQueryLong( String query, Map<String,Object> params )
