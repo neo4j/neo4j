@@ -113,8 +113,8 @@ object PatternExpressionSolver {
 
         case inExpression =>
           val expression = solveUsingGetDegree(inExpression)
-          val RewriteResult(firstStepPlan, firstStepExpression, firstStepIntroducedVariables) = patternExpressionSolver.rewriteInnerExpressions(resultPlan, expression, context)
-          val RewriteResult(secondStepPlan, secondStepExpression, secondStepintroducedVariables) = patternComprehensionSolver.rewriteInnerExpressions(firstStepPlan, firstStepExpression, context)
+          val RewriteResult(firstStepPlan, firstStepExpression, firstStepIntroducedVariables) = patternComprehensionSolver.rewriteInnerExpressions(resultPlan, expression, context)
+          val RewriteResult(secondStepPlan, secondStepExpression, secondStepintroducedVariables) = patternExpressionSolver.rewriteInnerExpressions(firstStepPlan, firstStepExpression, context)
           RewriteResult(secondStepPlan, secondStepExpression, firstStepIntroducedVariables ++ secondStepintroducedVariables)
       }
       resultPlan = plan
