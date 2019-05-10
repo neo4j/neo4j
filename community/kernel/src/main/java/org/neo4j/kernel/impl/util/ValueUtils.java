@@ -229,10 +229,10 @@ public final class ValueUtils
         return VirtualValues.list( relValues );
     }
 
-    public static MapValue asMapValue( Map<String,Object> map )
+    public static MapValue asMapValue( Map<String,?> map )
     {
         MapValueBuilder builder = new MapValueBuilder( map.size() );
-        for ( Map.Entry<String,Object> entry : map.entrySet() )
+        for ( Map.Entry<String,?> entry : map.entrySet() )
         {
             builder.add( entry.getKey(), ValueUtils.of( entry.getValue() ) );
         }
