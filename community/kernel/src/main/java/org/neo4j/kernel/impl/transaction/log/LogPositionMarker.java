@@ -54,4 +54,10 @@ public class LogPositionMarker
     {
         return byteOffset;
     }
+
+    @Override
+    public String toString()
+    {
+        return "Mark:" + newPosition().toString();
+    }
 }
