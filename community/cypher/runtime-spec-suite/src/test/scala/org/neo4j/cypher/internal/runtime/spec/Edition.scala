@@ -38,7 +38,14 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
   def newGraphManagementService(): DatabaseManagementService = {
     val graphBuilder = graphBuilderFactory().impermanent
     configs.foreach{
-      case (setting, value) => graphBuilder.setConfig(setting, value)
+      case (setting, value) =>
+        val valueInGraph =
+          setting match {
+            case GraphDatabaseSettings.cypher_morsel_runtime_scheduler => "single_threaded"
+            case GraphDatabaseSettings.cypher_worker_count => "1"
+            case _ => value
+          }
+        graphBuilder.setConfig(setting, valueInGraph)
     }
     graphBuilder.build()
   }
