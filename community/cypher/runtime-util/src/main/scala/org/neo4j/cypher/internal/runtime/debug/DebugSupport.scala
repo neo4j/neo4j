@@ -22,4 +22,11 @@ package org.neo4j.cypher.internal.runtime.debug
 object DebugSupport {
 
   final val debugLog = false
+  final val debugWorkers = false
+
+  def logWorker(str: => String): Unit = {
+    if (debugWorkers) {
+      println("        " + str)
+    }
+  }
 }

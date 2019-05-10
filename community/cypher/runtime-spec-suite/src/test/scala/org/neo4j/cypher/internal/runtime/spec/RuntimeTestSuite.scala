@@ -72,7 +72,6 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   override def beforeEach(): Unit = {
     DebugLog.beginTime()
-    DebugLog.log("before.__________")
     managementService = edition.newGraphManagementService()
     graphDb = managementService.database(DEFAULT_DATABASE_NAME)
     runtimeTestSupport = new RuntimeTestSupport[CONTEXT](graphDb, edition)

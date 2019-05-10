@@ -21,12 +21,16 @@ package org.neo4j.cypher.internal.runtime.debug
 
 object DebugLog {
 
-  private var t0: Long = _
-  private var tn: Long = _
+  private var t0: Long = 0L
+  private var tn: Long = 0L
 
   def beginTime(): Unit =
-    if (DebugSupport.debugLog)
+    if (DebugSupport.debugLog) {
+      println("")
+      println("            ~= BEGINNING OF TIME =~")
       t0 = System.currentTimeMillis()
+      log("")
+    }
 
   def log(str: => String): Unit =
     if (DebugSupport.debugLog) {
