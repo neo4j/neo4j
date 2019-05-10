@@ -145,7 +145,10 @@ public final class ValueUtils
             else
             {
                 throw new IllegalArgumentException(
-                        String.format( "Cannot convert %s of type %s to AnyValue", object, object.getClass().getName() ) );
+                        String.format( "Cannot convert %s of type %s to AnyValue, classloader-%s",
+                                object,
+                                object.getClass().getName(),
+                                object.getClass().getClassLoader().getName()) );
             }
         }
     }

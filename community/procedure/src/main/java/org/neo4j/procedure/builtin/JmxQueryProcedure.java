@@ -51,6 +51,7 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
 
+import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.longValue;
@@ -160,42 +161,65 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
 
     private AnyValue toNeo4jValue( Object attributeValue )
     {
-        // These branches as per {@link javax.management.openmbean.OpenType#ALLOWED_CLASSNAMES_LIST}
-        if ( isSimpleType( attributeValue ) )
+        //TODO: this extra error checking is temporary just for handling a flaky test
+        try
         {
-            return ValueUtils.of( attributeValue );
-        }
-        else if ( attributeValue.getClass().isArray() )
-        {
-            if ( isSimpleType( attributeValue.getClass().getComponentType() ) )
+            // These branches as per {@link javax.management.openmbean.OpenType#ALLOWED_CLASSNAMES_LIST}
+            if ( isSimpleType( attributeValue ) )
             {
                 return ValueUtils.of( attributeValue );
             }
+            else if ( attributeValue.getClass().isArray() )
+            {
+                if ( isSimpleType( attributeValue.getClass().getComponentType() ) )
+                {
+                    return ValueUtils.of( attributeValue );
+                }
+                else
+                {
+                    return toNeo4jValue( (Object[]) attributeValue );
+                }
+            }
+            else if ( attributeValue instanceof CompositeData )
+            {
+                return toNeo4jValue( (CompositeData) attributeValue );
+            }
+            else if ( attributeValue instanceof ObjectName )
+            {
+                return stringValue( ((ObjectName) attributeValue).getCanonicalName() );
+            }
+            else if ( attributeValue instanceof TabularData )
+            {
+                return toNeo4jValue( (Map<?,?>) attributeValue );
+            }
+            else if ( attributeValue instanceof Date )
+            {
+                return longValue( ((Date) attributeValue).getTime() );
+            }
             else
             {
-                return toNeo4jValue( (Object[]) attributeValue );
+                // Don't convert objects that are not OpenType values
+                return null;
             }
         }
-        else if ( attributeValue instanceof CompositeData )
+        catch ( Exception e )
         {
-            return toNeo4jValue( (CompositeData) attributeValue );
-        }
-        else if ( attributeValue instanceof ObjectName )
-        {
-            return stringValue( ((ObjectName) attributeValue).getCanonicalName() );
-        }
-        else if ( attributeValue instanceof TabularData )
-        {
-            return toNeo4jValue( (Map<?,?>) attributeValue );
-        }
-        else if ( attributeValue instanceof Date )
-        {
-            return longValue(((Date) attributeValue).getTime());
-        }
-        else
-        {
-            // Don't convert objects that are not OpenType values
-            return null;
+            if ( attributeValue == null )
+            {
+                throw new IllegalArgumentException( "Failed to convert null to NO_VALUE", e );
+            }
+            else
+            {
+                throw new IllegalArgumentException(
+                        format(
+                                "value=%s%n" +
+                                "class=%s%n" +
+                                "classLoader=%s%n",
+                                attributeValue.toString(),
+                                attributeValue.getClass().getName(),
+                                attributeValue.getClass().getClassLoader().getName() ), e );
+
+            }
         }
     }
 
@@ -218,7 +242,15 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
         MapValueBuilder properties = new MapValueBuilder();
         for ( String key : composite.getCompositeType().keySet() )
         {
-            properties.add( key, toNeo4jValue(composite.get( key )) );
+            //TODO: this extra error checking is temporary just for handling a flaky test
+            try
+            {
+                properties.add( key, toNeo4jValue( composite.get( key ) ) );
+            }
+            catch ( Exception e )
+            {
+                throw new IllegalArgumentException( format( "Failed to convert for key=%s", key ) );
+            }
         }
 
         MapValueBuilder out = new MapValueBuilder();
