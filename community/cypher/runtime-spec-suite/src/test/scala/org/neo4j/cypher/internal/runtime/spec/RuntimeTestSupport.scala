@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec
 import org.neo4j.common.DependencyResolver
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.runtime.debug.DebugLog
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
@@ -72,6 +73,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                   input: InputDataStream,
                   resultMapper: (CONTEXT, RuntimeResult) => RESULT,
                   subscriber: QuerySubscriber): RESULT = {
+    DebugLog.log("RuntimeTestSupport.run(...)")
     run(compile(logicalQuery, runtime), input, resultMapper, subscriber)
   }
 

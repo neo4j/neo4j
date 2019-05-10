@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.logical.builder.TokenResolver
+import org.neo4j.cypher.internal.runtime.debug.DebugLog
 import org.neo4j.cypher.internal.runtime.{InputCursor, InputDataStream, NoInput, QueryStatistics}
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
@@ -69,7 +70,9 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   var runtimeTestSupport: RuntimeTestSupport[CONTEXT] = _
   val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
 
-  final override def beforeEach(): Unit = {
+  override def beforeEach(): Unit = {
+    DebugLog.beginTime()
+    DebugLog.log("before.__________")
     managementService = edition.newGraphManagementService()
     graphDb = managementService.database(DEFAULT_DATABASE_NAME)
     runtimeTestSupport = new RuntimeTestSupport[CONTEXT](graphDb, edition)
@@ -77,7 +80,8 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     super.beforeEach()
   }
 
-  final override def afterEach(): Unit = {
+  override def afterEach(): Unit = {
+    DebugLog.log("")
     runtimeTestSupport.stop()
     managementService.shutdown()
     afterShutdown()
