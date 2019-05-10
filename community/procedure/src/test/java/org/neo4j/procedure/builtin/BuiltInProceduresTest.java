@@ -433,7 +433,13 @@ class BuiltInProceduresTest
             Object[] values = new Object[anyValue.length];
             for ( int i = 0; i < anyValue.length; i++ )
             {
-                values[i] = anyValue[i].map( valueMapper );
+                AnyValue value = anyValue[i];
+                //TODO: this is temporary just for flaky test investigation
+                if ( value == null )
+                {
+                    throw new NullPointerException( String.format( "Procedure returned null in row, results=%s", Arrays.toString( anyValue ) ) );
+                }
+                values[i] = value.map( valueMapper );
             }
             toReturn.add( values );
         }
