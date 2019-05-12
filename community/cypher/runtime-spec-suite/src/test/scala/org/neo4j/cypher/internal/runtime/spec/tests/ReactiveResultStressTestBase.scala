@@ -70,8 +70,7 @@ abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](edition: 
   }
 
   test("should handle input") {
-    // given
-    circleGraph(sizeHint)
+    // given, an empty graph
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

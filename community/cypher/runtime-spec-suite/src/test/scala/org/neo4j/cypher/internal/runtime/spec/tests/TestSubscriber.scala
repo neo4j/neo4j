@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
+import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.graphdb
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -32,7 +32,7 @@ class TestSubscriber extends QuerySubscriber {
 
   private val records = new ConcurrentLinkedQueue[Seq[AnyValue]]()
   private var current: ConcurrentLinkedQueue[AnyValue] = _
-  private val done = new AtomicBoolean(false)
+  @volatile private var done = false
   private val numberOfSeenRecords = new AtomicInteger(0)
 
   override def onResult(numberOfFields: Int): Unit = {
@@ -57,10 +57,10 @@ class TestSubscriber extends QuerySubscriber {
   }
 
   override def onResultCompleted(statistics: graphdb.QueryStatistics): Unit = {
-    done.set(true)
+    done = true
   }
 
-  def isCompleted: Boolean = done.get()
+  def isCompleted: Boolean = done
 
   def lastSeen: Seq[AnyValue] = current.asScala.toSeq
 
