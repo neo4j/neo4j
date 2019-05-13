@@ -246,9 +246,19 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(plan))
   }
 
-  def aggregation(groupingExpressions: Map[String, Expression],
-                  aggregationExpression: Map[String, Expression]): IMPL =
-    appendAtCurrentIndent(UnaryOperator(lp => Aggregation(lp, groupingExpressions, aggregationExpression)))
+  def aggregation(groupingExpressions: Seq[String],
+                  aggregationExpression: Seq[String]): IMPL =
+    appendAtCurrentIndent(UnaryOperator(lp => Aggregation(lp,
+      ExpressionParser.parseProjections(groupingExpressions: _*),
+      ExpressionParser.parseProjections(aggregationExpression: _*))))
+
+  def orderedAggregation(groupingExpressions: Seq[String],
+                         aggregationExpression: Seq[String],
+                         orderToLeverage: Seq[Expression]): IMPL =
+    appendAtCurrentIndent(UnaryOperator(lp => OrderedAggregation(lp,
+      ExpressionParser.parseProjections(groupingExpressions: _*),
+      ExpressionParser.parseProjections(aggregationExpression: _*),
+      orderToLeverage)))
 
   def apply(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Apply(lhs, rhs)))
@@ -272,10 +282,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(Argument()))
 
   def input(nodes: Seq[String] = Seq.empty, variables: Seq[String] = Seq.empty, nullable: Boolean = true): IMPL = {
-    if (indent != 0)
+    if (indent != 0) {
       throw new IllegalStateException("The input operator has to be the left-most leaf of the plan")
-    if (nodes.toSet.size < nodes.size || variables.toSet.size < variables.size)
+    }
+    if (nodes.toSet.size < nodes.size || variables.toSet.size < variables.size) {
       throw new IllegalArgumentException("Input must create unique variables")
+    }
     nodes.foreach(node => newNode(varFor(node)))
     appendAtCurrentIndent(LeafOperator(Input(nodes.toArray, variables.toArray, nullable)))
   }

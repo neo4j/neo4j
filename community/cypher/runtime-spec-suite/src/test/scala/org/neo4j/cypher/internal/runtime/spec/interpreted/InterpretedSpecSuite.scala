@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.interpreted
 
 import org.neo4j.cypher.internal.runtime.spec.COMMUNITY
 import org.neo4j.cypher.internal.runtime.spec.interpreted.InterpretedSpecSuite.SIZE_HINT
-import org.neo4j.cypher.internal.runtime.spec.tests.{AggregationTestBase, AllNodeScanTestBase, ArgumentTestBase, ReactiveResultTestBase, DistinctTestBase, ExpandAllTestBase, ExpandAllWithOptionalTestBase, FilterTestBase, InputTestBase, LabelScanTestBase, LimitTestBase, NodeHashJoinTestBase, NodeIndexContainsScanTestBase, NodeIndexScanTestBase, NodeIndexSeekRangeAndCompositeTestBase, NodeIndexSeekTestBase, NodeLockingUniqueIndexSeekTestBase, OrderedDistinctTestBase, PartialSortTestBase, PartialTop1TestBase, PartialTopNTestBase, ProjectionTestBase, SortTestBase, UnwindTestBase}
+import org.neo4j.cypher.internal.runtime.spec.tests.{AggregationTestBase, AllNodeScanTestBase, ArgumentTestBase, ReactiveResultTestBase, DistinctTestBase, ExpandAllTestBase, ExpandAllWithOptionalTestBase, FilterTestBase, InputTestBase, LabelScanTestBase, LimitTestBase, NodeHashJoinTestBase, NodeIndexContainsScanTestBase, NodeIndexScanTestBase, NodeIndexSeekRangeAndCompositeTestBase, NodeIndexSeekTestBase, NodeLockingUniqueIndexSeekTestBase, OrderedAggregationTestBase, OrderedDistinctTestBase, PartialSortTestBase, PartialTop1TestBase, PartialTopNTestBase, ProjectionTestBase, SortTestBase, UnwindTestBase}
 import org.neo4j.cypher.internal.{CommunityRuntimeContext, InterpretedRuntime}
 
 object InterpretedSpecSuite {
@@ -29,6 +29,7 @@ object InterpretedSpecSuite {
 }
 
 class InterpretedAggregationTest extends AggregationTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedOrderedAggregationTest extends OrderedAggregationTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedAllNodeScanTest extends AllNodeScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedExpandAllTest extends ExpandAllTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
                                with ExpandAllWithOptionalTestBase[CommunityRuntimeContext]

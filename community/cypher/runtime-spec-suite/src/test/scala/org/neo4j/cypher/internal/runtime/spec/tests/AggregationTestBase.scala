@@ -25,7 +25,6 @@ import java.util.Collections
 
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.v4_0.expressions.{CountStar, FunctionInvocation}
 import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.values.storable.{DoubleValue, DurationValue, StringValue, Values}
@@ -44,7 +43,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
-      .aggregation(Map.empty, Map("c" -> CountStar()(pos)))
+      .aggregation(Seq.empty, Seq("count(*) AS c"))
       .allNodeScan("x")
       .build()
 
@@ -63,7 +62,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("name", "c")
-      .aggregation(Map("name" -> prop("x", "name")), Map("c" -> CountStar()(pos)))
+      .aggregation(Seq("x.name AS name"), Seq("count(*) AS c"))
       .allNodeScan("x")
       .build()
 
@@ -72,6 +71,26 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("name", "c").withRows(for (i <- 0 until 10) yield {
       Array(s"bob$i", sizeHint / 10)
+    })
+  }
+
+  test("should count(*) on single primitive grouping column") {
+    // given
+    val (nodes, _) = circleGraph(sizeHint)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "c")
+      .aggregation(Seq("x AS x"), Seq("count(*) AS c"))
+      .expand("(x)--(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x", "c").withRows(nodes.map { node =>
+      Array(node, 2)
     })
   }
 
@@ -85,7 +104,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("name", "c")
-      .aggregation(Map("name" -> prop("x", "name")), Map("c" -> CountStar()(pos)))
+      .aggregation(Seq("x.name AS name"), Seq("count(*) AS c"))
       .allNodeScan("x")
       .build()
 
@@ -97,6 +116,27 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     }) :+ Array(null, sizeHint / 2))
   }
 
+  test("should count(*) on single primitive grouping column with nulls") {
+    // given
+    val (unfilteredNodes, _) = circleGraph(sizeHint)
+    val nodes = select(unfilteredNodes, nullProbability = 0.5)
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "c")
+      .aggregation(Seq("x AS x"), Seq("count(*) AS c"))
+      .expand("(x)--(y)")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected = for(node <- nodes if node != null) yield Array(node, 2)
+    runtimeResult should beColumns("x", "c").withRows(expected)
+  }
+
   test("should count(*) on two grouping columns") {
     // given
     nodePropertyGraph(sizeHint, {
@@ -106,7 +146,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("name", "surname", "c")
-      .aggregation(Map("name" -> prop("x", "name"), "surname" -> prop("x", "surname")), Map("c" -> CountStar()(pos)))
+      .aggregation(Seq("x.name AS name", "x.surname AS surname"), Seq("count(*) AS c"))
       .allNodeScan("x")
       .build()
 
@@ -118,6 +158,28 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     })
   }
 
+  test("should count(*) on two primitive grouping columns with nulls") {
+    // given
+    val (unfilteredNodes, _) = circleGraph(sizeHint)
+    val nodes = select(unfilteredNodes, nullProbability = 0.5)
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "c")
+      .aggregation(Seq("x AS x", "x2 AS x2"), Seq("count(*) AS c"))
+      .projection("x AS x2")
+      .expand("(x)--(y)")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected = for(node <- nodes if node != null) yield Array(node, 2)
+    runtimeResult should beColumns("x", "c").withRows(expected)
+  }
+
   test("should count(*) on three grouping columns") {
     // given
     nodePropertyGraph(sizeHint, {
@@ -127,7 +189,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("name", "surname", "dead", "c")
-      .aggregation(Map("name" -> prop("x", "name"), "surname" -> prop("x", "surname"), "dead" -> prop("x", "dead")), Map("c" -> CountStar()(pos)))
+      .aggregation(Seq("x.name AS name", "x.surname AS surname", "x.dead AS dead"), Seq("count(*) AS c"))
       .allNodeScan("x")
       .build()
 
@@ -148,7 +210,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
-      .aggregation(Map.empty, Map("c" -> count(prop("x", "num"))))
+      .aggregation(Seq.empty, Seq("count(x.num) AS c"))
       .allNodeScan("x")
       .build()
 
@@ -167,7 +229,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
-      .aggregation(Map.empty, Map("c" -> collect(prop("x", "num"))))
+      .aggregation(Seq.empty, Seq("collect(x.num) AS c"))
       .allNodeScan("x")
       .build()
 
@@ -189,7 +251,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
-      .aggregation(Map.empty, Map("c" -> sum(prop("x", "num"))))
+      .aggregation(Seq.empty, Seq("sum(x.num) AS c"))
       .allNodeScan("x")
       .build()
 
@@ -200,20 +262,20 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail sum() on mixed numbers and durations I") {
-    assertFailOnMixedNumberAndDuration(sum(varFor("x")))
+    assertFailOnMixedNumberAndDuration("sum(x)")
   }
 
   test("should fail avg() on mixed numbers and durations I") {
-    assertFailOnMixedNumberAndDuration(avg(varFor("x")))
+    assertFailOnMixedNumberAndDuration("avg(x)")
   }
 
-  private def assertFailOnMixedNumberAndDuration(aggregatingFunction: FunctionInvocation) {
+  private def assertFailOnMixedNumberAndDuration(aggregatingFunction: String) {
     // when
     val NUMBER: Array[Any] = Array(1.0)
     val DURATION: Array[Any] = Array(Duration.of(1, ChronoUnit.NANOS))
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
-      .aggregation(Map.empty, Map("c" -> aggregatingFunction))
+      .aggregation(Seq.empty, Seq(s"$aggregatingFunction AS c"))
       .input(variables = Seq("x"))
       .build()
 
@@ -257,7 +319,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
-      .aggregation(Map.empty, Map("c" -> min(prop("x", "num"))))
+      .aggregation(Seq.empty, Seq("min(x.num) AS c"))
       .allNodeScan("x")
       .build()
 
@@ -276,7 +338,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
-      .aggregation(Map.empty, Map("c" -> max(prop("x", "num"))))
+      .aggregation(Seq.empty, Seq("max(x.num) AS c"))
       .allNodeScan("x")
       .build()
 
@@ -295,7 +357,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
-      .aggregation(Map.empty, Map("c" -> avg(prop("x", "num"))))
+      .aggregation(Seq.empty, Seq("avg(x.num) AS c"))
       .allNodeScan("x")
       .build()
 
@@ -316,7 +378,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("name", "c")
-      .aggregation(Map("name" -> prop("x", "name")), Map("c" -> avg(prop("x", "num"))))
+      .aggregation(Seq("x.name AS name"), Seq("avg(x.num) AS c"))
       .allNodeScan("x")
       .build()
 
@@ -352,7 +414,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
-      .aggregation(Map.empty, Map("c" -> avg(prop("x", "num"))))
+      .aggregation(Seq.empty, Seq("avg(x.num) AS c"))
       .allNodeScan("x")
       .build()
 
@@ -375,7 +437,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
-      .aggregation(Map.empty, Map("c" -> avg(prop("x", "num"))))
+      .aggregation(Seq.empty, Seq("avg(x.num) AS c"))
       .allNodeScan("x")
       .build()
 
@@ -393,15 +455,14 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("countStar", "count", "avg", "collect", "max", "min", "sum")
-      .aggregation(Map.empty, Map(
-        "countStar" -> CountStar()(pos),
-        "count" -> count(prop("x", "num")),
-        "avg" -> avg(prop("x", "num")),
-        "collect" -> collect(prop("x", "num")),
-        "max" -> max(prop("x", "num")),
-        "min" -> min(prop("x", "num")),
-        "sum" -> sum(prop("x", "num"))
-      ))
+      .aggregation(Seq.empty, Seq(
+        "count(*) AS countStar",
+        "count(x.num) AS count",
+        "avg(x.num) AS avg",
+        "collect(x.num) AS collect",
+        "max(x.num) AS max",
+        "min(x.num) AS min",
+        "sum(x.num) AS sum"))
       .allNodeScan("x")
       .build()
 
@@ -409,5 +470,23 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("countStar", "count", "avg", "collect", "max", "min", "sum").withSingleRow(0, 0, null, Collections.emptyList(),  null, null, 0)
+  }
+
+  test("should keep input order") {
+    // given
+    val input = inputColumns(10, sizeHint / 10, identity)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("i", "count")
+      .aggregation(Seq("i AS i"), Seq("count(i) AS count"))
+      .input(variables = Seq("i"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns("i", "count")
+      .withRows(inOrder((0 until sizeHint).map(Array[Any](_, 1))))
   }
 }
