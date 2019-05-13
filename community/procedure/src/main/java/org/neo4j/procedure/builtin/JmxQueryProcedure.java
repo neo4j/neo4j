@@ -214,9 +214,11 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
                         format(
                                 "value=%s%n" +
                                 "class=%s%n" +
-                                "classLoader=%s%n",
+                                "classLoader=%s%n" +
+                                "classLoader-name=%s%n",
                                 attributeValue.toString(),
                                 attributeValue.getClass().getName(),
+                                attributeValue.getClass().getClassLoader().toString(),
                                 attributeValue.getClass().getClassLoader().getName() ), e );
 
             }
