@@ -49,22 +49,19 @@ case class MultiDatabaseManagementCommandRuntime(normalExecutionEngine: Executio
     // SHOW DATABASES
     case ShowDatabases() => (_, _) =>
       SystemCommandExecutionPlan("ShowDatabases", normalExecutionEngine,
-        "MATCH (d:Database) WHERE d.status <> $excluded RETURN d.name as name, d.status as status",
-        VirtualValues.map(Array("excluded"), Array(DatabaseStatus.Deleted))
-      )
+        "MATCH (d:Database) RETURN d.name as name, d.status as status", VirtualValues.emptyMap())
 
     // SHOW DATABASE foo
     case ShowDatabase(dbName) => (_, _) =>
       SystemCommandExecutionPlan("ShowDatabase", normalExecutionEngine,
-        "MATCH (d:Database {name:$name}) WHERE d.status <> $excluded RETURN d.name as name, d.status as status",
-        VirtualValues.map(Array("name", "excluded"), Array(Values.stringValue(dbName), DatabaseStatus.Deleted))
-      )
+        "MATCH (d:Database {name: $name}) RETURN d.name as name, d.status as status", VirtualValues.map(Array("name"), Array(Values.stringValue(dbName))))
 
     // CREATE DATABASE foo
     case CreateDatabase(dbName) => (_, _) =>
       SystemCommandExecutionPlan("CreateDatabase", normalExecutionEngine,
-        """CREATE (d:Database {name:$name})
+        """CREATE (d:Database {name: $name})
           |SET d.status = $status
+          |SET d.created_at = datetime()
           |RETURN d.name as name, d.status as status""".stripMargin,
         VirtualValues.map(Array("name", "status"), Array(Values.stringValue(dbName), DatabaseStatus.Online))
       )
@@ -72,35 +69,30 @@ case class MultiDatabaseManagementCommandRuntime(normalExecutionEngine: Executio
     // DROP DATABASE foo
     case DropDatabase(dbName) => (_, _) =>
       UpdatingSystemCommandExecutionPlan("DeleteDatabase", normalExecutionEngine,
-        """OPTIONAL MATCH (d:Database {name:$name})
-          |WHERE d.status <> $excluded
-          |OPTIONAL MATCH (d2: Database{name:$name})
-          |SET d2.status = $status
-          |RETURN d.name as name, d.status as status, d2.name as db""".stripMargin,
-        VirtualValues.map(Array("name", "status", "excluded"),
-          Array(Values.stringValue(dbName), // $name
-          DatabaseStatus.Deleted, // $status
-          DatabaseStatus.Deleted)), // $excluded
+        """OPTIONAL MATCH (d:Database {name: $name})
+          |REMOVE d:Database
+          |SET d:DeletedDatabase
+          |SET d.deleted_at = datetime()
+          |RETURN d.name as name, d.status as status""".stripMargin,
+        VirtualValues.map(Array("name"), Array(Values.stringValue(dbName))),
         record => {
           if (record.get("name") == null) throw new IllegalStateException("Cannot drop non-existent database '" + dbName + "'")
-          if (record.get("db") == null) throw new IllegalStateException("Cannot drop database '" + dbName + "' that is not " + DatabaseStatus.Offline.stringValue() + ". It is: " + record.get("status"))
         }
       )
 
     // START DATABASE foo
     case StartDatabase(dbName) => (_, _) =>
       UpdatingSystemCommandExecutionPlan("StartDatabase", normalExecutionEngine,
-        """OPTIONAL MATCH (d:Database {name:$name})
-          |WHERE d.status <> $excluded
-          |OPTIONAL MATCH (d2:Database {name:$name, status:$oldStatus})
+        """OPTIONAL MATCH (d:Database {name: $name})
+          |OPTIONAL MATCH (d2:Database {name: $name, status: $oldStatus})
           |SET d2.status = $status
+          |SET d2.started_at = datetime()
           |RETURN d2.name as name, d2.status as status, d.name as db""".stripMargin,
         VirtualValues.map(
-          Array("name", "oldStatus", "status", "excluded"),
+          Array("name", "oldStatus", "status"),
           Array(Values.stringValue(dbName),
             DatabaseStatus.Offline,
-            DatabaseStatus.Online,
-            DatabaseStatus.Deleted
+            DatabaseStatus.Online
           )
         ),
         record => {
@@ -111,17 +103,16 @@ case class MultiDatabaseManagementCommandRuntime(normalExecutionEngine: Executio
     // STOP DATABASE foo
     case StopDatabase(dbName) => (_, _) =>
       UpdatingSystemCommandExecutionPlan("StopDatabase", normalExecutionEngine,
-        """OPTIONAL MATCH (d:Database {name:$name})
-          |WHERE d.status <> $excluded
-          |OPTIONAL MATCH (d2:Database {name:$name, status:$oldStatus})
+        """OPTIONAL MATCH (d:Database {name: $name})
+          |OPTIONAL MATCH (d2:Database {name: $name, status: $oldStatus})
           |SET d2.status = $status
+          |SET d2.stopped_at = datetime()
           |RETURN d2.name as name, d2.status as status, d.name as db""".stripMargin,
         VirtualValues.map(
-          Array("name", "oldStatus", "status", "excluded"),
+          Array("name", "oldStatus", "status"),
           Array(Values.stringValue(dbName),
             DatabaseStatus.Online,
-            DatabaseStatus.Offline,
-            DatabaseStatus.Deleted
+            DatabaseStatus.Offline
           )
         ),
         record => {
