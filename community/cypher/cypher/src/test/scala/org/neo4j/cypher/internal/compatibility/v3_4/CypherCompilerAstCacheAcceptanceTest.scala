@@ -225,7 +225,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     counter.counts should equal(CacheCounts(hits = 0, misses = 1, flushes = 1, evicted = 0))
 
     // when
-    // we create enough nodes to cause divergence in NodesAllCardinality
+    // we create enough nodes for NodesAllCardinality to trigger a replan
     (0 until 5).foreach { _ => createNode() }
     runQuery(query)
 
@@ -249,8 +249,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     counter.counts should equal(CacheCounts(hits = 0, misses = 1, flushes = 1, evicted = 0))
 
     // when
-    // we create enough nodes to cause divergence in NodesLabelCardinality("Dog")
-    // but no divergence in NodesAllCardinality or NodesLabelCardinality("Person")
+    // we create enough nodes for NodesLabelCardinality("Dog") to trigger a replan
+    // but not NodesAllCardinality or NodesLabelCardinality("Person")
     (0 until 5).foreach { _ => createLabeledNode("Dog") }
     runQuery(query)
 
