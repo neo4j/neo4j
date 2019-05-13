@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.procs.{SystemCommandExecutionPlan, UpdatingSystemCommandExecutionPlan}
+import org.neo4j.cypher.internal.procs.{QueryHandler, SystemCommandExecutionPlan, UpdatingSystemCommandExecutionPlan}
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.dbms.api.DatabaseManagementException
 import org.neo4j.values.storable.{TextValue, Values}
@@ -80,9 +80,9 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
             DatabaseStatus.Online
           )
         ),
-        record => {
+        QueryHandler.handleResult(record => {
           if (record.get("db") == null) throw new DatabaseManagementException("Database '" + dbName + "' does not exist.")
-        }
+        })
       )
 
     // STOP DATABASE foo
@@ -100,9 +100,9 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
             DatabaseStatus.Offline
           )
         ),
-        record => {
+        QueryHandler.handleResult(record => {
           if (record.get("db") == null) throw new DatabaseManagementException("Database '" + dbName + "' does not exist.")
-        }
+        })
       )
   }
 

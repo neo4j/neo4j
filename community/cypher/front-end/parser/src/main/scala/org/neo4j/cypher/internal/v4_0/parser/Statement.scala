@@ -146,28 +146,28 @@ trait Statement extends Parser
   }
 
   def GrantRole: Rule1[GrantRolesToUsers] = rule("CATALOG GRANT ROLE") {
-    group(keyword("GRANT") ~~ (keyword("ROLES") | keyword("ROLE")) ~~ RoleNames ~~
-      keyword("TO") ~~ UserNames) ~~>> (ast.GrantRolesToUsers(_, _))
+    group(keyword("GRANT") ~~ (keyword("ROLES") | keyword("ROLE")) ~~ SymbolicNamesList ~~
+      keyword("TO") ~~ SymbolicNamesList) ~~>> (ast.GrantRolesToUsers(_, _))
   }
 
   //`GRANT TRAVERSE ON DATABASE foo GRAPH NODES A (*) TO role1`
   def GrantTraverse: Rule1[GrantTraverse] = rule("CATALOG GRANT TRAVERSE") {
-    group(keyword("GRANT TRAVERSE ON GRAPH * NODES * (*) TO") ~~ RoleNameString) ~~>> (ast.GrantTraverse(ast.AllGraphsScope(), ast.AllQualifier(), _)) |
-      group(keyword("GRANT TRAVERSE ON GRAPH * NODES") ~~ SymbolicNameString ~~ keyword("(*) TO") ~~ RoleNameString) ~~>>
+    group(keyword("GRANT TRAVERSE ON GRAPH * NODES * (*) TO") ~~ SymbolicNameString) ~~>> (ast.GrantTraverse(ast.AllGraphsScope(), ast.AllQualifier(), _)) |
+      group(keyword("GRANT TRAVERSE ON GRAPH * NODES") ~~ SymbolicNameString ~~ keyword("(*) TO") ~~ SymbolicNameString) ~~>>
         ((label, role) => ast.GrantTraverse(ast.AllGraphsScope(), ast.LabelQualifier(label), role)) |
-      group(keyword("GRANT TRAVERSE ON GRAPH") ~~ DatabaseNameString ~~ keyword("NODES") ~~ keyword("* (*) TO") ~~ RoleNameString) ~~>>
+      group(keyword("GRANT TRAVERSE ON GRAPH") ~~ SymbolicNameString ~~ keyword("NODES") ~~ keyword("* (*) TO") ~~ SymbolicNameString) ~~>>
         ((db, role) => ast.GrantTraverse(ast.NamedGraphScope(db), ast.AllQualifier(), role)) |
-      group(keyword("GRANT TRAVERSE ON GRAPH") ~~ DatabaseNameString ~~ keyword("NODES") ~~ SymbolicNameString ~~ keyword("(*) TO") ~~
-        RoleNameString) ~~>> ((db, label, role) => ast.GrantTraverse(ast.NamedGraphScope(db), ast.LabelQualifier(label), role))
+      group(keyword("GRANT TRAVERSE ON GRAPH") ~~ SymbolicNameString ~~ keyword("NODES") ~~ SymbolicNameString ~~ keyword("(*) TO") ~~
+        SymbolicNameString) ~~>> ((db, label, role) => ast.GrantTraverse(ast.NamedGraphScope(db), ast.LabelQualifier(label), role))
   }
 
   def ShowPrivileges: Rule1[ShowPrivileges] = rule("CATALOG SHOW PRIVILEGES") {
     //SHOW ALL PRIVILEGES
     group(keyword("SHOW") ~~ keyword("ALL") ~~ keyword("PRIVILEGES")) ~>>> (_ => ast.ShowPrivileges("ALL", "")) |
       //SHOW USER joe PRIVILEGES
-      group(keyword("SHOW") ~~ keyword("USER") ~~ UserNameString ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowPrivileges("USER", _)) |
+      group(keyword("SHOW") ~~ keyword("USER") ~~ SymbolicNameString ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowPrivileges("USER", _)) |
       //SHOW ROLE role1 PRIVILEGES
-      group(keyword("SHOW") ~~ keyword("ROLE") ~~ RoleNameString ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowPrivileges("ROLE", _))
+      group(keyword("SHOW") ~~ keyword("ROLE") ~~ SymbolicNameString ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowPrivileges("ROLE", _))
   }
 
   def ShowDatabase: Rule1[ShowDatabase] = rule("CATALOG SHOW DATABASE") {

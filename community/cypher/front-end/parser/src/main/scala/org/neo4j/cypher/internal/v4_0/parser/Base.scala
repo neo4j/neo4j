@@ -109,6 +109,11 @@ trait Base extends Parser {
     ) memoMismatches) ~~> (_.reduce(_ + '`' + _))
   }
 
+  def SymbolicNamesList: Rule1[List[String]] =
+    rule("a list of symbolic names") {
+      (oneOrMore(WS ~~ SymbolicNameString ~~ WS, separator = ",") memoMismatches).suppressSubnodes
+    }
+
   def Namespace: Rule1[ASTNamespace] = rule("namespace of a procedure") {
     zeroOrMore(SymbolicNameString ~ ".") ~~>> (ASTNamespace(_))
   }

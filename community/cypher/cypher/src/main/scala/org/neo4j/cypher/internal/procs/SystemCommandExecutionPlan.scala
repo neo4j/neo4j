@@ -35,7 +35,7 @@ import org.neo4j.values.virtual.MapValue
 /**
   * Execution plan for performing system commands, i.e. creating databases or showing roles and users.
   */
-case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue, onError: Throwable => {} = e => throw e)
+case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue, onError: Throwable => Unit = e => throw e)
   extends ExecutionPlan {
 
   override def run(ctx: QueryContext,
@@ -60,7 +60,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
 /**
   * A wrapping QuerySubscriber that overrides the error handling to allow custom error messages for SystemCommands instead of the inner errors.
   */
-class SystemCommandQuerySubscriber(inner: QuerySubscriber, doOnError: Throwable => {}) extends QuerySubscriber {
+class SystemCommandQuerySubscriber(inner: QuerySubscriber, doOnError: Throwable => Unit) extends QuerySubscriber {
   override def onResult(numberOfFields: Int): Unit = inner.onResult(numberOfFields)
   override def onResultCompleted(statistics: QueryStatistics): Unit = inner.onResultCompleted(statistics)
   override def onRecord(): Unit = inner.onRecord()

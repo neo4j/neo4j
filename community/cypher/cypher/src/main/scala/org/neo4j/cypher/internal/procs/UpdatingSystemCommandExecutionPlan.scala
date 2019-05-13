@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.procs
 
 import java.util
-import java.util.function.Consumer
 
 import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslatingQueryContext
 import org.neo4j.cypher.internal.plandescription.Argument
@@ -37,7 +36,7 @@ import org.neo4j.values.virtual.MapValue
   * Execution plan for performing system commands, i.e. starting, stopping or dropping databases.
   */
 case class UpdatingSystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue,
-                                              resultHandler: Consumer[util.Map[String, AnyRef]], onError: Throwable => {} = t => throw t)
+                                              queryHandler: QueryHandler)
   extends ExecutionPlan {
 
   override def run(ctx: QueryContext,
@@ -48,9 +47,13 @@ case class UpdatingSystemCommandExecutionPlan(name: String, normalExecutionEngin
                    subscriber: QuerySubscriber): RuntimeResult = {
 
     val tc = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
-    val execution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, new SystemCommandQuerySubscriber(subscriber, onError)).asInstanceOf[InternalExecutionResult]
+    val execution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, new SystemCommandQuerySubscriber(subscriber, queryHandler.onError)).asInstanceOf[InternalExecutionResult]
 
-    execution.javaIterator.stream().forEach(resultHandler)
+    val results = execution.javaIterator
+    if (results.hasNext)
+      results.stream().forEach(queryHandler.onResult(_))
+    else
+      queryHandler.onNoResults()
 
     SchemaWriteRuntimeResult(ctx, subscriber)
   }
@@ -60,4 +63,40 @@ case class UpdatingSystemCommandExecutionPlan(name: String, normalExecutionEngin
   override def metadata: Seq[Argument] = Nil
 
   override def notifications: Set[InternalNotification] = Set.empty
+}
+
+class QueryHandler {
+  def onError(t: Throwable): Unit = throw t
+
+  def onResult(record: util.Map[String, AnyRef]): Unit = Unit
+
+  def onNoResults(): Unit = Unit
+}
+
+class QueryHandlerBuilder(parent: QueryHandler) extends QueryHandler {
+  override def onError(t: Throwable): Unit = parent.onError(t)
+
+  override def onResult(record: util.Map[String, AnyRef]): Unit = parent.onResult(record)
+
+  override def onNoResults(): Unit = parent.onNoResults()
+
+  def handleError(f: Throwable => Unit): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
+    override def onError(t: Throwable): Unit = f(t)
+  }
+
+  def handleNoResult(f: () => Nothing): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
+    override def onNoResults(): Unit = f()
+  }
+
+  def handleResult(handler: util.Map[String, AnyRef] => Unit): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
+    override def onResult(record: util.Map[String, AnyRef]): Unit = handler(record)
+  }
+}
+
+object QueryHandler {
+  def handleError(f: Throwable => Unit): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleError(f)
+
+  def handleNoResult(f: () => Nothing): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleNoResult(f)
+
+  def handleResult(handler: util.Map[String, AnyRef] => Unit): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleResult(handler)
 }
