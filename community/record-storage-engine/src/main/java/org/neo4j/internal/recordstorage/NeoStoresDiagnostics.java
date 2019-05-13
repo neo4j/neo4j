@@ -22,18 +22,22 @@ package org.neo4j.internal.recordstorage;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.logging.Logger;
+import org.neo4j.util.FeatureToggles;
 
 public abstract class NeoStoresDiagnostics extends NamedDiagnosticsProvider
 {
+    private static final boolean THROW_NEOSTORE_DIAGNOSTICS_ERRORS =
+            FeatureToggles.flag( NeoStoresDiagnostics.class, "THROW_NEOSTORE_DIAGNOSTICS_ERRORS", false );
+
     public static class NeoStoreVersions extends NeoStoresDiagnostics
     {
-        public NeoStoreVersions( NeoStores nodeStores )
+        NeoStoreVersions( NeoStores nodeStores )
         {
             super( nodeStores, "Store versions" );
         }
 
         @Override
-        public void dump( Logger logger )
+        protected void dump( NeoStores neoStores, Logger logger )
         {
             neoStores.logVersions( logger );
         }
@@ -42,13 +46,13 @@ public abstract class NeoStoresDiagnostics extends NamedDiagnosticsProvider
     public static class NeoStoreIdUsage extends NeoStoresDiagnostics
     {
 
-        public NeoStoreIdUsage( NeoStores neoStores )
+        NeoStoreIdUsage( NeoStores neoStores )
         {
             super( neoStores, "Id usage" );
         }
 
         @Override
-        public void dump( Logger logger )
+        protected void dump( NeoStores neoStores, Logger logger )
         {
             neoStores.logIdUsage( logger );
         }
@@ -56,23 +60,43 @@ public abstract class NeoStoresDiagnostics extends NamedDiagnosticsProvider
 
     public static class NeoStoreRecords extends NeoStoresDiagnostics
     {
-        public NeoStoreRecords( NeoStores neoStores )
+        NeoStoreRecords( NeoStores neoStores )
         {
             super( neoStores,  "Neostore records"  );
         }
 
         @Override
-        public void dump( Logger logger )
+        protected void dump( NeoStores neoStores, Logger logger )
         {
             neoStores.getMetaDataStore().logRecords( logger );
         }
     }
 
-    protected final NeoStores neoStores;
+    private final NeoStores neoStores;
 
     NeoStoresDiagnostics( NeoStores neoStores, String message )
     {
         super( message );
         this.neoStores = neoStores;
     }
+
+    @Override
+    public void dump( Logger logger )
+    {
+        try
+        {
+            dump( neoStores, logger );
+        }
+        catch ( RuntimeException e )
+        {
+            if ( THROW_NEOSTORE_DIAGNOSTICS_ERRORS )
+            {
+                throw e;
+            }
+
+            logger.log( "Diagnostics not available: " + e.getMessage() );
+        }
+    }
+
+    protected abstract void dump( NeoStores neoStores, Logger logger );
 }
