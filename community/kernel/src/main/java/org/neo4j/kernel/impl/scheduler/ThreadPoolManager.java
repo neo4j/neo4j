@@ -19,24 +19,30 @@
  */
 package org.neo4j.kernel.impl.scheduler;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.scheduler.Group;
 
 final class ThreadPoolManager
 {
-    private final ConcurrentHashMap<Group,ThreadPool> pools;
+    private final Map<Group,ThreadPool> pools;
     private final ThreadGroup topLevelGroup;
+    private boolean shutDown;
 
     ThreadPoolManager( ThreadGroup topLevelGroup )
     {
         this.topLevelGroup = topLevelGroup;
-        pools = new ConcurrentHashMap<>();
+        pools = new HashMap<>();
     }
 
-    ThreadPool getThreadPool( Group group, Integer desiredParallelism )
+    synchronized ThreadPool getThreadPool( Group group, Integer desiredParallelism )
     {
+        if ( shutDown )
+        {
+            throw new IllegalStateException( "ThreadPoolManager is shutdown." );
+        }
         return pools.computeIfAbsent( group, g ->
         {
             if ( desiredParallelism == null )
@@ -50,8 +56,9 @@ final class ThreadPoolManager
         } );
     }
 
-    InterruptedException shutDownAll()
+    synchronized InterruptedException shutDownAll()
     {
+        shutDown = true;
         pools.forEach( ( group, pool ) -> pool.cancelAllJobs() );
         pools.forEach( ( group, pool ) -> pool.shutDown() );
         return pools.values().stream()
