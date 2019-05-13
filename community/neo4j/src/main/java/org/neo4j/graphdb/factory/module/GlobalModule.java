@@ -44,6 +44,8 @@ import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.GuardVersionContextSupplier;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
+import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.PlaceholderDatabaseIdRepository;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionFailureStrategies;
@@ -126,6 +128,7 @@ public class GlobalModule
     private final DatabaseEventListeners databaseEventListeners;
     private final GlobalTransactionEventListeners transactionEventListeners;
     private final ThreadToStatementContextBridge threadToTransactionBridge;
+    private final DatabaseIdRepository databaseIdRepository;
     // In the future this may not be a global decision, but for now this is a good central place to make the decision about which storage engine to use
     private final StorageEngineFactory storageEngineFactory;
     private final DependencyResolver externalDependencyResolver;
@@ -227,6 +230,8 @@ public class GlobalModule
         globalDependencies.satisfyDependency( storageEngineFactory );
 
         checkLegacyDefaultDatabase();
+
+        databaseIdRepository = new PlaceholderDatabaseIdRepository( globalConfig );
     }
 
     private <T> T tryResolveOrCreate( Class<T> clazz, Supplier<T> newInstanceMethod )
@@ -536,5 +541,10 @@ public class GlobalModule
     ThreadToStatementContextBridge getThreadToTransactionBridge()
     {
         return threadToTransactionBridge;
+    }
+
+    public DatabaseIdRepository getDatabaseIdRepository()
+    {
+        return databaseIdRepository;
     }
 }

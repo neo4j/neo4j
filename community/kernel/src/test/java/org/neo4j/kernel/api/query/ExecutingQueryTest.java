@@ -37,7 +37,8 @@ import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.WaitStrategy;
@@ -66,6 +67,7 @@ public class ExecutingQueryTest
     public final FakeHeapAllocation heapAllocation = new FakeHeapAllocation().add( randomLong( 0x1_0000_0000L ) );
     private final PageCursorCountersStub page = new PageCursorCountersStub();
     private long lockCount;
+    private DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
     private ExecutingQuery query = createExecutingquery( 1, "hello world", page, clock, cpuClock, heapAllocation );
     private ExecutingQuery subQuery = createExecutingquery( 2, "goodbye world", page, clock, cpuClock, heapAllocation );
 
@@ -234,7 +236,7 @@ public class ExecutingQueryTest
     {
         // given
         ExecutingQuery query = new ExecutingQuery( 17,
-                ClientConnectionInfo.EMBEDDED_CONNECTION, new DatabaseId( DEFAULT_DATABASE_NAME ), "neo4j", "hello world",
+                ClientConnectionInfo.EMBEDDED_CONNECTION, databaseIdRepository.get( DEFAULT_DATABASE_NAME ), "neo4j", "hello world",
                 EMPTY_MAP,
                 Collections.emptyMap(),
                 () -> lockCount, PageCursorTracer.NULL,
@@ -277,7 +279,7 @@ public class ExecutingQueryTest
     {
         // given
         ExecutingQuery query = new ExecutingQuery( 17,
-                ClientConnectionInfo.EMBEDDED_CONNECTION, new DatabaseId( DEFAULT_DATABASE_NAME ), "neo4j", "hello world",
+                ClientConnectionInfo.EMBEDDED_CONNECTION, databaseIdRepository.defaultDatabase(), "neo4j", "hello world",
                 EMPTY_MAP,
                 Collections.emptyMap(),
                 () -> lockCount,
@@ -404,7 +406,7 @@ public class ExecutingQueryTest
     private ExecutingQuery createExecutingquery( int queryId, String hello_world, PageCursorCountersStub page,
             FakeClock clock, FakeCpuClock cpuClock, FakeHeapAllocation heapAllocation )
     {
-        return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, new DatabaseId( DEFAULT_DATABASE_NAME ), "neo4j", hello_world,
+        return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, databaseIdRepository.defaultDatabase(), "neo4j", hello_world,
                 EMPTY_MAP, Collections.emptyMap(), () -> lockCount, page, Thread.currentThread().getId(),
                 Thread.currentThread().getName(), clock, cpuClock, heapAllocation );
     }

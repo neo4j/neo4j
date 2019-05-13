@@ -58,6 +58,7 @@ import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -120,7 +121,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
@@ -143,10 +143,12 @@ public class KernelTransactionsTest
     private static final SystemNanoClock clock = Clocks.nanoClock();
     private static DatabaseAvailabilityGuard databaseAvailabilityGuard;
 
+    private static final DatabaseId DEFAULT_DATABASE_ID = new TestDatabaseIdRepository().defaultDatabase();
+
     @Before
     public void setUp() throws Exception
     {
-        databaseAvailabilityGuard = new DatabaseAvailabilityGuard( new DatabaseId( DEFAULT_DATABASE_NAME ), clock, NullLog.getInstance(), 0,
+        databaseAvailabilityGuard = new DatabaseAvailabilityGuard( DEFAULT_DATABASE_ID, clock, NullLog.getInstance(), 0,
                 mock( CompositeDatabaseAvailabilityGuard.class ) );
         databaseAvailabilityGuard.init();
     }
@@ -734,7 +736,7 @@ public class KernelTransactionsTest
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
-                mockedTokenHolders(), new DatabaseId( DEFAULT_DATABASE_NAME ), mock( IndexingService.class ), mock( LabelScanStore.class ),
+                mockedTokenHolders(), DEFAULT_DATABASE_ID, mock( IndexingService.class ), mock( LabelScanStore.class ),
                 mock( IndexStatisticsStore.class ), createDependencies() );
     }
 
@@ -810,7 +812,7 @@ public class KernelTransactionsTest
                     storageEngine, globalProcedures, transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                     new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), accessCapability,
                     versionContextSupplier, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), tokenHolders,
-                    new DatabaseId( DEFAULT_DATABASE_NAME ), mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ),
+                    DEFAULT_DATABASE_ID, mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ),
                     databaseDependencies );
         }
 

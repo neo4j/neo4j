@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
@@ -43,11 +43,14 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
 {
     private final DatabaseManager<?> databaseManager;
     private final ThreadToStatementContextBridge threadToStatementContextBridge;
+    private final DatabaseIdRepository databaseIdRepository;
 
-    public ContextSwitchingSystemGraphQueryExecutor( DatabaseManager<?> databaseManager, ThreadToStatementContextBridge threadToStatementContextBridge )
+    public ContextSwitchingSystemGraphQueryExecutor( DatabaseManager<?> databaseManager, ThreadToStatementContextBridge threadToStatementContextBridge,
+            DatabaseIdRepository databaseIdRepository )
     {
         this.databaseManager = databaseManager;
         this.threadToStatementContextBridge = threadToStatementContextBridge;
+        this.databaseIdRepository = databaseIdRepository;
     }
 
     @Override
@@ -173,7 +176,7 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
 
     private SystemDatabaseInnerAccessor getSystemDb()
     {
-        return databaseManager.getDatabaseContext( new DatabaseId( SYSTEM_DATABASE_NAME ) ).orElseThrow(
+        return databaseManager.getDatabaseContext( databaseIdRepository.systemDatabase() ).orElseThrow(
                 () -> new AuthProviderFailedException( "No database called `" + SYSTEM_DATABASE_NAME + "` was found." ) )
                 .dependencies().resolveDependency( SystemDatabaseInnerAccessor.class );
     }

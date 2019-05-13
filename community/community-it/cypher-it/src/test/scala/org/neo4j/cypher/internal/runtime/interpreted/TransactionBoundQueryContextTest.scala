@@ -45,7 +45,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.api.security.AnonymousContext
-import org.neo4j.kernel.database.DatabaseId
+import org.neo4j.kernel.database.TestDatabaseIdRepository
 import org.neo4j.kernel.impl.api.{ClockContext, KernelStatement, KernelTransactionImplementation}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
@@ -83,7 +83,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(kernelTransaction.acquireStatement()).thenReturn(statement)
     statement = new KernelStatement(kernelTransaction, LockTracer.NONE, new ClockContext(), EmptyVersionContextSupplier.EMPTY,
       new AtomicReference[CpuClock](CpuClock.NOT_AVAILABLE), new AtomicReference[HeapAllocation](HeapAllocation.NOT_AVAILABLE),
-      new DatabaseId(DEFAULT_DATABASE_NAME))
+      new TestDatabaseIdRepository().defaultDatabase)
     statement.initialize(null, PageCursorTracerSupplier.NULL.get())
     statement.acquire()
   }

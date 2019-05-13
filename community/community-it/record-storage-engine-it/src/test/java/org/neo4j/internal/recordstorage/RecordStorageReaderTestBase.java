@@ -36,7 +36,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -58,7 +58,6 @@ import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 
 /**
@@ -103,7 +102,7 @@ public abstract class RecordStorageReaderTestBase
         this.storageReader = storageEngine.newReader();
         this.state = new KernelStatement( null, LockTracer.NONE, new ClockContext(), EmptyVersionContextSupplier.EMPTY,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
-                new DatabaseId( DEFAULT_DATABASE_NAME ) );
+                new TestDatabaseIdRepository().defaultDatabase() );
         this.commitReader = storageEngine.newReader();
         this.commitContext = storageEngine.newCommandCreationContext();
     }

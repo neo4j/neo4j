@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.WaitStrategy;
@@ -38,7 +38,6 @@ import org.neo4j.time.FakeClock;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 class ExecutingQueryStatusTest
 {
@@ -99,7 +98,7 @@ class ExecutingQueryStatusTest
                         new ExecutingQuery(
                                 12,
                                 null,
-                                new DatabaseId( DEFAULT_DATABASE_NAME ),
+                                new TestDatabaseIdRepository().defaultDatabase(),
                                 null,
                                 "",
                                 VirtualValues.EMPTY_MAP,

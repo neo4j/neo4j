@@ -36,6 +36,7 @@ import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
@@ -50,7 +51,7 @@ import static org.mockito.Mockito.when;
 class DbmsDiagnosticsManagerTest
 {
     private static final String DEFAULT_DATABASE_NAME = "testDatabase";
-    private static final DatabaseId DEFAULT_DATABASE_ID = new DatabaseId( DEFAULT_DATABASE_NAME );
+    private static final DatabaseId DEFAULT_DATABASE_ID = new TestDatabaseIdRepository().get( DEFAULT_DATABASE_NAME );
 
     private DbmsDiagnosticsManager diagnosticsManager;
     private AssertableLogProvider logProvider;
@@ -124,7 +125,7 @@ class DbmsDiagnosticsManagerTest
         for ( int i = 0; i < numberOfDatabases; i++ )
         {
             Database database = mock( Database.class );
-            DatabaseId databaseId = new DatabaseId( String.valueOf( i ) );
+            DatabaseId databaseId = new TestDatabaseIdRepository().get( String.valueOf( i ) );
             when( database.getDatabaseId() ).thenReturn( databaseId );
             databaseMap.put( databaseId, new StandaloneDatabaseContext( database ) );
         }

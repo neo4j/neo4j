@@ -31,6 +31,7 @@ import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.transaction.events.GlobalTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
@@ -46,9 +47,11 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
     private final DatabaseEventListeners databaseEventListeners;
     private final GlobalTransactionEventListeners transactionEventListeners;
     private final Log log;
+    private final DatabaseIdRepository databaseIdRepository;
 
     public DatabaseManagementServiceImpl( DatabaseManager<?> databaseManager, CompositeDatabaseAvailabilityGuard globalAvailabilityGuard, Lifecycle globalLife,
-            DatabaseEventListeners databaseEventListeners, GlobalTransactionEventListeners transactionEventListeners, Log log )
+            DatabaseEventListeners databaseEventListeners, GlobalTransactionEventListeners transactionEventListeners, DatabaseIdRepository databaseIdRepository,
+            Log log )
     {
         this.databaseManager = databaseManager;
         this.globalAvailabilityGuard = globalAvailabilityGuard;
@@ -56,12 +59,14 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
         this.databaseEventListeners = databaseEventListeners;
         this.transactionEventListeners = transactionEventListeners;
         this.log = log;
+        this.databaseIdRepository = databaseIdRepository;
     }
 
     @Override
     public GraphDatabaseService database( String name ) throws DatabaseNotFoundException
     {
-        return databaseManager.getDatabaseContext( new DatabaseId( name ) ).orElseThrow( () -> new DatabaseNotFoundException( name ) ).databaseFacade();
+        return databaseManager.getDatabaseContext( databaseIdRepository.get( name ) )
+                .orElseThrow( () -> new DatabaseNotFoundException( name ) ).databaseFacade();
     }
 
     @Override

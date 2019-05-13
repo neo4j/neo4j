@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
@@ -34,7 +34,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 class StatementLifecycleTest
 {
@@ -76,7 +75,7 @@ class StatementLifecycleTest
     {
         return new KernelStatement( transaction, LockTracer.NONE, new ClockContext(), EmptyVersionContextSupplier.EMPTY,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
-                new DatabaseId( DEFAULT_DATABASE_NAME ) );
+                new TestDatabaseIdRepository().defaultDatabase() );
     }
 
 }

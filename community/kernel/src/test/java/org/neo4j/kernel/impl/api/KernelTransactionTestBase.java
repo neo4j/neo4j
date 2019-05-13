@@ -44,7 +44,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.availability.AvailabilityGuard;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -185,7 +185,7 @@ public class KernelTransactionTestBase
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
                 new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
                 mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies, availabilityGuard,
-                new DatabaseId( DEFAULT_DATABASE_NAME ) );
+                new TestDatabaseIdRepository().defaultDatabase() );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

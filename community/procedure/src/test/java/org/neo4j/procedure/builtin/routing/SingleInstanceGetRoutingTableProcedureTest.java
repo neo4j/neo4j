@@ -38,6 +38,8 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.PlaceholderDatabaseIdRepository;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Collections.emptyList;
@@ -49,7 +51,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.Settings.TRUE;
 import static org.neo4j.configuration.connectors.Connector.ConnectorType.BOLT;
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.nullValue;
@@ -63,8 +64,9 @@ import static org.neo4j.procedure.builtin.routing.BaseRoutingProcedureInstaller.
 
 public class SingleInstanceGetRoutingTableProcedureTest
 {
-    private static final DatabaseId ID = new DatabaseId( DEFAULT_DATABASE_NAME );
-    private static final DatabaseId UNKNOWN_ID = new DatabaseId( "unknown_database_name" );
+    private static final DatabaseIdRepository databaseIdRepository = new PlaceholderDatabaseIdRepository( Config.defaults() );
+    private static final DatabaseId ID = databaseIdRepository.defaultDatabase();
+    private static final DatabaseId UNKNOWN_ID = databaseIdRepository.get( "unknown_database_name" );
 
     @Test
     void shouldHaveCorrectSignature()
@@ -141,7 +143,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
 
     protected BaseGetRoutingTableProcedure newProcedure( DatabaseManager<?> databaseManager, ConnectorPortRegister portRegister, Config config )
     {
-        return new SingleInstanceGetRoutingTableProcedure( DEFAULT_NAMESPACE, databaseManager, portRegister, config );
+        return new SingleInstanceGetRoutingTableProcedure( DEFAULT_NAMESPACE, databaseManager, portRegister, databaseIdRepository, config );
     }
 
     protected List<AdvertisedSocketAddress> expectedWriters( AdvertisedSocketAddress selfAddress )

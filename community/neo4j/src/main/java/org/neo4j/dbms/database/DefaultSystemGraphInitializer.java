@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
@@ -39,26 +39,28 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
 {
     private final DatabaseManager<?> databaseManager;
     private final boolean isCommunity;
+    private final DatabaseIdRepository databaseIdRepository;
     private final String defaultDbName;
     private final Label databaseLabel = Label.label( "Database" );
     private final Label deletedLabel = Label.label( "DeletedDatabase" );
 
-    public DefaultSystemGraphInitializer( DatabaseManager<?> databaseManager, Config config )
+    public DefaultSystemGraphInitializer( DatabaseManager<?> databaseManager, DatabaseIdRepository databaseIdRepository, Config config )
     {
-        this( databaseManager, config, true );
+        this( databaseManager, databaseIdRepository, config, true );
     }
 
-    protected DefaultSystemGraphInitializer( DatabaseManager<?> databaseManager, Config config, boolean isCommunity )
+    protected DefaultSystemGraphInitializer( DatabaseManager<?> databaseManager, DatabaseIdRepository databaseIdRepository, Config config, boolean isCommunity )
     {
         this.databaseManager = databaseManager;
         this.defaultDbName = config.get( GraphDatabaseSettings.default_database );
         this.isCommunity = isCommunity;
+        this.databaseIdRepository = databaseIdRepository;
     }
 
     public void initializeSystemGraph() throws Exception
     {
         // First get a recent handle on the database representing the system graph
-        GraphDatabaseFacade system = databaseManager.getDatabaseContext( new DatabaseId( SYSTEM_DATABASE_NAME ) ).orElseThrow(
+        GraphDatabaseFacade system = databaseManager.getDatabaseContext( databaseIdRepository.systemDatabase() ).orElseThrow(
                 () -> new IllegalStateException( "No database called `" + SYSTEM_DATABASE_NAME + "` was found." ) ).databaseFacade();
         initializeSystemGraph( system );
     }

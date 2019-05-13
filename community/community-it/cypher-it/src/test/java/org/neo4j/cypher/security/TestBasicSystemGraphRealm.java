@@ -33,6 +33,8 @@ import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.transaction.events.GlobalTransactionEventListeners;
 import org.neo4j.logging.Log;
@@ -56,12 +58,13 @@ import static org.neo4j.cypher.security.BasicSystemGraphRealmTestHelper.TestData
 public class TestBasicSystemGraphRealm
 {
     private static final TestThreadToStatementContextBridge threadToStatementContextBridge = new TestThreadToStatementContextBridge();
+    private static final DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
 
     protected static final SecureHasher secureHasher = new SecureHasher();
 
     static BasicSystemGraphRealm testRealm( BasicImportOptionsBuilder importOptions, TestDatabaseManager dbManager, Config config ) throws Throwable
     {
-        ContextSwitchingSystemGraphQueryExecutor executor = new ContextSwitchingSystemGraphQueryExecutor( dbManager, threadToStatementContextBridge );
+        var executor = new ContextSwitchingSystemGraphQueryExecutor( dbManager, threadToStatementContextBridge, databaseIdRepository );
         return testRealm( importOptions.migrationSupplier(), importOptions.initialUserSupplier(), newRateLimitedAuthStrategy(),
                 dbManager, executor, config );
     }
@@ -75,7 +78,7 @@ public class TestBasicSystemGraphRealm
         Supplier<UserRepository> migrationUserRepositorySupplier = () -> CommunitySecurityModule.getUserRepository( config, logProvider, fileSystem );
         Supplier<UserRepository> initialUserRepositorySupplier = () -> CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem );
 
-        ContextSwitchingSystemGraphQueryExecutor executor = new ContextSwitchingSystemGraphQueryExecutor( dbManager, threadToStatementContextBridge );
+        var executor = new ContextSwitchingSystemGraphQueryExecutor( dbManager, threadToStatementContextBridge, databaseIdRepository );
         return testRealm( migrationUserRepositorySupplier, initialUserRepositorySupplier, newRateLimitedAuthStrategy(), dbManager,
                 executor, config );
     }
@@ -95,7 +98,7 @@ public class TestBasicSystemGraphRealm
         BasicSystemGraphOperations systemGraphOperations = new BasicSystemGraphOperations( executor, secureHasher );
         UserSecurityGraphInitializer securityGraphInitializer =
                 new UserSecurityGraphInitializer(
-                        new DefaultSystemGraphInitializer( manager, config ),
+                        new DefaultSystemGraphInitializer( manager, databaseIdRepository, config ),
                         executor,
                         Mockito.mock(Log.class),
                         systemGraphOperations,

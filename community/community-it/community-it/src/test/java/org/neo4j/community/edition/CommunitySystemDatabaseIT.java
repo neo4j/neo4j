@@ -42,6 +42,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
@@ -61,7 +63,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterators.count;
@@ -76,6 +77,7 @@ class CommunitySystemDatabaseIT
     private GraphDatabaseFacade defaultDb;
     private GraphDatabaseFacade systemDb;
     private DatabaseManagementService managementService;
+    private final DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
 
     @BeforeEach
     void setUp()
@@ -85,8 +87,8 @@ class CommunitySystemDatabaseIT
         managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).setExternalDependencies( dependencies ).build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
         databaseManager = getDatabaseManager( database );
-        defaultDb = getDatabaseByName( databaseManager, new DatabaseId( DEFAULT_DATABASE_NAME ) );
-        systemDb = getDatabaseByName( databaseManager, new DatabaseId( SYSTEM_DATABASE_NAME ) );
+        defaultDb = getDatabaseByName( databaseManager, databaseIdRepository.defaultDatabase() );
+        systemDb = getDatabaseByName( databaseManager, databaseIdRepository.systemDatabase() );
     }
 
     @AfterEach
@@ -209,7 +211,7 @@ class CommunitySystemDatabaseIT
             managementService = new TestDatabaseManagementServiceBuilder( disabledSystemDbDirectory ).build();
             databaseWithSystemDb = managementService.database( DEFAULT_DATABASE_NAME );
             DatabaseManager<?> databaseManager = getDatabaseManager( databaseWithSystemDb );
-            assertTrue( databaseManager.getDatabaseContext( new DatabaseId( SYSTEM_DATABASE_NAME ) ).isPresent() );
+            assertTrue( databaseManager.getDatabaseContext( databaseIdRepository.systemDatabase() ).isPresent() );
         }
         finally
         {

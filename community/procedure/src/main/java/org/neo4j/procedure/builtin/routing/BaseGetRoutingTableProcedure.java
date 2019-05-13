@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.procedure.Mode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
@@ -51,12 +52,14 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
     private static final String NAME = "getRoutingTable";
 
     private final ProcedureSignature signature;
+    private final DatabaseIdRepository databaseIdRepository;
 
     protected final Config config;
 
-    protected BaseGetRoutingTableProcedure( List<String> namespace, Config config )
+    protected BaseGetRoutingTableProcedure( List<String> namespace, DatabaseIdRepository databaseIdRepository, Config config )
     {
         this.signature = buildSignature( namespace );
+        this.databaseIdRepository = databaseIdRepository;
         this.config = config;
     }
 
@@ -90,11 +93,11 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
         var arg = input[1];
         if ( arg == Values.NO_VALUE )
         {
-            return new DatabaseId( config.get( default_database ) );
+            return databaseIdRepository.get( config.get( default_database ) );
         }
         else if ( arg instanceof TextValue )
         {
-            return new DatabaseId( ((TextValue) arg).stringValue() );
+            return databaseIdRepository.get( ((TextValue) arg).stringValue() );
         }
         else
         {

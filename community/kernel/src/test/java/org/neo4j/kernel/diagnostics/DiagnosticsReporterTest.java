@@ -41,6 +41,7 @@ import java.util.Set;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -179,7 +180,7 @@ class DiagnosticsReporterTest
         }
 
         @Override
-        public void init( FileSystemAbstraction fs, Config config, File storeDirectory )
+        public void init( FileSystemAbstraction fs, DatabaseIdRepository databaseIdRepository, Config config, File storeDirectory )
         {
         }
 

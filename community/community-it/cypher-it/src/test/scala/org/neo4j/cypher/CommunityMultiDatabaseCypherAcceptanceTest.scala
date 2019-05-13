@@ -27,7 +27,7 @@ import org.neo4j.configuration.{Config, GraphDatabaseSettings}
 import org.neo4j.cypher.internal.DatabaseStatus
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.dbms.database.{DatabaseContext, DatabaseManager, DefaultSystemGraphInitializer}
-import org.neo4j.kernel.database.DatabaseId
+import org.neo4j.kernel.database.TestDatabaseIdRepository
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.logging.Log
 import org.neo4j.server.security.auth.{InMemoryUserRepository, SecureHasher}
@@ -37,6 +37,7 @@ class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite
   private val onlineStatus = DatabaseStatus.Online.stringValue()
   private val offlineStatus = DatabaseStatus.Offline.stringValue()
   private val defaultConfig = Config.defaults()
+  private val databaseIdRepository = new TestDatabaseIdRepository()
 
   test("should list default database") {
     // GIVEN
@@ -145,12 +146,12 @@ class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite
     graph = new GraphDatabaseCypherService(graphOps)
 
     val manager = databaseManager()
-    val queryExecutor: ContextSwitchingSystemGraphQueryExecutor = new ContextSwitchingSystemGraphQueryExecutor(manager, threadToStatementContextBridge())
+    val queryExecutor: ContextSwitchingSystemGraphQueryExecutor = new ContextSwitchingSystemGraphQueryExecutor(manager, threadToStatementContextBridge(), databaseIdRepository)
     val secureHasher: SecureHasher = new SecureHasher
     val systemGraphOperations: BasicSystemGraphOperations = new BasicSystemGraphOperations(queryExecutor, secureHasher)
 
     val securityGraphInitializer = new UserSecurityGraphInitializer(
-      new DefaultSystemGraphInitializer(manager, config),
+      new DefaultSystemGraphInitializer(manager, databaseIdRepository, config),
       queryExecutor,
       mock[Log],
       systemGraphOperations,
@@ -168,7 +169,7 @@ class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite
 
   private def selectDatabase(name: String): Unit = {
     val manager = databaseManager()
-    val maybeCtx: Optional[DatabaseContext] = manager.getDatabaseContext(new DatabaseId(name))
+    val maybeCtx: Optional[DatabaseContext] = manager.getDatabaseContext(databaseIdRepository.get(name))
     val dbCtx: DatabaseContext = maybeCtx.orElseGet(() => throw new RuntimeException(s"No such database: $name"))
     graphOps = dbCtx.databaseFacade()
     graph = new GraphDatabaseCypherService(graphOps)

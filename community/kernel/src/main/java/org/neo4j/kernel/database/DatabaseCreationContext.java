@@ -138,4 +138,6 @@ public interface DatabaseCreationContext
     StorageEngineFactory getStorageEngineFactory();
 
     ThreadToStatementContextBridge getContextBridge();
+
+    DatabaseIdRepository getDatabaseIdRepository();
 }

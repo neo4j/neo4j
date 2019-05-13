@@ -38,7 +38,8 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.PlaceholderDatabaseIdRepository;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
@@ -306,7 +307,8 @@ class RecoveryIT
         try
         {
             DatabaseManager<?> databaseManager = ((GraphDatabaseAPI) restartedDb).getDependencyResolver().resolveDependency( DatabaseManager.class );
-            DatabaseContext databaseContext = databaseManager.getDatabaseContext( new DatabaseId( DEFAULT_DATABASE_NAME ) ).get();
+            DatabaseIdRepository databaseIdRepository = new PlaceholderDatabaseIdRepository( defaults() );
+            DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseIdRepository.defaultDatabase() ).get();
             assertTrue( databaseContext.isFailed() );
             assertThat( getRootCause( databaseContext.failureCause() ).getMessage(),
                     containsString( "Transaction logs are missing and recovery is not possible." ) );

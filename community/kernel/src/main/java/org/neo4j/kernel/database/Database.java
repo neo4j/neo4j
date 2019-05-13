@@ -161,7 +161,6 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
@@ -201,6 +200,7 @@ public class Database extends LifecycleAdapter
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final Locks locks;
     private final DatabaseEventListeners eventListeners;
+    private final DatabaseIdRepository databaseIdRepository;
 
     private Dependencies databaseDependencies;
     private LifeSupport life;
@@ -260,6 +260,7 @@ public class Database extends LifecycleAdapter
         this.clock = context.getClock();
         this.accessCapability = context.getAccessCapability();
         this.eventListeners = context.getDatabaseEventListeners();
+        this.databaseIdRepository = context.getDatabaseIdRepository();
 
         this.readOnly = context.getGlobalConfig().get( GraphDatabaseSettings.read_only );
         this.idController = context.getIdController();
@@ -486,8 +487,8 @@ public class Database extends LifecycleAdapter
 
     private void upgradeStore( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache ) throws IOException
     {
-        new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, scheduler ).createDatabaseMigrator( databaseLayout,
-                storageEngineFactory, databaseDependencies ).migrate();
+        new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, scheduler, databaseIdRepository )
+                .createDatabaseMigrator( databaseLayout, storageEngineFactory, databaseDependencies ).migrate();
     }
 
     /**
@@ -528,7 +529,7 @@ public class Database extends LifecycleAdapter
 
     public boolean isSystem()
     {
-        return SYSTEM_DATABASE_NAME.equals( databaseId.name() );
+        return DatabaseId.isSystemDatabase( databaseId );
     }
 
     /**

@@ -31,6 +31,8 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -41,13 +43,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
 @ExtendWith( TestDirectoryExtension.class )
 class DefaultDatabaseManagerIT
 {
-    private static final DatabaseId DEFAULT_DATABASE_ID = new DatabaseId( DEFAULT_DATABASE_NAME );
-    private static final DatabaseId SYSTEM_DATABASE_ID = new DatabaseId( SYSTEM_DATABASE_NAME );
+    private static final DatabaseIdRepository DATABASE_ID_REPOSITORY = new TestDatabaseIdRepository();
+    private static final DatabaseId DEFAULT_DATABASE_ID = DATABASE_ID_REPOSITORY.defaultDatabase();
+    private static final DatabaseId SYSTEM_DATABASE_ID = DATABASE_ID_REPOSITORY.systemDatabase();
     @Inject
     private TestDirectory testDirectory;
     private GraphDatabaseService database;

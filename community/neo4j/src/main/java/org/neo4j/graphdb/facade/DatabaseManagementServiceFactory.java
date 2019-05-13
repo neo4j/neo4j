@@ -51,7 +51,7 @@ import org.neo4j.kernel.api.impl.fulltext.FulltextAdapter;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.api.dbms.NonTransactionalDbmsOperations;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -134,7 +134,8 @@ public class DatabaseManagementServiceFactory
         Log internalLog = logService.getInternalLog( getClass() );
         DatabaseManager<?> databaseManager = createAndInitializeDatabaseManager( globalModule, edition, internalLog );
         DatabaseManagementService managementService = new DatabaseManagementServiceImpl( databaseManager, globalModule.getGlobalAvailabilityGuard(),
-                globalLife, globalModule.getDatabaseEventListeners(), globalModule.getTransactionEventListeners(), internalLog );
+                globalLife, globalModule.getDatabaseEventListeners(), globalModule.getTransactionEventListeners(), edition.databaseIdRepository(),
+                internalLog );
         globalDependencies.satisfyDependencies( managementService );
 
         GlobalProcedures globalProcedures = setupProcedures( globalModule, edition, databaseManager );
@@ -164,7 +165,7 @@ public class DatabaseManagementServiceFactory
         {
             edition.createDatabases( databaseManager, config );
             globalLife.start();
-            verifySystemDatabaseStart( databaseManager );
+            verifySystemDatabaseStart( databaseManager, edition.databaseIdRepository() );
         }
         catch ( Throwable throwable )
         {
@@ -194,9 +195,9 @@ public class DatabaseManagementServiceFactory
         }
     }
 
-    private static void verifySystemDatabaseStart( DatabaseManager<?> databaseManager )
+    private static void verifySystemDatabaseStart( DatabaseManager<?> databaseManager, DatabaseIdRepository databaseIdRepository )
     {
-        Optional<? extends DatabaseContext> databaseContext = databaseManager.getDatabaseContext( new DatabaseId( SYSTEM_DATABASE_NAME ) );
+        Optional<? extends DatabaseContext> databaseContext = databaseManager.getDatabaseContext( databaseIdRepository.systemDatabase() );
         if ( databaseContext.isEmpty() )
         {
             throw new UnableToStartDatabaseException( SYSTEM_DATABASE_NAME + " not found." );

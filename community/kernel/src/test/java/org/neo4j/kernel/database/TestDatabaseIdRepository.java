@@ -19,19 +19,28 @@
  */
 package org.neo4j.kernel.database;
 
-import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.GraphDatabaseSettings;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class DatabaseNameLogContextTest
+public class TestDatabaseIdRepository implements DatabaseIdRepository
 {
-    @Test
-    void shouldFormatMessage()
+    private static DatabaseId DEFAULT_DATABASE_ID = new DatabaseId( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+    private static DatabaseId SYSTEM_DATABASE_ID = new DatabaseId( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
+
+    @Override
+    public DatabaseId get( String databaseName )
     {
-        var context = new DatabaseNameLogContext( new TestDatabaseIdRepository().get( "my_database" ) );
+        return new DatabaseId( databaseName );
+    }
 
-        var formattedMessage = context.formatMessage( "Hello there" );
+    @Override
+    public DatabaseId defaultDatabase()
+    {
+        return DEFAULT_DATABASE_ID;
+    }
 
-        assertEquals( "[my_database] Hello there", formattedMessage );
+    @Override
+    public DatabaseId systemDatabase()
+    {
+        return SYSTEM_DATABASE_ID;
     }
 }

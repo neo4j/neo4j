@@ -29,6 +29,7 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.database.PlaceholderDatabaseIdRepository;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 
 import static java.util.stream.Collectors.toSet;
@@ -48,7 +49,8 @@ class SingleInstanceRoutingProcedureInstallerTest
         DatabaseManager<?> databaseManager = mock( DatabaseManager.class );
         ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
         Config config = Config.defaults();
-        SingleInstanceRoutingProcedureInstaller installer = new SingleInstanceRoutingProcedureInstaller( databaseManager, portRegister, config );
+        SingleInstanceRoutingProcedureInstaller installer = new SingleInstanceRoutingProcedureInstaller( databaseManager, portRegister,
+                new PlaceholderDatabaseIdRepository( config ), config );
         GlobalProcedures procedures = spy( new GlobalProceduresRegistry() );
 
         installer.install( procedures );

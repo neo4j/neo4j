@@ -46,7 +46,6 @@ import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPIProvider;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
-import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
@@ -72,6 +71,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.bolt.testing.BoltTestUtil.newTestBoltChannel;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
@@ -99,7 +99,7 @@ public class ResetFuzzTest
             new ExecutorBoltSchedulerProvider( config, new CachedThreadPoolExecutorFactory( NullLog.getInstance() ), scheduler,
                     NullLogService.getInstance() ) );
     private final Clock clock = Clock.systemUTC();
-    private final BoltStateMachine machine = new BoltStateMachineV1( new FuzzStubSPI(), BoltTestUtil.newTestBoltChannel(), clock );
+    private final BoltStateMachine machine = new BoltStateMachineV1( new FuzzStubSPI(), newTestBoltChannel(), clock );
     private final BoltConnectionFactory connectionFactory =
             new DefaultBoltConnectionFactory( boltSchedulerProvider, TransportThrottleGroup.NO_THROTTLE,
                     config, NullLogService.getInstance(), clock, monitors );

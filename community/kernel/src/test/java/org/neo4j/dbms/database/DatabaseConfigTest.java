@@ -27,6 +27,7 @@ import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.configuration.TransactionTracingLevel;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.test.Race;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,7 +38,8 @@ class DatabaseConfigTest
     void shouldHandleRegisterDynamicUpdateListenersConcurrently() throws Throwable
     {
         // given
-        DatabaseConfig config = DatabaseConfig.from( Config.defaults(), new DatabaseId( GraphDatabaseSettings.DEFAULT_DATABASE_NAME ) );
+        DatabaseId databaseId = new TestDatabaseIdRepository().defaultDatabase();
+        DatabaseConfig dbConfig = DatabaseConfig.from( Config.defaults(), databaseId );
         Setting<TransactionTracingLevel> setting = GraphDatabaseSettings.transaction_tracing_level;
         int threads = 100; // big because we want to exercise what happens when the potentially backing List wants to grow
         Listener[] listeners = new Listener[threads];
@@ -51,12 +53,12 @@ class DatabaseConfigTest
         for ( int i = 0; i < threads; i++ )
         {
             int slot = i;
-            race.addContestant( () -> config.registerDynamicUpdateListener( setting, listeners[slot] ), 1 );
+            race.addContestant( () -> dbConfig.registerDynamicUpdateListener( setting, listeners[slot] ), 1 );
         }
         race.go();
 
         // then
-        config.updateDynamicSetting( setting.name(), TransactionTracingLevel.DISABLED.name(), "test" );
+        dbConfig.updateDynamicSetting( setting.name(), TransactionTracingLevel.DISABLED.name(), "test" );
         for ( int i = 0; i < threads; i++ )
         {
             assertEquals( 1, listeners[i].callCount );

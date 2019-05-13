@@ -51,6 +51,8 @@ import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
 import org.neo4j.dbms.diagnostics.jmx.JmxDump;
 import org.neo4j.internal.helpers.Args;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.PlaceholderDatabaseIdRepository;
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSource;
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSources;
 import org.neo4j.kernel.diagnostics.DiagnosticsReporter;
@@ -247,7 +249,9 @@ public class DiagnosticsReportCommand implements AdminCommand
 
         File storeDirectory = config.get( databases_root_path );
 
-        reporter.registerAllOfflineProviders( config, storeDirectory, this.fs );
+        DatabaseIdRepository databaseIdRepository = new PlaceholderDatabaseIdRepository( config );
+
+        reporter.registerAllOfflineProviders( config, storeDirectory, this.fs, databaseIdRepository );
 
         // Register sources provided by this tool
         reporter.registerSource( "config",

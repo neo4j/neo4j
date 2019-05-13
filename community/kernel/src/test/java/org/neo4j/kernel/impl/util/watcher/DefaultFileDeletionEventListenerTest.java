@@ -26,6 +26,7 @@ import java.nio.file.WatchKey;
 import org.neo4j.io.fs.watcher.resource.WatchedFile;
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -66,8 +67,9 @@ class DefaultFileDeletionEventListenerTest
 
     private DefaultFileDeletionEventListener buildListener( AssertableLogProvider internalLogProvider )
     {
+        DatabaseId databaseId = new TestDatabaseIdRepository().get( "testDatabase" );
         SimpleLogService logService = new SimpleLogService( NullLogProvider.getInstance(), internalLogProvider );
-        return new DefaultFileDeletionEventListener( new DatabaseId( "testDatabase" ), asSet( watchedResource ), logService,
+        return new DefaultFileDeletionEventListener( databaseId, asSet( watchedResource ), logService,
                 filename -> filename.startsWith( TransactionLogFilesHelper.DEFAULT_NAME ) );
     }
 }

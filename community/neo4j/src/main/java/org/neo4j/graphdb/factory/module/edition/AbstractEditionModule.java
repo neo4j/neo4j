@@ -23,7 +23,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseExistsException;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.SystemGraphInitializer;
@@ -42,6 +41,7 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -84,7 +84,7 @@ public abstract class AbstractEditionModule
             Predicate<String> fileNameFilter )
     {
         DefaultFileDeletionListenerFactory listenerFactory =
-                new DefaultFileDeletionListenerFactory( new DatabaseId( databaseLayout.getDatabaseName() ), logging, fileNameFilter );
+                new DefaultFileDeletionListenerFactory( databaseIdRepository().get( databaseLayout.getDatabaseName() ), logging, fileNameFilter );
         return new DatabaseLayoutWatcher( watcher, databaseLayout, listenerFactory );
     }
 
@@ -169,8 +169,8 @@ public abstract class AbstractEditionModule
 
     public void createDatabases( DatabaseManager<?> databaseManager, Config config ) throws DatabaseExistsException
     {
-        databaseManager.createDatabase( new DatabaseId( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) );
-        databaseManager.createDatabase( new DatabaseId( config.get( GraphDatabaseSettings.default_database ) ) );
+        databaseManager.createDatabase( databaseIdRepository().systemDatabase() );
+        databaseManager.createDatabase( databaseIdRepository().defaultDatabase() );
     }
 
     public TransactionHeaderInformationFactory getHeaderInformationFactory()
@@ -212,4 +212,6 @@ public abstract class AbstractEditionModule
     {
         this.securityProvider = securityProvider;
     }
+
+    public abstract DatabaseIdRepository databaseIdRepository();
 }

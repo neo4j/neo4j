@@ -49,7 +49,9 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.DatabaseNameLogContext;
+import org.neo4j.kernel.database.PlaceholderDatabaseIdRepository;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
@@ -154,8 +156,9 @@ public class DatabaseRule extends ExternalResource
         dependency( mutableDependencies, DbmsDiagnosticsManager.class, deps -> mock( DbmsDiagnosticsManager.class ) );
         StorageEngineFactory storageEngineFactory = dependency( mutableDependencies, StorageEngineFactory.class,
                 deps -> StorageEngineFactory.selectStorageEngine() );
+        DatabaseId databaseId = new PlaceholderDatabaseIdRepository( config ).get( databaseName );
 
-        database = new Database( new TestDatabaseCreationContext( databaseName, databaseLayout, config, idGeneratorFactory, logService,
+        database = new Database( new TestDatabaseCreationContext( databaseId, databaseLayout, config, idGeneratorFactory, logService,
                 mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ), mutableDependencies, mockedTokenHolders(), locksFactory,
                 mock( GlobalTransactionEventListeners.class ), fs, transactionStats, databaseHealth,
                 TransactionHeaderInformationFactory.DEFAULT, new CommunityCommitProcessFactory(),
@@ -234,8 +237,9 @@ public class DatabaseRule extends ExternalResource
         private final DatabaseEventListeners eventListeners;
         private final StorageEngineFactory storageEngineFactory;
         private final ThreadToStatementContextBridge contextBridge;
+        private final DatabaseIdRepository databaseIdRepository;
 
-        TestDatabaseCreationContext( String databaseName, DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory,
+        TestDatabaseCreationContext( DatabaseId databaseId, DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory,
                 LogService logService, JobScheduler scheduler, TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
                 TokenHolders tokenHolders, StatementLocksFactory statementLocksFactory, GlobalTransactionEventListeners globalTransactionEventListeners,
                 FileSystemAbstraction fs, DatabaseTransactionStats databaseTransactionStats, DatabaseHealth databaseHealth,
@@ -247,10 +251,10 @@ public class DatabaseRule extends ExternalResource
                 Iterable<ExtensionFactory<?>> extensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
                 Iterable<QueryEngineProvider> engineProviders, StorageEngineFactory storageEngineFactory, ThreadToStatementContextBridge contextBridge )
         {
-            this.databaseId = new DatabaseId( databaseName );
+            this.databaseId = databaseId;
             this.databaseLayout = databaseLayout;
             this.config = config;
-            this.databaseConfig = DatabaseConfig.from( config, databaseId );
+            this.databaseConfig = DatabaseConfig.from( config, this.databaseId );
             this.idGeneratorFactory = idGeneratorFactory;
             this.logService = new DatabaseLogService( new DatabaseNameLogContext( databaseId ), logService );
             this.scheduler = scheduler;
@@ -283,6 +287,7 @@ public class DatabaseRule extends ExternalResource
             this.eventListeners = mock( DatabaseEventListeners.class );
             this.storageEngineFactory = storageEngineFactory;
             this.contextBridge = contextBridge;
+            this.databaseIdRepository = new PlaceholderDatabaseIdRepository( config );
         }
 
         @Override
@@ -521,6 +526,12 @@ public class DatabaseRule extends ExternalResource
         public ThreadToStatementContextBridge getContextBridge()
         {
             return contextBridge;
+        }
+
+        @Override
+        public DatabaseIdRepository getDatabaseIdRepository()
+        {
+            return databaseIdRepository;
         }
     }
 

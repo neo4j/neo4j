@@ -30,7 +30,8 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -45,7 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.io.fs.FileSystemUtils.isEmptyOrNonExistingDirectory;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
@@ -66,8 +66,9 @@ class DatabaseManagementServiceBuilderIT
             DependencyResolver dependencyResolver = database.getDependencyResolver();
             DatabaseManager<?> databaseManager = dependencyResolver.resolveDependency( DatabaseManager.class );
             Config config = dependencyResolver.resolveDependency( Config.class );
-            assertThat( databaseManager.getDatabaseContext( new DatabaseId( config.get( default_database ) ) ), not( empty() ) );
-            assertThat( databaseManager.getDatabaseContext( new DatabaseId( SYSTEM_DATABASE_NAME ) ), not( empty() ) );
+            DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
+            assertThat( databaseManager.getDatabaseContext( databaseIdRepository.defaultDatabase() ), not( empty() ) );
+            assertThat( databaseManager.getDatabaseContext( databaseIdRepository.systemDatabase() ), not( empty() ) );
         }
         finally
         {

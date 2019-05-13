@@ -33,7 +33,7 @@ import org.neo4j.kernel.availability.AvailabilityRequirement;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DescriptiveAvailabilityRequirement;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.test.extension.Inject;
@@ -51,7 +51,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( LifeExtension.class )
 class DatabaseAvailabilityGuardTest
@@ -365,6 +364,7 @@ class DatabaseAvailabilityGuardTest
 
     private static DatabaseAvailabilityGuard createAvailabilityGuard( Clock clock, Log log )
     {
-        return new DatabaseAvailabilityGuard( new DatabaseId( DEFAULT_DATABASE_NAME ), clock, log, 0, mock( CompositeDatabaseAvailabilityGuard.class ) );
+        return new DatabaseAvailabilityGuard( new TestDatabaseIdRepository().defaultDatabase(), clock, log, 0,
+                    mock( CompositeDatabaseAvailabilityGuard.class ) );
     }
 }

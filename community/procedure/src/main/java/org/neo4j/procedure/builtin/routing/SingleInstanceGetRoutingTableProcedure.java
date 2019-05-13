@@ -30,6 +30,7 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.helpers.AdvertisedSocketAddress;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Collections.emptyList;
@@ -41,10 +42,10 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
     private final DatabaseManager<?> databaseManager;
     private final ConnectorPortRegister portRegister;
 
-    public SingleInstanceGetRoutingTableProcedure( List<String> namespace, DatabaseManager<?> databaseManager,
-            ConnectorPortRegister portRegister, Config config )
+    public SingleInstanceGetRoutingTableProcedure( List<String> namespace, DatabaseManager<?> databaseManager, ConnectorPortRegister portRegister,
+            DatabaseIdRepository databaseIdRepository, Config config )
     {
-        super( namespace, config );
+        super( namespace, databaseIdRepository, config );
         this.databaseManager = databaseManager;
         this.portRegister = portRegister;
     }

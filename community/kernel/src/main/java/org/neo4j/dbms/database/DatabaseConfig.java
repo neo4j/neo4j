@@ -22,7 +22,6 @@ package org.neo4j.dbms.database;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,7 +47,7 @@ public class DatabaseConfig extends Config implements Lifecycle
 
     public static DatabaseConfig from( Config globalConfig, DatabaseId databaseId )
     {
-        if ( Objects.equals( databaseId.name(), GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) )
+        if ( DatabaseId.isSystemDatabase( databaseId ) )
         {
             Map<String,String> overriddenConfigs = MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), "" );
             return new OverriddenDatabaseConfig( globalConfig, overriddenConfigs );

@@ -19,19 +19,16 @@
  */
 package org.neo4j.kernel.database;
 
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class DatabaseNameLogContextTest
+/**
+ * Encapsulates the retrieval of a persistent {@link DatabaseId} for a database of a given name.
+ *
+ * For further details see https://trello.com/c/3ajorJyU
+ */
+public interface DatabaseIdRepository
 {
-    @Test
-    void shouldFormatMessage()
-    {
-        var context = new DatabaseNameLogContext( new TestDatabaseIdRepository().get( "my_database" ) );
+    DatabaseId get( String databaseName );
 
-        var formattedMessage = context.formatMessage( "Hello there" );
+    DatabaseId defaultDatabase();
 
-        assertEquals( "[my_database] Hello there", formattedMessage );
-    }
+    DatabaseId systemDatabase();
 }
