@@ -201,7 +201,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       taskCloser.addTask(queryContext.transactionalContext.close)
       taskCloser.addTask(queryContext.resources.close)
       runSafely {
-        val internalExecutionResult =  innerExecute(transactionalContext, preParsedQuery, taskCloser, queryContext, params,
+        val internalExecutionResult = innerExecute(transactionalContext, preParsedQuery, taskCloser, queryContext, params,
                                              prePopulateResults, NOT_A_SUBSCRIBER)
         new ExecutionResult(internalExecutionResult)
       } (e => {

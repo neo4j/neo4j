@@ -99,13 +99,9 @@ abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](edition: 
       hasMore = runtimeResult.await()
 
       if (!hasMore) {
-        eventually {
-          subscriber.isCompleted should equal(true)
-        }
+        subscriber.isCompleted should equal(true)
       }
-      eventually {
-        subscriber.resultsInLastBatch should be <= requested
-      }
+      subscriber.resultsInLastBatch should be <= requested
     }
     subscriber.allSeen.size
   }

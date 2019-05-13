@@ -25,7 +25,6 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.{longValue, stringValue}
-import org.scalatest.concurrent.Eventually.eventually
 
 abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                                  runtime: CypherRuntime[CONTEXT])
@@ -63,13 +62,9 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
     if (lastAwait) {
       result.request(1)
       result.await() shouldBe false
-      eventually {
-        subscriber.isCompleted shouldBe true
-      }
+      subscriber.isCompleted shouldBe true
     } else {
-      eventually {
-        subscriber.isCompleted shouldBe true
-      }
+      subscriber.isCompleted shouldBe true
     }
   }
 
