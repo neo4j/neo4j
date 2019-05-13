@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{Expressio
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Expression, Literal, ShortestPathExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.{GroupingAggTable, NonGroupingAggTable, OrderedGroupingAggTable, OrderedNonGroupingAggTable}
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, ProcedureCallMode, QueryIndexes}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.{Equals => ASTEquals, Expression => ASTExpression, _}
@@ -246,12 +247,48 @@ case class InterpretedPipeMapper(readOnly: Boolean,
           OrderedDistinctPipe(source, projection)(id = id)
         }
 
+      case OrderedAggregation(_, groupingExpressions, aggregatingExpressions, orderToLeverage) if aggregatingExpressions.isEmpty =>
+        val projection = groupingExpressions.map {
+          case (key, value) => DistinctPipe.GroupingCol(key, buildExpression(value), orderToLeverage.contains(value))
+        }.toArray
+        OrderedDistinctPipe(source, projection)(id = id)
+
       case Aggregation(_, groupingExpressions, aggregatingExpressions) =>
-        EagerAggregationPipe(
-          source,
-          Eagerly.immutableMapValues(groupingExpressions, buildExpression),
-          Eagerly.immutableMapValues[String, ASTExpression, AggregationExpression](aggregatingExpressions, buildExpression(_).asInstanceOf[AggregationExpression])
-        )(id = id)
+        val aggregationColumns = aggregatingExpressions.map {
+          case (key, value) => AggregationPipe.AggregatingCol(key, buildExpression(value).asInstanceOf[AggregationExpression])
+        }.toArray
+
+        val tableFactory =
+          if (groupingExpressions.isEmpty) {
+            NonGroupingAggTable.Factory(aggregationColumns)
+          } else {
+            val groupingColumns = groupingExpressions.map {
+              case (key, value) => DistinctPipe.GroupingCol(key, buildExpression(value))
+            }.toArray
+            val groupingFunction: (ExecutionContext, QueryState) => AnyValue = AggregationPipe.computeGroupingFunction(groupingColumns)
+            GroupingAggTable.Factory(groupingColumns, groupingFunction, aggregationColumns)
+          }
+        EagerAggregationPipe(source, tableFactory)(id = id)
+
+      case OrderedAggregation(_, groupingExpressions, aggregatingExpressions, orderToLeverage) =>
+        val aggregationColumns = aggregatingExpressions.map {
+          case (key, value) => AggregationPipe.AggregatingCol(key, buildExpression(value).asInstanceOf[AggregationExpression])
+        }.toArray
+        val groupingColumns = groupingExpressions.map {
+          case (key, value) => DistinctPipe.GroupingCol(key, buildExpression(value), orderToLeverage.contains(value))
+        }.toArray
+
+        val (orderedGroupingColumns, unorderedGroupingColumns) = groupingColumns.partition(_.ordered)
+        val unorderedGroupingFunction: (ExecutionContext, QueryState) => AnyValue = AggregationPipe.computeGroupingFunction(unorderedGroupingColumns)
+        val orderedGroupingFunction: (ExecutionContext, QueryState) => AnyValue = AggregationPipe.computeGroupingFunction(orderedGroupingColumns)
+
+        val tableFactory =
+          if (groupingColumns.forall(_.ordered)) {
+            OrderedNonGroupingAggTable.Factory(orderedGroupingFunction, orderedGroupingColumns, aggregationColumns)
+          } else {
+            OrderedGroupingAggTable.Factory(orderedGroupingFunction, orderedGroupingColumns, unorderedGroupingFunction, unorderedGroupingColumns, aggregationColumns)
+          }
+        OrderedAggregationPipe(source, tableFactory)(id = id)
 
       case FindShortestPaths(_, shortestPathPattern, predicates, withFallBack, disallowSameNode) =>
         val legacyShortestPath = shortestPathPattern.expr.asLegacyPatterns(id, shortestPathPattern.name, expressionConverters).head

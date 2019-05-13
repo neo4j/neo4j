@@ -27,6 +27,9 @@ import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.mutable
 
+/**
+  * Specialization of [[DistinctPipe]] that leverages the order of some grouping columns.
+  */
 case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])
                        (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
@@ -74,7 +77,7 @@ case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol]
 }
 
 /**
-  * Specialization for the case that all groupingColumns are ordered
+  * Specialization for the case that all groupingColumns are ordered.
   */
 case class AllOrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])
                        (val id: Id = Id.INVALID_ID)

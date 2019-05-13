@@ -30,7 +30,7 @@ case class PartialSortPipe(source: Pipe,
                            prefixComparator: Comparator[ExecutionContext],
                            suffixComparator: Comparator[ExecutionContext])
                           (val id: Id = Id.INVALID_ID)
-  extends OrderedInputPipe(source) {
+  extends PipeWithSource(source) with OrderedInputPipe {
 
   class PartialSortReceiver extends OrderedChunkReceiver {
     private val buffer = new java.util.ArrayList[ExecutionContext]()

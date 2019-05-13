@@ -19,126 +19,22 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import java.util.function
-
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Expression}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, MutableMaps}
+import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.AggregationTableFactory
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{ListValue, VirtualValues}
-
-import scala.collection.immutable
-import scala.collection.mutable.{Map => MutableMap}
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
 // to emit aggregated results.
 // Cypher is lazy until it can't - this pipe will eagerly load the full match
-case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expression], aggregations: Map[String, AggregationExpression])
-                               (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
-
-  aggregations.values.foreach(_.registerOwningPipe(this))
-  keyExpressions.values.foreach(_.registerOwningPipe(this))
-
-  private val expressionOrder: immutable.Seq[(String, Expression)] = keyExpressions.toIndexedSeq
-  private val computeAggregations: function.Function[AnyValue, Seq[AggregationFunction]] =
-    (_: AnyValue) => aggregations.map(_._2.createAggregationFunction).toIndexedSeq
-
-  val groupingFunction: (ExecutionContext, QueryState) => AnyValue = {
-    keyExpressions.size match {
-      case 1 =>
-        val firstExpression = keyExpressions.head._2
-        (ctx, state) => firstExpression(ctx, state)
-
-      case 2 =>
-        val e1 = keyExpressions.head._2
-        val e2 = keyExpressions.last._2
-        (ctx, state) => VirtualValues.list(e1(ctx, state), e2(ctx, state))
-
-      case 3 =>
-        val e1 = keyExpressions.head._2
-        val e2 = keyExpressions.tail.head._2
-        val e3 = keyExpressions.last._2
-        (ctx, state) => VirtualValues.list(e1(ctx, state), e2(ctx, state), e3(ctx, state))
-
-      case _ =>
-        val expressions = keyExpressions.values.toSeq
-        (ctx, state) => VirtualValues.list(expressions.map(e => e(ctx, state)): _*)
-    }
-  }
-
-  def createResultFunction(newMap: MutableMap[String, AnyValue], groupingKey: AnyValue): Unit =
-    keyExpressions.size match {
-      case 1 =>
-        val tuple = keyExpressions.head._1 -> groupingKey
-        newMap += tuple
-      case 2 =>
-        val t2 = groupingKey.asInstanceOf[ListValue]
-        newMap += keyExpressions.head._1 -> t2.head +=
-          keyExpressions.last._1 -> t2.last
-      case 3 =>
-        val t3 = groupingKey.asInstanceOf[ListValue]
-        newMap += keyExpressions.head._1 -> t3.value(0) +=
-          keyExpressions.tail.head._1  -> t3.value(1) +=
-          keyExpressions.last._1  -> t3.value(2)
-      case _ =>
-        val listOfValues = groupingKey.asInstanceOf[ListValue]
-        var i = 0
-        while (i < keyExpressions.size) {
-          val (k, v) = expressionOrder(i)
-          val value: AnyValue = listOfValues.value(i)
-          newMap += (k -> value)
-          i += 1
-        }
-    }
+case class EagerAggregationPipe(source: Pipe,
+                                tableFactory: AggregationTableFactory)
+                               (val id: Id = Id.INVALID_ID)
+  extends AggregationPipe(source, tableFactory) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-
-    val result = new java.util.LinkedHashMap[AnyValue, Seq[AggregationFunction]]()
-    val keyNames = keyExpressions.keySet.toList
-    val aggregationNames: IndexedSeq[String] = aggregations.keys.toIndexedSeq
-    val keyNamesSize = keyNames.size
-    val mapSize = keyNamesSize + aggregationNames.size
-
-    def createEmptyResult(): Iterator[ExecutionContext] = {
-      val newMap = MutableMaps.empty[String, AnyValue]
-      val values = aggregations.map(_._2.createAggregationFunction.result(state))
-      val aggregationNamesAndFunctions: IndexedSeq[(String, AnyValue)] = aggregationNames zip values
-
-      aggregationNamesAndFunctions.toMap
-        .foreach { case (name, zeroValue) => newMap += name -> zeroValue}
-      Iterator.single(ExecutionContext(newMap))
-    }
-
-    // This code is not pretty. It's full of asInstanceOf calls and other things that might irk you.
-    // You'll just have to trust that the original authors spent time profiling and making sure that this
-    // code runs really fast.
-    // If you feel like cleaning it up - please make sure to not regress in performance. This is a hot spot.
-    def createResults(groupingKey: AnyValue, aggregator: scala.Seq[AggregationFunction]): ExecutionContext = {
-      val newMap = MutableMaps.create[String, AnyValue](mapSize)
-      createResultFunction(newMap, groupingKey)
-      (aggregationNames zip aggregator.map(_.result(state))).foreach(newMap += _)
-      ExecutionContext(newMap)
-    }
-
-
-    input.foreach(ctx => {
-      val groupingValue: AnyValue = groupingFunction(ctx, state)
-      val functions = result.computeIfAbsent(groupingValue, computeAggregations)
-      functions.foreach(func => func(ctx, state))
-    })
-
-    if (result.isEmpty && keyNames.isEmpty) {
-      createEmptyResult()
-    } else {
-      val iterator = result.entrySet().iterator()
-      new Iterator[ExecutionContext] {
-        override def hasNext: Boolean = iterator.hasNext
-        override def next(): ExecutionContext = {
-          val entry = iterator.next()
-          createResults(entry.getKey, entry.getValue)
-        }
-      }
-    }
+    val table = tableFactory.table(state, executionContextFactory)
+    table.clear()
+    input.foreach(table.processRow)
+    table.result()
   }
 }

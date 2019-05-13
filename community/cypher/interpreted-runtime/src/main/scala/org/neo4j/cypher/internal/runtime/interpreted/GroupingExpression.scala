@@ -65,5 +65,8 @@ trait GroupingExpression {
     */
   def project(context: ExecutionContext,  groupingKey: KeyType): Unit
 
+  /**
+    * @return `true` if there is no grouping, `false` otherwise.
+    */
   def isEmpty: Boolean
 }

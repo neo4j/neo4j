@@ -34,7 +34,7 @@ case class PartialTopNPipe(source: Pipe,
                            prefixComparator: Comparator[ExecutionContext],
                            suffixComparator: Comparator[ExecutionContext])
                           (val id: Id = Id.INVALID_ID)
-  extends OrderedInputPipe(source) {
+  extends PipeWithSource(source: Pipe) with OrderedInputPipe {
 
   countExpression.registerOwningPipe(this)
 

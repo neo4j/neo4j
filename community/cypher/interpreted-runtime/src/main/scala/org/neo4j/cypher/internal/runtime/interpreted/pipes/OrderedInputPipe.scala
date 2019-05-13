@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.runtime.ExecutionContext
 /**
   * A pipe that relies on its input coming in a certain order and processing that input in chunks.
   */
-abstract class OrderedInputPipe(source: Pipe) extends PipeWithSource(source) {
+trait OrderedInputPipe {
+  self: PipeWithSource =>
 
   /**
     * @return provide the receiver that will be used to create results. If you override internalCreateResults, and choose to call
