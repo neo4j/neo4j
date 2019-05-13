@@ -32,6 +32,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
 
+import org.neo4j.test.Race;
 import org.neo4j.test.extension.SuppressOutputExtension;
 
 import static java.lang.String.format;
@@ -43,6 +44,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith( SuppressOutputExtension.class )
@@ -303,6 +305,32 @@ class ProgressMonitorTest
         order.verify( indicator ).completePart( "part1" );
         order.verify( indicator ).completePart( "part2" );
         order.verify( indicator ).completeProcess();
+    }
+
+    @Test
+    void shouldAllowConcurrentProgressReportingForMultipartProgress( TestInfo testInfo )
+    {
+        // given
+        ProgressMonitorFactory.MultiPartBuilder builder = factory.multipleParts( testInfo.getDisplayName() );
+        int numberOfThreads = 4;
+        int part1LocalCount = 12345;
+        int part2LocalCount = 54321;
+        int part1TotalCount = numberOfThreads * part1LocalCount;
+        int part2TotalCount = numberOfThreads * part2LocalCount;
+        ProgressListener part1 = builder.progressForPart( "part1", part1TotalCount );
+        ProgressListener part2 = builder.progressForPart( "part2", part2TotalCount );
+
+        // when
+        Race race = new Race().withEndCondition( () -> false );
+        race.addContestants( numberOfThreads, () -> part1.add( 1 ), part1LocalCount );
+        race.addContestants( numberOfThreads, () -> part2.add( 1 ), part2LocalCount );
+        race.goUnchecked();
+
+        // then
+        for ( int i = 0; i < 10; i++ )
+        {
+            verify( indicator ).progress( i, i + 1 );
+        }
     }
 
     private static Indicator indicatorMock()

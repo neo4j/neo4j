@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.helpers.progress;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+
 /**
  * A Progress object is an object through which a process can report its progress.
  * <p>
@@ -30,8 +33,6 @@ public interface ProgressListener
     void started( String task );
 
     void started();
-
-    void set( long progress );
 
     void add( long progress );
 
@@ -49,11 +50,6 @@ public interface ProgressListener
 
         @Override
         public void started( String task )
-        {
-        }
-
-        @Override
-        public void set( long progress )
         {
         }
 
@@ -100,12 +96,6 @@ public interface ProgressListener
         }
 
         @Override
-        public void set( long progress )
-        {
-            update( value = progress );
-        }
-
-        @Override
         public void add( long progress )
         {
             update( value += progress );
@@ -114,7 +104,7 @@ public interface ProgressListener
         @Override
         public void done()
         {
-            set( totalCount );
+            update( value = totalCount );
             indicator.completeProcess();
         }
 
@@ -142,9 +132,8 @@ public interface ProgressListener
         public final long totalCount;
 
         private final Aggregator aggregator;
-        private boolean started;
-        private long value;
-        private long lastReported;
+        private final AtomicBoolean started = new AtomicBoolean();
+        private final AtomicLong progress = new AtomicLong();
 
         MultiPartProgressListener( Aggregator aggregator, String part, long totalCount )
         {
@@ -156,29 +145,30 @@ public interface ProgressListener
         @Override
         public void started( String task )
         {
-            if ( !started )
+            if ( started.compareAndSet( false, true ) )
             {
                 aggregator.start( this );
-                started = true;
             }
         }
 
         @Override
-        public void set( long progress )
+        public void add( long delta )
         {
-            update( value = progress );
+            started();
+            progress.addAndGet( delta );
+            aggregator.update( delta );
         }
 
         @Override
-        public void add( long progress )
+        public synchronized void done()
         {
-            update( value += progress );
-        }
+            long delta = totalCount - progress.get();
+            if ( delta > 0 )
+            {
+                add( delta );
+            }
 
-        @Override
-        public void done()
-        {
-            set( totalCount );
+            // Idempotent call
             aggregator.complete( this );
         }
 
@@ -186,21 +176,6 @@ public interface ProgressListener
         public void failed( Throwable e )
         {
             aggregator.signalFailure( e );
-        }
-
-        private void update( long progress )
-        {
-            started();
-            if ( progress > lastReported )
-            {
-                aggregator.update( progress - lastReported );
-                lastReported = progress;
-            }
-        }
-
-        enum State
-        {
-            INIT, LIVE
         }
     }
 }

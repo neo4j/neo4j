@@ -517,6 +517,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
                 Predicate<? super R>... filters ) throws FAILURE
         {
             ResourceIterable<R> iterable = Scanner.scan( store, true, filters );
+            long lastReported = -1;
             try ( ResourceIterator<R> scan = iterable.iterator() )
             {
                 while ( scan.hasNext() )
@@ -528,7 +529,9 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
                     }
 
                     store.accept( this, record );
-                    progressListener.set( record.getId() );
+                    long diff = record.getId() - lastReported;
+                    progressListener.add( diff );
+                    lastReported = record.getId();
                 }
                 progressListener.done();
             }

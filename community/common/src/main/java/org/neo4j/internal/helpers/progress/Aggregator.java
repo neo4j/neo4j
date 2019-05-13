@@ -28,7 +28,7 @@ import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
 final class Aggregator
 {
-    private final Map<ProgressListener, ProgressListener.MultiPartProgressListener.State> states = new HashMap<>();
+    private final Map<ProgressListener,State> states = new HashMap<>();
     private final Indicator indicator;
     @SuppressWarnings( "unused"/*accessed through updater*/ )
     private volatile long progress;
@@ -46,7 +46,7 @@ final class Aggregator
 
     synchronized void add( ProgressListener progress, long totalCount )
     {
-        states.put( progress, ProgressListener.MultiPartProgressListener.State.INIT );
+        states.put( progress, State.INIT );
         this.totalCount += totalCount;
     }
 
@@ -78,7 +78,7 @@ final class Aggregator
 
     synchronized void start( ProgressListener.MultiPartProgressListener part )
     {
-        if ( states.put( part, ProgressListener.MultiPartProgressListener.State.LIVE ) == ProgressListener.MultiPartProgressListener.State.INIT )
+        if ( states.put( part, State.LIVE ) == State.INIT )
         {
             indicator.startPart( part.part, part.totalCount );
         }
@@ -99,5 +99,10 @@ final class Aggregator
     synchronized void signalFailure( Throwable e )
     {
         indicator.failure( e );
+    }
+
+    enum State
+    {
+        INIT, LIVE
     }
 }

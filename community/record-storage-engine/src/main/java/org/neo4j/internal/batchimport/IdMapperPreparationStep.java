@@ -62,12 +62,6 @@ public class IdMapperPreparationStep extends LonelyProcessingStep
             }
 
             @Override
-            public void set( long progress )
-            {
-                throw new UnsupportedOperationException( "Shouldn't be required" );
-            }
-
-            @Override
             public void failed( Throwable e )
             {
                 issuePanic( e );
