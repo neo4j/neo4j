@@ -109,31 +109,6 @@ trait Base extends Parser {
     ) memoMismatches) ~~> (_.reduce(_ + '`' + _))
   }
 
-  def UserNameString: Rule1[String] = rule("a user name") {
-    // Since the username may include (and start with) quotation marks, they are always part of the username
-    oneOrMore(!ch(' ') ~ ANY) ~> (_.toLowerCase) ~ (ch(' ') | EOI)
-  }
-
-  def RoleNameString: Rule1[String] = UnquotedRoleNameString | QuotedRoleNameString
-
-  def UnquotedRoleNameString: Rule1[String] = rule("a role name") {
-    oneOrMore(RoleNamePart) ~> (_.toLowerCase) ~ !RoleNamePart
-  }
-
-  def QuotedRoleNameString: Rule1[String] = rule("a role name") {
-    group(ch('"') ~ oneOrMore(RoleNamePart) ~ ch('"')) ~> (_.replace("\"","").toLowerCase) ~ !RoleNamePart
-  }
-
-  def DatabaseNameString: Rule1[String] = UnquotedDatabaseNameString | QuotedDatabaseNameString
-
-  def UnquotedDatabaseNameString: Rule1[String] = rule("a database name") {
-    group(DatabaseNameStart ~ zeroOrMore(DatabaseNamePart)) ~> (_.toLowerCase) ~ !DatabaseNamePart
-  }
-
-  def QuotedDatabaseNameString: Rule1[String] = rule("a database name") {
-    group(ch('"') ~ DatabaseNameStart ~ zeroOrMore(DatabaseNamePart) ~ ch('"')) ~> (_.replace("\"","").toLowerCase) ~ !DatabaseNamePart
-  }
-
   def Namespace: Rule1[ASTNamespace] = rule("namespace of a procedure") {
     zeroOrMore(SymbolicNameString ~ ".") ~~>> (ASTNamespace(_))
   }

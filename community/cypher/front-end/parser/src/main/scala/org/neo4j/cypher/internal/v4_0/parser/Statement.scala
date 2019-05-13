@@ -47,53 +47,53 @@ trait Statement extends Parser
 
   def CreateUser: Rule1[CreateUser] = rule("CATALOG CREATE USER") {
     // CREATE USER username SET PASSWORD stringLiteralPassword optionalStatus
-    group(keyword("CREATE USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
+    group(keyword("CREATE USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
     optionalStatus) ~~>> ((userName, initialPassword, suspended) =>
       ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange = true, suspended.getOrElse(false))) |
     // CREATE USER username SET PASSWORD stringLiteralPassword optionalRequirePasswordChange optionalStatus
-    group(keyword("CREATE USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
+    group(keyword("CREATE USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
     optionalRequirePasswordChange ~~ optionalStatus) ~~>> ((userName, initialPassword, requirePasswordChange, suspended) =>
       ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange.getOrElse(true), suspended.getOrElse(false))) |
     //
     // CREATE USER username SET PASSWORD parameterPassword optionalStatus
-    group(keyword("CREATE USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
+    group(keyword("CREATE USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
     optionalStatus) ~~>> ((userName, initialPassword, suspended) =>
       ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange = true, suspended.getOrElse(false))) |
     // CREATE USER username SET PASSWORD parameterPassword optionalRequirePasswordChange optionalStatus
-    group(keyword("CREATE USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
+    group(keyword("CREATE USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
     optionalRequirePasswordChange ~~ optionalStatus) ~~>> ((userName, initialPassword, requirePasswordChange, suspended) =>
       ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange.getOrElse(true), suspended.getOrElse(false)))
   }
 
   def DropUser: Rule1[DropUser] = rule("CATALOG DROP USER") {
-    group(keyword("DROP USER") ~~ UserNameString) ~~>> (ast.DropUser(_))
+    group(keyword("DROP USER") ~~ SymbolicNameString) ~~>> (ast.DropUser(_))
   }
 
   def AlterUser: Rule1[AlterUser] = rule("CATALOG ALTER USER") {
     // ALTER USER username SET PASSWORD stringLiteralPassword optionalStatus
-    group(keyword("ALTER USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
+    group(keyword("ALTER USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
     optionalStatus) ~~>> ((userName, initialPassword, suspended) =>
       ast.AlterUser(userName, Some(initialPassword.value), None, None, suspended)) |
     // ALTER USER username SET PASSWORD stringLiteralPassword optionalRequirePasswordChange optionalStatus
-    group(keyword("ALTER USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
+    group(keyword("ALTER USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
     optionalRequirePasswordChange ~~ optionalStatus) ~~>> ((userName, initialPassword, requirePasswordChange, suspended) =>
       ast.AlterUser(userName, Some(initialPassword.value), None, requirePasswordChange, suspended)) |
     //
     // ALTER USER username SET PASSWORD parameterPassword optionalStatus
-    group(keyword("ALTER USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
+    group(keyword("ALTER USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
     optionalStatus) ~~>> ((userName, initialPassword, suspended) =>
       ast.AlterUser(userName, None, Some(initialPassword), None, suspended)) |
     // ALTER USER username SET PASSWORD parameterPassword optionalRequirePasswordChange optionalStatus
-    group(keyword("ALTER USER") ~~ UserNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
+    group(keyword("ALTER USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
     optionalRequirePasswordChange ~~ optionalStatus) ~~>> ((userName, initialPassword, requirePasswordChange, suspended) =>
       ast.AlterUser(userName, None, Some(initialPassword), requirePasswordChange, suspended)) |
     //
     // ALTER USER username setRequirePasswordChange optionalStatus
-    group(keyword("ALTER USER") ~~ UserNameString ~~ setRequirePasswordChange ~~ optionalStatus) ~~>>
+    group(keyword("ALTER USER") ~~ SymbolicNameString ~~ setRequirePasswordChange ~~ optionalStatus) ~~>>
       ((userName, requirePasswordChange, suspended) => ast.AlterUser(userName, None, None, Some(requirePasswordChange), suspended)) |
     //
     // ALTER USER username setStatus
-    group(keyword("ALTER USER") ~~ UserNameString ~~ setStatus) ~~>>
+    group(keyword("ALTER USER") ~~ SymbolicNameString ~~ setStatus) ~~>>
       ((userName, suspended) => ast.AlterUser(userName, None, None, None, Some(suspended)))
   }
 
@@ -133,16 +133,16 @@ trait Statement extends Parser
   }
 
   def CreateRole: Rule1[CreateRole] = rule("CATALOG CREATE ROLE") {
-    group(keyword("CREATE ROLE") ~~ RoleNameString ~~
-      optional(keyword("AS COPY OF") ~~ RoleNameString)) ~~>> (ast.CreateRole(_, _))
+    group(keyword("CREATE ROLE") ~~ SymbolicNameString ~~
+      optional(keyword("AS COPY OF") ~~ SymbolicNameString)) ~~>> (ast.CreateRole(_, _))
   }
 
   def DropRole: Rule1[DropRole] = rule("CATALOG DROP ROLE") {
-    group(keyword("DROP ROLE") ~~ RoleNameString) ~~>> (ast.DropRole(_))
+    group(keyword("DROP ROLE") ~~ SymbolicNameString) ~~>> (ast.DropRole(_))
   }
 
   def ShowDatabase: Rule1[ShowDatabase] = rule("CATALOG SHOW DATABASE") {
-    group(keyword("SHOW DATABASE") ~~ DatabaseNameString) ~~>> (ast.ShowDatabase(_))
+    group(keyword("SHOW DATABASE") ~~ SymbolicNameString) ~~>> (ast.ShowDatabase(_))
   }
 
   def ShowDatabases: Rule1[ShowDatabases] = rule("CATALOG SHOW DATABASES") {
@@ -150,19 +150,19 @@ trait Statement extends Parser
   }
 
   def CreateDatabase: Rule1[CreateDatabase] = rule("CATALOG CREATE DATABASE") {
-    group(keyword("CREATE DATABASE") ~~ DatabaseNameString) ~~>> (ast.CreateDatabase(_))
+    group(keyword("CREATE DATABASE") ~~ SymbolicNameString) ~~>> (ast.CreateDatabase(_))
   }
 
   def DropDatabase: Rule1[DropDatabase] = rule("CATALOG DROP DATABASE") {
-    group(keyword("DROP DATABASE") ~~ DatabaseNameString) ~~>> (ast.DropDatabase(_))
+    group(keyword("DROP DATABASE") ~~ SymbolicNameString) ~~>> (ast.DropDatabase(_))
   }
 
   def StartDatabase: Rule1[StartDatabase] = rule("CATALOG START DATABASE") {
-    group(keyword("START DATABASE") ~~ DatabaseNameString) ~~>> (ast.StartDatabase(_))
+    group(keyword("START DATABASE") ~~ SymbolicNameString) ~~>> (ast.StartDatabase(_))
   }
 
   def StopDatabase: Rule1[StopDatabase] = rule("CATALOG STOP DATABASE") {
-    group(keyword("STOP DATABASE") ~~ DatabaseNameString) ~~>> (ast.StopDatabase(_))
+    group(keyword("STOP DATABASE") ~~ SymbolicNameString) ~~>> (ast.StopDatabase(_))
   }
 
   def CreateGraph: Rule1[CreateGraph] = rule("CATALOG CREATE GRAPH") {

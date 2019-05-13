@@ -22,8 +22,5 @@ import org.parboiled.scala.Rule0
 package object parser {
   lazy val IdentifierStart: Rule0 = new IdentifierStartMatcher()
   lazy val IdentifierPart: Rule0 = new IdentifierPartMatcher()
-  lazy val DatabaseNameStart: Rule0 = new DatabaseNameStartMatcher()
-  lazy val DatabaseNamePart: Rule0 = new DatabaseNamePartMatcher()
-  lazy val RoleNamePart: Rule0 = new RoleNameMatcher()
   lazy val WSChar: Rule0 = new WhitespaceCharMatcher()
 }
