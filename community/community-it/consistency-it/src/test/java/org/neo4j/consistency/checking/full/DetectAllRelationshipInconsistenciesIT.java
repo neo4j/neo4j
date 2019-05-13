@@ -97,8 +97,7 @@ public class DetectAllRelationshipInconsistenciesIT
                 }
                 for ( int i = 0; i < 10_000; i++ )
                 {
-                    relationships[i] =
-                            random.among( nodes ).createRelationshipTo( random.among( nodes ), MyRelTypes.TEST );
+                    relationships[i] = random.among( nodes ).createRelationshipTo( random.among( nodes ), MyRelTypes.TEST );
                 }
                 tx.commit();
             }
@@ -197,14 +196,29 @@ public class DetectAllRelationshipInconsistenciesIT
         RelationshipRecord before = store.getRecord( id, store.newRecord(), RecordLoad.NORMAL );
         RelationshipRecord after = before.clone();
 
+        boolean sabotageSourceChain = random.nextBoolean(); // otherwise target chain
         long otherReference;
-        if ( !after.isFirstInFirstChain() )
+        if ( sabotageSourceChain )
         {
-            after.setFirstPrevRel( otherReference = after.getFirstPrevRel() + 1 );
+            if ( !after.isFirstInFirstChain() )
+            {
+                after.setFirstPrevRel( otherReference = after.getFirstPrevRel() + 1 );
+            }
+            else
+            {
+                after.setFirstNextRel( otherReference = after.getFirstNextRel() + 1 );
+            }
         }
         else
         {
-            after.setFirstNextRel( otherReference = after.getFirstNextRel() + 1 );
+            if ( !after.isFirstInSecondChain() )
+            {
+                after.setSecondPrevRel( otherReference = after.getSecondPrevRel() + 1 );
+            }
+            else
+            {
+                after.setSecondNextRel( otherReference = after.getSecondNextRel() + 1 );
+            }
         }
 
         store.prepareForCommit( after );
