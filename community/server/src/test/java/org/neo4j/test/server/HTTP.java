@@ -19,34 +19,34 @@
  */
 package org.neo4j.test.server;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientRequest;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.config.ClientConfig;
-import com.sun.jersey.api.client.config.DefaultClientConfig;
-import com.sun.jersey.client.urlconnection.HTTPSProperties;
 import org.codehaus.jackson.JsonNode;
 
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
-import javax.ws.rs.core.MediaType;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
-import static com.sun.jersey.api.client.config.ClientConfig.PROPERTY_FOLLOW_REDIRECTS;
-import static com.sun.jersey.client.urlconnection.HTTPSProperties.PROPERTY_HTTPS_PROPERTIES;
+import static java.net.http.HttpClient.Redirect.NEVER;
 import static java.util.Collections.unmodifiableMap;
+import static javax.ws.rs.core.HttpHeaders.ACCEPT;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_ENCODING;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static javax.ws.rs.core.HttpHeaders.LOCATION;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
@@ -58,11 +58,11 @@ import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 /**
  * A tool for performing REST HTTP requests
  */
-public class HTTP
+public final class HTTP
 {
 
-    private static final Builder BUILDER = new Builder().withHeaders( "Accept", "application/json" );
-    private static final Client CLIENT = createClient();
+    private static final Builder BUILDER = new Builder().withHeaders( ACCEPT, APPLICATION_JSON );
+    private static final HttpClient CLIENT = createClient();
 
     private HTTP()
     {
@@ -70,7 +70,7 @@ public class HTTP
 
     public static String basicAuthHeader( String username, String password )
     {
-        String usernamePassword = username + ':' + password;
+        var usernamePassword = username + ':' + password;
         return "Basic " + Base64.getEncoder().encodeToString( usernamePassword.getBytes() );
     }
 
@@ -114,23 +114,17 @@ public class HTTP
         return BUILDER.request( method, uri, payload );
     }
 
-    /**
-     * Create a Jersey HTTP client that is able to talk HTTPS and trusts all certificates.
-     *
-     * @return new client.
-     */
-    private static Client createClient()
+    private static HttpClient createClient()
     {
         try
         {
-            HostnameVerifier hostnameVerifier = HttpsURLConnection.getDefaultHostnameVerifier();
-            ClientConfig config = new DefaultClientConfig();
-            SSLContext ctx = SSLContext.getInstance( "TLS" );
-            ctx.init( null, new TrustManager[]{new InsecureTrustManager()}, null );
-            Map<String,Object> properties = config.getProperties();
-            properties.put( PROPERTY_HTTPS_PROPERTIES, new HTTPSProperties( hostnameVerifier, ctx ) );
-            properties.put( PROPERTY_FOLLOW_REDIRECTS, false );
-            return Client.create( config );
+            var sslContext = SSLContext.getInstance( "TLS" );
+            sslContext.init( null, new TrustManager[]{new InsecureTrustManager()}, null );
+
+            return HttpClient.newBuilder()
+                    .followRedirects( NEVER )
+                    .sslContext( sslContext )
+                    .build();
         }
         catch ( Exception e )
         {
@@ -161,10 +155,10 @@ public class HTTP
 
         public Builder withHeaders( Map<String, String> newHeaders )
         {
-            HashMap<String, String> combined = new HashMap<>();
-            combined.putAll( headers );
-            combined.putAll( newHeaders );
-            return new Builder( combined, baseUri );
+            var combinedHeaders = new HashMap<String,String>();
+            combinedHeaders.putAll( headers );
+            combinedHeaders.putAll( newHeaders );
+            return new Builder( combinedHeaders, baseUri );
         }
 
         public Builder withBaseUri( String baseUri )
@@ -199,7 +193,9 @@ public class HTTP
 
         public Response request( String method, String uri )
         {
-            return new Response( CLIENT.handle( build().build( buildUri( uri ), method ) ) );
+            var request = requestBuilder( uri ).method( method, BodyPublishers.noBody() ).build();
+            var response = send( request );
+            return new Response( response );
         }
 
         public Response request( String method, String uri, Object payload )
@@ -208,16 +204,21 @@ public class HTTP
             {
                 return request( method, uri );
             }
-            String jsonPayload = payload instanceof RawPayload ? ((RawPayload) payload).get() : createJsonFrom(
-                    payload );
-            ClientRequest.Builder lastBuilder = build().entity( jsonPayload, MediaType.APPLICATION_JSON_TYPE );
+            var jsonPayload = payload instanceof RawPayload ? ((RawPayload) payload).get() : createJsonFrom( payload );
 
-            return new Response( CLIENT.handle( lastBuilder.build( buildUri( uri ), method ) ) );
+            var request = requestBuilder( uri )
+                    .method( method, BodyPublishers.ofString( jsonPayload ) )
+                    .setHeader( CONTENT_TYPE, APPLICATION_JSON )
+                    .build();
+
+            var response = send( request );
+
+            return new Response( response );
         }
 
         private URI buildUri( String uri )
         {
-            URI unprefixedUri = URI.create( uri );
+            var unprefixedUri = URI.create( uri );
             if ( unprefixedUri.isAbsolute() )
             {
                 return unprefixedUri;
@@ -228,24 +229,36 @@ public class HTTP
             }
         }
 
-        private ClientRequest.Builder build()
+        private HttpRequest.Builder requestBuilder( String uri )
         {
-            ClientRequest.Builder builder = ClientRequest.create();
-            for ( Map.Entry<String, String> header : headers.entrySet() )
+            var builder = HttpRequest.newBuilder( buildUri( uri ) );
+            for ( var headerEntry : headers.entrySet() )
             {
-                builder = builder.header( header.getKey(), header.getValue() );
+                builder = builder.setHeader( headerEntry.getKey(), headerEntry.getValue() );
             }
 
             return builder;
+        }
+
+        private static HttpResponse<String> send( HttpRequest request )
+        {
+            try
+            {
+                return CLIENT.send( request, BodyHandlers.ofString() );
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
         }
     }
 
     /**
      * Check some general validations that all REST responses should always pass.
      */
-    public static ClientResponse sanityCheck( ClientResponse response )
+    private static HttpResponse<String> sanityCheck( HttpResponse<String> response )
     {
-        List<String> contentEncodings = response.getHeaders().get( "Content-Encoding" );
+        var contentEncodings = response.headers().allValues( CONTENT_ENCODING );
         String contentEncoding;
         if ( contentEncodings != null && (contentEncoding = Iterables.singleOrNull( contentEncodings )) != null )
         {
@@ -262,35 +275,32 @@ public class HTTP
 
     public static class Response
     {
-        private final ClientResponse response;
+        private final HttpResponse<String> response;
         private final String entity;
 
-        public Response( ClientResponse response )
+        public Response( HttpResponse<String> response )
         {
             this.response = sanityCheck( response );
-            if ( response.getStatus() == 204 )
+            if ( response.statusCode() == NO_CONTENT.getStatusCode() )
             {
                 entity = "";
             }
             else
             {
-                this.entity = response.getEntity( String.class );
+                this.entity = response.body();
             }
         }
 
         public int status()
         {
-            return response.getStatus();
+            return response.statusCode();
         }
 
         public String location()
         {
-            if ( response.getLocation() != null )
-            {
-                return response.getLocation().toString();
-            }
-            throw new RuntimeException( "The request did not contain a location header, " +
-                    "unable to provide location. Status code was: " + status() );
+            return response.headers()
+                    .firstValue( LOCATION )
+                    .orElseThrow( () -> new RuntimeException( "The request did not contain a location header.\n" + this ) );
         }
 
         @SuppressWarnings( "unchecked" )
@@ -323,19 +333,19 @@ public class HTTP
 
         public String header( String name )
         {
-            return response.getHeaders().getFirst( name );
+            return response.headers().firstValue( name ).orElse( null );
         }
 
         @Override
         public String toString()
         {
-            StringBuilder sb = new StringBuilder();
-            sb.append( "HTTP " ).append( response.getStatus() ).append( "\n" );
-            for ( Map.Entry<String, List<String>> header : response.getHeaders().entrySet() )
+            var sb = new StringBuilder();
+            sb.append( "HTTP " ).append( response.statusCode() ).append( "\n" );
+            for ( var headerEntry : response.headers().map().entrySet() )
             {
-                for ( String headerEntry : header.getValue() )
+                for ( var headerValue : headerEntry.getValue() )
                 {
-                    sb.append( header.getKey() + ": " ).append( headerEntry ).append( "\n" );
+                    sb.append( headerEntry.getKey() ).append( ": " ).append( headerValue ).append( "\n" );
                 }
             }
             sb.append( "\n" );

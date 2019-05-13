@@ -21,23 +21,29 @@ package org.neo4j.server;
 
 import org.junit.Test;
 
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
-import org.neo4j.server.rest.JaxRsResponse;
 
+import static java.net.http.HttpClient.Redirect.NORMAL;
+import static java.net.http.HttpResponse.BodyHandlers.discarding;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 public class NeoServerDefaultPortAndHostnameIT extends AbstractRestFunctionalTestBase
 {
     @Test
-    public void shouldDefaultToSensiblePortIfNoneSpecifiedInConfig()
+    public void shouldDefaultToSensiblePortIfNoneSpecifiedInConfig() throws Exception
     {
-        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server() );
+        var functionalTestHelper = new FunctionalTestHelper( server() );
 
-        JaxRsResponse response = functionalTestHelper.get( functionalTestHelper.managementUri() );
+        var request = HttpRequest.newBuilder( functionalTestHelper.managementUri() ).GET().build();
+        var httpClient = HttpClient.newBuilder().followRedirects( NORMAL ).build();
+        var response = httpClient.send( request, discarding() );
 
-        assertThat( response.getStatus(), is( 200 ) );
+        assertThat( response.statusCode(), is( 200 ) );
     }
 
     @Test

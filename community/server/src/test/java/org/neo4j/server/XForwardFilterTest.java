@@ -19,38 +19,38 @@
  */
 package org.neo4j.server;
 
-import com.sun.jersey.core.header.InBoundHeaders;
 import org.glassfish.jersey.internal.PropertiesDelegate;
 import org.glassfish.jersey.server.ContainerRequest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
+import java.util.List;
+import java.util.Map;
 import javax.ws.rs.core.SecurityContext;
 
 import org.neo4j.server.web.XForwardFilter;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-public class XForwardFilterTest
+class XForwardFilterTest
 {
     private static final String X_FORWARD_HOST_HEADER_KEY = "X-Forwarded-Host";
     private static final String X_FORWARD_PROTO_HEADER_KEY = "X-Forwarded-Proto";
 
     @Test
-    public void shouldSetTheBaseUriToTheSameValueAsTheXForwardHostHeader()
+    void shouldSetTheBaseUriToTheSameValueAsTheXForwardHostHeader()
     {
         // given
-        final String xForwardHostAndPort = "jimwebber.org:1234";
+        var xForwardHostAndPort = "jimwebber.org:1234";
 
-        XForwardFilter filter = new XForwardFilter();
+        var filter = new XForwardFilter();
 
-        InBoundHeaders headers = new InBoundHeaders();
-        headers.add( X_FORWARD_HOST_HEADER_KEY, xForwardHostAndPort );
+        var headers = Map.of( X_FORWARD_HOST_HEADER_KEY, List.of( xForwardHostAndPort ) );
 
-        ContainerRequest request = new ContainerRequest(
+        var request = new ContainerRequest(
                 URI.create( "http://iansrobinson.com" ), URI.create( "http://iansrobinson.com/foo/bar" ), "GET",
                 mock( SecurityContext.class ), mock( PropertiesDelegate.class ) );
 
@@ -64,17 +64,16 @@ public class XForwardFilterTest
     }
 
     @Test
-    public void shouldSetTheRequestUriToTheSameValueAsTheXForwardHostHeader()
+    void shouldSetTheRequestUriToTheSameValueAsTheXForwardHostHeader()
     {
         // given
-        final String xForwardHostAndPort = "jimwebber.org:1234";
+        var xForwardHostAndPort = "jimwebber.org:1234";
 
-        XForwardFilter filter = new XForwardFilter();
+        var filter = new XForwardFilter();
 
-        InBoundHeaders headers = new InBoundHeaders();
-        headers.add( X_FORWARD_HOST_HEADER_KEY, xForwardHostAndPort );
+        var headers = Map.of( X_FORWARD_HOST_HEADER_KEY, List.of( xForwardHostAndPort ) );
 
-        ContainerRequest request = new ContainerRequest(
+        var request = new ContainerRequest(
                 URI.create( "http://iansrobinson.com" ), URI.create( "http://iansrobinson.com/foo/bar" ), "GET",
                 mock( SecurityContext.class ), mock( PropertiesDelegate.class ) );
 
@@ -88,17 +87,16 @@ public class XForwardFilterTest
     }
 
     @Test
-    public void shouldSetTheBaseUriToTheSameProtocolAsTheXForwardProtoHeader()
+    void shouldSetTheBaseUriToTheSameProtocolAsTheXForwardProtoHeader()
     {
         // given
-        final String theProtocol = "https";
+        var theProtocol = "https";
 
-        XForwardFilter filter = new XForwardFilter();
+        var filter = new XForwardFilter();
 
-        InBoundHeaders headers = new InBoundHeaders();
-        headers.add( X_FORWARD_PROTO_HEADER_KEY, theProtocol );
+        var headers = Map.of( X_FORWARD_PROTO_HEADER_KEY, List.of( theProtocol ) );
 
-        ContainerRequest request = new ContainerRequest(
+        var request = new ContainerRequest(
                 URI.create( "http://jimwebber.org:1234" ), URI.create( "http://jimwebber.org:1234/foo/bar" ), "GET",
                 mock( SecurityContext.class ), mock( PropertiesDelegate.class ) );
 
@@ -112,17 +110,16 @@ public class XForwardFilterTest
     }
 
     @Test
-    public void shouldSetTheRequestUriToTheSameProtocolAsTheXForwardProtoHeader()
+    void shouldSetTheRequestUriToTheSameProtocolAsTheXForwardProtoHeader()
     {
         // given
-        final String theProtocol = "https";
+        var theProtocol = "https";
 
-        XForwardFilter filter = new XForwardFilter();
+        var filter = new XForwardFilter();
 
-        InBoundHeaders headers = new InBoundHeaders();
-        headers.add( X_FORWARD_PROTO_HEADER_KEY, theProtocol );
+        var headers = Map.of( X_FORWARD_PROTO_HEADER_KEY, List.of( theProtocol ) );
 
-        ContainerRequest request = new ContainerRequest(
+        var request = new ContainerRequest(
                 URI.create( "http://jimwebber.org:1234" ), URI.create( "http://jimwebber.org:1234/foo/bar" ), "GET",
                 mock( SecurityContext.class ), mock( PropertiesDelegate.class ) );
 

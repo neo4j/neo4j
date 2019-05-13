@@ -21,6 +21,11 @@ package org.neo4j.server.rest;
 
 import org.junit.Test;
 
+import java.net.URI;
+import java.net.http.HttpRequest;
+
+import static java.net.http.HttpClient.newHttpClient;
+import static java.net.http.HttpResponse.BodyHandlers.discarding;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -28,18 +33,23 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class RedirectorIT extends AbstractRestFunctionalTestBase
 {
     @Test
-    public void shouldRedirectRootToBrowser()
+    public void shouldRedirectRootToBrowser() throws Exception
     {
-        JaxRsResponse response = new RestRequest( server().baseUri() ).get();
+        var request = HttpRequest.newBuilder( server().baseUri() ).GET().build();
 
-        assertThat(response.getStatus(), is(not(404)));
+        var response = newHttpClient().send( request, discarding() );
+
+        assertThat( response.statusCode(), is( not( 404 ) ) );
     }
 
     @Test
-    public void shouldNotRedirectTheRestOfTheWorld()
+    public void shouldNotRedirectTheRestOfTheWorld() throws Exception
     {
-        JaxRsResponse response = new RestRequest( server().baseUri() ).get( "a/different/relative/data/uri/" );
+        var uri = URI.create( server().baseUri() + "a/different/relative/data/uri/" );
+        var request = HttpRequest.newBuilder( uri ).GET().build();
 
-        assertThat(response.getStatus(), is(404));
+        var response = newHttpClient().send( request, discarding() );
+
+        assertThat( response.statusCode(), is( 404 ) );
     }
 }

@@ -111,8 +111,6 @@ Common Development and Distribution License Version 1.1
   istack common utility code runtime
   Java Servlet API
   jaxb-api
-  jersey-client
-  jersey-core
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API

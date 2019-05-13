@@ -25,17 +25,19 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.server.rest.JaxRsResponse;
-import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
+import static java.net.http.HttpClient.newHttpClient;
+import static java.net.http.HttpResponse.BodyHandlers.ofString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -91,13 +93,14 @@ public class BoltIT extends ExclusiveServerTestBase
         String host = "neo4j.com";
 
         startServerWithBoltEnabled( host, 9999, "localhost", 0 );
-        RestRequest request = new RestRequest( server.baseUri() ).host( host );
+
+        HttpRequest request = HttpRequest.newBuilder( server.baseUri() ).GET().build();
 
         // When
-        JaxRsResponse response = request.get();
+        HttpResponse<String> response = newHttpClient().send( request, ofString() );
 
         // Then
-        Map<String,Object> map = JsonHelper.jsonToMap( response.getEntity() );
+        Map<String,Object> map = JsonHelper.jsonToMap( response.body() );
         assertThat( String.valueOf( map.get( "bolt" ) ), containsString( "bolt://" + host + ":" + 9999 ) );
     }
 

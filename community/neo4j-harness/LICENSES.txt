@@ -1565,8 +1565,6 @@ Common Development and Distribution License Version 1.1
   istack common utility code runtime
   Java Servlet API
   jaxb-api
-  jersey-client
-  jersey-core
 ------------------------------------------------------------------------------
 
 COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1 

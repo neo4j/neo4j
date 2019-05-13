@@ -21,16 +21,20 @@ package org.neo4j.server.rest;
 
 import org.junit.Test;
 
+import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Map;
 
 import org.neo4j.server.rest.domain.JsonHelper;
 
 import static java.net.http.HttpClient.Redirect.NEVER;
+import static java.net.http.HttpClient.newHttpClient;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
+import static java.net.http.HttpResponse.BodyHandlers.ofString;
 import static javax.ws.rs.core.HttpHeaders.ACCEPT;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -42,58 +46,55 @@ import static org.junit.Assert.assertTrue;
 public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
 {
     @Test
-    public void shouldRespondWith200WhenRetrievingDiscoveryDocument()
+    public void shouldRespondWith200WhenRetrievingDiscoveryDocument() throws Exception
     {
-        JaxRsResponse response = getDiscoveryDocument();
-        assertEquals( 200, response.getStatus() );
-        response.close();
+        var response = requestDiscovery();
+        assertEquals( 200, response.statusCode() );
     }
 
     @Test
-    public void shouldGetContentLengthHeaderWhenRetrievingDiscoveryDocument()
+    public void shouldGetContentLengthHeaderWhenRetrievingDiscoveryDocument() throws Exception
     {
-        JaxRsResponse response = getDiscoveryDocument();
-        assertNotNull( response.getHeaders().get( "Content-Length" ) );
-        response.close();
+        var response = requestDiscovery();
+        assertTrue( response.headers().firstValue( CONTENT_LENGTH ).isPresent() );
     }
 
     @Test
-    public void shouldHaveJsonMediaTypeWhenRetrievingDiscoveryDocument()
+    public void shouldHaveJsonMediaTypeWhenRetrievingDiscoveryDocument() throws Exception
     {
-        JaxRsResponse response = getDiscoveryDocument();
-        assertThat( response.getType().toString(), containsString( APPLICATION_JSON ) );
-        response.close();
+        var response = requestDiscovery();
+        assertThat( response.headers().firstValue( CONTENT_TYPE ).orElseThrow(), containsString( APPLICATION_JSON ) );
     }
 
     @Test
     public void shouldHaveJsonDataInResponse() throws Exception
     {
-        JaxRsResponse response = getDiscoveryDocument();
+        var response = requestDiscovery();
 
-        Map<String,Object> map = JsonHelper.jsonToMap( response.getEntity() );
+        var responseBodyMap = JsonHelper.jsonToMap( response.body() );
 
-        String managementKey = "management";
-        assertTrue( map.containsKey( managementKey ) );
-        assertNotNull( map.get( managementKey ) );
+        var managementKey = "management";
+        assertTrue( responseBodyMap.containsKey( managementKey ) );
+        assertNotNull( responseBodyMap.get( managementKey ) );
 
-        String dataKey = "data";
-        assertTrue( map.containsKey( dataKey ) );
-        assertNotNull( map.get( dataKey ) );
-        response.close();
+        var dataKey = "data";
+        assertTrue( responseBodyMap.containsKey( dataKey ) );
+        assertNotNull( responseBodyMap.get( dataKey ) );
     }
 
     @Test
     public void shouldRedirectOnHtmlRequest() throws Exception
     {
-        HttpRequest request = HttpRequest.newBuilder( server().baseUri() ).header( ACCEPT, TEXT_HTML ).GET().build();
-        HttpClient client = HttpClient.newBuilder().followRedirects( NEVER ).build();
-        HttpResponse<Void> response = client.send( request, discarding() );
+        var request = HttpRequest.newBuilder( server().baseUri() ).header( ACCEPT, TEXT_HTML ).GET().build();
+        var httpClient = HttpClient.newBuilder().followRedirects( NEVER ).build();
+        var response = httpClient.send( request, discarding() );
 
         assertEquals( 303, response.statusCode() );
     }
 
-    private static JaxRsResponse getDiscoveryDocument()
+    private static HttpResponse<String> requestDiscovery() throws IOException, InterruptedException
     {
-        return new RestRequest( server().baseUri() ).get();
+        var request = HttpRequest.newBuilder( server().baseUri() ).GET().build();
+        return newHttpClient().send( request, ofString() );
     }
 }

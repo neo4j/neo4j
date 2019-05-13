@@ -22,8 +22,6 @@ package org.neo4j.server.helpers;
 import java.net.URI;
 
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.rest.JaxRsResponse;
-import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
 import static org.hamcrest.Matchers.containsString;
@@ -34,8 +32,6 @@ public final class FunctionalTestHelper
     private final NeoServer server;
     private final GraphDbHelper helper;
 
-    private RestRequest request;
-
     public FunctionalTestHelper( NeoServer server )
     {
         if ( server.getDatabase() == null )
@@ -44,7 +40,6 @@ public final class FunctionalTestHelper
         }
         this.helper = new GraphDbHelper( server.getDatabase() );
         this.server = server;
-        this.request = new RestRequest( server.baseUri().resolve( "db/data/" ) );
     }
 
     public GraphDbHelper getGraphDbHelper()
@@ -57,20 +52,14 @@ public final class FunctionalTestHelper
         return server.baseUri().toString() + "db/data/";
     }
 
-    public String managementUri()
+    public URI managementUri()
     {
-        return server.baseUri()
-                .toString() + "db/manage";
+        return server.baseUri().resolve( "db/manage" );
     }
 
     public String extensionUri()
     {
         return dataUri() + "ext";
-    }
-
-    public JaxRsResponse get( String path )
-    {
-        return request.get( path );
     }
 
     public URI baseUri()

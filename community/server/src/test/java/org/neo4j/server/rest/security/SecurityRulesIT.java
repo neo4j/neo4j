@@ -89,7 +89,7 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
         JaxRsResponse response = gen.get().expectedStatus( 401 ).expectedHeader(
                 "WWW-Authenticate" ).payload( functionalTestHelper.simpleCypherRequestBody() ).post( functionalTestHelper.cypherURL() ).response();
 
-        assertThat( (String) response.getHeaders().getFirst( "WWW-Authenticate" ),
+        assertThat( response.getHeaderString( "WWW-Authenticate" ),
                 containsString( "Basic realm=\"" + PermanentlyFailingSecurityRule.REALM + "\"" ) );
     }
 
@@ -111,7 +111,7 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
                 .post( functionalTestHelper.cypherURL() )
                 .response();
 
-        assertThat( (String) response.getHeaders().getFirst( "WWW-Authenticate" ),
+        assertThat( response.getHeaderString( "WWW-Authenticate" ),
                 containsString( "Basic realm=\"" + PermanentlyFailingSecurityRule.REALM + "\"" ) );
     }
 

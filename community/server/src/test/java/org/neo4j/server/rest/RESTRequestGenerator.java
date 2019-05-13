@@ -19,41 +19,37 @@
  */
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientRequest;
-import com.sun.jersey.api.client.ClientRequest.Builder;
-import com.sun.jersey.api.client.ClientResponse;
-
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.function.Predicate;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
 
+import static java.net.http.HttpClient.newHttpClient;
+import static java.net.http.HttpRequest.BodyPublishers.noBody;
+import static java.net.http.HttpRequest.BodyPublishers.ofString;
+import static javax.ws.rs.core.HttpHeaders.ACCEPT;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class RESTRequestGenerator
 {
-    private static final Builder REQUEST_BUILDER = ClientRequest.create();
-
-    private static final List<String> RESPONSE_HEADERS = Arrays.asList( "Content-Type", "Location" );
-
-    private static final List<String> REQUEST_HEADERS = Arrays.asList( "Content-Type", "Accept" );
-
-    public static final Producer<RESTRequestGenerator> PRODUCER = new Producer<RESTRequestGenerator>()
+    public static final Producer<RESTRequestGenerator> PRODUCER = new Producer<>()
     {
         @Override
         public RESTRequestGenerator create( GraphDefinition graph, String title, String documentation )
@@ -87,18 +83,6 @@ public class RESTRequestGenerator
     public RESTRequestGenerator expectedStatus( final int expectedResponseStatus )
     {
         this.expectedResponseStatus = expectedResponseStatus;
-        return this;
-    }
-
-    /**
-     * Set the expected status of the response. The test will fail if the
-     * response has a different status. Defaults to HTTP 200 OK.
-     *
-     * @param expectedStatus the expected response status
-     */
-    public RESTRequestGenerator expectedStatus( final ClientResponse.Status expectedStatus )
-    {
-        this.expectedResponseStatus = expectedStatus.getStatusCode();
         return this;
     }
 
@@ -225,16 +209,12 @@ public class RESTRequestGenerator
     private ResponseEntity retrieveResponseFromRequest( final String method, final String uri, final int responseCode,
             final MediaType accept, final List<Pair<String,Predicate<String>>> headerFields )
     {
-        ClientRequest request;
-        try
-        {
-            request = withHeaders( REQUEST_BUILDER ).accept( accept ).build( new URI( uri ), method );
-        }
-        catch ( URISyntaxException e )
-        {
-            throw new RuntimeException( e );
-        }
-        return retrieveResponse( uri, responseCode, accept, headerFields, request );
+        var request = newRequestBuilder( uri )
+                .method( method, noBody() )
+                .header( ACCEPT, accept.toString() )
+                .build();
+
+        return retrieveResponse( responseCode, accept, headerFields, request );
     }
 
     /**
@@ -244,31 +224,31 @@ public class RESTRequestGenerator
             final MediaType payloadType, final int responseCode, final MediaType accept,
             final List<Pair<String,Predicate<String>>> headerFields )
     {
-        ClientRequest request;
-        try
+        HttpRequest request;
+        if ( payload != null )
         {
-            if ( payload != null )
-            {
-                request = withHeaders( REQUEST_BUILDER ).type( payloadType ).accept( accept ).entity( payload )
-                        .build( new URI( uri ), method );
-            }
-            else
-            {
-                request = withHeaders( REQUEST_BUILDER ).accept( accept ).build( new URI( uri ), method );
-            }
+            request = newRequestBuilder( uri )
+                    .method( method, ofString( payload ) )
+                    .header( CONTENT_TYPE, payloadType.toString() )
+                    .header( ACCEPT, accept.toString() )
+                    .build();
         }
-        catch ( URISyntaxException e )
+        else
         {
-            throw new RuntimeException( e );
+            request = newRequestBuilder( uri )
+                    .method( method, noBody() )
+                    .header( ACCEPT, accept.toString() )
+                    .build();
         }
-        return retrieveResponse( uri, responseCode, accept, headerFields, request );
+        return retrieveResponse( responseCode, accept, headerFields, request );
     }
 
-    private <T extends Builder> T withHeaders( T builder )
+    private HttpRequest.Builder newRequestBuilder( String uri )
     {
-        for ( Entry<String,String> entry : addedRequestHeaders.entrySet() )
+        var builder = HttpRequest.newBuilder( URI.create( uri ) );
+        for ( var entry : addedRequestHeaders.entrySet() )
         {
-            builder.header(entry.getKey(),entry.getValue());
+            builder.header( entry.getKey(), entry.getValue() );
         }
         return builder;
     }
@@ -276,84 +256,36 @@ public class RESTRequestGenerator
     /**
      * Send the request and create the documentation.
      */
-    private ResponseEntity retrieveResponse( final String uri,
-                                             final int responseCode, final MediaType type,
-                                             final List<Pair<String, Predicate<String>>> headerFields,
-                                             final ClientRequest request )
+    private static ResponseEntity retrieveResponse( final int responseCode, final MediaType type,
+            final List<Pair<String,Predicate<String>>> headerFields, final HttpRequest request )
     {
-        RequestData data = new RequestData();
-        getRequestHeaders( data, request.getHeaders() );
-        if ( request.getEntity() != null )
+        try
         {
-            data.setPayload( String.valueOf( request.getEntity() ) );
-        }
-        Client client = new Client();
-        ClientResponse response = client.handle( request );
-        if ( response.hasEntity() && response.getStatus() != 204 )
-        {
-            data.setEntity( response.getEntity( String.class ) );
-        }
-        if ( response.getType() != null )
-        {
-            assertTrue( "wrong response type: " + data.entity, response.getType().isCompatible( type ) );
-        }
-        for ( Pair<String,Predicate<String>> headerField : headerFields )
-        {
-            assertTrue( "wrong headers: " + response.getHeaders(), headerField.other().test( response.getHeaders()
-                    .getFirst( headerField.first() ) ) );
-        }
-        data.setMethod( request.getMethod() );
-        data.setUri( uri );
-        data.setStatus( responseCode );
-        assertEquals( "Wrong response status. response: " + data.entity, responseCode, response.getStatus() );
-        getResponseHeaders( data, response.getHeaders(), headerNames(headerFields) );
-        return new ResponseEntity( response, data.entity );
-    }
+            var response = newHttpClient().send( request, BodyHandlers.ofString() );
 
-    private List<String> headerNames( List<Pair<String, Predicate<String>>> headerPredicates )
-    {
-        List<String> names = new ArrayList<>();
-        for ( Pair<String, Predicate<String>> headerPredicate : headerPredicates )
-        {
-            names.add( headerPredicate.first() );
-        }
-        return names;
-    }
+            var responseContentType = response.headers().firstValue( CONTENT_TYPE );
+            responseContentType.ifPresent( responseType -> assertThat( responseType, equalToIgnoringCase( type.toString() ) ) );
 
-    private void getResponseHeaders( final RequestData data, final MultivaluedMap<String, String> headers,
-                                     final List<String> additionalFilter )
-    {
-        data.setResponseHeaders( getHeaders( headers, RESPONSE_HEADERS, additionalFilter ) );
-    }
-
-    private void getRequestHeaders( final RequestData data, final MultivaluedMap<String, Object> headers )
-    {
-        data.setRequestHeaders( getHeaders( headers, REQUEST_HEADERS,
-                addedRequestHeaders.keySet() ) );
-    }
-
-    private <T> Map<String, String> getHeaders( final MultivaluedMap<String, T> headers, final List<String> filter,
-            final Collection<String> additionalFilter )
-    {
-        Map<String, String> filteredHeaders = new TreeMap<>();
-        for ( Entry<String, List<T>> header : headers.entrySet() )
-        {
-            String key = header.getKey();
-            if ( filter.contains( key ) || additionalFilter.contains( key ) )
+            var responseHeaders = response.headers();
+            for ( var headerField : headerFields )
             {
-                String values = "";
-                for ( T value : header.getValue() )
-                {
-                    if ( !values.isEmpty() )
-                    {
-                        values += ", ";
-                    }
-                    values += String.valueOf( value );
-                }
-                filteredHeaders.put( key, values );
+                var name = headerField.first();
+                var verifier = headerField.other();
+                assertTrue( "Wrong headers: " + responseHeaders, verifier.test( responseHeaders.firstValue( name ).orElseThrow() ) );
             }
+
+            assertEquals( responseCode, response.statusCode() );
+            return new ResponseEntity( response );
         }
-        return filteredHeaders;
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException( e );
+        }
     }
 
     /**
@@ -364,10 +296,10 @@ public class RESTRequestGenerator
         private final String entity;
         private final JaxRsResponse response;
 
-        public ResponseEntity( ClientResponse response, String entity )
+        public ResponseEntity( HttpResponse<String> response )
         {
-            this.response = new JaxRsResponse( response, entity );
-            this.entity = entity;
+            this.response = new JaxRsResponse( response );
+            this.entity = response.body();
         }
 
         /**
