@@ -218,6 +218,7 @@ public class GlobalModule
 
         databaseEventListeners = new DatabaseEventListeners( logService.getInternalLog( DatabaseEventListeners.class ) );
         transactionEventListeners = new GlobalTransactionEventListeners();
+        globalDependencies.satisfyDependency( transactionEventListeners );
 
         connectorPortRegister = new ConnectorPortRegister();
         globalDependencies.satisfyDependency( connectorPortRegister );
