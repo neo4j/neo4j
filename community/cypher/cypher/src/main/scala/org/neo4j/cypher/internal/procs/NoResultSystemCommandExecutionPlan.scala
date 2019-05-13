@@ -34,10 +34,7 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
 
 /**
-  * Execution plan for performing schema writes, i.e. creating or dropping indexes and constraints.
-  *
-  * @param name        A name of the schema write
-  * @param schemaWrite The actual schema write to perform
+  * Execution plan for performing system commands, i.e. creating or dropping roles and users.
   */
 case class NoResultSystemCommandExecutionPlan()
   extends ExecutionPlan {

@@ -25,7 +25,6 @@ import org.parboiled.scala.Rule1
 class CatalogDDLParserTest
   extends ParserAstTest[ast.Statement] with Statement with AstConstructionTestSupport {
 
-
   implicit val parser: Rule1[ast.Statement] = Statement
 
   private val singleQuery = ast.SingleQuery(Seq(ast.ConstructGraph()(pos)))(pos)
@@ -50,6 +49,10 @@ class CatalogDDLParserTest
 
   test("CREATE USER !#\"~ SeT PASSWORD 'password'") {
     yields(ast.CreateUser("!#\"~", Some("password"), None, requirePasswordChange = true, suspended = false))
+  }
+
+  test("CREATE USER foo SeT PASSWORD 'pasS5Wor%d'") {
+    yields(ast.CreateUser("foo", Some("pasS5Wor%d"), None, requirePasswordChange = true, suspended = false))
   }
 
   test("CREaTE USER foo SET PASSWORD 'password' CHANGE REQUIRED") {
@@ -116,6 +119,18 @@ class CatalogDDLParserTest
     failsToParse
   }
 
+  test("CREATE USER foo SET PASSWORD CHANGE REQUIRED") {
+    failsToParse
+  }
+
+  test("CREATE USER foo SET STATUS SUSPENDED") {
+    failsToParse
+  }
+
+  test("CREATE USER foo SET PASSWORD CHANGE REQUIRED STATUS ACTIVE") {
+    failsToParse
+  }
+
   test("DROP USER foo") {
     yields(ast.DropUser("foo"))
   }
@@ -128,12 +143,20 @@ class CatalogDDLParserTest
     yields(ast.AlterUser("foo", None, Some(Param("password", CTAny)(_)), None, None))
   }
 
+  test("CATALOG ALTER USER foo SET PASSWORD CHANGE REQUIRED") {
+    yields(ast.AlterUser("foo", None, None, requirePasswordChange = Some(true), None))
+  }
+
   test("CATALOG ALTER USER foo SET PASSWORD CHANGE NOT REQUIRED") {
     yields(ast.AlterUser("foo", None, None, requirePasswordChange = Some(false), None))
   }
 
   test("ALTER USER foo SET STATUS SUSPENDED") {
     yields(ast.AlterUser("foo", None, None, None, suspended = Some(true)))
+  }
+
+  test("ALTER USER foo SET STATUS ACTIVE") {
+    yields(ast.AlterUser("foo", None, None, None, suspended = Some(false)))
   }
 
   test("CATALOG ALTER USER foo SET PASSWORD 'password' CHANGE REQUIRED") {
@@ -146,6 +169,10 @@ class CatalogDDLParserTest
 
   test("CATALOG ALTER USER foo SET PASSWORD 'password' SET STATUS ACTIVE") {
     yields(ast.AlterUser("foo", Some("password"), None, None, suspended = Some(false)))
+  }
+
+  test("CATALOG ALTER USER foo SET PASSWORD CHANGE NOT REQUIRED SET STATUS ACTIVE") {
+    yields(ast.AlterUser("foo", None, None, requirePasswordChange = Some(false), suspended = Some(false)))
   }
 
   test("ALTER USER foo SET PASSWORD $password SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED") {

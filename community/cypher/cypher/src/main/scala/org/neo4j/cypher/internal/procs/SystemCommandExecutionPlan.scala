@@ -34,7 +34,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
 /**
-  * Execution plan for performing system commands, i.e. creating or dropping databases.
+  * Execution plan for performing system commands, i.e. creating databases or showing roles and users.
   */
 case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue)
   extends ExecutionPlan {

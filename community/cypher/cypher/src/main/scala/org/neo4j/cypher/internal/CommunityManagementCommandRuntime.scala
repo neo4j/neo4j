@@ -38,7 +38,7 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
 
     def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
       throw new CantCompileQueryException(
-        s"Plan is not a recognized command in community edition: ${unknownPlan.getClass.getSimpleName}")
+        s"Plan is not a recognized database administration command in community edition: ${unknownPlan.getClass.getSimpleName}")
     }
 
     val (withSlottedParameters, parameterMapping) = slottedParameters(state.logicalPlan)

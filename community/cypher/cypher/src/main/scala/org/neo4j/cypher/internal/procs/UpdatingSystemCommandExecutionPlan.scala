@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
 
 /**
-  * Execution plan for performing system commands, i.e. creating or dropping databases.
+  * Execution plan for performing system commands, i.e. starting, stopping or dropping databases.
   */
 case class UpdatingSystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue,
                                                resultHandler: Consumer[util.Map[String, AnyRef]])
