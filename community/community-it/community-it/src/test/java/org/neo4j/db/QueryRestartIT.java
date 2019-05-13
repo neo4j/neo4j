@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package db;
+package org.neo4j.db;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.util.function.LongSupplier;
@@ -44,23 +44,26 @@ import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-public class QueryRestartIT
+@ExtendWith( {TestDirectoryExtension.class} )
+class QueryRestartIT
 {
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDirectory;
     private GraphDatabaseService database;
     private TestTransactionVersionContextSupplier testContextSupplier;
     private File storeDir;
     private TestVersionContext testCursorContext;
     private DatabaseManagementService managementService;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         storeDir = testDirectory.directory();
         testContextSupplier = new TestTransactionVersionContextSupplier();
@@ -71,17 +74,17 @@ public class QueryRestartIT
         testContextSupplier.setCursorContext( testCursorContext );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
-        if ( database != null )
+        if ( managementService != null )
         {
             managementService.shutdown();
         }
     }
 
     @Test
-    public void executeQueryWithoutRestarts()
+    void executeQueryWithoutRestarts()
     {
         testCursorContext.setWrongLastClosedTxId( false );
 
@@ -94,7 +97,7 @@ public class QueryRestartIT
     }
 
     @Test
-    public void executeQueryWithSingleRetry()
+    void executeQueryWithSingleRetry()
     {
         Result result = database.execute( "MATCH (n) RETURN n.c" );
         assertEquals( 1, testCursorContext.getAdditionalAttempts() );
@@ -105,7 +108,7 @@ public class QueryRestartIT
     }
 
     @Test
-    public void executeCountStoreQueryWithSingleRetry()
+    void executeCountStoreQueryWithSingleRetry()
     {
         Result result = database.execute( "MATCH (n:toRetry) RETURN count(n)" );
         assertEquals( 1, testCursorContext.getAdditionalAttempts() );
@@ -116,7 +119,7 @@ public class QueryRestartIT
     }
 
     @Test
-    public void executeLabelScanQueryWithSingleRetry()
+    void executeLabelScanQueryWithSingleRetry()
     {
         Result result = database.execute( "MATCH (n:toRetry) RETURN n.c" );
         assertEquals( 1, testCursorContext.getAdditionalAttempts() );
@@ -127,7 +130,7 @@ public class QueryRestartIT
     }
 
     @Test
-    public void queryThatModifyDataAndSeeUnstableSnapshotThrowException()
+    void queryThatModifyDataAndSeeUnstableSnapshotThrowException()
     {
         try
         {

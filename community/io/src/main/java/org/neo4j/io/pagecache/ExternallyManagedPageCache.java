@@ -25,6 +25,8 @@ import java.nio.file.OpenOption;
 import java.util.List;
 import java.util.Optional;
 
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+
 /**
  * A PageCache implementation that delegates to another page cache, whose life cycle is managed elsewhere.
  *
@@ -50,6 +52,12 @@ public class ExternallyManagedPageCache implements PageCache
     public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
     {
         return delegate.map( file, pageSize, openOptions );
+    }
+
+    @Override
+    public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, OpenOption... openOptions ) throws IOException
+    {
+        return delegate.map( file, versionContextSupplier, pageSize, openOptions );
     }
 
     @Override
@@ -92,5 +100,11 @@ public class ExternallyManagedPageCache implements PageCache
     public void reportEvents()
     {
         delegate.reportEvents();
+    }
+
+    @Override
+    public VersionContextSupplier versionContextSupplier()
+    {
+        return delegate.versionContextSupplier();
     }
 }

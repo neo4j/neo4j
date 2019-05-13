@@ -55,6 +55,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 
 @ExtendWith( TestDirectoryExtension.class )
 class DatabasePageCacheTest
@@ -70,8 +71,8 @@ class DatabasePageCacheTest
     {
         globalPageCache = mock( PageCache.class );
         pagedFileMapper = new PagedFileAnswer();
-        when( globalPageCache.map( any( File.class ), eq( PAGE_SIZE ) ) ).then( pagedFileMapper );
-        databasePageCache = new DatabasePageCache( globalPageCache );
+        when( globalPageCache.map( any( File.class ), any(), eq( PAGE_SIZE ) ) ).then( pagedFileMapper );
+        databasePageCache = new DatabasePageCache( globalPageCache, EMPTY );
     }
 
     @AfterEach
@@ -87,10 +88,10 @@ class DatabasePageCacheTest
     void mapDatabaseFile() throws IOException
     {
         File mapFile = testDirectory.createFile( "mapFile" );
-        PagedFile pagedFile = databasePageCache.map( mapFile, PAGE_SIZE );
+        PagedFile pagedFile = databasePageCache.map( mapFile, EMPTY, PAGE_SIZE );
 
         assertNotNull( pagedFile );
-        verify( globalPageCache ).map( mapFile, PAGE_SIZE );
+        verify( globalPageCache ).map( mapFile, EMPTY, PAGE_SIZE );
     }
 
     @Test
@@ -110,7 +111,7 @@ class DatabasePageCacheTest
     @Test
     void doNotIncludeNotDatabaseFilesInMappingsList() throws IOException
     {
-        try ( DatabasePageCache anotherDatabaseCache = new DatabasePageCache( globalPageCache ) )
+        try ( DatabasePageCache anotherDatabaseCache = new DatabasePageCache( globalPageCache, EMPTY ) )
         {
             File mapFile1 = testDirectory.createFile( "mapFile1" );
             File mapFile2 = testDirectory.createFile( "mapFile2" );
@@ -134,7 +135,7 @@ class DatabasePageCacheTest
     @Test
     void existingMappingRestrictedToDatabaseMappedFiles() throws IOException
     {
-        try ( DatabasePageCache anotherDatabaseCache = new DatabasePageCache( globalPageCache ) )
+        try ( DatabasePageCache anotherDatabaseCache = new DatabasePageCache( globalPageCache, EMPTY ) )
         {
             File mapFile1 = testDirectory.createFile( "mapFile1" );
             File mapFile2 = testDirectory.createFile( "mapFile2" );
@@ -168,7 +169,7 @@ class DatabasePageCacheTest
     @Test
     void flushOnlyAffectsDatabaseRelatedFiles() throws IOException
     {
-        try ( DatabasePageCache anotherDatabaseCache = new DatabasePageCache( globalPageCache ) )
+        try ( DatabasePageCache anotherDatabaseCache = new DatabasePageCache( globalPageCache, EMPTY ) )
         {
             File mapFile1 = testDirectory.createFile( "mapFile1" );
             File mapFile2 = testDirectory.createFile( "mapFile2" );
@@ -197,7 +198,7 @@ class DatabasePageCacheTest
     @Test
     void flushWithLimiterOnlyAffectsDatabaseRelatedFiles() throws IOException
     {
-        try ( DatabasePageCache anotherDatabaseCache = new DatabasePageCache( globalPageCache ) )
+        try ( DatabasePageCache anotherDatabaseCache = new DatabasePageCache( globalPageCache, EMPTY ) )
         {
             File mapFile1 = testDirectory.createFile( "mapFile1" );
             File mapFile2 = testDirectory.createFile( "mapFile2" );
@@ -242,7 +243,7 @@ class DatabasePageCacheTest
         assertTrue( databasePageCache.listExistingMappings().isEmpty() );
     }
 
-    private PagedFile findPagedFile( List<PagedFile> pagedFiles, File mapFile )
+    private static PagedFile findPagedFile( List<PagedFile> pagedFiles, File mapFile )
     {
         return pagedFiles.stream().filter( pagedFile -> pagedFile.file().equals( mapFile ) ).findFirst().orElseThrow(
                 () -> new IllegalStateException( format( "Mapped paged file '%s' not found", mapFile.getName() ) ) );
@@ -250,7 +251,7 @@ class DatabasePageCacheTest
 
     private static class PagedFileAnswer implements Answer<PagedFile>
     {
-        private List<PagedFile> pagedFiles = new ArrayList<>();
+        private final List<PagedFile> pagedFiles = new ArrayList<>();
 
         @Override
         public PagedFile answer( InvocationOnMock invocation )

@@ -34,6 +34,7 @@ import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 /**
  * A {@linkplain PageCache page cache} that wraps another page cache and an {@linkplain Adversary adversary} to provide
@@ -55,7 +56,7 @@ public class AdversarialPageCache implements PageCache
     }
 
     @Override
-    public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
+    public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, OpenOption... openOptions ) throws IOException
     {
         if ( ArrayUtils.contains( openOptions, StandardOpenOption.CREATE ) )
         {
@@ -65,7 +66,7 @@ public class AdversarialPageCache implements PageCache
         {
             adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
         }
-        PagedFile pagedFile = delegate.map( file, pageSize, openOptions );
+        PagedFile pagedFile = delegate.map( file, versionContextSupplier, pageSize, openOptions );
         return new AdversarialPagedFile( pagedFile, adversary );
     }
 
@@ -126,5 +127,11 @@ public class AdversarialPageCache implements PageCache
     public void reportEvents()
     {
         delegate.reportEvents();
+    }
+
+    @Override
+    public VersionContextSupplier versionContextSupplier()
+    {
+        return delegate.versionContextSupplier();
     }
 }

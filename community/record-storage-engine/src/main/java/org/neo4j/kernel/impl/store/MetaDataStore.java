@@ -52,6 +52,7 @@ import org.neo4j.util.concurrent.OutOfOrderSequence;
 import static java.lang.String.format;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.RECORD_SIZE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
@@ -227,7 +228,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     {
         long previousValue = FIELD_NOT_INITIALIZED;
         int pageSize = getPageSize( pageCache );
-        try ( PagedFile pagedFile = pageCache.map( neoStore, pageSize ) )
+        try ( PagedFile pagedFile = pageCache.map( neoStore, EMPTY, pageSize ) )
         {
             int offset = offset( position );
             try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
@@ -286,7 +287,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         MetaDataRecordFormat format = new MetaDataRecordFormat();
         int pageSize = getPageSize( pageCache );
         long value = FIELD_NOT_PRESENT;
-        try ( PagedFile pagedFile = pageCache.map( neoStore, pageSize ) )
+        try ( PagedFile pagedFile = pageCache.map( neoStore, EMPTY, pageSize ) )
         {
             if ( pagedFile.getLastPageId() >= 0 )
             {

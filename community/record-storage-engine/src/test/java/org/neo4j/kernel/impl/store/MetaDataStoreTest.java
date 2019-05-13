@@ -43,6 +43,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -94,9 +95,9 @@ class MetaDataStoreTest
         pageCacheWithFakeOverflow = new DelegatingPageCache( pageCache )
         {
             @Override
-            public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
+            public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, OpenOption... openOptions ) throws IOException
             {
-                return new DelegatingPagedFile( super.map( file, pageSize, openOptions ) )
+                return new DelegatingPagedFile( super.map( file, versionContextSupplier, pageSize, openOptions ) )
                 {
                     @Override
                     public PageCursor io( long pageId, int pf_flags ) throws IOException

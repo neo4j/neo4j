@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.PrintWriter;
@@ -52,28 +52,32 @@ import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-public class EagerResultIT
+@ExtendWith( TestDirectoryExtension.class )
+class EagerResultIT
 {
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDirectory;
     private GraphDatabaseService database;
     private TestTransactionVersionContextSupplier testContextSupplier;
     private File storeDir;
     private TestVersionContext testCursorContext;
     private DatabaseManagementService managementService;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         storeDir = testDirectory.directory();
         testContextSupplier = new TestTransactionVersionContextSupplier();
@@ -84,17 +88,17 @@ public class EagerResultIT
         testContextSupplier.setCursorContext( testCursorContext );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
-        if ( database != null )
+        if ( managementService != null )
         {
             managementService.shutdown();
         }
     }
 
     @Test
-    public void eagerResultContainsAllData()
+    void eagerResultContainsAllData()
     {
         Result result = database.execute( "MATCH (n) RETURN n.c" );
         assertEquals( 1, testCursorContext.getAdditionalAttempts() );
@@ -108,7 +112,7 @@ public class EagerResultIT
     }
 
     @Test
-    public void eagerResultContainsExecutionType()
+    void eagerResultContainsExecutionType()
     {
         Result result = database.execute( "MATCH (n) RETURN n.c" );
         assertEquals( 1, testCursorContext.getAdditionalAttempts() );
@@ -116,7 +120,7 @@ public class EagerResultIT
     }
 
     @Test
-    public void eagerResultContainsColumns()
+    void eagerResultContainsColumns()
     {
         Result result = database.execute( "MATCH (n) RETURN n.c as a, count(n) as b" );
         assertEquals( 1, testCursorContext.getAdditionalAttempts() );
@@ -124,7 +128,7 @@ public class EagerResultIT
     }
 
     @Test
-    public void useColumnAsOnEagerResult()
+    void useColumnAsOnEagerResult()
     {
         Result result = database.execute( "MATCH (n) RETURN n.c as c, n.b as b" );
         assertEquals( 1, testCursorContext.getAdditionalAttempts() );
@@ -139,7 +143,7 @@ public class EagerResultIT
     }
 
     @Test
-    public void eagerResultHaveQueryStatistic()
+    void eagerResultHaveQueryStatistic()
     {
         Result result = database.execute( "MATCH (n) RETURN n.c" );
         assertEquals( 1, testCursorContext.getAdditionalAttempts() );
@@ -147,7 +151,7 @@ public class EagerResultIT
     }
 
     @Test
-    public void eagerResultHaveExecutionPlan()
+    void eagerResultHaveExecutionPlan()
     {
         Result result = database.execute( "profile MATCH (n) RETURN n.c" );
         assertEquals( 1, testCursorContext.getAdditionalAttempts() );
@@ -155,7 +159,7 @@ public class EagerResultIT
     }
 
     @Test
-    public void eagerResultToString()
+    void eagerResultToString()
     {
         Result result = database.execute( "MATCH (n) RETURN n.c, n.d" );
         assertEquals( 1, testCursorContext.getAdditionalAttempts() );
@@ -166,7 +170,7 @@ public class EagerResultIT
     }
 
     @Test
-    public void eagerResultWriteAsStringToStream()
+    void eagerResultWriteAsStringToStream()
     {
         Result result = database.execute( "MATCH (n) RETURN n.c" );
         assertEquals( 1, testCursorContext.getAdditionalAttempts() );
@@ -174,7 +178,7 @@ public class EagerResultIT
     }
 
     @Test
-    public void eagerResultVisit() throws Exception
+    void eagerResultVisit() throws Exception
     {
         Result result = database.execute( "MATCH (n) RETURN n.c" );
         List<String> values = new ArrayList<>();
@@ -187,31 +191,31 @@ public class EagerResultIT
         assertThat( values, containsInAnyOrder( "d", "y" ) );
     }
 
-    @Test( expected = QueryExecutionException.class )
-    public void dirtyContextDuringResultVisitResultInUnstableSnapshotException() throws Exception
+    @Test
+    void dirtyContextDuringResultVisitResultInUnstableSnapshotException()
     {
         Result result = database.execute( "MATCH (n) RETURN n.c" );
         List<String> values = new ArrayList<>();
-        result.accept( (Result.ResultVisitor<Exception>) row ->
+        assertThrows( QueryExecutionException.class, () -> result.accept( (Result.ResultVisitor<Exception>) row ->
         {
             testCursorContext.markAsDirty();
             values.add( row.getString( "n.c" ) );
             return false;
-        } );
+        } ) );
     }
 
-    @Test( expected = QueryExecutionException.class )
-    public void dirtyContextEntityNotFoundExceptionDuringResultVisitResultInUnstableSnapshotException() throws Exception
+    @Test
+    void dirtyContextEntityNotFoundExceptionDuringResultVisitResultInUnstableSnapshotException()
     {
         Result result = database.execute( "MATCH (n) RETURN n.c" );
-        result.accept( (Result.ResultVisitor<Exception>) row ->
+        assertThrows( QueryExecutionException.class, () -> result.accept( (Result.ResultVisitor<Exception>) row ->
         {
             testCursorContext.markAsDirty();
             throw new NotFoundException( new RuntimeException() );
-        } );
+        } ) );
     }
 
-    private String printToStream( Result result )
+    private static String printToStream( Result result )
     {
         StringWriter stringWriter = new StringWriter();
         PrintWriter printWriter = new PrintWriter( stringWriter );

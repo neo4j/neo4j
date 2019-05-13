@@ -25,6 +25,7 @@ import java.util.function.LongFunction;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
@@ -36,6 +37,7 @@ import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
@@ -45,13 +47,13 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
-import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.events.GlobalTransactionEventListeners;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
@@ -107,7 +109,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final DatabaseLayout databaseLayout;
     private final DatabaseEventListeners eventListeners;
     private final GlobalTransactionEventListeners transactionEventListeners;
-    private final DatabaseMigratorFactory databaseMigratorFactory;
     private final StorageEngineFactory storageEngineFactory;
     private final ThreadToStatementContextBridge contextBridge;
 
@@ -147,13 +148,12 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.accessCapability = perEditionComponents.getAccessCapability();
         this.storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         this.databaseInfo = globalModule.getDatabaseInfo();
-        this.versionContextSupplier = globalModule.getVersionContextSupplier();
+        this.versionContextSupplier = createVersionContestSupplier( globalModule, databaseConfig );
         this.collectionsFactorySupplier = globalModule.getCollectionsFactorySupplier();
         this.extensionFactories = globalModule.getExtensionFactories();
         this.watcherServiceFactory = perEditionComponents.getWatcherServiceFactory();
         this.engineProviders = globalModule.getQueryEngineProviders();
         this.databaseAvailabilityGuardFactory = databaseTimeoutMillis -> databaseAvailabilityGuardFactory( databaseId, globalModule, databaseTimeoutMillis );
-        this.databaseMigratorFactory = new DatabaseMigratorFactory( fs, globalConfig, logService, pageCache, scheduler );
         this.storageEngineFactory = globalModule.getStorageEngineFactory();
         this.contextBridge = globalModule.getThreadToTransactionBridge();
     }
@@ -375,12 +375,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public DatabaseMigratorFactory getDatabaseMigratorFactory()
-    {
-        return databaseMigratorFactory;
-    }
-
-    @Override
     public StorageEngineFactory getStorageEngineFactory()
     {
         return storageEngineFactory;
@@ -396,5 +390,19 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     {
         Log guardLog = logService.getInternalLog( DatabaseAvailabilityGuard.class );
         return new DatabaseAvailabilityGuard( databaseId, clock, guardLog, databaseTimeoutMillis, globalModule.getGlobalAvailabilityGuard() );
+    }
+
+    private static VersionContextSupplier createVersionContestSupplier( GlobalModule globalModule, DatabaseConfig databaseConfig )
+    {
+        DependencyResolver externalDependencyResolver = globalModule.getExternalDependencyResolver();
+        Class<VersionContextSupplier> klass = VersionContextSupplier.class;
+        if ( externalDependencyResolver.resolveTypeDependencies( klass ).iterator().hasNext() )
+        {
+            return externalDependencyResolver.resolveDependency( klass );
+        }
+        else
+        {
+            return databaseConfig.get( GraphDatabaseSettings.snapshot_query ) ? new TransactionVersionContextSupplier() : EmptyVersionContextSupplier.EMPTY;
+        }
     }
 }

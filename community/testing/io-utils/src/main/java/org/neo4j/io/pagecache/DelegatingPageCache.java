@@ -25,6 +25,8 @@ import java.nio.file.OpenOption;
 import java.util.List;
 import java.util.Optional;
 
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+
 public class DelegatingPageCache implements PageCache
 {
     private final PageCache delegate;
@@ -35,9 +37,9 @@ public class DelegatingPageCache implements PageCache
     }
 
     @Override
-    public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
+    public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, OpenOption... openOptions ) throws IOException
     {
-        return delegate.map( file, pageSize, openOptions );
+        return delegate.map( file, versionContextSupplier, pageSize, openOptions );
     }
 
     @Override
@@ -74,6 +76,12 @@ public class DelegatingPageCache implements PageCache
     public void reportEvents()
     {
         delegate.reportEvents();
+    }
+
+    @Override
+    public VersionContextSupplier versionContextSupplier()
+    {
+        return delegate.versionContextSupplier();
     }
 
     @Override

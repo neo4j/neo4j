@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DatabaseTest
 {
-    private Database arg = new Database();
+    private final Database arg = new Database();
 
     @Test
     void parseDatabaseShouldThrowOnPath()

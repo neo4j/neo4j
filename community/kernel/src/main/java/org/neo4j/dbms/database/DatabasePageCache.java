@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 import static java.util.Objects.requireNonNull;
 
@@ -45,18 +46,21 @@ public class DatabasePageCache implements PageCache
 {
     private final PageCache globalPageCache;
     private final CopyOnWriteArrayList<PagedFile> databasePagedFiles = new CopyOnWriteArrayList<>();
+    private final VersionContextSupplier versionContextSupplier;
     private boolean closed;
 
-    public DatabasePageCache( PageCache globalPageCache )
+    public DatabasePageCache( PageCache globalPageCache, VersionContextSupplier versionContextSupplier )
     {
         requireNonNull( globalPageCache );
+        requireNonNull( versionContextSupplier );
         this.globalPageCache = globalPageCache;
+        this.versionContextSupplier = versionContextSupplier;
     }
 
     @Override
-    public synchronized PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
+    public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, OpenOption... openOptions ) throws IOException
     {
-        PagedFile pagedFile = globalPageCache.map( file, pageSize, openOptions );
+        PagedFile pagedFile = globalPageCache.map( file, versionContextSupplier, pageSize, openOptions );
         DatabasePageFile databasePageFile = new DatabasePageFile( pagedFile, databasePagedFiles );
         databasePagedFiles.add( databasePageFile );
         return databasePageFile;
@@ -125,6 +129,12 @@ public class DatabasePageCache implements PageCache
     public void reportEvents()
     {
         globalPageCache.reportEvents();
+    }
+
+    @Override
+    public VersionContextSupplier versionContextSupplier()
+    {
+        return versionContextSupplier;
     }
 
     private static class DatabasePageFile implements PagedFile

@@ -66,8 +66,6 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
-import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
-import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.events.GlobalTransactionEventListeners;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
@@ -91,7 +89,6 @@ import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -167,15 +164,8 @@ public class DatabaseRule extends ExternalResource
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP,
                 Iterables.iterable( new EmptyIndexExtensionFactory() ),
                 file -> mock( DatabaseLayoutWatcher.class ), Iterables.empty(),
-                mockedDatabaseMigratorFactory(), storageEngineFactory, new ThreadToStatementContextBridge() ) );
+                storageEngineFactory, new ThreadToStatementContextBridge() ) );
         return database;
-    }
-
-    private static DatabaseMigratorFactory mockedDatabaseMigratorFactory()
-    {
-        DatabaseMigratorFactory factory = mock( DatabaseMigratorFactory.class );
-        when( factory.createDatabaseMigrator( any(), any(), any() ) ).thenReturn( mock( DatabaseMigrator.class ) );
-        return factory;
     }
 
     private static <T> T dependency( Dependencies dependencies, Class<T> type, Function<DependencyResolver,T> defaultSupplier )
@@ -240,7 +230,6 @@ public class DatabaseRule extends ExternalResource
         private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
         private final Iterable<QueryEngineProvider> engineProviders;
         private final DatabaseEventListeners eventListeners;
-        private final DatabaseMigratorFactory databaseMigratorFactory;
         private final StorageEngineFactory storageEngineFactory;
         private final ThreadToStatementContextBridge contextBridge;
 
@@ -254,8 +243,7 @@ public class DatabaseRule extends ExternalResource
                 StoreCopyCheckPointMutex storeCopyCheckPointMutex, IdController idController,
                 DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
                 Iterable<ExtensionFactory<?>> extensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
-                Iterable<QueryEngineProvider> engineProviders, DatabaseMigratorFactory databaseMigratorFactory,
-                StorageEngineFactory storageEngineFactory, ThreadToStatementContextBridge contextBridge )
+                Iterable<QueryEngineProvider> engineProviders, StorageEngineFactory storageEngineFactory, ThreadToStatementContextBridge contextBridge )
         {
             this.databaseId = new DatabaseId( databaseName );
             this.databaseLayout = databaseLayout;
@@ -291,7 +279,6 @@ public class DatabaseRule extends ExternalResource
             this.watcherServiceFactory = watcherServiceFactory;
             this.engineProviders = engineProviders;
             this.eventListeners = mock( DatabaseEventListeners.class );
-            this.databaseMigratorFactory = databaseMigratorFactory;
             this.storageEngineFactory = storageEngineFactory;
             this.contextBridge = contextBridge;
         }
@@ -520,12 +507,6 @@ public class DatabaseRule extends ExternalResource
         public DatabaseEventListeners getDatabaseEventListeners()
         {
             return eventListeners;
-        }
-
-        @Override
-        public DatabaseMigratorFactory getDatabaseMigratorFactory()
-        {
-            return databaseMigratorFactory;
         }
 
         @Override

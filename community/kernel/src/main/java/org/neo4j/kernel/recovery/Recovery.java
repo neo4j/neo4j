@@ -29,6 +29,7 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -266,6 +267,7 @@ public final class Recovery
         }
         LifeSupport recoveryLife = new LifeSupport();
         Monitors monitors = new Monitors( globalMonitors );
+        DatabasePageCache databasePageCache = new DatabasePageCache( pageCache, EmptyVersionContextSupplier.EMPTY );
         SimpleLogService logService = new SimpleLogService( logProvider );
         VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
 
@@ -282,23 +284,23 @@ public final class Recovery
         TokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
 
         RecoveryCleanupWorkCollector recoveryCleanupCollector = new GroupingRecoveryCleanupWorkCollector( scheduler );
-        DatabaseExtensions extensions = instantiateRecoveryExtensions( databaseLayout, fs, config, logService, pageCache, scheduler,
+        DatabaseExtensions extensions = instantiateRecoveryExtensions( databaseLayout, fs, config, logService, databasePageCache, scheduler,
                 recoveryCleanupCollector, DatabaseInfo.TOOL, monitors, tokenHolders, recoveryCleanupCollector, extensionFactories );
         DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( extensions, config );
 
-        StorageEngine storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, config, pageCache, tokenHolders, schemaState,
+        StorageEngine storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, config, databasePageCache, tokenHolders, schemaState,
                 getConstraintSemantics(), NO_LOCK_SERVICE, new DefaultIdGeneratorFactory( fs ), new DefaultIdController(), databaseHealth,
                 EmptyVersionContextSupplier.EMPTY, logService.getInternalLogProvider() );
 
         // Label index
         NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, storageEngine::newReader );
         LabelScanStore labelScanStore = Database.buildLabelIndex( recoveryCleanupCollector, storageEngine, neoStoreIndexStoreView, monitors,
-                logProvider, pageCache, databaseLayout, fs, false );
+                logProvider, databasePageCache, databaseLayout, fs, false );
 
         // Schema indexes
         DynamicIndexStoreView indexStoreView =
                 new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, NO_LOCK_SERVICE, storageEngine::newReader, logProvider );
-        IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout, recoveryCleanupCollector );
+        IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupCollector );
         IndexingService indexingService = Database.buildIndexingService( storageEngine, schemaState, indexStoreView, indexStatisticsStore,
                 config, scheduler, indexProviderMap, tokenNameLookup, logProvider, logProvider, monitors.newMonitor( IndexingService.Monitor.class ) );
 
@@ -306,7 +308,7 @@ public final class Recovery
         LogVersionRepository logVersionRepository = storageEngine.logVersionRepository();
 
         Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, getConstraintSemantics(),
+        dependencies.satisfyDependencies( databaseLayout, config, databasePageCache, fs, logProvider, tokenHolders, schemaState, getConstraintSemantics(),
                 NO_LOCK_SERVICE, databaseHealth, new DefaultIdGeneratorFactory( fs ), new DefaultIdController(),
                 EmptyVersionContextSupplier.EMPTY, logService, transactionIdStore, logVersionRepository );
 
@@ -339,7 +341,6 @@ public final class Recovery
                 new CheckPointerImpl( transactionIdStore, RecoveryThreshold.INSTANCE, forceOperation, LogPruning.NO_PRUNING, transactionAppender,
                         databaseHealth, logProvider, CheckPointTracer.NULL, IOLimiter.UNLIMITED, new StoreCopyCheckPointMutex(),
                         monitors.newMonitor( CheckPointerMonitor.class ) );
-
         recoveryLife.add( scheduler );
         recoveryLife.add( recoveryCleanupCollector );
         recoveryLife.add( extensions );

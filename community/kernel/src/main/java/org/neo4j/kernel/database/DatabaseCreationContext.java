@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
-import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.events.GlobalTransactionEventListeners;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
@@ -135,8 +134,6 @@ public interface DatabaseCreationContext
     Iterable<QueryEngineProvider> getEngineProviders();
 
     DatabaseEventListeners getDatabaseEventListeners();
-
-    DatabaseMigratorFactory getDatabaseMigratorFactory();
 
     StorageEngineFactory getStorageEngineFactory();
 

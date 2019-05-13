@@ -32,7 +32,6 @@ import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
@@ -68,9 +67,9 @@ public class AdversarialPageCacheGraphDatabaseFactory
 
                             @Override
                             protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config,
-                                    LogService logging, Tracers tracers, VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler )
+                                    LogService logging, Tracers tracers, JobScheduler jobScheduler )
                             {
-                                PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers, versionContextSupplier, jobScheduler );
+                                PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers, jobScheduler );
                                 return new AdversarialPageCache( pageCache, adversary );
                             }
                         };

@@ -82,7 +82,7 @@ public class SnapshotQueryExecutionIT extends ExclusiveServerTestBase
         assertThat( response.status(), equalTo( 200 ) );
     }
 
-    private String transactionURI()
+    private static String transactionURI()
     {
         return "db/data/transaction";
     }

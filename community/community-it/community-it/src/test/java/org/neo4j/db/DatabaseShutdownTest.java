@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package db;
+package org.neo4j.db;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -120,15 +120,16 @@ class DatabaseShutdownTest
                     {
                         @Override
                         protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers,
-                                VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler )
+                                JobScheduler jobScheduler )
                         {
-                            PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers, versionContextSupplier, jobScheduler );
+                            PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers, jobScheduler );
                             return new DelegatingPageCache( pageCache )
                             {
                                 @Override
-                                public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
+                                public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, OpenOption... openOptions )
+                                        throws IOException
                                 {
-                                    PagedFile pagedFile = super.map( file, pageSize, openOptions );
+                                    PagedFile pagedFile = super.map( file, versionContextSupplier, pageSize, openOptions );
                                     return new DelegatingPagedFile( pagedFile )
                                     {
                                         @Override

@@ -26,6 +26,8 @@ import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Optional;
 
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+
 /**
  * A page caching mechanism that allows caching multiple files and accessing their data
  * in pages via a re-usable cursor.
@@ -42,7 +44,7 @@ public interface PageCache extends AutoCloseable
     int PAGE_SIZE = 8192;
 
     /**
-     * Ask for a handle to a paged file, backed by this page cache.
+     * Ask for a handle to a paged file, backed by this page cache with default version context that was provided during page cache construction
      * <p>
      * Note that this currently asks for the pageSize to use, which is an artifact or records being
      * of varying size in the stores. This should be consolidated to use a standard page size for the
@@ -62,7 +64,34 @@ public interface PageCache extends AutoCloseable
      * {@link StandardOpenOption#CREATE} option was not specified.
      * @throws IOException if the file could otherwise not be mapped. Causes include the file being locked.
      */
-    PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException;
+    default PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
+    {
+        return map( file, versionContextSupplier(), pageSize, openOptions );
+    }
+
+    /**
+     * Ask for a handle to a paged file, backed by this page cache.
+     * <p>
+     * Note that this currently asks for the pageSize to use, which is an artifact or records being
+     * of varying size in the stores. This should be consolidated to use a standard page size for the
+     * whole cache, with records aligning on those page boundaries.
+     *
+     * @param file The file to map.
+     * @param versionContextSupplier supplier of thread local (transaction local) version context that will provide
+     * @param pageSize The file page size to use for this mapping. If the file is already mapped with a different page
+     * size, an exception will be thrown.
+     * @param openOptions The set of open options to use for mapping this file.
+     * The {@link StandardOpenOption#READ} and {@link StandardOpenOption#WRITE} options always implicitly specified.
+     * The {@link StandardOpenOption#CREATE} open option will create the given file if it does not already exist, and
+     * the {@link StandardOpenOption#TRUNCATE_EXISTING} will truncate any existing file <em>iff</em> it has not already
+     * been mapped.
+     * The {@link StandardOpenOption#DELETE_ON_CLOSE} will cause the file to be deleted after the last unmapping.
+     * All other options are either silently ignored, or will cause an exception to be thrown.
+     * @throws java.nio.file.NoSuchFileException if the given file does not exist, and the
+     * {@link StandardOpenOption#CREATE} option was not specified.
+     * @throws IOException if the file could otherwise not be mapped. Causes include the file being locked.
+     */
+    PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, OpenOption... openOptions ) throws IOException;
 
     /**
      * Ask for an already mapped paged file, backed by this page cache.
@@ -137,4 +166,10 @@ public interface PageCache extends AutoCloseable
      * tracer, and reporting the events collected within it.
      */
     void reportEvents();
+
+    /**
+     * TODO:
+     * @return
+     */
+    VersionContextSupplier versionContextSupplier();
 }

@@ -200,14 +200,12 @@ public class Database extends LifecycleAdapter
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final Locks locks;
     private final DatabaseEventListeners eventListeners;
-    private final DatabaseMigratorFactory databaseMigratorFactory;
 
     private Dependencies databaseDependencies;
     private LifeSupport life;
     private IndexProviderMap indexProviderMap;
     private DatabaseHealth databaseHealth;
     private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
-    private DatabaseAvailability databaseAvailability;
     private final DatabaseConfig databaseConfig;
     private final DatabaseId databaseId;
     private final DatabaseLayout databaseLayout;
@@ -274,7 +272,6 @@ public class Database extends LifecycleAdapter
         this.commitProcessFactory = context.getCommitProcessFactory();
         this.globalPageCache = context.getPageCache();
         this.collectionsFactorySupplier = context.getCollectionsFactorySupplier();
-        this.databaseMigratorFactory = context.getDatabaseMigratorFactory();
         this.storageEngineFactory = context.getStorageEngineFactory();
         long availabilityGuardTimeout = databaseConfig.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
         this.databaseAvailabilityGuard = context.getDatabaseAvailabilityGuardFactory().apply( availabilityGuardTimeout );
@@ -291,14 +288,15 @@ public class Database extends LifecycleAdapter
         try
         {
             databaseDependencies = new Dependencies( globalDependencies );
-            databasePageCache = new DatabasePageCache( globalPageCache );
+            databasePageCache = new DatabasePageCache( globalPageCache, versionContextSupplier );
             databaseMonitors = new Monitors( globalMonitors );
 
             life = new LifeSupport();
             life.add( databaseConfig);
 
             databaseHealth = databaseHealthFactory.newInstance();
-            databaseAvailability = new DatabaseAvailability( databaseAvailabilityGuard, transactionStats, clock, getAwaitActiveTransactionDeadlineMillis() );
+            DatabaseAvailability databaseAvailability =
+                    new DatabaseAvailability( databaseAvailabilityGuard, transactionStats, clock, getAwaitActiveTransactionDeadlineMillis() );
 
             LogFileCreationMonitor physicalLogMonitor = databaseMonitors.newMonitor( LogFileCreationMonitor.class );
 
@@ -318,6 +316,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( idController );
             databaseDependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
             databaseDependencies.satisfyDependency( lockService );
+            databaseDependencies.satisfyDependency( versionContextSupplier );
             databaseDependencies.satisfyDependency( new DefaultValueMapper( databaseFacade ) );
 
             DefaultLogRotationMonitor logRotationMonitor = new DefaultLogRotationMonitor();
@@ -340,7 +339,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( watcherService );
 
             // Upgrade the store before we begin
-            upgradeStore();
+            upgradeStore( databaseConfig, databasePageCache );
 
             // Check the tail of transaction logs and validate version
             final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
@@ -482,9 +481,10 @@ public class Database extends LifecycleAdapter
         return extensionsLife;
     }
 
-    private void upgradeStore() throws IOException
+    private void upgradeStore( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache ) throws IOException
     {
-        databaseMigratorFactory.createDatabaseMigrator( databaseLayout, storageEngineFactory, databaseDependencies ).migrate();
+        new DatabaseMigratorFactory( fs, databaseConfig, logService, databasePageCache, scheduler ).createDatabaseMigrator( databaseLayout,
+                storageEngineFactory, databaseDependencies ).migrate();
     }
 
     /**
@@ -850,6 +850,11 @@ public class Database extends LifecycleAdapter
     public Health getDatabaseHealth()
     {
         return databaseHealth;
+    }
+
+    public VersionContextSupplier getVersionContextSupplier()
+    {
+        return versionContextSupplier;
     }
 
     private void prepareStop( Predicate<PagedFile> deleteFilePredicate )

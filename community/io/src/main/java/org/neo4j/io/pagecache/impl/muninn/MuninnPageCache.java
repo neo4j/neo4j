@@ -328,7 +328,8 @@ public class MuninnPageCache implements PageCache
     }
 
     @Override
-    public synchronized PagedFile map( File file, int filePageSize, OpenOption... openOptions ) throws IOException
+    public synchronized PagedFile map( File file, VersionContextSupplier versionContextSupplier, int filePageSize, OpenOption... openOptions )
+            throws IOException
     {
         assertHealthy();
         ensureThreadsInitialised();
@@ -741,6 +742,12 @@ public class MuninnPageCache implements PageCache
     public void reportEvents()
     {
         pageCursorTracerSupplier.get().reportEvents();
+    }
+
+    @Override
+    public VersionContextSupplier versionContextSupplier()
+    {
+        return versionContextSupplier;
     }
 
     int getPageCacheId()

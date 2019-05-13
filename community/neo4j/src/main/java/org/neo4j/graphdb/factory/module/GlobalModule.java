@@ -42,8 +42,7 @@ import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.GuardVersionContextSupplier;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -51,7 +50,6 @@ import org.neo4j.kernel.extension.ExtensionFailureStrategies;
 import org.neo4j.kernel.extension.GlobalExtensions;
 import org.neo4j.kernel.extension.context.GlobalExtensionContext;
 import org.neo4j.kernel.impl.cache.VmPauseMonitorComponent;
-import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
@@ -119,7 +117,6 @@ public class GlobalModule
     private final Iterable<QueryEngineProvider> queryEngineProviders;
     private final JobScheduler jobScheduler;
     private final SystemNanoClock globalClock;
-    private final VersionContextSupplier versionContextSupplier;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final ConnectorPortRegister connectorPortRegister;
     private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
@@ -189,13 +186,10 @@ public class GlobalModule
                 logService.getInternalLog( Tracers.class ), globalMonitors, this.jobScheduler, globalClock ) );
         globalDependencies.satisfyDependency( tracers.getPageCacheTracer() );
 
-        versionContextSupplier = tryResolveOrCreate( VersionContextSupplier.class, () -> createCursorContextSupplier( globalConfig ) );
-        globalDependencies.satisfyDependency( versionContextSupplier );
-
         collectionsFactorySupplier = createCollectionsFactorySupplier( globalConfig, globalLife );
 
         pageCache = tryResolveOrCreate( PageCache.class,
-                () -> createPageCache( fileSystem, globalConfig, logService, tracers, versionContextSupplier, this.jobScheduler ) );
+                () -> createPageCache( fileSystem, globalConfig, logService, tracers, this.jobScheduler ) );
 
         globalLife.add( new PageCacheLifecycle( pageCache ) );
 
@@ -271,12 +265,6 @@ public class GlobalModule
             Group group = executorGroupPair.other();
             executor.satisfyWith( jobScheduler.executor( group ) );
         }
-    }
-
-    protected VersionContextSupplier createCursorContextSupplier( Config config )
-    {
-        return config.get( GraphDatabaseSettings.snapshot_query ) ? new TransactionVersionContextSupplier()
-                                                                  : EmptyVersionContextSupplier.EMPTY;
     }
 
     protected StoreLocker createStoreLocker()
@@ -376,12 +364,12 @@ public class GlobalModule
     }
 
     protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging,
-            Tracers tracers, VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler )
+            Tracers tracers, JobScheduler jobScheduler )
     {
         Log pageCacheLog = logging.getInternalLog( PageCache.class );
-        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fileSystem, config, tracers.getPageCacheTracer(), tracers.getPageCursorTracerSupplier(), pageCacheLog,
-                versionContextSupplier, jobScheduler );
+        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fileSystem, config, tracers.getPageCacheTracer(),
+                tracers.getPageCursorTracerSupplier(), pageCacheLog,
+                GuardVersionContextSupplier.INSTANCE, jobScheduler );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         if ( config.get( GraphDatabaseSettings.dump_configuration ) )
@@ -432,11 +420,6 @@ public class GlobalModule
     CollectionsFactorySupplier getCollectionsFactorySupplier()
     {
         return collectionsFactorySupplier;
-    }
-
-    public VersionContextSupplier getVersionContextSupplier()
-    {
-        return versionContextSupplier;
     }
 
     public SystemNanoClock getGlobalClock()
@@ -544,7 +527,7 @@ public class GlobalModule
         return externalDependencyResolver;
     }
 
-    public ThreadToStatementContextBridge getThreadToTransactionBridge()
+    ThreadToStatementContextBridge getThreadToTransactionBridge()
     {
         return threadToTransactionBridge;
     }

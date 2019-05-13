@@ -42,6 +42,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -281,11 +282,13 @@ public class DatabaseTest
         PageCache pageCache = spy( realPageCache );
         doAnswer( (Answer<PagedFile>) invocation ->
         {
-            PagedFile file = spy( realPageCache.map( invocation.getArgument( 0 ), invocation.getArgument( 1 ) ) );
+            PagedFile file = spy( realPageCache.map( invocation.getArgument( 0, File.class ),
+                                                     invocation.getArgument( 1, VersionContextSupplier.class ),
+                                                     invocation.getArgument( 2, Integer.class) ) );
             files.add( file );
             return file;
         } )
-        .when( pageCache ).map( any( File.class ), anyInt() );
+        .when( pageCache ).map( any( File.class ), any( VersionContextSupplier.class ), anyInt() );
 
         Database database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(), pageCache );
         files.clear();
@@ -312,11 +315,13 @@ public class DatabaseTest
         PageCache pageCache = spy( realPageCache );
         doAnswer( (Answer<PagedFile>) invocation ->
         {
-            PagedFile file = spy( realPageCache.map( invocation.getArgument( 0 ), invocation.getArgument( 1 ) ) );
+            PagedFile file = spy( realPageCache.map( invocation.getArgument( 0, File.class ),
+                                                     invocation.getArgument( 1, VersionContextSupplier.class ),
+                                                     invocation.getArgument( 2, Integer.class ) ) );
             files.add( file );
             return file;
         } )
-        .when( pageCache ).map( any( File.class ), anyInt() );
+        .when( pageCache ).map( any( File.class ), any( VersionContextSupplier.class ), anyInt() );
 
         Database database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(), pageCache );
         files.clear();
@@ -425,9 +430,9 @@ public class DatabaseTest
         }
 
         @Override
-        public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
+        public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, OpenOption... openOptions ) throws IOException
         {
-            PagedFile pagedFile = super.map( file, pageSize, openOptions );
+            PagedFile pagedFile = super.map( file, versionContextSupplier, pageSize, openOptions );
             pagedFiles.add( pagedFile );
             return pagedFile;
         }
