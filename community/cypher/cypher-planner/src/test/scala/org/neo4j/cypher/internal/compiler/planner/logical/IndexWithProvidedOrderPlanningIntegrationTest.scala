@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.RegularPlannerQuery
+import org.neo4j.cypher.internal.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.{ASC, BOTH, DESC}
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.v4_0.util._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
@@ -297,12 +297,12 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       } getLogicalPlanFor s"MATCH (a:A)-[r]->(b) WHERE a.prop > 'foo' RETURN a.prop, count(b) ORDER BY a.prop $cypherToken"
 
       plan._2 should equal(
-        Aggregation(
+        OrderedAggregation(
           Expand(
             IndexSeek(
               "a:A(prop > 'foo')", indexOrder = plannedOrder),
             "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
-          Map("a.prop" -> prop("a", "prop")), Map("count(b)" -> count(varFor("b"))))
+          Map("a.prop" -> prop("a", "prop")), Map("count(b)" -> count(varFor("b"))), Seq(prop("a", "prop")))
       )
     }
 

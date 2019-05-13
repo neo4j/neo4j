@@ -79,13 +79,28 @@ object aggregation {
           context = context
         )
       } else {
-        context.logicalPlanProducer.planAggregation(
-          rewrittenPlan,
-          groupingExpressions,
-          aggregations,
-          aggregation.groupingExpressions,
-          aggregation.aggregationExpressions,
-          context)
+        val inputProvidedOrder = context.planningAttributes.providedOrders(plan.id)
+
+        val orderToLeverage = leverageOrder(inputProvidedOrder, groupingExpressions)
+
+        if (orderToLeverage.isEmpty) {
+          context.logicalPlanProducer.planAggregation(
+            rewrittenPlan,
+            groupingExpressions,
+            aggregations,
+            aggregation.groupingExpressions,
+            aggregation.aggregationExpressions,
+            context)
+        } else {
+          context.logicalPlanProducer.planOrderedAggregation(
+            rewrittenPlan,
+            groupingExpressions,
+            aggregations,
+            orderToLeverage,
+            aggregation.groupingExpressions,
+            aggregation.aggregationExpressions,
+            context)
+        }
       }
   }
 }

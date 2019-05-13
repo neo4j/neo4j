@@ -230,6 +230,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "EagerAggregation", children, Seq(KeyNames(groupingExpressions.keySet.toIndexedSeq)),
                             variables)
 
+      case OrderedAggregation(_, groupingExpressions, _, _) =>
+        PlanDescriptionImpl(id, "OrderedAggregation", children, Seq(KeyNames(groupingExpressions.keySet.toIndexedSeq)),
+                            variables)
+
       case _: Create =>
         PlanDescriptionImpl(id, "Create", children, Seq.empty, variables)
 

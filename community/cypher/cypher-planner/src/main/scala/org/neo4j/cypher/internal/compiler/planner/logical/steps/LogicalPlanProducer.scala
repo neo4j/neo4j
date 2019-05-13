@@ -535,6 +535,22 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(Aggregation(left, grouping, aggregation), solved, ProvidedOrder(trimmedAndRenamed), context)
   }
 
+  def planOrderedAggregation(left: LogicalPlan,
+                      grouping: Map[String, Expression],
+                      aggregation: Map[String, Expression],
+                      orderToLeverage: Seq[Expression],
+                      reportedGrouping: Map[String, Expression],
+                      reportedAggregation: Map[String, Expression],
+                      context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(left.id).updateTailOrSelf(_.withHorizon(
+      AggregatingQueryProjection(groupingExpressions = reportedGrouping, aggregationExpressions = reportedAggregation)
+    ))
+
+    val trimmedAndRenamed = trimAndRenameProvidedOrder(providedOrders.get(left.id), grouping)
+
+    annotate(OrderedAggregation(left, grouping, aggregation, orderToLeverage), solved, ProvidedOrder(trimmedAndRenamed), context)
+  }
+
   /**
     * The only purpose of this method is to set the solved correctly for something that is already sorted.
     */

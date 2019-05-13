@@ -294,6 +294,50 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     plan should equal(sort)
   }
 
+    test("should use ordered aggregation if there is one grouping column, ordered") {
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, count(a.foo)")._2
+
+    val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty)
+    val fooProperty = prop("a", "foo")
+    val fooCount = count(fooProperty)
+
+    val projection = Projection(labelScan, Map("a.foo" -> fooProperty))
+    val sort = Sort(projection, Seq(Ascending("a.foo")))
+    val aggregation = OrderedAggregation(sort, Map("a.foo" -> fooProperty), Map("count(a.foo)" -> fooCount), Seq(fooProperty))
+
+    plan should equal(aggregation)
+  }
+
+  test("should use ordered aggregation if there are two grouping columns, one ordered") {
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, a.bar, count(a.foo)")._2
+
+    val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty)
+    val fooProperty = prop("a", "foo")
+    val barProperty = prop("a", "bar")
+    val fooCount = count(fooProperty)
+
+    val projection = Projection(labelScan, Map("a.foo" -> fooProperty))
+    val sort = Sort(projection, Seq(Ascending("a.foo")))
+    val aggregation = OrderedAggregation(sort, Map("a.foo" -> fooProperty, "a.bar" -> barProperty), Map("count(a.foo)" -> fooCount), Seq(fooProperty))
+
+    plan should equal(aggregation)
+  }
+
+  test("should use ordered aggregation if there are two grouping columns, both ordered") {
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo, a.bar RETURN a.foo, a.bar, count(a.foo)")._2
+
+    val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty)
+    val fooProperty = prop("a", "foo")
+    val barProperty = prop("a", "bar")
+    val fooCount = count(fooProperty)
+
+    val projection = Projection(labelScan, Map("a.foo" -> fooProperty, "a.bar" -> barProperty))
+    val sort = Sort(projection, Seq(Ascending("a.foo"), Ascending("a.bar")))
+    val aggregation = OrderedAggregation(sort, Map("a.foo" -> fooProperty, "a.bar" -> barProperty), Map("count(a.foo)" -> fooCount), Seq(fooProperty, barProperty))
+
+    plan should equal(aggregation)
+  }
+
   test("should use ordered distinct if there is one grouping column, ordered") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo")._2
 
