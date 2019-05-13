@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
@@ -144,7 +145,6 @@ public class ServerUserLogTest
         File dir = homeDir.directory();
         Log logBeforeStart = serverBootstrapper.getLog();
         int maxArchives = 4;
-        int rotationDelayMs = 0;
 
         // when
         try
@@ -153,7 +153,7 @@ public class ServerUserLogTest
                     stringMap(
                             database_path.name(), homeDir.absolutePath().getAbsolutePath(),
                             store_user_log_to_stdout.name(), "false",
-                            store_user_log_rotation_delay.name(), rotationDelayMs + "0",
+                            store_user_log_rotation_delay.name(), "0",
                             store_user_log_rotation_threshold.name(), "16",
                             store_user_log_max_archives.name(), Integer.toString( maxArchives )
                     )
@@ -254,9 +254,11 @@ public class ServerUserLogTest
 
     private List<String> allUserLogFiles( File homeDir ) throws IOException
     {
-        return Files.list( Paths.get( homeDir.getAbsolutePath(), "logs" ) )
+        try ( Stream<String> stream = Files.list( Paths.get( homeDir.getAbsolutePath(), "logs" ) )
                 .map( x -> x.getFileName().toString() )
-                .filter( x -> x.contains( "neo4j.log" ) )
-                .collect( Collectors.toList() );
+                .filter( x -> x.contains( "neo4j.log" ) ) )
+        {
+            return stream.collect( Collectors.toList() );
+        }
     }
 }
