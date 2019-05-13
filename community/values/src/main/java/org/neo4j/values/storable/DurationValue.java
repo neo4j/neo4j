@@ -59,7 +59,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static org.neo4j.values.storable.NumberType.NO_NUMBER;
 import static org.neo4j.values.storable.NumberValue.safeCastFloatingPoint;
-import static org.neo4j.values.utils.TemporalUtil.AVG_DAYS_PER_MONTH;
+import static org.neo4j.values.utils.TemporalUtil.AVG_NANOS_PER_MONTH;
 import static org.neo4j.values.utils.TemporalUtil.AVG_SECONDS_PER_MONTH;
 import static org.neo4j.values.utils.TemporalUtil.NANOS_PER_SECOND;
 import static org.neo4j.values.utils.TemporalUtil.SECONDS_PER_DAY;
@@ -911,16 +911,24 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         return approximate( months / divisor, days / divisor, seconds / divisor, nanos / divisor );
     }
 
-    private static DurationValue approximate( double months, double days, double seconds, double nanos )
+    public static DurationValue approximate( double months, double days, double seconds, double nanos )
     {
-        long m = (long) months;
-        days += AVG_DAYS_PER_MONTH * (months - m);
-        long d = (long) days;
-        seconds += SECONDS_PER_DAY * (days - d);
-        long s = (long) seconds;
-        nanos += NANOS_PER_SECOND * (seconds - s);
-        long n = (long) nanos;
-        return duration( m, d, s, n );
+
+        long monthsAsLong = (long) months;
+
+        double monthDiffInNanos = AVG_NANOS_PER_MONTH * months - AVG_NANOS_PER_MONTH * monthsAsLong;
+        days += monthDiffInNanos / (NANOS_PER_SECOND * SECONDS_PER_DAY);
+        long daysAsLong = (long) days;
+
+        double daysDiffInNanos = NANOS_PER_SECOND * SECONDS_PER_DAY * days - NANOS_PER_SECOND * SECONDS_PER_DAY * daysAsLong;
+        seconds += daysDiffInNanos / NANOS_PER_SECOND;
+        long secondsAsLong = (long) seconds;
+
+        double secondsDiffInNanos = NANOS_PER_SECOND * seconds - NANOS_PER_SECOND * secondsAsLong;
+        nanos += secondsDiffInNanos;
+        long nanosAsLong = (long) nanos;
+
+        return duration( monthsAsLong, daysAsLong, secondsAsLong, nanosAsLong );
     }
 
     private static Temporal assertValidPlus( Temporal temporal, long amountToAdd, TemporalUnit unit )

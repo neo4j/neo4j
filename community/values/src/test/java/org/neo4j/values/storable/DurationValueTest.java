@@ -257,12 +257,12 @@ public class DurationValueTest
         assertNotParsable( "PT0,S" );
         assertNotParsable( "PT1,-1S" );
         assertNotParsable( "PT1.-1S" );
-        for ( String s : new String[] {"Y", "M", "W", "D"} )
+        for ( String s : new String[]{"Y", "M", "W", "D"} )
         {
             assertNotParsable( "P-" + s );
             assertNotParsable( "P1" + s + "T" );
         }
-        for ( String s : new String[] {"H", "M", "S"} )
+        for ( String s : new String[]{"H", "M", "S"} )
         {
             assertNotParsable( "PT-" + s );
             assertNotParsable( "T1" + s );
@@ -286,7 +286,7 @@ public class DurationValueTest
     public void shouldWriteDuration()
     {
         // given
-        for ( DurationValue duration : new DurationValue[] {
+        for ( DurationValue duration : new DurationValue[]{
                 duration( 0, 0, 0, 0 ),
                 duration( 1, 0, 0, 0 ),
                 duration( 0, 1, 0, 0 ),
@@ -425,8 +425,8 @@ public class DurationValueTest
     public void shouldComputeDurationBetweenDates()
     {
         assertEquals( duration( 22, 23, 0, 0 ), durationBetween( date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
-        assertEquals( duration( 0, 693, 0, 0 ), between(DAYS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
-        assertEquals( duration( 22, 0, 0, 0 ), between(MONTHS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
+        assertEquals( duration( 0, 693, 0, 0 ), between( DAYS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
+        assertEquals( duration( 22, 0, 0, 0 ), between( MONTHS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
     }
 
     @Test
@@ -505,7 +505,7 @@ public class DurationValueTest
     {
         // given
         @SuppressWarnings( "unchecked" )
-        Pair<Temporal,Temporal>[] input = new Pair[] {
+        Pair<Temporal, Temporal>[] input = new Pair[]{
                 pair( // change from CET to CEST - second time of day after first
                         datetime( date( 2017, 3, 20 ), localTime( 13, 37, 0, 0 ), ZoneId.of( "Europe/Stockholm" ) ),
                         datetime( date( 2017, 3, 26 ), localTime( 19, 40, 0, 0 ), ZoneId.of( "Europe/Stockholm" ) ) ),
@@ -519,7 +519,7 @@ public class DurationValueTest
                         datetime( date( 2017, 10, 20 ), localTime( 13, 37, 0, 0 ), ZoneId.of( "Europe/Stockholm" ) ),
                         datetime( date( 2017, 10, 29 ), localTime( 11, 40, 0, 0 ), ZoneId.of( "Europe/Stockholm" ) ) ),
         };
-        for ( Pair<Temporal,Temporal> pair : input )
+        for ( Pair<Temporal, Temporal> pair : input )
         {
             Temporal a = pair.first(), b = pair.other();
 
@@ -560,10 +560,26 @@ public class DurationValueTest
     }
 
     @Test
+    public void shouldApproximateWithoutAccumulatedRoundingErrors()
+    {
+        DurationValue result = DurationValue.approximate( 10.8, 0, 0, 0 );
+        assertEqual( result, DurationValue.duration( 10, 24, 30196, 800000000 ) );
+    }
+
+    @Test
+    public void shouldApproximateWithoutAccumulatedRoundingErrors2()
+    {
+        double months = 1.9013243104086859E-16; // 0.5 ns
+        double nanos = 0.6; // with 1.1 ns we should be on the safe side to get rounded to 1 ns, even with rounding errors
+        DurationValue result = DurationValue.approximate( months, 0, 0, nanos );
+        assertEqual( result, DurationValue.duration( 0, 0, 0, 1 ) );
+    }
+
+    @Test
     public void shouldNotThrowWhenInsideOverflowLimit()
     {
         // when
-        duration(0, 0, Long.MAX_VALUE, 999_999_999 );
+        duration( 0, 0, Long.MAX_VALUE, 999_999_999 );
 
         // then should not throw
     }
@@ -572,7 +588,7 @@ public class DurationValueTest
     public void shouldNotThrowWhenInsideNegativeOverflowLimit()
     {
         // when
-        duration(0, 0, Long.MIN_VALUE, -999_999_999 );
+        duration( 0, 0, Long.MIN_VALUE, -999_999_999 );
 
         // then should not throw
     }
