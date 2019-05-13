@@ -27,6 +27,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.time.Clocks;
+
 public abstract class ProgressMonitorFactory
 {
     public static final ProgressMonitorFactory NONE = new ProgressMonitorFactory()
@@ -40,17 +42,35 @@ public abstract class ProgressMonitorFactory
 
     public static ProgressMonitorFactory textual( final OutputStream out )
     {
-        return textual( new OutputStreamWriter( out, StandardCharsets.UTF_8 ) );
+        return textual( new OutputStreamWriter( out, StandardCharsets.UTF_8 ), false );
+    }
+
+    @Deprecated
+    public static ProgressMonitorFactory textualWithDeltaTimes( final OutputStream out )
+    {
+        return textual( new OutputStreamWriter( out, StandardCharsets.UTF_8 ), true );
+    }
+
+    @Deprecated
+    public static ProgressMonitorFactory textualWithDeltaTimes( final Writer out )
+    {
+        return textual( out, true );
     }
 
     public static ProgressMonitorFactory textual( final Writer out )
+    {
+        return textual( out, false );
+    }
+
+    @Deprecated
+    private static ProgressMonitorFactory textual( final Writer out, boolean deltaTimes )
     {
         return new ProgressMonitorFactory()
         {
             @Override
             protected Indicator newIndicator( String process )
             {
-                return new Indicator.Textual( process, writer() );
+                return new Indicator.Textual( process, writer(), deltaTimes, Clocks.nanoClock() );
             }
 
             private PrintWriter writer()

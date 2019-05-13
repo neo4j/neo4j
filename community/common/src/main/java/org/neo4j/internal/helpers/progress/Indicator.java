@@ -20,6 +20,11 @@
 package org.neo4j.internal.helpers.progress;
 
 import java.io.PrintWriter;
+import java.util.concurrent.TimeUnit;
+
+import org.neo4j.time.SystemNanoClock;
+
+import static org.neo4j.internal.helpers.Format.duration;
 
 public abstract class Indicator
 {
@@ -67,14 +72,21 @@ public abstract class Indicator
 
     static class Textual extends Indicator
     {
+        static final int DOTS_PER_LINE = 20;
+
         private final String process;
         private final PrintWriter out;
+        private final boolean deltaTimes;
+        private final SystemNanoClock clock;
+        private long lastReportTime;
 
-        Textual( String process, PrintWriter out )
+        Textual( String process, PrintWriter out, boolean deltaTimes, SystemNanoClock clock )
         {
             super( 200 );
             this.process = process;
             this.out = out;
+            this.deltaTimes = deltaTimes;
+            this.clock = clock;
         }
 
         @Override
@@ -82,6 +94,7 @@ public abstract class Indicator
         {
             out.println( process );
             out.flush();
+            lastReportTime = clock.nanos();
         }
 
         @Override
@@ -103,9 +116,17 @@ public abstract class Indicator
         private void printProgress( int progress )
         {
             out.print( '.' );
-            if ( progress % 20 == 0 )
+            if ( progress % DOTS_PER_LINE == 0 )
             {
-                out.printf( " %3d%%%n", progress / 2 );
+                long currentTime = clock.nanos();
+                long time = currentTime - lastReportTime;
+                out.printf( " %3d%%", progress / 2 );
+                if ( deltaTimes )
+                {
+                    out.printf( " ∆%s", duration( TimeUnit.NANOSECONDS.toMillis( time ) ) );
+                }
+                out.printf( "%n" );
+                lastReportTime = currentTime;
             }
         }
     }
