@@ -42,12 +42,15 @@ class QueryCollector extends CollectorStateMachine<Iterator<TruncatedQuerySnapsh
     private volatile boolean isCollecting;
     private final RingRecentBuffer<TruncatedQuerySnapshot> queries;
     private final JobScheduler jobScheduler;
+    private final int maxQueryTextSize;
 
     QueryCollector( JobScheduler jobScheduler,
-                    int maxRecentQueryCount )
+                    int maxRecentQueryCount,
+                    int maxQueryTextSize )
     {
         super( true );
         this.jobScheduler = jobScheduler;
+        this.maxQueryTextSize = maxQueryTextSize;
         isCollecting = false;
 
         // Round down to the nearest power of 2
@@ -115,7 +118,8 @@ class QueryCollector extends CollectorStateMachine<Iterator<TruncatedQuerySnapsh
                                                 snapshot.queryParameters(),
                                                 snapshot.elapsedTimeMicros(),
                                                 snapshot.compilationTimeMicros(),
-                                                snapshot.startTimestampMillis() ) );
+                                                snapshot.startTimestampMillis(),
+                                                maxQueryTextSize ) );
         }
     }
 }

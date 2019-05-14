@@ -43,7 +43,7 @@ object QueriesSection {
 
   case class ProfileData(dbHits: util.ArrayList[Long], rows: util.ArrayList[Long], params: util.Map[String, AnyRef])
 
-  case class QueryKey(queryText: String, plan: ExecutionPlanDescription)
+  case class QueryKey(queryText: String, fullQueryTextHash: Int, plan: ExecutionPlanDescription)
 
   class QueryData() {
     val invocations = new ArrayBuffer[SingleInvocation]
@@ -60,7 +60,7 @@ object QueriesSection {
       val snapshot = querySnapshots.next()
       val queryString = snapshot.queryText
       if (QUERY_FILTER.findFirstMatchIn(queryString).isEmpty) {
-        val snapshotList = queries.getOrElseUpdate(QueryKey(queryString, snapshot.queryPlan), new QueryData())
+        val snapshotList = queries.getOrElseUpdate(QueryKey(queryString, snapshot.fullQueryTextHash, snapshot.queryPlan), new QueryData())
         snapshotList.invocations += SingleInvocation(snapshot.queryParameters,
                                                      snapshot.elapsedTimeMicros,
                                                      snapshot.compilationTimeMicros,

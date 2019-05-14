@@ -46,7 +46,8 @@ public class DataCollector implements AutoCloseable
         this.jobScheduler = jobScheduler;
         this.valueMapper = valueMapper;
         this.queryCollector = new QueryCollector( jobScheduler,
-                                                  config.get( GraphDatabaseSettings.data_collector_max_recent_query_count ) );
+                                                  config.get( GraphDatabaseSettings.data_collector_max_recent_query_count ),
+                                                  config.get( GraphDatabaseSettings.data_collector_max_query_text_size ) );
         try
         {
             this.queryCollector.collect( Collections.emptyMap() );

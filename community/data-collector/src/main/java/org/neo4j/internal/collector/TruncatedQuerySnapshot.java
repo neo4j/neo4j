@@ -49,6 +49,7 @@ import org.neo4j.values.virtual.VirtualValues;
  */
 class TruncatedQuerySnapshot
 {
+    final int fullQueryTextHash;
     final String queryText;
     final ExecutionPlanDescription queryPlan;
     final MapValue queryParameters;
@@ -56,14 +57,16 @@ class TruncatedQuerySnapshot
     final Long compilationTimeMicros;
     final Long startTimestampMillis;
 
-    TruncatedQuerySnapshot( String queryText,
+    TruncatedQuerySnapshot( String fullQueryText,
                             ExecutionPlanDescription queryPlan,
                             MapValue queryParameters,
                             Long elapsedTimeMicros,
                             Long compilationTimeMicros,
-                            Long startTimestampMillis )
+                            Long startTimestampMillis,
+                            int maxQueryTextLength )
     {
-        this.queryText = truncateQueryText( queryText, 10000 );
+        this.fullQueryTextHash = fullQueryText.hashCode();
+        this.queryText = truncateQueryText( fullQueryText, maxQueryTextLength );
         this.queryPlan = queryPlan;
         this.queryParameters = truncateParameters( queryParameters );
         this.elapsedTimeMicros = elapsedTimeMicros;
