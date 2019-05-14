@@ -121,6 +121,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         long biggestCacheMemory = estimatedCacheSize( neoStores,
                 nodeRelationshipCache.memoryEstimation( estimates.numberOfNodes() ),
                 idMapper.memoryEstimation( estimates.numberOfNodes() ) );
+        System.out.println();
         printStageHeader( "Import starting",
                 ESTIMATED_NUMBER_OF_NODES, count( estimates.numberOfNodes() ),
                 ESTIMATED_NUMBER_OF_NODE_PROPERTIES, count( estimates.numberOfNodeProperties() ),

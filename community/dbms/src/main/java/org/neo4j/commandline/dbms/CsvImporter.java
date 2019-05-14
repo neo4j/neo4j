@@ -72,6 +72,7 @@ class CsvImporter implements Importer
     private final boolean ignoreDuplicateNodes;
     private final boolean ignoreExtraColumns;
     private final Boolean highIO;
+    private final boolean normalizeTypes;
 
     CsvImporter( Args args, Config databaseConfig, OutsideWorld outsideWorld, DatabaseLayout databaseLayout ) throws IncorrectUsage
     {
@@ -97,6 +98,7 @@ class CsvImporter implements Importer
                 from -> IdType.valueOf( from.toUpperCase() ) );
         inputEncoding = Charset.forName( args.get( "input-encoding", defaultCharset().name() ) );
         highIO = args.getBoolean( "high-io", null, true ); // intentionally left as null if not specified
+        normalizeTypes = args.getBoolean( "normalize-types", true );
         this.databaseConfig = databaseConfig;
     }
 
@@ -117,8 +119,8 @@ class CsvImporter implements Importer
             ZoneId dbTimeZone = databaseConfig.get( GraphDatabaseSettings.db_temporal_timezone );
             Supplier<ZoneId> defaultTimeZone = () -> dbTimeZone;
 
-            CsvInput input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader( defaultTimeZone ),
-                    relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader( defaultTimeZone ), idType,
+            CsvInput input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader( defaultTimeZone, normalizeTypes ),
+                    relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader( defaultTimeZone, normalizeTypes ), idType,
                     new WrappedCsvInputConfigurationForNeo4jAdmin( csvConfiguration( args, false ) ),
                     new CsvInput.PrintingMonitor( outsideWorld.outStream() ) );
 

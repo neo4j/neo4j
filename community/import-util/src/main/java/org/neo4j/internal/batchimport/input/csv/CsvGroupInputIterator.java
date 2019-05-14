@@ -30,6 +30,7 @@ import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.InputChunk;
+import org.neo4j.internal.batchimport.input.csv.Header.Monitor;
 
 /**
  * Iterates over groups of input data, each group containing one or more input files. A whole group conforms has each its own header.
@@ -42,11 +43,12 @@ public class CsvGroupInputIterator implements InputIterator
     private final Configuration config;
     private final Collector badCollector;
     private final Groups groups;
+    private final Monitor monitor;
     private CsvInputIterator current;
     private int groupId;
 
     public CsvGroupInputIterator( Iterator<DataFactory> source, Header.Factory headerFactory,
-            IdType idType, Configuration config, Collector badCollector, Groups groups )
+            IdType idType, Configuration config, Collector badCollector, Groups groups, Monitor monitor )
     {
         this.source = source;
         this.headerFactory = headerFactory;
@@ -54,6 +56,7 @@ public class CsvGroupInputIterator implements InputIterator
         this.config = config;
         this.badCollector = badCollector;
         this.groups = groups;
+        this.monitor = monitor;
     }
 
     @Override
@@ -80,7 +83,7 @@ public class CsvGroupInputIterator implements InputIterator
                 }
                 Data data = source.next().create( config );
                 current = new CsvInputIterator( new MultiReadable( data.stream() ), data.decorator(),
-                        headerFactory, idType, config, groups, badCollector, extractors( config ), groupId++ );
+                        headerFactory, idType, config, groups, badCollector, extractors( config ), groupId++, monitor );
             }
 
             if ( current.next( (CsvInputChunkProxy) chunk ) )

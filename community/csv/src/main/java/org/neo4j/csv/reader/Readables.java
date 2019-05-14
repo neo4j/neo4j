@@ -137,9 +137,28 @@ public class Readables
         }, length );
     }
 
+    public static CharReadable wrap( String sourceDescription, String data )
+    {
+        return wrap( sourceDescription, new StringReader( data ), data.length() );
+    }
+
     public static CharReadable wrap( String data )
     {
         return wrap( new StringReader( data ), data.length() );
+    }
+
+    /**
+     * Wraps a {@link Reader} in a {@link CharReadable}.
+     * Remember that the {@link Reader#toString()} must provide a description of the data source.
+     * Uses {@link Reader#toString()} as the source description.
+     *
+     * @param reader {@link Reader} to wrap.
+     * @param length total number of bytes provided by the reader.
+     * @return a {@link CharReadable} for the {@link Reader}.
+     */
+    public static CharReadable wrap( Reader reader, long length )
+    {
+        return wrap( reader.toString(), reader, length );
     }
 
     /**
@@ -150,9 +169,9 @@ public class Readables
      * @param length total number of bytes provided by the reader.
      * @return a {@link CharReadable} for the {@link Reader}.
      */
-    public static CharReadable wrap( final Reader reader, long length )
+    public static CharReadable wrap( String sourceDescription, Reader reader, long length )
     {
-        return new WrappedCharReadable( length, reader );
+        return new WrappedCharReadable( length, reader, sourceDescription );
     }
 
     private static class FromFile implements IOFunction<File,CharReadable>

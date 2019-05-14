@@ -37,6 +37,7 @@ import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.IdType;
+import org.neo4j.internal.batchimport.input.csv.Header.Monitor;
 
 import static java.util.Arrays.copyOf;
 
@@ -76,13 +77,14 @@ class CsvInputIterator implements SourceTraceability, Closeable
     }
 
     CsvInputIterator( CharReadable stream, Decorator decorator, Header.Factory headerFactory, IdType idType, Configuration config, Groups groups,
-            Collector badCollector, Extractors extractors, int groupId ) throws IOException
+            Collector badCollector, Extractors extractors, int groupId, Monitor monitor ) throws IOException
     {
-        this( stream, decorator, extractHeader( stream, headerFactory, idType, config, groups ), config, idType, badCollector, extractors, groupId );
+        this( stream, decorator, extractHeader( stream, headerFactory, idType, config, groups, monitor ),
+                config, idType, badCollector, extractors, groupId );
     }
 
     static Header extractHeader( CharReadable stream, Header.Factory headerFactory, IdType idType,
-            Configuration config, Groups groups ) throws IOException
+            Configuration config, Groups groups, Monitor monitor ) throws IOException
     {
         if ( !headerFactory.isDefined() )
         {
@@ -92,10 +94,10 @@ class CsvInputIterator implements SourceTraceability, Closeable
             ChunkImpl firstChunk = new ChunkImpl( copyOf( firstLineBuffer, firstLineBuffer.length + 1 ) );
             firstChunk.initialize( firstLineBuffer.length, stream.sourceDescription() );
             CharSeeker firstSeeker = seeker( firstChunk, config );
-            return headerFactory.create( firstSeeker, config, idType, groups );
+            return headerFactory.create( firstSeeker, config, idType, groups, monitor );
         }
 
-        return headerFactory.create( null, null, null, null );
+        return headerFactory.create( null, null, null, null, monitor );
     }
 
     public boolean next( CsvInputChunkProxy proxy ) throws IOException

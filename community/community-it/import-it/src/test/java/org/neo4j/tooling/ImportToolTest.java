@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 
@@ -47,6 +48,7 @@ import org.neo4j.common.Validator;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -93,6 +95,7 @@ import static org.neo4j.internal.helpers.ArrayUtil.join;
 import static org.neo4j.internal.helpers.Exceptions.contains;
 import static org.neo4j.internal.helpers.Exceptions.withMessage;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
+import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.Iterators.count;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
@@ -1453,7 +1456,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = Iterables.single( db.getAllNodes() );
+            Node node = single( db.getAllNodes() );
             assertFalse( node.hasProperty( "one" ) );
             assertFalse( node.hasProperty( "two" ) );
             assertEquals( "value", node.getProperty( "three" ) );
@@ -2117,6 +2120,97 @@ public class ImportToolTest
         assertTrue( lines.stream().anyMatch( line -> line.contains( "Import completed successfully" ) ) );
     }
 
+    @Test
+    public void shouldNormalizeTypes() throws Exception
+    {
+        // GIVEN
+        File dbConfig = prepareDefaultConfigFile();
+
+        // WHEN
+        File nodeData = createAndWriteFile( "nodes.csv", Charset.defaultCharset(), writer ->
+        {
+            writer.println( "id:ID,prop1:short,prop2:float" );
+            writer.println( "1,123,456.789" );
+            writer.println( "2,1000000,24850457689578965796.458348570" ); // <-- short too big, float too big
+        } );
+        File relationshipData = createAndWriteFile( "relationships.csv", Charset.defaultCharset(), writer ->
+        {
+            writer.println( ":START_ID,:END_ID,:TYPE,prop1:int,prop2:byte" );
+            writer.println( "1,2,DC,123,12" );
+            writer.println( "2,1,DC,9999999999,123456789" );
+        } );
+        importTool(
+                "--into", dbRule.getDatabaseDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
+                "--nodes", nodeData.getAbsolutePath(),
+                "--relationships", relationshipData.getAbsolutePath() );
+
+        // THEN
+        SuppressOutput.Voice out = suppressOutput.getOutputVoice();
+        assertTrue( out.containsMessage( "IMPORT DONE" ) );
+        assertTrue( out.containsMessage( format( "Property type of 'prop1' normalized from 'short' --> 'long' in %s", nodeData.getAbsolutePath() ) ) );
+        assertTrue( out.containsMessage( format( "Property type of 'prop2' normalized from 'float' --> 'double' in %s", nodeData.getAbsolutePath() ) ) );
+        assertTrue( out.containsMessage( format( "Property type of 'prop1' normalized from 'int' --> 'long' in %s", relationshipData.getAbsolutePath() ) ) );
+        assertTrue( out.containsMessage( format( "Property type of 'prop2' normalized from 'byte' --> 'long' in %s", relationshipData.getAbsolutePath() ) ) );
+        // The properties should have been normalized, let's verify that
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Map<String,Node> nodes = new HashMap<>();
+            db.getAllNodes().forEach( node -> nodes.put( node.getProperty( "id" ).toString(), node ) );
+            Node node1 = nodes.get( "1" );
+            assertEquals( 123L, node1.getProperty( "prop1" ) );
+            assertEquals( 456.789D, node1.getProperty( "prop2" ) );
+            Node node2 = nodes.get( "2" );
+            assertEquals( 1000000L, node2.getProperty( "prop1" ) );
+            assertEquals( 24850457689578965796.458348570D, node2.getProperty( "prop2" ) );
+
+            Relationship relationship1 = single( node1.getRelationships( Direction.OUTGOING ) );
+            assertEquals( 123L, relationship1.getProperty( "prop1" ) );
+            assertEquals( 12L, relationship1.getProperty( "prop2" ) );
+            Relationship relationship2 = single( node1.getRelationships( Direction.INCOMING ) );
+            assertEquals( 9999999999L, relationship2.getProperty( "prop1" ) );
+            assertEquals( 123456789L, relationship2.getProperty( "prop2" ) );
+
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldFailParsingOnTooLargeNumbersWithoutTypeNormalization() throws Exception
+    {
+        // GIVEN
+        File dbConfig = prepareDefaultConfigFile();
+
+        // WHEN
+        File nodeData = createAndWriteFile( "nodes.csv", Charset.defaultCharset(), writer ->
+        {
+            writer.println( "id:ID,prop1:short,prop2:float" );
+            writer.println( "1,1000000,24850457689578965796.458348570" ); // <-- short too big, float too big
+        } );
+        File relationshipData = createAndWriteFile( "relationships.csv", Charset.defaultCharset(), writer ->
+        {
+            writer.println( ":START_ID,:END_ID,:TYPE,prop1:int,prop2:byte" );
+            writer.println( "1,1,DC,9999999999,123456789" );
+        } );
+        try
+        {
+            importTool(
+                    "--into", dbRule.getDatabaseDirAbsolutePath(),
+                    "--additional-config", dbConfig.getAbsolutePath(),
+                    "--normalize-types", "false",
+                    "--nodes", nodeData.getAbsolutePath(),
+                    "--relationships", relationshipData.getAbsolutePath() );
+            fail();
+        }
+        catch ( InputException e )
+        {
+            String message = e.getMessage();
+            assertThat( message, containsString( "1000000" ) );
+            assertThat( message, containsString( "too big" ) );
+        }
+    }
+
     private static void assertContains( List<String> errorLines, String string )
     {
         for ( String line : errorLines )
@@ -2327,14 +2421,22 @@ public class ImportToolTest
     private File nodeData( boolean includeHeader, Configuration config, List<String> nodeIds,
             IntPredicate linePredicate, Charset encoding, int extraColumns ) throws Exception
     {
-        File file = file( fileName( "nodes.csv" ) );
-        try ( PrintStream writer = writer( file, encoding ) )
+        return createAndWriteFile( "nodes.csv", encoding, writer ->
         {
             if ( includeHeader )
             {
                 writeNodeHeader( writer, config, null );
             }
             writeNodeData( writer, config, nodeIds, linePredicate, extraColumns );
+        } );
+    }
+
+    private File createAndWriteFile( String name, Charset encoding, Consumer<PrintStream> dataWriter ) throws Exception
+    {
+        File file = file( fileName( name ) );
+        try ( PrintStream writer = writer( file, encoding ) )
+        {
+            dataWriter.accept( writer );
         }
         return file;
     }
@@ -2356,12 +2458,7 @@ public class ImportToolTest
 
     private File nodeHeader( Configuration config, String idGroup, Charset encoding ) throws Exception
     {
-        File file = file( fileName( "nodes-header.csv" ) );
-        try ( PrintStream writer = writer( file, encoding ) )
-        {
-            writeNodeHeader( writer, config, idGroup );
-        }
-        return file;
+        return createAndWriteFile( "nodes-header.csv", encoding, writer -> writeNodeHeader( writer, config, idGroup ) );
     }
 
     private void writeNodeHeader( PrintStream writer, Configuration config, String idGroup )
@@ -2457,16 +2554,14 @@ public class ImportToolTest
             Iterator<RelationshipDataLine> data, IntPredicate linePredicate,
             boolean specifyType, Charset encoding ) throws Exception
     {
-        File file = file( fileName( "relationships.csv" ) );
-        try ( PrintStream writer = writer( file, encoding ) )
+        return createAndWriteFile( "relationships.csv", encoding, writer ->
         {
             if ( includeHeader )
             {
                 writeRelationshipHeader( writer, config, null, null, specifyType );
             }
             writeRelationshipData( writer, config, data, linePredicate, specifyType );
-        }
-        return file;
+        } );
     }
 
     private File relationshipHeader( Configuration config ) throws Exception
@@ -2488,12 +2583,8 @@ public class ImportToolTest
     private File relationshipHeader( Configuration config, String startIdGroup, String endIdGroup, boolean specifyType,
             Charset encoding ) throws Exception
     {
-        File file = file( fileName( "relationships-header.csv" ) );
-        try ( PrintStream writer = writer( file, encoding ) )
-        {
-            writeRelationshipHeader( writer, config, startIdGroup, endIdGroup, specifyType );
-        }
-        return file;
+        return createAndWriteFile( "relationships-header.csv", encoding,
+                writer -> writeRelationshipHeader( writer, config, startIdGroup, endIdGroup, specifyType ) );
     }
 
     private String fileName( String name )

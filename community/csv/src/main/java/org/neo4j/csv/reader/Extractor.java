@@ -67,4 +67,12 @@ public interface Extractor<T> extends Cloneable
     String name();
 
     Extractor<T> clone();
+
+    /**
+     * Normalizes this extractor to that of a broader type, if possible. E.g. an extractor for {@code int} becomes {@code long}.
+     * This normalization should match higher levels of type systems, like Cypher.
+     *
+     * @return an extractor which potentially is of a broader type than this extractor.
+     */
+    Extractor<?> normalize();
 }

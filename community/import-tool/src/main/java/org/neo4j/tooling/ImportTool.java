@@ -266,7 +266,9 @@ public class ImportTool
         HIGH_IO( "high-io", null, "Assume a high-throughput storage subsystem",
                 "(advanced) Ignore environment-based heuristics, and assume that the target storage subsystem can " +
                 "support parallel IO with high throughput." ),
-        DETAILED_PROGRESS( "detailed-progress", false, "true/false", "Use the old detailed 'spectrum' progress printing" );
+        DETAILED_PROGRESS( "detailed-progress", false, "true/false", "Use the old detailed 'spectrum' progress printing" ),
+        NORMALIZE_TYPES( "normalize-types", true, "true/false", "Whether or not to normalize property types to Cypher types, " +
+                "e.g. 'int' becomes 'long' and 'float' becomes 'double'" );
 
         private final String key;
         private final Object defaultValue;
@@ -471,8 +473,9 @@ public class ImportTool
             configuration = importConfiguration(
                     processors, defaultSettingsSuitableForTests, dbConfig, maxMemory, databaseLayout,
                     allowCacheOnHeap, defaultHighIO );
-            input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
-                    relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
+            boolean normalizeTypes = args.getBoolean( Options.NORMALIZE_TYPES.key(), true );
+            input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader( normalizeTypes ),
+                    relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader( normalizeTypes ),
                     idType, csvConfiguration( args, defaultSettingsSuitableForTests ),
                     new CsvInput.PrintingMonitor( out ) );
             in = defaultSettingsSuitableForTests ? new ByteArrayInputStream( EMPTY_BYTE_ARRAY ) : System.in;

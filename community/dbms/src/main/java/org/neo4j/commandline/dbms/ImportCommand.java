@@ -160,7 +160,11 @@ public class ImportCommand implements AdminCommand
             .withArgument( new OptionalNamedArg( "high-io",
                     "true/false",
                     null,
-                    "Ignore environment-based heuristics, and assume that the target storage subsystem can support parallel IO with high throughput." ) );
+                    "Ignore environment-based heuristics, and assume that the target storage subsystem can support parallel IO with high throughput." ) )
+            .withArgument( new OptionalNamedArg( "normalize-types",
+                    "true/false",
+                    Boolean.TRUE.toString(),
+                    "Whether or not to normalize property types to Cypher types, e.g. 'int' becomes 'long' and 'float' becomes 'double'" ) );
     }
 
     static

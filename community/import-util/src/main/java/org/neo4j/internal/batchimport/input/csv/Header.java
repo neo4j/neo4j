@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.batchimport.input.csv;
 
+import java.io.PrintStream;
 import java.util.Arrays;
 
 import org.neo4j.csv.reader.CharSeeker;
@@ -36,6 +37,11 @@ public class Header implements Cloneable
 {
     public interface Factory
     {
+        default Header create( CharSeeker dataSeeker, Configuration configuration, IdType idType, Groups groups )
+        {
+            return create( dataSeeker, configuration, idType, groups, NO_MONITOR );
+        }
+
         /**
          * @param dataSeeker {@link CharSeeker} containing the data. Usually there's a header for us
          * to read at the very top of it.
@@ -44,7 +50,7 @@ public class Header implements Cloneable
          * @param groups {@link Groups} to register groups in.
          * @return the created {@link Header}.
          */
-        Header create( CharSeeker dataSeeker, Configuration configuration, IdType idType, Groups groups );
+        Header create( CharSeeker dataSeeker, Configuration configuration, IdType idType, Groups groups, Monitor monitor );
 
         /**
          * @return whether or not this header is already defined. If this returns {@code false} then the header
@@ -203,6 +209,44 @@ public class Header implements Cloneable
                 return first == other;
             }
             return first.getClass().equals( other.getClass() );
+        }
+    }
+
+    public interface Monitor
+    {
+        /**
+         * Notifies that a type has been normalized.
+         *
+         * @param sourceDescription description of source file or stream that the header entry is defined in.
+         * @param header name of the header entry.
+         * @param fromType the type specified in the header in the source.
+         * @param toType the type which will be used instead of the specified type.
+         */
+        void typeNormalized( String sourceDescription, String header, String fromType, String toType );
+    }
+
+    public static final Monitor NO_MONITOR = ( source, header, from, to ) -> {};
+
+    public static class PrintingMonitor implements Monitor
+    {
+        private final PrintStream out;
+        private boolean first = true;
+
+        public PrintingMonitor( PrintStream out )
+        {
+            this.out = out;
+        }
+
+        @Override
+        public void typeNormalized( String sourceDescription, String name, String fromType, String toType )
+        {
+            if ( first )
+            {
+                out.println( "Type normalization:" );
+                first = false;
+            }
+
+            out.println( String.format( "  Property type of '%s' normalized from '%s' --> '%s' in %s", name, fromType, toType, sourceDescription ) );
         }
     }
 }

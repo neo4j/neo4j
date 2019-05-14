@@ -46,6 +46,7 @@ import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.HeaderException;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.csv.Header.Entry;
+import org.neo4j.internal.batchimport.input.csv.Header.Monitor;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.values.storable.CSVHeaderInformation;
@@ -69,7 +70,7 @@ public class DataFactories
 
     /**
      * Creates a {@link DataFactory} where data exists in multiple files. If the first line of the first file is a header,
-     * {@link #defaultFormatNodeFileHeader()} can be used to extract that.
+     * E.g. {@link #defaultFormatNodeFileHeader()} can be used to extract that.
      *
      * @param decorator Decorator for this data.
      * @param charset {@link Charset} to read data in.
@@ -132,20 +133,29 @@ public class DataFactories
      *
      * This header factory can be used even when the header exists in a separate file, if that file
      * is the first in the list of files supplied to {@link #data}.
-     *
      * @param defaultTimeZone A supplier of the time zone to be used for temporal values when not specified explicitly
+     * @param normalizeTypes whether or not to normalize types.
      */
-    public static Header.Factory defaultFormatNodeFileHeader( Supplier<ZoneId> defaultTimeZone )
+    public static Header.Factory defaultFormatNodeFileHeader( Supplier<ZoneId> defaultTimeZone, boolean normalizeTypes )
     {
-        return new DefaultNodeFileHeaderParser( defaultTimeZone );
+        return new DefaultNodeFileHeaderParser( defaultTimeZone, normalizeTypes );
     }
 
     /**
-     * Like {@link #defaultFormatNodeFileHeader(Supplier<ZoneId>)} with UTC as the default time zone.
+     * Like {@link #defaultFormatNodeFileHeader(Supplier, boolean)}} with UTC as the default time zone.
+     * @param normalizeTypes whether or not to normalize types.
+     */
+    public static Header.Factory defaultFormatNodeFileHeader( boolean normalizeTypes )
+    {
+        return defaultFormatNodeFileHeader( defaultTimeZone, normalizeTypes );
+    }
+
+    /**
+     * Like {@link #defaultFormatNodeFileHeader(boolean)}} with no normalization.
      */
     public static Header.Factory defaultFormatNodeFileHeader()
     {
-        return defaultFormatNodeFileHeader( defaultTimeZone );
+        return defaultFormatNodeFileHeader( false );
     }
 
     /**
@@ -154,20 +164,29 @@ public class DataFactories
      *
      * This header factory can be used even when the header exists in a separate file, if that file
      * is the first in the list of files supplied to {@link #data}.
-     *
      * @param defaultTimeZone A supplier of the time zone to be used for temporal values when not specified explicitly
+     * @param normalizeTypes whether or not to normalize types.
      */
-    public static Header.Factory defaultFormatRelationshipFileHeader( Supplier<ZoneId> defaultTimeZone )
+    public static Header.Factory defaultFormatRelationshipFileHeader( Supplier<ZoneId> defaultTimeZone, boolean normalizeTypes )
     {
-        return new DefaultRelationshipFileHeaderParser( defaultTimeZone );
+        return new DefaultRelationshipFileHeaderParser( defaultTimeZone, normalizeTypes );
     }
 
     /**
-     * Like {@link #defaultFormatRelationshipFileHeader(Supplier<ZoneId>)} with UTC as the default time zone.
+     * Like {@link #defaultFormatRelationshipFileHeader(Supplier, boolean)} with UTC as the default time zone.
+     * @param normalizeTypes whether or not to normalize types.
+     */
+    public static Header.Factory defaultFormatRelationshipFileHeader( boolean normalizeTypes )
+    {
+        return defaultFormatRelationshipFileHeader( defaultTimeZone, normalizeTypes );
+    }
+
+    /**
+     * Like {@link #defaultFormatRelationshipFileHeader(boolean)} with no normalization.
      */
     public static Header.Factory defaultFormatRelationshipFileHeader()
     {
-        return defaultFormatRelationshipFileHeader( defaultTimeZone );
+        return defaultFormatRelationshipFileHeader( defaultTimeZone, false );
     }
 
     private static Supplier<ZoneId> defaultTimeZone = () -> UTC;
@@ -177,16 +196,18 @@ public class DataFactories
         private final boolean createGroups;
         private final Type[] mandatoryTypes;
         private final Supplier<ZoneId> defaultTimeZone;
+        private final boolean normalizeTypes;
 
-        protected AbstractDefaultFileHeaderParser( Supplier<ZoneId> defaultTimeZone, boolean createGroups, Type... mandatoryTypes )
+        protected AbstractDefaultFileHeaderParser( Supplier<ZoneId> defaultTimeZone, boolean createGroups, boolean normalizeTypes, Type... mandatoryTypes )
         {
             this.defaultTimeZone = defaultTimeZone;
             this.createGroups = createGroups;
+            this.normalizeTypes = normalizeTypes;
             this.mandatoryTypes = mandatoryTypes;
         }
 
         @Override
-        public Header create( CharSeeker dataSeeker, Configuration config, IdType idType, Groups groups )
+        public Header create( CharSeeker dataSeeker, Configuration config, IdType idType, Groups groups, Monitor monitor )
         {
             try
             {
@@ -210,7 +231,7 @@ public class DataFactories
                     else
                     {
                         Group group = createGroups ? groups.getOrCreate( spec.groupName ) : groups.get( spec.groupName );
-                        columns.add( entry( i, spec.name, spec.type, group, extractors, idExtractor ) );
+                        columns.add( entry( dataSeeker.sourceDescription(), i, spec.name, spec.type, group, extractors, idExtractor, monitor ) );
                     }
                 }
                 Entry[] entries = columns.toArray( new Header.Entry[columns.size()] );
@@ -281,12 +302,30 @@ public class DataFactories
             return false;
         }
 
+        Extractor<?> propertyExtractor( String sourceDescription, String name, String typeSpec, Extractors extractors, Monitor monitor )
+        {
+            Extractor<?> extractor = parsePropertyType( typeSpec, extractors );
+            if ( normalizeTypes )
+            {
+                // This basically mean that e.g. a specified type "float" will actually be "double", "int", "short" and all that will be "long".
+                String fromType = extractor.name();
+                Extractor<?> normalized = extractor.normalize();
+                if ( !normalized.equals( extractor ) )
+                {
+                    String toType = normalized.name();
+                    monitor.typeNormalized( sourceDescription, name, fromType, toType );
+                    return normalized;
+                }
+            }
+            return extractor;
+        }
+
         /**
          * @param idExtractor we supply the id extractor explicitly because it's a configuration,
          * or at least input-global concern and not a concern of this particular header.
          */
-        protected abstract Header.Entry entry( int index, String name, String typeSpec, Group group,
-                Extractors extractors, Extractor<?> idExtractor );
+        protected abstract Header.Entry entry( String sourceDescription, int index, String name, String typeSpec, Group group,
+                Extractors extractors, Extractor<?> idExtractor, Monitor monitor );
     }
 
     private static class HeaderEntrySpec
@@ -333,14 +372,14 @@ public class DataFactories
 
     private static class DefaultNodeFileHeaderParser extends AbstractDefaultFileHeaderParser
     {
-        protected DefaultNodeFileHeaderParser( Supplier<ZoneId> defaultTimeZone )
+        protected DefaultNodeFileHeaderParser( Supplier<ZoneId> defaultTimeZone, boolean normalizeTypes )
         {
-            super( defaultTimeZone, true );
+            super( defaultTimeZone, true, normalizeTypes );
         }
 
         @Override
-        protected Header.Entry entry( int index, String name, String typeSpec, Group group, Extractors extractors,
-                Extractor<?> idExtractor )
+        protected Header.Entry entry( String sourceDescription, int index, String name, String typeSpec, Group group, Extractors extractors,
+                Extractor<?> idExtractor, Monitor monitor )
         {
             // For nodes it's simply ID,LABEL,PROPERTY. typeSpec can be either ID,LABEL or a type of property,
             // like 'int' or 'string_array' or similar, or empty for 'string' property.
@@ -385,7 +424,7 @@ public class DataFactories
                 else
                 {
                     type = Type.PROPERTY;
-                    extractor = parsePropertyType( typeSpec, extractors );
+                    extractor = propertyExtractor( sourceDescription, name, typeSpec, extractors, monitor );
                 }
             }
             return new Header.Entry( name, type, group, extractor, optionalParameter );
@@ -394,15 +433,15 @@ public class DataFactories
 
     private static class DefaultRelationshipFileHeaderParser extends AbstractDefaultFileHeaderParser
     {
-        protected DefaultRelationshipFileHeaderParser( Supplier<ZoneId> defaultTimeZone )
+        protected DefaultRelationshipFileHeaderParser( Supplier<ZoneId> defaultTimeZone, boolean normalizeTypes )
         {
             // Don't have TYPE as mandatory since a decorator could provide that
-            super( defaultTimeZone, false, Type.START_ID, Type.END_ID );
+            super( defaultTimeZone, false, normalizeTypes, Type.START_ID, Type.END_ID );
         }
 
         @Override
-        protected Header.Entry entry( int index, String name, String typeSpec, Group group, Extractors extractors,
-                Extractor<?> idExtractor )
+        protected Header.Entry entry( String sourceDescription, int index, String name, String typeSpec, Group group, Extractors extractors,
+                Extractor<?> idExtractor, Monitor monitor )
         {
             Type type;
             Extractor<?> extractor;
@@ -451,12 +490,11 @@ public class DataFactories
                 else
                 {
                     type = Type.PROPERTY;
-                    extractor = parsePropertyType( typeSpec, extractors );
+                    extractor = propertyExtractor( sourceDescription, name, typeSpec, extractors, monitor );
                 }
             }
             return new Header.Entry( name, type, group, extractor, optionalParameter );
         }
-
     }
 
     private static Extractor<?> parsePropertyType( String typeSpec, Extractors extractors )

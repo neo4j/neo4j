@@ -29,6 +29,7 @@ import org.neo4j.values.storable.Values;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ExtractorsTest
@@ -280,6 +281,16 @@ class ExtractorsTest
         e2.extract( v2.toCharArray(), 0, v2.length(), false );
         assertEquals( v2, e2.value() );
         assertEquals( v1, e1.value() );
+    }
+
+    @Test
+    void shouldNormalizeNumberTypes()
+    {
+        Extractors extractors = new Extractors( ';' );
+        assertSame( extractors.long_(), extractors.byte_().normalize() );
+        assertSame( extractors.long_(), extractors.short_().normalize() );
+        assertSame( extractors.long_(), extractors.int_().normalize() );
+        assertSame( extractors.double_(), extractors.float_().normalize() );
     }
 
     private static String toString( long[] values, char delimiter )

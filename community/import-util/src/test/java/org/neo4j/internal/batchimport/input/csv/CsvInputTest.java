@@ -52,6 +52,7 @@ import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.InputEntityDecorators;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.input.InputException;
+import org.neo4j.internal.batchimport.input.csv.Header.Monitor;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.test.rule.RandomRule;
@@ -76,7 +77,9 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.internal.batchimport.input.Collector.EMPTY;
 import static org.neo4j.internal.batchimport.input.IdType.ACTUAL;
@@ -1256,6 +1259,30 @@ public class CsvInputTest
         };
     }
 
+    @Test
+    public void shouldNormalizeTypes() throws IOException
+    {
+        // given
+        Iterable<DataFactory> nodeData = datas(
+                data( "source1", ":ID,shortProp:short,intProp:int" ),
+                data( "source2", ":ID,floatProp:float,doubleProp:double" ) );
+        Iterable<DataFactory> relationshipData = datas(
+                data( "source3", ":START_ID,:END_ID,byteProp:byte,longProp:long" ) );
+        CsvInput.Monitor monitor = mock( CsvInput.Monitor.class );
+
+        // when
+        CsvInput input = new CsvInput( nodeData, defaultFormatNodeFileHeader( true ), relationshipData, defaultFormatRelationshipFileHeader( true ),
+                IdType.INTEGER, COMMAS, monitor );
+        input.calculateEstimates( values -> 1 /*doesn't quite matter*/ );
+
+        // then
+        verify( monitor, times( 1 ) ).typeNormalized( "source1", "shortProp", "short", "long" );
+        verify( monitor, times( 1 ) ).typeNormalized( "source1", "intProp", "int", "long" );
+        verify( monitor, times( 1 ) ).typeNormalized( "source2", "floatProp", "float", "double" );
+        verify( monitor, times( 1 ) ).typeNormalized( "source3", "byteProp", "byte", "long" );
+        verifyNoMoreInteractions( monitor );
+    }
+
     private Configuration customConfig( final char delimiter, final char arrayDelimiter, final char quote )
     {
         return config( new Configuration.Default()
@@ -1370,7 +1397,7 @@ public class CsvInputTest
             }
 
             @Override
-            public Header create( CharSeeker dataSeeker, Configuration configuration, IdType idType, Groups groups )
+            public Header create( CharSeeker dataSeeker, Configuration configuration, IdType idType, Groups groups, Monitor monitor )
             {
                 return new Header( entries );
             }
@@ -1387,7 +1414,12 @@ public class CsvInputTest
         return new Header.Entry( name, type, groups.getOrCreate( groupName ), extractor );
     }
 
-    private static DataFactory data( final String data )
+    private static DataFactory data( String sourceDescription, String data )
+    {
+        return config -> dataItem( charReader( sourceDescription, data ), d -> d );
+    }
+
+    private static DataFactory data( String data )
     {
         return data( data, value -> value );
     }
@@ -1395,6 +1427,11 @@ public class CsvInputTest
     private static DataFactory data( final String data, final Decorator decorator )
     {
         return config -> dataItem( charReader( data ), decorator );
+    }
+
+    private static CharReadable charReader( String sourceDescription, String data )
+    {
+        return wrap( sourceDescription, data );
     }
 
     private static CharReadable charReader( String data )

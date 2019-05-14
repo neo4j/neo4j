@@ -156,9 +156,9 @@ class CsvInputBatchImportIT
     {
         return new CsvInput(
                 DataFactories.datas( DataFactories.data( InputEntityDecorators.NO_DECORATOR, defaultCharset(), nodes ) ),
-                DataFactories.defaultFormatNodeFileHeader( testDefaultTimeZone ),
+                DataFactories.defaultFormatNodeFileHeader( testDefaultTimeZone, false ),
                 DataFactories.datas( DataFactories.data( InputEntityDecorators.NO_DECORATOR, defaultCharset(), relationships ) ),
-                DataFactories.defaultFormatRelationshipFileHeader( testDefaultTimeZone ),
+                DataFactories.defaultFormatRelationshipFileHeader( testDefaultTimeZone, false ),
                 idType,
                 configuration,
                 CsvInput.NO_MONITOR );

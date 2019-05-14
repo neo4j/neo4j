@@ -127,7 +127,7 @@ public class CsvInput implements Input
                 {
                     // Parsing and constructing this header will create this group,
                     // so no need to do something with the result of it right now
-                    nodeHeaderFactory.create( dataStream, config, idType, groups );
+                    nodeHeaderFactory.create( dataStream, config, idType, groups, NO_MONITOR );
                 }
             }
 
@@ -138,7 +138,7 @@ public class CsvInput implements Input
                 {
                     // Merely parsing and constructing the header here will as a side-effect verify that the
                     // id groups already exists (relationship header isn't allowed to create groups)
-                    relationshipHeaderFactory.create( dataStream, config, idType, groups );
+                    relationshipHeaderFactory.create( dataStream, config, idType, groups, NO_MONITOR );
                 }
             }
         }
@@ -218,7 +218,7 @@ public class CsvInput implements Input
 
     private InputIterator stream( Iterable<DataFactory> data, Header.Factory headerFactory, Collector badCollector )
     {
-        return new CsvGroupInputIterator( data.iterator(), headerFactory, idType, config, badCollector, groups );
+        return new CsvGroupInputIterator( data.iterator(), headerFactory, idType, config, badCollector, groups, NO_MONITOR );
     }
 
     @Override
@@ -266,7 +266,8 @@ public class CsvInput implements Input
                         if ( header == null )
                         {
                             // Extract the header from the first file in this group
-                            header = extractHeader( source, headerFactory, idType, config, groups );
+                            // This is the only place we monitor type normalization because it's before import and it touches all headers
+                            header = extractHeader( source, headerFactory, idType, config, groups, monitor );
                         }
                         try ( CsvInputIterator iterator = new CsvInputIterator( source, data.decorator(), header, config,
                                 idType, EMPTY, CsvGroupInputIterator.extractors( config ), groupId );
@@ -315,7 +316,7 @@ public class CsvInput implements Input
         }
     }
 
-    public interface Monitor
+    public interface Monitor extends Header.Monitor
     {
         /**
          * Reports that a given source file has been specified more than one time.
@@ -324,14 +325,26 @@ public class CsvInput implements Input
         void duplicateSourceFile( String sourceFile );
     }
 
-    public static final Monitor NO_MONITOR = source -> {};
+    public static final Monitor NO_MONITOR = new Monitor()
+    {
+        @Override
+        public void duplicateSourceFile( String sourceFile )
+        {   // no-op
+        }
 
-    public static class PrintingMonitor implements Monitor
+        @Override
+        public void typeNormalized( String sourceDescription, String header, String fromType, String toType )
+        {   // no-op
+        }
+    };
+
+    public static class PrintingMonitor extends Header.PrintingMonitor implements Monitor
     {
         private final PrintStream out;
 
         public PrintingMonitor( PrintStream out )
         {
+            super( out );
             this.out = out;
         }
 

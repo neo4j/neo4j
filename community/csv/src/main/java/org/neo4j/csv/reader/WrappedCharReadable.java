@@ -32,11 +32,11 @@ class WrappedCharReadable extends CharReadable.Adapter
     private long position;
     private final String sourceDescription;
 
-    WrappedCharReadable( long length, Reader reader )
+    WrappedCharReadable( long length, Reader reader, String sourceDescription )
     {
         this.length = length;
         this.reader = reader;
-        sourceDescription = reader.toString();
+        this.sourceDescription = sourceDescription;
     }
 
     @Override
