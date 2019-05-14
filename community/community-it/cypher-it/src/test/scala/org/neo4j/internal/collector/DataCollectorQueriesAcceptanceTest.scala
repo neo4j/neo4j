@@ -21,6 +21,7 @@ package org.neo4j.internal.collector
 
 import java.nio.file.Files
 
+import org.neo4j.graphdb.{Node, Path, Relationship}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.mutable.ArrayBuffer
@@ -201,7 +202,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> "BrassLeg"))
     execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> 2))
     execute("WITH 42 AS x RETURN x")
-    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> List(3.1, 3.2)))
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> 3.1))
     execute("WITH 42 AS x RETURN x")
 
     // when
@@ -216,7 +217,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
           "invocations" -> beInvocationsInOrder(
             Map("param" -> "BrassLeg"),
             Map("param" -> Long.box(2)),
-            Map("param" -> List(3.1, 3.2))
+            Map("param" -> Double.box(3.1))
           )
         )
       ),
@@ -235,7 +236,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> "BrassLeg"))
     execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> 2))
     execute("WITH 42 AS x RETURN x")
-    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> List(3.1, 3.2)))
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> 3.1))
     execute("WITH 42 AS x RETURN x")
 
     // when
@@ -259,7 +260,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> "BrassLeg"))
     execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> 2))
     execute("WITH 42 AS x RETURN x")
-    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> List(3.1, 3.2)))
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> 3.1))
     execute("WITH 42 AS x RETURN x")
     execute("WITH 42 AS x RETURN x")
     execute("WITH 42 AS x RETURN x")
@@ -294,6 +295,71 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     execute("CALL db.stats.retrieve('QUERIES', {maxIndications: -1})").toList // non-related arguments is fine
     assertInvalidArgument("CALL db.stats.retrieve('QUERIES', {maxInvocations: 'non-integer'})") // non-integer is not fine
     assertInvalidArgument("CALL db.stats.retrieve('QUERIES', {maxInvocations: -1})") // negative integer is not fine
+  }
+
+  test("should limit the collected query text size") {
+    // given
+    val largeQuery = (0 until 10000).map(i => s"CREATE (n$i) ").mkString("\n")
+    execute(largeQuery)
+
+    // when
+    val res = execute("CALL db.stats.retrieve('QUERIES')").toList
+
+    // then
+    res should beListWithoutOrder(
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> largeQuery.take(10000)
+        )
+      )
+    )
+  }
+
+  test("should limit the collected query parameter sizes") {
+    // given
+    val entities = execute(
+      """CREATE (node:A {p: 'startNode'})-[relationship:R {p: 'rel'}]->(_:B {p: 'endNode'})
+        |WITH node, relationship
+        |MATCH path=()-->()
+        |RETURN node, relationship, path
+      """.stripMargin).single
+
+    val node = entities("node").asInstanceOf[Node]
+    val relationship = entities("relationship").asInstanceOf[Relationship]
+    val path = entities("path").asInstanceOf[Path]
+
+    val longString: String = "".padTo(200, 'x')
+    val query = "RETURN $param"
+    execute(query, params = Map("param" -> longString))
+    execute(query, params = Map("param" -> List(1,2,3)))
+    execute(query, params = Map("param" -> Map("x" -> 1)))
+    execute(query, params = Map("param" -> node))
+    execute(query, params = Map("param" -> relationship))
+    execute(query, params = Map("param" -> path))
+
+    // when
+    val res = execute("CALL db.stats.retrieve('QUERIES')").toList
+
+    println(res)
+
+    // then
+    res should beListWithoutOrder(
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> query,
+          "invocations" -> beInvocationsInOrder(
+            Map("param" -> longString.take(100)),
+            Map("param" -> "§LIST[3]"),
+            Map("param" -> "§MAP[1]"),
+            Map("param" -> node),
+            Map("param" -> relationship),
+            Map("param" -> "§PATH[1]")
+          )
+        )
+      )
+    )
   }
 
   test("[retrieveAllAnonymized] should anonymize tokens inside queries") {
@@ -413,7 +479,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
           "invocations" -> beInvocationsInOrder(
             "4ac156c0", // Map("user" -> "BrassLeg", "name" -> "George")
             "b439d06c", // Map("user" -> 2, "name" -> "Glinda")
-            "e5adc9ad"  // Map("user" -> List(3.1, 3.2), "name" -> "Kim")
+            "8e2eb26e"  // Map("user" -> List(3.1, 3.2), "name" -> "Kim")
           )
         )
       ),
@@ -422,7 +488,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
         "data" -> beMapContaining(
           "query" -> "RETURN $param0, $param1, $param0 + $param1",
           "invocations" -> beInvocationsInOrder(
-            "e5adc9ad" // Map("user" -> List(3.1, 3.2), "name" -> "Kim")
+            "8e2eb26e" // Map("user" -> List(3.1, 3.2), "name" -> "Kim")
           )
         )
       )
