@@ -51,7 +51,7 @@ public class SetInitialPasswordCommand implements AdminCommand
     private final Path configDir;
     private OutsideWorld outsideWorld;
 
-    SetInitialPasswordCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+    public SetInitialPasswordCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
