@@ -65,7 +65,7 @@ public class BasicSystemGraphInitializer
         // we set it up by
         // 1) Try to migrate users from the auth file
         // 2) If no users were migrated, create one default user
-        if ( noUsers() )
+        if ( nbrOfUsers() == 0 )
         {
             // Ensure that multiple users cannot have the same name and create an index
             final QueryResult.QueryResultVisitor<RuntimeException> resultVisitor = row -> true;
@@ -76,12 +76,16 @@ public class BasicSystemGraphInitializer
                 ensureDefaultUser();
             }
         }
+        else
+        {
+            ensureCorrectInitialPassword();
+        }
     }
 
-    protected boolean noUsers()
+    protected long nbrOfUsers()
     {
         String query = "MATCH (u:User) RETURN count(u)";
-        return queryExecutor.executeQueryLong( query ) == 0;
+        return queryExecutor.executeQueryLong( query );
     }
 
     protected UserRepository startUserRepository( Supplier<UserRepository> supplier ) throws Exception
@@ -128,6 +132,39 @@ public class BasicSystemGraphInitializer
                     BasicSystemGraphRealm.IS_SUSPENDED ).build();
 
             systemGraphOperations.addUser( user );
+        }
+    }
+
+    private boolean onlyDefaultUserWithDefaultPassword() throws Exception
+    {
+        if ( nbrOfUsers() == 1 )
+        {
+            User user = systemGraphOperations.getUser( INITIAL_USER_NAME, true );
+            return user != null && user.credentials().matchesPassword( UTF8.encode( INITIAL_PASSWORD ) );
+        }
+        return false;
+    }
+
+    protected void ensureCorrectInitialPassword() throws Exception
+    {
+        if ( onlyDefaultUserWithDefaultPassword() )
+        {
+            if ( initialUserRepositorySupplier != null )
+            {
+                UserRepository initialUserRepository = startUserRepository( initialUserRepositorySupplier );
+                if ( initialUserRepository.numberOfUsers() > 0 )
+                {
+                    // In alignment with InternalFlatFileRealm we only allow the INITIAL_USER_NAME here for now
+                    // (This is what we get from the `set-initial-password` command)
+                    User initialUser = initialUserRepository.getUserByName( INITIAL_USER_NAME );
+
+                    if ( initialUser != null )
+                    {
+                        systemGraphOperations.setUserCredentials( INITIAL_USER_NAME, initialUser.credentials().serialize(), false );
+                    }
+                }
+                stopUserRepository( initialUserRepository );
+            }
         }
     }
 
