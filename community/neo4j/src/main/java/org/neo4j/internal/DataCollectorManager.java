@@ -26,6 +26,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.internal.collector.DataCollectorModule;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -40,17 +41,20 @@ public class DataCollectorManager extends LifecycleAdapter
     private final JobScheduler jobScheduler;
     private final Procedures procedures;
     private final Monitors monitors;
+    private final Config config;
     private final List<AutoCloseable> dataCollectors;
 
     public DataCollectorManager( DataSourceManager dataSourceManager,
                                  JobScheduler jobScheduler,
                                  Procedures procedures,
-                                 Monitors monitors )
+                                 Monitors monitors,
+                                 Config config )
     {
         this.dataSourceManager = dataSourceManager;
         this.jobScheduler = jobScheduler;
         this.procedures = procedures;
         this.monitors = monitors;
+        this.config = config;
         this.dataCollectors = new ArrayList<>();
     }
 
@@ -65,7 +69,8 @@ public class DataCollectorManager extends LifecycleAdapter
                                                                     jobScheduler,
                                                                     dataSource.getKernel(),
                                                                     monitors,
-                                                                    new DefaultValueMapper( embeddedProxySPI ) ) );
+                                                                    new DefaultValueMapper( embeddedProxySPI ),
+                                                                    config ) );
     }
 
     @Override

@@ -21,6 +21,7 @@ package org.neo4j.internal.collector
 
 import java.nio.file.Files
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.{Node, Path, Relationship}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -360,6 +361,52 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
         )
       )
     )
+  }
+
+  test("should respect the configured max_recent_query_count") {
+    // given
+    restartWithConfig(Map(GraphDatabaseSettings.data_collector_max_recent_query_count -> "4"))
+    execute("RETURN 1")
+    execute("RETURN 1, 2")
+    execute("RETURN 1, 2, 3")
+    execute("RETURN 1, 2, 3, 4")
+    execute("RETURN 1, 2, 3, 4, 5")
+
+    // when
+    val res = execute("CALL db.stats.retrieve('QUERIES')").toList
+
+    // then
+    res.size shouldBe 4
+    res should beListWithoutOrder(
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining("query" -> "RETURN 1, 2")
+      ),
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining("query" -> "RETURN 1, 2, 3")
+      ),
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining("query" -> "RETURN 1, 2, 3, 4")
+      ),
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining("query" -> "RETURN 1, 2, 3, 4, 5")
+      )
+    )
+  }
+
+  test("should not collect queries for max_recent_query_count=0") {
+    // given
+    restartWithConfig(Map(GraphDatabaseSettings.data_collector_max_recent_query_count -> "0"))
+    execute("RETURN 1")
+
+    // when
+    val res = execute("CALL db.stats.retrieve('QUERIES')").toList
+
+    // then
+    res.size shouldBe 0
   }
 
   test("[retrieveAllAnonymized] should anonymize tokens inside queries") {

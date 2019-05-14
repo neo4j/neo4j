@@ -42,22 +42,17 @@ class QueryCollector extends CollectorStateMachine<Iterator<TruncatedQuerySnapsh
     private volatile boolean isCollecting;
     private final RingRecentBuffer<TruncatedQuerySnapshot> queries;
     private final JobScheduler jobScheduler;
-    /**
-     * We retain at max 2^13 = 8192 queries in memory at any given time. This number
-     * was chosen as a trade-off between getting a useful amount of queries, and not
-     * wasting too much heap. Even with a buffer full of unique queries, the estimated
-     * footprint lies in tens of MBs. If the buffer is full of cached queries, the
-     * retained size was measured to 265 kB.
-     */
-    private static final int QUERY_BUFFER_SIZE_IN_BITS = 13;
 
-    QueryCollector( JobScheduler jobScheduler )
+    QueryCollector( JobScheduler jobScheduler,
+                    int maxRecentQueryCount )
     {
         super( true );
         this.jobScheduler = jobScheduler;
         isCollecting = false;
 
-        queries = new RingRecentBuffer<>( QUERY_BUFFER_SIZE_IN_BITS );
+        // Round down to the nearest power of 2
+        int queryBufferSize = Integer.highestOneBit( maxRecentQueryCount );
+        queries = new RingRecentBuffer<>( queryBufferSize );
     }
 
     long numSilentQueryDrops()
