@@ -103,14 +103,15 @@
       <artifactId>neo4j-values</artifactId>
       <version>${project.version}</version>
     </dependency>
+
+    <!-- neo4j testing -->
+
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-logical-query-builder</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
-
-    <!-- neo4j testing -->
-
     <dependency>
       <groupId>org.neo4j.community</groupId>
       <artifactId>it-test-support</artifactId>

@@ -34,15 +34,15 @@ trait TokenResolver {
   /**
     * Obtain the token of a label by name.
     */
-  def labelId(label: String): Int
+  def getLabelId(label: String): Int
 
-  def propertyKeyId(prop: String): Int
+  def getPropertyKeyId(prop: String): Int
 }
 
 /**
   * Test help utility for hand-writing objects needing logical plans.
   */
-abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[T, IMPL]](tokenResolver: TokenResolver) {
+abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[T, IMPL]](protected val tokenResolver: TokenResolver) {
 
   self: IMPL =>
 
@@ -239,8 +239,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                         argumentIds: Set[String] = Set.empty,
                         unique: Boolean = false,
                         customQueryExpression: Option[QueryExpression[Expression]] = None): IMPL = {
-    val label = tokenResolver.labelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
-    val propIds = PartialFunction(tokenResolver.propertyKeyId)
+    val label = tokenResolver.getLabelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
+    val propIds = PartialFunction(tokenResolver.getPropertyKeyId)
     val plan = IndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, Some(propIds), label, unique, customQueryExpression)
     newNode(varFor(plan.idName))
     appendAtCurrentIndent(LeafOperator(plan))
@@ -304,6 +304,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   // HELPERS
 
   private def appendAtCurrentIndent(operatorBuilder: OperatorBuilder): IMPL = {
+    if (tree == null) {
+      throw new IllegalStateException("Must call produceResult before adding other operators.")
+    }
+
     val newTree = new Tree(operatorBuilder)
     def appendAtIndent(): Unit = {
       val parent = looseEnds(indent)

@@ -94,7 +94,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   // HELPERS
 
-  override def labelId(label: String): Int = {
+  override def getLabelId(label: String): Int = {
     val tx = graphDb.beginTx()
     try {
       tx.success()
@@ -102,7 +102,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     } finally tx.close()
   }
 
-  override def propertyKeyId(prop: String): Int =  {
+  override def getPropertyKeyId(prop: String): Int =  {
     val tx = graphDb.beginTx()
     try {
       tx.success()
