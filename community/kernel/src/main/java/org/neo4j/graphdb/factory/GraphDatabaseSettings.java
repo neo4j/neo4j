@@ -431,7 +431,7 @@ public class GraphDatabaseSettings implements LoadableConfig
             " Lowering this value will reduce the memory footprint of collected query invocations under loads with" +
             " many queries with long query texts, which could occur for generated queries. The downside is that" +
             " on retrieving queries by `db.stats.retrieve`, queries longer than this max size would be returned" +
-            " incomplete. Setting this to 0 will completely drop query texts from the collected queries.")
+            " incomplete. Setting this to 0 will completely drop query texts from the collected queries." )
     @Internal
     public static final Setting<Integer> data_collector_max_query_text_size =
             buildSetting( "unsupported.datacollector.max_query_text_size", INTEGER, "10000" )
