@@ -20,21 +20,21 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.IOException;
-import java.util.Map;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
-import org.neo4j.values.storable.Value;
 
 public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
 {
@@ -82,10 +82,11 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
 
             IndexMigration indexMigration = IndexMigration.migrationFromOldProvider( oldIndexReference.providerKey(), oldIndexReference.providerVersion() );
 
-            Map<String,Value> indexConfig = indexMigration.extractIndexConfig( fs, pageCache, directoryLayout, indexId );
-            indexMigration.bless( indexConfig );
+            IndexConfig indexConfig = indexMigration.extractIndexConfig( fs, pageCache, directoryLayout, indexId );
 
-            // todo augment old index reference with extracted index config
+            IndexDescriptor descriptorWithIndexConfig = new IndexDescriptor( oldIndexReference ).withConfig( indexConfig );
+            descriptorWithIndexConfig = indexMigration.bless( descriptorWithIndexConfig );
+            return new DefaultStorageIndexReference( descriptorWithIndexConfig, indexId, oldIndexReference.owningConstraintReference() );
         }
         return rule;
     }

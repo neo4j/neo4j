@@ -22,13 +22,13 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Map;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.values.storable.Value;
+import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 
 import static org.neo4j.io.fs.FileUtils.path;
 
@@ -43,16 +43,17 @@ enum IndexMigration
                 }
 
                 @Override
-                Map<String,Value> extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException
+                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException
                 {
                     File lucene10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, lucene10Dir, indexId );
                 }
 
                 @Override
-                void bless( Map<String,Value> indexConfig )
+                IndexDescriptor bless( IndexDescriptor indexDescriptor )
                 {
                     // todo implement me
+                    return null;
                 }
             },
     NATIVE10( "lucene+native", "1.0", GraphDatabaseSettings.SchemaIndex.NATIVE30, true )
@@ -64,16 +65,17 @@ enum IndexMigration
                 }
 
                 @Override
-                Map<String,Value> extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException
+                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException
                 {
                     File providerRootDirectory = providerRootDirectory( layout );
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, providerRootDirectory, indexId );
                 }
 
                 @Override
-                void bless( Map<String,Value> indexConfig )
+                IndexDescriptor bless( IndexDescriptor indexDescriptor )
                 {
                     // todo implement me
+                    return null;
                 }
             },
     NATIVE20( "lucene+native", "2.0", GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10, true )
@@ -85,16 +87,17 @@ enum IndexMigration
                 }
 
                 @Override
-                Map<String,Value> extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException
+                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException
                 {
                     File providerRootDirectory = providerRootDirectory( layout );
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, providerRootDirectory, indexId );
                 }
 
                 @Override
-                void bless( Map<String,Value> indexConfig )
+                IndexDescriptor bless( IndexDescriptor indexDescriptor )
                 {
                     // todo implement me
+                    return null;
                 }
             },
     NATIVE_BTREE10( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerKey(), GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerVersion(),
@@ -107,16 +110,17 @@ enum IndexMigration
                 }
 
                 @Override
-                Map<String,Value> extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException
+                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException
                 {
                     File rootDir = providerRootDirectory( layout );
                     return GenericConfigExtractor.indexConfigFromGenericFile( pageCache, rootDir, indexId );
                 }
 
                 @Override
-                void bless( Map<String,Value> indexConfig )
+                IndexDescriptor bless( IndexDescriptor indexDescriptor )
                 {
                     // todo implement me
+                    return null;
                 }
             },
     FULLTEXT10( "fulltext", "1.0", null, false )
@@ -128,7 +132,7 @@ enum IndexMigration
                 }
 
                 @Override
-                Map<String,Value> extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId )
+                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId )
                 {
                     // Fulltext index directory structure.
                     // └── schema
@@ -149,9 +153,10 @@ enum IndexMigration
                 }
 
                 @Override
-                void bless( Map<String,Value> indexConfig )
+                IndexDescriptor bless( IndexDescriptor indexDescriptor )
                 {
                     // todo implement me
+                    return null;
                 }
             };
 
@@ -170,9 +175,9 @@ enum IndexMigration
 
     abstract File providerRootDirectory( DatabaseLayout layout );
 
-    abstract Map<String,Value> extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException;
+    abstract IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException;
 
-    abstract void bless( Map<String, Value> indexConfig );
+    abstract IndexDescriptor bless( IndexDescriptor indexDescriptor );
 
     /**
      * Returns the base schema index directory, i.e.

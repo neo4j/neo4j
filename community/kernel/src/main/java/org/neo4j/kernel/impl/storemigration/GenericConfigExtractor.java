@@ -28,6 +28,7 @@ import java.util.Map;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Header;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.values.storable.Value;
 
@@ -40,12 +41,12 @@ import static org.neo4j.io.fs.FileUtils.path;
  */
 class GenericConfigExtractor
 {
-    static Map<String,Value> indexConfigFromGenericFile( PageCache pageCache, File rootDir, long indexId ) throws IOException
+    static IndexConfig indexConfigFromGenericFile( PageCache pageCache, File rootDir, long indexId ) throws IOException
     {
         File genericFile = path( rootDir, String.valueOf( indexId ), "index-" + indexId );
         Map<String,Value> indexConfig = new HashMap<>();
         GBPTree.readHeader( pageCache, genericFile, new GenericConfig( indexConfig ) );
-        return indexConfig;
+        return IndexConfig.with( indexConfig );
     }
 
     // Copy of SpaceFillingCurveSettingsReader

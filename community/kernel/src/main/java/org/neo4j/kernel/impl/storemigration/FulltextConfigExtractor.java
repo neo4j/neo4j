@@ -25,9 +25,9 @@ import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -42,7 +42,7 @@ class FulltextConfigExtractor
     private static final String INDEX_CONFIG_ANALYZER = "analyzer";
     private static final String INDEX_CONFIG_EVENTUALLY_CONSISTENT = "eventually_consistent";
 
-    static Map<String,Value> indexConfigFromFulltextDirectory( FileSystemAbstraction fs, File fulltextIndexDirectory )
+    static IndexConfig indexConfigFromFulltextDirectory( FileSystemAbstraction fs, File fulltextIndexDirectory )
     {
         File settingsFile = new File( fulltextIndexDirectory, INDEX_CONFIG_FILE );
         Properties settings = new Properties();
@@ -64,7 +64,7 @@ class FulltextConfigExtractor
         extractSetting( settings, indexConfig, INDEX_CONFIG_EVENTUALLY_CONSISTENT );
         System.out.println( "fulltextIndexDirectory = " + fulltextIndexDirectory );
         System.out.println( indexConfig );
-        return indexConfig;
+        return IndexConfig.with( indexConfig );
     }
 
     private static void extractSetting( Properties settings, HashMap<String,Value> indexConfig, String setting )

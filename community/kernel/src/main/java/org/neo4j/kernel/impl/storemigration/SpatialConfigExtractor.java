@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Header;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -49,7 +50,7 @@ class SpatialConfigExtractor
     private static final Pattern CRS_FILE_PATTERN = Pattern.compile( "(\\d+)-(\\d+)" );
     private static final String spatialDirectoryName = "spatial-1.0";
 
-    static Map<String,Value> indexConfigFromSpatialFile( FileSystemAbstraction fs, PageCache pageCache, File parentDir, long indexId )
+    static IndexConfig indexConfigFromSpatialFile( FileSystemAbstraction fs, PageCache pageCache, File parentDir, long indexId )
             throws IOException
     {
         File spatialDirectory = path( parentDir, String.valueOf( indexId ), spatialDirectoryName );
@@ -68,7 +69,7 @@ class SpatialConfigExtractor
             double[] max = spacialConfig.max;
             addSpatialConfigToMap( map, crs, dimensions, maxLevels, min, max );
         }
-        return map;
+        return IndexConfig.with( map );
     }
 
     private static void addSpatialConfigToMap( Map<String,Value> map, CoordinateReferenceSystem crs, int dimensions, int maxLevels, double[] min,

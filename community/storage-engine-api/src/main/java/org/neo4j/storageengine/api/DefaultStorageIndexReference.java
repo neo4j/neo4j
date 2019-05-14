@@ -25,6 +25,7 @@ import org.neo4j.internal.schema.DefaultIndexDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaRule;
 
 /**
  * Default implementation of a {@link StorageIndexReference}. Mainly used as data carrier between the storage engine API and kernel.
@@ -34,6 +35,9 @@ public final class DefaultStorageIndexReference extends DefaultIndexDescriptor i
     private final long indexReference;
     private final Long owningConstraintReference;
 
+    /**
+     * Main constructor.
+     */
     public DefaultStorageIndexReference(
             SchemaDescriptor schema,
             String providerKey,
@@ -48,6 +52,9 @@ public final class DefaultStorageIndexReference extends DefaultIndexDescriptor i
         this.owningConstraintReference = owningConstraintReference;
     }
 
+    /**
+     * Constructor used for tests when we don't really care about index provider, name and eventual consistency.
+     */
     public DefaultStorageIndexReference( SchemaDescriptor schema, boolean isUnique, long indexReference, Long owningConstraintReference )
     {
         super( schema, isUnique );
@@ -55,11 +62,19 @@ public final class DefaultStorageIndexReference extends DefaultIndexDescriptor i
         this.owningConstraintReference = owningConstraintReference;
     }
 
+    /**
+     * Copy-constructor that set index reference and owning constraint reference.
+     * Typically for when storing this {@link SchemaRule} for the first time.
+     */
     public DefaultStorageIndexReference( IndexDescriptor index, long indexReference, Long owningConstraintRef )
     {
         this( index.schema(), index.providerKey(), index.providerVersion(), indexReference, optionalName( index ), index.isUnique(), owningConstraintRef );
     }
 
+    /**
+     * Copy-constructor that set owning constraint reference.
+     * Typically for when updating populated uniqueness index with an owning constraint.
+     */
     public DefaultStorageIndexReference( StorageIndexReference index, long owningConstraintReference )
     {
         this( index.schema(), index.providerKey(), index.providerVersion(), index.indexReference(),

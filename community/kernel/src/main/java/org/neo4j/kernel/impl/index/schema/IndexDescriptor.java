@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.schema.DefaultIndexDescriptor;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -140,5 +141,11 @@ public class IndexDescriptor extends DefaultIndexDescriptor
         {
             throw new IllegalArgumentException( "A " + getClass().getSimpleName() + " " + idName + " must be positive, got " + id );
         }
+    }
+
+    public IndexDescriptor withConfig( IndexConfig indexConfig )
+    {
+        SchemaDescriptor schema = schema().withIndexConfig( indexConfig );
+        return new IndexDescriptor( schema, isUnique(), name, providerDescriptor );
     }
 }
