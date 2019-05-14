@@ -56,7 +56,7 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
     case Selection(Ands(predicates),exp:Expand) => findMatchingOuterExpand(positivePredicate, triadicPredicate, patternExpression, predicates.toSeq, exp, qg, interestingOrder, context)
 
     // MATCH (a)-[:X]->(b)-[:Y]->(c) WHERE (predicate involving (a)-[:X]->(c))
-    case exp:Expand => findMatchingOuterExpand(positivePredicate, triadicPredicate, patternExpression, Seq.empty, exp, qg, interestingOrder,context)
+    case exp:Expand => findMatchingOuterExpand(positivePredicate, triadicPredicate, patternExpression, Seq.empty, exp, qg, interestingOrder, context)
 
     case _ => Seq.empty
   }

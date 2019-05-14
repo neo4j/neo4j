@@ -147,11 +147,12 @@ object PatternExpressionSolver {
     def rewriteLeafPlan(leafPlan: LogicalPlan): LogicalPlan = {
       val lhsOfApply = this.resultPlan
       this.resultPlan = null
-      if (lhsOfApply.isInstanceOf[Argument]) {
-        // We did not change anything. No need to wrap the leaf plan in an apply.
-        leafPlan
-      } else {
-        context.logicalPlanProducer.ForPatternExpressionSolver.planApply(lhsOfApply, leafPlan, context)
+      lhsOfApply match {
+        case _: Argument =>
+          // We did not change anything. No need to wrap the leaf plan in an apply.
+          leafPlan
+        case _ =>
+          context.logicalPlanProducer.ForPatternExpressionSolver.planApply(lhsOfApply, leafPlan, context)
       }
     }
   }
