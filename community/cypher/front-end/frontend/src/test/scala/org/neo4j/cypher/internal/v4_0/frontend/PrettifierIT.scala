@@ -205,16 +205,16 @@ class PrettifierIT extends CypherFunSuite {
           |RETURN $node AS n""".stripMargin,
 
       "catalog show database foO_Bar_42" ->
-        "CATALOG SHOW DATABASE foo_bar_42",
+        "CATALOG SHOW DATABASE foO_Bar_42",
 
       "catalog create database foO_Bar_42" ->
-        "CATALOG CREATE DATABASE foo_bar_42",
+        "CATALOG CREATE DATABASE foO_Bar_42",
 
-      "catalog create database \"foO_Bar_42\"" ->
-        "CATALOG CREATE DATABASE foo_bar_42",
+      "catalog create database `foO_Bar_42`" ->
+        "CATALOG CREATE DATABASE foO_Bar_42",
 
       "catalog DROP database foO_Bar_42" ->
-        "CATALOG DROP DATABASE foo_bar_42",
+        "CATALOG DROP DATABASE foO_Bar_42",
 
       "catalog create graph com.neo4j.Users { MATCH (n) RETURN n }" ->
         """CATALOG CREATE GRAPH com.neo4j.Users {
