@@ -20,8 +20,8 @@
 package org.neo4j.kernel.availability;
 
 import java.time.Clock;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.helpers.Format;
@@ -42,8 +42,8 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     private static final String DATABASE_AVAILABLE_MSG = "Fulfilling of requirement '%s' makes database %s available.";
     private static final String DATABASE_UNAVAILABLE_MSG = "Requirement `%s` makes database %s unavailable.";
 
-    private final Set<AvailabilityRequirement> blockingRequirements = new HashSet<>();
-    private boolean shutdown = true;
+    private final Set<AvailabilityRequirement> blockingRequirements = new CopyOnWriteArraySet<>();
+    private volatile boolean shutdown = true;
     private final Listeners<AvailabilityListener> listeners = new Listeners<>();
     private final DatabaseId databaseId;
     private final Clock clock;
@@ -63,25 +63,25 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     }
 
     @Override
-    public synchronized void init() throws Exception
+    public void init() throws Exception
     {
         shutdown = false;
     }
 
     @Override
-    public synchronized void start() throws Exception
+    public void start() throws Exception
     {
         globalGuard.addDatabaseAvailabilityGuard( this );
     }
 
     @Override
-    public synchronized void stop() throws Exception
+    public void stop() throws Exception
     {
         globalGuard.removeDatabaseAvailabilityGuard( this );
     }
 
     @Override
-    public synchronized void require( AvailabilityRequirement requirement )
+    public void require( AvailabilityRequirement requirement )
     {
         if ( shutdown )
         {
@@ -100,7 +100,7 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     }
 
     @Override
-    public synchronized void fulfill( AvailabilityRequirement requirement )
+    public void fulfill( AvailabilityRequirement requirement )
     {
         if ( shutdown )
         {
@@ -122,31 +122,31 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
      * Shutdown the guard. After this method is invoked, the database will always be considered unavailable.
      */
     @Override
-    public synchronized void shutdown()
+    public void shutdown()
     {
         shutdown = true;
         blockingRequirements.clear();
     }
 
     @Override
-    public synchronized boolean isAvailable()
+    public boolean isAvailable()
     {
         return availability() == Availability.AVAILABLE;
     }
 
     @Override
-    public synchronized boolean isShutdown()
+    public boolean isShutdown()
     {
         return availability() == Availability.SHUTDOWN;
     }
 
     @Override
-    public synchronized boolean isAvailable( long millis )
+    public boolean isAvailable( long millis )
     {
         return availability( millis ) == Availability.AVAILABLE;
     }
 
-    public synchronized void assertDatabaseAvailable() throws UnavailableException
+    public void assertDatabaseAvailable() throws UnavailableException
     {
         Availability availability = availability( databaseTimeMillis );
         switch ( availability )
@@ -163,7 +163,7 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     }
 
     @Override
-    public synchronized void await( long millis ) throws UnavailableException
+    public void await( long millis ) throws UnavailableException
     {
         Availability availability = availability( millis );
         if ( availability == Availability.AVAILABLE )
@@ -233,7 +233,7 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
      * @return a textual description of what components, if any, are blocking access
      */
     @Override
-    public synchronized String describe()
+    public String describe()
     {
         Set<AvailabilityRequirement> requirementSet = this.blockingRequirements;
         int requirements = requirementSet.size();
