@@ -45,22 +45,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-case class ExpectedException[T <: Throwable](e: T) {
-  def messageContains(s: String) = assertThat(e.getMessage, containsString(s))
-}
-
 trait ExecutionEngineTestSupport extends CypherTestSupport with ExecutionEngineHelper {
   self: CypherFunSuite with GraphDatabaseTestSupport =>
 
-  var eengine: ExecutionEngine = null
+  var eengine: ExecutionEngine = _
 
-  override protected def initTest() {
-    super.initTest()
+  override protected def onNewGraphDatabase(): Unit = {
     eengine = createEngine(graph)
   }
-
-  def runAndFail[T <: Throwable : Manifest](q: String): ExpectedException[T] =
-    ExpectedException(intercept[T](execute(q)))
 
   override def executeScalar[T](q: String, params: (String, Any)*): T = try {
     super.executeScalar[T](q, params: _*)
