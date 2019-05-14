@@ -33,7 +33,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.assertArray;
 
-class SchemaDescriptorFactoryTest
+class SchemaDescriptorTest
 {
     private static final int REL_TYPE_ID = 0;
     private static final int LABEL_ID = 0;
