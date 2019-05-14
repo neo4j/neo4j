@@ -28,7 +28,6 @@ import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 
 import static org.neo4j.io.fs.FileUtils.path;
 
@@ -49,12 +48,6 @@ enum IndexMigration
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, lucene10Dir, indexId );
                 }
 
-                @Override
-                IndexDescriptor bless( IndexDescriptor indexDescriptor )
-                {
-                    // todo implement me
-                    return null;
-                }
             },
     NATIVE10( "lucene+native", "1.0", GraphDatabaseSettings.SchemaIndex.NATIVE30, true )
             {
@@ -71,12 +64,6 @@ enum IndexMigration
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, providerRootDirectory, indexId );
                 }
 
-                @Override
-                IndexDescriptor bless( IndexDescriptor indexDescriptor )
-                {
-                    // todo implement me
-                    return null;
-                }
             },
     NATIVE20( "lucene+native", "2.0", GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10, true )
             {
@@ -93,12 +80,6 @@ enum IndexMigration
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, providerRootDirectory, indexId );
                 }
 
-                @Override
-                IndexDescriptor bless( IndexDescriptor indexDescriptor )
-                {
-                    // todo implement me
-                    return null;
-                }
             },
     NATIVE_BTREE10( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerKey(), GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerVersion(),
             GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10, false )
@@ -116,12 +97,6 @@ enum IndexMigration
                     return GenericConfigExtractor.indexConfigFromGenericFile( pageCache, rootDir, indexId );
                 }
 
-                @Override
-                IndexDescriptor bless( IndexDescriptor indexDescriptor )
-                {
-                    // todo implement me
-                    return null;
-                }
             },
     FULLTEXT10( "fulltext", "1.0", null, false )
             {
@@ -152,12 +127,6 @@ enum IndexMigration
                     return FulltextConfigExtractor.indexConfigFromFulltextDirectory( fs, fulltextIndexDirectory );
                 }
 
-                @Override
-                IndexDescriptor bless( IndexDescriptor indexDescriptor )
-                {
-                    // todo implement me
-                    return null;
-                }
             };
 
     final String providerKey;
@@ -176,8 +145,6 @@ enum IndexMigration
     abstract File providerRootDirectory( DatabaseLayout layout );
 
     abstract IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException;
-
-    abstract IndexDescriptor bless( IndexDescriptor indexDescriptor );
 
     /**
      * Returns the base schema index directory, i.e.

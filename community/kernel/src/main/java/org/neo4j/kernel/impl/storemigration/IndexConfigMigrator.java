@@ -24,11 +24,14 @@ import java.io.IOException;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.storageengine.api.DefaultStorageIndexReference;
@@ -43,8 +46,10 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
     private final PageCache pageCache;
     private final LogService logService;
     private final StorageEngineFactory storageEngineFactory;
+    private final IndexProviderMap indexProviderMap;
 
-    IndexConfigMigrator( FileSystemAbstraction fs, Config config, PageCache pageCache, LogService logService, StorageEngineFactory storageEngineFactory )
+    IndexConfigMigrator( FileSystemAbstraction fs, Config config, PageCache pageCache, LogService logService, StorageEngineFactory storageEngineFactory,
+            IndexProviderMap indexProviderMap )
     {
         super( "Index config" );
         this.fs = fs;
@@ -52,6 +57,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
         this.pageCache = pageCache;
         this.logService = logService;
         this.storageEngineFactory = storageEngineFactory;
+        this.indexProviderMap = indexProviderMap;
     }
 
     @Override
@@ -73,7 +79,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private SchemaRule migrateIndexConfig( SchemaRule rule, DatabaseLayout directoryLayout ) throws IOException
+    private SchemaRule migrateIndexConfig( SchemaRule rule, DatabaseLayout directoryLayout ) throws IOException, MisconfiguredIndexException
     {
         if ( rule instanceof DefaultStorageIndexReference )
         {
@@ -85,7 +91,8 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
             IndexConfig indexConfig = indexMigration.extractIndexConfig( fs, pageCache, directoryLayout, indexId );
 
             IndexDescriptor descriptorWithIndexConfig = new IndexDescriptor( oldIndexReference ).withConfig( indexConfig );
-            descriptorWithIndexConfig = indexMigration.bless( descriptorWithIndexConfig );
+            IndexProvider indexProvider = indexProviderMap.lookup( indexMigration.desiredAlternativeProvider.providerName() );
+            descriptorWithIndexConfig = indexProvider.bless( descriptorWithIndexConfig );
             return new DefaultStorageIndexReference( descriptorWithIndexConfig, indexId, oldIndexReference.owningConstraintReference() );
         }
         return rule;
