@@ -53,7 +53,6 @@ public class SetInitialPasswordCommandTest
 {
     private SetInitialPasswordCommand setPasswordCommand;
     private File authInitFile;
-    private File authFile;
     private FileSystemAbstraction fileSystem;
 
     private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();

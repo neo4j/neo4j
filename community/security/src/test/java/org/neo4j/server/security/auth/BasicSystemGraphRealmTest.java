@@ -60,11 +60,6 @@ import static org.neo4j.test.assertion.Assert.assertException;
 
 public class BasicSystemGraphRealmTest
 {
-    public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-
-    protected Config config;
-    protected UserRepository users;
-
     private AuthenticationStrategy authStrategy;
     private BasicSystemGraphRealm manager;
 
