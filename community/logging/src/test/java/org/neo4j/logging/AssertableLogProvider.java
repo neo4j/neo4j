@@ -724,7 +724,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
     {
         for ( LogCall logCall : logCalls )
         {
-            if ( logCall.message.contains( partOfMessage ) )
+            if ( logCall.toLogLikeString().contains( partOfMessage ) )
             {
                 return true;
             }
