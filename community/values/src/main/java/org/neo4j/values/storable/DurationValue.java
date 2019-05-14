@@ -914,21 +914,34 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     public static DurationValue approximate( double months, double days, double seconds, double nanos )
     {
 
-        long monthsAsLong = (long) months;
+        long monthsAsLong = safeDoubleToLong(months);
 
         double monthDiffInNanos = AVG_NANOS_PER_MONTH * months - AVG_NANOS_PER_MONTH * monthsAsLong;
         days += monthDiffInNanos / (NANOS_PER_SECOND * SECONDS_PER_DAY);
-        long daysAsLong = (long) days;
+        long daysAsLong = safeDoubleToLong(days);
 
         double daysDiffInNanos = NANOS_PER_SECOND * SECONDS_PER_DAY * days - NANOS_PER_SECOND * SECONDS_PER_DAY * daysAsLong;
         seconds += daysDiffInNanos / NANOS_PER_SECOND;
-        long secondsAsLong = (long) seconds;
+        long secondsAsLong = safeDoubleToLong(seconds);
 
         double secondsDiffInNanos = NANOS_PER_SECOND * seconds - NANOS_PER_SECOND * secondsAsLong;
         nanos += secondsDiffInNanos;
-        long nanosAsLong = (long) nanos;
+        long nanosAsLong = safeDoubleToLong(nanos);
 
         return duration( monthsAsLong, daysAsLong, secondsAsLong, nanosAsLong );
+    }
+
+    /**
+     * Will cast a double to a long, but only if it is inside the limits of [Long.MIN_VALUE, LONG.MAX_VALUE]
+     * We need this to detect overflow errors, whereas normal truncation is OK while approximating.
+     */
+    private static long safeDoubleToLong( double d )
+    {
+        if ( d > Long.MAX_VALUE || d < Long.MIN_VALUE )
+        {
+            throw new ArithmeticException( "long overflow" );
+        }
+        return (long) d;
     }
 
     private static Temporal assertValidPlus( Temporal temporal, long amountToAdd, TemporalUnit unit )
