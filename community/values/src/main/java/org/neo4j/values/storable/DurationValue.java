@@ -911,7 +911,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         return approximate( months / divisor, days / divisor, seconds / divisor, nanos / divisor );
     }
 
-    public static DurationValue approximate( double months, double days, double seconds, double nanos )
+    static DurationValue approximate( double months, double days, double seconds, double nanos )
     {
 
         long monthsAsLong = safeDoubleToLong(months);
