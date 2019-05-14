@@ -29,6 +29,8 @@ import java.util.Properties;
 
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.index.schema.FulltextConfigKey;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -57,22 +59,28 @@ class FulltextConfigExtractor
                 throw new UncheckedIOException( "Failed to read persisted fulltext index properties: " + settingsFile, e );
             }
         }
-            //todo
-            // - Real target index provider needs to be called here so that we use correct name for all config options.
+
         HashMap<String,Value> indexConfig = new HashMap<>();
-        extractSetting( settings, indexConfig, INDEX_CONFIG_ANALYZER );
-        extractSetting( settings, indexConfig, INDEX_CONFIG_EVENTUALLY_CONSISTENT );
-        System.out.println( "fulltextIndexDirectory = " + fulltextIndexDirectory );
-        System.out.println( indexConfig );
+        TextValue analyser = extractSetting( settings, indexConfig, INDEX_CONFIG_ANALYZER );
+        TextValue eventuallyConsistent = extractSetting( settings, indexConfig, INDEX_CONFIG_EVENTUALLY_CONSISTENT );
+        if ( analyser != null )
+        {
+            indexConfig.put( FulltextConfigKey.ANALYSER.key(), analyser );
+        }
+        if ( eventuallyConsistent != null )
+        {
+            indexConfig.put( FulltextConfigKey.EVENTUALLY_CONSISTENT.key(), eventuallyConsistent );
+        }
         return IndexConfig.with( indexConfig );
     }
 
-    private static void extractSetting( Properties settings, HashMap<String,Value> indexConfig, String setting )
+    private static TextValue extractSetting( Properties settings, HashMap<String,Value> indexConfig, String setting )
     {
         String property = settings.getProperty( setting );
         if ( property != null )
         {
-            indexConfig.put( "fulltext." + setting, Values.stringValue( property ) );
+            return Values.stringValue( property );
         }
+        return null;
     }
 }
