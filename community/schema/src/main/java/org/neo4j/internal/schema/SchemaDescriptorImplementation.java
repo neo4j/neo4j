@@ -275,6 +275,12 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     }
 
     @Override
+    public SchemaDescriptorImplementation withIndexConfig( IndexConfig indexConfig )
+    {
+        return new SchemaDescriptorImplementation( indexType, entityType, propertySchemaType, indexConfig, entityTokens, propertyKeyIds );
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( this == o )

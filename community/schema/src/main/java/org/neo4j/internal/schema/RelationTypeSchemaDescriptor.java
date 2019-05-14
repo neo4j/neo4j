@@ -28,4 +28,6 @@ import org.neo4j.util.MarkerInterface;
 @MarkerInterface
 public interface RelationTypeSchemaDescriptor extends SchemaDescriptor
 {
+    @Override
+    RelationTypeSchemaDescriptor withIndexConfig( IndexConfig indexConfig );
 }

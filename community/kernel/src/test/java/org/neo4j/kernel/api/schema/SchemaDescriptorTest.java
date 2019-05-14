@@ -27,10 +27,13 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.assertArray;
 
 class SchemaDescriptorTest
@@ -93,5 +96,20 @@ class SchemaDescriptorTest
                 equalTo( ":Label1(property2)" ) );
         assertThat( SchemaDescriptor.forRelType( 1, 3 ).userDescription( SchemaTestUtil.simpleNameLookup ),
                 equalTo( "-[:RelType1(property3)]-" ) );
+    }
+
+    @Test
+    void updatingIndexConfigLeavesOriginalDescriptorUntouched()
+    {
+        LabelSchemaDescriptor a = SchemaDescriptor.forLabel( 1, 2, 3 );
+        LabelSchemaDescriptor aa = SchemaDescriptor.forLabel( 1, 2, 3 );
+        LabelSchemaDescriptor b = a.withIndexConfig( a.getIndexConfig().with( "x", Values.stringValue( "y" ) ) );
+
+        assertThat( a.getIndexConfig(), not( equalTo( b.getIndexConfig() ) ) );
+        assertThat( a, equalTo( b ) );
+        assertThat( a, equalTo( aa ) );
+        assertThat( a.getIndexConfig(), equalTo( aa.getIndexConfig() ) );
+        assertThat( b.getIndexConfig().get( "x" ), equalTo( Values.stringValue( "y" ) ) );
+        assertThat( a.getIndexConfig().get( "x" ), is( nullValue() ) );
     }
 }
