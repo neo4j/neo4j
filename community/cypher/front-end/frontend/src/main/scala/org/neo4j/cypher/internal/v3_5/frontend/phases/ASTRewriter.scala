@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.v3_5.frontend.phases
 
-import org.neo4j.cypher.internal.v3_5.ast.{Statement, UnaliasedReturnItem}
 import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.v3_5.ast.{Statement, UnaliasedReturnItem}
 import org.neo4j.cypher.internal.v3_5.expressions.NotEquals
 import org.neo4j.cypher.internal.v3_5.rewriting.RewriterStep._
 import org.neo4j.cypher.internal.v3_5.rewriting.conditions._
@@ -34,6 +34,7 @@ class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer,
       recordScopes(semanticState),
       desugarMapProjection(semanticState),
       normalizeComparisons,
+      normalizeInequalities,
       enableCondition(noReferenceEqualityAmongVariables),
       enableCondition(containsNoNodesOfType[UnaliasedReturnItem]),
       enableCondition(noDuplicatesInReturnItems),

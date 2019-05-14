@@ -18,8 +18,6 @@ package org.neo4j.cypher.internal.v3_5.rewriting.rewriters
 
 import org.neo4j.cypher.internal.v3_5.expressions._
 import org.neo4j.cypher.internal.v3_5.util.{Rewriter, topDown}
-import org.neo4j.cypher.internal.v3_5.expressions._
-
 
 case object normalizeComparisons extends Rewriter {
 
