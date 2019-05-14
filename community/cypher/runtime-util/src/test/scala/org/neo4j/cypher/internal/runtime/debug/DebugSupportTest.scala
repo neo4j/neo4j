@@ -19,13 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.debug
 
-object DebugSupport {
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-  final val debugWorkers = false
+class DebugSupportTest extends CypherFunSuite {
 
-  def logWorker(str: => String): Unit = {
-    if (debugWorkers) {
-      println("        " + str)
-    }
+  test("I think you forgot to disable DebugSupport after debugging...") {
+    DebugSupport.debugWorkers shouldBe false
   }
 }

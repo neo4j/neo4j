@@ -41,6 +41,9 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
       case (setting, value) =>
         val valueInGraph =
           setting match {
+            // This is intentionally telling the regular Neo4j RuntimeEnvironment not to launch it's own
+            // QueryExecutor or Scheduler, because those only busy-consume threads for no benefit except
+            // making test execution slower, and debugging more confusing.
             case GraphDatabaseSettings.cypher_morsel_runtime_scheduler => "single_threaded"
             case GraphDatabaseSettings.cypher_worker_count => "1"
             case _ => value

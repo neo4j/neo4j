@@ -21,11 +21,13 @@ package org.neo4j.cypher.internal.runtime.debug
 
 object DebugLog {
 
+  final val enabled = false
+
   private var t0: Long = 0L
   private var tn: Long = 0L
 
   def beginTime(): Unit =
-    if (DebugSupport.debugLog) {
+    if (enabled) {
       println("")
       println("            ~= BEGINNING OF TIME =~")
       t0 = System.currentTimeMillis()
@@ -33,13 +35,13 @@ object DebugLog {
     }
 
   def log(str: => String): Unit =
-    if (DebugSupport.debugLog) {
+    if (enabled) {
       tn = System.currentTimeMillis()
       println("[%6d ms] %s".format(tn - t0, str))
     }
 
   def logDiff(str: => String): Unit =
-    if (DebugSupport.debugLog) {
+    if (enabled) {
       val tPrev = tn
       tn = System.currentTimeMillis()
       println("     %+4d ms: %s".format(tn - tPrev, str))
