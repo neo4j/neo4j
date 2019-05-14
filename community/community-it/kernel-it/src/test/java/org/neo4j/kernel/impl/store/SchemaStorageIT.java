@@ -32,17 +32,22 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaStorage;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorPredicates;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -55,6 +60,7 @@ import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -243,6 +249,28 @@ public class SchemaStorageIT
         // Then
         assertNotNull( rule );
         assertRule( rule, LABEL1, PROP1, ConstraintDescriptor.Type.UNIQUE );
+    }
+
+    @Test
+    public void shouldWriteAndReadIndexConfig() throws KernelException
+    {
+        // given
+        IndexConfig expected = IndexConfig.with( MapUtil.genericMap(
+                "value.string", Values.stringValue( "value" ),
+                "value.int", Values.intValue( 1 ),
+                "value.doubleArray", Values.doubleArray( new double[]{0.4, 0.6, 1.0} ),
+                "value.boolean", Values.booleanValue( true )
+        ) );
+        SchemaDescriptor schema = SchemaDescriptor.withIndexConfig( forLabel( labelId( LABEL1 ), propId( PROP1 ) ), expected );
+        StoreIndexDescriptor storeIndexDescriptor = forSchema( schema ).withId( 1 );
+        storage.writeSchemaRule( storeIndexDescriptor );
+
+        // when
+        SchemaRule schemaRule = storage.loadSingleSchemaRule( 1 );
+
+        // then
+        IndexConfig actual = schemaRule.schema().getIndexConfig();
+        assertEquals( "Read index config not same as written, expected " + expected + ", actual " + actual, expected, actual );
     }
 
     private void assertRule( StorageIndexReference rule, String label, String propertyKey, boolean isUnique )

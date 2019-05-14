@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.tuple.Pair;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import java.io.File;
@@ -231,17 +233,28 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         return tokenisedMap;
     }
 
-    // todo Add IndexType and IndexConfig to SchemaDescriptor
+    // todo Add IndexType to SchemaDescriptor
     private static void schemaDescriptorToMap( SchemaDescriptor schemaDescriptor, Map<String,Value> map )
     {
         EntityType entityType = schemaDescriptor.entityType();
         PropertySchemaType propertySchemaType = schemaDescriptor.propertySchemaType();
         int[] entityTokenIds = schemaDescriptor.getEntityTokenIds();
         int[] propertyIds = schemaDescriptor.getPropertyIds();
+        IndexConfig indexConfig = schemaDescriptor.getIndexConfig();
         putStringProperty( map, PROP_SCHEMA_DESCRIPTOR_ENTITY_TYPE, entityType.name() );
         putStringProperty( map, PROP_SCHEMA_DESCRIPTOR_PROPERTY_SCHEMA_TYPE, propertySchemaType.name() );
         putIntArrayProperty( map, PROP_SCHEMA_DESCRIPTOR_ENTITY_IDS, entityTokenIds );
         putIntArrayProperty( map, PROP_SCHEMA_DESCRIPTOR_PROPERTY_IDS, propertyIds );
+        indexConfigToMap( indexConfig, map );
+    }
+
+    private static void indexConfigToMap( IndexConfig indexConfig, Map<String,Value> map )
+    {
+        RichIterable<Pair<String,Value>> entries = indexConfig.entries();
+        for ( Pair<String,Value> entry : entries )
+        {
+            putIndexConfigProperty( map, entry.getOne(), entry.getTwo() );
+        }
     }
 
     private static void schemaIndexToMap( StorageIndexReference rule, Map<String,Value> map )
@@ -421,6 +434,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         EntityType entityType = getEntityType( getString( PROP_SCHEMA_DESCRIPTOR_ENTITY_TYPE, props ) );
         int[] entityIds = getIntArray( PROP_SCHEMA_DESCRIPTOR_ENTITY_IDS, props );
         int[] propertyIds = getIntArray( PROP_SCHEMA_DESCRIPTOR_PROPERTY_IDS, props );
+        IndexConfig indexConfig = extractIndexConfig( props );
 
         switch ( propertySchemaType )
         {
@@ -428,9 +442,9 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
             switch ( entityType )
             {
             case NODE:
-                return SchemaDescriptor.forLabel( singleEntityId( entityIds ), propertyIds );
+                return SchemaDescriptor.withIndexConfig( SchemaDescriptor.forLabel( singleEntityId( entityIds ), propertyIds ), indexConfig );
             case RELATIONSHIP:
-                return SchemaDescriptor.forRelType( singleEntityId( entityIds ), propertyIds );
+                return SchemaDescriptor.withIndexConfig( SchemaDescriptor.forRelType( singleEntityId( entityIds ), propertyIds ), indexConfig );
             default:
                 throw new MalformedSchemaRuleException( "Unrecognised entity type: " + entityType );
             }
@@ -439,6 +453,19 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         default:
             throw new MalformedSchemaRuleException( "Did not recognize property schema type: " + propertySchemaType );
         }
+    }
+
+    private static IndexConfig extractIndexConfig( Map<String,Value> props )
+    {
+        Map<String,Value> configMap = new HashMap<>();
+        for ( String key : props.keySet() )
+        {
+            if ( key.startsWith( PROP_INDEX_CONFIG_PREFIX ) )
+            {
+                configMap.put( key.replace( PROP_INDEX_CONFIG_PREFIX, "" ), props.get( key ) );
+            }
+        }
+        return IndexConfig.with( configMap );
     }
 
     private static int singleEntityId( int[] entityIds ) throws MalformedSchemaRuleException
@@ -506,5 +533,10 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
     private static void putStringProperty( Map<String,Value> map, String property, String value )
     {
         map.put( property, Values.stringValue( value ) );
+    }
+
+    private static void putIndexConfigProperty( Map<String,Value> map, String key, Value value )
+    {
+        map.put( PROP_INDEX_CONFIG_PREFIX + key, value );
     }
 }

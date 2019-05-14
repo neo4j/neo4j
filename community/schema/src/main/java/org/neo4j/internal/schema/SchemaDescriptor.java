@@ -78,6 +78,17 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
         return new SchemaDescriptorImplementation( indexType, RELATIONSHIP, COMPLETE_ALL_TOKENS, IndexConfig.empty(), new int[]{relTypeId}, propertyIds );
     }
 
+    static SchemaDescriptor withIndexConfig( SchemaDescriptor schemaDescriptor, IndexConfig indexConfig )
+    {
+        return new SchemaDescriptorImplementation(
+                schemaDescriptor.getIndexType(),
+                schemaDescriptor.entityType(),
+                schemaDescriptor.propertySchemaType(),
+                indexConfig,
+                schemaDescriptor.getEntityTokenIds(),
+                schemaDescriptor.getPropertyIds() );
+    }
+
     private static void validatePropertyIds( int[] propertyIds )
     {
         for ( int propertyId : propertyIds )
