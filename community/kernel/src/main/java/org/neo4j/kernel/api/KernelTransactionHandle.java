@@ -128,9 +128,9 @@ public interface KernelTransactionHandle
     String getUserTransactionName();
 
     /**
-     * @return a list of all queries currently executing that use the underlying transaction
+     * Query currently executing, if any, that use the underlying transaction
      */
-    Stream<ExecutingQuery> executingQueries();
+    Optional<ExecutingQuery> executingQuery();
 
     /**
      * @return the lock requests granted for this transaction.

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.stream.Stream;
+import java.util.Optional;
 
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.query.ExecutingQuery;
@@ -46,10 +46,10 @@ public class OperationsFacade implements QueryRegistryOperations
     // query monitoring
 
     @Override
-    public Stream<ExecutingQuery> executingQueries()
+    public Optional<ExecutingQuery> executingQuery()
     {
         statement.assertOpen();
-        return queryRegistrationOperations().executingQueries( statement );
+        return queryRegistrationOperations().executingQuery( statement );
     }
 
     @Override

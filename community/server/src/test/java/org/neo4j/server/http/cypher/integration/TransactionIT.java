@@ -41,7 +41,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
@@ -63,11 +62,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.containsNoErrors;
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.hasErrors;
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.isValidRFCTimestamp;
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.matches;
+import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
@@ -895,14 +894,14 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertThat( response.get( "errors" ).size(), equalTo( 0 ) );
     }
 
-    private void assertPath( JsonNode jsonURIString, String path, String hostname, final String scheme )
+    private static void assertPath( JsonNode jsonURIString, String path, String hostname, final String scheme )
     {
         assertTrue( "Expected a uri matching '" + scheme + "://" + hostname + ":\\d+/db/data" + path + "', " +
                     "but got '" + jsonURIString.asText() + "'.",
                 jsonURIString.asText().matches( scheme + "://" + hostname + ":\\d+/db/data" + path ) );
     }
 
-    private HTTP.RawPayload singleStatement( String statement )
+    private static HTTP.RawPayload singleStatement( String statement )
     {
         return rawPayload( "{\"statements\":[{\"statement\":\"" + statement + "\"}]}" );
     }
@@ -931,7 +930,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         }
     }
 
-    private void assertHasTxLocation( Response begin )
+    private static void assertHasTxLocation( Response begin )
     {
         assertThat( begin.location(), matches( "http://localhost:\\d+/db/data/transaction/\\d+" ) );
     }
@@ -965,7 +964,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     private static boolean isStatementExecuting( KernelTransactions kernelTransactions, String statement )
     {
         return kernelTransactions.activeTransactions().stream()
-                .flatMap( KernelTransactionHandle::executingQueries )
+                .flatMap( k -> k.executingQuery().stream() )
                 .anyMatch( executingQuery -> statement.equals( executingQuery.queryText() ) );
     }
 }

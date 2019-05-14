@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.operations;
 
-import java.util.stream.Stream;
+import java.util.Optional;
 
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -32,7 +32,7 @@ import org.neo4j.values.virtual.MapValue;
  */
 public interface QueryRegistrationOperations
 {
-    Stream<ExecutingQuery> executingQueries( KernelStatement statement );
+    Optional<ExecutingQuery> executingQuery( KernelStatement statement );
 
     ExecutingQuery startQueryExecution( KernelStatement statement, String queryText, MapValue queryParameters );
 

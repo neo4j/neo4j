@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
-import java.util.stream.Stream;
+import java.util.Optional;
 
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.values.virtual.MapValue;
@@ -38,7 +38,7 @@ public interface QueryRegistryOperations
      * List of all currently running stream in this transaction. An user can have multiple stream running
      * simultaneously on the same transaction.
      */
-    Stream<ExecutingQuery> executingQueries();
+    Optional<ExecutingQuery> executingQuery();
 
     /**
      * Registers a query, and creates the ExecutingQuery object for it.

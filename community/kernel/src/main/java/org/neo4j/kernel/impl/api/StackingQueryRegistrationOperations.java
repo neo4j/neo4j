@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.DatabaseId;
@@ -52,9 +52,9 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
     }
 
     @Override
-    public Stream<ExecutingQuery> executingQueries( KernelStatement statement )
+    public Optional<ExecutingQuery> executingQuery( KernelStatement statement )
     {
-        return statement.executingQueryList().queries();
+        return statement.executingQuery();
     }
 
     @Override

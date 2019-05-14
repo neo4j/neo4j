@@ -121,7 +121,7 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     }
 
     @Override
-    public Stream<ExecutingQuery> executingQueries()
+    public Optional<ExecutingQuery> executingQuery()
     {
         throw new UnsupportedOperationException();
     }

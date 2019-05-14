@@ -53,7 +53,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     private final ClientConnectionInfo clientInfo;
     private final AuthSubject subject;
     private final Optional<Status> terminationReason;
-    private final ExecutingQueryList executingQueries;
+    private final Optional<ExecutingQuery> executingQuery;
     private final Map<String,Object> metaData;
     private final long userTransactionId;
     private final TransactionInitializationTrace initializationTrace;
@@ -67,7 +67,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
         this.timeoutMillis = tx.timeout();
         this.subject = tx.subjectOrAnonymous();
         this.terminationReason = tx.getReasonIfTerminated();
-        this.executingQueries = tx.executingQueries();
+        this.executingQuery = tx.executingQuery();
         this.metaData = tx.getMetaData();
         this.userTransactionId = tx.userTransactionId();
         this.initializationTrace = tx.getInitializationTrace();
@@ -149,9 +149,9 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     }
 
     @Override
-    public Stream<ExecutingQuery> executingQueries()
+    public Optional<ExecutingQuery> executingQuery()
     {
-        return executingQueries.queries();
+        return executingQuery;
     }
 
     @Override

@@ -70,6 +70,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.availability.AvailabilityGuard;
@@ -454,9 +455,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return cursorTracerSupplier.get().faults();
     }
 
-    ExecutingQueryList executingQueries()
+    Optional<ExecutingQuery> executingQuery()
     {
-        return currentStatement.executingQueryList();
+        return currentStatement.executingQuery();
     }
 
     void upgradeToDataWrites() throws InvalidTransactionTypeKernelException
@@ -1223,13 +1224,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
          */
         long getWaitingTimeNanos( long nowNanos )
         {
-            ExecutingQueryList queryList = transaction.executingQueries();
+            Optional<ExecutingQuery> query = transaction.executingQuery();
             long waitingTime = waitingTimeNanos;
-            if ( queryList != null )
+            if ( query.isPresent() )
             {
-                Long latestQueryWaitingNanos = queryList.top( executingQuery ->
-                        executingQuery.totalWaitingTimeNanos( nowNanos ) );
-                waitingTime = latestQueryWaitingNanos != null ? waitingTime + latestQueryWaitingNanos : waitingTime;
+                long latestQueryWaitingNanos = query.get().totalWaitingTimeNanos( nowNanos );
+                waitingTime = waitingTime + latestQueryWaitingNanos;
             }
             return waitingTime;
         }

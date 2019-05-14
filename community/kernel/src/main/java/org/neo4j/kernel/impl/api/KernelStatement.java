@@ -79,7 +79,7 @@ public class KernelStatement extends CloseableResourceManager implements TxState
     private StatementLocks statementLocks;
     private PageCursorTracer pageCursorTracer = PageCursorTracer.NULL;
     private int referenceCount;
-    private volatile ExecutingQueryList executingQueryList;
+    private volatile ExecutingQuery executingQuery;
     private final LockTracer systemLockTracer;
     private final Deque<StackTraceElement[]> statementOpenCloseCalls;
     private final ClockContext clockContext;
@@ -95,7 +95,7 @@ public class KernelStatement extends CloseableResourceManager implements TxState
         this.transaction = transaction;
         this.txStateHolder = txStateHolder;
         this.facade = new OperationsFacade( this, statementOperations );
-        this.executingQueryList = ExecutingQueryList.EMPTY;
+        this.executingQuery = null;
         this.systemLockTracer = systemLockTracer;
         this.statementOpenCloseCalls = RECORD_STATEMENTS_TRACES ? new ArrayDeque<>() : EMPTY_STATEMENT_HISTORY;
         this.clockContext = clockContext;
@@ -161,7 +161,7 @@ public class KernelStatement extends CloseableResourceManager implements TxState
 
     public LockTracer lockTracer()
     {
-        LockTracer tracer = executingQueryList.top( ExecutingQuery::lockTracer );
+        LockTracer tracer = executingQuery != null ? executingQuery.lockTracer() : null;
         return tracer == null ? systemLockTracer : systemLockTracer.combine( tracer );
     }
 
@@ -215,19 +215,19 @@ public class KernelStatement extends CloseableResourceManager implements TxState
         return transaction.securityContext().subject().username();
     }
 
-    final ExecutingQueryList executingQueryList()
+    final Optional<ExecutingQuery> executingQuery()
     {
-        return executingQueryList;
+        return Optional.ofNullable( executingQuery );
     }
 
     final void startQueryExecution( ExecutingQuery query )
     {
-        this.executingQueryList = executingQueryList.push( query );
+        this.executingQuery = query;
     }
 
     final void stopQueryExecution( ExecutingQuery executingQuery )
     {
-        this.executingQueryList = executingQueryList.remove( executingQuery );
+        this.executingQuery = null;
         transaction.getStatistics().addWaitingTime( executingQuery.reportedWaitingTimeNanos() );
     }
 
@@ -235,7 +235,7 @@ public class KernelStatement extends CloseableResourceManager implements TxState
     {
         // closing is done by KTI
         transaction.releaseStatementResources();
-        executingQueryList = ExecutingQueryList.EMPTY;
+        executingQuery = null;
         closeAllCloseableResources();
     }
 

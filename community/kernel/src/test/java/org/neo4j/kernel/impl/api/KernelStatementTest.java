@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.graphdb.NotInTransactionException;
@@ -78,7 +79,7 @@ class KernelStatementTest
         KernelTransactionImplementation.Statistics statistics = new KernelTransactionImplementation.Statistics( transaction,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ) );
         when( transaction.getStatistics() ).thenReturn( statistics );
-        when( transaction.executingQueries() ).thenReturn( ExecutingQueryList.EMPTY );
+        when( transaction.executingQuery() ).thenReturn( Optional.empty() );
 
         KernelStatement statement = new KernelStatement( transaction, txStateHolder,
                 LockTracer.NONE, mock( StatementOperationParts.class ),
@@ -96,7 +97,7 @@ class KernelStatementTest
         assertEquals( 3, statistics.getWaitingTimeNanos( 1 ) );
     }
 
-    private ExecutingQuery getQueryWithWaitingTime()
+    private static ExecutingQuery getQueryWithWaitingTime()
     {
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );
         when( executingQuery.reportedWaitingTimeNanos() ).thenReturn( 1L );
