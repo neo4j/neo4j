@@ -22,6 +22,8 @@ import scala.collection.mutable
 
 object NonEmptyList {
 
+  def unapplySeq[T](input: NonEmptyList[T]): Option[Seq[T]] = Some(input.toIndexedSeq)
+
   def from[T](input: Iterable[T]): NonEmptyList[T] =
     from(input.iterator)
 

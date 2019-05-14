@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans
 
-import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v3_5.expressions.{functions, _}
+import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.neo4j.cypher.internal.v3_5.util.NonEmptyList
 import org.neo4j.cypher.internal.v3_5.util.symbols._
 
 object WithSeekableArgs {
@@ -67,6 +68,9 @@ object AsPropertyScannable {
 
     case expr: InequalityExpression =>
       partialPropertyPredicate(expr, expr.lhs)
+
+    case outerExpr@AndedPropertyInequalities(_, _, NonEmptyList(expr: InequalityExpression)) =>
+      partialPropertyPredicate(outerExpr, expr.lhs)
 
     case startsWith: StartsWith =>
       partialPropertyPredicate(startsWith, startsWith.lhs)
