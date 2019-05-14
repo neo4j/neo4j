@@ -78,15 +78,15 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
         return new SchemaDescriptorImplementation( indexType, RELATIONSHIP, COMPLETE_ALL_TOKENS, IndexConfig.empty(), new int[]{relTypeId}, propertyIds );
     }
 
-    static SchemaDescriptor withIndexConfig( SchemaDescriptor schemaDescriptor, IndexConfig indexConfig )
+    /**
+     * Create a predicate that checks whether a schema descriptor Supplier supplies the given schema descriptor.
+     * @param descriptor The schema descriptor to check equality with.
+     * @return A predicate that returns {@code true} if it is given a schema descriptor supplier that supplies the
+     * same schema descriptor as the given schema descriptor.
+     */
+    static <T extends SchemaDescriptorSupplier> Predicate<T> equalTo( SchemaDescriptor descriptor )
     {
-        return new SchemaDescriptorImplementation(
-                schemaDescriptor.getIndexType(),
-                schemaDescriptor.entityType(),
-                schemaDescriptor.propertySchemaType(),
-                indexConfig,
-                schemaDescriptor.getEntityTokenIds(),
-                schemaDescriptor.getPropertyIds() );
+        return supplier -> descriptor.equals( supplier.schema() );
     }
 
     private static void validatePropertyIds( int[] propertyIds )
@@ -292,15 +292,4 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
      * @return the {@link IndexConfig}, if any
      */
     IndexConfig getIndexConfig();
-
-    /**
-     * Create a predicate that checks whether a schema descriptor Supplier supplies the given schema descriptor.
-     * @param descriptor The schema descriptor to check equality with.
-     * @return A predicate that returns {@code true} if it is given a schema descriptor supplier that supplies the
-     * same schema descriptor as the given schema descriptor.
-     */
-    static <T extends SchemaDescriptorSupplier> Predicate<T> equalTo( SchemaDescriptor descriptor )
-    {
-        return supplier -> descriptor.equals( supplier.schema() );
-    }
 }
