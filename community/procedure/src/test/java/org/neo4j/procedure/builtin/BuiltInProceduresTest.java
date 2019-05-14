@@ -55,7 +55,7 @@ import org.neo4j.internal.schema.constraints.AbstractConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.index.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;

@@ -25,7 +25,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;

@@ -27,7 +27,7 @@ import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.schema.DefaultIndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
-import org.neo4j.kernel.api.index.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.values.storable.ValueCategory;
 
 /**

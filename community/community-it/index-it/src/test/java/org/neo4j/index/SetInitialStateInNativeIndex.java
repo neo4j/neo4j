@@ -27,7 +27,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.index.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.index.schema.NativeIndexHeaderWriter;
 import org.neo4j.kernel.impl.index.schema.NativeIndexes;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;

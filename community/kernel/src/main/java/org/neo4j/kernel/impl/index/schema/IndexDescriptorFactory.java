@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.index.schema;
 import java.util.Optional;
 
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.index.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 
-import static org.neo4j.kernel.api.index.IndexProviderDescriptor.UNDECIDED;
+import static org.neo4j.internal.schema.IndexProviderDescriptor.UNDECIDED;
 
 public class IndexDescriptorFactory
 {

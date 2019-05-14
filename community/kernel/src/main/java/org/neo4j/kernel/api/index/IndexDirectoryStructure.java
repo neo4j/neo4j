@@ -21,6 +21,8 @@ package org.neo4j.kernel.api.index;
 
 import java.io.File;
 
+import org.neo4j.internal.schema.IndexProviderDescriptor;
+
 import static org.neo4j.io.fs.FileUtils.path;
 
 /**

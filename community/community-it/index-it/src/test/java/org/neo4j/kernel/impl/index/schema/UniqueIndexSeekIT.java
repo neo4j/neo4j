@@ -41,7 +41,7 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory30;
-import org.neo4j.kernel.api.index.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.tracking.TrackingIndexExtensionFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;

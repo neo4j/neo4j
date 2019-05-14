@@ -39,7 +39,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.index.SetInitialStateInNativeIndex;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.api.index.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.DbmsRule;

@@ -20,7 +20,7 @@
 package org.neo4j.consistency.checking;
 
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.index.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.ConstraintRule;
