@@ -83,7 +83,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
     public Map<String,Value> indexConfig()
     {
         Map<String,Value> map = new HashMap<>();
-        spaceFillingCurveSettings.visitIndexSpecificSettings( new SpatialConfigExtractor( map ) );
+        spaceFillingCurveSettings.visitIndexSpecificSettings( new SpatialConfigVisitor( map ) );
         return map;
     }
 

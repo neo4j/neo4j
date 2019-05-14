@@ -54,7 +54,7 @@ class GenericBlockBasedIndexPopulator extends BlockBasedIndexPopulator<GenericKe
     public Map<String,Value> indexConfig()
     {
         Map<String,Value> map = new HashMap<>();
-        spatialSettings.visitIndexSpecificSettings( new SpatialConfigExtractor( map ) );
+        spatialSettings.visitIndexSpecificSettings( new SpatialConfigVisitor( map ) );
         return map;
     }
 }

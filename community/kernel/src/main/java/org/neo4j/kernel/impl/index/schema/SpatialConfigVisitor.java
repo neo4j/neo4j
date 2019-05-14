@@ -26,11 +26,11 @@ import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 
-class SpatialConfigExtractor implements IndexSpecificSpaceFillingCurveSettings.SettingVisitor
+class SpatialConfigVisitor implements IndexSpecificSpaceFillingCurveSettings.SettingVisitor
 {
     private final Map<String,Value> map;
 
-    SpatialConfigExtractor( Map<String,Value> map )
+    SpatialConfigVisitor( Map<String,Value> map )
     {
         this.map = map;
     }

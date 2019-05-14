@@ -39,7 +39,7 @@ import org.neo4j.values.storable.Values;
  * {@link CoordinateReferenceSystem#getName()}.
  * By using this class when extracting configurations we make sure that the same name and format is used for the same configuration.
  */
-final class SpatialIndexConfig
+public final class SpatialIndexConfig
 {
     static final String TABLE_ID = "tableId";
     static final String CODE = "code";
@@ -62,14 +62,18 @@ final class SpatialIndexConfig
      */
     static void addSpatialConfig( Map<String,Value> map, CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings )
     {
-        String crsName = crs.getName();
-        int tableId = crs.getTable().getTableId();
-        int code = crs.getCode();
         int dimensions = settings.getDimensions();
         int maxLevels = settings.getMaxLevels();
         double[] min = settings.indexExtents().getMin();
         double[] max = settings.indexExtents().getMax();
+        addSpatialConfig( map, crs, dimensions, maxLevels, min, max );
+    }
 
+    public static void addSpatialConfig( Map<String,Value> map, CoordinateReferenceSystem crs, int dimensions, int maxLevels, double[] min, double[] max )
+    {
+        String crsName = crs.getName();
+        int tableId = crs.getTable().getTableId();
+        int code = crs.getCode();
         map.put( key( crsName, TABLE_ID ), Values.intValue( tableId ) );
         map.put( key( crsName, CODE ), Values.intValue( code ) );
         map.put( key( crsName, DIMENSIONS ), Values.intValue( dimensions ) );

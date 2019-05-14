@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,6 +29,8 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Header;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.index.schema.SpatialIndexConfig;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.io.fs.FileUtils.path;
@@ -101,15 +102,8 @@ class GenericConfigExtractor
                 min[i] = Double.longBitsToDouble( headerBytes.getLong() );
                 max[i] = Double.longBitsToDouble( headerBytes.getLong() );
             }
-
-            //todo Implement this
-            // - Real target index provider needs to be called here so that we use correct name for all config options.
-            System.out.println( "  tableId = " + tableId );
-            System.out.println( "  code = " + code );
-            System.out.println( "    dimensions = " + dimensions );
-            System.out.println( "    max = " + maxLevels );
-            System.out.println( "    min = " + Arrays.toString( min ) );
-            System.out.println( "    max = " + Arrays.toString( max ) );
+            CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( tableId, code );
+            SpatialIndexConfig.addSpatialConfig( indexConfig, crs, dimensions, maxLevels, min, max );
         }
     }
 }

@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +34,7 @@ import org.neo4j.index.internal.gbptree.Header;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.index.schema.SpatialIndexConfig;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 
@@ -58,30 +58,17 @@ class SpatialConfigExtractor
         List<SpatialFile> spatialFiles = existingSpatialFiles( fs, spatialDirectory );
         for ( SpatialFile spatialFile : spatialFiles )
         {
-            System.out.println( "  spatial file: " + spatialFile.indexFile );
-            SpacialConfig spacialConfig = new SpacialConfig();
-            GBPTree.readHeader( pageCache, spatialFile.indexFile, spacialConfig.headerReader() );
+            SpacialConfigReader spacialConfigReader = new SpacialConfigReader();
+            GBPTree.readHeader( pageCache, spatialFile.indexFile, spacialConfigReader.headerReader() );
 
             CoordinateReferenceSystem crs = spatialFile.crs;
-            int dimensions = spacialConfig.dimensions;
-            int maxLevels = spacialConfig.maxLevels;
-            double[] min = spacialConfig.min;
-            double[] max = spacialConfig.max;
-            addSpatialConfigToMap( map, crs, dimensions, maxLevels, min, max );
+            int dimensions = spacialConfigReader.dimensions;
+            int maxLevels = spacialConfigReader.maxLevels;
+            double[] min = spacialConfigReader.min;
+            double[] max = spacialConfigReader.max;
+            SpatialIndexConfig.addSpatialConfig( map, crs, dimensions, maxLevels, min, max );
         }
         return IndexConfig.with( map );
-    }
-
-    private static void addSpatialConfigToMap( Map<String,Value> map, CoordinateReferenceSystem crs, int dimensions, int maxLevels, double[] min,
-            double[] max )
-    {
-        //todo Implement this
-        // - Real target index provider needs to be called here so that we use correct name for all config options.
-        System.out.println( "  crs = " + crs );
-        System.out.println( "    dimensions = " + dimensions );
-        System.out.println( "    max = " + maxLevels );
-        System.out.println( "    min = " + Arrays.toString( min ) );
-        System.out.println( "    max = " + Arrays.toString( max ) );
     }
 
     private static List<SpatialFile> existingSpatialFiles( FileSystemAbstraction fs, File spatialDirectory )
@@ -106,7 +93,7 @@ class SpatialConfigExtractor
         return spatialFiles;
     }
 
-    private static class SpacialConfig
+    private static class SpacialConfigReader
     {
         private static final byte BYTE_FAILED = 0;
         private static final int SPATIAL_INDEX_TYPE_SPACE_FILLING_CURVE = 1;

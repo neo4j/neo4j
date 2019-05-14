@@ -93,9 +93,16 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
             IndexDescriptor descriptorWithIndexConfig = new IndexDescriptor( oldIndexReference ).withConfig( indexConfig );
             IndexProvider indexProvider = indexProviderMap.lookup( indexMigration.desiredAlternativeProvider.providerName() );
             descriptorWithIndexConfig = indexProvider.bless( descriptorWithIndexConfig );
-            return new DefaultStorageIndexReference( descriptorWithIndexConfig, indexId, oldIndexReference.owningConstraintReference() );
+            Long owningConstraintReference = getOwningConstraintReference( oldIndexReference );
+            return new DefaultStorageIndexReference( descriptorWithIndexConfig, indexId, owningConstraintReference );
         }
         return rule;
+    }
+
+    private Long getOwningConstraintReference( DefaultStorageIndexReference oldIndexReference )
+    {
+        return oldIndexReference.isUnique() && oldIndexReference.hasOwningConstraintReference() ?
+               oldIndexReference.owningConstraintReference() : null;
     }
 
     @Override
