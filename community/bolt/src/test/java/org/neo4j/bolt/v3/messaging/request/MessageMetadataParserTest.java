@@ -30,20 +30,20 @@ import static org.neo4j.bolt.v3.messaging.request.MessageMetadataParser.parseTra
 import static org.neo4j.bolt.v3.messaging.request.MessageMetadataParser.parseTransactionTimeout;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
-import static org.neo4j.values.virtual.VirtualValues.emptyMap;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 class MessageMetadataParserTest
 {
     @Test
     void shouldAllowNoTransactionTimeout() throws Exception
     {
-        assertNull( parseTransactionTimeout( emptyMap() ) );
+        assertNull( parseTransactionTimeout( EMPTY_MAP ) );
     }
 
     @Test
     void shouldAllowNoTransactionMetadata() throws Exception
     {
-        assertNull( parseTransactionMetadata( emptyMap() ) );
+        assertNull( parseTransactionMetadata( EMPTY_MAP ) );
     }
 
     @Test

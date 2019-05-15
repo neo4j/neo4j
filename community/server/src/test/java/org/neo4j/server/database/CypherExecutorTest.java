@@ -29,7 +29,6 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -75,7 +74,7 @@ public class CypherExecutorTest
         CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
 
-        cypherExecutor.createTransactionContext( QUERY, VirtualValues.emptyMap(), request );
+        cypherExecutor.createTransactionContext( QUERY, VirtualValues.EMPTY_MAP, request );
 
         verify( databaseQueryService ).beginTransaction( eq( KernelTransaction.Type.implicit ), eq( AUTH_DISABLED ), any( HttpConnectionInfo.class ) );
         logProvider.assertNoLoggingOccurred();
@@ -90,7 +89,7 @@ public class CypherExecutorTest
         CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
 
-        cypherExecutor.createTransactionContext( QUERY, VirtualValues.emptyMap(), request );
+        cypherExecutor.createTransactionContext( QUERY, VirtualValues.EMPTY_MAP, request );
 
         verify( databaseQueryService ).beginTransaction( eq( KernelTransaction.Type.implicit ), eq( AUTH_DISABLED ), any( HttpConnectionInfo.class ),
                 eq( CUSTOM_TRANSACTION_TIMEOUT ), eq( TimeUnit.MILLISECONDS ) );
@@ -106,7 +105,7 @@ public class CypherExecutorTest
         CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
 
-        cypherExecutor.createTransactionContext( QUERY, VirtualValues.emptyMap(), request );
+        cypherExecutor.createTransactionContext( QUERY, VirtualValues.EMPTY_MAP, request );
 
         verify( databaseQueryService ).beginTransaction( eq( KernelTransaction.Type.implicit ), eq( AUTH_DISABLED ), any( HttpConnectionInfo.class ) );
         logProvider.assertContainsMessageContaining( "Fail to parse `max-execution-time` header with value: 'not a " +
@@ -122,7 +121,7 @@ public class CypherExecutorTest
         CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
 
-        cypherExecutor.createTransactionContext( QUERY, VirtualValues.emptyMap(), request );
+        cypherExecutor.createTransactionContext( QUERY, VirtualValues.EMPTY_MAP, request );
 
         verify( databaseQueryService ).beginTransaction( eq( KernelTransaction.Type.implicit ), eq( AUTH_DISABLED ), any( HttpConnectionInfo.class ) );
         logProvider.assertNoLoggingOccurred();

@@ -35,7 +35,6 @@ import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualValueGroup;
 import org.neo4j.values.virtual.VirtualValueTestUtil;
-import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.Integer.signum;
 import static java.lang.String.format;
@@ -65,9 +64,9 @@ import static org.neo4j.values.virtual.VirtualValueTestUtil.list;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.map;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.nodes;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.relationships;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 import static org.neo4j.values.virtual.VirtualValues.concat;
-import static org.neo4j.values.virtual.VirtualValues.emptyMap;
 import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.node;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
@@ -99,13 +98,13 @@ class AnyValueComparatorTest
 
             // Node
             node( 1L ),
-            nodeValue( 2L, stringArray( "L" ), emptyMap() ),
+            nodeValue( 2L, stringArray( "L" ), EMPTY_MAP ),
             node( 3L ),
 
             // Edge
             relationship( 1L ),
-            relationshipValue( 2L, nodeValue( 1L, stringArray( "L" ), emptyMap() ),
-                    nodeValue( 2L, stringArray( "L" ), emptyMap() ), stringValue( "type" ), emptyMap() ),
+            relationshipValue( 2L, nodeValue( 1L, stringArray( "L" ), EMPTY_MAP ),
+                    nodeValue( 2L, stringArray( "L" ), EMPTY_MAP ), stringValue( "type" ), EMPTY_MAP ),
             relationship( 3L ),
 
             // LIST AND STORABLE ARRAYS
@@ -230,11 +229,11 @@ class AnyValueComparatorTest
     @Test
     void shouldTernaryCompareLists()
     {
-        assertTernaryCompare( VirtualValues.EMPTY_LIST, VirtualValues.EMPTY_LIST, EQUAL );
-        assertTernaryCompare( VirtualValues.EMPTY_LIST, Values.EMPTY_BYTE_ARRAY, EQUAL );
-        assertTernaryCompare( VirtualValues.EMPTY_LIST, NO_VALUE, UNDEFINED );
-        assertTernaryCompare( VirtualValues.EMPTY_LIST, list( "foo" ), SMALLER_THAN );
-        assertTernaryCompare( VirtualValues.EMPTY_LIST, stringArray( "foo" ), SMALLER_THAN );
+        assertTernaryCompare( EMPTY_LIST, EMPTY_LIST, EQUAL );
+        assertTernaryCompare( EMPTY_LIST, Values.EMPTY_BYTE_ARRAY, EQUAL );
+        assertTernaryCompare( EMPTY_LIST, NO_VALUE, UNDEFINED );
+        assertTernaryCompare( EMPTY_LIST, list( "foo" ), SMALLER_THAN );
+        assertTernaryCompare( EMPTY_LIST, stringArray( "foo" ), SMALLER_THAN );
         assertTernaryCompare( list( "foo" ), stringArray( "foo" ), EQUAL );
         assertTernaryCompare( list( stringArray( "foo" ) ), list( stringArray( "foo" ) ), EQUAL );
         assertTernaryCompare( list( list( "foo" ) ), list( list( "foo" ) ), EQUAL );

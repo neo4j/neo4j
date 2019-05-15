@@ -58,7 +58,7 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
     // SHOW DATABASES
     case ShowDatabases() => (_, _) =>
       SystemCommandExecutionPlan("ShowDatabases", normalExecutionEngine,
-        "MATCH (d:Database) RETURN d.name as name, d.status as status", VirtualValues.emptyMap())
+        "MATCH (d:Database) RETURN d.name as name, d.status as status", VirtualValues.EMPTY_MAP)
 
     // SHOW DATABASE foo
     case ShowDatabase(dbName) => (_, _) =>

@@ -102,7 +102,7 @@ class ExecutingQueryStatusTest
                                 new DatabaseId( DEFAULT_DATABASE_NAME ),
                                 null,
                                 "",
-                                VirtualValues.emptyMap(),
+                                VirtualValues.EMPTY_MAP,
                                 null,
                                 ( /*activeLockCount:*/ ) -> 0,
                                 PageCursorTracer.NULL,

@@ -80,7 +80,7 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 public class InvocationTest
 {
 
-    static MapValue NO_PARAMS = VirtualValues.emptyMap();
+    static MapValue NO_PARAMS = VirtualValues.EMPTY_MAP;
 
     private final Log log = mock( Log.class );
     private final Result executionResult = mock( Result.class );

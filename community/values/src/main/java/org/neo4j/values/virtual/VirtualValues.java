@@ -80,11 +80,6 @@ public final class VirtualValues
         return new ListValue.ConcatList( lists );
     }
 
-    public static MapValue emptyMap()
-    {
-        return EMPTY_MAP;
-    }
-
     public static MapValue map( String[] keys, AnyValue[] values )
     {
         assert keys.length == values.length;

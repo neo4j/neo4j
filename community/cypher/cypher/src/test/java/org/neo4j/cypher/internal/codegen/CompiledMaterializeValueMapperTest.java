@@ -47,12 +47,12 @@ class CompiledMaterializeValueMapperTest
     private static final EmbeddedProxySPI spi = new CompilerEmbeddedProxySPI();
 
     private static final NodeValue nodeProxyValue = ValueUtils.fromNodeProxy( new NodeProxy( spi, 1L ) );
-    private static final NodeValue directNodeValue = VirtualValues.nodeValue( 2L, Values.stringArray(), VirtualValues.emptyMap() );
+    private static final NodeValue directNodeValue = VirtualValues.nodeValue( 2L, Values.stringArray(), VirtualValues.EMPTY_MAP );
     private static final NodeReference nodeReference = VirtualValues.node( 1L ); // Should equal nodeProxyValue when converted
 
     private static final RelationshipValue relationshipProxyValue = ValueUtils.fromRelationshipProxy( new RelationshipProxy( spi, 11L ) );
     private static final RelationshipValue directRelationshipValue =
-            VirtualValues.relationshipValue( 12L, nodeProxyValue, directNodeValue, Values.stringValue( "TYPE" ), VirtualValues.emptyMap() );
+            VirtualValues.relationshipValue( 12L, nodeProxyValue, directNodeValue, Values.stringValue( "TYPE" ), VirtualValues.EMPTY_MAP );
     private static final RelationshipReference relationshipReference = VirtualValues.relationship( 11L ); // Should equal relationshipProxyValue when converted
 
     @Test

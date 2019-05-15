@@ -80,7 +80,6 @@ import org.neo4j.lock.ResourceTypes;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.ValueMapper;
-import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -194,7 +193,7 @@ class QueryExecutionLocksIT
         {
             TransactionalContextWrapper context =
                     new TransactionalContextWrapper( createTransactionContext( graph, tx, query ), listeners );
-            executionEngine.executeQuery( query, VirtualValues.emptyMap(), context, false );
+            executionEngine.executeQuery( query, EMPTY_MAP, context, false );
             return new ArrayList<>( context.recordingLocks.getLockOperationRecords() );
         }
     }

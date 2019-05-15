@@ -27,7 +27,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.emptyMap;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
@@ -48,7 +48,7 @@ public class VirtualValueTestUtil
 
     public static NodeValue node( long id, String... labels )
     {
-        return nodeValue( id, stringArray( labels ), emptyMap() );
+        return nodeValue( id, stringArray( labels ), EMPTY_MAP );
     }
 
     public static VirtualValue path( VirtualValue... pathElements )
@@ -67,7 +67,7 @@ public class VirtualValueTestUtil
 
     public static RelationshipValue rel( long id, long start, long end )
     {
-        return relationshipValue( id, node( start ), node( end ), stringValue( "T" ), emptyMap() );
+        return relationshipValue( id, node( start ), node( end ), stringValue( "T" ), EMPTY_MAP );
     }
 
     public static ListValue list( Object... objects )
@@ -96,14 +96,14 @@ public class VirtualValueTestUtil
     public static NodeValue[] nodes( long... ids )
     {
         return Arrays.stream( ids )
-                .mapToObj( id -> nodeValue( id, stringArray( "L" ), emptyMap() ) )
+                .mapToObj( id -> nodeValue( id, stringArray( "L" ), EMPTY_MAP ) )
                 .toArray( NodeValue[]::new );
     }
 
     public static RelationshipValue[] relationships( long... ids )
     {
         return Arrays.stream( ids )
-                .mapToObj( id -> relationshipValue( id, node( 0L ), node( 1L ), stringValue( "T" ), emptyMap() ) )
+                .mapToObj( id -> relationshipValue( id, node( 0L ), node( 1L ), stringValue( "T" ), EMPTY_MAP ) )
                 .toArray( RelationshipValue[]::new );
     }
 }

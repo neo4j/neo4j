@@ -70,7 +70,7 @@ import static org.neo4j.values.storable.Values.shortArray;
 import static org.neo4j.values.storable.Values.shortValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.emptyMap;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 import static org.neo4j.values.virtual.VirtualValues.fromList;
 import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.map;
@@ -82,11 +82,11 @@ class ValueMapperTest
 {
     private static Stream<AnyValue> parameters()
     {
-        NodeValue node1 = nodeValue( 1, stringArray(), emptyMap() );
-        NodeValue node2 = nodeValue( 2, stringArray(), emptyMap() );
-        NodeValue node3 = nodeValue( 3, stringArray(), emptyMap() );
-        RelationshipValue relationship1 = relationshipValue( 100, node1, node2, stringValue( "ONE" ), emptyMap() );
-        RelationshipValue relationship2 = relationshipValue( 200, node2, node2, stringValue( "TWO" ), emptyMap() );
+        NodeValue node1 = nodeValue( 1, stringArray(), EMPTY_MAP );
+        NodeValue node2 = nodeValue( 2, stringArray(), EMPTY_MAP );
+        NodeValue node3 = nodeValue( 3, stringArray(), EMPTY_MAP );
+        RelationshipValue relationship1 = relationshipValue( 100, node1, node2, stringValue( "ONE" ), EMPTY_MAP );
+        RelationshipValue relationship2 = relationshipValue( 200, node2, node2, stringValue( "TWO" ), EMPTY_MAP );
         return Stream.of(
                 node1,
                 relationship1,

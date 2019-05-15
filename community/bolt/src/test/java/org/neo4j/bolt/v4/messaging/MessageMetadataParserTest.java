@@ -32,7 +32,7 @@ import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_ID;
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.parseDatabaseId;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
-import static org.neo4j.values.virtual.VirtualValues.emptyMap;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 class MessageMetadataParserTest
 {
@@ -40,7 +40,7 @@ class MessageMetadataParserTest
     void noDatabaseNameShouldDefaultToEmptyString() throws Exception
     {
         assertThat( ABSENT_DB_ID, equalTo( new DatabaseId( "" ) ) );
-        assertThat( parseDatabaseId( emptyMap() ), equalTo( ABSENT_DB_ID ) );
+        assertThat( parseDatabaseId( EMPTY_MAP ), equalTo( ABSENT_DB_ID ) );
     }
 
     @Test

@@ -40,7 +40,7 @@ class KillQueryTest extends ExecutionEngineFunSuite {
    */
   val emptyMap = new util.HashMap[String, AnyRef]
   val NODE_COUNT = 1000
-  val THREAD_COUNT = Runtime.getRuntime().availableProcessors() * 2
+  val THREAD_COUNT: Int = Runtime.getRuntime.availableProcessors() * 2
   val SECONDS_TO_RUN = 5
 
   test("run queries and kill them left and right") {
@@ -101,7 +101,7 @@ class KillQueryTest extends ExecutionEngineFunSuite {
           try {
             val transactionalContext: TransactionalContext = contextFactory.newContext(tx, query, EMPTY_MAP)
             tcs.put(transactionalContext)
-            val result = engine.execute(query, VirtualValues.emptyMap(), transactionalContext)
+            val result = engine.execute(query, VirtualValues.EMPTY_MAP, transactionalContext)
             result.resultAsString()
             tx.success()
           }
