@@ -144,12 +144,13 @@ public final class ValueUtils
             }
             else
             {
+                ClassLoader classLoader = object.getClass().getClassLoader();
                 throw new IllegalArgumentException(
                         String.format( "Cannot convert %s of type %s to AnyValue, classloader=%s, classloader-name=%s",
                                 object,
                                 object.getClass().getName(),
-                                object.getClass().getClassLoader().toString(),
-                                object.getClass().getClassLoader().getName() )
+                                classLoader != null ? classLoader.toString() : "null",
+                                classLoader != null ? classLoader.getName() : "null" )
                 );
             }
         }

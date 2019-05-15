@@ -210,6 +210,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
             }
             else
             {
+                ClassLoader classLoader = attributeValue.getClass().getClassLoader();
                 throw new IllegalArgumentException(
                         format(
                                 "value=%s%n" +
@@ -218,8 +219,8 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
                                 "classLoader-name=%s%n",
                                 attributeValue.toString(),
                                 attributeValue.getClass().getName(),
-                                attributeValue.getClass().getClassLoader().toString(),
-                                attributeValue.getClass().getClassLoader().getName() ), e );
+                                classLoader != null ? classLoader.toString() : "null",
+                                classLoader != null ? classLoader.getName() : "null" ), e );
 
             }
         }
