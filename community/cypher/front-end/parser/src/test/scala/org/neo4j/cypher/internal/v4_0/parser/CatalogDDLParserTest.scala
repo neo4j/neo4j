@@ -55,6 +55,10 @@ class CatalogDDLParserTest
     failsToParse
   }
 
+  test("CREATE USER `!#\"~` SeT PASSWORD 'password'") {
+    yields(ast.CreateUser("!#\"~", Some("password"), None, requirePasswordChange = true, suspended = false))
+  }
+
   test("CREATE USER foo SeT PASSWORD 'pasS5Wor%d'") {
     yields(ast.CreateUser("foo", Some("pasS5Wor%d"), None, requirePasswordChange = true, suspended = false))
   }
