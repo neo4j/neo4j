@@ -416,8 +416,6 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     // when
     val res = execute("CALL db.stats.retrieve('QUERIES')").toList
 
-    println(res)
-
     // then
     res should beListWithoutOrder(
       beMapContaining(
@@ -431,6 +429,30 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
             Map("param" -> node),
             Map("param" -> relationship),
             Map("param" -> "§PATH[1]")
+          )
+        )
+      )
+    )
+  }
+
+  test("should limit the collected query parameter key length") {
+    // given
+    val MAX_PARAM_NAME_LENGTH = 1000
+    val longParamName: String = "".padTo(MAX_PARAM_NAME_LENGTH+3, 'x')
+    val query = "RETURN $"+longParamName
+    execute(query, params = Map(longParamName -> 2))
+
+    // when
+    val res = execute("CALL db.stats.retrieve('QUERIES')").toList
+
+    // then
+    res should beListWithoutOrder(
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> query,
+          "invocations" -> beInvocationsInOrder(
+            Map(longParamName.take(MAX_PARAM_NAME_LENGTH) -> 2)
           )
         )
       )

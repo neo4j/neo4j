@@ -87,7 +87,7 @@ class TruncatedQuerySnapshot
         int i = 0;
         for ( String key : parameters.keySet() )
         {
-            keys[i] = key;
+            keys[i] = key.length() <= MAX_PARAMETER_KEY_LENGTH ? key : key.substring( 0, MAX_PARAMETER_KEY_LENGTH );
             values[i] = parameters.get( key ).map( VALUE_TRUNCATER );
             i++;
         }
@@ -96,6 +96,8 @@ class TruncatedQuerySnapshot
     }
 
     private static ValueTruncater VALUE_TRUNCATER = new ValueTruncater();
+    private static int MAX_TEXT_PARAMETER_LENGTH = 100;
+    private static int MAX_PARAMETER_KEY_LENGTH = 1000;
 
     static class ValueTruncater implements ValueMapper<AnyValue>
     {
@@ -111,7 +113,7 @@ class TruncatedQuerySnapshot
         {
             if ( value instanceof NodeValue )
             {
-                // Note: we do not want to keep a reference to the whole node value as it could contains a lot of data.
+                // Note: we do not want to keep a reference to the whole node value as it could contain a lot of data.
                 return VirtualValues.node( value.id() );
             }
             return value;
@@ -122,7 +124,7 @@ class TruncatedQuerySnapshot
         {
             if ( value instanceof RelationshipValue )
             {
-                // Note: we do not want to keep a reference to the whole relationship value as it could contains a lot of data.
+                // Note: we do not want to keep a reference to the whole relationship value as it could contain a lot of data.
                 return VirtualValues.relationship( value.id() );
             }
             return value;
@@ -149,9 +151,9 @@ class TruncatedQuerySnapshot
         @Override
         public AnyValue mapText( TextValue value )
         {
-            if ( value.length() > 100 )
+            if ( value.length() > MAX_TEXT_PARAMETER_LENGTH )
             {
-                return Values.stringValue( value.stringValue().substring( 0, 100 ) );
+                return Values.stringValue( value.stringValue().substring( 0, MAX_TEXT_PARAMETER_LENGTH ) );
             }
             return value;
         }
