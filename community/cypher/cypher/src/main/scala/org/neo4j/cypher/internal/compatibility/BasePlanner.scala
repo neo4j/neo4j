@@ -24,10 +24,10 @@ import java.time.Clock
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility.v4_0.{WrappedMonitors => WrappedMonitorsv4_0}
-import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext, PlannerContextCreator}
+import org.neo4j.cypher.internal.compiler.phases.{PlannerContext, PlannerContextCreator}
 import org.neo4j.cypher.internal.compiler.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.{CypherPlanner => CypherPlannerv4_0, _}
-import org.neo4j.cypher.internal.planner.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName, PlanContext}
+import org.neo4j.cypher.internal.planner.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
@@ -129,24 +129,6 @@ abstract class BasePlanner[STATEMENT <: AnyRef, PARSED_STATE <: AnyRef](
       override def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit = {}
       override def queryCacheRecompile(queryKey: STATEMENT, metaData: String): Unit = {}
     }
-
-  protected def createReusabilityState(logicalPlanState: LogicalPlanState,
-                                       planContext: PlanContext,
-                                       maybeManagementRuntime : Option[ManagementCommandRuntime]): ReusabilityState = {
-
-    val isApplicableManagementCommand = maybeManagementRuntime match {
-      case Some(runtime) => runtime.isApplicableManagementCommand(logicalPlanState)
-      case None => false
-    }
-
-    if (ProcedureCallOrSchemaCommandRuntime.isApplicable(logicalPlanState) || isApplicableManagementCommand)
-      FineToReuse
-    else {
-      val fingerprint = PlanFingerprint.take(clock, planContext.txIdProvider, planContext.statistics)
-      val fingerprintReference = new PlanFingerprintReference(fingerprint)
-      MaybeReusable(fingerprintReference)
-    }
-  }
 }
 
 trait CypherCacheFlushingMonitor {

@@ -68,6 +68,12 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
   override def shortestPathCommonEndNodesForbiddenException(message: String, cause: Throwable): CypherException =
     new ShortestPathCommonEndNodesForbiddenException(message, cause)
 
+  override def databaseManagementException(message: String): CypherException =
+    new DatabaseManagementException(message)
+
+  override def securityManagementException(message: String): CypherException =
+    new SecurityManagementException(message)
+
   override def invalidSemanticException(message: String, cause: Throwable) = new InvalidSemanticsException(message, cause)
 
   override def parameterWrongTypeException(message: String, cause: Throwable) = new ParameterWrongTypeException(message, cause)

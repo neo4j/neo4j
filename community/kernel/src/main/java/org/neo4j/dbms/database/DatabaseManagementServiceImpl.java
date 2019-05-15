@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
@@ -134,7 +135,14 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
 
     private void systemDatabaseExecute( String query )
     {
-        database( SYSTEM_DATABASE_NAME ).execute( query );
+        try
+        {
+            database( SYSTEM_DATABASE_NAME ).execute( query );
+        }
+        catch ( QueryExecutionException e )
+        {
+            throw new DatabaseManagementException( e );
+        }
     }
 
     private static void validateDatabaseName( String databaseName )

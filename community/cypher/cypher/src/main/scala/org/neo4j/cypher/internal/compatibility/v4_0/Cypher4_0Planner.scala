@@ -25,11 +25,10 @@ import java.util.function.BiFunction
 import org.neo4j.cypher._
 import org.neo4j.cypher.exceptionHandler.runSafely
 import org.neo4j.cypher.internal.compatibility.{CypherPlanner, _}
-import org.neo4j.cypher.internal.{compiler, _}
 import org.neo4j.cypher.internal.compiler._
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory, simpleExpressionEvaluator}
-import org.neo4j.cypher.internal.logical.plans.{LoadCSV, LogicalPlan}
+import org.neo4j.cypher.internal.logical.plans.{LoadCSV, LogicalPlan, MultiDatabaseLogicalPlan}
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.{ExceptionTranslatingPlanContext, TransactionBoundPlanContext}
@@ -40,6 +39,7 @@ import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{GeneratingNamer, InnerVariableNamer}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.{compiler, _}
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.Log
@@ -124,10 +124,20 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
         if (missingParameterNames.nonEmpty) {
           notificationLogger.log(MissingParametersNotification(missingParameterNames))
         }
-        val reusabilityState = createReusabilityState(logicalPlanState, planContext, runtime match {
-          case m:ManagementCommandRuntime => Some(m)
-          case _ => None
-        })
+        val reusabilityState = runtime match {
+          case m: ManagementCommandRuntime =>
+            if (m.isApplicableManagementCommand(logicalPlanState))
+              FineToReuse
+            else throw logicalPlanState.maybeLogicalPlan match {
+              case Some(plan: MultiDatabaseLogicalPlan) => plan.invalid("Unsupported management command: " + logicalPlanState.queryText)
+              case _ => new IllegalStateException("Attempting invalid management command in management runtime")
+            }
+          case _ if ProcedureCallOrSchemaCommandRuntime.isApplicable(logicalPlanState) => FineToReuse
+          case _ =>
+            val fingerprint = PlanFingerprint.take(clock, planContext.txIdProvider, planContext.statistics)
+            val fingerprintReference = new PlanFingerprintReference(fingerprint)
+            MaybeReusable(fingerprintReference)
+        }
         CacheableLogicalPlan(logicalPlanState, reusabilityState, notificationLogger.notifications, shouldBeCached)
       }
 

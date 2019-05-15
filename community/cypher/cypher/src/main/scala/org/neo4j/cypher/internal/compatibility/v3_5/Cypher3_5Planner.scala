@@ -25,7 +25,6 @@ import java.util.function.BiFunction
 import org.neo4j.cypher.exceptionHandler.runSafely
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.notification.LogicalPlanNotifications
-import org.neo4j.cypher.internal.{compiler, _}
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory, simpleExpressionEvaluator}
 import org.neo4j.cypher.internal.compiler.{CypherPlanner => _, _}
@@ -39,6 +38,7 @@ import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseState, CompilationPha
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{GeneratingNamer, InnerVariableNamer}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.{compiler, _}
 import org.neo4j.cypher.{CypherPlannerOption, CypherUpdateStrategy}
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -116,7 +116,13 @@ case class Cypher3_5Planner(config: CypherPlannerConfiguration,
           notificationLogger.log(MissingParametersNotification(missingParameterNames))
         }
 
-        val reusabilityState = createReusabilityState(logicalPlanState, planContext, maybeManagementRuntime = None)
+        val reusabilityState = if (ProcedureCallOrSchemaCommandRuntime.isApplicable(logicalPlanState))
+          FineToReuse
+        else {
+          val fingerprint = PlanFingerprint.take(clock, planContext.txIdProvider, planContext.statistics)
+          val fingerprintReference = new PlanFingerprintReference(fingerprint)
+          MaybeReusable(fingerprintReference)
+        }
         CacheableLogicalPlan(logicalPlanState, reusabilityState, notificationLogger.notifications, shouldBeCached)
       }
 
