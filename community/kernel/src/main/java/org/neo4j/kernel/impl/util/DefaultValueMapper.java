@@ -53,8 +53,6 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
     @Override
     public Node mapNode( VirtualNodeValue value )
     {
-        assert !(value instanceof NodeReference);
-
         if ( value instanceof NodeProxyWrappingNodeValue )
         { // this is the back door through which "virtual nodes" slip
             return ((NodeProxyWrappingNodeValue) value).nodeProxy();
@@ -65,8 +63,6 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
     @Override
     public Relationship mapRelationship( VirtualRelationshipValue value )
     {
-        assert !(value instanceof RelationshipReference);
-
         if ( value instanceof RelationshipProxyWrappingValue )
         { // this is the back door through which "virtual relationships" slip
             return ((RelationshipProxyWrappingValue) value).relationshipProxy();
