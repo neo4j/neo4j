@@ -34,7 +34,6 @@ import java.nio.file.Path;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.commandline.admin.NullOutsideWorld;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.commandline.admin.Usage;
@@ -48,13 +47,9 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -76,7 +71,7 @@ class ImportCommandTest
         ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
         Importer importer = mock( Importer.class );
         when( mockImporterFactory
-                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ), any( DatabaseLayout.class ) ) )
+                .createImporter( any( Args.class ), any( Config.class ), any( OutsideWorld.class ), any( DatabaseLayout.class ) ) )
                 .thenReturn( importer );
 
         try ( RealOutsideWorld outsideWorld = new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ) )
@@ -85,11 +80,11 @@ class ImportCommandTest
                     new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), outsideWorld,
                             mockImporterFactory );
 
-            String[] arguments = {"--database=foo", "--from=bar"};
+            String[] arguments = {"--database=foo"};
 
             importCommand.execute( arguments );
 
-            verify( mockImporterFactory ).getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ),
+            verify( mockImporterFactory ).createImporter( any( Args.class ), any( Config.class ),
                     any( OutsideWorld.class ), any( DatabaseLayout.class ) );
         }
     }
@@ -101,18 +96,18 @@ class ImportCommandTest
         ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
         Importer importer = mock( Importer.class );
         when( mockImporterFactory
-                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ), any() ) )
+                .createImporter( any( Args.class ), any( Config.class ), any( OutsideWorld.class ), any() ) )
                 .thenReturn( importer );
 
         ImportCommand importCommand =
                 new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(),
                         new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ), mockImporterFactory );
 
-        String[] arguments = {"--database=foo", "--from=bar", "--nodes:PERSON:FRIEND=mock.csv"};
+        String[] arguments = {"--database=foo", "--nodes:PERSON:FRIEND=mock.csv"};
 
         importCommand.execute( arguments );
 
-        verify( mockImporterFactory ).getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ),
+        verify( mockImporterFactory ).createImporter( any( Args.class ), any( Config.class ), any( OutsideWorld.class ),
                 any( DatabaseLayout.class ) );
     }
 
@@ -123,49 +118,19 @@ class ImportCommandTest
         ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
         Importer importer = mock( Importer.class );
         when( mockImporterFactory
-                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ), any( DatabaseLayout.class ) ) )
+                .createImporter( any( Args.class ), any( Config.class ), any( OutsideWorld.class ), any( DatabaseLayout.class ) ) )
                 .thenReturn( importer );
 
         ImportCommand importCommand =
                 new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(),
                         new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ), mockImporterFactory );
 
-        String[] arguments = {"--database=foo", "--from=bar", "--relationships:LIKES:HATES=mock.csv"};
+        String[] arguments = {"--database=foo", "--relationships:LIKES:HATES=mock.csv"};
 
         importCommand.execute( arguments );
 
         verify( mockImporterFactory )
-                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ), any( DatabaseLayout.class ) );
-    }
-
-    @Test
-    void requiresDatabaseArgument()
-    {
-        try ( NullOutsideWorld outsideWorld = new NullOutsideWorld() )
-        {
-            ImportCommand importCommand =
-                    new ImportCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath(),
-                            outsideWorld );
-
-            String[] arguments = {"--mode=database", "--from=bar"};
-            IncorrectUsage incorrectUsage = assertThrows( IncorrectUsage.class, () -> importCommand.execute( arguments ) );
-            assertThat( incorrectUsage.getMessage(), containsString( "database" ) );
-        }
-    }
-
-    @Test
-    void failIfInvalidModeSpecified()
-    {
-        try ( NullOutsideWorld outsideWorld = new NullOutsideWorld() )
-        {
-            ImportCommand importCommand =
-                    new ImportCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath(),
-                            outsideWorld );
-
-            String[] arguments = {"--mode=foo", "--database=bar", "--from=baz"};
-            IncorrectUsage incorrectUsage = assertThrows( IncorrectUsage.class, () -> importCommand.execute( arguments ) );
-            assertThat( incorrectUsage.getMessage(), containsString( "foo" ) );
-        }
+                .createImporter( any( Args.class ), any( Config.class ), any( OutsideWorld.class ), any( DatabaseLayout.class ) );
     }
 
     @Test
@@ -178,7 +143,7 @@ class ImportCommandTest
         Path confPath = testDir.directory( "conf" ).toPath();
         ImportCommand importCommand = new ImportCommand( homeDir, confPath, outsideWorld );
         File nodesFile = createTextFile( "nodes.csv", ":ID", "1", "2" );
-        String[] arguments = {"--mode=csv", "--database=existing", "--nodes=" + nodesFile.getAbsolutePath(),
+        String[] arguments = {"--database=existing", "--nodes=" + nodesFile.getAbsolutePath(),
                 "--report-file=" + testDir.file( "report" )};
 
         // First run an import so that a database gets created
@@ -187,7 +152,7 @@ class ImportCommandTest
         // When
         ImporterFactory importerFactory = mock( ImporterFactory.class );
         Importer importer = mock( Importer.class );
-        when( importerFactory.getImporterForMode( any(), any(), any(), any(), any() ) ).thenReturn( importer );
+        when( importerFactory.createImporter( any(), any(), any(), any() ) ).thenReturn( importer );
         new ImportCommand( homeDir, confPath, outsideWorld, importerFactory ).execute( arguments );
 
         // Then no exception about database existence should be thrown
@@ -226,7 +191,7 @@ class ImportCommandTest
             Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
             usage.printUsageForCommand( new ImportCommandProvider(), ps::println );
 
-            assertEquals( String.format( "usage: neo4j-admin import [--mode=csv] [--database=<name>]%n" +
+            assertEquals( String.format( "usage: neo4j-admin import [--database=<name>]%n" +
                             "                          [--additional-config=<config-file-path>]%n" +
                             "                          [--report-file=<filename>]%n" +
                             "                          [--nodes[:Label1:Label2]=<\"file1,file2,...\">]%n" +
@@ -244,9 +209,6 @@ class ImportCommandTest
                             "                          [--f=<File containing all arguments to this import>]%n" +
                             "                          [--high-io=<true/false>]%n" +
                             "                          [--normalize-types=<true/false>]%n" +
-                            "usage: neo4j-admin import --mode=database [--database=<name>]%n" +
-                            "                          [--additional-config=<config-file-path>]%n" +
-                            "                          [--from=<source-directory>]%n" +
                             "%n" +
                             "environment variables:%n" +
                             "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
@@ -255,19 +217,13 @@ class ImportCommandTest
                             "    HEAP_SIZE     Set JVM maximum heap size during command execution.%n" +
                             "                  Takes a number and a unit, for example 512m.%n" +
                             "%n" +
-                            "Import a collection of CSV files with --mode=csv (default), or a database from a%n" +
-                            "pre-3.0 installation with --mode=database.%n" +
+                            "Import a collection of CSV files.%n" +
                             "%n" +
                             "options:%n" +
                             "  --database=<name>%n" +
                             "      Name of database. [default:" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME + "]%n" +
                             "  --additional-config=<config-file-path>%n" +
                             "      Configuration file to supply additional configuration in. [default:]%n" +
-                            "  --mode=<database|csv>%n" +
-                            "      Import a collection of CSV files or a pre-3.0 installation. [default:csv]%n" +
-                            "  --from=<source-directory>%n" +
-                            "      The location of the pre-3.0 database (e.g. <neo4j-root>/data/neo4j).%n" +
-                            "      [default:]%n" +
                             "  --report-file=<filename>%n" +
                             "      File in which to store the report of the csv-import.%n" +
                             "      [default:import.report]%n" +

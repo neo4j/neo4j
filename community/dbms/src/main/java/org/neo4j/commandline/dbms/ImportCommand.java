@@ -29,7 +29,6 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
-import org.neo4j.commandline.arguments.MandatoryNamedArg;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.commandline.arguments.OptionalNamedArgWithMetadata;
@@ -40,7 +39,6 @@ import org.neo4j.internal.helpers.Args;
 import org.neo4j.io.layout.DatabaseLayout;
 
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.csv.reader.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
@@ -50,43 +48,10 @@ import static org.neo4j.tooling.ImportTool.parseFileArgumentList;
 public class ImportCommand implements AdminCommand
 {
     public static final String DEFAULT_REPORT_FILE_NAME = "import.report";
-    private static final String[] allowedModes = {"database", "csv"};
-    private static final Arguments databaseArguments = new Arguments()
-            .withArgument( new MandatoryNamedArg( "mode", "database", "Import a pre-3.0 installation." )
-            {
-                @Override
-                public String usage()
-                {
-                    return String.format( "--%s=%s", name(), exampleValue() );
-                }
-            } )
+
+    private static final Arguments arguments = new Arguments()
             .withDatabase()
             .withAdditionalConfig();
-
-    private static final Arguments csvArguments = new Arguments()
-            .withArgument( new OptionalNamedArg( "mode", "csv", "csv", "Import a collection of CSV files." )
-            {
-                @Override
-                public String usage()
-                {
-                    return String.format( "[--%s=%s]", name(), exampleValue() );
-                }
-            } )
-            .withDatabase()
-            .withAdditionalConfig();
-
-    private static final Arguments allArguments = new Arguments()
-            .withDatabase()
-            .withAdditionalConfig()
-            .withArgument( new OptionalNamedArg( "mode", allowedModes, "csv",
-                    "Import a collection of CSV files or a pre-3.0 installation." ) );
-
-    private static void includeDatabaseArguments( Arguments arguments )
-    {
-        arguments
-            .withArgument( new OptionalNamedArg( "from", "source-directory", "",
-                    "The location of the pre-3.0 database (e.g. <neo4j-root>/data/" + DEFAULT_DATABASE_NAME + ")." ) );
-    }
 
     private static void includeCsvArguments( Arguments arguments )
     {
@@ -170,26 +135,12 @@ public class ImportCommand implements AdminCommand
 
     static
     {
-        includeDatabaseArguments( databaseArguments );
-        includeDatabaseArguments( allArguments );
-
-        includeCsvArguments( csvArguments );
-        includeCsvArguments( allArguments );
+        includeCsvArguments( arguments );
     }
 
-    public static Arguments databaseArguments()
+    public static Arguments arguments()
     {
-        return databaseArguments;
-    }
-
-    public static Arguments csvArguments()
-    {
-        return csvArguments;
-    }
-
-    public static Arguments allArguments()
-    {
-        return allArguments;
+        return arguments;
     }
 
     private final Path homeDir;
@@ -214,17 +165,14 @@ public class ImportCommand implements AdminCommand
     public void execute( String[] userSupplierArguments ) throws IncorrectUsage, CommandFailed
     {
         final String[] args;
-        final String mode;
         final Optional<Path> additionalConfigFile;
         final String database;
 
         try
         {
             args = getImportToolArgs( userSupplierArguments );
-            allArguments.parse( args );
-            mode = allArguments.get( "mode" );
-            database = allArguments.get( ARG_DATABASE );
-            additionalConfigFile = allArguments.getOptionalPath( "additional-config" );
+            database = arguments.get( ARG_DATABASE );
+            additionalConfigFile = arguments.getOptionalPath( "additional-config" );
         }
         catch ( IllegalArgumentException e )
         {
@@ -239,7 +187,7 @@ public class ImportCommand implements AdminCommand
         {
             Config config = loadNeo4jConfig( homeDir, configDir, loadAdditionalConfig( additionalConfigFile ) );
             DatabaseLayout databaseLayout = DatabaseLayout.of( config.get( databases_root_path ), LayoutConfig.of( config ), database );
-            Importer importer = importerFactory.getImporterForMode( mode, Args.parse( args ), config, outsideWorld, databaseLayout );
+            Importer importer = importerFactory.createImporter( Args.parse( args ), config, outsideWorld, databaseLayout );
             importer.doImport();
         }
         catch ( IllegalArgumentException e )
@@ -254,8 +202,8 @@ public class ImportCommand implements AdminCommand
 
     private static String[] getImportToolArgs( String[] userSupplierArguments ) throws IOException, IncorrectUsage
     {
-        allArguments.parse( userSupplierArguments );
-        Optional<Path> fileArgument = allArguments.getOptionalPath( "f" );
+        arguments.parse( userSupplierArguments );
+        Optional<Path> fileArgument = arguments.getOptionalPath( "f" );
         return fileArgument.isPresent() ? parseFileArgumentList( fileArgument.get().toFile() ) : userSupplierArguments;
     }
 

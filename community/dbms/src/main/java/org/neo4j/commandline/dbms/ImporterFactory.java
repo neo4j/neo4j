@@ -19,7 +19,6 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.configuration.Config;
@@ -28,21 +27,9 @@ import org.neo4j.io.layout.DatabaseLayout;
 
 class ImporterFactory
 {
-    Importer getImporterForMode( String mode, Args parsedArgs, Config config, OutsideWorld outsideWorld, DatabaseLayout databaseLayout )
-            throws IncorrectUsage, CommandFailed
+    Importer createImporter( Args parsedArgs, Config config, OutsideWorld outsideWorld, DatabaseLayout databaseLayout )
+            throws IncorrectUsage
     {
-        Importer importer;
-        switch ( mode )
-        {
-        case "database":
-            importer = new DatabaseImporter( parsedArgs, databaseLayout );
-            break;
-        case "csv":
-            importer = new CsvImporter( parsedArgs, config, outsideWorld, databaseLayout );
-            break;
-        default:
-            throw new CommandFailed( "Invalid mode specified." );
-        }
-        return importer;
+        return new CsvImporter( parsedArgs, config, outsideWorld, databaseLayout );
     }
 }

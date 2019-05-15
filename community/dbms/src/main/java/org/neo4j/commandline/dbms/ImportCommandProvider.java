@@ -19,7 +19,7 @@
  */
 package org.neo4j.commandline.dbms;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nonnull;
 
@@ -43,29 +43,28 @@ public class ImportCommandProvider implements AdminCommand.Provider
     @Nonnull
     public Arguments allArguments()
     {
-        return ImportCommand.allArguments();
+        return ImportCommand.arguments();
     }
 
     @Override
     @Nonnull
     public List<Arguments> possibleArguments()
     {
-        return Arrays.asList( ImportCommand.csvArguments(), ImportCommand.databaseArguments() );
+        return Collections.singletonList( ImportCommand.arguments() );
     }
 
     @Override
     @Nonnull
     public String description()
     {
-        return "Import a collection of CSV files with --mode=csv (default), or a database from " +
-                "a pre-3.0 installation with --mode=database.";
+        return "Import a collection of CSV files.";
     }
 
     @Override
     @Nonnull
     public String summary()
     {
-        return "Import from a collection of CSV files or a pre-3.0 database.";
+        return "Import from a collection of CSV files.";
     }
 
     @Override
