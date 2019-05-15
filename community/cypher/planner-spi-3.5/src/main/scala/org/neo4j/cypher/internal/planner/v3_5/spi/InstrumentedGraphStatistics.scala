@@ -48,8 +48,7 @@ case class GraphStatisticsSnapshot(statsValues: Map[StatisticsKey, Double] = Map
       case NodesWithLabelCardinality(labelId) =>
         instrumented.nodesWithLabelCardinality(labelId)
       case NodesAllCardinality =>
-        val value = statsValues.getOrElse(NodesAllCardinality, 1.0)
-        snapshot.map.put(NodesAllCardinality, value) // Copy the old value, otherwise every create would lead to a diverged cache if we update this
+        instrumented.nodesAllCardinality()
       case CardinalityByLabelsAndRelationshipType(lhs, relType, rhs) =>
         instrumented.cardinalityByLabelsAndRelationshipType(lhs, relType, rhs)
       case IndexSelectivity(index) =>
