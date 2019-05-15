@@ -31,7 +31,16 @@ the result of the NestedPipeExpression evaluation is a collection containing the
  */
 case class NestedPipeExpression(pipe: Pipe, inner: Expression) extends Expression {
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
-    val innerState = state.withInitialContext(ctx).withDecorator(state.decorator.innerDecorator(owningPipe))
+    val maybeOwningPipe = owningPipe
+    val innerState =
+      if (maybeOwningPipe.isDefined) {
+        state.withInitialContext(ctx).withDecorator(state.decorator.innerDecorator(maybeOwningPipe.get))
+      } else {
+        // We will get inaccurate profiling information of any db hits incurred by this nested expression
+        // but at least we will be able to execute the query
+        state.withInitialContext(ctx)
+      }
+
     val results = pipe.createResults(innerState)
     val map = results.map(ctx => inner(ctx, state))
     VirtualValues.list(map.toArray:_*)

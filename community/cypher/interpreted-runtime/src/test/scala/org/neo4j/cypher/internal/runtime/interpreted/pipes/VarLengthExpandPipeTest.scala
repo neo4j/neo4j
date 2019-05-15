@@ -1078,9 +1078,9 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val pipe = VarLengthExpandPipe(src, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING,
       LazyTypes.empty, 3, None, nodeInScope = false, filteringStep)()
 
-    pipe.filteringStep.predicateExpressions.foreach(_.owningPipe should equal(pipe))
-    pred1.owningPipe should equal(pipe)
-    pred2.owningPipe should equal(pipe)
+    pipe.filteringStep.predicateExpressions.foreach(_.owningPipe.get should equal(pipe))
+    pred1.owningPipe.get should equal(pipe)
+    pred2.owningPipe.get should equal(pipe)
   }
 
   private def row(values: (String, AnyValue)*) = ExecutionContext.from(values: _*)

@@ -252,7 +252,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     val pipe = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())()
 
     // then
-    pipe.predicate.owningPipe should equal(pipe)
+    pipe.predicate.owningPipe.get should equal(pipe)
   }
 
   private def mockRelationships(rels: Relationship*) {

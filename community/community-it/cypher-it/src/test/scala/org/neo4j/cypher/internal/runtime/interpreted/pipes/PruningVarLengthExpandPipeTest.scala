@@ -318,9 +318,9 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val pred2 = True()
     val pipeUnderTest = createPipe(src, 1, 2, SemanticDirection.OUTGOING, pred1, pred2)
 
-    pipeUnderTest.filteringStep.predicateExpressions.foreach(_.owningPipe should equal(pipeUnderTest))
-    pred1.owningPipe should equal(pipeUnderTest)
-    pred2.owningPipe should equal(pipeUnderTest)
+    pipeUnderTest.filteringStep.predicateExpressions.foreach(_.owningPipe.get should equal(pipeUnderTest))
+    pred1.owningPipe.get should equal(pipeUnderTest)
+    pred2.owningPipe.get should equal(pipeUnderTest)
   }
 
   private def setUpGraph(seed: Long, POPULATION: Int, friendCount: Int = 50): IndexedSeq[Node] = {

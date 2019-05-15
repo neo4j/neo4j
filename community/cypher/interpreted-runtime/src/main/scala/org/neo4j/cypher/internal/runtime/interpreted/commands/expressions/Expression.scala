@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.TypeSafe
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.cypher.internal.v3_5.util.InternalException
 import org.neo4j.cypher.internal.v3_5.util.symbols.CypherType
 
 abstract class Expression extends TypeSafe with AstNode[Expression] {
@@ -34,8 +33,7 @@ abstract class Expression extends TypeSafe with AstNode[Expression] {
   // WARNING: MUTABILITY IN IMMUTABLE CLASSES ...
   private var _owningPipe: Option[Pipe] = None
 
-  def owningPipe: Pipe = _owningPipe.getOrElse(
-    throw new InternalException("Expressions need to be registered with it's owning Pipe, so the profiling knows where to report db-hits"))
+  def owningPipe: Option[Pipe] = _owningPipe
 
   def registerOwningPipe(pipe: Pipe): Unit = visit {
     case x:Expression => x._owningPipe = Some(pipe)
