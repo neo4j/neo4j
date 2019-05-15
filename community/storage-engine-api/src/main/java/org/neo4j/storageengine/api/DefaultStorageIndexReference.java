@@ -103,6 +103,12 @@ public class DefaultStorageIndexReference extends DefaultIndexDescriptor impleme
     }
 
     @Override
+    public DefaultStorageIndexReference withSchemaDescriptor( SchemaDescriptor schema )
+    {
+        return new DefaultStorageIndexReference( super.withSchemaDescriptor( schema ), indexReference, owningConstraintReference );
+    }
+
+    @Override
     public String name()
     {
         return name.orElse( "index_" + indexReference );

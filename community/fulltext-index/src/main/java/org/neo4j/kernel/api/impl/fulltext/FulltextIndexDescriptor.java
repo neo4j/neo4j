@@ -120,6 +120,12 @@ class FulltextIndexDescriptor implements StorageIndexReference
     }
 
     @Override
+    public FulltextIndexDescriptor withSchemaDescriptor( SchemaDescriptor schema )
+    {
+        return new FulltextIndexDescriptor( descriptor.withSchemaDescriptor( schema ), propertyNames, analyzer, analyzerName, eventuallyConsistent );
+    }
+
+    @Override
     public long indexReference()
     {
         return descriptor.indexReference();

@@ -64,4 +64,11 @@ public interface IndexDescriptor extends SchemaDescriptorSupplier
      * @return A new index descriptor with the given index provider.
      */
     IndexDescriptor withIndexProvider( IndexProviderDescriptor indexProvider );
+
+    /**
+     * Produce a new index descriptor that is the same as this index descriptor in every way, except it has the given schema descriptor.
+     * @param schema The schema descriptor used in the new index descriptor.
+     * @return A new index descriptor with the given schema descriptor.
+     */
+    IndexDescriptor withSchemaDescriptor( SchemaDescriptor schema );
 }

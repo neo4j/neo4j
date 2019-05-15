@@ -40,4 +40,14 @@ class DefaultStorageIndexReferenceTest
         assertEquals( a.providerKey(), "provider-A" );
         assertEquals( a.providerVersion(), "1.0" );
     }
+
+    @Test
+    void updatingSchemaDescriptorLeavesOriginalDescriptorUntouched()
+    {
+        DefaultStorageIndexReference a = new DefaultStorageIndexReference( forLabel( 1, 2 ), "provider-A", "1.0", 1, empty(), false, null, false );
+        DefaultStorageIndexReference b  = a.withSchemaDescriptor( forLabel( 10, 20 ) );
+
+        assertEquals( b.schema(), forLabel( 10, 20 ) );
+        assertEquals( a.schema(), forLabel( 1, 2 ) );
+    }
 }

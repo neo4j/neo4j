@@ -42,4 +42,13 @@ class IndexDescriptorTest
         assertEquals( a.providerVersion(), "1.0" );
         assertEquals( a.providerDescriptor(), new IndexProviderDescriptor( "provider-A", "1.0" ) );
     }
+    @Test
+    void updatingSchemaDescriptorLeavesOriginalDescriptorUntouched()
+    {
+        IndexDescriptor a = new IndexDescriptor( forLabel( 1, 2 ), false, empty(), new IndexProviderDescriptor( "provider-A", "1.0" ) );
+        IndexDescriptor b  = a.withSchemaDescriptor( forLabel( 10, 20 ) );
+
+        assertEquals( b.schema(), forLabel( 10, 20 ) );
+        assertEquals( a.schema(), forLabel( 1, 2 ) );
+    }
 }

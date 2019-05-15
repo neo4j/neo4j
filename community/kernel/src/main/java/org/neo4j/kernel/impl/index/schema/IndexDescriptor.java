@@ -85,6 +85,12 @@ public class IndexDescriptor extends DefaultIndexDescriptor
         return new IndexDescriptor( super.withIndexProvider( indexProvider ), indexProvider );
     }
 
+    @Override
+    public IndexDescriptor withSchemaDescriptor( SchemaDescriptor schema )
+    {
+        return new IndexDescriptor( super.withSchemaDescriptor( schema ), providerDescriptor );
+    }
+
     public IndexProviderDescriptor providerDescriptor()
     {
         return providerDescriptor;

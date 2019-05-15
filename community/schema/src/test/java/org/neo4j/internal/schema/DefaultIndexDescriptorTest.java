@@ -38,4 +38,14 @@ class DefaultIndexDescriptorTest
         assertEquals( a.providerKey(), "provider-A" );
         assertEquals( a.providerVersion(), "1.0" );
     }
+
+    @Test
+    void updatingSchemaDescriptorLeavesOriginalDescriptorUntouched()
+    {
+        DefaultIndexDescriptor a = new DefaultIndexDescriptor( forLabel( 1, 2 ), "provider-A", "1.0", empty(), false, false );
+        DefaultIndexDescriptor b = a.withSchemaDescriptor( forLabel( 10, 20 ) );
+
+        assertEquals( b.schema(), forLabel( 10, 20 ) );
+        assertEquals( a.schema(), forLabel( 1, 2 ) );
+    }
 }

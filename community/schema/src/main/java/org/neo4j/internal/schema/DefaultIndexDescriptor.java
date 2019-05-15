@@ -124,6 +124,12 @@ public class DefaultIndexDescriptor implements IndexDescriptor
     }
 
     @Override
+    public DefaultIndexDescriptor withSchemaDescriptor( SchemaDescriptor schema )
+    {
+        return new DefaultIndexDescriptor( schema, providerKey, providerVersion, name, isUnique, isEventuallyConsistent );
+    }
+
+    @Override
     public SchemaDescriptor schema()
     {
         return schema;

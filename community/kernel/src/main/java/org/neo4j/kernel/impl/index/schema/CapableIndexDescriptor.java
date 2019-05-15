@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.IndexLimitation;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.values.storable.ValueCategory;
 
 /**
@@ -43,6 +44,12 @@ public class CapableIndexDescriptor extends StoreIndexDescriptor
     public CapableIndexDescriptor withIndexProvider( IndexProviderDescriptor indexProvider )
     {
         return new CapableIndexDescriptor( super.withIndexProvider( indexProvider ), indexCapability );
+    }
+
+    @Override
+    public CapableIndexDescriptor withSchemaDescriptor( SchemaDescriptor schema )
+    {
+        return new CapableIndexDescriptor( super.withSchemaDescriptor( schema ), indexCapability );
     }
 
     @Override

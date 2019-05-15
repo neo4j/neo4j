@@ -21,6 +21,7 @@ package org.neo4j.storageengine.api;
 
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 
 public interface StorageIndexReference extends IndexDescriptor, SchemaRule
@@ -43,4 +44,7 @@ public interface StorageIndexReference extends IndexDescriptor, SchemaRule
 
     @Override
     StorageIndexReference withIndexProvider( IndexProviderDescriptor indexProvider );
+
+    @Override
+    StorageIndexReference withSchemaDescriptor( SchemaDescriptor schema );
 }
