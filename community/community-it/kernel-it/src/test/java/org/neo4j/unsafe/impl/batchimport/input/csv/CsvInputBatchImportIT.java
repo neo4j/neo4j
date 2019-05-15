@@ -153,7 +153,8 @@ public class CsvInputBatchImportIT
                 defaultFormatRelationshipFileHeader( testDefaultTimeZone ),
                 idType,
                 configuration,
-                badCollector );
+                badCollector,
+                CsvInput.NO_MONITOR );
     }
 
     private static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration lowBufferSize(
