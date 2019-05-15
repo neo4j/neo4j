@@ -113,7 +113,7 @@ class CsvImporter implements Importer
                 collect( ignoreBadRelationships, ignoreDuplicateNodes, ignoreExtraColumns ) ) )
         {
             Configuration configuration =
-                    new WrappedBatchImporterConfigurationForNeo4jAdmin( importConfiguration( null, false, databaseConfig, databaseLayout, highIO ) );
+                    new WrappedBatchImporterConfigurationForNeo4jAdmin( importConfiguration( null, false, databaseLayout, highIO ) );
 
             // Extract the default time zone from the database configuration
             ZoneId dbTimeZone = databaseConfig.get( GraphDatabaseSettings.db_temporal_timezone );

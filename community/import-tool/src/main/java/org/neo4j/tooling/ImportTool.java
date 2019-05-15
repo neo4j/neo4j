@@ -471,7 +471,7 @@ public class ImportTool
             boolean allowCacheOnHeap = args.getBoolean( Options.CACHE_ON_HEAP.key(),
                     (Boolean) Options.CACHE_ON_HEAP.defaultValue() );
             configuration = importConfiguration(
-                    processors, defaultSettingsSuitableForTests, dbConfig, maxMemory, databaseLayout,
+                    processors, defaultSettingsSuitableForTests, maxMemory, databaseLayout,
                     allowCacheOnHeap, defaultHighIO );
             boolean normalizeTypes = args.getBoolean( Options.NORMALIZE_TYPES.key(), true );
             input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader( normalizeTypes ),
@@ -729,15 +729,15 @@ public class ImportTool
     }
 
     public static org.neo4j.internal.batchimport.Configuration importConfiguration(
-            Number processors, boolean defaultSettingsSuitableForTests, Config dbConfig, DatabaseLayout databaseLayout, Boolean defaultHighIO )
+            Number processors, boolean defaultSettingsSuitableForTests, DatabaseLayout databaseLayout, Boolean defaultHighIO )
     {
         return importConfiguration(
-                processors, defaultSettingsSuitableForTests, dbConfig, null, databaseLayout,
+                processors, defaultSettingsSuitableForTests, null, databaseLayout,
                 DEFAULT.allowCacheAllocationOnHeap(), defaultHighIO );
     }
 
     public static org.neo4j.internal.batchimport.Configuration importConfiguration(
-            Number processors, boolean defaultSettingsSuitableForTests, Config dbConfig, Long maxMemory, DatabaseLayout databaseLayout,
+            Number processors, boolean defaultSettingsSuitableForTests, Long maxMemory, DatabaseLayout databaseLayout,
             boolean allowCacheOnHeap, Boolean defaultHighIO )
     {
         return new org.neo4j.internal.batchimport.Configuration()
