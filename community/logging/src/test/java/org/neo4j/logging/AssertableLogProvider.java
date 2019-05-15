@@ -561,8 +561,34 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         }
     }
 
+    /**
+     * @return a {@link MessageMatcher} which compares the raw messages, i.e. even for format strings that gets an array of arguments
+     * passed along with it the comparison will be on the message string with the formatting indicators intact and no arguments formatted in.
+     */
+    public MessageMatcher rawMessageMatcher()
+    {
+        return new MessageMatcher( logCall -> logCall.message );
+    }
+
+    /**
+     * @return a {@link MessageMatcher} which compares the formatted messages, i.e. after the message and its arguments have
+     * been formatted by {@link String#format(String, Object...)} - the resulting log messages.
+     */
+    public MessageMatcher formattedMessageMatcher()
+    {
+        return new MessageMatcher( LogCall::toLogLikeString );
+    }
+
+    /**
+     * @return a {@link MessageMatcher} which compares strings from {@link LogCall#toString()}.
+     */
+    public MessageMatcher internalToStringMessageMatcher()
+    {
+        return new MessageMatcher( LogCall::toString );
+    }
+
     @SafeVarargs
-    public final void assertContainsLogCallsMatching( int logSkipCount, Matcher<String>... matchers )
+    private final void assertContainsLogCallsMatching( int logSkipCount, Function<LogCall,String> stringifyer, Matcher<String>... matchers )
     {
         synchronized ( logCalls )
         {
@@ -572,7 +598,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
                 LogCall logCall = logCalls.get( logSkipCount + i );
                 Matcher<String> matcher = matchers[i];
 
-                if ( !matcher.matches( logCall.message ) )
+                if ( !matcher.matches( stringifyer.apply( logCall ) ) )
                 {
                     StringDescription description = new StringDescription();
                     description.appendDescriptionOf( matcher );
@@ -635,9 +661,9 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         }
     }
 
-    public void assertNoLogCallContaining( String partOfMessage )
+    private void assertNoLogCallContaining( String partOfMessage, Function<LogCall,String> stringifyer )
     {
-        if ( containsLogCallContaining( partOfMessage ) )
+        if ( containsLogCallContaining( partOfMessage, stringifyer ) )
         {
             fail( format(
                     "Expected no log statement containing '%s', but at least one found. Actual log calls were:\n%s",
@@ -645,13 +671,13 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         }
     }
 
-    public void assertLogStringContains( String partOfMessage )
+    private void assertLogStringContains( String partOfMessage, Function<LogCall,String> stringifyer )
     {
         synchronized ( logCalls )
         {
             for ( LogCall logCall : logCalls )
             {
-                if ( logCall.toLogLikeString().contains( partOfMessage ) )
+                if ( stringifyer.apply( logCall ).contains( partOfMessage ) )
                 {
                     return;
                 }
@@ -662,9 +688,9 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
                 partOfMessage, serialize( logCalls.iterator() ) ) );
     }
 
-    public void assertContainsLogCallContaining( String partOfMessage )
+    private void assertContainsLogCallContaining( String partOfMessage, Function<LogCall,String> stringifyer )
     {
-        if ( !containsLogCallContaining( partOfMessage ) )
+        if ( !containsLogCallContaining( partOfMessage, stringifyer ) )
         {
             fail( format(
                     "Expected at least one log statement containing '%s', but none found. Actual log calls were:\n%s",
@@ -672,13 +698,13 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         }
     }
 
-    private boolean containsLogCallContaining( String partOfMessage )
+    private boolean containsLogCallContaining( String partOfMessage, Function<LogCall,String> stringifyer )
     {
         synchronized ( logCalls )
         {
             for ( LogCall logCall : logCalls )
             {
-                if ( logCall.toString().contains( partOfMessage ) )
+                if ( stringifyer.apply( logCall ).contains( partOfMessage ) )
                 {
                     return true;
                 }
@@ -707,11 +733,11 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         return null;
     }
 
-    public void assertContainsMessageContaining( String partOfMessage )
+    private void assertContainsMessageContaining( String partOfMessage, Function<LogCall,String> stringifyer )
     {
         synchronized ( logCalls )
         {
-            if ( containsMessage( partOfMessage ) )
+            if ( containsMessage( partOfMessage, stringifyer ) )
             {
                 return;
             }
@@ -720,11 +746,11 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         }
     }
 
-    private boolean containsMessage( String partOfMessage )
+    private boolean containsMessage( String partOfMessage, Function<LogCall,String> stringifyer )
     {
         for ( LogCall logCall : logCalls )
         {
-            if ( logCall.toLogLikeString().contains( partOfMessage ) )
+            if ( stringifyer.apply( logCall ).contains( partOfMessage ) )
             {
                 return true;
             }
@@ -732,11 +758,11 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         return false;
     }
 
-    public void assertNoMessagesContaining( String partOfMessage )
+    private void assertNoMessagesContaining( String partOfMessage, Function<LogCall,String> stringifyer )
     {
         synchronized ( logCalls )
         {
-            if ( containsMessage( partOfMessage ) )
+            if ( containsMessage( partOfMessage, stringifyer ) )
             {
                 fail( format(
                         "Expected at least one log statement containing '%s', but none found. Actual log calls were:\n%s",
@@ -745,13 +771,13 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         }
     }
 
-    public void assertContainsMessageMatching( Matcher<String> messageMatcher )
+    private void assertContainsMessageMatching( Matcher<String> messageMatcher, Function<LogCall,String> stringifyer )
     {
         synchronized ( logCalls )
         {
             for ( LogCall logCall : logCalls )
             {
-                if ( messageMatcher.matches( logCall.message ) )
+                if ( messageMatcher.matches( stringifyer.apply( logCall ) ) )
                 {
                     return;
                 }
@@ -764,14 +790,14 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         }
     }
 
-    public final void assertContainsExactlyOneMessageMatching( Matcher<String> messageMatcher )
+    private void assertContainsExactlyOneMessageMatching( Matcher<String> messageMatcher, Function<LogCall,String> stringifyer )
     {
         boolean found = false;
         synchronized ( logCalls )
         {
             for ( LogCall logCall : logCalls )
             {
-                if ( messageMatcher.matches( logCall.message ) )
+                if ( messageMatcher.matches( stringifyer.apply( logCall ) ) )
                 {
                     if ( !found )
                     {
@@ -843,5 +869,56 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
             sb.append( "\n" );
         }
         return sb.toString();
+    }
+
+    public class MessageMatcher
+    {
+        private final Function<LogCall,String> stringifyer;
+
+        MessageMatcher( Function<LogCall,String> stringifyer )
+        {
+            this.stringifyer = stringifyer;
+        }
+
+        public void assertContainsExactlyOneMessageMatching( Matcher<String> messageMatcher )
+        {
+            AssertableLogProvider.this.assertContainsExactlyOneMessageMatching( messageMatcher, stringifyer );
+        }
+
+        public void assertContainsLogCallContaining( String partOfMessage )
+        {
+            AssertableLogProvider.this.assertContainsLogCallContaining( partOfMessage, stringifyer );
+        }
+
+        @SafeVarargs
+        public final void assertContainsLogCallsMatching( int logSkipCount, Matcher<String>... matchers )
+        {
+            AssertableLogProvider.this.assertContainsLogCallsMatching( logSkipCount, stringifyer, matchers );
+        }
+
+        public void assertContainsMessageContaining( String partOfMessage )
+        {
+            AssertableLogProvider.this.assertContainsMessageContaining( partOfMessage, stringifyer );
+        }
+
+        public void assertContainsMessageMatching( Matcher<String> messageMatcher )
+        {
+            AssertableLogProvider.this.assertContainsMessageMatching( messageMatcher, stringifyer );
+        }
+
+        public void assertLogStringContains( String partOfMessage )
+        {
+            AssertableLogProvider.this.assertLogStringContains( partOfMessage, stringifyer );
+        }
+
+        public void assertNoLogCallContaining( String partOfMessage )
+        {
+            AssertableLogProvider.this.assertNoLogCallContaining( partOfMessage, stringifyer );
+        }
+
+        public void assertNoMessagesContaining( String partOfMessage )
+        {
+            AssertableLogProvider.this.assertNoMessagesContaining( partOfMessage, stringifyer );
+        }
     }
 }

@@ -139,7 +139,7 @@ public class DetectAllRelationshipInconsistenciesIT
                         RecordType.RELATIONSHIP );
 
                 assertTrue( "Couldn't detect sabotaged relationship " + sabotage, relationshipInconsistencies > 0 );
-                logProvider.assertContainsLogCallContaining( sabotage.after.toString() );
+                logProvider.rawMessageMatcher().assertContainsLogCallContaining( sabotage.after.toString() );
             }
         }
         finally

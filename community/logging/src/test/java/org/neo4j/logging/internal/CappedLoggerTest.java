@@ -192,7 +192,7 @@ public class CappedLoggerTest
             matchers[i] = containsString( line );
         }
 
-        logProvider.assertContainsLogCallsMatching( skip, matchers );
+        logProvider.rawMessageMatcher().assertContainsLogCallsMatching( skip, matchers );
     }
 
     @Before
@@ -220,9 +220,10 @@ public class CappedLoggerTest
     public void mustLogExceptions()
     {
         logMethod.log( logger, "MESSAGE", new ArithmeticException( "EXCEPTION" ) );
-        logProvider.assertContainsLogCallContaining( "MESSAGE" );
-        logProvider.assertContainsLogCallContaining( "ArithmeticException" );
-        logProvider.assertContainsLogCallContaining( "EXCEPTION" );
+        AssertableLogProvider.MessageMatcher matcher = logProvider.internalToStringMessageMatcher();
+        matcher.assertContainsLogCallContaining( "MESSAGE" );
+        matcher.assertContainsLogCallContaining( "ArithmeticException" );
+        matcher.assertContainsLogCallContaining( "EXCEPTION" );
     }
 
     @Test( expected = IllegalArgumentException.class )
@@ -292,7 +293,7 @@ public class CappedLoggerTest
         String[] moreLines = logLines( 1, limit + 1 );
         assertLoggedLines( ArrayUtils.addAll( ArrayUtils.subarray( lines, 0, limit ), moreLines ), 1 + limit );
         logProvider.assertNone( currentLog( inLog( CappedLogger.class ), containsString( lines[limit] ) ) );
-        logProvider.assertContainsMessageMatching( containsString( moreLines[0] ) );
+        logProvider.rawMessageMatcher().assertContainsMessageMatching( containsString( moreLines[0] ) );
     }
 
     @Test
@@ -320,9 +321,9 @@ public class CappedLoggerTest
         clock.forward( 1, TimeUnit.MILLISECONDS );
         logMethod.log( logger, "### CCC ###" );
 
-        logProvider.assertContainsMessageMatching( containsString( "### AAA ###" ) );
+        logProvider.rawMessageMatcher().assertContainsMessageMatching( containsString( "### AAA ###" ) );
         logProvider.assertNone( currentLog( inLog( CappedLogger.class ), containsString( "### BBB ###" ) ) );
-        logProvider.assertContainsMessageMatching( containsString( "### CCC ###" ) );
+        logProvider.rawMessageMatcher().assertContainsMessageMatching( containsString( "### CCC ###" ) );
     }
 
     @Test
@@ -338,11 +339,11 @@ public class CappedLoggerTest
         logger.unsetTimeLimit(); // Note that we are not advancing the clock!
         logMethod.log( logger, "### EEE ###" );
 
-        logProvider.assertContainsMessageMatching( containsString( "### AAA ###" ) );
+        logProvider.rawMessageMatcher().assertContainsMessageMatching( containsString( "### AAA ###" ) );
         logProvider.assertNone( currentLog( inLog( CappedLogger.class ), containsString( "### BBB ###" ) ) );
-        logProvider.assertContainsMessageMatching( containsString( "### CCC ###" ) );
+        logProvider.rawMessageMatcher().assertContainsMessageMatching( containsString( "### CCC ###" ) );
         logProvider.assertNone( currentLog( inLog( CappedLogger.class ), containsString( "### DDD ###" ) ) );
-        logProvider.assertContainsMessageMatching( containsString( "### EEE ###" ) );
+        logProvider.rawMessageMatcher().assertContainsMessageMatching( containsString( "### EEE ###" ) );
     }
 
     @Test
@@ -355,9 +356,9 @@ public class CappedLoggerTest
         logger.reset();
         logMethod.log( logger, "### CCC ###" );
 
-        logProvider.assertContainsMessageMatching( containsString( "### AAA ###" ) );
+        logProvider.rawMessageMatcher().assertContainsMessageMatching( containsString( "### AAA ###" ) );
         logProvider.assertNone( currentLog( inLog( CappedLogger.class ), containsString( "### BBB ###" ) ) );
-        logProvider.assertContainsMessageMatching( containsString( "### CCC ###" ) );
+        logProvider.rawMessageMatcher().assertContainsMessageMatching( containsString( "### CCC ###" ) );
     }
 
     @Test
@@ -373,10 +374,10 @@ public class CappedLoggerTest
         logger.reset();
         logMethod.log( logger, "### DDD ###" );
 
-        logProvider.assertContainsMessageMatching( containsString( "### AAA ###" ) );
+        logProvider.rawMessageMatcher().assertContainsMessageMatching( containsString( "### AAA ###" ) );
         logProvider.assertNone( currentLog( inLog( CappedLogger.class ), containsString( "### BBB ###" ) ) );
         logProvider.assertNone( currentLog( inLog( CappedLogger.class ), containsString( "### CCC ###" ) ) );
-        logProvider.assertContainsMessageMatching( containsString( "### DDD ###" ) );
+        logProvider.rawMessageMatcher().assertContainsMessageMatching( containsString( "### DDD ###" ) );
     }
 
     @Test

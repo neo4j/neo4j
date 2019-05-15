@@ -313,10 +313,11 @@ public class StoreUpgraderTest
                 new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) ).migrateIfNeeded( databaseLayout );
 
         // Then
-        logProvider.assertContainsLogCallContaining( "Store files" );
-        logProvider.assertContainsLogCallContaining( "Indexes" );
-        logProvider.assertContainsLogCallContaining( "Counts store" );
-        logProvider.assertContainsLogCallContaining( "Successfully finished" );
+        AssertableLogProvider.MessageMatcher messageMatcher = logProvider.rawMessageMatcher();
+        messageMatcher.assertContainsLogCallContaining( "Store files" );
+        messageMatcher.assertContainsLogCallContaining( "Indexes" );
+        messageMatcher.assertContainsLogCallContaining( "Counts store" );
+        messageMatcher.assertContainsLogCallContaining( "Successfully finished" );
     }
 
     @Test

@@ -78,18 +78,18 @@ public class VisibleMigrationProgressMonitorTest
         monitor.completed();
 
         // then
-        logProvider.assertContainsMessageContaining( "took 1s 500ms" );
+        logProvider.formattedMessageMatcher().assertContainsMessageContaining( "took 1s 500ms" );
     }
 
     private void verifySectionReportedCorrectly( AssertableLogProvider logProvider )
     {
-        logProvider.assertContainsMessageContaining( VisibleMigrationProgressMonitor.MESSAGE_STARTED );
+        logProvider.formattedMessageMatcher().assertContainsMessageContaining( VisibleMigrationProgressMonitor.MESSAGE_STARTED );
         for ( int i = 10; i <= 100; i += 10 )
         {
-            logProvider.assertContainsMessageContaining( i + "%" );
+            logProvider.formattedMessageMatcher().assertContainsMessageContaining( i + "%" );
         }
         logProvider.assertNone( AssertableLogProvider.inLog( VisibleMigrationProgressMonitor.class ).info( containsString( "110%" ) ) );
-        logProvider.assertContainsMessageContaining( VisibleMigrationProgressMonitor.MESSAGE_COMPLETED );
+        logProvider.formattedMessageMatcher().assertContainsMessageContaining( VisibleMigrationProgressMonitor.MESSAGE_COMPLETED );
     }
 
     private void monitorSection( VisibleMigrationProgressMonitor monitor, String name, int max, int... steps )
