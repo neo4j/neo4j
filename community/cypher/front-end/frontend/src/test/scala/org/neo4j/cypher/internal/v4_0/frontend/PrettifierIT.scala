@@ -213,6 +213,9 @@ class PrettifierIT extends CypherFunSuite {
       "catalog create database `foO_Bar_42`" ->
         "CATALOG CREATE DATABASE foO_Bar_42",
 
+      "catalog create database `graph.db`" ->
+        "CATALOG CREATE DATABASE `graph.db`",
+
       "catalog DROP database foO_Bar_42" ->
         "CATALOG DROP DATABASE foO_Bar_42",
 
