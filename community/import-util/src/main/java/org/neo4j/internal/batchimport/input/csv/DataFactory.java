@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.batchimport.input.csv;
 
+import org.neo4j.csv.reader.Configuration;
 import org.neo4j.internal.batchimport.input.Input;
 
 /**

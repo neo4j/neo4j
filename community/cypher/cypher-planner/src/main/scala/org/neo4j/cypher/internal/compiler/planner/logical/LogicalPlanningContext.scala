@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.csv.reader.Configuration
 import org.neo4j.csv.reader.Configuration.DEFAULT_LEGACY_STYLE_QUOTING
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CardinalityModel, CostModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.{CostComparisonListener, LogicalPlanProducer}
 import org.neo4j.cypher.internal.ir.StrictnessMode
-import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, PlanContext, PlanningAttributes}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, PlanContext, PlanningAttributes}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
@@ -43,7 +42,7 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   errorIfShortestPathFallbackUsedAtRuntime: Boolean = false,
                                   errorIfShortestPathHasCommonNodesAtRuntime: Boolean = true,
                                   legacyCsvQuoteEscaping: Boolean = DEFAULT_LEGACY_STYLE_QUOTING,
-                                  csvBufferSize: Int = 2 * Configuration.MB,
+                                  csvBufferSize: Int = 2 * 1024 * 1024,
                                   config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
                                   leafPlanUpdater: LeafPlanUpdater = EmptyUpdater,
                                   costComparisonListener: CostComparisonListener,

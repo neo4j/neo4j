@@ -997,62 +997,27 @@ public class BufferedCharSeekerTest
 
     private static Configuration config( final int bufferSize )
     {
-        return new Configuration.Overridden( Configuration.DEFAULT )
-        {
-            @Override
-            public int bufferSize()
-            {
-                return bufferSize;
-            }
-        };
+        return Configuration.newBuilder().withBufferSize( bufferSize ).build();
     }
 
     private static Configuration withMultilineFields( Configuration config, boolean multiline )
     {
-        return new Configuration.Overridden( config )
-        {
-            @Override
-            public boolean multilineFields()
-            {
-                return multiline;
-            }
-        };
+        return config.toBuilder().withMultilineFields( multiline ).build();
     }
 
     private static Configuration withLegacyStyleQuoting( Configuration config, boolean legacyStyleQuoting )
     {
-        return new Configuration.Overridden( config )
-        {
-            @Override
-            public boolean legacyStyleQuoting()
-            {
-                return legacyStyleQuoting;
-            }
-        };
+        return config.toBuilder().withLegacyStyleQuoting( legacyStyleQuoting ).build();
     }
 
     private static Configuration withQuoteCharacter( Configuration config, char quoteCharacter )
     {
-        return new Configuration.Overridden( config )
-        {
-            @Override
-            public char quotationCharacter()
-            {
-                return quoteCharacter;
-            }
-        };
+        return config.toBuilder().withQuotationCharacter( quoteCharacter ).build();
     }
 
     private static Configuration withTrimStrings( Configuration config, boolean trimStrings )
     {
-        return new Configuration.Overridden( config )
-        {
-            @Override
-            public boolean trimStrings()
-            {
-                return trimStrings;
-            }
-        };
+        return config.toBuilder().withTrimStrings( trimStrings ).build();
     }
 
     private static class ControlledCharReadable extends CharReadable.Adapter

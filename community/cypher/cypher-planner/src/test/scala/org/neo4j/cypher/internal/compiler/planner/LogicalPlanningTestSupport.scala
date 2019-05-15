@@ -23,7 +23,6 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.csv.reader.Configuration
 import org.neo4j.cypher.internal.compiler.phases.{CreatePlannerQuery, LogicalPlanState, PlannerContext, RewriteProcedureCalls}
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.planner.logical._
@@ -237,7 +236,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     errorIfShortestPathFallbackUsedAtRuntime = false,
     errorIfShortestPathHasCommonNodesAtRuntime = true,
     legacyCsvQuoteEscaping = false,
-    csvBufferSize = Configuration.DEFAULT_BUFFER_SIZE_4MB,
+    csvBufferSize = 4 * 1024 * 1024,
     nonIndexedLabelWarningThreshold = 10000,
     planSystemCommands = false
   )

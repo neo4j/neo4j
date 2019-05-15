@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.csv.reader.Configuration;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.InputIterator;
 import org.neo4j.internal.batchimport.input.Collector;
@@ -36,7 +37,6 @@ import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.RandomEntityDataGenerator;
-import org.neo4j.internal.batchimport.input.csv.Configuration;
 import org.neo4j.internal.batchimport.input.csv.Deserialization;
 import org.neo4j.internal.batchimport.input.csv.Header;
 import org.neo4j.internal.batchimport.input.csv.StringDeserialization;

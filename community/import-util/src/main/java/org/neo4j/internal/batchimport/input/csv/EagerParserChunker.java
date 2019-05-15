@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Chunker;
+import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Source.Chunk;
 import org.neo4j.internal.batchimport.input.Collector;

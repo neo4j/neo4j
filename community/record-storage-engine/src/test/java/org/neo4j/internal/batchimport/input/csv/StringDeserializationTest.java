@@ -21,6 +21,7 @@ package org.neo4j.internal.batchimport.input.csv;
 
 import org.junit.Test;
 
+import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractors;
 
 import static org.junit.Assert.assertEquals;

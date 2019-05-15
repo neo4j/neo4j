@@ -21,7 +21,6 @@ package org.neo4j.csv.reader;
 
 import java.io.FileReader;
 
-import static org.neo4j.csv.reader.Configuration.DEFAULT;
 import static org.neo4j.csv.reader.ThreadAheadReadable.threadAhead;
 
 /**
@@ -68,19 +67,10 @@ public class CharSeekers
     public static CharSeeker charSeeker( CharReadable reader, final int bufferSize, boolean readAhead,
             final char quotationCharacter )
     {
-        return charSeeker( reader, new Configuration.Overridden( DEFAULT )
-        {
-            @Override
-            public char quotationCharacter()
-            {
-                return quotationCharacter;
-            }
-
-            @Override
-            public int bufferSize()
-            {
-                return bufferSize;
-            }
-        }, readAhead );
+        final var config = Configuration.newBuilder()
+                .withQuotationCharacter( quotationCharacter )
+                .withBufferSize( bufferSize )
+                .build();
+        return charSeeker( reader, config, readAhead );
     }
 }

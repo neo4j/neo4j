@@ -27,7 +27,7 @@ import org.neo4j.csv.reader.Source.Chunk;
 import org.neo4j.values.storable.CSVHeaderInformation;
 
 import static java.lang.String.format;
-
+import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.csv.reader.Mark.END_OF_LINE_CHARACTER;
 
 /**
@@ -282,7 +282,7 @@ public class BufferedCharSeeker implements CharSeeker
         {
             // Cypher compatibility can result in older Cypher 2.3 code being passed here with older implementations of
             // Configuration. So we need to ignore the fact that those implementations do not include trimStrings().
-            return Configuration.DEFAULT.trimStrings();
+            return COMMAS.trimStrings();
         }
     }
 

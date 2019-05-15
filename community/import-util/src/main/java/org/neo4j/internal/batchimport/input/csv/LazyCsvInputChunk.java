@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport.input.csv;
 import java.io.IOException;
 
 import org.neo4j.csv.reader.Chunker;
+import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Source.Chunk;
 import org.neo4j.internal.batchimport.input.Collector;

@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport.input.csv;
 import java.lang.reflect.Array;
 import java.util.function.Function;
 
+import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.SourceTraceability;
 
 /**

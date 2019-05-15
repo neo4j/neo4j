@@ -54,7 +54,7 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.internal.batchimport.input.csv.Configuration.COMMAS;
+import static org.neo4j.csv.reader.Configuration.COMMAS;
 
 public class ImportPanicIT
 {
@@ -98,16 +98,9 @@ public class ImportPanicIT
         }
     }
 
-    private static org.neo4j.internal.batchimport.input.csv.Configuration csvConfigurationWithLowBufferSize()
+    private static org.neo4j.csv.reader.Configuration csvConfigurationWithLowBufferSize()
     {
-        return new org.neo4j.internal.batchimport.input.csv.Configuration.Overridden( COMMAS )
-        {
-            @Override
-            public int bufferSize()
-            {
-                return BUFFER_SIZE;
-            }
-        };
+        return COMMAS.toBuilder().withBufferSize( BUFFER_SIZE ).build();
     }
 
     private static Supplier<CharReadable> fileAsCharReadable( File file )

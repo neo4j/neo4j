@@ -32,14 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MultiReadableTest
 {
-    private static final Configuration CONFIG = new Configuration.Overridden( Configuration.DEFAULT )
-    {
-        @Override
-        public int bufferSize()
-        {
-            return 200;
-        }
-    };
+    private static final Configuration CONFIG = Configuration.newBuilder().withBufferSize( 200 ).build();
     private final Mark mark = new Mark();
     private final Extractors extractors = new Extractors( ';' );
     private final int delimiter = ',';

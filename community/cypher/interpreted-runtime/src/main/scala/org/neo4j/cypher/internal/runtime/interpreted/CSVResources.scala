@@ -40,19 +40,14 @@ object CSVResources {
   val DEFAULT_BUFFER_SIZE: Int = 2 * 1024 * 1024
   val DEFAULT_QUOTE_CHAR: Char = '"'
 
-  private def config(legacyCsvQuoteEscaping: Boolean, csvBufferSize: Int) = new Configuration {
-    override def quotationCharacter(): Char = DEFAULT_QUOTE_CHAR
-
-    override def bufferSize(): Int = csvBufferSize
-
-    override def multilineFields(): Boolean = true
-
-    override def emptyQuotedStringsAsNull(): Boolean = true
-
-    override def trimStrings(): Boolean = false
-
-    override def legacyStyleQuoting(): Boolean = legacyCsvQuoteEscaping
-  }
+  private def config(legacyCsvQuoteEscaping: Boolean, csvBufferSize: Int) = Configuration.newBuilder()
+    .withQuotationCharacter(DEFAULT_QUOTE_CHAR)
+    .withBufferSize(csvBufferSize)
+    .withMultilineFields(true)
+    .withTrimStrings(false)
+    .withEmptyQuotedStringsAsNull(true)
+    .withLegacyStyleQuoting(legacyCsvQuoteEscaping)
+    .build()
 }
 
 case class CSVResource(url: URL, resource: AutoCloseable) extends AutoCloseable {

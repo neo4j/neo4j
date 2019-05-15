@@ -57,6 +57,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.batchinsert.internal.TransactionLogsInitializer;
 import org.neo4j.configuration.Config;
+import org.neo4j.csv.reader.Configuration;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -103,8 +104,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
+import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
-import static org.neo4j.internal.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
@@ -152,7 +153,7 @@ class CsvInputBatchImportIT
         }
     }
 
-    static Input csv( File nodes, File relationships, IdType idType, org.neo4j.internal.batchimport.input.csv.Configuration configuration )
+    static Input csv( File nodes, File relationships, IdType idType, Configuration configuration )
     {
         return new CsvInput(
                 DataFactories.datas( DataFactories.data( InputEntityDecorators.NO_DECORATOR, defaultCharset(), nodes ) ),
@@ -164,17 +165,9 @@ class CsvInputBatchImportIT
                 CsvInput.NO_MONITOR );
     }
 
-    private static org.neo4j.internal.batchimport.input.csv.Configuration lowBufferSize(
-            org.neo4j.internal.batchimport.input.csv.Configuration actual )
+    private static Configuration lowBufferSize( Configuration actual )
     {
-        return new org.neo4j.internal.batchimport.input.csv.Configuration.Overridden( actual )
-        {
-            @Override
-            public int bufferSize()
-            {
-                return 10_000;
-            }
-        };
+        return actual.toBuilder().withBufferSize( 10_000 ).build();
     }
 
     // ======================================================

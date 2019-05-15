@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -42,6 +43,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.configuration.Settings;
+import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
@@ -52,7 +54,6 @@ import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.MissingRelationshipDataException;
-import org.neo4j.internal.batchimport.input.csv.Configuration;
 import org.neo4j.internal.batchimport.input.csv.CsvInput;
 import org.neo4j.internal.batchimport.input.csv.DataFactory;
 import org.neo4j.internal.batchimport.input.csv.Decorator;
@@ -79,11 +80,13 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.StoreLogService;
 import org.neo4j.scheduler.JobScheduler;
 
+import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.util.Arrays.asList;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.configuration.Settings.parseLongWithUnit;
+import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
@@ -96,7 +99,6 @@ import static org.neo4j.internal.batchimport.input.Collectors.silentBadCollector
 import static org.neo4j.internal.batchimport.input.InputEntityDecorators.NO_DECORATOR;
 import static org.neo4j.internal.batchimport.input.InputEntityDecorators.additiveLabels;
 import static org.neo4j.internal.batchimport.input.InputEntityDecorators.defaultRelationshipType;
-import static org.neo4j.internal.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.data;
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
@@ -166,11 +168,11 @@ public class ImportTool
                         + "`\"\\\"Go away\\\", he said.\"` are supported. "
                         + "If you have set \"`'`\" to be used as the quotation character, "
                         + "you could write the previous example like this instead: " + "`'\"Go away\", he said.'`" ),
-        MULTILINE_FIELDS( "multiline-fields", org.neo4j.csv.reader.Configuration.DEFAULT.multilineFields(),
+        MULTILINE_FIELDS( "multiline-fields", COMMAS.multilineFields(),
                 "<true/false>",
                 "Whether or not fields from input source can span multiple lines, i.e. contain newline characters." ),
 
-        TRIM_STRINGS( "trim-strings", org.neo4j.csv.reader.Configuration.DEFAULT.trimStrings(),
+        TRIM_STRINGS( "trim-strings", COMMAS.trimStrings(),
                 "<true/false>",
                 "Whether or not strings should be trimmed for whitespaces." ),
 
@@ -180,7 +182,7 @@ public class ImportTool
                         + "character sets in the JVM, as provided by Charset#availableCharsets(). "
                         + "If no input encoding is provided, the default character set of the JVM will be used.",
                 true ),
-        IGNORE_EMPTY_STRINGS( "ignore-empty-strings", org.neo4j.csv.reader.Configuration.DEFAULT.emptyQuotedStringsAsNull(),
+        IGNORE_EMPTY_STRINGS( "ignore-empty-strings", COMMAS.emptyQuotedStringsAsNull(),
                 "<true/false>",
                 "Whether or not empty string fields, i.e. \"\" from input source are ignored, i.e. treated as null." ),
         ID_TYPE( "id-type", IdType.STRING,
@@ -243,10 +245,10 @@ public class ImportTool
                         + GraphDatabaseSettings.dense_node_threshold.name() + "\n"
                         + GraphDatabaseSettings.string_block_size.name() + "\n"
                         + GraphDatabaseSettings.array_block_size.name(), true ),
-        LEGACY_STYLE_QUOTING( "legacy-style-quoting", Configuration.DEFAULT_LEGACY_STYLE_QUOTING,
+        LEGACY_STYLE_QUOTING( "legacy-style-quoting", org.neo4j.csv.reader.Configuration.DEFAULT_LEGACY_STYLE_QUOTING,
                 "<true/false>",
                 "Whether or not backslash-escaped quote e.g. \\\" is interpreted as inner quote." ),
-        READ_BUFFER_SIZE( "read-buffer-size", org.neo4j.csv.reader.Configuration.DEFAULT.bufferSize(),
+        READ_BUFFER_SIZE( "read-buffer-size", COMMAS.bufferSize(),
                 "<bytes, e.g. 10k, 4M>",
                 "Size of each buffer for reading input data. It has to at least be large enough to hold the " +
                 "biggest single value in the input data." ),
@@ -933,86 +935,39 @@ public class ImportTool
 
     public static Configuration csvConfiguration( Args args, final boolean defaultSettingsSuitableForTests )
     {
-        final Configuration defaultConfiguration = COMMAS;
-        final Character specificDelimiter = args.interpretOption( Options.DELIMITER.key(),
-                Converters.optional(), CHARACTER_CONVERTER );
-        final Character specificArrayDelimiter = args.interpretOption( Options.ARRAY_DELIMITER.key(),
-                Converters.optional(), CHARACTER_CONVERTER );
-        final Character specificQuote = args.interpretOption( Options.QUOTE.key(), Converters.optional(),
-                CHARACTER_CONVERTER );
-        final Boolean multiLineFields = args.getBoolean( Options.MULTILINE_FIELDS.key(), null );
-        final Boolean emptyStringsAsNull = args.getBoolean( Options.IGNORE_EMPTY_STRINGS.key(), null );
-        final Boolean trimStrings = args.getBoolean( Options.TRIM_STRINGS.key(), null);
-        final Boolean legacyStyleQuoting = args.getBoolean( Options.LEGACY_STYLE_QUOTING.key(), null );
-        final Number bufferSize = args.has( Options.READ_BUFFER_SIZE.key() )
-                ? parseLongWithUnit( args.get( Options.READ_BUFFER_SIZE.key(), null ) )
-                : null;
-        return new Configuration.Default()
-        {
-            @Override
-            public char delimiter()
-            {
-                return specificDelimiter != null
-                        ? specificDelimiter
-                        : defaultConfiguration.delimiter();
-            }
+        final var config = COMMAS.toBuilder();
 
-            @Override
-            public char arrayDelimiter()
-            {
-                return specificArrayDelimiter != null
-                        ? specificArrayDelimiter
-                        : defaultConfiguration.arrayDelimiter();
-            }
+        Optional.ofNullable( args.interpretOption( Options.DELIMITER.key(), Converters.optional(), CHARACTER_CONVERTER ) )
+                .ifPresent( config::withDelimiter );
 
-            @Override
-            public char quotationCharacter()
-            {
-                return specificQuote != null
-                        ? specificQuote
-                        : defaultConfiguration.quotationCharacter();
-            }
+        Optional.ofNullable( args.interpretOption( Options.ARRAY_DELIMITER.key(), Converters.optional(), CHARACTER_CONVERTER ) )
+                .ifPresent( config::withArrayDelimiter );
 
-            @Override
-            public boolean multilineFields()
-            {
-                return multiLineFields != null
-                        ? multiLineFields
-                        : defaultConfiguration.multilineFields();
-            }
+        Optional.ofNullable( args.interpretOption( Options.QUOTE.key(), Converters.optional(), CHARACTER_CONVERTER ) )
+                .ifPresent( config::withQuotationCharacter );
 
-            @Override
-            public boolean emptyQuotedStringsAsNull()
-            {
-                return emptyStringsAsNull != null
-                        ? emptyStringsAsNull
-                        : defaultConfiguration.emptyQuotedStringsAsNull();
-            }
+        Optional.ofNullable( args.getBoolean( Options.MULTILINE_FIELDS.key(), null ) )
+                .ifPresent( config::withMultilineFields );
 
-            @Override
-            public int bufferSize()
-            {
-                return bufferSize != null
-                        ? bufferSize.intValue()
-                        : defaultSettingsSuitableForTests ? 10_000 : super.bufferSize();
-            }
+        Optional.ofNullable( args.getBoolean( Options.IGNORE_EMPTY_STRINGS.key(), null ) )
+                .ifPresent( config::withEmptyQuotedStringsAsNull );
 
-            @Override
-            public boolean trimStrings()
-            {
-                return trimStrings != null
-                       ? trimStrings
-                       : defaultConfiguration.trimStrings();
-            }
+        Optional.ofNullable( args.getBoolean( Options.TRIM_STRINGS.key(), null ) )
+                .ifPresent( config::withTrimStrings );
 
-            @Override
-            public boolean legacyStyleQuoting()
-            {
-                return legacyStyleQuoting != null
-                        ? legacyStyleQuoting
-                        : defaultConfiguration.legacyStyleQuoting();
-            }
-        };
+        Optional.ofNullable( args.getBoolean( Options.LEGACY_STYLE_QUOTING.key(), null ) )
+                .ifPresent( config::withLegacyStyleQuoting );
+
+        Optional.ofNullable( args.get( Options.READ_BUFFER_SIZE.key(), null ) )
+                .map( s -> toIntExact( parseLongWithUnit( s ) ) )
+                .ifPresentOrElse( config::withBufferSize, () -> {
+                    if ( defaultSettingsSuitableForTests )
+                    {
+                        config.withBufferSize( 10_000 );
+                    }
+                } );
+
+        return config.build();
     }
 
     private static final Function<String,IdType> TO_ID_TYPE = from -> IdType.valueOf( from.toUpperCase() );

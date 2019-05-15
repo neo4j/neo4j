@@ -28,6 +28,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.Settings;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.CharSeekers;
+import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Readables;
 import org.neo4j.internal.batchimport.BatchImporter;
@@ -38,7 +39,6 @@ import org.neo4j.internal.batchimport.input.DataGeneratorInput;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.Input;
-import org.neo4j.internal.batchimport.input.csv.Configuration;
 import org.neo4j.internal.batchimport.input.csv.DataFactories;
 import org.neo4j.internal.batchimport.input.csv.Header;
 import org.neo4j.internal.helpers.Args;
@@ -197,16 +197,8 @@ public class QuickImport
                 idType, groups );
     }
 
-    private static CharSeeker seeker( String definition, Configuration config )
+    private static CharSeeker seeker( String definition, org.neo4j.csv.reader.Configuration config )
     {
-        return CharSeekers.charSeeker( Readables.wrap( definition ),
-                new org.neo4j.csv.reader.Configuration.Overridden( config )
-        {
-            @Override
-            public int bufferSize()
-            {
-                return 10_000;
-            }
-        }, false );
+        return CharSeekers.charSeeker( Readables.wrap( definition ), config.toBuilder().withBufferSize( 10_000 ).build(), false );
     }
 }

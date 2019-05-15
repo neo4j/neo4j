@@ -21,7 +21,7 @@ package org.neo4j.tooling;
 
 import java.util.function.Function;
 
-import org.neo4j.internal.batchimport.input.csv.Configuration;
+import org.neo4j.csv.reader.Configuration;
 
 /**
  * Converts a string expression into a character to be used as delimiter, array delimiter, or quote character. Can be

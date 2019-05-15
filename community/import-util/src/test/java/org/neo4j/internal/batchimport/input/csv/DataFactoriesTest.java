@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.CharSeekers;
+import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.MultiReadable;
@@ -45,8 +46,8 @@ import static org.neo4j.internal.helpers.ArrayUtil.array;
 public class DataFactoriesTest
 {
     private static final int BUFFER_SIZE = 10_000;
-    private static final Configuration COMMAS = withBufferSize( Configuration.COMMAS, BUFFER_SIZE );
-    private static final Configuration TABS = withBufferSize( Configuration.TABS, BUFFER_SIZE );
+    private static final Configuration COMMAS = Configuration.COMMAS.toBuilder().withBufferSize( BUFFER_SIZE ).build();
+    private static final Configuration TABS = Configuration.TABS.toBuilder().withBufferSize( BUFFER_SIZE ).build();
 
     private final Groups groups = new Groups();
 
@@ -261,31 +262,11 @@ public class DataFactoriesTest
         }
     }
 
-    private static final org.neo4j.csv.reader.Configuration SEEKER_CONFIG =
-            new org.neo4j.csv.reader.Configuration.Overridden( new org.neo4j.csv.reader.Configuration.Default() )
-    {
-        @Override
-        public int bufferSize()
-        {
-            return 1_000;
-        }
-    };
+    private static final Configuration SEEKER_CONFIG = Configuration.TABS.toBuilder().withBufferSize( 1000 ).build();
 
     private CharSeeker seeker( String data )
     {
         return CharSeekers.charSeeker( wrap( data ), SEEKER_CONFIG, false );
-    }
-
-    private static Configuration withBufferSize( Configuration config, final int bufferSize )
-    {
-        return new Configuration.Overridden( config )
-        {
-            @Override
-            public int bufferSize()
-            {
-                return bufferSize;
-            }
-        };
     }
 
     private Header.Entry entry( String name, Type type, Extractor<?> extractor )

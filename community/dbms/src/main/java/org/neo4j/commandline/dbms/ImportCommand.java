@@ -40,9 +40,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
-import static org.neo4j.csv.reader.Configuration.DEFAULT;
+import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
-import static org.neo4j.internal.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.tooling.ImportTool.parseFileArgumentList;
 
 public class ImportCommand implements AdminCommand
@@ -92,7 +91,7 @@ public class ImportCommand implements AdminCommand
             .withArgument( new OptionalBooleanArg( "ignore-missing-nodes", false,
                     "If relationships referring to missing nodes should be ignored during the import." ) )
             .withArgument( new OptionalBooleanArg( "multiline-fields",
-                    DEFAULT.multilineFields(),
+                    COMMAS.multilineFields(),
                     "Whether or not fields from input source can span multiple lines," +
                             " i.e. contain newline characters." ) )
             .withArgument( new OptionalNamedArg( "delimiter",

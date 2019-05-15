@@ -41,6 +41,7 @@ import static java.lang.Character.isWhitespace;
 import static java.lang.reflect.Modifier.isStatic;
 import static java.time.ZoneOffset.UTC;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToByte;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToShort;
@@ -110,12 +111,12 @@ public class Extractors
 
     public Extractors( char arrayDelimiter )
     {
-        this( arrayDelimiter, Configuration.DEFAULT.emptyQuotedStringsAsNull(), Configuration.DEFAULT.trimStrings(), inUTC );
+        this( arrayDelimiter, COMMAS.emptyQuotedStringsAsNull(), COMMAS.trimStrings(), inUTC );
     }
 
     public Extractors( char arrayDelimiter, boolean emptyStringsAsNull )
     {
-        this( arrayDelimiter, emptyStringsAsNull, Configuration.DEFAULT.trimStrings(), inUTC );
+        this( arrayDelimiter, emptyStringsAsNull, COMMAS.trimStrings(), inUTC );
     }
 
     public Extractors( char arrayDelimiter, boolean emptyStringsAsNull, boolean trimStrings )

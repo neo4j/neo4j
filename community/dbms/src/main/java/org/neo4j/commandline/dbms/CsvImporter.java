@@ -30,8 +30,6 @@ import java.util.function.Supplier;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
-import org.neo4j.commandline.dbms.config.WrappedBatchImporterConfigurationForNeo4jAdmin;
-import org.neo4j.commandline.dbms.config.WrappedCsvInputConfigurationForNeo4jAdmin;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.batchimport.Configuration;
@@ -40,6 +38,7 @@ import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.csv.CsvInput;
 import org.neo4j.internal.helpers.Args;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.tooling.ImportTool;
@@ -112,8 +111,7 @@ class CsvImporter implements Importer
         try ( Collector badCollector = badCollector( badOutput, isIgnoringSomething() ? BadCollector.UNLIMITED_TOLERANCE : 0,
                 collect( ignoreBadRelationships, ignoreDuplicateNodes, ignoreExtraColumns ) ) )
         {
-            Configuration configuration =
-                    new WrappedBatchImporterConfigurationForNeo4jAdmin( importConfiguration( null, false, databaseLayout, highIO ) );
+            Configuration configuration = importConfiguration( null, false, databaseLayout, highIO );
 
             // Extract the default time zone from the database configuration
             ZoneId dbTimeZone = databaseConfig.get( GraphDatabaseSettings.db_temporal_timezone );
@@ -121,7 +119,12 @@ class CsvImporter implements Importer
 
             CsvInput input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader( defaultTimeZone, normalizeTypes ),
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader( defaultTimeZone, normalizeTypes ), idType,
-                    new WrappedCsvInputConfigurationForNeo4jAdmin( csvConfiguration( args, false ) ),
+                    csvConfiguration( args, false ).toBuilder()
+                            .withBufferSize( (int) ByteUnit.mebiBytes( 4 ) )
+                            .withTrimStrings( true )
+                            .withEmptyQuotedStringsAsNull( false )
+                            .withLegacyStyleQuoting( false )
+                            .build(),
                     new CsvInput.PrintingMonitor( outsideWorld.outStream() ) );
 
             ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), outsideWorld.inStream(), databaseLayout, reportFile, fs,

@@ -29,6 +29,7 @@ import org.neo4j.csv.reader.CharReadableChunker.ChunkImpl;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Chunker;
 import org.neo4j.csv.reader.ClosestNewLineChunker;
+import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Readables;
 import org.neo4j.csv.reader.Source;

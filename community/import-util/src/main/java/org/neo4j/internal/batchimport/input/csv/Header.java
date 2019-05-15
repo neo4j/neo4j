@@ -23,6 +23,7 @@ import java.io.PrintStream;
 import java.util.Arrays;
 
 import org.neo4j.csv.reader.CharSeeker;
+import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;

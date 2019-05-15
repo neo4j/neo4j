@@ -22,39 +22,92 @@ package org.neo4j.csv.reader;
 /**
  * Configuration options around reading CSV data, or similar.
  */
-public interface Configuration
+public class Configuration
 {
+    public static final Configuration COMMAS = newBuilder()
+            .withDelimiter( ',' )
+            .withArrayDelimiter( ';' )
+            .build();
+
+    public static final Configuration TABS = newBuilder()
+            .withDelimiter( '\t' )
+            .withArrayDelimiter( ',' )
+            .build();
+
     /**
      * TODO: Our intention is to flip this to false (which means to comply with RFC4180) at some point
      * because of how it better complies with common expectancy of behavior. It may be least disruptive
      * to do this when changing major version of the product.
      */
-    boolean DEFAULT_LEGACY_STYLE_QUOTING = true;
+    public static final boolean DEFAULT_LEGACY_STYLE_QUOTING = true;
 
-    /**
-     * Character to regard as quotes. Quoted values can contain newline characters and even delimiters.
-     */
-    char quotationCharacter();
+    private final char quotationCharacter;
+    private final char delimiter;
+    private final char arrayDelimiter;
+    private final int bufferSize;
+    private final boolean multilineFields;
+    private final boolean trimStrings;
+    private final boolean emptyQuotedStringsAsNull;
+    private final boolean legacyStyleQuoting;
+
+    private Configuration( Builder b )
+    {
+        this.quotationCharacter = b.quotationCharacter;
+        this.delimiter = b.delimiter;
+        this.arrayDelimiter = b.arrayDelimiter;
+        this.bufferSize = b.bufferSize;
+        this.multilineFields = b.multilineFields;
+        this.trimStrings = b.trimStrings;
+        this.emptyQuotedStringsAsNull = b.emptyQuotedStringsAsNull;
+        this.legacyStyleQuoting = b.legacyStyleQuoting;
+    }
+
+    public char quotationCharacter()
+    {
+        return quotationCharacter;
+    }
+
+    public char delimiter()
+    {
+        return delimiter;
+    }
+
+    public char arrayDelimiter()
+    {
+        return arrayDelimiter;
+    }
 
     /**
      * Data buffer size.
      */
-    int bufferSize();
+    public int bufferSize()
+    {
+        return bufferSize;
+    }
 
     /**
      * Whether or not fields are allowed to have newline characters in them, i.e. span multiple lines.
      */
-    boolean multilineFields();
+    public boolean multilineFields()
+    {
+        return multilineFields;
+    }
 
     /**
      * Whether or not strings should be trimmed for whitespaces.
      */
-    boolean trimStrings();
+    public boolean trimStrings()
+    {
+        return trimStrings;
+    }
 
     /**
      * @return {@code true} for treating empty strings, i.e. {@code ""} as null, instead of an empty string.
      */
-    boolean emptyQuotedStringsAsNull();
+    public boolean emptyQuotedStringsAsNull()
+    {
+        return emptyQuotedStringsAsNull;
+    }
 
     /**
      * Adds a default implementation returning {@link #DEFAULT_LEGACY_STYLE_QUOTING}, this to not requiring
@@ -65,92 +118,91 @@ public interface Configuration
      * "standard" RFC for CSV parsing, see https://tools.ietf.org/html/rfc4180. This also makes it impossible
      * to enter some combinations of characters, e.g. <code>"""abc\"""</code>, when expecting <code>"abc\"</code>.
      */
-    default boolean legacyStyleQuoting()
+    public boolean legacyStyleQuoting()
     {
-        return DEFAULT_LEGACY_STYLE_QUOTING;
-    }
-    int KB = 1024;
-    int MB = KB * KB;
-    int DEFAULT_BUFFER_SIZE_4MB = 4 * MB;
-
-    class Default implements Configuration
-    {
-        @Override
-        public char quotationCharacter()
-        {
-            return '"';
-        }
-
-        @Override
-        public int bufferSize()
-        {
-            return DEFAULT_BUFFER_SIZE_4MB;
-        }
-
-        @Override
-        public boolean multilineFields()
-        {
-            return false;
-        }
-
-        @Override
-        public boolean emptyQuotedStringsAsNull()
-        {
-            return false;
-        }
-
-        @Override
-        public boolean trimStrings()
-        {
-            return false;
-        }
+        return legacyStyleQuoting;
     }
 
-    Configuration DEFAULT = new Default();
-
-    class Overridden implements Configuration
+    public Builder toBuilder()
     {
-        private final Configuration defaults;
+        return new Builder()
+                .withQuotationCharacter( quotationCharacter )
+                .withDelimiter( delimiter )
+                .withArrayDelimiter( arrayDelimiter )
+                .withBufferSize( bufferSize )
+                .withMultilineFields( multilineFields )
+                .withTrimStrings( trimStrings )
+                .withEmptyQuotedStringsAsNull( emptyQuotedStringsAsNull )
+                .withLegacyStyleQuoting( legacyStyleQuoting );
+    }
 
-        public Overridden( Configuration defaults )
+    public static Builder newBuilder()
+    {
+        return new Builder();
+    }
+
+    public static class Builder
+    {
+        private char quotationCharacter = '"';
+        private char delimiter = ',';
+        private char arrayDelimiter = ';';
+        private int bufferSize = 4 * 1024 * 1024;
+        private boolean multilineFields;
+        private boolean trimStrings;
+        private boolean emptyQuotedStringsAsNull;
+        private boolean legacyStyleQuoting = DEFAULT_LEGACY_STYLE_QUOTING;
+
+        public Builder withQuotationCharacter( char quotationCharacter )
         {
-            this.defaults = defaults;
+            this.quotationCharacter = quotationCharacter;
+            return this;
         }
 
-        @Override
-        public char quotationCharacter()
+        public Builder withDelimiter( char delimiter )
         {
-            return defaults.quotationCharacter();
+            this.delimiter = delimiter;
+            return this;
         }
 
-        @Override
-        public int bufferSize()
+        public Builder withArrayDelimiter( char arrayDelimiter )
         {
-            return defaults.bufferSize();
+            this.arrayDelimiter = arrayDelimiter;
+            return this;
         }
 
-        @Override
-        public boolean multilineFields()
+        public Builder withBufferSize( int bufferSize )
         {
-            return defaults.multilineFields();
+            this.bufferSize = bufferSize;
+            return this;
         }
 
-        @Override
-        public boolean emptyQuotedStringsAsNull()
+        public Builder withMultilineFields( boolean multilineFields )
         {
-            return defaults.emptyQuotedStringsAsNull();
+            this.multilineFields = multilineFields;
+            return this;
         }
 
-        @Override
-        public boolean trimStrings()
+        public Builder withTrimStrings( boolean trimStrings )
         {
-            return defaults.trimStrings();
+            this.trimStrings = trimStrings;
+            return this;
         }
 
-        @Override
-        public boolean legacyStyleQuoting()
+        public Builder withEmptyQuotedStringsAsNull( boolean emptyQuotedStringsAsNull )
         {
-            return defaults.legacyStyleQuoting();
+            this.emptyQuotedStringsAsNull = emptyQuotedStringsAsNull;
+            return this;
+        }
+
+        public Builder withLegacyStyleQuoting( boolean legacyStyleQuoting )
+        {
+            this.legacyStyleQuoting = legacyStyleQuoting;
+            return this;
+        }
+
+        public Configuration build()
+        {
+            return new Configuration( this );
         }
     }
 }

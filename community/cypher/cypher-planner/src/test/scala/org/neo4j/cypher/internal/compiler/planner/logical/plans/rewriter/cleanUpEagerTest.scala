@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
-import org.neo4j.csv.reader.Configuration.DEFAULT_BUFFER_SIZE_4MB
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.plans._
@@ -28,6 +27,7 @@ import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
+  val DEFAULT_BUFFER_SIZE_4MB: Int = 4 * 1024 * 1024
 
   test("should concatenate two eagers after eachother") {
     val leaf = newMockedLogicalPlan()
