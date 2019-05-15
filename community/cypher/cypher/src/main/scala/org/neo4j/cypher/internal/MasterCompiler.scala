@@ -47,10 +47,7 @@ object MasterCompiler {
 /**
   * Selects the correct cypher implementation based on a pre-parsed query.
   */
-class MasterCompiler(graph: GraphDatabaseQueryService,
-                     kernelMonitors: KernelMonitors,
-                     config: CypherConfiguration,
-                     logProvider: LogProvider,
+class MasterCompiler(config: CypherConfiguration,
                      compilerLibrary: CompilerLibrary) {
 
   /**

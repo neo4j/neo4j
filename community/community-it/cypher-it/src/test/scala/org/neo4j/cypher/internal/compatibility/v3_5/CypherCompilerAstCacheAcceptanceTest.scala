@@ -71,15 +71,15 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       cypher.CypherPlannerOption.default,
       CypherUpdateStrategy.default,
       () => 1)
-    createCompiler(planner, config)
+    createCompiler(planner, log, config)
   }
 
-  private def createCompiler(planner: CypherPlanner, config: CypherPlannerConfiguration):
+  private def createCompiler(planner: CypherPlanner, log: Log, config: CypherPlannerConfiguration):
   CypherCurrentCompiler[RuntimeContext] = {
     CypherCurrentCompiler(
       planner,
       CommunityRuntimeFactory.getRuntime(CypherRuntimeOption.default, disallowFallback = true),
-      CommunityRuntimeContextCreator(config),
+      CommunityRuntimeContextCreator(log, config),
       kernelMonitors)
 
   }
@@ -131,7 +131,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       CypherUpdateStrategy.default,
       () => 1)
 
-    compiler3_4 = createCompiler(planner3_4, config3_4)
+    compiler3_4 = createCompiler(planner3_4, NullLog.getInstance, config3_4)
 
     kernelMonitors.addMonitorListener(counter)
 

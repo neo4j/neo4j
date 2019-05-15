@@ -34,6 +34,7 @@ import org.neo4j.cypher.{CypherRuntimeOption, InvalidArgumentException, exceptio
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.cypher.internal.v3_5.frontend.phases.{InternalNotificationLogger, RecordingNotificationLogger}
 import org.neo4j.cypher.internal.v3_5.util.InternalNotification
+import org.neo4j.logging.Log
 
 import scala.concurrent.duration.Duration
 import scala.util.Try
@@ -64,6 +65,7 @@ abstract class RuntimeContext {
   def readOnly: Boolean
   def config: CypherPlannerConfiguration
   def compileExpressions: Boolean
+  def log: Log
 }
 
 /**
@@ -119,8 +121,13 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
           )
         )
 
-      if (executionPlan.isFailure && requestedRuntime != CypherRuntimeOption.default)
-        logger.log(RuntimeUnsupportedNotification)
+      if (executionPlan.isFailure) {
+        context.log.debug(s"Runtime ${runtime.getClass.getSimpleName} failed to compile query ${logicalPlan.queryText}", executionPlan.failed.get)
+        if (requestedRuntime != CypherRuntimeOption.default) {
+          logger.log(RuntimeUnsupportedNotification)
+        }
+      }
+
     }
     val notifications = logger.notifications
 
