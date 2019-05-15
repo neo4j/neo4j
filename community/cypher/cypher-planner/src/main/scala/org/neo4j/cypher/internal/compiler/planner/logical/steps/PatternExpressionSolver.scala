@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.{LogicalPlanningContext, patternExpressionRewriter}
-import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph}
+import org.neo4j.cypher.internal.ir.{HasMappableExpressions, InterestingOrder, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.{Argument, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Exists
@@ -301,6 +301,33 @@ object PatternExpressionSolver {
         case f: FunctionInvocation => f.function == Exists
         case _ => false
       })
+    }
+  }
+
+  case class ForMappable[T]() {
+    def solve(inner: LogicalPlan, mappable: HasMappableExpressions[T], interestingOrder: InterestingOrder, context: LogicalPlanningContext): (T, LogicalPlan) = {
+      val solver = PatternExpressionSolver.solverFor(inner, interestingOrder, context)
+      val rewrittenExpression = mappable.mapExpressions(solver.solve(_))
+      val rewrittenInner = solver.rewrittenPlan()
+      (rewrittenExpression, rewrittenInner)
+    }
+  }
+
+  object ForMulti {
+    def solve(inner: LogicalPlan, expressions: Seq[Expression], interestingOrder: InterestingOrder, context: LogicalPlanningContext): (Seq[Expression], LogicalPlan) = {
+      val solver = PatternExpressionSolver.solverFor(inner, interestingOrder, context)
+      val rewrittenExpressions: Seq[Expression] = expressions.map(solver.solve(_))
+      val rewrittenInner = solver.rewrittenPlan()
+      (rewrittenExpressions, rewrittenInner)
+    }
+  }
+
+  object ForSingle  {
+    def solve(inner: LogicalPlan, expression: Expression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): (Expression, LogicalPlan) = {
+      val solver = PatternExpressionSolver.solverFor(inner, interestingOrder, context)
+      val rewrittenExpression = solver.solve(expression)
+      val rewrittenInner = solver.rewrittenPlan()
+      (rewrittenExpression, rewrittenInner)
     }
   }
 }

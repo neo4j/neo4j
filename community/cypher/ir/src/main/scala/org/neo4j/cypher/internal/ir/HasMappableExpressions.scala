@@ -19,13 +19,8 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LabelName}
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
 
-/**
-  * Create a new node with the provided labels and properties and assign it to the variable 'idName'.
-  */
-case class CreateNode(idName: String, labels: Seq[LabelName], properties: Option[Expression]) extends HasMappableExpressions[CreateNode] {
-  def dependencies: Set[String] = properties.map(_.dependencies.map(_.name)).getOrElse(Set.empty)
-
-  override def mapExpressions(f: Expression => Expression): CreateNode = copy(properties = properties.map(f))
+trait HasMappableExpressions[T] {
+  def mapExpressions(f: Expression => Expression): T
 }

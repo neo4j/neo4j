@@ -29,7 +29,7 @@ case class CreateRelationship(idName: String,
                               relType: RelTypeName,
                               rightNode: String,
                               direction: SemanticDirection,
-                              properties: Option[Expression]) {
+                              properties: Option[Expression]) extends HasMappableExpressions[CreateRelationship] {
 
   val (startNode, endNode) =
     if (direction == SemanticDirection.OUTGOING || direction == SemanticDirection.BOTH) (leftNode, rightNode)
@@ -37,5 +37,5 @@ case class CreateRelationship(idName: String,
 
   def dependencies: Set[String] = properties.map(_.dependencies.map(_.name)).getOrElse(Set.empty) + leftNode + rightNode
 
-  def mapProperties(f: Expression => Expression): CreateRelationship = copy(properties = properties.map(f))
+  override def mapExpressions(f: Expression => Expression): CreateRelationship = copy(properties = properties.map(f))
 }
