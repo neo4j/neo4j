@@ -57,4 +57,11 @@ public interface IndexDescriptor extends SchemaDescriptorSupplier
     String providerKey();
 
     String providerVersion();
+
+    /**
+     * Produce a new index descriptor that is the same as this index descriptor in every way, except it has the given index provider descriptor.
+     * @param indexProvider The index provider descriptor used in the new index descriptor.
+     * @return A new index descriptor with the given index provider.
+     */
+    IndexDescriptor withIndexProvider( IndexProviderDescriptor indexProvider );
 }

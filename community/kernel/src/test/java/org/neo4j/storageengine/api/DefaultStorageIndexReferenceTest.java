@@ -19,28 +19,25 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.junit.jupiter.api.Test;
+
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.SchemaRule;
 
-public interface StorageIndexReference extends IndexDescriptor, SchemaRule
+import static java.util.Optional.empty;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+
+class DefaultStorageIndexReferenceTest
 {
-    /**
-     * @return reference to this index.
-     */
-    long indexReference();
+    @Test
+    void updatingIndexProviderLeavesOriginalDescriptorUntouched()
+    {
+        DefaultStorageIndexReference a = new DefaultStorageIndexReference( forLabel( 1, 2 ), "provider-A", "1.0", 1, empty(), false, null, false );
+        DefaultStorageIndexReference b  = a.withIndexProvider( new IndexProviderDescriptor( "provider-B", "2.0" ) );
 
-    /**
-     * @return whether or not this index has an owning constraint. This method is only valid to call if this index is {@link #isUnique() unique}.
-     */
-    boolean hasOwningConstraintReference();
-
-    /**
-     * @return reference to the owning constraint, if present.
-     * @throws IllegalStateException if this isn't a {@link #isUnique() unique} index or if this index doesn't have an owning constraint.
-     */
-    long owningConstraintReference();
-
-    @Override
-    StorageIndexReference withIndexProvider( IndexProviderDescriptor indexProvider );
+        assertEquals( b.providerKey(), "provider-B" );
+        assertEquals( b.providerVersion(), "2.0" );
+        assertEquals( a.providerKey(), "provider-A" );
+        assertEquals( a.providerVersion(), "1.0" );
+    }
 }

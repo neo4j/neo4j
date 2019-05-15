@@ -59,6 +59,12 @@ public class IndexDescriptor extends DefaultIndexDescriptor
         this.providerDescriptor = providerDescriptor;
     }
 
+    protected IndexDescriptor( DefaultIndexDescriptor descriptor, IndexProviderDescriptor providerDescriptor )
+    {
+        super( descriptor );
+        this.providerDescriptor = providerDescriptor;
+    }
+
     // METHODS
 
     @Override
@@ -71,6 +77,12 @@ public class IndexDescriptor extends DefaultIndexDescriptor
     public String name()
     {
         return name.orElse( UNNAMED_INDEX );
+    }
+
+    @Override
+    public IndexDescriptor withIndexProvider( IndexProviderDescriptor indexProvider )
+    {
+        return new IndexDescriptor( super.withIndexProvider( indexProvider ), indexProvider );
     }
 
     public IndexProviderDescriptor providerDescriptor()

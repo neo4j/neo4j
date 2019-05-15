@@ -296,7 +296,7 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
     /**
      * Produce a new schema descriptor that is the same as this schema descriptor in every way, except it has the given index config.
      * @param indexConfig The index config of the new schema descriptor.
-     * @return a new schema descriptor with the given index config.
+     * @return A new schema descriptor with the given index config.
      */
     SchemaDescriptor withIndexConfig( IndexConfig indexConfig );
 }

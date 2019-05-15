@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.storageengine.api.StorageIndexReference;
 
@@ -34,10 +35,17 @@ public class StoreIndexDescriptor extends IndexDescriptor implements StorageInde
     private final long id;
     private final Long owningConstraintId;
 
-    // ** Copy-constructor used by sub-classes.
+    // ** Copy-constructors used by sub-classes.
     protected StoreIndexDescriptor( StoreIndexDescriptor indexDescriptor )
     {
         this( indexDescriptor, indexDescriptor.id, indexDescriptor.owningConstraintId );
+    }
+
+    protected StoreIndexDescriptor( IndexDescriptor descriptor, long id, Long owningConstraintId )
+    {
+        super( descriptor, descriptor.providerDescriptor() );
+        this.id = id;
+        this.owningConstraintId = owningConstraintId;
     }
 
     // ** General purpose constructors.
@@ -159,6 +167,12 @@ public class StoreIndexDescriptor extends IndexDescriptor implements StorageInde
     public CapableIndexDescriptor withoutCapabilities()
     {
         return new CapableIndexDescriptor( this, IndexCapability.NO_CAPABILITY );
+    }
+
+    @Override
+    public StoreIndexDescriptor withIndexProvider( IndexProviderDescriptor indexProvider )
+    {
+        return new StoreIndexDescriptor( super.withIndexProvider( indexProvider ), id, owningConstraintId );
     }
 
     // ** Misc

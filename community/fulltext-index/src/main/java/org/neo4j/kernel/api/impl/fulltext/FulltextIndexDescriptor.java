@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.fulltext;
 import org.apache.lucene.analysis.Analyzer;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.StorageIndexReference;
@@ -110,6 +111,12 @@ class FulltextIndexDescriptor implements StorageIndexReference
     public String providerVersion()
     {
         return descriptor.providerVersion();
+    }
+
+    @Override
+    public FulltextIndexDescriptor withIndexProvider( IndexProviderDescriptor indexProvider )
+    {
+        return new FulltextIndexDescriptor( descriptor.withIndexProvider( indexProvider ), propertyNames, analyzer, analyzerName, eventuallyConsistent );
     }
 
     @Override

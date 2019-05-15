@@ -23,6 +23,7 @@ import java.util.Optional;
 
 import org.neo4j.internal.schema.DefaultIndexDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
 /**
@@ -67,6 +68,13 @@ public class DefaultStorageIndexReference extends DefaultIndexDescriptor impleme
                 optionalName( index ), index.isUnique(), owningConstraintReference, index.isEventuallyConsistent() );
     }
 
+    protected DefaultStorageIndexReference( DefaultIndexDescriptor descriptor, long indexReference, Long owningConstraintReference )
+    {
+        super( descriptor );
+        this.indexReference = indexReference;
+        this.owningConstraintReference = owningConstraintReference;
+    }
+
     @Override
     public long indexReference()
     {
@@ -86,6 +94,12 @@ public class DefaultStorageIndexReference extends DefaultIndexDescriptor impleme
         assertUniqueTypeIndex();
         assertHasOwningConstraint();
         return owningConstraintReference;
+    }
+
+    @Override
+    public DefaultStorageIndexReference withIndexProvider( IndexProviderDescriptor indexProvider )
+    {
+        return new DefaultStorageIndexReference( super.withIndexProvider( indexProvider ), indexReference, owningConstraintReference );
     }
 
     @Override
