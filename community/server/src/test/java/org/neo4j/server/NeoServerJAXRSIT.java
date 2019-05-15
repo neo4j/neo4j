@@ -93,7 +93,7 @@ public class NeoServerJAXRSIT extends ExclusiveServerTestBase
         assertEquals( "hello", response );
 
         // Assert that extensions gets initialized
-        var nodesCreated = createSimpleDatabase( server.getDatabase().getGraph() );
+        var nodesCreated = createSimpleDatabase( server.getDatabaseService().getDatabase() );
         thirdPartyServiceUri = new URI( server.baseUri() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT + "/inject-test" ).normalize();
         request = HttpRequest.newBuilder( thirdPartyServiceUri ).GET().build();
         response = httpClient.send( request, ofString() ).body();

@@ -19,35 +19,20 @@
  */
 package org.neo4j.server.database;
 
+import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public class WrappedDatabase extends LifecycleAdapter implements Database
+public interface DatabaseService extends Lifecycle
 {
-    private final GraphDatabaseFacade graph;
+    DatabaseManagementService getDatabaseManagementService();
 
-    public WrappedDatabase( GraphDatabaseFacade graph )
-    {
-        this.graph = graph;
-        try
-        {
-            start();
-        }
-        catch ( Throwable throwable )
-        {
-            throw new RuntimeException( throwable );
-        }
-    }
+    GraphDatabaseFacade getDatabase();
 
-    @Override
-    public GraphDatabaseFacade getGraph()
-    {
-        return graph;
-    }
+    GraphDatabaseFacade getSystemDatabase();
 
-    @Override
-    public boolean isRunning()
-    {
-        return true;
-    }
+    GraphDatabaseFacade getDatabase( String databaseName ) throws DatabaseNotFoundException;
+
+    boolean isRunning();
 }

@@ -162,7 +162,7 @@ public class DiscoveryServiceTest
 
         DependencyResolver dependencyResolver = mock( DependencyResolver.class );
         when( dependencyResolver.resolveDependency( ConnectorPortRegister.class ) ).thenReturn( portRegistry );
-        when( neoServer.getDatabase().getGraph().getDependencyResolver() ).thenReturn( dependencyResolver );
+        when( neoServer.getDatabaseService().getDatabase().getDependencyResolver() ).thenReturn( dependencyResolver );
     }
 
     private Config mockConfig()

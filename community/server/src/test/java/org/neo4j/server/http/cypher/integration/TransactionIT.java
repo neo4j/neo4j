@@ -954,7 +954,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     private static void waitForStatementExecution( String statement )
     {
         KernelTransactions kernelTransactions =
-                server().getDatabase().getGraph().getDependencyResolver().resolveDependency( KernelTransactions.class );
+                server().getDatabaseService().getDatabase().getDependencyResolver().resolveDependency( KernelTransactions.class );
         while ( !isStatementExecuting( kernelTransactions, statement ) )
         {
             Thread.yield();

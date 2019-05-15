@@ -35,8 +35,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpConnector.Encryption;
-import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.internal.helpers.AdvertisedSocketAddress;
 import org.neo4j.internal.helpers.ListenSocketAddress;
@@ -52,10 +51,10 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.bind.ComponentsBinder;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.database.Database;
+import org.neo4j.server.database.DatabaseService;
 import org.neo4j.server.database.GraphFactory;
-import org.neo4j.server.database.LifecycleManagingDatabase;
 import org.neo4j.server.http.cypher.TransactionRegistry;
+import org.neo4j.server.database.LifecycleManagingDatabaseService;
 import org.neo4j.server.http.cypher.HttpTransactionManager;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.rest.repr.InputFormat;
@@ -105,8 +104,7 @@ public abstract class AbstractNeoServer implements NeoServer
     private AdvertisedSocketAddress httpAdvertisedAddress;
     private AdvertisedSocketAddress httpsAdvertisedAddress;
 
-    protected final Database database;
-    private DependencyResolver dependencyResolver;
+    protected final DatabaseService databaseService;
     protected WebServer webServer;
     protected Supplier<AuthManager> authManagerSupplier;
     protected Supplier<UserManagerSupplier> userManagerSupplier;
@@ -139,8 +137,8 @@ public abstract class AbstractNeoServer implements NeoServer
         httpsListenAddress = listenAddressFor( config, httpsConnector );
         httpsAdvertisedAddress = advertisedAddressFor( config, httpsConnector );
 
-        database = new LifecycleManagingDatabase( config, graphFactory, dependencies );
-        life.add( database );
+        databaseService = new LifecycleManagingDatabaseService( config, graphFactory, dependencies );
+        life.add( databaseService );
         life.add( new ServerDependenciesLifeCycleAdapter() );
         life.add( new ServerComponentsLifecycleAdapter() );
     }
@@ -161,17 +159,13 @@ public abstract class AbstractNeoServer implements NeoServer
         }
     }
 
-    public DependencyResolver getDependencyResolver()
+    private HttpTransactionManager createHttpTransactionManager()
     {
-        return dependencyResolver;
-    }
-
-    private HttpTransactionManager createHttpTransactionManager( DatabaseManager databaseManager )
-    {
-        JobScheduler jobScheduler = resolveDependency( JobScheduler.class );
+        DependencyResolver dependencyResolver = getSystemDatabaseDependencyResolver();
+        JobScheduler jobScheduler = dependencyResolver.resolveDependency( JobScheduler.class );
         Clock clock = Clocks.systemClock();
         Duration transactionTimeout = getTransactionTimeout();
-        return new HttpTransactionManager( databaseManager, config, jobScheduler, clock, transactionTimeout, userLogProvider );
+        return new HttpTransactionManager( databaseService, jobScheduler, clock, transactionTimeout, userLogProvider );
     }
 
     /**
@@ -301,6 +295,7 @@ public abstract class AbstractNeoServer implements NeoServer
             return;
         }
 
+        DependencyResolver dependencyResolver = getSystemDatabaseDependencyResolver();
         requestLog = new RotatingRequestLog(
                 dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
                 dependencyResolver.resolveDependency( JobScheduler.class ),
@@ -309,6 +304,11 @@ public abstract class AbstractNeoServer implements NeoServer
                 config.get( http_logging_rotation_size ),
                 config.get( http_logging_rotation_keep_number ) );
         webServer.setRequestLog( requestLog );
+    }
+
+    private DependencyResolver getSystemDatabaseDependencyResolver()
+    {
+        return databaseService.getSystemDatabase().getDependencyResolver();
     }
 
     protected Pattern[] getUriWhitelist()
@@ -335,9 +335,9 @@ public abstract class AbstractNeoServer implements NeoServer
     }
 
     @Override
-    public Database getDatabase()
+    public DatabaseService getDatabaseService()
     {
-        return database;
+        return databaseService;
     }
 
     @Override
@@ -367,12 +367,12 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private ComponentsBinder createComponentsBinder()
     {
-        Database database = getDatabase();
+        DatabaseService database = getDatabaseService();
 
         ComponentsBinder binder = new ComponentsBinder();
 
-        binder.addSingletonBinding( database, Database.class );
-        binder.addSingletonBinding( database.getGraph(), GraphDatabaseService.class );
+        binder.addSingletonBinding( database, DatabaseService.class );
+        binder.addSingletonBinding( database.getDatabaseManagementService(), DatabaseManagementService.class );
         binder.addSingletonBinding( this, NeoServer.class );
         binder.addSingletonBinding( getConfig(), Config.class );
         binder.addSingletonBinding( getWebServer(), WebServer.class );
@@ -386,11 +386,6 @@ public abstract class AbstractNeoServer implements NeoServer
         binder.addSingletonBinding( userLogProvider.getLog( NeoServer.class ), Log.class );
 
         return binder;
-    }
-
-    protected <T> T resolveDependency( Class<T> type )
-    {
-        return dependencyResolver.resolveDependency( type );
     }
 
     private static void verifyConnectorsConfiguration( Config config )
@@ -428,7 +423,7 @@ public abstract class AbstractNeoServer implements NeoServer
         @Override
         public void start()
         {
-            dependencyResolver = database.getGraph().getDependencyResolver();
+            DependencyResolver dependencyResolver = getSystemDatabaseDependencyResolver();
 
             authManagerSupplier = dependencyResolver.provideDependency( AuthManager.class );
             userManagerSupplier = dependencyResolver.provideDependency( UserManagerSupplier.class );
@@ -447,13 +442,14 @@ public abstract class AbstractNeoServer implements NeoServer
         @Override
         public void start() throws Exception
         {
-            LogService logService = resolveDependency( LogService.class );
+            DependencyResolver dependencyResolver = getSystemDatabaseDependencyResolver();
+
+            LogService logService = dependencyResolver.resolveDependency( LogService.class );
             Log serverLog = logService.getInternalLog( ServerComponentsLifecycleAdapter.class );
             serverLog.info( "Starting web server" );
-            connectorPortRegister = dependencyResolver.resolveDependency( ConnectorPortRegister.class );
 
-            DatabaseManager databaseManager = database.getGraph().getDependencyResolver().resolveDependency( DatabaseManager.class );
-            httpTransactionManager = createHttpTransactionManager(databaseManager);
+            connectorPortRegister = dependencyResolver.resolveDependency( ConnectorPortRegister.class );
+            httpTransactionManager = createHttpTransactionManager();
 
             configureWebServer();
 

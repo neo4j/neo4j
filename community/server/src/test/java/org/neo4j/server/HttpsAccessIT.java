@@ -143,6 +143,6 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
 
     private HostnamePort addressForConnector( String name )
     {
-        return PortUtils.getConnectorAddress( server.database.getGraph(), name );
+        return PortUtils.getConnectorAddress( server.databaseService.getDatabase(), name );
     }
 }

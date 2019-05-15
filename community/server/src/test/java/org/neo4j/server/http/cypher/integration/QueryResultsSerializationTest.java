@@ -565,7 +565,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldHandleTemporalArrays() throws Exception
     {
         //Given
-        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         ZonedDateTime date = ZonedDateTime.of( 1980, 3, 11, 0, 0,
                 0, 0, ZoneId.of( "Europe/Stockholm" ) );
         try ( Transaction tx = db.beginTx() )
@@ -592,7 +592,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldHandleDurationArrays() throws Exception
     {
         //Given
-        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         Duration duration = Duration.ofSeconds( 73 );
         try ( Transaction tx = db.beginTx() )
         {
@@ -618,7 +618,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldHandleTemporalUsingRestResultDataContent() throws Exception
     {
         //Given
-        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         ZonedDateTime date = ZonedDateTime.of( 1980, 3, 11, 0, 0,
                 0, 0, ZoneId.of( "Europe/Stockholm" ) );
         try ( Transaction tx = db.beginTx() )
@@ -644,7 +644,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldHandleDurationUsingRestResultDataContent() throws Exception
     {
         //Given
-        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         Duration duration = Duration.ofSeconds( 73 );
 
         try ( Transaction tx = db.beginTx() )
@@ -670,7 +670,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldHandleTemporalArraysUsingRestResultDataContent() throws Exception
     {
         //Given
-        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         ZonedDateTime date = ZonedDateTime.of( 1980, 3, 11, 0, 0,
                 0, 0, ZoneId.of( "Europe/Stockholm" ) );
         try ( Transaction tx = db.beginTx() )
@@ -696,7 +696,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldHandleDurationArraysUsingRestResultDataContent() throws Exception
     {
         //Given
-        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         Duration duration = Duration.ofSeconds( 73 );
 
         try ( Transaction tx = db.beginTx() )
@@ -722,7 +722,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldHandleTemporalUsingGraphResultDataContent() throws Exception
     {
         //Given
-        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         ZonedDateTime date = ZonedDateTime.of( 1980, 3, 11, 0, 0,
                 0, 0, ZoneId.of( "Europe/Stockholm" ) );
         try ( Transaction tx = db.beginTx() )
@@ -747,7 +747,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldHandleDurationUsingGraphResultDataContent() throws Exception
     {
         //Given
-        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         Duration duration = Duration.ofSeconds( 73 );
 
         try ( Transaction tx = db.beginTx() )
@@ -773,7 +773,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldHandleTemporalArraysUsingGraphResultDataContent() throws Exception
     {
         //Given
-        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         ZonedDateTime date = ZonedDateTime.of( 1980, 3, 11, 0, 0,
                 0, 0, ZoneId.of( "Europe/Stockholm" ) );
         try ( Transaction tx = db.beginTx() )
@@ -799,7 +799,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldHandleDurationArraysUsingGraphResultDataContent() throws Exception
     {
         //Given
-        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         Duration duration = Duration.ofSeconds( 73 );
 
         try ( Transaction tx = db.beginTx() )

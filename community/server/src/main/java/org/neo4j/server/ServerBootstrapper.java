@@ -160,7 +160,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
 
     public boolean isRunning()
     {
-        return server != null && server.getDatabase() != null && server.getDatabase().isRunning();
+        return server != null && server.getDatabaseService() != null && server.getDatabaseService().isRunning();
     }
 
     public NeoServer getServer()

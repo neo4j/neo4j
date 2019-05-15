@@ -63,7 +63,7 @@ public class ServerConfigIT extends ExclusiveServerTestBase
                 .build();
         server.start();
 
-        var localHttpAddress = PortUtils.getConnectorAddress( server.getDatabase().getGraph(), "http" );
+        var localHttpAddress = PortUtils.getConnectorAddress( server.getDatabaseService().getDatabase(), "http" );
         assertNotEquals( HttpConnector.Encryption.NONE.defaultPort, localHttpAddress.getPort() );
         assertEquals( nonDefaultAddress.getHostname(), localHttpAddress.getHost() );
 

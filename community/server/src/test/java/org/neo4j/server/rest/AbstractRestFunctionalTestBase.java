@@ -57,7 +57,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     @Override
     public GraphDatabaseService graphdb()
     {
-        return server().getDatabase().getGraph();
+        return server().getDatabaseService().getDatabase();
     }
 
     public <T> T resolveDependency( Class<T> cls )
@@ -105,7 +105,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     public static int getLocalHttpPort()
     {
         ConnectorPortRegister connectorPortRegister =
-                server().getDatabase().getGraph().getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
+                server().getDatabaseService().getDatabase().getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
         return connectorPortRegister.getLocalAddress( "http" ).getPort();
     }
 

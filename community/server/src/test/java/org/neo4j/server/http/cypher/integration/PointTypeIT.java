@@ -61,7 +61,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         assertEquals( 200, response.status() );
         assertNoErrors( response );
 
-        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             for ( Node node : db.getAllNodes() )
@@ -95,7 +95,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
     public void shouldHandlePointArrays() throws Exception
     {
         //Given
-        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( label( "N" ) );
@@ -123,7 +123,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
     public void shouldHandlePointsUsingRestResultDataContent() throws Exception
     {
         //Given
-        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( label( "N" ) );
@@ -151,7 +151,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
     public void shouldHandlePointsUsingGraphResultDataContent() throws Exception
     {
         //Given
-        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( label( "N" ) );
@@ -177,7 +177,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
     public void shouldHandleArrayOfPointsUsingRestResultDataContent() throws Exception
     {
         //Given
-        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( label( "N" ) );
@@ -203,7 +203,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
     public void shouldHandleArrayOfPointsUsingGraphResultDataContent() throws Exception
     {
         //Given
-        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( label( "N" ) );

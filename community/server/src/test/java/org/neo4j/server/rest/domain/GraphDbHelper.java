@@ -37,7 +37,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.server.database.Database;
+import org.neo4j.server.database.DatabaseService;
 
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
@@ -47,16 +47,16 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 public class GraphDbHelper
 {
-    private final Database database;
+    private final DatabaseService database;
 
-    public GraphDbHelper( Database database )
+    public GraphDbHelper( DatabaseService database )
     {
         this.database = database;
     }
 
     public int getNumberOfNodes()
     {
-        Kernel kernel = database.getGraph().getDependencyResolver().resolveDependency( Kernel.class );
+        Kernel kernel = database.getDatabase().getDependencyResolver().resolveDependency( Kernel.class );
         try ( org.neo4j.internal.kernel.api.Transaction tx = kernel.beginTransaction( implicit, AnonymousContext.read() ) )
         {
             return Math.toIntExact( tx.dataRead().nodesGetCount() );
@@ -69,7 +69,7 @@ public class GraphDbHelper
 
     public int getNumberOfRelationships()
     {
-        Kernel kernel = database.getGraph().getDependencyResolver().resolveDependency( Kernel.class );
+        Kernel kernel = database.getDatabase().getDependencyResolver().resolveDependency( Kernel.class );
         try ( org.neo4j.internal.kernel.api.Transaction tx = kernel.beginTransaction( implicit, AnonymousContext.read() ) )
         {
             return Math.toIntExact( tx.dataRead().relationshipsGetCount() );
@@ -82,9 +82,9 @@ public class GraphDbHelper
 
     public Map<String, Object> getNodeProperties( long nodeId )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.read() ) )
+        try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.read() ) )
         {
-            Node node = database.getGraph().getNodeById( nodeId );
+            Node node = database.getDatabase().getNodeById( nodeId );
             Map<String, Object> allProperties = node.getAllProperties();
             tx.success();
             return allProperties;
@@ -93,9 +93,9 @@ public class GraphDbHelper
 
     public void setNodeProperties( long nodeId, Map<String, Object> properties )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.writeToken() ) )
+        try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
-            Node node = database.getGraph().getNodeById( nodeId );
+            Node node = database.getDatabase().getNodeById( nodeId );
             for ( Map.Entry<String, Object> propertyEntry : properties.entrySet() )
             {
                 node.setProperty( propertyEntry.getKey(), propertyEntry.getValue() );
@@ -106,9 +106,9 @@ public class GraphDbHelper
 
     public long createNode( Label... labels )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.writeToken() ) )
+        try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
-            Node node = database.getGraph().createNode( labels );
+            Node node = database.getDatabase().createNode( labels );
             tx.success();
             return node.getId();
         }
@@ -116,9 +116,9 @@ public class GraphDbHelper
 
     public long createNode( Map<String, Object> properties, Label... labels )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.writeToken() ) )
+        try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
-            Node node = database.getGraph().createNode( labels );
+            Node node = database.getDatabase().createNode( labels );
             for ( Map.Entry<String, Object> entry : properties.entrySet() )
             {
                 node.setProperty( entry.getKey(), entry.getValue() );
@@ -130,9 +130,9 @@ public class GraphDbHelper
 
     public void deleteNode( long id )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.write() ) )
+        try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.write() ) )
         {
-            Node node = database.getGraph().getNodeById( id );
+            Node node = database.getDatabase().getNodeById( id );
             node.delete();
             tx.success();
         }
@@ -140,10 +140,10 @@ public class GraphDbHelper
 
     public long createRelationship( String type, long startNodeId, long endNodeId )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.writeToken() ) )
+        try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
-            Node startNode = database.getGraph().getNodeById( startNodeId );
-            Node endNode = database.getGraph().getNodeById( endNodeId );
+            Node startNode = database.getDatabase().getNodeById( startNodeId );
+            Node endNode = database.getDatabase().getNodeById( endNodeId );
             Relationship relationship = startNode.createRelationshipTo( endNode, RelationshipType.withName( type ) );
             tx.success();
             return relationship.getId();
@@ -152,10 +152,10 @@ public class GraphDbHelper
 
     public long createRelationship( String type )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.writeToken() ) )
+        try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
-            Node startNode = database.getGraph().createNode();
-            Node endNode = database.getGraph().createNode();
+            Node startNode = database.getDatabase().createNode();
+            Node endNode = database.getDatabase().createNode();
             Relationship relationship = startNode.createRelationshipTo( endNode,
                     RelationshipType.withName( type ) );
             tx.success();
@@ -166,9 +166,9 @@ public class GraphDbHelper
     public void setRelationshipProperties( long relationshipId, Map<String, Object> properties )
 
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.writeToken() ) )
+        try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
-            Relationship relationship = database.getGraph().getRelationshipById( relationshipId );
+            Relationship relationship = database.getDatabase().getRelationshipById( relationshipId );
             for ( Map.Entry<String, Object> propertyEntry : properties.entrySet() )
             {
                 relationship.setProperty( propertyEntry.getKey(), propertyEntry.getValue() );
@@ -179,9 +179,9 @@ public class GraphDbHelper
 
     public Map<String, Object> getRelationshipProperties( long relationshipId )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.read() ) )
+        try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.read() ) )
         {
-            Relationship relationship = database.getGraph().getRelationshipById( relationshipId );
+            Relationship relationship = database.getDatabase().getRelationshipById( relationshipId );
             Map<String, Object> allProperties = relationship.getAllProperties();
             tx.success();
             return allProperties;
@@ -190,9 +190,9 @@ public class GraphDbHelper
 
     public Relationship getRelationship( long relationshipId )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.read() ) )
+        try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.read() ) )
         {
-            Relationship relationship = database.getGraph().getRelationshipById( relationshipId );
+            Relationship relationship = database.getDatabase().getRelationshipById( relationshipId );
             tx.success();
             return relationship;
         }
@@ -200,18 +200,18 @@ public class GraphDbHelper
 
     public long getFirstNode()
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.write() ) )
+        try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.write() ) )
         {
             try
             {
-                Node referenceNode = database.getGraph().getNodeById( 0L );
+                Node referenceNode = database.getDatabase().getNodeById( 0L );
 
                 tx.success();
                 return referenceNode.getId();
             }
             catch ( NotFoundException e )
             {
-                Node newNode = database.getGraph().createNode();
+                Node newNode = database.getDatabase().createNode();
                 tx.success();
                 return newNode.getId();
             }
@@ -220,7 +220,7 @@ public class GraphDbHelper
 
     public Iterable<String> getNodeLabels( long node )
     {
-        return new IterableWrapper<String, Label>( database.getGraph().getNodeById( node ).getLabels() )
+        return new IterableWrapper<String, Label>( database.getDatabase().getNodeById( node ).getLabels() )
         {
             @Override
             protected String underlyingObjectToObject( Label object )
@@ -232,23 +232,23 @@ public class GraphDbHelper
 
     public void addLabelToNode( long node, String labelName )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.writeToken() ) )
+        try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
-            database.getGraph().getNodeById( node ).addLabel( label( labelName ) );
+            database.getDatabase().getNodeById( node ).addLabel( label( labelName ) );
             tx.success();
         }
     }
 
     public Iterable<IndexDefinition> getSchemaIndexes( String labelName )
     {
-        return database.getGraph().schema().getIndexes( label( labelName ) );
+        return database.getDatabase().schema().getIndexes( label( labelName ) );
     }
 
     public IndexDefinition createSchemaIndex( String labelName, String propertyKey )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AUTH_DISABLED ) )
+        try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AUTH_DISABLED ) )
         {
-            IndexDefinition index = database.getGraph().schema().indexFor( label( labelName ) ).on( propertyKey ).create();
+            IndexDefinition index = database.getDatabase().schema().indexFor( label( labelName ) ).on( propertyKey ).create();
             tx.success();
             return index;
         }
@@ -256,7 +256,7 @@ public class GraphDbHelper
 
     public Iterable<ConstraintDefinition> getPropertyUniquenessConstraints( String labelName, final String propertyKey )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.read() ) )
+        try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.read() ) )
         {
             Iterable<ConstraintDefinition> definitions = Iterables.filter( item ->
             {
@@ -270,7 +270,7 @@ public class GraphDbHelper
                     return false;
                 }
 
-            }, database.getGraph().schema().getConstraints( label( labelName ) ) );
+            }, database.getDatabase().schema().getConstraints( label( labelName ) ) );
             tx.success();
             return definitions;
         }
@@ -278,9 +278,9 @@ public class GraphDbHelper
 
     public ConstraintDefinition createPropertyUniquenessConstraint( String labelName, List<String> propertyKeys )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AUTH_DISABLED ) )
+        try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AUTH_DISABLED ) )
         {
-            ConstraintCreator creator = database.getGraph().schema().constraintFor( label( labelName ) );
+            ConstraintCreator creator = database.getDatabase().schema().constraintFor( label( labelName ) );
             for ( String propertyKey : propertyKeys )
             {
                 creator = creator.assertPropertyIsUnique( propertyKey );
@@ -293,9 +293,9 @@ public class GraphDbHelper
 
     public long getLabelCount( long nodeId )
     {
-        try ( Transaction transaction = database.getGraph().beginTransaction( implicit, AnonymousContext.read() ) )
+        try ( Transaction transaction = database.getDatabase().beginTransaction( implicit, AnonymousContext.read() ) )
         {
-            return count( database.getGraph().getNodeById( nodeId ).getLabels());
+            return count( database.getDatabase().getNodeById( nodeId ).getLabels());
         }
     }
 }

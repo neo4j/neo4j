@@ -25,9 +25,9 @@ import java.util.Collections;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.server.database.Database;
+import org.neo4j.server.database.DatabaseService;
 import org.neo4j.server.database.GraphFactory;
-import org.neo4j.server.database.LifecycleManagingDatabase;
+import org.neo4j.server.database.LifecycleManagingDatabaseService;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.http.cypher.DisabledTransactionRegistry;
 import org.neo4j.server.http.cypher.TransactionRegistry;
@@ -37,14 +37,14 @@ import static org.neo4j.server.exception.ServerStartupErrors.translateToServerSt
 
 public class DisabledNeoServer implements NeoServer
 {
-    private final Database db;
+    private final DatabaseService db;
     private final Config config;
 
     private final LifeSupport life = new LifeSupport();
 
     public DisabledNeoServer( GraphFactory graphFactory, ExternalDependencies dependencies, Config config )
     {
-        this.db = new LifecycleManagingDatabase( config, graphFactory, dependencies );
+        this.db = new LifecycleManagingDatabaseService( config, graphFactory, dependencies );
         this.config = config;
 
         life.add( db );
@@ -78,7 +78,7 @@ public class DisabledNeoServer implements NeoServer
     }
 
     @Override
-    public Database getDatabase()
+    public DatabaseService getDatabaseService()
     {
         return db;
     }

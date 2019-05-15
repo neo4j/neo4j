@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.database.Database;
+import org.neo4j.server.database.DatabaseService;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
@@ -62,8 +62,8 @@ public class SnapshotQueryExecutionIT extends ExclusiveServerTestBase
     @Test
     public void executeQueryWithSnapshotEngine()
     {
-        Database database = server.getDatabase();
-        GraphDatabaseFacade graph = database.getGraph();
+        DatabaseService database = server.getDatabaseService();
+        GraphDatabaseFacade graph = database.getDatabase();
         try ( Transaction transaction = graph.beginTx() )
         {
             for ( int i = 0; i < 10; i++ )

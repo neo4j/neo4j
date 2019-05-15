@@ -23,16 +23,15 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.Optional;
 
-import org.neo4j.collection.Dependencies;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.common.DependencyResolver;
+import org.neo4j.dbms.database.DatabaseNotFoundException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.server.database.DatabaseService;
 import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -47,19 +46,16 @@ public class HttpTransactionManager
     private static final String DEFAULT_HTTP_DB_NAME = "data";
 
     private final TransactionHandleRegistry transactionRegistry;
-    private final DatabaseManager databaseManager;
-    private final JobScheduler jobScheduler;
+    private final DatabaseService database;
     private final LogProvider userLogProvider;
-    private final String defaultDatabaseName;
+    private final JobScheduler jobScheduler;
 
-    public HttpTransactionManager( DatabaseManager databaseManager, Config config, JobScheduler jobScheduler, Clock clock, Duration transactionTimeout,
-            LogProvider userLogProvider )
+    public HttpTransactionManager( DatabaseService database, JobScheduler jobScheduler, Clock clock, Duration transactionTimeout, LogProvider userLogProvider )
     {
-        this.databaseManager = databaseManager;
-        this.jobScheduler = jobScheduler;
+        this.database = database;
         this.userLogProvider = userLogProvider;
+        this.jobScheduler = jobScheduler;
 
-        this.defaultDatabaseName = config.get( GraphDatabaseSettings.default_database );
         transactionRegistry = new TransactionHandleRegistry( clock, transactionTimeout, userLogProvider );
         scheduleTransactionTimeout( transactionTimeout );
     }
@@ -70,16 +66,18 @@ public class HttpTransactionManager
      * @param databaseName database name.
      * @return a transaction facade or {@code null} if a database with the supplied database name does not exist.
      */
-    public TransactionFacade getTransactionFacade( String databaseName )
+    public Optional<TransactionFacade> getTransactionFacade( String databaseName )
     {
-        databaseName = transformDbName( databaseName );
-        Optional<DatabaseContext> databaseContext = databaseManager.getDatabaseContext( databaseName );
-        if ( databaseContext.isEmpty() )
+        Optional<GraphDatabaseFacade> graph;
+        try
         {
-            return null;
+            graph = Optional.of( DEFAULT_HTTP_DB_NAME.equals( databaseName ) ? database.getDatabase() : database.getDatabase( databaseName ) );
         }
-
-        return createTransactionFacade( databaseContext.get() );
+        catch ( DatabaseNotFoundException e )
+        {
+            graph = Optional.empty();
+        }
+        return graph.map( this::createTransactionFacade );
     }
 
     public TransactionHandleRegistry getTransactionHandleRegistry()
@@ -87,21 +85,11 @@ public class HttpTransactionManager
         return transactionRegistry;
     }
 
-    private String transformDbName( String databaseName )
+    private TransactionFacade createTransactionFacade( GraphDatabaseFacade graph )
     {
-        if ( DEFAULT_HTTP_DB_NAME.equals( databaseName ) )
-        {
-            return defaultDatabaseName;
-        }
+        DependencyResolver dependencyResolver = graph.getDependencyResolver();
 
-        return databaseName;
-    }
-
-    private TransactionFacade createTransactionFacade( DatabaseContext databaseContext )
-    {
-        Dependencies dependencyResolver = databaseContext.getDependencies();
-
-        return new TransactionFacade( new TransitionalPeriodTransactionMessContainer( databaseContext.getDatabaseFacade() ),
+        return new TransactionFacade( new TransitionalPeriodTransactionMessContainer( graph ),
                 dependencyResolver.resolveDependency( QueryExecutionEngine.class ), dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ),
                 transactionRegistry, userLogProvider );
     }

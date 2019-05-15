@@ -261,6 +261,6 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
 
     private GraphDatabaseAPI db()
     {
-        return bootstrapper.getServer().getDatabase().getGraph();
+        return bootstrapper.getServer().getDatabaseService().getDatabase();
     }
 }

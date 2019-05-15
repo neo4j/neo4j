@@ -47,7 +47,7 @@ public class ServerHelper
 
         rollbackAllOpenTransactions( server );
 
-        cleanTheDatabase( server.getDatabase().getGraph() );
+        cleanTheDatabase( server.getDatabaseService().getDatabase() );
     }
 
     public static void cleanTheDatabase( GraphDatabaseAPI db )

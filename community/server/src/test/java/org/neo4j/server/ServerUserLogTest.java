@@ -91,7 +91,7 @@ class ServerUserLogTest
 
             // then no exceptions are thrown and
             assertEquals( OK, returnCode );
-            assertTrue( serverBootstrapper.getServer().getDatabase().isRunning() );
+            assertTrue( serverBootstrapper.getServer().getDatabaseService().isRunning() );
             assertThat( serverBootstrapper.getLog(), not( sameInstance( logBeforeStart ) ) );
 
             assertThat( getStdOut(), not( empty() ) );
@@ -119,7 +119,7 @@ class ServerUserLogTest
             int returnCode = serverBootstrapper.start( dir, Optional.empty(), stringMap( store_user_log_to_stdout.name(), "false" ) );
             // then no exceptions are thrown and
             assertEquals( OK, returnCode );
-            assertTrue( serverBootstrapper.getServer().getDatabase().isRunning() );
+            assertTrue( serverBootstrapper.getServer().getDatabaseService().isRunning() );
             assertThat( serverBootstrapper.getLog(), not( sameInstance( logBeforeStart ) ) );
 
         }
@@ -158,7 +158,7 @@ class ServerUserLogTest
             // then
             assertEquals( OK, returnCode );
             assertThat( serverBootstrapper.getLog(), not( sameInstance( logBeforeStart ) ) );
-            assertTrue( serverBootstrapper.getServer().getDatabase().isRunning() );
+            assertTrue( serverBootstrapper.getServer().getDatabaseService().isRunning() );
 
             // when we forcibly log some more stuff
             do

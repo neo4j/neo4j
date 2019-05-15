@@ -135,6 +135,6 @@ public class BoltIT extends ExclusiveServerTestBase
 
     private <T> T getDependency( Class<T> clazz )
     {
-        return server.getDatabase().getGraph().getDependencyResolver().resolveDependency( clazz );
+        return server.getDatabaseService().getDatabase().getDependencyResolver().resolveDependency( clazz );
     }
 }

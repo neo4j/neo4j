@@ -53,7 +53,7 @@ public class TestLifecycleManagedDatabase
     public ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule( logProvider );
 
     private File dataDirectory;
-    private Database theDatabase;
+    private DatabaseService theDatabase;
     private boolean deletionFailureOk;
     private GraphFactory dbFactory;
     private Config dbConfig;
@@ -68,9 +68,9 @@ public class TestLifecycleManagedDatabase
         theDatabase = newDatabase();
     }
 
-    private LifecycleManagingDatabase newDatabase()
+    private LifecycleManagingDatabaseService newDatabase()
     {
-        return new LifecycleManagingDatabase( dbConfig, dbFactory,
+        return new LifecycleManagingDatabaseService( dbConfig, dbFactory,
                 GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider ) );
     }
 
@@ -101,7 +101,7 @@ public class TestLifecycleManagedDatabase
         theDatabase.start();
 
         logProvider.assertAtLeastOnce(
-                inLog( LifecycleManagingDatabase.class ).info( "Started." )
+                inLog( LifecycleManagingDatabaseService.class ).info( "Started." )
         );
     }
 
@@ -112,7 +112,7 @@ public class TestLifecycleManagedDatabase
         theDatabase.stop();
 
         logProvider.assertAtLeastOnce(
-                inLog( LifecycleManagingDatabase.class ).info( "Stopped." )
+                inLog( LifecycleManagingDatabaseService.class ).info( "Stopped." )
         );
     }
 
@@ -122,7 +122,7 @@ public class TestLifecycleManagedDatabase
         deletionFailureOk = true;
         theDatabase.start();
 
-        LifecycleManagingDatabase db = newDatabase();
+        LifecycleManagingDatabaseService db = newDatabase();
 
         try
         {

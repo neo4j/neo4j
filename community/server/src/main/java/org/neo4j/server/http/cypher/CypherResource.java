@@ -22,6 +22,7 @@ package org.neo4j.server.http.cypher;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
@@ -74,21 +75,20 @@ public class CypherResource
     @POST
     public Response executeStatementsInNewTransaction( InputEventStream inputEventStream )
     {
+        InputEventStream inputStream = ensureNotNull( inputEventStream );
 
-        inputEventStream = ensureNotNull( inputEventStream );
+        Optional<TransactionFacade> transactionFacade = httpTransactionManager.getTransactionFacade( databaseName );
 
-        TransactionFacade transactionFacade = httpTransactionManager.getTransactionFacade( databaseName );
-        if ( transactionFacade == null )
-        {
-            return createNonExistentDatabaseResponse( inputEventStream.getParameters() );
-        }
+        return transactionFacade
+                .map( t -> {
+                    TransactionHandle transactionHandle = createNewTransactionHandle( t, headers, request, false );
 
-        TransactionHandle transactionHandle = createNewTransactionHandle( transactionFacade, headers, request, false );
-
-        Invocation invocation = new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), inputEventStream, false );
-        OutputEventStreamImpl outputEventStream =
-                new OutputEventStreamImpl( inputEventStream.getParameters(), transactionFacade.getTransactionContainer(), uriScheme, invocation::execute );
-        return Response.created( transactionHandle.uri() ).entity( outputEventStream ).build();
+                    Invocation invocation = new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), inputStream, false );
+                    OutputEventStreamImpl outputStream =
+                            new OutputEventStreamImpl( inputStream.getParameters(), t.getTransactionContainer(), uriScheme, invocation::execute );
+                    return Response.created( transactionHandle.uri() ).entity( outputStream ).build();
+                } )
+                .orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
     }
 
     @POST
@@ -110,48 +110,43 @@ public class CypherResource
     @Path( "/commit" )
     public Response commitNewTransaction( @Context HttpHeaders headers, InputEventStream inputEventStream, @Context HttpServletRequest request )
     {
-        inputEventStream = ensureNotNull( inputEventStream );
+        InputEventStream inputStream = ensureNotNull( inputEventStream );
 
-        TransactionFacade transactionFacade = httpTransactionManager.getTransactionFacade( databaseName );
-        if ( transactionFacade == null )
-        {
-            return createNonExistentDatabaseResponse( inputEventStream.getParameters() );
-        }
+        Optional<TransactionFacade> transactionFacade = httpTransactionManager.getTransactionFacade( databaseName );
+        return transactionFacade
+                .map( t -> {
+                    TransactionHandle transactionHandle = createNewTransactionHandle( t, headers, request, true );
 
-        TransactionHandle transactionHandle = createNewTransactionHandle( transactionFacade, headers, request, true );
-
-        Invocation invocation = new Invocation( log, transactionHandle, null, inputEventStream, true );
-        OutputEventStreamImpl outputEventStream =
-                new OutputEventStreamImpl( inputEventStream.getParameters(), transactionFacade.getTransactionContainer(), uriScheme, invocation::execute );
-        return Response.ok( outputEventStream ).build();
+                    Invocation invocation = new Invocation( log, transactionHandle, null, inputStream, true );
+                    OutputEventStreamImpl outputStream =
+                            new OutputEventStreamImpl( inputStream.getParameters(), t.getTransactionContainer(), uriScheme, invocation::execute );
+                    return Response.ok( outputStream ).build();
+                }  )
+                .orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
     }
 
     @DELETE
     @Path( "/{id}" )
     public Response rollbackTransaction( @PathParam( "id" ) final long id )
     {
-        TransactionHandle transactionHandle;
+        Optional<TransactionFacade> transactionFacade = httpTransactionManager.getTransactionFacade( databaseName );
+        return transactionFacade.map( t -> {
+            TransactionHandle transactionHandle;
+            try
+            {
+                transactionHandle = t.terminate( id );
+            }
+            catch ( TransactionLifecycleException e )
+            {
+                return invalidTransaction( t, e, Collections.emptyMap() );
+            }
 
-        TransactionFacade transactionFacade = httpTransactionManager.getTransactionFacade( databaseName );
-        if ( transactionFacade == null )
-        {
-            return createNonExistentDatabaseResponse( Collections.emptyMap() );
-        }
+            RollbackInvocation invocation = new RollbackInvocation( log, transactionHandle );
+            OutputEventStreamImpl outputEventStream =
+                    new OutputEventStreamImpl( Collections.emptyMap(), null, uriScheme, invocation::execute );
+            return Response.ok().entity( outputEventStream ).build();
 
-        try
-        {
-            transactionHandle = transactionFacade.terminate( id );
-        }
-        catch ( TransactionLifecycleException e )
-        {
-            return invalidTransaction( transactionFacade, e, Collections.emptyMap() );
-        }
-
-        RollbackInvocation invocation = new RollbackInvocation( log, transactionHandle );
-
-        OutputEventStreamImpl outputEventStream =
-                new OutputEventStreamImpl( Collections.emptyMap(), null, uriScheme, invocation::execute );
-        return Response.ok().entity( outputEventStream ).build();
+        } ).orElse( createNonExistentDatabaseResponse( Collections.emptyMap() ) );
     }
 
     private TransactionHandle createNewTransactionHandle( TransactionFacade transactionFacade, HttpHeaders headers, HttpServletRequest request,
@@ -165,28 +160,25 @@ public class CypherResource
 
     private Response executeInExistingTransaction( long transactionId, InputEventStream inputEventStream, boolean finishWithCommit )
     {
-        inputEventStream = ensureNotNull( inputEventStream );
+        InputEventStream inputStream = ensureNotNull( inputEventStream );
 
-        TransactionFacade transactionFacade = httpTransactionManager.getTransactionFacade( databaseName );
-        if ( transactionFacade == null )
-        {
-            return createNonExistentDatabaseResponse( inputEventStream.getParameters() );
-        }
-
-        TransactionHandle transactionHandle;
-        try
-        {
-            transactionHandle = transactionFacade.findTransactionHandle( transactionId );
-        }
-        catch ( TransactionLifecycleException e )
-        {
-            return invalidTransaction( transactionFacade, e, inputEventStream.getParameters() );
-        }
-        Invocation invocation =
-                new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), inputEventStream, finishWithCommit );
-        OutputEventStreamImpl outputEventStream =
-                new OutputEventStreamImpl( inputEventStream.getParameters(), transactionFacade.getTransactionContainer(), uriScheme, invocation::execute );
-        return Response.ok( outputEventStream ).build();
+        Optional<TransactionFacade> transactionFacade = httpTransactionManager.getTransactionFacade( databaseName );
+        return transactionFacade.map( t -> {
+            TransactionHandle transactionHandle;
+            try
+            {
+                transactionHandle = t.findTransactionHandle( transactionId );
+            }
+            catch ( TransactionLifecycleException e )
+            {
+                return invalidTransaction( t, e, inputStream.getParameters() );
+            }
+            Invocation invocation =
+                    new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), inputStream, finishWithCommit );
+            OutputEventStreamImpl outputEventStream =
+                    new OutputEventStreamImpl( inputStream.getParameters(), t.getTransactionContainer(), uriScheme, invocation::execute );
+            return Response.ok( outputEventStream ).build();
+        } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
     }
 
     private Response invalidTransaction( TransactionFacade transactionFacade, TransactionLifecycleException e, Map<String,Object> parameters )

@@ -181,7 +181,7 @@ public class InProcessNeo4j implements Neo4j, AutoCloseable
     @Override
     public GraphDatabaseService graph()
     {
-        return server.getDatabase().getGraph();
+        return server.getDatabaseService().getDatabase();
     }
 
     @Override
@@ -208,6 +208,6 @@ public class InProcessNeo4j implements Neo4j, AutoCloseable
 
     private static ConnectorPortRegister connectorPortRegister( NeoServer server )
     {
-        return ((GraphDatabaseAPI) server.getDatabase().getGraph()).getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
+        return ((GraphDatabaseAPI) server.getDatabaseService().getDatabase()).getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
     }
 }

@@ -37,7 +37,7 @@ public class NeoServerIT extends AbstractRestFunctionalTestBase
     @Test
     public void whenServerIsStartedItshouldStartASingleDatabase()
     {
-        assertNotNull( server().getDatabase() );
+        assertNotNull( server().getDatabaseService() );
     }
 
     @Test
