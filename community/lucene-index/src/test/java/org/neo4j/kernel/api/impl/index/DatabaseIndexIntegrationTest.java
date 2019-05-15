@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -385,6 +386,12 @@ class DatabaseIndexIntegrationTest
             public void close() throws IOException
             {
                 delegate.close();
+            }
+
+            @Override
+            public Set<String> getPendingDeletions() throws IOException
+            {
+                return delegate.getPendingDeletions();
             }
         }
     }
