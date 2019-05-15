@@ -32,7 +32,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.QueryRegistryOperations;
+import org.neo4j.kernel.api.QueryRegistry;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -148,7 +148,7 @@ public class CypherExecutorTest
 
         LoginContext loginContext = AUTH_DISABLED;
         KernelTransaction.Type type = KernelTransaction.Type.implicit;
-        QueryRegistryOperations registryOperations = mock( QueryRegistryOperations.class );
+        QueryRegistry registryOperations = mock( QueryRegistry.class );
         when( statement.queryRegistration() ).thenReturn( registryOperations );
         when( statementBridge.get() ).thenReturn( statement );
         when( kernelTransaction.securityContext() ).thenReturn( loginContext.authorize(

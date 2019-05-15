@@ -44,6 +44,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.availability.AvailabilityGuard;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -85,6 +86,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
@@ -103,7 +105,6 @@ public class KernelTransactionTestBase
     protected final AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
     protected final FakeClock clock = Clocks.fakeClock();
     protected final Pool<KernelTransactionImplementation> txPool = mock( Pool.class );
-    protected final StatementOperationParts statementOperations = mock( StatementOperationParts.class );
     protected CollectionsFactory collectionsFactory;
 
     protected final Config config = Config.defaults();
@@ -162,7 +163,7 @@ public class KernelTransactionTestBase
         StatementLocks statementLocks = new SimpleStatementLocks( locks );
         try
         {
-            SecurityContext securityContext = loginContext.authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+            SecurityContext securityContext = loginContext.authorize( LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME );
             tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP, statementLocks, Type.implicit,
                     securityContext, transactionTimeout, 1L, EMBEDDED_CONNECTION );
         }
@@ -177,13 +178,14 @@ public class KernelTransactionTestBase
     {
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( mock( DefaultValueMapper.class ) );
-        return new KernelTransactionImplementation( config, statementOperations, mock( DatabaseTransactionEventListeners.class ),
+        return new KernelTransactionImplementation( config, mock( DatabaseTransactionEventListeners.class ),
                 null, null, headerInformationFactory,
                 commitProcess, transactionMonitor, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                 new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), TransactionTracer.NULL, LockTracer.NONE, PageCursorTracerSupplier.NULL, storageEngine,
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
                 new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
-                mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies, availabilityGuard );
+                mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies, availabilityGuard,
+                new DatabaseId( DEFAULT_DATABASE_NAME ) );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

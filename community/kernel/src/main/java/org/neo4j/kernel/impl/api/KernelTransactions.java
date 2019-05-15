@@ -86,7 +86,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
 {
     private final StatementLocksFactory statementLocksFactory;
     private final ConstraintIndexCreator constraintIndexCreator;
-    private final StatementOperationParts statementOperations;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final TransactionCommitProcess transactionCommitProcess;
     private final DatabaseTransactionEventListeners eventListeners;
@@ -143,7 +142,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private volatile boolean stopped = true;
 
     public KernelTransactions( Config config, StatementLocksFactory statementLocksFactory, ConstraintIndexCreator constraintIndexCreator,
-            StatementOperationParts statementOperations, TransactionHeaderInformationFactory txHeaderFactory,
+            TransactionHeaderInformationFactory txHeaderFactory,
             TransactionCommitProcess transactionCommitProcess, DatabaseTransactionEventListeners eventListeners, TransactionMonitor transactionMonitor,
             AvailabilityGuard databaseAvailabilityGuard, Tracers tracers, StorageEngine storageEngine, GlobalProcedures globalProcedures,
             TransactionIdStore transactionIdStore, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef,
@@ -155,7 +154,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.config = config;
         this.statementLocksFactory = statementLocksFactory;
         this.constraintIndexCreator = constraintIndexCreator;
-        this.statementOperations = statementOperations;
         this.transactionHeaderInformationFactory = txHeaderFactory;
         this.transactionCommitProcess = transactionCommitProcess;
         this.eventListeners = eventListeners;
@@ -393,14 +391,15 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         public KernelTransactionImplementation newInstance()
         {
             KernelTransactionImplementation tx =
-                    new KernelTransactionImplementation( config, statementOperations, eventListeners,
+                    new KernelTransactionImplementation( config, eventListeners,
                             constraintIndexCreator, globalProcedures, transactionHeaderInformationFactory,
                             transactionCommitProcess, transactionMonitor, localTxPool, clock, cpuClockRef, heapAllocationRef,
                             tracers.getTransactionTracer(),
                             tracers.getLockTracer(),
                             tracers.getPageCursorTracerSupplier(), storageEngine, accessCapability,
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
-                            schemaState, tokenHolders, indexingService, labelScanStore, indexStatisticsStore, databaseDependendies, databaseAvailabilityGuard );
+                            schemaState, tokenHolders, indexingService, labelScanStore, indexStatisticsStore, databaseDependendies, databaseAvailabilityGuard,
+                            databaseId );
             this.transactions.add( tx );
             return tx;
         }

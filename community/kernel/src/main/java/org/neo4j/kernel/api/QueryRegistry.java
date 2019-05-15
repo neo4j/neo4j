@@ -32,7 +32,7 @@ import org.neo4j.values.virtual.MapValue;
  * If a query uses multiple transactions (think of PERIODIC COMMIT), the query needs to be registered to all
  * transactions it uses.
  */
-public interface QueryRegistryOperations
+public interface QueryRegistry
 {
     /**
      * List of all currently running stream in this transaction. An user can have multiple stream running

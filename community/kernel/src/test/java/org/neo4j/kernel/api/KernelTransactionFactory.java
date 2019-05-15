@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -33,8 +32,8 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -58,6 +57,7 @@ import org.neo4j.time.Clocks;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.kernel.impl.transaction.tracing.TransactionTracer.NULL;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
@@ -92,20 +92,20 @@ public class KernelTransactionFactory
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( mock( DefaultValueMapper.class ) );
         KernelTransactionImplementation transaction =
-                new KernelTransactionImplementation( Config.defaults(), mock( StatementOperationParts.class ), mock( DatabaseTransactionEventListeners.class ),
+                new KernelTransactionImplementation( Config.defaults(), mock( DatabaseTransactionEventListeners.class ),
                         mock( ConstraintIndexCreator.class ), mock( GlobalProcedures.class ), headerInformationFactory,
                         mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),
-                        mock( Pool.class ), Clocks.systemClock(), new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
+                        mock( Pool.class ), Clocks.nanoClock(), new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                         new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), NULL, LockTracer.NONE, PageCursorTracerSupplier.NULL, storageEngine,
                         new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                         new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
                         mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies,
-                        mock( AvailabilityGuard.class ) );
+                        mock( AvailabilityGuard.class ), new DatabaseId( DEFAULT_DATABASE_NAME ) );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 
         transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit,
-                loginContext.authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 1L, EMBEDDED_CONNECTION );
+                loginContext.authorize( LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME ), 0L, 1L, EMBEDDED_CONNECTION );
 
         return new Instances( transaction );
     }

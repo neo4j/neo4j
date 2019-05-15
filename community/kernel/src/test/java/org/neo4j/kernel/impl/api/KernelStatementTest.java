@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
@@ -37,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 class KernelStatementTest
 {
@@ -46,9 +47,7 @@ class KernelStatementTest
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         when( transaction.isSuccess() ).thenReturn( true );
-        KernelStatement statement = new KernelStatement( transaction,
-                null, LockTracer.NONE,
-                mock( StatementOperationParts.class ), new ClockContext(), EmptyVersionContextSupplier.EMPTY );
+        KernelStatement statement = createStatement( transaction );
         statement.acquire();
 
         // when
@@ -62,10 +61,7 @@ class KernelStatementTest
     void assertStatementIsNotOpenWhileAcquireIsNotInvoked()
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        TxStateHolder txStateHolder = mock( TxStateHolder.class );
-        KernelStatement statement = new KernelStatement( transaction, txStateHolder,
-                LockTracer.NONE, mock( StatementOperationParts.class ),
-                new ClockContext(), EmptyVersionContextSupplier.EMPTY );
+        KernelStatement statement = createStatement( transaction );
 
         assertThrows( NotInTransactionException.class, statement::assertOpen );
     }
@@ -74,16 +70,13 @@ class KernelStatementTest
     void reportQueryWaitingTimeToTransactionStatisticWhenFinishQueryExecution()
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        TxStateHolder txStateHolder = mock( TxStateHolder.class );
 
         KernelTransactionImplementation.Statistics statistics = new KernelTransactionImplementation.Statistics( transaction,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ) );
         when( transaction.getStatistics() ).thenReturn( statistics );
         when( transaction.executingQuery() ).thenReturn( Optional.empty() );
 
-        KernelStatement statement = new KernelStatement( transaction, txStateHolder,
-                LockTracer.NONE, mock( StatementOperationParts.class ),
-                new ClockContext(), EmptyVersionContextSupplier.EMPTY );
+        KernelStatement statement = createStatement( transaction );
         statement.acquire();
 
         ExecutingQuery query = getQueryWithWaitingTime();
@@ -95,6 +88,13 @@ class KernelStatementTest
         statement.stopQueryExecution( query3 );
 
         assertEquals( 3, statistics.getWaitingTimeNanos( 1 ) );
+    }
+
+    private static KernelStatement createStatement( KernelTransactionImplementation transaction )
+    {
+        return new KernelStatement( transaction, LockTracer.NONE, new ClockContext(), EmptyVersionContextSupplier.EMPTY,
+                new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
+                new DatabaseId( DEFAULT_DATABASE_NAME ) );
     }
 
     private static ExecutingQuery getQueryWithWaitingTime()

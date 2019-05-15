@@ -35,7 +35,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.QueryRegistryOperations;
+import org.neo4j.kernel.api.QueryRegistry;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
@@ -103,7 +103,7 @@ class Neo4jTransactionalContextTest
         when( initialTransaction.transactionType() ).thenReturn( transactionType );
         when( initialTransaction.securityContext() ).thenReturn( securityContext );
         when( initialTransaction.terminationReason() ).thenReturn( Optional.empty() );
-        QueryRegistryOperations initialQueryRegistry = mock( QueryRegistryOperations.class );
+        QueryRegistry initialQueryRegistry = mock( QueryRegistry.class );
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );
         ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
 
@@ -111,7 +111,7 @@ class Neo4jTransactionalContextTest
         KernelTransaction secondKTX = mockTransaction( secondStatement );
         InternalTransaction secondTransaction = mock( InternalTransaction.class );
         when( secondTransaction.terminationReason() ).thenReturn( Optional.empty() );
-        QueryRegistryOperations secondQueryRegistry = mock( QueryRegistryOperations.class );
+        QueryRegistry secondQueryRegistry = mock( QueryRegistry.class );
 
         when( executingQuery.queryText() ).thenReturn( "X" );
         when( executingQuery.queryParameters() ).thenReturn( EMPTY_MAP );
@@ -183,7 +183,7 @@ class Neo4jTransactionalContextTest
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
         Statement initialStatement = mock( Statement.class );
         KernelTransaction initialKTX = mockTransaction( initialStatement );
-        QueryRegistryOperations initialQueryRegistry = mock( QueryRegistryOperations.class );
+        QueryRegistry initialQueryRegistry = mock( QueryRegistry.class );
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );
         ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
 
@@ -191,7 +191,7 @@ class Neo4jTransactionalContextTest
         KernelTransaction secondKTX = mockTransaction( secondStatement );
         InternalTransaction secondTransaction = mock( InternalTransaction.class );
         when( secondTransaction.terminationReason() ).thenReturn( Optional.empty() );
-        QueryRegistryOperations secondQueryRegistry = mock( QueryRegistryOperations.class );
+        QueryRegistry secondQueryRegistry = mock( QueryRegistry.class );
 
         when( executingQuery.queryText() ).thenReturn( "X" );
         when( executingQuery.queryParameters() ).thenReturn( EMPTY_MAP );
@@ -412,11 +412,11 @@ class Neo4jTransactionalContextTest
         initialStatement = mock( KernelStatement.class );
 
         statistics = new ConfiguredExecutionStatistics();
-        QueryRegistryOperations queryRegistryOperations = mock( QueryRegistryOperations.class );
+        QueryRegistry queryRegistry = mock( QueryRegistry.class );
         InternalTransaction internalTransaction = mock( InternalTransaction.class );
         when( internalTransaction.terminationReason() ).thenReturn( Optional.empty() );
 
-        when( initialStatement.queryRegistration() ).thenReturn( queryRegistryOperations );
+        when( initialStatement.queryRegistration() ).thenReturn( queryRegistry );
         when( queryService.getDependencyResolver() ).thenReturn( resolver );
         when( resolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( txBridge );
         when( queryService.beginTransaction( any(), any(), any() ) ).thenReturn( internalTransaction );

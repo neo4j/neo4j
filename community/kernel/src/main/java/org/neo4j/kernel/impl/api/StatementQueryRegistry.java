@@ -22,29 +22,28 @@ package org.neo4j.kernel.impl.api;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.kernel.api.QueryRegistry;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
-public class StackingQueryRegistrationOperations implements QueryRegistrationOperations
+public class StatementQueryRegistry implements QueryRegistry
 {
-    private final MonotonicCounter lastQueryId = MonotonicCounter.newAtomicMonotonicCounter();
+    private static final MonotonicCounter lastQueryId = MonotonicCounter.newAtomicMonotonicCounter();
+    private final KernelStatement statement;
     private final SystemNanoClock clock;
     private final AtomicReference<CpuClock> cpuClockRef;
     private final AtomicReference<HeapAllocation> heapAllocationRef;
     private final DatabaseId databaseId;
 
-    public StackingQueryRegistrationOperations(
-            SystemNanoClock clock,
-            AtomicReference<CpuClock> cpuClockRef,
-            AtomicReference<HeapAllocation> heapAllocationRef,
-            DatabaseId databaseId )
+    StatementQueryRegistry( KernelStatement statement, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef,
+            AtomicReference<HeapAllocation> heapAllocationRef, DatabaseId databaseId )
     {
+        this.statement = statement;
         this.clock = clock;
         this.cpuClockRef = cpuClockRef;
         this.heapAllocationRef = heapAllocationRef;
@@ -52,39 +51,36 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
     }
 
     @Override
-    public Optional<ExecutingQuery> executingQuery( KernelStatement statement )
+    public Optional<ExecutingQuery> executingQuery()
     {
         return statement.executingQuery();
     }
 
     @Override
-    public void registerExecutingQuery( KernelStatement statement, ExecutingQuery executingQuery )
+    public void registerExecutingQuery( ExecutingQuery executingQuery )
     {
         statement.startQueryExecution( executingQuery );
     }
 
     @Override
-    public ExecutingQuery startQueryExecution(
-        KernelStatement statement,
-        String queryText,
-        MapValue queryParameters
-    )
+    public ExecutingQuery startQueryExecution( String queryText, MapValue queryParameters )
     {
         long queryId = lastQueryId.incrementAndGet();
         Thread thread = Thread.currentThread();
         long threadId = thread.getId();
         String threadName = thread.getName();
+        KernelTransactionImplementation transaction = statement.getTransaction();
         ExecutingQuery executingQuery =
-                new ExecutingQuery( queryId, statement.getTransaction().clientInfo(), databaseId, statement.username(), queryText, queryParameters,
-                        statement.getTransaction().getMetaData(), () -> statement.locks().activeLockCount(),
+                new ExecutingQuery( queryId, transaction.clientInfo(), databaseId, statement.username(), queryText, queryParameters,
+                        transaction.getMetaData(), () -> statement.locks().activeLockCount(),
                         statement.getPageCursorTracer(),
                         threadId, threadName, clock, cpuClockRef.get(), heapAllocationRef.get() );
-        registerExecutingQuery( statement, executingQuery );
+        registerExecutingQuery( executingQuery );
         return executingQuery;
     }
 
     @Override
-    public void unregisterExecutingQuery( KernelStatement statement, ExecutingQuery executingQuery )
+    public void unregisterExecutingQuery( ExecutingQuery executingQuery )
     {
         statement.stopQueryExecution( executingQuery );
     }

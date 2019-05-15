@@ -19,7 +19,7 @@
  */
 package org.neo4j.procedure.builtin;
 
-import org.neo4j.kernel.api.QueryRegistryOperations;
+import org.neo4j.kernel.api.QueryRegistry;
 import org.neo4j.kernel.api.ResourceManager.EmptyResourceManager;
 import org.neo4j.kernel.api.Statement;
 
@@ -33,7 +33,7 @@ public class StubStatement extends EmptyResourceManager implements Statement
     }
 
     @Override
-    public QueryRegistryOperations queryRegistration()
+    public QueryRegistry queryRegistration()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

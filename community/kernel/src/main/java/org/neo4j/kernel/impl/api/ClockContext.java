@@ -23,18 +23,21 @@ import java.time.Clock;
 import java.time.ZoneId;
 import java.util.Objects;
 
+import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
+
 public final class ClockContext
 {
-    private final Clock system;
+    private final SystemNanoClock system;
     private Clock statement;
     private Clock transaction;
 
     public ClockContext()
     {
-        this( Clock.systemDefaultZone() );
+        this( Clocks.nanoClock() );
     }
 
-    public ClockContext( Clock clock )
+    public ClockContext( SystemNanoClock clock )
     {
         this.system = Objects.requireNonNull( clock, "system clock" );
     }
@@ -62,7 +65,7 @@ public final class ClockContext
         return system.getZone();
     }
 
-    public Clock systemClock()
+    public SystemNanoClock systemClock()
     {
         return system;
     }

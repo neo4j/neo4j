@@ -25,7 +25,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.QueryRegistryOperations;
+import org.neo4j.kernel.api.QueryRegistry;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
@@ -169,7 +169,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         collectTransactionExecutionStatistic();
 
         // (1) Unbind current transaction
-        QueryRegistryOperations oldQueryRegistryOperations = statement.queryRegistration();
+        QueryRegistry oldQueryRegistry = statement.queryRegistration();
         Statement oldStatement = statement;
         InternalTransaction oldTransaction = transaction;
         KernelTransaction oldKernelTx = txBridge.getKernelTransactionBoundToThisThread( true );
@@ -184,7 +184,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
 
         // (3) Rebind old transaction just to commit and close it (and unregister as a side effect of that)
         txBridge.bindTransactionToCurrentThread( oldKernelTx );
-        oldQueryRegistryOperations.unregisterExecutingQuery( executingQuery );
+        oldQueryRegistry.unregisterExecutingQuery( executingQuery );
         try
         {
             oldStatement.close();

@@ -709,27 +709,26 @@ public class KernelTransactionsTest
                 clock );
         StatementLocksFactory statementLocksFactory = new SimpleStatementLocksFactory( locks );
 
-        StatementOperationParts statementOperations = mock( StatementOperationParts.class );
         KernelTransactions transactions;
         if ( testKernelTransactions )
         {
             transactions = createTestTransactions( storageEngine, commitProcess, transactionIdStore, tracers,
-                    statementLocksFactory, statementOperations, clock, databaseAvailabilityGuard );
+                    statementLocksFactory, clock, databaseAvailabilityGuard );
         }
         else
         {
             transactions = createTransactions( storageEngine, commitProcess, transactionIdStore, tracers,
-                    statementLocksFactory, statementOperations, clock, databaseAvailabilityGuard, config );
+                    statementLocksFactory, clock, databaseAvailabilityGuard, config );
         }
         transactions.start();
         return transactions;
     }
 
     private static KernelTransactions createTransactions( StorageEngine storageEngine, TransactionCommitProcess commitProcess,
-            TransactionIdStore transactionIdStore, Tracers tracers, StatementLocksFactory statementLocksFactory, StatementOperationParts statementOperations,
+            TransactionIdStore transactionIdStore, Tracers tracers, StatementLocksFactory statementLocksFactory,
             SystemNanoClock clock, AvailabilityGuard databaseAvailabilityGuard, Config config )
     {
-        return new KernelTransactions( config, statementLocksFactory, null, statementOperations,
+        return new KernelTransactions( config, statementLocksFactory, null,
                 DEFAULT, commitProcess, mock( DatabaseTransactionEventListeners.class ),
                 mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, mock( GlobalProcedures.class ), transactionIdStore, clock,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
@@ -741,11 +740,11 @@ public class KernelTransactionsTest
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
             TransactionCommitProcess commitProcess, TransactionIdStore transactionIdStore, Tracers tracers,
-            StatementLocksFactory statementLocksFactory, StatementOperationParts statementOperations,
+            StatementLocksFactory statementLocksFactory,
             SystemNanoClock clock, AvailabilityGuard databaseAvailabilityGuard )
     {
         Dependencies dependencies = createDependencies();
-        return new TestKernelTransactions( statementLocksFactory, null, statementOperations, DEFAULT, commitProcess,
+        return new TestKernelTransactions( statementLocksFactory, null, DEFAULT, commitProcess,
                 mock( DatabaseTransactionEventListeners.class ), mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine,
                 mock( GlobalProcedures.class ), transactionIdStore, clock, new CanWrite(), EmptyVersionContextSupplier.EMPTY, mockedTokenHolders(),
                 dependencies );
@@ -798,7 +797,7 @@ public class KernelTransactionsTest
     private static class TestKernelTransactions extends KernelTransactions
     {
         TestKernelTransactions( StatementLocksFactory statementLocksFactory,
-                ConstraintIndexCreator constraintIndexCreator, StatementOperationParts statementOperations,
+                ConstraintIndexCreator constraintIndexCreator,
                 TransactionHeaderInformationFactory txHeaderFactory,
                 TransactionCommitProcess transactionCommitProcess,
                 DatabaseTransactionEventListeners eventListeners, TransactionMonitor transactionMonitor, AvailabilityGuard databaseAvailabilityGuard,
@@ -806,7 +805,7 @@ public class KernelTransactionsTest
                 AccessCapability accessCapability,
                 VersionContextSupplier versionContextSupplier, TokenHolders tokenHolders, Dependencies databaseDependencies )
         {
-            super( Config.defaults(), statementLocksFactory, constraintIndexCreator, statementOperations, txHeaderFactory,
+            super( Config.defaults(), statementLocksFactory, constraintIndexCreator, txHeaderFactory,
                     transactionCommitProcess, eventListeners, transactionMonitor, databaseAvailabilityGuard, tracers,
                     storageEngine, globalProcedures, transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                     new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), accessCapability,

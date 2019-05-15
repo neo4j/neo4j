@@ -70,15 +70,12 @@ import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactions;
-import org.neo4j.kernel.impl.api.StackingQueryRegistrationOperations;
-import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
@@ -622,13 +619,10 @@ public class Database extends LifecycleAdapter
 
         ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService, logProvider );
 
-        StatementOperationParts statementOperationParts = databaseDependencies.satisfyDependency(
-                buildStatementOperations( cpuClockRef, heapAllocationRef ) );
-
         DatabaseTransactionEventListeners databaseTransactionEventListeners =
                 new DatabaseTransactionEventListeners( facade, transactionEventListeners, databaseId );
         KernelTransactions kernelTransactions = life.add(
-                new KernelTransactions( databaseConfig, statementLocksFactory, constraintIndexCreator, statementOperationParts,
+                new KernelTransactions( databaseConfig, statementLocksFactory, constraintIndexCreator,
                         transactionHeaderInformationFactory, transactionCommitProcess, databaseTransactionEventListeners, transactionStats,
                         databaseAvailabilityGuard, globalTracers,
                         storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
@@ -826,15 +820,6 @@ public class Database extends LifecycleAdapter
     public JobScheduler getScheduler()
     {
         return scheduler;
-    }
-
-    private StatementOperationParts buildStatementOperations( AtomicReference<CpuClock> cpuClockRef,
-            AtomicReference<HeapAllocation> heapAllocationRef )
-    {
-        QueryRegistrationOperations queryRegistrationOperations =
-                new StackingQueryRegistrationOperations( clock, cpuClockRef, heapAllocationRef, databaseId );
-
-        return new StatementOperationParts( queryRegistrationOperations );
     }
 
     public StoreCopyCheckPointMutex getStoreCopyCheckPointMutex()

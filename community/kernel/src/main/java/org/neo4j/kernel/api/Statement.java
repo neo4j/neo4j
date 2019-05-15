@@ -29,12 +29,12 @@ import org.neo4j.graphdb.Resource;
  *
  * Note that Statement used to be the access-point for all kernel reads and writes before 3.4. For
  * accessing the graph now, see {@link org.neo4j.internal.kernel.api.Transaction}. The only remainder
- * the QueryRegistryOperations, which will eventually also move from here.
+ * the QueryRegistry, which will eventually also move from here.
  */
 public interface Statement extends Resource, ResourceManager
 {
     /**
      * @return interface exposing operations for associating metadata with this statement
      */
-    QueryRegistryOperations queryRegistration();
+    QueryRegistry queryRegistration();
 }

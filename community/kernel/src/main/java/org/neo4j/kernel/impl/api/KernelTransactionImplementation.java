@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -74,6 +73,7 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.availability.AvailabilityGuard;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -108,6 +108,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 
 import static java.lang.String.format;
@@ -119,11 +120,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_
 import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.getTraceProvider;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
-/**
- * This class should replace the {@link org.neo4j.kernel.api.KernelTransaction} interface, and take its name, as soon
- * as
- * {@code TransitionalTxManagementKernelTransaction} is gone from {@code server}.
- */
 public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder, ExecutionStatistics
 {
     /*
@@ -200,16 +196,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private final Lock terminationReleaseLock = new ReentrantLock();
 
-    public KernelTransactionImplementation( Config config, StatementOperationParts statementOperations,
+    public KernelTransactionImplementation( Config config,
             DatabaseTransactionEventListeners eventListeners, ConstraintIndexCreator constraintIndexCreator, GlobalProcedures globalProcedures,
             TransactionHeaderInformationFactory headerInformationFactory, TransactionCommitProcess commitProcess, TransactionMonitor transactionMonitor,
-            Pool<KernelTransactionImplementation> pool, Clock clock,
+            Pool<KernelTransactionImplementation> pool, SystemNanoClock clock,
             AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, TransactionTracer transactionTracer,
             LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier, StorageEngine storageEngine, AccessCapability accessCapability,
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
             ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, IndexingService indexingService,
             LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
-            AvailabilityGuard databaseAvailabilityGuard )
+            AvailabilityGuard databaseAvailabilityGuard, DatabaseId databaseId )
     {
         this.eventListeners = eventListeners;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -225,7 +221,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.cursorTracerSupplier = cursorTracerSupplier;
         this.versionContextSupplier = versionContextSupplier;
         this.databaseAvailabilityGuard = databaseAvailabilityGuard;
-        this.currentStatement = new KernelStatement( this, this, lockTracer, statementOperations, this.clocks, versionContextSupplier );
+        this.currentStatement = new KernelStatement( this, lockTracer, this.clocks, versionContextSupplier, cpuClockRef, heapAllocationRef, databaseId );
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
         this.userMetaData = emptyMap();
