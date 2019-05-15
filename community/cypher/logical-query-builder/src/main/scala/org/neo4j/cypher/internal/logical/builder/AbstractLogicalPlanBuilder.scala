@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.builder
 
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.pos
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LabelName, SignedDecimalIntegerLiteral, Variable}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
@@ -348,10 +349,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   // AST construction
-  protected val pos = new InputPosition(0, 1, 0)
   private def varFor(name: String): Variable = Variable(name)(pos)
   private def labelName(s: String): LabelName = LabelName(s)(pos)
   private def literalInt(value: Long): SignedDecimalIntegerLiteral =
     SignedDecimalIntegerLiteral(value.toString)(pos)
 
+}
+
+object AbstractLogicalPlanBuilder {
+  val pos = new InputPosition(0, 1, 0)
 }

@@ -22,20 +22,25 @@ package org.neo4j.cypher.internal.logical.builder
 import org.neo4j.cypher.internal.logical.plans.CachedNodeProperty
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.parser.Expressions
-import org.neo4j.cypher.internal.v4_0.util.{InputPosition, Rewriter, topDown}
+import org.neo4j.cypher.internal.v4_0.util.{ASTNode, Rewriter, topDown}
 import org.parboiled.scala.{ReportingParseRunner, Rule1}
 
 object ExpressionParser {
   val injectCachedNodeProperties: Rewriter = topDown(Rewriter.lift {
     case ContainerIndex(Variable("cached"), Property(Variable(node), PropertyKeyName(prop))) =>
-      CachedNodeProperty(node, PropertyKeyName(prop)(InputPosition.NONE))(InputPosition.NONE)
+      CachedNodeProperty(node, PropertyKeyName(prop)(AbstractLogicalPlanBuilder.pos))(AbstractLogicalPlanBuilder.pos)
   })
+  val invalidateInputPositions: Rewriter = topDown(Rewriter.lift {
+    case a:ASTNode => a.dup(a.children.toSeq :+ AbstractLogicalPlanBuilder.pos)
+  })
+
   private val regex = s"(.+) AS ([a-zA-Z0-9]+)".r
   private val expParser = new ExpressionParser
 
   def parseProjections(projections: String*): Map[String, Expression] = {
     projections.map {
-      case regex(ExpressionParser(expression), alias) => (alias, injectCachedNodeProperties(expression).asInstanceOf[Expression])
+      case regex(ExpressionParser(expression), alias) => (alias,
+        injectCachedNodeProperties.andThen(invalidateInputPositions)(expression).asInstanceOf[Expression])
       case x => throw new IllegalArgumentException(s"'$x' cannot be parsed as a projection")
     }.toMap
   }
