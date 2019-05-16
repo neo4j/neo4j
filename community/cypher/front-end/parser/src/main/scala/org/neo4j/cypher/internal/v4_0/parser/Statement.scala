@@ -51,20 +51,20 @@ trait Statement extends Parser
 
   def CreateUser: Rule1[CreateUser] = rule("CATALOG CREATE USER") {
     // CREATE USER username SET PASSWORD stringLiteralPassword optionalStatus
-    group(keyword("CREATE USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
+    group(keyword("CREATE USER") ~~ validUsername ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
     optionalStatus) ~~>> ((userName, initialPassword, suspended) =>
       ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange = true, suspended.getOrElse(false))) |
     // CREATE USER username SET PASSWORD stringLiteralPassword optionalRequirePasswordChange optionalStatus
-    group(keyword("CREATE USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
+    group(keyword("CREATE USER") ~~ validUsername ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
     optionalRequirePasswordChange ~~ optionalStatus) ~~>> ((userName, initialPassword, requirePasswordChange, suspended) =>
       ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange.getOrElse(true), suspended.getOrElse(false))) |
     //
     // CREATE USER username SET PASSWORD parameterPassword optionalStatus
-    group(keyword("CREATE USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
+    group(keyword("CREATE USER") ~~ validUsername ~~ keyword("SET PASSWORD") ~~ Parameter ~~
     optionalStatus) ~~>> ((userName, initialPassword, suspended) =>
       ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange = true, suspended.getOrElse(false))) |
     // CREATE USER username SET PASSWORD parameterPassword optionalRequirePasswordChange optionalStatus
-    group(keyword("CREATE USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
+    group(keyword("CREATE USER") ~~ validUsername ~~ keyword("SET PASSWORD") ~~ Parameter ~~
     optionalRequirePasswordChange ~~ optionalStatus) ~~>> ((userName, initialPassword, requirePasswordChange, suspended) =>
       ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange.getOrElse(true), suspended.getOrElse(false)))
   }
@@ -75,30 +75,37 @@ trait Statement extends Parser
 
   def AlterUser: Rule1[AlterUser] = rule("CATALOG ALTER USER") {
     // ALTER USER username SET PASSWORD stringLiteralPassword optionalStatus
-    group(keyword("ALTER USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
+    group(keyword("ALTER USER") ~~ validUsername ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
     optionalStatus) ~~>> ((userName, initialPassword, suspended) =>
       ast.AlterUser(userName, Some(initialPassword.value), None, None, suspended)) |
     // ALTER USER username SET PASSWORD stringLiteralPassword optionalRequirePasswordChange optionalStatus
-    group(keyword("ALTER USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
+    group(keyword("ALTER USER") ~~ validUsername ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
     optionalRequirePasswordChange ~~ optionalStatus) ~~>> ((userName, initialPassword, requirePasswordChange, suspended) =>
       ast.AlterUser(userName, Some(initialPassword.value), None, requirePasswordChange, suspended)) |
     //
     // ALTER USER username SET PASSWORD parameterPassword optionalStatus
-    group(keyword("ALTER USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
+    group(keyword("ALTER USER") ~~ validUsername ~~ keyword("SET PASSWORD") ~~ Parameter ~~
     optionalStatus) ~~>> ((userName, initialPassword, suspended) =>
       ast.AlterUser(userName, None, Some(initialPassword), None, suspended)) |
     // ALTER USER username SET PASSWORD parameterPassword optionalRequirePasswordChange optionalStatus
-    group(keyword("ALTER USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
+    group(keyword("ALTER USER") ~~ validUsername ~~ keyword("SET PASSWORD") ~~ Parameter ~~
     optionalRequirePasswordChange ~~ optionalStatus) ~~>> ((userName, initialPassword, requirePasswordChange, suspended) =>
       ast.AlterUser(userName, None, Some(initialPassword), requirePasswordChange, suspended)) |
     //
     // ALTER USER username setRequirePasswordChange optionalStatus
-    group(keyword("ALTER USER") ~~ SymbolicNameString ~~ setRequirePasswordChange ~~ optionalStatus) ~~>>
+    group(keyword("ALTER USER") ~~ validUsername ~~ setRequirePasswordChange ~~ optionalStatus) ~~>>
       ((userName, requirePasswordChange, suspended) => ast.AlterUser(userName, None, None, Some(requirePasswordChange), suspended)) |
     //
     // ALTER USER username setStatus
-    group(keyword("ALTER USER") ~~ SymbolicNameString ~~ setStatus) ~~>>
+    group(keyword("ALTER USER") ~~ validUsername ~~ setStatus) ~~>>
       ((userName, suspended) => ast.AlterUser(userName, None, None, None, Some(suspended)))
+  }
+
+  def validUsername: Rule1[String] = {
+    SymbolicNameString ~~> { userName =>
+      UserNameValidator.assertValidUsername(userName)
+      userName
+    }
   }
 
   def optionalRequirePasswordChange: Rule1[Option[Boolean]] = {
