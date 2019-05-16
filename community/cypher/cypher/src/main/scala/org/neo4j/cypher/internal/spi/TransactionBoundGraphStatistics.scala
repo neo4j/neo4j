@@ -72,10 +72,13 @@ object TransactionBoundGraphStatistics {
         case _: IndexNotFoundKernelException => None
       }
 
+    override def nodesAllCardinality(): Cardinality =
+      atLeastOne(read.countsForNodeWithoutTxState(TokenRead.ANY_LABEL))
+
     override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
       atLeastOne(read.countsForNodeWithoutTxState(labelId))
 
-    override def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+    override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
       atLeastOne(read.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
 
     /**

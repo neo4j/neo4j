@@ -178,7 +178,7 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
         def getCardinality(fromLabel:String, typ:String, toLabel:String): Double =
           knownRelationshipCardinality.getOrElse((fromLabel, typ, toLabel), 0.0)
 
-        def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+        def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
           (fromLabel, relTypeId, toLabel) match {
             case (_, Some(id), _) if getRelationshipName(id).isEmpty => Cardinality(0)
             case (Some(id), _, _) if getLabelName(id).isEmpty        => Cardinality(0)

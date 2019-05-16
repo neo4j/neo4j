@@ -46,7 +46,7 @@ trait GraphStatistics {
     *   r has the type `relTypeId`, or any type if `relTypeId` is None
     * }}}
     */
-  def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality
+  def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality
 
   /**
     * Probability of any node in the index to have a given property with a particular value
@@ -67,8 +67,8 @@ class DelegatingGraphStatistics(delegate: GraphStatistics) extends GraphStatisti
   override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
     delegate.nodesWithLabelCardinality(labelId)
 
-  override def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
-    delegate.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel)
+  override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+    delegate.patternStepCardinality(fromLabel, relTypeId, toLabel)
 
   override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
     delegate.uniqueValueSelectivity(index)
@@ -82,16 +82,16 @@ class DelegatingGraphStatistics(delegate: GraphStatistics) extends GraphStatisti
 class StatisticsCompletingGraphStatistics(delegate: GraphStatistics)
   extends DelegatingGraphStatistics(delegate) {
 
-  override def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+  override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
     (fromLabel, toLabel) match {
       case (Some(_), Some(_)) =>
         // TODO: read real counts from readOperations when they are gonna be properly computed and updated
         Cardinality.min(
-          super.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, None),
-          super.cardinalityByLabelsAndRelationshipType(None, relTypeId, toLabel)
+          super.patternStepCardinality(fromLabel, relTypeId, None),
+          super.patternStepCardinality(None, relTypeId, toLabel)
         )
       case _ =>
-        super.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel)
+        super.patternStepCardinality(fromLabel, relTypeId, toLabel)
     }
 }
 

@@ -74,7 +74,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
     (new given {
       labelCardinality = Map("X" -> 1.0, "Y" -> 10.0)
       statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
-        override def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = {
+        override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = {
           // TODO proper lookup from semantic table somehow
           // X = 0, Y = 1
           if (fromLabel.exists(_.id == 0) && relTypeId.isEmpty && toLabel.isEmpty) {
@@ -84,7 +84,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
             // high from b to c
             1000000000.0
           } else {
-            super.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel)
+            super.patternStepCardinality(fromLabel, relTypeId, toLabel)
           }
         }
       }
@@ -104,7 +104,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
     (new given {
       labelCardinality = Map("X" -> 10.0, "Y" -> 1.0)
       statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
-        override def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = {
+        override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = {
           // TODO proper lookup from semantic table somehow
           // X = 0, Y = 1
           if (fromLabel.exists(_.id == 0) && relTypeId.isEmpty && toLabel.isEmpty) {
@@ -114,7 +114,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
             // low from b to c
             100.0
           } else {
-            super.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel)
+            super.patternStepCardinality(fromLabel, relTypeId, toLabel)
           }
         }
       }

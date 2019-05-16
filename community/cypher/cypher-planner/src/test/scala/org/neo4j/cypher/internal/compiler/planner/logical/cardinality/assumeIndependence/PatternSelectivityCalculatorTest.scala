@@ -39,7 +39,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with AstConstructi
     val stats: GraphStatistics = mock[GraphStatistics]
     when(stats.nodesWithLabelCardinality(any())).thenReturn(Cardinality(0))
     when(stats.nodesAllCardinality()).thenReturn(Cardinality.EMPTY)
-    when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(42))
+    when(stats.patternStepCardinality(any(), any(), any())).thenReturn(Cardinality(42))
 
     val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
     val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
@@ -55,7 +55,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with AstConstructi
     val stats: GraphStatistics = mock[GraphStatistics]
     when(stats.nodesWithLabelCardinality(any())).thenReturn(Cardinality(1))
     when(stats.nodesAllCardinality()).thenReturn(Cardinality.SINGLE)
-    when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(42))
+    when(stats.patternStepCardinality(any(), any(), any())).thenReturn(Cardinality(42))
 
     val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
     val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
@@ -71,7 +71,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with AstConstructi
     val stats: GraphStatistics = mock[GraphStatistics]
     when(stats.nodesWithLabelCardinality(any())).thenReturn(Cardinality(1))
     when(stats.nodesAllCardinality()).thenReturn(Cardinality.SINGLE)
-    when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(3))
+    when(stats.patternStepCardinality(any(), any(), any())).thenReturn(Cardinality(3))
 
     val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
     val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength(33, Some(33)))
@@ -95,7 +95,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with AstConstructi
       }
     })
     when(stats.nodesAllCardinality()).thenReturn(Cardinality(10))
-    when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(42))
+    when(stats.patternStepCardinality(any(), any(), any())).thenReturn(Cardinality(42))
 
     val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
     val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)

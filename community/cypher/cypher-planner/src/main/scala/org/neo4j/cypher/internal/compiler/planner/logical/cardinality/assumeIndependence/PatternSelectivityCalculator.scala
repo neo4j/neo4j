@@ -99,7 +99,7 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
                                                   estimatedMaxCardForPatternBasedOnLabels: Cardinality): Selectivity = {
 
     def selectivityEstimateForPattern(fromLabel: Option[LabelId], relType: Option[RelTypeId], toLabel: Option[LabelId]): Selectivity = {
-      stats.cardinalityByLabelsAndRelationshipType(fromLabel, relType, toLabel) / estimatedMaxCardForPatternBasedOnLabels getOrElse Selectivity.ONE
+      stats.patternStepCardinality(fromLabel, relType, toLabel) / estimatedMaxCardForPatternBasedOnLabels getOrElse Selectivity.ONE
     }
 
     // (a:A:B)-[r:T1|T2]->(c:C:D)    WHERE a:A AND a:B and type(r) = "T1" OR type(r) = "T2"

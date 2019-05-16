@@ -50,7 +50,7 @@ case class GraphStatisticsSnapshot(statsValues: Map[StatisticsKey, Double] = Map
       case NodesAllCardinality =>
         instrumented.nodesAllCardinality()
       case CardinalityByLabelsAndRelationshipType(lhs, relType, rhs) =>
-        instrumented.cardinalityByLabelsAndRelationshipType(lhs, relType, rhs)
+        instrumented.patternStepCardinality(lhs, relType, rhs)
       case IndexSelectivity(index) =>
         instrumented.uniqueValueSelectivity(index)
       case IndexPropertyExistsSelectivity(index) =>
@@ -82,10 +82,10 @@ case class InstrumentedGraphStatistics(inner: GraphStatistics, snapshot: Mutable
       snapshot.map.getOrElseUpdate(NodesWithLabelCardinality(labelId), inner.nodesWithLabelCardinality(labelId).amount)
     }
 
-  def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+  def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
     snapshot.map.getOrElseUpdate(
       CardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel),
-      inner.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel).amount
+      inner.patternStepCardinality(fromLabel, relTypeId, toLabel).amount
     )
 
   def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] = {

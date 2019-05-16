@@ -33,7 +33,7 @@ class DbStructureGraphStatistics(lookup: DbStructureLookup) extends GraphStatist
   override def nodesWithLabelCardinality( label: Option[LabelId] ): Cardinality =
     Cardinality(lookup.nodesWithLabelCardinality(label))
 
-  override def cardinalityByLabelsAndRelationshipType( fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId] ): Cardinality =
+  override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId] ): Cardinality =
     Cardinality(lookup.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel))
 
   override def uniqueValueSelectivity(index: IndexDescriptor ): Option[Selectivity] = {

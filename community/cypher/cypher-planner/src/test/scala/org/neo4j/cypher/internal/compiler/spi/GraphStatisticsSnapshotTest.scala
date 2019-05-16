@@ -45,7 +45,7 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
     instrumentedStatistics.nodesAllCardinality()
     instrumentedStatistics.uniqueValueSelectivity(index)
     instrumentedStatistics.nodesWithLabelCardinality(Some(label4))
-    instrumentedStatistics.cardinalityByLabelsAndRelationshipType(Some(label2), None, None)
+    instrumentedStatistics.patternStepCardinality(Some(label2), None, None)
 
     snapshot.freeze.statsValues should equal(Map(
       NodesAllCardinality -> allNodes,
@@ -61,15 +61,15 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
     instrumentedStatistics.nodesAllCardinality()
     instrumentedStatistics.uniqueValueSelectivity(index)
     instrumentedStatistics.nodesWithLabelCardinality(Some(label4))
-    instrumentedStatistics.cardinalityByLabelsAndRelationshipType(Some(label2), None, None)
-    instrumentedStatistics.cardinalityByLabelsAndRelationshipType(None, Some(RelTypeId(1)), Some(label2))
+    instrumentedStatistics.patternStepCardinality(Some(label2), None, None)
+    instrumentedStatistics.patternStepCardinality(None, Some(RelTypeId(1)), Some(label2))
 
     val snapshot2 = new MutableGraphStatisticsSnapshot()
     val statistics = graphStatistics()
 
     val instrumentedStatistics2 = InstrumentedGraphStatistics(statistics, snapshot2)
-    instrumentedStatistics2.cardinalityByLabelsAndRelationshipType(None, Some(RelTypeId(1)), Some(label2))
-    instrumentedStatistics2.cardinalityByLabelsAndRelationshipType(Some(label2), None, None)
+    instrumentedStatistics2.patternStepCardinality(None, Some(RelTypeId(1)), Some(label2))
+    instrumentedStatistics2.patternStepCardinality(Some(label2), None, None)
     instrumentedStatistics2.uniqueValueSelectivity(index)
     instrumentedStatistics2.nodesAllCardinality()
     instrumentedStatistics2.nodesWithLabelCardinality(Some(label4))
@@ -219,7 +219,7 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
       case Some(id) => Cardinality(labeledNodes * _factor)
     }
 
-    def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+    def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
       Cardinality(relCardinality * _factor)
 
     def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] = {

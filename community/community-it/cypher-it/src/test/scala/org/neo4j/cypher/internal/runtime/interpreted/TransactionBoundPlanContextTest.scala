@@ -70,8 +70,8 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
       // pattern stats
       Set(Some(LabelId(0)), None).foreach { label1 =>
         Set(Some(LabelId(1)), None).foreach { label2 =>
-          statistics.cardinalityByLabelsAndRelationshipType(label1, Some(RelTypeId(0)), label2) should equal(Cardinality.SINGLE)
-          statistics.cardinalityByLabelsAndRelationshipType(label1, None, label2) should equal(Cardinality.SINGLE)
+          statistics.patternStepCardinality(label1, Some(RelTypeId(0)), label2) should equal(Cardinality.SINGLE)
+          statistics.patternStepCardinality(label1, None, label2) should equal(Cardinality.SINGLE)
         }
       }
     })
@@ -98,17 +98,17 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
       statistics.nodesAllCardinality() should equal(Cardinality(200))
 
       // pattern stats
-      statistics.cardinalityByLabelsAndRelationshipType(
+      statistics.patternStepCardinality(
         Some(LabelId(0)), Some(RelTypeId(0)), Some(LabelId(1))) should equal(Cardinality.SINGLE)
-      statistics.cardinalityByLabelsAndRelationshipType(
+      statistics.patternStepCardinality(
         Some(LabelId(0)), Some(RelTypeId(0)), None) should equal(Cardinality(100))
-      statistics.cardinalityByLabelsAndRelationshipType(
+      statistics.patternStepCardinality(
         Some(LabelId(0)), None, Some(LabelId(1))) should equal(Cardinality.SINGLE)
-      statistics.cardinalityByLabelsAndRelationshipType(
+      statistics.patternStepCardinality(
         Some(LabelId(0)), None, None) should equal(Cardinality(100))
-      statistics.cardinalityByLabelsAndRelationshipType(
+      statistics.patternStepCardinality(
         None, None, None) should equal(Cardinality(100))
-      statistics.cardinalityByLabelsAndRelationshipType(
+      statistics.patternStepCardinality(
         None, Some(RelTypeId(0)), None) should equal(Cardinality(100))
     })
   }
