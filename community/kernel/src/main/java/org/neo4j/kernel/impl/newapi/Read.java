@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.stream.IntStream;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.index.label.LabelScan;
@@ -168,7 +166,7 @@ abstract class Read implements TxStateHolder,
                 boolean allowForAllLabels = true;
                 for ( int label : schema.getEntityTokenIds() )
                 {
-                    boolean allowForLabel = accessMode.allowsTraverseLabels( label ) && accessMode.allowsReadProperty( () -> new int[]{label}, prop );
+                    boolean allowForLabel = accessMode.allowsTraverseLabels( label ) && accessMode.allowsReadProperty( () -> Labels.from( label ), prop );
                     allowForAllLabels &= allowForLabel;
                 }
                 allowsAll &= allowForAllLabels;

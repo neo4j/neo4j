@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.Arrays;
-
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -83,7 +81,7 @@ class NodeLabelSecurityFilter implements IndexProgressor.EntityValueClient, Inde
         {
             long[] labels = node.labels().all();
             allowed &= accessMode.allowsTraverseLabels( labels ) &&
-                    accessMode.allowsReadProperty( () -> Arrays.stream( labels ).mapToInt( l -> (int) l ).toArray(), prop );
+                    accessMode.allowsReadProperty( () -> Labels.from( labels ), prop );
         }
 
         return allowed && target.acceptEntity( reference, score, values );

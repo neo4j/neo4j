@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.Arrays;
 import java.util.Iterator;
-import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
+import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -46,9 +45,8 @@ public class DefaultPropertyCursor implements PropertyCursor
     private AssertOpen assertOpen;
     private final CursorPool<DefaultPropertyCursor> pool;
     private AccessMode accessMode;
-    private static Supplier<int[]> NO_LABELS = () -> new int[0];
-    private Supplier<int[]> labels = NO_LABELS;
-    private IntPredicate allowReadProperty = ignored -> true;
+    private boolean checkReadProperty = false;
+    private long entityReference = -1L;
 
     DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor )
     {
@@ -62,7 +60,8 @@ public class DefaultPropertyCursor implements PropertyCursor
 
         init( read, assertOpen );
         storeCursor.initNodeProperties( reference );
-        allowReadProperty = this::allowedForNode;
+        checkReadProperty = true;
+        this.entityReference = nodeReference;
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -75,7 +74,6 @@ public class DefaultPropertyCursor implements PropertyCursor
             this.propertiesState = null;
             this.txStateChangedProperties = null;
         }
-        this.labels = new NodeLabels( nodeReference, read );
     }
 
     void initRelationship( long relationshipReference, long reference, Read read, AssertOpen assertOpen )
@@ -84,6 +82,8 @@ public class DefaultPropertyCursor implements PropertyCursor
 
         init( read, assertOpen );
         storeCursor.initRelationshipProperties( reference );
+        checkReadProperty = false;
+        entityReference = relationshipReference;
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -102,6 +102,8 @@ public class DefaultPropertyCursor implements PropertyCursor
     {
         init( read, assertOpen );
         storeCursor.initGraphProperties();
+        checkReadProperty = false;
+        entityReference = -1L;
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -132,8 +134,15 @@ public class DefaultPropertyCursor implements PropertyCursor
 
     boolean allowedForNode( int propertyKey )
     {
-        return accessMode.allowsPropertyReads( propertyKey ) &&
-                accessMode.allowsReadProperty( labels, propertyKey );
+        if ( checkReadProperty )
+        {
+            return accessMode.allowsPropertyReads( propertyKey ) &&
+                   accessMode.allowsReadProperty( new NodeLabels( entityReference, read ), propertyKey );
+        }
+        else
+        {
+            return true;
+        }
     }
 
     @Override
@@ -156,7 +165,7 @@ public class DefaultPropertyCursor implements PropertyCursor
         while ( storeCursor.next() )
         {
             boolean skip = propertiesState != null && propertiesState.isPropertyChangedOrRemoved( storeCursor.propertyKey() );
-            if ( !skip && allowReadProperty.test( propertyKey() ) )
+            if ( !skip && allowedForNode( propertyKey() ) )
             {
                 return true;
             }
@@ -239,11 +248,11 @@ public class DefaultPropertyCursor implements PropertyCursor
         storeCursor.close();
     }
 
-    private class NodeLabels implements Supplier<int[]>
+    private class NodeLabels implements Supplier<LabelSet>
     {
         private final long nodeReference;
         private final Read read;
-        private int[] labels;
+        private LabelSet labels;
 
         private NodeLabels( long nodeReference, Read read )
         {
@@ -252,7 +261,7 @@ public class DefaultPropertyCursor implements PropertyCursor
         }
 
         @Override
-        public int[] get()
+        public LabelSet get()
         {
             if ( labels == null )
             {
@@ -260,7 +269,7 @@ public class DefaultPropertyCursor implements PropertyCursor
                 {
                     read.singleNode( nodeReference, nodeCursor );
                     nodeCursor.next();
-                    labels = Arrays.stream( nodeCursor.labels().all() ).mapToInt( l -> (int) l ).toArray();
+                    labels = nodeCursor.labels();
                 }
             }
             return labels;
