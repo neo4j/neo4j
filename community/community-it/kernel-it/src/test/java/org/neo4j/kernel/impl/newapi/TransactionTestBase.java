@@ -24,9 +24,13 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.exceptions.ForbiddenLockInteractionException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.test.assertion.Assert;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
@@ -100,6 +104,132 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
         assertNoNode( nodeId );
     }
 
+    @Test
+    void shouldForbidLockInteractions() throws Exception
+    {
+        // GIVEN
+        int label;
+        int propertyKey;
+
+        try ( Transaction tx = beginTransaction() )
+        {
+            label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
+            propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
+            tx.schemaWrite().indexCreate( SchemaDescriptor.forLabel( label, propertyKey ) );
+            tx.success();
+        }
+
+        try ( Transaction tx = beginTransaction() )
+        {
+            assertAllowedLocks( label, propertyKey, tx );
+
+            // WHEN
+            tx.forbidLockInteractions();
+
+            // THEN
+            assertForbiddenLocks( label, propertyKey, tx );
+        }
+    }
+
+    @Test
+    void shouldAllowLockInteractions() throws Exception
+    {
+        // GIVEN
+        int label;
+        int propertyKey;
+
+        try ( Transaction tx = beginTransaction() )
+        {
+            label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
+            propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
+            tx.schemaWrite().indexCreate( SchemaDescriptor.forLabel( label, propertyKey ) );
+            tx.success();
+        }
+
+        try ( Transaction tx = beginTransaction() )
+        {
+            // WHEN
+            tx.forbidLockInteractions();
+            tx.allowLockInteractions();
+
+            // THEN
+            assertAllowedLocks( label, propertyKey, tx );
+        }
+    }
+
+    @Test
+    void shouldForbidLockInteractionsIdempotently() throws Exception
+    {
+        // GIVEN
+        int label;
+        int propertyKey;
+
+        try ( Transaction tx = beginTransaction() )
+        {
+            label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
+            propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
+            tx.schemaWrite().indexCreate( SchemaDescriptor.forLabel( label, propertyKey ) );
+            tx.success();
+        }
+
+        try ( Transaction tx = beginTransaction() )
+        {
+            // WHEN
+            tx.forbidLockInteractions();
+            tx.forbidLockInteractions();
+            tx.forbidLockInteractions();
+            tx.forbidLockInteractions();
+
+            // THEN
+            assertForbiddenLocks( label, propertyKey, tx );
+
+            // WHEN
+            tx.allowLockInteractions();
+            tx.allowLockInteractions();
+            tx.allowLockInteractions();
+            tx.allowLockInteractions();
+
+            // THEN
+            assertAllowedLocks( label, propertyKey, tx );
+
+            // WHEN
+            tx.forbidLockInteractions();
+
+            // THEN
+            assertForbiddenLocks( label, propertyKey, tx );
+        }
+    }
+
+    @Test
+    void shouldCommitOnForbiddenLocks() throws Exception
+    {
+        // GIVEN
+        long node;
+
+        try ( Transaction tx = beginTransaction() )
+        {
+            node = tx.dataWrite().nodeCreate();
+
+            // WHEN
+            tx.forbidLockInteractions();
+            tx.success();
+        }
+
+        // THEN
+        assertNodeExists( node );
+    }
+
+    private void assertAllowedLocks( int label, int propertyKey, Transaction tx )
+    {
+        tx.schemaRead().index( label, propertyKey ); // acquires shared schema lock, but that's fine again
+    }
+
+    private void assertForbiddenLocks( int label, int propertyKey, Transaction tx )
+    {
+        Assert.assertException( () -> tx.schemaRead().index( label, propertyKey ), // acquires shared schema lock
+                                ForbiddenLockInteractionException.class );
+    }
+
     private void assertNoNode( long nodeId ) throws TransactionFailureException
     {
         try ( Transaction tx = beginTransaction();
@@ -107,6 +237,16 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
         {
             tx.dataRead().singleNode( nodeId, cursor );
             assertFalse( cursor.next() );
+        }
+    }
+
+    private void assertNodeExists( long nodeId ) throws TransactionFailureException
+    {
+        try ( Transaction tx = beginTransaction();
+                NodeCursor cursor = tx.cursors().allocateNodeCursor() )
+        {
+            tx.dataRead().singleNode( nodeId, cursor );
+            assertTrue( cursor.next() );
         }
     }
 }

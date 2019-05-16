@@ -584,6 +584,18 @@ class QueryExecutionLocksIT
         }
 
         @Override
+        public void forbidLockInteractions()
+        {
+            internal.forbidLockInteractions();
+        }
+
+        @Override
+        public void allowLockInteractions()
+        {
+            internal.allowLockInteractions();
+        }
+
+        @Override
         public CursorFactory cursors()
         {
             return internal.cursors();

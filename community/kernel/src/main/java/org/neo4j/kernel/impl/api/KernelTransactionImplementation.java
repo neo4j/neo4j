@@ -83,6 +83,7 @@ import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrac
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.locking.ActiveLock;
+import org.neo4j.kernel.impl.locking.ForbiddenStatementLocks;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
@@ -668,6 +669,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             // Convert changes into commands and commit
             if ( hasChanges() )
             {
+                allowLockInteractions();
+
                 // grab all optimistic locks now, locks can't be deferred any further
                 statementLocks.prepareForCommit( currentStatement.lockTracer() );
                 // use pessimistic locks for the rest of the commit process, locks can't be deferred any further
@@ -842,6 +845,26 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
        return operations.locks();
     }
 
+    @Override
+    public void forbidLockInteractions()
+    {
+        StatementLocks locks = statementLocks;
+        if ( !(locks instanceof ForbiddenStatementLocks) )
+        {
+            this.statementLocks = new ForbiddenStatementLocks( locks );
+        }
+    }
+
+    @Override
+    public void allowLockInteractions()
+    {
+        StatementLocks locks = statementLocks;
+        if ( locks instanceof ForbiddenStatementLocks )
+        {
+            this.statementLocks = ((ForbiddenStatementLocks)locks).getRealStatementLocks();
+        }
+    }
+
     public StatementLocks statementLocks()
     {
         assertOpen();
@@ -966,6 +989,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         terminationReleaseLock.lock();
         try
         {
+            allowLockInteractions();
             statementLocks.close();
             statementLocks = null;
             terminationReason = null;
@@ -1058,9 +1082,20 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public String toString()
     {
-        String lockSessionId = statementLocks == null
-                               ? "statementLocks == null"
-                               : String.valueOf( statementLocks.pessimistic().getLockSessionId() );
+        String lockSessionId;
+        StatementLocks locks = statementLocks;
+        if ( locks == null )
+        {
+            lockSessionId = "statementLocks == null";
+        }
+        else
+        {
+            if ( locks instanceof ForbiddenStatementLocks )
+            {
+                locks = ((ForbiddenStatementLocks)locks).getRealStatementLocks();
+            }
+            lockSessionId = String.valueOf( locks.pessimistic().getLockSessionId() );
+        }
 
         return "KernelTransaction[" + lockSessionId + "]";
     }

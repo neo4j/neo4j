@@ -127,6 +127,18 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
+    public void forbidLockInteractions()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void allowLockInteractions()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     public CursorFactory cursors()
     {
         throw new UnsupportedOperationException( "not implemented" );
