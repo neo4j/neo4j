@@ -25,6 +25,17 @@ import java.util.Objects;
  * {@link AbstractBaseRecord records} are intended to be reusable. Created with a zero-arg constructor
  * and initialized with the public {@code initialize} method exposed by the specific record implementations,
  * or {@link #clear() cleared} if reading a record that isn't in use.
+ *
+ * Regarding secondary unit there are three state fields involving secondary unit. This is an explanation of what they mean and how they relate to each other:
+ * <ul>
+ *     <li>{@link #requiresSecondaryUnit()} set when a record is prepared, at a time where actual ids cannot be allocated, for one or more reasons.
+ *     This state is accessed at some point later and if this record doesn't have a secondary unit it assigned already, such an id will be allocated
+ *     and assigned {@link #setSecondaryUnitId(long)} and the {@link #setCreatedSecondaryUnit()} flag raised because it was set right now.</li>
+ *     <li>{@link #getSecondaryUnitId()} set when a large record requires a secondary unit. If such a large record is created right now
+ *     (and not loaded from store) the {@link #setCreatedSecondaryUnit()} should also be set to reflect this fact.</li>
+ *     <li>{@link #isSecondaryUnitCreated()} whether or not the secondary unit in this record (assuming it has one) was created now
+ *     and wasn't there when it was loaded from the store</li>
+ * </ul>
  */
 public abstract class AbstractBaseRecord implements Cloneable
 {
@@ -39,6 +50,7 @@ public abstract class AbstractBaseRecord implements Cloneable
     private boolean requiresSecondaryUnit;
     private boolean inUse;
     private boolean created;
+    private boolean createdSecondaryUnit;
     // Flag that indicates usage of fixed references format.
     // Fixed references format allows to avoid encoding/decoding of references in variable length format and as result
     // speed up records read/write operations.
@@ -72,7 +84,8 @@ public abstract class AbstractBaseRecord implements Cloneable
         created = false;
         secondaryUnitId = NO_ID;
         requiresSecondaryUnit = false;
-        this.useFixedReferences = false;
+        createdSecondaryUnit = false;
+        useFixedReferences = false;
     }
 
     public long getId()
@@ -91,14 +104,23 @@ public abstract class AbstractBaseRecord implements Cloneable
     }
 
     /**
-     * Sets a secondary record unit ID for this record. If this is set to something other than {@link #NO_ID}
-     * then {@link #requiresSecondaryUnit()} will return {@code true}.
-     * Setting this id is separate from setting {@link #requiresSecondaryUnit()} since this secondary unit id
-     * may be used to just free that id at the time of updating in the store if a record goes from two to one unit.
+     * Sets a secondary record unit ID for this record on loading the record. Setting this id is separate from setting {@link #requiresSecondaryUnit()}
+     * since this secondary unit id may be used to just free that id at the time of updating in the store if a record goes from two to one unit.
      */
-    public void setSecondaryUnitId( long id )
+    public void setSecondaryUnitIdOnLoad( long id )
     {
         this.secondaryUnitId = id;
+    }
+
+    /**
+     * Sets a secondary record unit ID for this record on creating the secondary unit. This method also sets the {@link #setCreatedSecondaryUnit()}.
+     * Setting this id is separate from setting {@link #requiresSecondaryUnit()} since this secondary unit id may be used to just free that id
+     * at the time of updating in the store if a record goes from two to one unit.
+     */
+    public void setSecondaryUnitIdOnCreate( long id )
+    {
+        this.secondaryUnitId = id;
+        this.createdSecondaryUnit = true;
     }
 
     public boolean hasSecondaryUnitId()
@@ -107,7 +129,7 @@ public abstract class AbstractBaseRecord implements Cloneable
     }
 
     /**
-     * @return secondary record unit ID set by {@link #setSecondaryUnitId(long)}.
+     * @return secondary record unit ID set by {@link #setSecondaryUnitIdOnLoad(long)} or {@link #setSecondaryUnitIdOnCreate(long)}.
      */
     public long getSecondaryUnitId()
     {
@@ -125,6 +147,11 @@ public abstract class AbstractBaseRecord implements Cloneable
     public boolean requiresSecondaryUnit()
     {
         return requiresSecondaryUnit;
+    }
+
+    public boolean isSecondaryUnitCreated()
+    {
+        return createdSecondaryUnit;
     }
 
     public final boolean inUse()

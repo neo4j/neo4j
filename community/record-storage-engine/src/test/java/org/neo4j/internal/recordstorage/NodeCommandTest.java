@@ -157,11 +157,11 @@ class NodeCommandTest
         NodeRecord before = new NodeRecord( 13, false, 1, 2 );
         before.setInUse( true );
         before.setRequiresSecondaryUnit( false );
-        before.setSecondaryUnitId( NO_ID ); // this and the previous line set the defaults, they are here for clarity
+        before.setSecondaryUnitIdOnLoad( NO_ID ); // this and the previous line set the defaults, they are here for clarity
         NodeRecord after = new NodeRecord( 13, false, 1, 2 );
         after.setInUse( true );
         after.setRequiresSecondaryUnit( true );
-        after.setSecondaryUnitId( 14L );
+        after.setSecondaryUnitIdOnCreate( 14L );
 
         Command.NodeCommand command = new Command.NodeCommand( before, after );
 

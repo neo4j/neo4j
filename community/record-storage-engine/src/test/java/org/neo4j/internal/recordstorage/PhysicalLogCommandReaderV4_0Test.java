@@ -44,6 +44,7 @@ import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.recordstorage.PhysicalLogCommandReaderV4_0.markAfterRecordAsCreatedIfCommandLooksCreated;
 
 class PhysicalLogCommandReaderV4_0Test
 {
@@ -209,7 +210,7 @@ class PhysicalLogCommandReaderV4_0Test
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipRecord before = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
         before.setRequiresSecondaryUnit( true );
-        before.setSecondaryUnitId( 47 );
+        before.setSecondaryUnitIdOnLoad( 47 );
         RelationshipRecord after = new RelationshipRecord( 42, true, 1, 8, 3, 4, 5, 6, 7, true, true );
         new Command.RelationshipCommand( before, after ).serialize( channel );
 
@@ -227,7 +228,7 @@ class PhysicalLogCommandReaderV4_0Test
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipRecord before = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
         before.setRequiresSecondaryUnit( false );
-        before.setSecondaryUnitId( 52 );
+        before.setSecondaryUnitIdOnLoad( 52 );
         RelationshipRecord after = new RelationshipRecord( 42, true, 1, 8, 3, 4, 5, 6, 7, true, true );
         new Command.RelationshipCommand( before, after ).serialize( channel );
 
@@ -289,7 +290,7 @@ class PhysicalLogCommandReaderV4_0Test
         RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 3 );
         RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 3, 4, 5, 6, 7, 8, true );
         after.setRequiresSecondaryUnit( true );
-        after.setSecondaryUnitId( 17 );
+        after.setSecondaryUnitIdOnCreate( 17 );
         after.setCreated();
 
         new Command.RelationshipGroupCommand( before, after ).serialize( channel );
@@ -313,7 +314,7 @@ class PhysicalLogCommandReaderV4_0Test
         RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 3 );
         RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 3, 4, 5, 6, 7, 8, true );
         after.setRequiresSecondaryUnit( false );
-        after.setSecondaryUnitId( 17 );
+        after.setSecondaryUnitIdOnCreate( 17 );
         after.setCreated();
 
         new Command.RelationshipGroupCommand( before, after ).serialize( channel );
@@ -409,7 +410,7 @@ class PhysicalLogCommandReaderV4_0Test
         PropertyRecord before = new PropertyRecord( 1 );
         PropertyRecord after = new PropertyRecord( 1 );
         after.setRequiresSecondaryUnit( true );
-        after.setSecondaryUnitId( 78 );
+        after.setSecondaryUnitIdOnCreate( 78 );
 
         new Command.PropertyCommand( before, after ).serialize( channel );
 
@@ -430,7 +431,7 @@ class PhysicalLogCommandReaderV4_0Test
         PropertyRecord before = new PropertyRecord( 1 );
         PropertyRecord after = new PropertyRecord( 1 );
         after.setRequiresSecondaryUnit( false );
-        after.setSecondaryUnitId( 78 );
+        after.setSecondaryUnitIdOnCreate( 78 );
 
         new Command.PropertyCommand( before, after ).serialize( channel );
 
@@ -496,10 +497,7 @@ class PhysicalLogCommandReaderV4_0Test
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         SchemaRecord before = createRandomSchemaRecord();
         SchemaRecord after = createRandomSchemaRecord();
-        if ( !before.inUse() && after.inUse() )
-        {
-            after.setCreated();
-        }
+        markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
 
         SchemaRule rule = new DefaultStorageIndexReference( SchemaDescriptor.forLabel( 1, 2, 3 ), false, after.getId(), null );
         new Command.SchemaRuleCommand( before, after, rule ).serialize( channel );
@@ -507,7 +505,6 @@ class PhysicalLogCommandReaderV4_0Test
         CommandReader reader = createReader();
         Command.SchemaRuleCommand command = (Command.SchemaRuleCommand) reader.read( channel );
 
-        String commandString = command.toString();
         assertBeforeAndAfterEquals( command, before, after );
     }
 
@@ -529,7 +526,7 @@ class PhysicalLogCommandReaderV4_0Test
             if ( requiresSecondaryUnit )
             {
                 record.setRequiresSecondaryUnit( rng.nextBoolean() );
-                record.setSecondaryUnitId( rng.nextLong() );
+                record.setSecondaryUnitIdOnLoad( rng.nextLong() );
             }
         }
         else
@@ -555,5 +552,6 @@ class PhysicalLogCommandReaderV4_0Test
         assertEquals( expected, record );
         assertEquals( expected.isCreated(), record.isCreated() );
         assertEquals( expected.isUseFixedReferences(), record.isUseFixedReferences() );
+        assertEquals( expected.isSecondaryUnitCreated(), record.isSecondaryUnitCreated() );
     }
 }

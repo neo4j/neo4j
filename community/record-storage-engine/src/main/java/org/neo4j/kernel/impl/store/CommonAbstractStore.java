@@ -898,14 +898,11 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     // then free the id of that secondary unit.
                     idUpdateListener.markIdAsUnused( idType, idGenerator, record.getSecondaryUnitId() );
                 }
-                if ( record.inUse() && record.requiresSecondaryUnit() && record.hasSecondaryUnitId() )
+                if ( record.inUse() && record.isSecondaryUnitCreated() )
                 {
                     // Triggers on:
                     // - (a) record got created right now and has a secondary unit, or
                     // - (b) it already existed and just now grew into a secondary unit then mark the secondary unit as used
-                    // TODO currently there's no state in the record to correctly see (b), or rather there's no telling (b) apart from
-                    //      a big record consisting of two units simply being updated. This is fine correctness-wise, but will invoke
-                    //      unnecessary calls to markIdAsUsed for big records.
                     idUpdateListener.markIdAsUsed( idType, idGenerator, record.getSecondaryUnitId() );
                 }
             }

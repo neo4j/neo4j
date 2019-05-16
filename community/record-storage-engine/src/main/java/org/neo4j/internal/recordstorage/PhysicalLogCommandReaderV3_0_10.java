@@ -234,7 +234,7 @@ public class PhysicalLogCommandReaderV3_0_10 extends BaseCommandReader
         record.setRequiresSecondaryUnit( requireSecondaryUnit );
         if ( hasSecondaryUnit )
         {
-            record.setSecondaryUnitId( channel.getLong() );
+            record.setSecondaryUnitIdOnLoad( channel.getLong() );
         }
         record.setUseFixedReferences( usesFixedReferenceFormat );
         return record;
@@ -432,7 +432,7 @@ public class PhysicalLogCommandReaderV3_0_10 extends BaseCommandReader
             record.setRequiresSecondaryUnit( requiresSecondaryUnit );
             if ( hasSecondaryUnit )
             {
-                record.setSecondaryUnitId( channel.getLong() );
+                record.setSecondaryUnitIdOnLoad( channel.getLong() );
             }
             record.setUseFixedReferences( usesFixedReferenceFormat );
         }
@@ -470,7 +470,7 @@ public class PhysicalLogCommandReaderV3_0_10 extends BaseCommandReader
             record.setFirstInSecondChain( (extraByte & 0x2) > 0 );
             if ( hasSecondaryUnit )
             {
-                record.setSecondaryUnitId( channel.getLong() );
+                record.setSecondaryUnitIdOnLoad( channel.getLong() );
             }
             record.setUseFixedReferences( usesFixedReferenceFormat );
         }
@@ -568,7 +568,7 @@ public class PhysicalLogCommandReaderV3_0_10 extends BaseCommandReader
         }
         if ( hasSecondaryUnit )
         {
-            record.setSecondaryUnitId( channel.getLong() );
+            record.setSecondaryUnitIdOnLoad( channel.getLong() );
         }
         int nrPropBlocks = channel.get();
         assert nrPropBlocks >= 0;

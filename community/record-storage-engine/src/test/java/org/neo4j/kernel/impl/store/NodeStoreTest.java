@@ -297,7 +297,7 @@ class NodeStoreTest
         nodeStore = newNodeStore( fs );
         NodeRecord record = new NodeRecord( 5L );
         record.setRequiresSecondaryUnit( true );
-        record.setSecondaryUnitId( 10L );
+        record.setSecondaryUnitIdOnLoad( 10L );
         record.setInUse( true );
         nodeStore.updateRecord( record );
         nodeStore.setHighestPossibleIdInUse( 10L );
@@ -319,7 +319,7 @@ class NodeStoreTest
         nodeStore = newNodeStore( fs );
         NodeRecord record = new NodeRecord( 5L );
         record.setRequiresSecondaryUnit( true );
-        record.setSecondaryUnitId( 10L );
+        record.setSecondaryUnitIdOnLoad( 10L );
         record.setInUse( true );
         nodeStore.updateRecord( record );
         nodeStore.setHighestPossibleIdInUse( 10L );
@@ -343,7 +343,7 @@ class NodeStoreTest
         nodeStore = newNodeStore( fs );
         NodeRecord record = new NodeRecord( primaryUnitId );
         record.setRequiresSecondaryUnit( true );
-        record.setSecondaryUnitId( secondaryUnitId );
+        record.setSecondaryUnitIdOnCreate( secondaryUnitId );
         record.setInUse( true );
         record.setCreated();
 
@@ -371,7 +371,7 @@ class NodeStoreTest
         // when
         nodeStore.getRecord( primaryUnitId, record, NORMAL );
         record.setRequiresSecondaryUnit( true );
-        record.setSecondaryUnitId( secondaryUnitId );
+        record.setSecondaryUnitIdOnCreate( secondaryUnitId );
         IdUpdateListener idUpdateListener = mock( IdUpdateListener.class );
         nodeStore.updateRecord( record, idUpdateListener );
 

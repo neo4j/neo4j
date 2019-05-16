@@ -72,7 +72,7 @@ public class ForcedSecondaryUnitRecordFormat<RECORD extends AbstractBaseRecord> 
         actual.prepare( record, recordSize, idSequence );
         if ( !record.hasSecondaryUnitId() )
         {
-            record.setSecondaryUnitId( idSequence.nextId() );
+            record.setSecondaryUnitIdOnCreate( idSequence.nextId() );
         }
     }
 

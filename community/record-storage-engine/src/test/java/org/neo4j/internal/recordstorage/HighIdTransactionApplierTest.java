@@ -139,17 +139,17 @@ class HighIdTransactionApplierTest
         HighIdTransactionApplier tracker = new HighIdTransactionApplier( neoStores );
 
         NodeRecord node = new NodeRecord( 5 ).initialize( true, 123, true, 456, 0 );
-        node.setSecondaryUnitId( 6 );
+        node.setSecondaryUnitIdOnLoad( 6 );
         node.setRequiresSecondaryUnit( true );
 
         RelationshipRecord relationship = new RelationshipRecord( 10 )
                 .initialize( true, 1, 2, 3, 4, 5, 6, 7, 8, true, true );
-        relationship.setSecondaryUnitId( 12 );
+        relationship.setSecondaryUnitIdOnLoad( 12 );
         relationship.setRequiresSecondaryUnit( true );
 
         RelationshipGroupRecord relationshipGroup = new RelationshipGroupRecord( 8 )
                 .initialize( true, 0, 1, 2, 3, 4, 5 );
-        relationshipGroup.setSecondaryUnitId( 20 );
+        relationshipGroup.setSecondaryUnitIdOnLoad( 20 );
         relationshipGroup.setRequiresSecondaryUnit( true );
 
         // WHEN

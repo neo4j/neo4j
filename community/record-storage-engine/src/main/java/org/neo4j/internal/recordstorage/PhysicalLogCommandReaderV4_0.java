@@ -189,7 +189,7 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         record.setRequiresSecondaryUnit( requireSecondaryUnit );
         if ( hasSecondaryUnit )
         {
-            record.setSecondaryUnitId( channel.getLong() );
+            record.setSecondaryUnitIdOnLoad( channel.getLong() );
         }
         record.setUseFixedReferences( usesFixedReferenceFormat );
         return record;
@@ -383,7 +383,7 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
             schemaRecord.setNextProp( channel.getLong() );
             if ( bitFlag( flags, Record.HAS_SECONDARY_UNIT ) )
             {
-                schemaRecord.setSecondaryUnitId( channel.getLong() );
+                schemaRecord.setSecondaryUnitIdOnLoad( channel.getLong() );
             }
         }
         else
@@ -603,7 +603,7 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
             record.setRequiresSecondaryUnit( requiresSecondaryUnit );
             if ( hasSecondaryUnit )
             {
-                record.setSecondaryUnitId( channel.getLong() );
+                record.setSecondaryUnitIdOnLoad( channel.getLong() );
             }
             record.setUseFixedReferences( usesFixedReferenceFormat );
         }
@@ -641,7 +641,7 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
             record.setFirstInSecondChain( (extraByte & 0x2) > 0 );
             if ( hasSecondaryUnit )
             {
-                record.setSecondaryUnitId( channel.getLong() );
+                record.setSecondaryUnitIdOnLoad( channel.getLong() );
             }
             record.setUseFixedReferences( usesFixedReferenceFormat );
         }
@@ -740,7 +740,7 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         }
         if ( hasSecondaryUnit )
         {
-            record.setSecondaryUnitId( channel.getLong() );
+            record.setSecondaryUnitIdOnLoad( channel.getLong() );
         }
         int nrPropBlocks = channel.get();
         assert nrPropBlocks >= 0;
@@ -834,11 +834,16 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         return new Command.RelationshipCountsCommand( startLabelId, typeId, endLabelId, delta );
     }
 
-    private static void markAfterRecordAsCreatedIfCommandLooksCreated( AbstractBaseRecord before, AbstractBaseRecord after )
+    static void markAfterRecordAsCreatedIfCommandLooksCreated( AbstractBaseRecord before, AbstractBaseRecord after )
     {
         if ( !before.inUse() && after.inUse() )
         {
             after.setCreated();
+        }
+        if ( !before.hasSecondaryUnitId() && after.hasSecondaryUnitId() )
+        {
+            // Override the "load" of the secondary unit to be a create since the before state didn't have it and the after does
+            after.setSecondaryUnitIdOnCreate( after.getSecondaryUnitId() );
         }
     }
 }
