@@ -331,7 +331,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     }
 
     @Override
-    protected FormattedLog buildLog( Class loggingClass )
+    protected FormattedLog buildLog( Class<?> loggingClass )
     {
         String className = loggingClass.getName();
         String shortenedClassName = PACKAGE_PATTERN.matcher( className ).replaceAll( "$1." );

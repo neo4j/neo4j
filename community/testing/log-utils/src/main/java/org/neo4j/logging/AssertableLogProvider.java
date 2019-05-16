@@ -290,7 +290,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
     }
 
     @Override
-    protected Log buildLog( Class loggingClass )
+    protected Log buildLog( Class<?> loggingClass )
     {
         return new AssertableLog( loggingClass.getName() );
     }

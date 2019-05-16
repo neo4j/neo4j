@@ -38,7 +38,7 @@ public abstract class AbstractLogProvider<T extends Log> implements LogProvider
     private final ReadWriteLock settingsChangeLock = new ReentrantReadWriteLock();
 
     @Override
-    public T getLog( final Class loggingClass )
+    public T getLog( final Class<?> loggingClass )
     {
         return getLog( loggingClass.getName(), () -> buildLog( loggingClass ) );
     }
@@ -82,7 +82,7 @@ public abstract class AbstractLogProvider<T extends Log> implements LogProvider
      * @param loggingClass the context for the returned {@link Log}
      * @return a {@link Log} that logs messages with the {@code loggingClass} as the context
      */
-    protected abstract T buildLog( Class loggingClass );
+    protected abstract T buildLog( Class<?> loggingClass );
 
     /**
      * @param name the context for the returned {@link Log}

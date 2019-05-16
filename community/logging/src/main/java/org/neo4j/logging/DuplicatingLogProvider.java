@@ -66,7 +66,7 @@ public class DuplicatingLogProvider extends AbstractLogProvider<DuplicatingLog>
     }
 
     @Override
-    protected DuplicatingLog buildLog( final Class loggingClass )
+    protected DuplicatingLog buildLog( final Class<?> loggingClass )
     {
         return buildLog( logProvider -> logProvider.getLog( loggingClass ) );
     }
