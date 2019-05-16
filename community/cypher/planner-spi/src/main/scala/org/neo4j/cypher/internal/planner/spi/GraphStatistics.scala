@@ -24,6 +24,11 @@ import org.neo4j.cypher.internal.v4_0.util.{Cardinality, LabelId, RelTypeId, Sel
 trait GraphStatistics {
 
   /**
+    * Gets the Cardinality of all nodes regardless of labels.
+    */
+  def nodesAllCardinality(): Cardinality
+
+  /**
     * Gets the Cardinality for given LabelId
     *
     * Attention: This method does NOT return the number of nodes anymore!
@@ -32,22 +37,29 @@ trait GraphStatistics {
     */
   def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality
 
-  def nodesAllCardinality(): Cardinality
-
+  /**
+    * Gets the Cardinality of all relationships (a)-[r]->(b), where
+    *
+    * {{{
+    *   a has the label `fromLabel`, or any labels if `fromLabel` is None
+    *   b has the label `toLabel`, or any labels if `toLabel` is None
+    *   r has the type `relTypeId`, or any type if `relTypeId` is None
+    * }}}
+    */
   def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality
 
-  /*
-      Probability of any node in the index to have a given property with a particular value
-
-      indexSelectivity(:X, prop) = s => |MATCH (a:X)  WHERE has(x.prop)| * s = |MATCH (a:X) WHERE x.prop = '*'|
-   */
+  /**
+    * Probability of any node in the index to have a given property with a particular value
+    *
+    * indexSelectivity(:X, prop) = s => |MATCH (a:X)  WHERE has(x.prop)| * s = |MATCH (a:X) WHERE x.prop = '*'|
+    */
   def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity]
 
-  /*
-      Probability of any node with the given label, to have a particular property
-
-      indexPropertyExistsSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE has(x.prop)|
-   */
+  /**
+    * Probability of any node with the given label, to have a particular property
+    *
+    * indexPropertyExistsSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE has(x.prop)|
+    */
   def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity]
 }
 
