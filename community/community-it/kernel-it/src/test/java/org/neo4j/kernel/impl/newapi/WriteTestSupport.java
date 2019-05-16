@@ -23,10 +23,14 @@ import java.io.File;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.database.DatabaseManagementService;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.GraphDatabaseServiceCleaner;
@@ -43,6 +47,19 @@ public class WriteTestSupport implements KernelAPIWriteTestSupport
     public void setup( File storeDir )
     {
         db = newDb( storeDir );
+        try ( Transaction tx = beginTransaction() )
+        {
+            //We are creating these dummy tokens so that that the ones that we actually use don't get
+            //the value 0. Using 0 may hide mask bugs that are caused by default the intitalization of ints
+            TokenWrite tokenWrite = tx.tokenWrite();
+            tokenWrite.propertyKeyCreateForName( "DO_NOT_USE", false );
+            tokenWrite.labelCreateForName( "DO_NOT_USE", false );
+            tokenWrite.relationshipTypeCreateForName( "DO_NOT_USE", false );
+        }
+        catch ( KernelException e )
+        {
+            throw new AssertionError( "Failed to setup database", e );
+        }
     }
 
     protected GraphDatabaseService newDb( File storeDir )
@@ -55,7 +72,7 @@ public class WriteTestSupport implements KernelAPIWriteTestSupport
     public void clearGraph()
     {
         GraphDatabaseServiceCleaner.cleanDatabaseContent( db );
-        try ( Transaction tx = db.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             PropertyContainer graphProperties = graphProperties();
             for ( String key : graphProperties.getPropertyKeys() )
@@ -80,6 +97,11 @@ public class WriteTestSupport implements KernelAPIWriteTestSupport
     {
         DependencyResolver resolver = ((GraphDatabaseAPI) this.db).getDependencyResolver();
         return resolver.resolveDependency( Kernel.class );
+    }
+
+    private Transaction beginTransaction() throws TransactionFailureException
+    {
+        return kernelToTest().beginTransaction( Transaction.Type.implicit, LoginContext.AUTH_DISABLED );
     }
 
     @Override
