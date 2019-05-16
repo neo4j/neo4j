@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.v4_0.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.{Rewriter, topDown}
 import org.neo4j.cypher.internal.v4_0.expressions._
 

@@ -85,16 +85,16 @@ object LogicalPlans {
           val result = mapper.onOneChildPlan(current, source)
           resultStack.push(result)
 
-        case (Some(left), Some(right)) if right == left =>
+        case (Some(left), Some(right)) if right eq left =>
           throw new IllegalStateException(s"Tried to map bad logical plan. LHS and RHS must never be the same: op: $current\nfull plan: $plan")
 
-        case (Some(left), Some(_)) if comingFrom == left =>
+        case (Some(left), Some(_)) if comingFrom eq left =>
           val arg1 = resultStack.pop()
           val arg2 = resultStack.pop()
           val result = mapper.onTwoChildPlan(current, arg1, arg2)
           resultStack.push(result)
 
-        case (Some(left), Some(right)) if comingFrom == right =>
+        case (Some(left), Some(right)) if comingFrom eq right =>
           planStack.push(current)
           populate(left)
       }

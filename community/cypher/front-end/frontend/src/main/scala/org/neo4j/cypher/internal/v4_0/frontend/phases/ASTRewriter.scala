@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.frontend.phases
 
-import org.neo4j.cypher.internal.v4_0.ast.{Statement, UnaliasedReturnItem}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.v4_0.ast.{Statement, UnaliasedReturnItem}
 import org.neo4j.cypher.internal.v4_0.expressions.NotEquals
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStep._
 import org.neo4j.cypher.internal.v4_0.rewriting.conditions._
