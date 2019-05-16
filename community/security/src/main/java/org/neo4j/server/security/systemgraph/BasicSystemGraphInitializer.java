@@ -37,6 +37,7 @@ import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.string.UTF8;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_USER_NAME;
 
@@ -75,24 +76,29 @@ public class BasicSystemGraphInitializer
         // we set it up by
         // 1) Try to migrate users from the auth file
         // 2) If no users were migrated, create one default user
+        if ( isSystemGraphEmpty() )
+        {
+            setupDefaultDatabasesAndConstraints();
+            migrateFromAuthFile();
+        }
+
         if ( nbrOfUsers() == 0 )
         {
-            // Ensure that multiple users cannot have the same name and create an index
-            final QueryResult.QueryResultVisitor<RuntimeException> resultVisitor = row -> true;
-            queryExecutor.executeQuery( "CREATE CONSTRAINT ON (u:User) ASSERT u.name IS UNIQUE", Collections.emptyMap(), resultVisitor );
-            queryExecutor.executeQuery( "CREATE CONSTRAINT ON (d:Database) ASSERT d.name IS UNIQUE", Collections.emptyMap(), resultVisitor );
-
-            ensureDefaultDatabases();
-
-            if ( !migrateFromAuthFile() )
-            {
-                ensureDefaultUser();
-            }
+            ensureDefaultUser();
         }
         else
         {
             ensureCorrectInitialPassword();
         }
+    }
+
+    protected boolean isSystemGraphEmpty()
+    {
+        // Execute a query to see if the system database exists
+        String query = "MATCH (db:Database {name: $name}) RETURN db.name";
+        Map<String,Object> params = map( "name", SYSTEM_DATABASE_NAME );
+
+        return !queryExecutor.executeQueryWithParamCheck( query, params );
     }
 
     protected long nbrOfUsers()
@@ -148,8 +154,14 @@ public class BasicSystemGraphInitializer
         }
     }
 
-    protected void ensureDefaultDatabases() throws InvalidArgumentsException
+    protected void setupDefaultDatabasesAndConstraints() throws InvalidArgumentsException
     {
+        // Ensure that multiple users, roles or databases cannot have the same name and are indexed
+        final QueryResult.QueryResultVisitor<RuntimeException> resultVisitor = row -> true;
+        queryExecutor.executeQuery( "CREATE CONSTRAINT ON (u:User) ASSERT u.name IS UNIQUE", Collections.emptyMap(), resultVisitor );
+        queryExecutor.executeQuery( "CREATE CONSTRAINT ON (r:Role) ASSERT r.name IS UNIQUE", Collections.emptyMap(), resultVisitor );
+        queryExecutor.executeQuery( "CREATE CONSTRAINT ON (d:Database) ASSERT d.name IS UNIQUE", Collections.emptyMap(), resultVisitor );
+
         newDb( defaultDbName );
         newDb( SYSTEM_DATABASE_NAME );
     }
@@ -197,7 +209,7 @@ public class BasicSystemGraphInitializer
         }
     }
 
-    private boolean migrateFromAuthFile() throws Exception
+    private void migrateFromAuthFile() throws Exception
     {
         UserRepository userRepository = startUserRepository( migrationUserRepositorySupplier );
         ListSnapshot<User> users = userRepository.getPersistedSnapshot();
@@ -222,7 +234,5 @@ public class BasicSystemGraphInitializer
         }
 
         stopUserRepository( userRepository );
-
-        return usersToMigrate;
     }
 }
