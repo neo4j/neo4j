@@ -26,12 +26,12 @@ import org.neo4j.cypher.internal.v4_0.util.RelTypeId
 import org.neo4j.cypher.internal.v4_0.util.Selectivity
 
 case object HardcodedGraphStatistics extends GraphStatistics {
-  val NODES_CARDINALITY = Cardinality(10000)
-  val NODES_WITH_LABEL_SELECTIVITY = Selectivity.of(0.2).get
-  val NODES_WITH_LABEL_CARDINALITY = NODES_CARDINALITY * NODES_WITH_LABEL_SELECTIVITY
-  val RELATIONSHIPS_CARDINALITY = Cardinality(50000)
-  val INDEX_SELECTIVITY = Selectivity.of(.02).get
-  val INDEX_PROPERTY_EXISTS_SELECTIVITY = Selectivity.of(.5).get
+  private val NODES_CARDINALITY = Cardinality(10000)
+  private val NODES_WITH_LABEL_SELECTIVITY = Selectivity.of(0.2).get
+  private val NODES_WITH_LABEL_CARDINALITY = NODES_CARDINALITY * NODES_WITH_LABEL_SELECTIVITY
+  private val PATTERN_STEP_CARDINALITY = Cardinality(50000)
+  private val INDEX_SELECTIVITY = Selectivity.of(.02).get
+  private val INDEX_PROPERTY_EXISTS_SELECTIVITY = Selectivity.of(.5).get
 
   def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
     Some(INDEX_SELECTIVITY * Selectivity.of(index.properties.length).get)
@@ -43,7 +43,7 @@ case object HardcodedGraphStatistics extends GraphStatistics {
     labelId.map(_ => NODES_WITH_LABEL_CARDINALITY).getOrElse(Cardinality.SINGLE)
 
   def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
-    RELATIONSHIPS_CARDINALITY
+    PATTERN_STEP_CARDINALITY
 
   override def nodesAllCardinality(): Cardinality = NODES_CARDINALITY
 }
