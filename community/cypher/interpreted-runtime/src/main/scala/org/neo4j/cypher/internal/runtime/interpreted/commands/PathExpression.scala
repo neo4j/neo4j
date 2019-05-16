@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predica
 import org.neo4j.cypher.internal.runtime.interpreted.PatternGraphBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.matching.MatchingContext
-import org.neo4j.cypher.internal.runtime.interpreted.symbols.SymbolTable
+import org.neo4j.cypher.internal.runtime.interpreted.symbols.{SymbolTable, TypeSafe}
 import org.neo4j.cypher.internal.v3_5.util.UnNamedNameGenerator.isNamed
 import org.neo4j.cypher.internal.v3_5.util.symbols._
 import org.neo4j.values.AnyValue
@@ -65,11 +65,12 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate: Predicate,
     }
   }
 
-  override def children = pathPattern :+ predicate
+  override def children: Seq[TypeSafe with AstNode[_ >: Expression with Pattern <: TypeSafe with AstNode[_ >: Expression with Pattern]]] =
+    pathPattern :+ predicate :+ projection
 
-  override def arguments = Seq.empty
+  override def arguments: Seq[Nothing] = Seq.empty
 
-  override def rewrite(f: (Expression) => Expression) =
+  override def rewrite(f: Expression => Expression): Expression =
     f(PathExpression(pathPattern.map(_.rewrite(f)), predicate.rewriteAsPredicate(f), projection, allowIntroducingNewIdentifiers))
 
   override def symbolTableDependencies = {
