@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import java.time._
 import java.time.temporal.TemporalAmount
 
-import org.neo4j.cypher.internal.v4_0.util.Eagerly
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.graphdb.spatial.{Geometry, Point}
 import org.neo4j.graphdb.{Node, Path, Relationship}

@@ -41,6 +41,4 @@ case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], n
     val cond = items.exists { context.getByName(_) != Values.NO_VALUE}
       if (negated) !cond else cond
   }
-
-  private def name = if (negated) "AntiConditionalApply" else "ConditionalApply"
 }
