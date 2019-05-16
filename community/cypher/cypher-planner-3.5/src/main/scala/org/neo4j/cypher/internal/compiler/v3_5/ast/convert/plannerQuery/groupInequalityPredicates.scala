@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.v3_5.util.NonEmptyList
 import org.neo4j.cypher.internal.ir.v3_5.Predicate
 import org.neo4j.cypher.internal.v3_5.expressions.{AndedPropertyInequalities, InequalityExpression, Property, Variable}
+import org.neo4j.cypher.internal.v3_5.util.NonEmptyList
 
 // This transforms
 //
@@ -79,7 +79,7 @@ object groupInequalityPredicates extends (NonEmptyList[Predicate] => NonEmptyLis
   }
 
   private def groupedInequalities(inequalities: NonEmptyList[(Predicate, InequalityExpression)]) = {
-    inequalities.groupBy { (input: (Predicate, InequalityExpression)) =>
+    inequalities.groupBy { input: (Predicate, InequalityExpression) =>
       val (_, inequality) = input
       inequality.lhs match {
         case prop@Property(ident: Variable, _) => Some(ident -> prop)
