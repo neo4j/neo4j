@@ -20,10 +20,14 @@
 package org.neo4j.server.security.systemgraph;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.function.Supplier;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.Log;
@@ -32,6 +36,7 @@ import org.neo4j.server.security.auth.SecureHasher;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.string.UTF8;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_USER_NAME;
 
@@ -39,17 +44,21 @@ public class BasicSystemGraphInitializer
 {
     protected final QueryExecutor queryExecutor;
     private final BasicSystemGraphOperations systemGraphOperations;
+    protected final Log log;
+
     private final Supplier<UserRepository> migrationUserRepositorySupplier;
     private final Supplier<UserRepository> initialUserRepositorySupplier;
     private final SecureHasher secureHasher;
-    protected final Log log;
+    private final String defaultDbName;
 
     public BasicSystemGraphInitializer(
             QueryExecutor queryExecutor,
             BasicSystemGraphOperations systemGraphOperations,
             Supplier<UserRepository> migrationUserRepositorySupplier,
             Supplier<UserRepository> initialUserRepositorySupplier,
-            SecureHasher secureHasher, Log log )
+            SecureHasher secureHasher,
+            Log log,
+            Config config )
     {
         this.queryExecutor = queryExecutor;
         this.systemGraphOperations = systemGraphOperations;
@@ -57,6 +66,7 @@ public class BasicSystemGraphInitializer
         this.initialUserRepositorySupplier = initialUserRepositorySupplier;
         this.secureHasher = secureHasher;
         this.log = log;
+        this.defaultDbName = config.get( GraphDatabaseSettings.default_database );
     }
 
     public void initializeSystemGraph() throws Exception
@@ -70,6 +80,9 @@ public class BasicSystemGraphInitializer
             // Ensure that multiple users cannot have the same name and create an index
             final QueryResult.QueryResultVisitor<RuntimeException> resultVisitor = row -> true;
             queryExecutor.executeQuery( "CREATE CONSTRAINT ON (u:User) ASSERT u.name IS UNIQUE", Collections.emptyMap(), resultVisitor );
+            queryExecutor.executeQuery( "CREATE CONSTRAINT ON (d:Database) ASSERT d.name IS UNIQUE", Collections.emptyMap(), resultVisitor );
+
+            ensureDefaultDatabases();
 
             if ( !migrateFromAuthFile() )
             {
@@ -133,6 +146,22 @@ public class BasicSystemGraphInitializer
 
             systemGraphOperations.addUser( user );
         }
+    }
+
+    protected void ensureDefaultDatabases() throws InvalidArgumentsException
+    {
+        newDb( defaultDbName );
+        newDb( SYSTEM_DATABASE_NAME );
+    }
+
+    private void newDb( String dbName ) throws InvalidArgumentsException
+    {
+        BasicSystemGraphOperations.assertValidDbName( dbName );
+
+        String query = "CREATE (db:Database {name: $dbName, status: 'online'})";
+        Map<String,Object> params = Collections.singletonMap( "dbName", dbName );
+
+        queryExecutor.executeQueryWithConstraint( query, params, "The specified database '" + dbName + "' already exists." );
     }
 
     private boolean onlyDefaultUserWithDefaultPassword() throws Exception
