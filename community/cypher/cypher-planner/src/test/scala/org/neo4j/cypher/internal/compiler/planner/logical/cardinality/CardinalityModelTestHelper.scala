@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
+import org.neo4j.cypher.internal.compiler.planner.logical.{Metrics, PlannerDefaults}
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics._
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.v4_0.util.Cardinality
@@ -66,12 +66,12 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
     def forQuery(q: String) = cardinalityData.forQuery(givenPattern(q))
   }
 
-  val DEFAULT_PREDICATE_SELECTIVITY: Double = GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY.factor
-  val DEFAULT_EQUALITY_SELECTIVITY: Double = GraphStatistics.DEFAULT_EQUALITY_SELECTIVITY.factor
-  val DEFAULT_RANGE_SELECTIVITY: Double = GraphStatistics.DEFAULT_RANGE_SELECTIVITY.factor
-  val DEFAULT_REL_UNIQUENESS_SELECTIVITY: Double = GraphStatistics.DEFAULT_REL_UNIQUENESS_SELECTIVITY.factor
-  val DEFAULT_RANGE_SEEK_FACTOR: Double = GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR
-  val DEFAULT_LIST_CARDINALITY: Int = GraphStatistics.DEFAULT_LIST_CARDINALITY.amount.toInt
-  val DEFAULT_LIMIT_CARDINALITY: Int = GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt
-  val DEFAULT_DISTINCT_SELECTIVITY: Double = GraphStatistics.DEFAULT_DISTINCT_SELECTIVITY.factor
+  val DEFAULT_PREDICATE_SELECTIVITY: Double = PlannerDefaults.DEFAULT_PREDICATE_SELECTIVITY.factor
+  val DEFAULT_EQUALITY_SELECTIVITY: Double = PlannerDefaults.DEFAULT_EQUALITY_SELECTIVITY.factor
+  val DEFAULT_RANGE_SELECTIVITY: Double = PlannerDefaults.DEFAULT_RANGE_SELECTIVITY.factor
+  val DEFAULT_REL_UNIQUENESS_SELECTIVITY: Double = PlannerDefaults.DEFAULT_REL_UNIQUENESS_SELECTIVITY.factor
+  val DEFAULT_RANGE_SEEK_FACTOR: Double = PlannerDefaults.DEFAULT_RANGE_SEEK_FACTOR
+  val DEFAULT_LIST_CARDINALITY: Int = PlannerDefaults.DEFAULT_LIST_CARDINALITY.amount.toInt
+  val DEFAULT_LIMIT_CARDINALITY: Int = PlannerDefaults.DEFAULT_LIMIT_CARDINALITY.amount.toInt
+  val DEFAULT_DISTINCT_SELECTIVITY: Double = PlannerDefaults.DEFAULT_DISTINCT_SELECTIVITY.factor
 }

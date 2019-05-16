@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import PlannerDefaults._
 import org.neo4j.cypher.internal.compiler.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.planner._
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.{IndependenceCombiner, SelectivityCombiner}
 import org.neo4j.cypher.internal.ir._
-import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Multiplier}
@@ -59,13 +59,13 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
           !simpleExpressionEvaluator.isDeterministic(limit)
 
       val limitCardinality =
-        if (cannotEvaluateStableValue) GraphStatistics.DEFAULT_LIMIT_CARDINALITY
+        if (cannotEvaluateStableValue) DEFAULT_LIMIT_CARDINALITY
         else {
           val evaluatedValue: Option[Any] = simpleExpressionEvaluator.evaluateExpression(limit)
 
           if (evaluatedValue.isDefined && evaluatedValue.get.isInstanceOf[NumberValue])
             Cardinality(evaluatedValue.get.asInstanceOf[NumberValue].doubleValue())
-          else GraphStatistics.DEFAULT_LIMIT_CARDINALITY
+          else DEFAULT_LIMIT_CARDINALITY
         }
 
       val cardinalityBeforeSelection = Cardinality.min(in, limitCardinality)
@@ -76,10 +76,10 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
 
     // Distinct
     case projection: AggregatingQueryProjection if projection.aggregationExpressions.isEmpty =>
-      val cardinalityBeforeSelection = in * GraphStatistics.DEFAULT_DISTINCT_SELECTIVITY
+      val cardinalityBeforeSelection = in * DEFAULT_DISTINCT_SELECTIVITY
       horizonCardinalityWithSelections(cardinalityBeforeSelection, projection.selections, semanticTable)
     case projection: DistinctQueryProjection =>
-      val cardinalityBeforeSelection = in * GraphStatistics.DEFAULT_DISTINCT_SELECTIVITY
+      val cardinalityBeforeSelection = in * DEFAULT_DISTINCT_SELECTIVITY
       horizonCardinalityWithSelections(cardinalityBeforeSelection, projection.selections, semanticTable)
 
     // Aggregates with no grouping

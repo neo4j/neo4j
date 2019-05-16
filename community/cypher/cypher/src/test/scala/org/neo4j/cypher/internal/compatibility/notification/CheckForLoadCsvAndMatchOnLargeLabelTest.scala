@@ -26,7 +26,7 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.LargeLabelWithLoadCsvNotification
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.HasHeaders
-import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, InstrumentedGraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.planner.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.logical.plans.{Argument, CartesianProduct, LoadCSV, NodeByLabelScan}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite

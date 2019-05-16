@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 import org.neo4j.cypher.internal.compiler.planner.logical.plans._
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor}
-import org.neo4j.cypher.internal.planner.spi.GraphStatistics._
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults._
 import org.neo4j.cypher.internal.logical.plans.PrefixRange
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions._
@@ -88,7 +88,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     // Implicit relation uniqueness predicates
     case Not(Equals(lhs: Variable, rhs: Variable))
       if areRelationships(semanticTable, lhs, rhs) =>
-      GraphStatistics.DEFAULT_REL_UNIQUENESS_SELECTIVITY // This should not be the default. Instead, we should figure
+        DEFAULT_REL_UNIQUENESS_SELECTIVITY // This should not be the default. Instead, we should figure
 
     // WHERE NOT [...]
     case Not(inner) =>
@@ -104,14 +104,14 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     // WHERE <expr> = <expr>
     case _: Equals =>
-      GraphStatistics.DEFAULT_EQUALITY_SELECTIVITY
+      DEFAULT_EQUALITY_SELECTIVITY
 
     // WHERE <expr> >= <expr>
     case _: GreaterThan | _: GreaterThanOrEqual | _: LessThan | _: LessThanOrEqual =>
-      GraphStatistics.DEFAULT_RANGE_SELECTIVITY
+      DEFAULT_RANGE_SELECTIVITY
 
     case _ =>
-      GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY
+      DEFAULT_PREDICATE_SELECTIVITY
   }
 
   private def areRelationships(semanticTable: SemanticTable, lhs: Variable, rhs: Variable): Boolean = {
