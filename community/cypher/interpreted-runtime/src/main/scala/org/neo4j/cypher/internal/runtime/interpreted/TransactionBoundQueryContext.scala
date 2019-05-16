@@ -155,8 +155,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
           case INCOMING => incomingCursor(cursors, cursor, types)
           case BOTH => allCursor(cursors, cursor, types)
         }
-        val ids = new CursorIterator[RelationshipValue] {
-          override protected def close(): Unit = selectionCursor.close()
+        resources.trace(selectionCursor)
+        new CursorIterator[RelationshipValue] {
+          override protected def close(): Unit = resources.release(selectionCursor)
 
           override protected def fetchNext(): RelationshipValue =
             if (selectionCursor.next())
@@ -166,8 +167,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                                                                         selectionCursor.targetNodeReference()))
             else null
         }
-        resources.trace(ids)
-        ids
       }
     } finally {
       cursor.close()
@@ -188,10 +187,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
           case INCOMING => incomingCursor(cursors, cursor, types)
           case BOTH => allCursor(cursors, cursor, types)
         }
-        resources.trace(selectionCursor)
-        val iterator = new RelationshipCursorIterator(selectionCursor)
-        resources.trace(iterator)
-        iterator
+        new RelationshipCursorIterator(selectionCursor)
       }
     } finally {
       cursor.close()
@@ -328,16 +324,14 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def getNodesByLabel(id: Int): Iterator[NodeValue] = {
     val cursor = allocateAndTraceNodeLabelIndexCursor()
     reads().nodeLabelScan(id, cursor)
-    val nodes = new CursorIterator[NodeValue] {
+    new CursorIterator[NodeValue] {
       override protected def fetchNext(): NodeValue = {
         if (cursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(cursor.nodeReference()))
         else null
       }
 
-      override protected def close(): Unit = cursor.close()
+      override protected def close(): Unit = resources.release(cursor)
     }
-    resources.trace(nodes)
-    nodes
   }
 
   override def nodeAsMap(id: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): MapValue = {
@@ -371,13 +365,12 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def getNodesByLabelPrimitive(id: Int): LongIterator = {
     val cursor = allocateAndTraceNodeLabelIndexCursor()
     reads().nodeLabelScan(id, cursor)
-    val nodes = new PrimitiveCursorIterator {
+    resources.trace(cursor)
+    new PrimitiveCursorIterator {
       override protected def fetchNext(): Long = if (cursor.next()) cursor.nodeReference() else -1L
 
-      override protected def close(): Unit = cursor.close()
+      override protected def close(): Unit = resources.release(cursor)
     }
-    resources.trace(nodes)
-    nodes
   }
 
   override def nodeGetOutgoingDegree(node: Long, nodeCursor: NodeCursor): Int = {
@@ -523,28 +516,26 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     override def all: Iterator[NodeValue] = {
       val nodeCursor = allocateAndTraceNodeCursor()
       reads().allNodesScan(nodeCursor)
-      val nodes = new CursorIterator[NodeValue] {
+      resources.trace(nodeCursor)
+      new CursorIterator[NodeValue] {
         override protected def fetchNext(): NodeValue = {
           if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
           else null
         }
 
-        override protected def close(): Unit = nodeCursor.close()
+        override protected def close(): Unit = resources.release(nodeCursor)
       }
-      resources.trace(nodes)
-      nodes
     }
 
     override def allPrimitive: LongIterator = {
       val nodeCursor = allocateAndTraceNodeCursor()
       reads().allNodesScan(nodeCursor)
-      val nodes = new PrimitiveCursorIterator {
+      resources.trace(nodeCursor)
+      new PrimitiveCursorIterator {
         override protected def fetchNext(): Long = if (nodeCursor.next()) nodeCursor.nodeReference() else -1L
 
-        override protected def close(): Unit = nodeCursor.close()
+        override protected def close(): Unit = resources.release(nodeCursor)
       }
-      resources.trace(nodes)
-      nodes
     }
 
     override def isDeletedInThisTx(id: Long): Boolean = reads().nodeDeletedInTransaction(id)
@@ -654,7 +645,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     override def all: Iterator[RelationshipValue] = {
       val relCursor = allocateAndTraceRelationshipScanCursor()
       reads().allRelationshipsScan(relCursor)
-      val relationships = new CursorIterator[RelationshipValue] {
+      resources.trace(relCursor)
+      new CursorIterator[RelationshipValue] {
         override protected def fetchNext(): RelationshipValue = {
           if (relCursor.next())
             fromRelationshipProxy(entityAccessor.newRelationshipProxy(relCursor.relationshipReference(),
@@ -663,22 +655,19 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
           else null
         }
 
-        override protected def close(): Unit = relCursor.close()
+        override protected def close(): Unit = resources.release(relCursor)
       }
-      resources.trace(relationships)
-      relationships
     }
 
     override def allPrimitive: LongIterator = {
       val relCursor = allocateAndTraceRelationshipScanCursor()
       reads().allRelationshipsScan(relCursor)
-      val relationships = new PrimitiveCursorIterator {
+      resources.trace(relCursor)
+      new PrimitiveCursorIterator {
         override protected def fetchNext(): Long = if (relCursor.next()) relCursor.relationshipReference() else -1L
 
-        override protected def close(): Unit = relCursor.close()
+        override protected def close(): Unit = resources.release(relCursor)
       }
-      resources.trace(relationships)
-      relationships
     }
 
     override def isDeletedInThisTx(id: Long): Boolean =
@@ -976,6 +965,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     private var typeId: Int = NO_ID
     private var source: Long = NO_ID
     private var target: Long = NO_ID
+    resources.trace(selectionCursor)
 
     override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long,
                                                            visitor: RelationshipVisitor[EXCEPTION]): Boolean = {
@@ -1016,7 +1006,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       current
     }
 
-    override def close(): Unit = selectionCursor.close()
+    override def close(): Unit = resources.release(selectionCursor)
   }
 
   object RelationshipCursorIterator {

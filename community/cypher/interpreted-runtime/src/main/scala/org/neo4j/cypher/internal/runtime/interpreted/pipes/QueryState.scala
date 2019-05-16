@@ -86,7 +86,7 @@ class QueryState(val query: QueryContext,
   def executionContextFactory: ExecutionContextFactory = _exFactory
 
   override def close(): Unit = {
-    cursors.close()
+    query.resources.release(cursors)
   }
 }
 
