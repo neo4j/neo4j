@@ -204,6 +204,66 @@ class PrettifierIT extends CypherFunSuite {
           |UNION ALL
           |RETURN $node AS n""".stripMargin,
 
+      "create user abc set password 'foo'" ->
+        "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
+
+      "create user `ab%$c` set password 'foo'" ->
+        "CATALOG CREATE USER `ab%$c` SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
+
+      "alter user abc set password 'foo'" ->
+        "CATALOG ALTER USER abc SET PASSWORD '******'",
+
+      "alter user `ab%$c` set password 'foo'" ->
+        "CATALOG ALTER USER `ab%$c` SET PASSWORD '******'",
+
+      "alter user abc set status active" ->
+        "CATALOG ALTER USER abc SET STATUS ACTIVE",
+
+      "alter user abc set password 'foo' change required set status active" ->
+        "CATALOG ALTER USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
+
+      "alter user abc set password change not required set status suspended" ->
+        "CATALOG ALTER USER abc SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED",
+
+      "drop user abc" ->
+        "CATALOG DROP USER abc",
+
+      "drop user `ab%$c`" ->
+        "CATALOG DROP USER `ab%$c`",
+
+      "create role abc" ->
+        "CATALOG CREATE ROLE abc",
+
+      "create role `ab%$c`" ->
+        "CATALOG CREATE ROLE `ab%$c`",
+
+      "drop role abc" ->
+        "CATALOG DROP ROLE abc",
+
+      "drop role `ab%$c`" ->
+        "CATALOG DROP ROLE `ab%$c`",
+
+      "show privileges" ->
+        "CATALOG SHOW ALL PRIVILEGES",
+
+      "show all privileges" ->
+        "CATALOG SHOW ALL PRIVILEGES",
+
+      "show user abc privileges" ->
+        "CATALOG SHOW USER abc PRIVILEGES",
+
+      "show  user `$aB%x`  privileges" ->
+        "CATALOG SHOW USER `$aB%x` PRIVILEGES",
+
+      "show role abc privileges" ->
+        "CATALOG SHOW ROLE abc PRIVILEGES",
+
+      "show  role `$aB%x`  privileges" ->
+        "CATALOG SHOW ROLE `$aB%x` PRIVILEGES",
+
+      "grant traverse on graph foo nodes * (*) to role" ->
+        "CATALOG GRANT TRAVERSE ON GRAPH foo NODES * (*) TO role",
+
       "catalog show database foO_Bar_42" ->
         "CATALOG SHOW DATABASE foO_Bar_42",
 

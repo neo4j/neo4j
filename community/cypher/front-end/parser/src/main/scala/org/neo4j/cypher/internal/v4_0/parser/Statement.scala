@@ -163,7 +163,7 @@ trait Statement extends Parser
 
   def ShowPrivileges: Rule1[ShowPrivileges] = rule("CATALOG SHOW PRIVILEGES") {
     //SHOW ALL PRIVILEGES
-    group(keyword("SHOW") ~~ keyword("ALL") ~~ keyword("PRIVILEGES")) ~>>> (_ => ast.ShowPrivileges("ALL", "")) |
+    group(keyword("SHOW") ~~ optional(keyword("ALL")) ~~ keyword("PRIVILEGES")) ~>>> (_ => ast.ShowPrivileges("ALL", "")) |
       //SHOW USER joe PRIVILEGES
       group(keyword("SHOW") ~~ keyword("USER") ~~ SymbolicNameString ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowPrivileges("USER", _)) |
       //SHOW ROLE role1 PRIVILEGES

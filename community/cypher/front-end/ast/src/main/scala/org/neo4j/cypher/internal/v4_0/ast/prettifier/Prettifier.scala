@@ -70,60 +70,70 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case x: ShowUsers =>
       s"${x.name}"
 
-    case x @ CreateUser(userName, _, _, requirePasswordChange, suspended) =>
-      val passwordString = s"SET PASSWORD ****** CHANGE ${if (!requirePasswordChange) "NOT" else ""} REQUIRED"
+    case x @ CreateUser(userName, _, initialParameterPassword, requirePasswordChange, suspended) =>
+      val userNameString = escapeName(userName)
+      val password = if (initialParameterPassword.isDefined)
+        s"$$${initialParameterPassword.get.name}"
+      else "'******'"
+      val passwordString = s"SET PASSWORD $password CHANGE ${if (!requirePasswordChange) "NOT " else ""}REQUIRED"
       val statusString = s"SET STATUS ${if (suspended) "SUSPENDED" else "ACTIVE"}"
-      s"${x.name} $userName $passwordString $statusString"
+      s"${x.name} $userNameString $passwordString $statusString"
 
     case x @ DropUser(userName) =>
-      s"${x.name} $userName"
+      s"${x.name} ${escapeName(userName)}"
 
     case x @ AlterUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended) =>
-      val password = initialStringPassword.isDefined || initialParameterPassword.isDefined
-      val passwordString = if (password) s" SET PASSWORD ******" else ""
+      val userNameString = escapeName(userName)
+      val passwordString = if (initialStringPassword.isDefined) s" '******'"
+      else if (initialParameterPassword.isDefined)
+        s" $$${initialParameterPassword.get.name}"
+      else ""
       val passwordModeString = if (requirePasswordChange.isDefined)
-                                 s" SET PASSWORD CHANGE ${if (!requirePasswordChange.get) "NOT" else ""} REQUIRED"
-                               else ""
-      val statusString = if(suspended.isDefined) s" SET STATUS ${if (suspended.get) "SUSPENDED" else "ACTIVE"}" else ""
-      s"${x.name} $userName$passwordString$passwordModeString$statusString"
+        s" CHANGE ${if (!requirePasswordChange.get) "NOT " else ""}REQUIRED"
+      else
+        ""
+      val passwordPrefix = if (passwordString.nonEmpty || passwordModeString.nonEmpty) " SET PASSWORD" else ""
+      val statusString = if (suspended.isDefined) s" SET STATUS ${if (suspended.get) "SUSPENDED" else "ACTIVE"}" else ""
+      s"${x.name} $userNameString$passwordPrefix$passwordString$passwordModeString$statusString"
 
     case x @ ShowRoles(withUsers, _) =>
-      s"${x.name} ${if (withUsers) "WITH USERS" else ""}"
+      s"${x.name}${if (withUsers) " WITH USERS" else ""}"
 
     case x @ CreateRole(roleName, _) =>
-      s"${x.name} $roleName"
+      s"${x.name} ${escapeName(roleName)}"
 
     case x @ DropRole(roleName) =>
-      s"${x.name} $roleName"
+      s"${x.name} ${escapeName(roleName)}"
 
     case x @ GrantRolesToUsers(roleNames, userNames) =>
-      s"${x.name} ${roleNames.mkString("," )} TO ${userNames.mkString(", ")}"
+      s"${x.name} ${roleNames.map(escapeName).mkString("," )} TO ${userNames.map(escapeName).mkString(", ")}"
 
-    case x @ GrantTraverse(database, label, roleName) =>
-      s"${x.name} DATABASE $database NODES $label (*) TO $roleName"
+    case x @ GrantTraverse(dbScope, qualifier, roleName) =>
+      val (dbName, label) = extractScope(dbScope, qualifier)
+      s"${x.name} ON GRAPH $dbName NODES $label (*) TO ${escapeName(roleName)}"
 
     case x @ ShowPrivileges(scope, grantee) => scope match {
-      case "ALL" => s"${x.name} ALL PRIVILEGES"
-      case _ => s"${x.name} $scope $grantee PRIVILEGES"
+      case "ALL" => s"CATALOG SHOW ALL PRIVILEGES"
+      case _ => s"CATALOG SHOW ${escapeName(scope)} ${escapeName(grantee)} PRIVILEGES"
     }
 
     case x: ShowDatabases =>
       s"${x.name}"
 
     case x @ ShowDatabase(dbName) =>
-      s"${x.name} $dbName"
+      s"${x.name} ${escapeName(dbName)}"
 
     case x @ CreateDatabase(dbName) =>
-      s"${x.name} $dbName"
+      s"${x.name} ${escapeName(dbName)}"
 
     case x @ DropDatabase(dbName) =>
-      s"${x.name} $dbName"
+      s"${x.name} ${escapeName(dbName)}"
 
     case x @ StartDatabase(dbName) =>
-      s"${x.name} $dbName"
+      s"${x.name} ${escapeName(dbName)}"
 
     case x @ StopDatabase(dbName) =>
-      s"${x.name} $dbName"
+      s"${x.name} ${escapeName(dbName)}"
 
     case x @ CreateGraph(catalogName, query) =>
       val graphName = catalogName.parts.mkString(".")
@@ -141,6 +151,28 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case x @ DropView(catalogName) =>
       val graphName = catalogName.parts.mkString(".")
       s"CATALOG DROP VIEW $graphName"
+  }
+
+  private def extractScope(dbScope: GraphScope, qualifier: PrivilegeQualifier) = {
+    val dbName = dbScope match {
+      case NamedGraphScope(name) => escapeName(name)
+      case AllGraphsScope() => "*"
+      case _ => "<unknown>"
+    }
+    val label = qualifier match {
+      case LabelQualifier(name) => escapeName(name)
+      case AllQualifier() => "*"
+      case _ => "<unknown>"
+    }
+    (dbName, label)
+  }
+
+  private def escapeName(name: String): String = {
+    val c = name.chars().toArray.toSeq
+    if (Character.isJavaIdentifierStart(c.head) && c.tail.forall(Character.isJavaIdentifierPart))
+      name
+    else
+      s"`$name`"
   }
 
   private def queryPart(part: QueryPart): String =
