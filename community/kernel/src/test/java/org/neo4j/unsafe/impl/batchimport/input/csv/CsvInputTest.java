@@ -1236,7 +1236,8 @@ public class CsvInputTest
             {
                 return NO_DECORATOR;
             }
-        } );Iterable<DataFactory> relationshipData = datas( config -> new Data()
+        } );
+        Iterable<DataFactory> relationshipData = datas( config -> new Data()
         {
             @Override
             public RawIterator<CharReadable,IOException> stream()
