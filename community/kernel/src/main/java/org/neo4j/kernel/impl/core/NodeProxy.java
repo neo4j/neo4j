@@ -52,7 +52,7 @@ import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.internal.kernel.api.helpers.Nodes;
 import org.neo4j.internal.kernel.api.helpers.RelationshipFactory;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -230,6 +230,10 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         catch ( IllegalTokenNameException e )
         {
             throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
+        }
+        catch ( TokenCapacityExceededKernelException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
         }
         catch ( KernelException e )
         {
@@ -543,6 +547,10 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         {
             throw new IllegalArgumentException( e );
         }
+        catch ( TokenCapacityExceededKernelException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
+        }
         catch ( KernelException e )
         {
             throw new TransactionFailureException( "Unknown error trying to create relationship type token", e );
@@ -576,9 +584,9 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         {
             throw new ConstraintViolationException( format( "Invalid label name '%s'.", label.name() ), e );
         }
-        catch ( TooManyLabelsException e )
+        catch ( TokenCapacityExceededKernelException e )
         {
-            throw new ConstraintViolationException( "Unable to add label.", e );
+            throw new ConstraintViolationException( e.getMessage(), e );
         }
         catch ( KernelException e )
         {

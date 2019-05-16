@@ -57,7 +57,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -636,7 +636,7 @@ public class SchemaImpl implements Schema
                 {
                     throw new IllegalArgumentException( e );
                 }
-                catch ( TooManyLabelsException e )
+                catch ( TokenCapacityExceededKernelException e )
                 {
                     throw new IllegalStateException( e );
                 }
@@ -682,7 +682,7 @@ public class SchemaImpl implements Schema
                 {
                     throw new IllegalArgumentException( e );
                 }
-                catch ( TooManyLabelsException e )
+                catch ( TokenCapacityExceededKernelException e )
                 {
                     throw new IllegalStateException( e );
                 }
@@ -722,7 +722,7 @@ public class SchemaImpl implements Schema
                 {
                     throw new IllegalArgumentException( e );
                 }
-                catch ( TooManyLabelsException e )
+                catch ( TokenCapacityExceededKernelException e )
                 {
                     throw new IllegalStateException( e );
                 }

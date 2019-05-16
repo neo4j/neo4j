@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.storageengine.api.RelationshipVisitor;
@@ -422,6 +423,10 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         catch ( IllegalTokenNameException e )
         {
             throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
+        }
+        catch ( TokenCapacityExceededKernelException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
         }
         catch ( KernelException e )
         {

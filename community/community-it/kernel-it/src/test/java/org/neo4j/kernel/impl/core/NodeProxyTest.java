@@ -30,6 +30,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -364,6 +366,63 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         {
             assertThat( Iterables.asList( node.getRelationshipTypes() ),
                     equalTo( singletonList( RelationshipType.withName( "R" ) ) ) );
+        }
+    }
+
+    @Test
+    public void shouldThrowCorrectExceptionOnLabelTokensExceeded() throws KernelException
+    {
+        // given
+        EmbeddedProxySPI spi = mockedProxySPIWithDepletedTokens();
+        NodeProxy nodeProxy = new NodeProxy( spi, 5 );
+
+        // when
+        try
+        {
+            nodeProxy.addLabel( Label.label( "Label" ) );
+            fail( "Should have failed" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            // then good
+        }
+    }
+
+    @Test
+    public void shouldThrowCorrectExceptionOnPropertyKeyTokensExceeded() throws KernelException
+    {
+        // given
+        EmbeddedProxySPI spi = mockedProxySPIWithDepletedTokens();
+        NodeProxy nodeProxy = new NodeProxy( spi, 5 );
+
+        // when
+        try
+        {
+            nodeProxy.setProperty( "key", "value" );
+            fail( "Should have failed" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            // then good
+        }
+    }
+
+    @Test
+    public void shouldThrowCorrectExceptionOnRelationshipTypeTokensExceeded() throws KernelException
+    {
+        // given
+        EmbeddedProxySPI spi = mockedProxySPIWithDepletedTokens();
+        NodeProxy nodeProxy = new NodeProxy( spi, 5 );
+
+        // when
+        try
+        {
+            nodeProxy.setProperty( "key", "value" );
+            fail( "Should have failed" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            // then good
         }
     }
 

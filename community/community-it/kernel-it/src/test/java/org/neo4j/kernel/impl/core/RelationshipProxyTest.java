@@ -23,6 +23,8 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
 
+import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -36,6 +38,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -221,6 +224,25 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
         try ( Transaction ignore = db.beginTx() )
         {
             assertThat( relationship.getProperty( "prop" ), instanceOf( Double.class ) );
+        }
+    }
+
+    @Test
+    public void shouldThrowCorrectExceptionOnPropertyKeyTokensExceeded() throws KernelException
+    {
+        // given
+        EmbeddedProxySPI spi = mockedProxySPIWithDepletedTokens();
+        RelationshipProxy relationshipProxy = new RelationshipProxy( spi, 5 );
+
+        // when
+        try
+        {
+            relationshipProxy.setProperty( "key", "value" );
+            fail( "Should have failed" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            // then good
         }
     }
 

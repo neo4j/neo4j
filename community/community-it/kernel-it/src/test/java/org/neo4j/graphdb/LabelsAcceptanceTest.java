@@ -34,7 +34,6 @@ import java.util.stream.Stream;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -213,7 +212,7 @@ class LabelsAcceptanceTest
         {
             // Given
             Dependencies dependencies = new Dependencies();
-            dependencies.satisfyDependencies( createIdContextFactory( fileSystem ) );
+            dependencies.satisfyDependencies( createIdContextFactoryWithMaxedOutLabelTokenIds( fileSystem ) );
 
             DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fileSystem ).setExternalDependencies(
                     dependencies ).impermanent().build();
@@ -695,7 +694,7 @@ class LabelsAcceptanceTest
         }
     }
 
-    private IdContextFactory createIdContextFactory( FileSystemAbstraction fileSystem )
+    private IdContextFactory createIdContextFactoryWithMaxedOutLabelTokenIds( FileSystemAbstraction fileSystem )
     {
         return IdContextFactoryBuilder.of( new CommunityIdTypeConfigurationProvider(), JobSchedulerFactory.createScheduler() ).withIdGenerationFactoryProvider(
                 any -> new DefaultIdGeneratorFactory( fileSystem )
@@ -703,19 +702,11 @@ class LabelsAcceptanceTest
                     @Override
                     public IdGenerator open( File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
                     {
-                        IdGenerator idGenerator = super.open( fileName, grabSize, idType, highId, maxId );
-                        if ( idType != IdType.LABEL_TOKEN )
+                        if ( idType == IdType.LABEL_TOKEN )
                         {
-                            return idGenerator;
+                            maxId = highId.getAsLong() - 1;
                         }
-                        return new IdGenerator.Delegate( idGenerator )
-                        {
-                            @Override
-                            public long nextId()
-                            {
-                                throw new UnderlyingStorageException( "Id capacity exceeded" );
-                            }
-                        };
+                        return super.open( fileName, grabSize, idType, highId, maxId );
                     }
                 } ).build();
     }

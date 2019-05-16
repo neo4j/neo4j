@@ -20,15 +20,16 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Iterator;
+import java.util.function.IntSupplier;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.id.IdCapacityExceededException;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -57,64 +58,38 @@ public class KernelToken implements Token
     @Override
     public int labelGetOrCreateForName( String labelName ) throws KernelException
     {
-        try
-        {
-            return getOrCreateForName( tokenHolders.labelTokens(), labelName );
-        }
-        catch ( UnderlyingStorageException e )
-        {
-            // Temporary workaround for the property store based label implementation.
-            // Actual implementation should not depend on internal kernel exception messages like this.
-            if ( e.getMessage().equals( "Id capacity exceeded" ) )
-            {
-                throw new TooManyLabelsException( e );
-            }
-            throw e;
-        }
+        return getOrCreateForName( tokenHolders.labelTokens(), labelName );
     }
 
     @Override
     public void labelGetOrCreateForNames( String[] labelNames, int[] labelIds ) throws KernelException
     {
-        try
-        {
-            getOrCreateForNames( tokenHolders.labelTokens(), labelNames, labelIds );
-        }
-        catch ( UnderlyingStorageException e )
-        {
-            // Temporary workaround for the property store based label implementation.
-            // Actual implementation should not depend on internal kernel exception messages like this.
-            if ( e.getMessage().equals( "Id capacity exceeded" ) )
-            {
-                throw new TooManyLabelsException( e );
-            }
-            throw e;
-        }
+        getOrCreateForNames( tokenHolders.labelTokens(), labelNames, labelIds );
     }
 
     @Override
-    public int labelCreateForName( String labelName, boolean internal )
+    public int labelCreateForName( String labelName, boolean internal ) throws KernelException
     {
         ktx.assertOpen();
-        int id = commandCreationContext.reserveLabelTokenId();
+        int id = reserveTokenId( commandCreationContext::reserveLabelTokenId, TokenHolder.TYPE_LABEL );
         ktx.txState().labelDoCreateForName( labelName, internal, id );
         return id;
     }
 
     @Override
-    public int relationshipTypeCreateForName( String relationshipTypeName, boolean internal )
+    public int relationshipTypeCreateForName( String relationshipTypeName, boolean internal ) throws KernelException
     {
         ktx.assertOpen();
-        int id = commandCreationContext.reserveRelationshipTypeTokenId();
+        int id = reserveTokenId( commandCreationContext::reserveRelationshipTypeTokenId, TokenHolder.TYPE_RELATIONSHIP_TYPE );
         ktx.txState().relationshipTypeDoCreateForName( relationshipTypeName, internal, id );
         return id;
     }
 
     @Override
-    public int propertyKeyCreateForName( String propertyKeyName, boolean internal )
+    public int propertyKeyCreateForName( String propertyKeyName, boolean internal ) throws KernelException
     {
         ktx.assertOpen();
-        int id = commandCreationContext.reservePropertyKeyTokenId();
+        int id = reserveTokenId( commandCreationContext::reservePropertyKeyTokenId, TokenHolder.TYPE_PROPERTY_KEY );
         ktx.txState().propertyKeyDoCreateForName( propertyKeyName, internal, id );
         return id;
     }
@@ -293,6 +268,18 @@ public class KernelToken implements Token
         if ( names.length != ids.length )
         {
             throw new IllegalArgumentException( "Name and id arrays have different length." );
+        }
+    }
+
+    private static int reserveTokenId( IntSupplier generator, String tokenType ) throws KernelException
+    {
+        try
+        {
+            return generator.getAsInt();
+        }
+        catch ( IdCapacityExceededException e )
+        {
+            throw new TokenCapacityExceededKernelException( e, tokenType );
         }
     }
 }

@@ -21,11 +21,13 @@ package org.neo4j.internal.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class TooManyLabelsException extends SchemaKernelException
+import static java.lang.String.format;
+
+public class TokenCapacityExceededKernelException extends SchemaKernelException
 {
-    public TooManyLabelsException( Throwable cause )
+    public TokenCapacityExceededKernelException( Throwable cause, String tokenType )
     {
-        super( Status.Schema.LabelLimitReached,
-                "The maximum number of labels available has been reached. Cannot create more labels.", cause );
+        super( Status.Schema.TokenLimitReached,
+                format( "The maximum number of %ss available has been reached, no more can be created.", tokenType ), cause );
     }
 }

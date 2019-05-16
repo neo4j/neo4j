@@ -25,13 +25,21 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.token.api.TokenHolder;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.test.assertion.Assert.assertObjectOrArrayEquals;
 
 public abstract class PropertyContainerProxyTest
@@ -89,5 +97,21 @@ public abstract class PropertyContainerProxyTest
         {
             assertObjectOrArrayEquals( properties.get( key ), listedProperties.get( key ) );
         }
+    }
+
+    EmbeddedProxySPI mockedProxySPIWithDepletedTokens() throws KernelException
+    {
+        EmbeddedProxySPI spi = mock( EmbeddedProxySPI.class );
+        KernelTransaction ktx = mock( KernelTransaction.class );
+        when( spi.kernelTransaction() ).thenReturn( ktx );
+        TokenWrite tokenWrite = mock( TokenWrite.class );
+        when( ktx.tokenWrite() ).thenReturn( tokenWrite );
+        when( tokenWrite.labelGetOrCreateForName( any() ) ).thenThrow(
+                new TokenCapacityExceededKernelException( new Exception( "Just some cause" ), TokenHolder.TYPE_LABEL ) );
+        when( tokenWrite.propertyKeyGetOrCreateForName( any() ) ).thenThrow(
+                new TokenCapacityExceededKernelException( new Exception( "Just some cause" ), TokenHolder.TYPE_PROPERTY_KEY ) );
+        when( tokenWrite.relationshipTypeGetOrCreateForName( any() ) ).thenThrow(
+                new TokenCapacityExceededKernelException( new Exception( "Just some cause" ), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+        return spi;
     }
 }

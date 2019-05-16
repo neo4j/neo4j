@@ -21,7 +21,7 @@ package org.neo4j.internal.kernel.api;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 
 public interface TokenWrite
 {
@@ -32,7 +32,7 @@ public interface TokenWrite
      * @param labelName the name of the label.
      * @return id of the created label.
      * @throws IllegalTokenNameException if any token name is illegal.
-     * @throws TooManyLabelsException if too many labels would be created by this call, compared to the token id space available.
+     * @throws TokenCapacityExceededKernelException if too many labels would be created by this call, compared to the token id space available.
      */
     int labelGetOrCreateForName( String labelName ) throws KernelException;
 
@@ -45,7 +45,7 @@ public interface TokenWrite
      * @param labelNames The array of label names for which to resolve or create their id.
      * @param labelIds The array into which the resulting token ids will be stored.
      * @throws IllegalTokenNameException if any token name is illegal.
-     * @throws TooManyLabelsException if too many labels would be created by this call, compared to the token id space available.
+     * @throws TokenCapacityExceededKernelException if too many labels would be created by this call, compared to the token id space available.
      */
     void labelGetOrCreateForNames( String[] labelNames, int[] labelIds ) throws KernelException;
 
@@ -56,7 +56,7 @@ public interface TokenWrite
      * @param internal {@code true} if the token is internal and must not be visible on the product surface, otherwise {@code false} if the token is public.
      * @return id of the created label.
      * @throws IllegalTokenNameException if token name is illegal.
-     * @throws TooManyLabelsException if too many labels would be created by this call, compared to the token id space available.
+     * @throws TokenCapacityExceededKernelException if too many labels would be created by this call, compared to the token id space available.
      */
     int labelCreateForName( String labelName, boolean internal ) throws KernelException;
 
@@ -67,6 +67,7 @@ public interface TokenWrite
      * @param internal {@code true} if the token is internal and must not be visible on the product surface, otherwise {@code false} if the token is public.
      * @return id of the created property key.
      * @throws IllegalTokenNameException if token name is illegal.
+     * @throws TokenCapacityExceededKernelException if too many property keys would be created by this call, compared to the token id space available.
      */
     int propertyKeyCreateForName( String propertyKeyName, boolean internal ) throws KernelException;
 
@@ -76,6 +77,7 @@ public interface TokenWrite
      * @param internal {@code true} if the token is internal and must not be visible on the product surface, otherwise {@code false} if the token is public.
      * @return id of the created relationship type.
      * @throws IllegalTokenNameException if token name is illegal.
+     * @throws TokenCapacityExceededKernelException if too many relationship types would be created by this call, compared to the token id space available.
      */
     int relationshipTypeCreateForName( String relationshipTypeName, boolean internal ) throws KernelException;
 
@@ -85,6 +87,7 @@ public interface TokenWrite
      * @param propertyKeyName the name of the property key.
      * @return id of the created property key.
      * @throws IllegalTokenNameException if token name is illegal.
+     * @throws TokenCapacityExceededKernelException if too many property keys would be created by this call, compared to the token id space available.
      */
     int propertyKeyGetOrCreateForName( String propertyKeyName ) throws KernelException;
 
@@ -97,6 +100,7 @@ public interface TokenWrite
      * @param propertyKeys The array of property names for which to resolve or create their id.
      * @param ids The array into which the resulting token ids will be stored.
      * @throws IllegalTokenNameException if any token name is illegal.
+     * @throws TokenCapacityExceededKernelException if too many property keys would be created by this call, compared to the token id space available.
      */
     void propertyKeyGetOrCreateForNames( String[] propertyKeys, int[] ids ) throws KernelException;
 
@@ -105,6 +109,7 @@ public interface TokenWrite
      * @param relationshipTypeName the name of the relationship
      * @return the id associated with the name
      * @throws IllegalTokenNameException if token name is illegal.
+     * @throws TokenCapacityExceededKernelException if too many relationship types would be created by this call, compared to the token id space available.
      */
     int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws KernelException;
 
@@ -117,6 +122,7 @@ public interface TokenWrite
      * @param relationshipTypes The array of relationship type names for which to resolve or create their id.
      * @param ids The array into which the resulting token ids will be stored.
      * @throws IllegalTokenNameException if any token name is illegal.
+     * @throws TokenCapacityExceededKernelException if too many relationship types would be created by this call, compared to the token id space available.
      */
     void relationshipTypeGetOrCreateForNames( String[] relationshipTypes, int[] ids ) throws KernelException;
 }
