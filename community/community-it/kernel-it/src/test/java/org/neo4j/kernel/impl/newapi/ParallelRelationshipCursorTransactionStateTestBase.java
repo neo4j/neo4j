@@ -56,13 +56,13 @@ import static org.neo4j.kernel.impl.newapi.TestUtils.count;
 import static org.neo4j.kernel.impl.newapi.TestUtils.randomBatchWorker;
 import static org.neo4j.kernel.impl.newapi.TestUtils.singleBatchWorker;
 
-public abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends KernelAPIWriteTestSupport>
+abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
 {
     private static final ToLongFunction<RelationshipScanCursor> REL_GET = RelationshipScanCursor::relationshipReference;
 
     @Test
-    public void shouldHandleEmptyDatabase() throws TransactionFailureException
+    void shouldHandleEmptyDatabase() throws TransactionFailureException
     {
         try ( Transaction tx = beginTransaction() )
         {
@@ -78,7 +78,7 @@ public abstract class ParallelRelationshipCursorTransactionStateTestBase<G exten
     }
 
     @Test
-    public void scanShouldNotSeeDeletedRelationships() throws Exception
+    void scanShouldNotSeeDeletedRelationships() throws Exception
     {
         int size = 100;
         MutableLongSet created = LongSets.mutable.empty();
@@ -126,7 +126,7 @@ public abstract class ParallelRelationshipCursorTransactionStateTestBase<G exten
     }
 
     @Test
-    public void scanShouldSeeAddedRelationships() throws Exception
+    void scanShouldSeeAddedRelationships() throws Exception
     {
         int size = 100;
         MutableLongSet existing = createRelationships( size );
@@ -164,7 +164,7 @@ public abstract class ParallelRelationshipCursorTransactionStateTestBase<G exten
     }
 
     @Test
-    public void shouldReserveBatchFromTxState() throws KernelException
+    void shouldReserveBatchFromTxState() throws KernelException
     {
         try ( Transaction tx = beginTransaction() )
         {
@@ -194,7 +194,7 @@ public abstract class ParallelRelationshipCursorTransactionStateTestBase<G exten
     }
 
     @Test
-    public void shouldScanAllRelationshipsFromMultipleThreads()
+    void shouldScanAllRelationshipsFromMultipleThreads()
             throws InterruptedException, ExecutionException, KernelException
     {
         // given
@@ -243,7 +243,7 @@ public abstract class ParallelRelationshipCursorTransactionStateTestBase<G exten
     }
 
     @Test
-    public void shouldScanAllRelationshipsFromMultipleThreadWithBigSizeHints()
+    void shouldScanAllRelationshipsFromMultipleThreadWithBigSizeHints()
             throws InterruptedException, ExecutionException, KernelException
     {
         // given
@@ -288,7 +288,7 @@ public abstract class ParallelRelationshipCursorTransactionStateTestBase<G exten
     }
 
     @Test
-    public void shouldScanAllRelationshipFromRandomlySizedWorkers()
+    void shouldScanAllRelationshipFromRandomlySizedWorkers()
             throws InterruptedException, KernelException
     {
         // given
@@ -334,7 +334,7 @@ public abstract class ParallelRelationshipCursorTransactionStateTestBase<G exten
     }
 
     @Test
-    public void parallelTxStateScanStressTest()
+    void parallelTxStateScanStressTest()
             throws InterruptedException, KernelException
     {
         LongSet existingRelationships = createRelationships( 77 );
