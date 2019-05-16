@@ -75,7 +75,7 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
           |RETURN d2.name as name, d2.status as status, d.name as db""".stripMargin,
         VirtualValues.map(
           Array("name", "oldStatus", "status"),
-          Array(Values.stringValue(dbName),
+          Array(Values.stringValue(dbName.toLowerCase),
             DatabaseStatus.Offline,
             DatabaseStatus.Online
           )
@@ -95,7 +95,7 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
           |RETURN d2.name as name, d2.status as status, d.name as db""".stripMargin,
         VirtualValues.map(
           Array("name", "oldStatus", "status"),
-          Array(Values.stringValue(dbName),
+          Array(Values.stringValue(dbName.toLowerCase),
             DatabaseStatus.Online,
             DatabaseStatus.Offline
           )
