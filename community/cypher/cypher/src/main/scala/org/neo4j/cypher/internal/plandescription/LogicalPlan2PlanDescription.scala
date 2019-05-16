@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.plandescription.Arguments._
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
-import org.neo4j.cypher.internal.v4_0.ast.{AllGraphsScope, AllQualifier, NamedGraphScope, LabelQualifier}
+import org.neo4j.cypher.internal.v4_0.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Point
 import org.neo4j.cypher.internal.v4_0.expressions.{FunctionInvocation, FunctionName, LabelToken, MapExpression, Namespace, PropertyKeyToken, Expression => ASTExpression}
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
@@ -158,70 +158,65 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "ShowUsers", NoChildren, Seq.empty, variables)
 
       case CreateUser(name, _, _, _, _) =>
-        val userName = User(name)
+        val userName = User(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "CreateUser", NoChildren, Seq(userName), variables)
 
       case DropUser(name) =>
-        val userName = User(name)
+        val userName = User(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "DropUser", NoChildren, Seq(userName), variables)
 
       case AlterUser(name, _, _, _, _) =>
-        val userName = User(name)
+        val userName = User(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "AlterUser", NoChildren, Seq(userName), variables)
 
       case ShowRoles(_,_) =>
         PlanDescriptionImpl(id, "ShowRoles", NoChildren, Seq.empty, variables)
 
       case CreateRole(name, _) =>
-        val roleName = Role(name)
+        val roleName = Role(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "CreateRole", NoChildren, Seq(roleName), variables)
 
       case DropRole(name) =>
-        val roleName = Role(name)
+        val roleName = Role(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "DropRole", NoChildren, Seq(roleName), variables)
 
       case GrantRolesToUsers(roleNames, userNames) =>
-        val roles = roleNames.map(Role)
-        val users = userNames.map(User)
+        val roles = roleNames.map(Prettifier.escapeName).map(Role)
+        val users = userNames.map(Prettifier.escapeName).map(User)
         PlanDescriptionImpl(id, "GrantRolesToUsers", NoChildren, roles ++ users, variables)
 
       case GrantTraverse(database, qualifier, roleName) =>
-        val qualifierText = qualifier match {
-          case LabelQualifier(name) => name
-          case AllQualifier() => "*"
-          case _ => "<unknown>"
-        }
-        val graph = database match {
-          case NamedGraphScope(name) => name
-          case AllGraphsScope() => "*"
-          case _ => "<unknown>"
-        }
-        PlanDescriptionImpl(id, "GrantTraverse", NoChildren, Seq(Database(graph), Qualifier(qualifierText), Role(roleName)), variables)
+        val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
+        PlanDescriptionImpl(id, "GrantTraverse", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
-      case ShowPrivileges(scope, grantee) =>
-        PlanDescriptionImpl(id, "ShowPrivileges", NoChildren, Seq(Scope(scope), Grantee(grantee)), variables)
+      case GrantRead(resource, database, qualifier, roleName) =>
+        val (resourceText, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
+        PlanDescriptionImpl(id, "GrantRead", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
+
+      case ShowPrivileges(scope) =>
+        PlanDescriptionImpl(id, "ShowPrivileges", NoChildren, Seq(Scope(Prettifier.extractScope(scope))), variables)
 
       case ShowDatabase(name) =>
-        val dbName = Database(name)
+        val dbName = Database(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "ShowDatabase", NoChildren, Seq(dbName), variables)
 
       case ShowDatabases() =>
         PlanDescriptionImpl(id, "ShowDatabases", NoChildren, Seq.empty, variables)
 
       case CreateDatabase(name) =>
-        val dbName = Database(name)
+        val dbName = Database(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "CreateDatabase", NoChildren, Seq(dbName), variables)
 
       case DropDatabase(name) =>
-        val dbName = Database(name)
+        val dbName = Database(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "DropDatabase", NoChildren, Seq(dbName), variables)
 
       case StartDatabase(name) =>
-        val dbName = Database(name)
+        val dbName = Database(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "StartDatabase", NoChildren, Seq(dbName), variables)
 
       case StopDatabase(name) =>
-        val dbName = Database(name)
+        val dbName = Database(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "StopDatabase", NoChildren, Seq(dbName), variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")

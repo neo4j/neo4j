@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.ir.{LazyMode, StrictnessMode}
-import org.neo4j.cypher.internal.v4_0.ast.{GraphScope, PrivilegeQualifier}
+import org.neo4j.cypher.internal.v4_0.ast.{ActionResource, GraphScope, PrivilegeQualifier, ShowPrivilegeScope}
 import org.neo4j.cypher.internal.v4_0.expressions.Parameter
 import org.neo4j.cypher.internal.v4_0.util.CypherException
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
@@ -63,13 +63,14 @@ case class CreateUser(userName: String, initialStringPassword: Option[String], i
                       requirePasswordChange: Boolean, suspended: Boolean)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
 case class DropUser(userName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
 case class AlterUser(userName: String, initialStringPassword: Option[String], initialParameterPassword: Option[Parameter],
-                      requirePasswordChange: Option[Boolean], suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
+                     requirePasswordChange: Option[Boolean], suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
 case class ShowRoles(withUsers: Boolean, showAll: Boolean)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
 case class CreateRole(roleName: String, from: Option[String])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
 case class DropRole(roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
 case class GrantRolesToUsers(roleNames: Seq[String], userNames: Seq[String])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
 case class GrantTraverse(database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
-case class ShowPrivileges(scope: String, grantee: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
+case class GrantRead(resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
+case class ShowPrivileges(scope: ShowPrivilegeScope)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
 
 // Database management commands
 case class ShowDatabases()(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan(idGen)

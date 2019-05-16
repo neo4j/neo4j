@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.v4_0.ast.prettifier
 
 import org.neo4j.cypher.internal.v4_0.ast.{Skip, Statement, _}
 import org.neo4j.cypher.internal.v4_0.expressions.{NodePattern, PatternElement, PatternPart, RelationshipChain, _}
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 case class Prettifier(mkStringOf: ExpressionStringifier) {
 
@@ -71,7 +72,7 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
       s"${x.name}"
 
     case x @ CreateUser(userName, _, initialParameterPassword, requirePasswordChange, suspended) =>
-      val userNameString = escapeName(userName)
+      val userNameString = Prettifier.escapeName(userName)
       val password = if (initialParameterPassword.isDefined)
         s"$$${initialParameterPassword.get.name}"
       else "'******'"
@@ -80,10 +81,10 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
       s"${x.name} $userNameString $passwordString $statusString"
 
     case x @ DropUser(userName) =>
-      s"${x.name} ${escapeName(userName)}"
+      s"${x.name} ${Prettifier.escapeName(userName)}"
 
     case x @ AlterUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended) =>
-      val userNameString = escapeName(userName)
+      val userNameString = Prettifier.escapeName(userName)
       val passwordString = if (initialStringPassword.isDefined) s" '******'"
       else if (initialParameterPassword.isDefined)
         s" $$${initialParameterPassword.get.name}"
@@ -100,40 +101,42 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
       s"${x.name}${if (withUsers) " WITH USERS" else ""}"
 
     case x @ CreateRole(roleName, _) =>
-      s"${x.name} ${escapeName(roleName)}"
+      s"${x.name} ${Prettifier.escapeName(roleName)}"
 
     case x @ DropRole(roleName) =>
-      s"${x.name} ${escapeName(roleName)}"
+      s"${x.name} ${Prettifier.escapeName(roleName)}"
 
     case x @ GrantRolesToUsers(roleNames, userNames) =>
-      s"${x.name} ${roleNames.map(escapeName).mkString("," )} TO ${userNames.map(escapeName).mkString(", ")}"
+      s"${x.name} ${roleNames.map(Prettifier.escapeName).mkString("," )} TO ${userNames.map(Prettifier.escapeName).mkString(", ")}"
 
     case x @ GrantTraverse(dbScope, qualifier, roleName) =>
-      val (dbName, label) = extractScope(dbScope, qualifier)
-      s"${x.name} ON GRAPH $dbName NODES $label (*) TO ${escapeName(roleName)}"
+      val (dbName, label) = Prettifier.extractScope(dbScope, qualifier)
+      s"${x.name} ON GRAPH $dbName NODES $label (*) TO ${Prettifier.escapeName(roleName)}"
 
-    case x @ ShowPrivileges(scope, grantee) => scope match {
-      case "ALL" => s"CATALOG SHOW ALL PRIVILEGES"
-      case _ => s"CATALOG SHOW ${escapeName(scope)} ${escapeName(grantee)} PRIVILEGES"
-    }
+    case x @ GrantRead(resource, dbScope, qualifier, roleName) =>
+      val (resourceName, dbName, label) = Prettifier.extractScope(resource, dbScope, qualifier)
+      s"${x.name} ($resourceName) ON GRAPH $dbName NODES $label (*) TO ${Prettifier.escapeName(roleName)}"
+
+    case x @ ShowPrivileges(scope) =>
+      s"CATALOG SHOW ${Prettifier.extractScope(scope)} PRIVILEGES"
 
     case x: ShowDatabases =>
       s"${x.name}"
 
     case x @ ShowDatabase(dbName) =>
-      s"${x.name} ${escapeName(dbName)}"
+      s"${x.name} ${Prettifier.escapeName(dbName)}"
 
     case x @ CreateDatabase(dbName) =>
-      s"${x.name} ${escapeName(dbName)}"
+      s"${x.name} ${Prettifier.escapeName(dbName)}"
 
     case x @ DropDatabase(dbName) =>
-      s"${x.name} ${escapeName(dbName)}"
+      s"${x.name} ${Prettifier.escapeName(dbName)}"
 
     case x @ StartDatabase(dbName) =>
-      s"${x.name} ${escapeName(dbName)}"
+      s"${x.name} ${Prettifier.escapeName(dbName)}"
 
     case x @ StopDatabase(dbName) =>
-      s"${x.name} ${escapeName(dbName)}"
+      s"${x.name} ${Prettifier.escapeName(dbName)}"
 
     case x @ CreateGraph(catalogName, query) =>
       val graphName = catalogName.parts.mkString(".")
@@ -151,28 +154,6 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case x @ DropView(catalogName) =>
       val graphName = catalogName.parts.mkString(".")
       s"CATALOG DROP VIEW $graphName"
-  }
-
-  private def extractScope(dbScope: GraphScope, qualifier: PrivilegeQualifier) = {
-    val dbName = dbScope match {
-      case NamedGraphScope(name) => escapeName(name)
-      case AllGraphsScope() => "*"
-      case _ => "<unknown>"
-    }
-    val label = qualifier match {
-      case LabelQualifier(name) => escapeName(name)
-      case AllQualifier() => "*"
-      case _ => "<unknown>"
-    }
-    (dbName, label)
-  }
-
-  private def escapeName(name: String): String = {
-    val c = name.chars().toArray.toSeq
-    if (Character.isJavaIdentifierStart(c.head) && c.tail.forall(Character.isJavaIdentifierPart))
-      name
-    else
-      s"`$name`"
   }
 
   private def queryPart(part: QueryPart): String =
@@ -312,8 +293,6 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
   }
 
   private def asString(start: Start): String = {
-
-
     val startItems =
       start.items.map {
         case AllNodes(v) => s"${v.name} = NODE( * )"
@@ -335,4 +314,53 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
 
   private def asString(properties: Seq[Property]): String =
     properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")
+}
+
+object Prettifier {
+
+  def extractScope(scope: ShowPrivilegeScope): String = {
+    scope match {
+      case ShowUserPrivileges(name) => s"USER ${escapeName(name)}"
+      case ShowRolePrivileges(name) => s"USER ${escapeName(name)}"
+      case ShowAllPrivileges() => "ALL"
+      case _ => "<unknown>"
+    }
+  }
+
+  def extractScope(dbScope: GraphScope, qualifier: PrivilegeQualifier): (String, String) = {
+    val (r, d, q) = extractScope(AllResource()(InputPosition.NONE), dbScope, qualifier)
+    (d, q)
+  }
+
+  def extractScope(resource: ActionResource, dbScope: GraphScope, qualifier: PrivilegeQualifier): (String, String, String) = {
+    val resourceName = resource match {
+      case PropertyResource(name) => escapeName(name)
+      case NoResource() => ""
+      case AllResource() => "*"
+      case _ => "<unknown>"
+    }
+    val dbName = dbScope match {
+      case NamedGraphScope(name) => escapeName(name)
+      case AllGraphsScope() => "*"
+      case _ => "<unknown>"
+    }
+    val label = qualifier match {
+      case LabelQualifier(name) => escapeName(name)
+      case AllQualifier() => "*"
+      case _ => "<unknown>"
+    }
+    (resourceName, dbName, label)
+  }
+
+  def escapeName(name: String): String = {
+    if (name.isEmpty)
+      name
+    else {
+      val c = name.chars().toArray.toSeq
+      if (Character.isJavaIdentifierStart(c.head) && (c.tail.isEmpty || c.tail.forall(Character.isJavaIdentifierPart)))
+        name
+      else
+        s"`$name`"
+    }
+  }
 }

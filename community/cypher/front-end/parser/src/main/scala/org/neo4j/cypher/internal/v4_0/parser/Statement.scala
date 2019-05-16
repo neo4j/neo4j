@@ -42,7 +42,7 @@ trait Statement extends Parser
   }
 
   def PrivilegeManagementCommand: Rule1[CatalogDDL] = rule("Security privilege management statement") {
-    optional(keyword("CATALOG")) ~~ (ShowPrivileges | GrantRole | GrantTraverse)
+    optional(keyword("CATALOG")) ~~ (ShowPrivileges | GrantRole | GrantTraverse | GrantRead)
   }
 
   def ShowUsers: Rule1[ShowUsers] = rule("CATALOG SHOW USERS") {
@@ -152,23 +152,40 @@ trait Statement extends Parser
 
   //`GRANT TRAVERSE ON DATABASE foo GRAPH NODES A (*) TO role1`
   def GrantTraverse: Rule1[GrantTraverse] = rule("CATALOG GRANT TRAVERSE") {
-    group(keyword("GRANT TRAVERSE ON GRAPH * NODES * (*) TO") ~~ SymbolicNameString) ~~>> (ast.GrantTraverse(ast.AllGraphsScope(), ast.AllQualifier(), _)) |
-      group(keyword("GRANT TRAVERSE ON GRAPH * NODES") ~~ SymbolicNameString ~~ keyword("(*) TO") ~~ SymbolicNameString) ~~>>
-        ((label, role) => ast.GrantTraverse(ast.AllGraphsScope(), ast.LabelQualifier(label), role)) |
-      group(keyword("GRANT TRAVERSE ON GRAPH") ~~ SymbolicNameString ~~ keyword("NODES") ~~ keyword("* (*) TO") ~~ SymbolicNameString) ~~>>
-        ((db, role) => ast.GrantTraverse(ast.NamedGraphScope(db), ast.AllQualifier(), role)) |
-      group(keyword("GRANT TRAVERSE ON GRAPH") ~~ SymbolicNameString ~~ keyword("NODES") ~~ SymbolicNameString ~~ keyword("(*) TO") ~~
-        SymbolicNameString) ~~>> ((db, label, role) => ast.GrantTraverse(ast.NamedGraphScope(db), ast.LabelQualifier(label), role))
+    group(keyword("GRANT TRAVERSE") ~~ keyword("ON GRAPH") ~~ GraphName ~~ keyword("NODES") ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNameString) ~~>>
+      ((scope, qualifier, grantee) => ast.GrantTraverse(scope, qualifier, grantee))
+  }
+
+  //`GRANT READ (?) ON DATABASE foo GRAPH NODES A (*) TO role1`
+  def GrantRead: Rule1[GrantRead] = rule("GRANT READ") {
+    group(keyword("GRANT READ") ~~ PrivilegeProperty ~~ keyword("ON GRAPH") ~~ GraphName ~~ keyword("NODES") ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNameString) ~~>>
+      ((prop, scope, qualifier, grantee) => ast.GrantRead(prop, scope, qualifier, grantee))
   }
 
   def ShowPrivileges: Rule1[ShowPrivileges] = rule("CATALOG SHOW PRIVILEGES") {
-    //SHOW ALL PRIVILEGES
-    group(keyword("SHOW") ~~ optional(keyword("ALL")) ~~ keyword("PRIVILEGES")) ~>>> (_ => ast.ShowPrivileges("ALL", "")) |
-      //SHOW USER joe PRIVILEGES
-      group(keyword("SHOW") ~~ keyword("USER") ~~ SymbolicNameString ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowPrivileges("USER", _)) |
-      //SHOW ROLE role1 PRIVILEGES
-      group(keyword("SHOW") ~~ keyword("ROLE") ~~ SymbolicNameString ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowPrivileges("ROLE", _))
+    group(keyword("SHOW") ~~ ScopeForShowPrivileges ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowPrivileges(_))
   }
+
+  private def PrivilegeProperty: Rule1[ActionResource] = rule("a property")(
+    group("(" ~~ SymbolicNameString ~~ ")") ~~>> {ast.PropertyResource(_)} |
+      group("(" ~~ "*" ~~ ")") ~~~> {ast.AllResource()}
+  )
+
+  private def ScopeQualifier: Rule1[PrivilegeQualifier] = rule("a label (prop) combination")(
+    group(SymbolicNameString ~~ "(" ~~ "*" ~~ ")") ~~>> {ast.LabelQualifier(_)} |
+      group("*" ~~ "(" ~~ "*" ~~ ")") ~~~> {ast.AllQualifier()}
+  )
+
+  private def GraphName: Rule1[GraphScope] = rule("a database/graph")(
+    group(SymbolicNameString) ~~>> (ast.NamedGraphScope(_)) |
+      keyword("*") ~~~> (ast.AllGraphsScope())
+  )
+
+  private def ScopeForShowPrivileges: Rule1[ShowPrivilegeScope] = rule("a database/graph")(
+    group(keyword("ROLE") ~~ SymbolicNameString) ~~>> (ast.ShowRolePrivileges(_)) |
+      group(keyword("USER") ~~ SymbolicNameString) ~~>> (ast.ShowUserPrivileges(_)) |
+      optional(keyword("ALL")) ~~~> (ast.ShowAllPrivileges())
+  )
 
   def ShowDatabase: Rule1[ShowDatabase] = rule("CATALOG SHOW DATABASE") {
     group(keyword("SHOW DATABASE") ~~ SymbolicNameString) ~~>> (ast.ShowDatabase(_))

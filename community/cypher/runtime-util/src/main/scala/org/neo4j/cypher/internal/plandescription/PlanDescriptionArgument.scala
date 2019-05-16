@@ -127,11 +127,6 @@ object Arguments {
     override def name = "user"
   }
 
-  case class Grantee(value: String) extends Argument {
-
-    override def name = "grantee"
-  }
-
   case class Qualifier(value: String) extends Argument {
 
     override def name = "qualifier"

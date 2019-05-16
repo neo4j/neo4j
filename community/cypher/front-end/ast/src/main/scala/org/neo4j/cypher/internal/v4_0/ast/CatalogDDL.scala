@@ -127,17 +127,33 @@ final case class GrantRolesToUsers(roleNames: Seq[String], userNames: Seq[String
       SemanticState.recordCurrentScope(this)
 }
 
+sealed trait ActionResource
+
+final case class PropertyResource(property: String)(val position: InputPosition) extends ActionResource
+
+final case class AllResource()(val position: InputPosition) extends ActionResource
+
+final case class NoResource()(val position: InputPosition) extends ActionResource
+
 sealed trait PrivilegeQualifier
 
-final case class LabelQualifier(label: String) extends PrivilegeQualifier
+final case class LabelQualifier(label: String)(val position: InputPosition) extends PrivilegeQualifier
 
-final case class AllQualifier() extends PrivilegeQualifier
+final case class AllQualifier()(val position: InputPosition) extends PrivilegeQualifier
 
 sealed trait GraphScope
 
-final case class NamedGraphScope(database: String) extends GraphScope
+final case class NamedGraphScope(database: String)(val position: InputPosition) extends GraphScope
 
-final case class AllGraphsScope() extends GraphScope
+final case class AllGraphsScope()(val position: InputPosition) extends GraphScope
+
+sealed trait ShowPrivilegeScope
+
+final case class ShowRolePrivileges(role: String)(val position: InputPosition) extends ShowPrivilegeScope
+
+final case class ShowUserPrivileges(user: String)(val position: InputPosition) extends ShowPrivilegeScope
+
+final case class ShowAllPrivileges()(val position: InputPosition) extends ShowPrivilegeScope
 
 final case class GrantTraverse(scope: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(val position: InputPosition) extends MultiDatabaseDDL {
 
@@ -148,7 +164,16 @@ final case class GrantTraverse(scope: GraphScope, qualifier: PrivilegeQualifier,
       SemanticState.recordCurrentScope(this)
 }
 
-final case class ShowPrivileges(scope: String, grantee: String)(val position: InputPosition) extends MultiDatabaseDDL {
+final case class GrantRead(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+
+  override def name = "CATALOG GRANT READ"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
+final case class ShowPrivileges(scope: ShowPrivilegeScope)(val position: InputPosition) extends MultiDatabaseDDL {
 
   override def name = "CATALOG SHOW PRIVILEGE"
 
