@@ -284,7 +284,7 @@ public class DatabaseTest
         {
             PagedFile file = spy( realPageCache.map( invocation.getArgument( 0, File.class ),
                                                      invocation.getArgument( 1, VersionContextSupplier.class ),
-                                                     invocation.getArgument( 2, Integer.class) ) );
+                                                     invocation.getArgument( 2, Integer.class ) ) );
             files.add( file );
             return file;
         } )

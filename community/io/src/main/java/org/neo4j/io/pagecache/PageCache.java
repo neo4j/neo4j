@@ -168,8 +168,9 @@ public interface PageCache extends AutoCloseable
     void reportEvents();
 
     /**
-     * TODO:
-     * @return
+     * Default supplier of thread local (transaction local) version context for current page cache instance that will be used
+     * on page file mapping.
+     * @return page cache specific version context supplier.
      */
     VersionContextSupplier versionContextSupplier();
 }
