@@ -96,6 +96,7 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
         this.batched = true;
         this.open = true;
         this.nextStoreReference = NO_ID;
+        this.filterType = -1;
 
         return ((RecordRelationshipScan) scan).scanBatch( sizeHint , this);
     }
