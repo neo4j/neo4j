@@ -279,7 +279,6 @@ public class NeoStoreDataSource extends LifecycleAdapter
         this.lockService = new ReentrantLockService();
         this.commitProcessFactory = context.getCommitProcessFactory();
         this.pageCache = context.getPageCache();
-        this.monitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
         this.collectionsFactorySupplier = context.getCollectionsFactorySupplier();
         this.databaseAvailability = context.getDatabaseAvailability();
         this.failOnCorruptedLogFiles = context.getConfig().get( GraphDatabaseSettings.fail_on_corrupted_log_files );
@@ -332,11 +331,22 @@ public class NeoStoreDataSource extends LifecycleAdapter
                 .withConfig( config )
                 .withDependencies( dataSourceDependencies ).build();
 
+        LoggingLogFileMonitor logFileMonitor = new LoggingLogFileMonitor( msgLog );
+        LoggingLogTailScannerMonitor tailMonitor = new LoggingLogTailScannerMonitor( logService.getInternalLog( LogTailScanner.class ) );
+        ReverseTransactionCursorLoggingMonitor reverseCursorMonitor =
+                new ReverseTransactionCursorLoggingMonitor( logService.getInternalLog( ReversedSingleFileTransactionCursor.class ) );
+        monitors.addMonitorListener( logFileMonitor );
+        monitors.addMonitorListener( tailMonitor );
+        monitors.addMonitorListener( reverseCursorMonitor );
+        life.add( LifecycleAdapter.onShutdown( () ->
+        {
+            // We might be started and stopped multiple times, so make sure we clean up after ourselves when we're stopped.
+            monitors.removeMonitorListener( logFileMonitor );
+            monitors.removeMonitorListener( tailMonitor );
+            monitors.removeMonitorListener( reverseCursorMonitor );
+        } ) );
+
         LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, monitors, failOnCorruptedLogFiles );
-        monitors.addMonitorListener(
-                new LoggingLogTailScannerMonitor( logService.getInternalLog( LogTailScanner.class ) ) );
-        monitors.addMonitorListener( new ReverseTransactionCursorLoggingMonitor(
-                logService.getInternalLog( ReversedSingleFileTransactionCursor.class ) ) );
         LogVersionUpgradeChecker.check( tailScanner, config );
 
         // Upgrade the store before we begin
