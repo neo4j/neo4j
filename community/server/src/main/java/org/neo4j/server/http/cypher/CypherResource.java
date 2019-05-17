@@ -200,8 +200,8 @@ public class CypherResource
 
     private Response createNonExistentDatabaseResponse( Map<String,Object> parameters )
     {
-        ErrorInvocation errorInvocation = new ErrorInvocation( new Neo4jError( Status.Request.Invalid,
-                String.format( "The database requested does not exists. " + "Requested database name: '%s'.", databaseName ) ) );
+        ErrorInvocation errorInvocation = new ErrorInvocation( new Neo4jError( Status.Database.DatabaseNotFound,
+                String.format( "The database requested does not exists. Requested database name: '%s'.", databaseName ) ) );
         return Response.status( Response.Status.NOT_FOUND ).entity(
                 new OutputEventStreamImpl( parameters, null, uriScheme, errorInvocation::execute ) ).build();
     }

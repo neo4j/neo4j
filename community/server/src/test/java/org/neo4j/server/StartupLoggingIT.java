@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.integration;
+package org.neo4j.server;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -38,7 +38,6 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpConnector.Encryption;
 import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
-import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;

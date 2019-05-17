@@ -19,25 +19,70 @@
  */
 package org.neo4j.server;
 
+import org.hamcrest.MatcherAssert;
+import org.junit.Test;
+
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
-import org.junit.Test;
-
+import org.neo4j.dbms.database.DatabaseNotFoundException;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.server.database.DatabaseService;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.test.server.HTTP;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.server.http.cypher.integration.TransactionMatchers.containsNoErrors;
+import static org.neo4j.server.http.cypher.integration.TransactionMatchers.hasErrors;
+import static org.neo4j.test.server.HTTP.POST;
+import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class NeoServerIT extends AbstractRestFunctionalTestBase
 {
     @Test
-    public void whenServerIsStartedItshouldStartASingleDatabase()
+    public void whenServerIsStartedItShouldStartDatabaseService()
     {
         assertNotNull( server().getDatabaseService() );
+        assertNotNull( server().getDatabaseService().getDatabaseManagementService() );
+    }
+
+    @Test
+    public void whenServerIsStartedItShouldHaveAccessToSystemAndDefaultDatabase()
+    {
+        assertNotNull( server().getDatabaseService().getSystemDatabase() );
+        assertNotNull( server().getDatabaseService().getDatabase() );
+    }
+
+    @Test
+    public void shouldErrorForUnknownDatabase()
+    {
+        DatabaseService databaseService = server().getDatabaseService();
+        DatabaseNotFoundException error = assertThrows( DatabaseNotFoundException.class, () -> databaseService.getDatabase( "foo" ) );
+
+        assertThat( error.getMessage(), containsString( "foo" ) );
+    }
+
+    @Test
+    public void shouldErrorForUnknownDatabaseViaTransactionalEndpoint()
+    {
+        HTTP.Response response = POST( txCommitUri( "foo" ), quotedJson( "{ 'statements': [ { 'statement': 'RETURN 1' } ] }" ) );
+
+        MatcherAssert.assertThat( response.status(), is( 404 ) );
+        MatcherAssert.assertThat( response, hasErrors( Status.Database.DatabaseNotFound ) );
+    }
+
+    @Test
+    public void shouldBeAbleToRunQueryAgainstSystemDatabaseViaTransactionalEndpoint() throws Exception
+    {
+        HTTP.Response response = POST( txCommitUri( "system" ), quotedJson( "{ 'statements': [ { 'statement': 'SHOW DATABASES' } ] }" ) );
+
+        MatcherAssert.assertThat( response.status(), is( 200 ) );
+        MatcherAssert.assertThat( response, containsNoErrors() );
     }
 
     @Test

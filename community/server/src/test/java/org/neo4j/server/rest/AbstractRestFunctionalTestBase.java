@@ -67,7 +67,12 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
 
     protected static String getDataUri()
     {
-        return "http://localhost:" + getLocalHttpPort() + "/db/data/";
+        return getDatabaseUri( "data" );
+    }
+
+    private static String getDatabaseUri( String databaseName )
+    {
+        return String.format( "http://localhost:%s/db/%s/", getLocalHttpPort(), databaseName );
     }
 
     protected String getDatabaseUri()
@@ -80,9 +85,19 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return getDataUri() + "transaction";
     }
 
+    protected String txUri( String databaseName )
+    {
+        return getDatabaseUri( databaseName ) + "transaction";
+    }
+
     protected static String txCommitUri()
     {
         return getDataUri() + "transaction/commit";
+    }
+
+    protected static String txCommitUri( String databaseName )
+    {
+        return getDatabaseUri( databaseName ) + "transaction/commit";
     }
 
     protected String txUri( long txId )
@@ -105,7 +120,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     public static int getLocalHttpPort()
     {
         ConnectorPortRegister connectorPortRegister =
-                server().getDatabaseService().getDatabase().getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
+                server().getDatabaseService().getSystemDatabase().getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
         return connectorPortRegister.getLocalAddress( "http" ).getPort();
     }
 

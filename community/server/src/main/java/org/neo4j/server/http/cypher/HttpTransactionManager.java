@@ -34,6 +34,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.database.DatabaseService;
 import org.neo4j.time.Clocks;
 
+import static java.lang.Math.round;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
@@ -99,10 +100,11 @@ public class HttpTransactionManager
         Clock clock = Clocks.systemClock();
 
         long timeoutMillis = timeout.toMillis();
+        long runEvery = round( timeoutMillis / 2.0 );
         jobScheduler.scheduleRecurring( Group.SERVER_TRANSACTION_TIMEOUT, () ->
         {
             long maxAge = clock.millis() - timeoutMillis;
             transactionRegistry.rollbackSuspendedTransactionsIdleSince( maxAge );
-        }, timeoutMillis, MILLISECONDS );
+        }, runEvery, MILLISECONDS );
     }
 }

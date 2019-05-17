@@ -72,7 +72,7 @@ public class CommunityNeoServer extends AbstractNeoServer
     @Override
     protected WebServer createWebServer()
     {
-        NetworkConnectionTracker connectionTracker = getDependencyResolver().resolveDependency( NetworkConnectionTracker.class );
+        NetworkConnectionTracker connectionTracker = getSystemDatabaseDependencyResolver().resolveDependency( NetworkConnectionTracker.class );
         return new Jetty9WebServer( userLogProvider, getConfig(), connectionTracker );
     }
 
@@ -86,7 +86,7 @@ public class CommunityNeoServer extends AbstractNeoServer
     {
         // ConnectorPortRegister isn't available until runtime, so defer loading until then
         Supplier<DiscoverableURIs> discoverableURIs  = () -> communityDiscoverableURIs( getConfig(),
-                getDependencyResolver().resolveDependency( ConnectorPortRegister.class ) );
+                getSystemDatabaseDependencyResolver().resolveDependency( ConnectorPortRegister.class ) );
         return new DBMSModule( webServer, getConfig(), discoverableURIs );
     }
 

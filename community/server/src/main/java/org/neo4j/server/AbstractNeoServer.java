@@ -107,8 +107,8 @@ public abstract class AbstractNeoServer implements NeoServer
     protected final DatabaseService databaseService;
     protected WebServer webServer;
     protected Supplier<AuthManager> authManagerSupplier;
-    protected Supplier<UserManagerSupplier> userManagerSupplier;
-    protected Supplier<SslPolicyLoader> sslPolicyFactorySupplier;
+    private Supplier<UserManagerSupplier> userManagerSupplier;
+    private Supplier<SslPolicyLoader> sslPolicyFactorySupplier;
     private HttpTransactionManager httpTransactionManager;
 
     private ConnectorPortRegister connectorPortRegister;
@@ -306,7 +306,7 @@ public abstract class AbstractNeoServer implements NeoServer
         webServer.setRequestLog( requestLog );
     }
 
-    private DependencyResolver getSystemDatabaseDependencyResolver()
+    protected DependencyResolver getSystemDatabaseDependencyResolver()
     {
         return databaseService.getSystemDatabase().getDependencyResolver();
     }

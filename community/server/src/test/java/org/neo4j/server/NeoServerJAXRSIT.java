@@ -97,7 +97,7 @@ public class NeoServerJAXRSIT extends ExclusiveServerTestBase
         thirdPartyServiceUri = new URI( server.baseUri() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT + "/inject-test" ).normalize();
         request = HttpRequest.newBuilder( thirdPartyServiceUri ).GET().build();
         response = httpClient.send( request, ofString() ).body();
-        assertEquals( String.valueOf( nodesCreated ), response );
+        assertEquals( response, String.valueOf( nodesCreated ), response );
     }
 
     private static int createSimpleDatabase( final GraphDatabaseAPI graph )

@@ -62,7 +62,7 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
         // When
         server.start();
 
-        // Then I should be able to access the console service
+        // Then I should not be able to access the console service
         HTTP.Response response = HTTP.GET( server.baseUri().resolve( "db/manage/server/console" ).toString() );
         assertThat( response.status(), equalTo( 401 ) );
     }
@@ -78,7 +78,7 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
         server.start();
 
         // Then I should get a unauthorized response for access to the DB
-        HTTP.Response response = HTTP.GET(HTTP.GET( server.baseUri().resolve( "db" ).toString()).location() );
+        HTTP.Response response = HTTP.GET( server.baseUri().resolve( "db/data" ).toString() );
         assertThat( response.status(), equalTo( 401 ) );
     }
 

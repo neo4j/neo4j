@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.rest.security;
 
-import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,6 +29,7 @@ import javax.ws.rs.core.MediaType;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
+import org.dummy.web.service.DummyThirdPartyWebService;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RESTRequestGenerator;
@@ -87,7 +87,7 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
         JaxRsResponse response = gen.get().expectedStatus( 401 ).expectedHeader(
-                "WWW-Authenticate" ).payload( functionalTestHelper.simpleCypherRequestBody() ).post( functionalTestHelper.cypherURL() ).response();
+                "WWW-Authenticate" ).payload( functionalTestHelper.simpleCypherRequestBody() ).post( functionalTestHelper.txCommitUri() ).response();
 
         assertThat( response.getHeaderString( "WWW-Authenticate" ),
                 containsString( "Basic realm=\"" + PermanentlyFailingSecurityRule.REALM + "\"" ) );
@@ -108,7 +108,7 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
         JaxRsResponse response = gen.get().expectedStatus( 401 )
                 .expectedHeader( "WWW-Authenticate" )
                 .payload( functionalTestHelper.simpleCypherRequestBody() )
-                .post( functionalTestHelper.cypherURL() )
+                .post( functionalTestHelper.txCommitUri() )
                 .response();
 
         assertThat( response.getHeaderString( "WWW-Authenticate" ),
@@ -146,7 +146,7 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
 
         String responseBody = gen.get().expectedStatus( 200 )
                 .payload( functionalTestHelper.simpleCypherRequestBody() )
-                .post( functionalTestHelper.cypherURL() )
+                .post( functionalTestHelper.txCommitUri() )
                 .response()
                 .getEntity();
         functionalTestHelper.verifyCypherResponse( responseBody );

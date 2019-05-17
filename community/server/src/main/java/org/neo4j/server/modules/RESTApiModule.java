@@ -53,7 +53,7 @@ public class RESTApiModule implements ServerModule
     @Override
     public void start()
     {
-        URI restApiUri = restApiUri( );
+        URI restApiUri = restApiUri();
 
         webServer.addFilter( new CorsFilter( logProvider, config.get( http_access_control_allow_origin ) ), "/*" );
         webServer.addJAXRSClasses( getClassNames(), restApiUri.toString(), null );

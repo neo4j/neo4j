@@ -54,6 +54,7 @@ import org.neo4j.server.http.cypher.format.api.InputEventStream;
 import org.neo4j.server.http.cypher.format.api.InputFormatException;
 import org.neo4j.server.http.cypher.format.api.Statement;
 import org.neo4j.server.http.cypher.format.api.TransactionNotificationState;
+import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -900,6 +901,12 @@ public class InvocationTest
         public URI txCommitUri( long id )
         {
             return URI.create( "transaction/" + id + "/commit" );
+        }
+
+        @Override
+        public URI dbUri()
+        {
+            return URI.create( "data/" );
         }
     };
 }

@@ -49,7 +49,12 @@ public final class FunctionalTestHelper
 
     public String dataUri()
     {
-        return server.baseUri().toString() + "db/data/";
+        return databaseUri( "data" );
+    }
+
+    public String databaseUri( String databaseName )
+    {
+        return String.format( "%sdb/%s/", server.baseUri(), databaseName );
     }
 
     public URI managementUri()
@@ -67,9 +72,14 @@ public final class FunctionalTestHelper
         return server.baseUri();
     }
 
-    public String cypherURL()
+    public String txCommitUri()
     {
         return dataUri() + "transaction/commit";
+    }
+
+    public String txCommitUri( String databaseName )
+    {
+        return databaseUri( databaseName ) + "transaction/commit";
     }
 
     public String simpleCypherRequestBody()
