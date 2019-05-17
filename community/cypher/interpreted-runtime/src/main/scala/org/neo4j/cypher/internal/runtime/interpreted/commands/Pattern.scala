@@ -125,7 +125,7 @@ case class RelatedTo(left: SingleNode,
       left.symbolTableDependencies ++
       right.symbolTableDependencies
 
-  override def children: Seq[AstNode[_]] = Seq.empty
+  override def children: Seq[AstNode[_]] = Seq(left, right)
 
   def changeEnds(left: SingleNode = this.left, right: SingleNode = this.right): RelatedTo =
     copy(left = left, right = right)
@@ -191,7 +191,7 @@ case class VarLengthRelatedTo(pathName: String,
 
   override def rels: Seq[String] = Seq()
 
-  override def children: Seq[AstNode[_]] = Seq.empty
+  override def children: Seq[AstNode[_]] = Seq(left, right) ++ properties.values
 
   override def changeEnds(left: SingleNode = this.left, right: SingleNode = this.right): VarLengthRelatedTo =
     copy(left = left, right = right)
