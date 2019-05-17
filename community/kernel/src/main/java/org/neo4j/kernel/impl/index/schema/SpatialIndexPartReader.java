@@ -142,12 +142,6 @@ public class SpatialIndexPartReader<VALUE extends NativeSchemaValue> extends Nat
                                 return null;
                             }
                         }
-                        @Override
-                        public void close()
-                        {
-                            super.close();
-                            propertyAccessor.close();
-                        }
                     };
             client.initialize( descriptor, progressor, new IndexQuery[0] );
         }
