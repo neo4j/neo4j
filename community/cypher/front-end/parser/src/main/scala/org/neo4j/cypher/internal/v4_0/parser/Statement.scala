@@ -152,13 +152,13 @@ trait Statement extends Parser
 
   //`GRANT TRAVERSE ON DATABASE foo GRAPH NODES A (*) TO role1`
   def GrantTraverse: Rule1[GrantTraverse] = rule("CATALOG GRANT TRAVERSE") {
-    group(keyword("GRANT TRAVERSE") ~~ keyword("ON GRAPH") ~~ GraphName ~~ keyword("NODES") ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNameString) ~~>>
+    group(keyword("GRANT TRAVERSE") ~~ keyword("ON GRAPH") ~~ GraphName ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNameString) ~~>>
       ((scope, qualifier, grantee) => ast.GrantTraverse(scope, qualifier, grantee))
   }
 
   //`GRANT READ (?) ON DATABASE foo GRAPH NODES A (*) TO role1`
   def GrantRead: Rule1[GrantRead] = rule("GRANT READ") {
-    group(keyword("GRANT READ") ~~ PrivilegeProperty ~~ keyword("ON GRAPH") ~~ GraphName ~~ keyword("NODES") ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNameString) ~~>>
+    group(keyword("GRANT READ") ~~ PrivilegeProperty ~~ keyword("ON GRAPH") ~~ GraphName ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNameString) ~~>>
       ((prop, scope, qualifier, grantee) => ast.GrantRead(prop, scope, qualifier, grantee))
   }
 
@@ -172,8 +172,8 @@ trait Statement extends Parser
   )
 
   private def ScopeQualifier: Rule1[PrivilegeQualifier] = rule("a label (prop) combination")(
-    group(SymbolicNameString ~~ "(" ~~ "*" ~~ ")") ~~>> {ast.LabelQualifier(_)} |
-      group("*" ~~ "(" ~~ "*" ~~ ")") ~~~> {ast.AllQualifier()}
+    group(keyword("NODES") ~~ SymbolicNameString ~~ optional("(" ~~ "*" ~~ ")")) ~~>> {ast.LabelQualifier(_)} |
+      optional(keyword("NODES") ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.AllQualifier()}
   )
 
   private def GraphName: Rule1[GraphScope] = rule("a database/graph")(
