@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.v4_0.parser
 
 import org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.v4_0.util.InvalidArgumentException
 import org.parboiled.scala._
 
 trait Statement extends Parser
@@ -69,6 +70,13 @@ trait Statement extends Parser
       ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange.getOrElse(true), suspended.getOrElse(false)))
   }
 
+  def validUsername: Rule1[String] = {
+    SymbolicNameString ~~> { userName =>
+      UserNameValidator.assertValidUsername(userName)
+      userName
+    }
+  }
+
   def DropUser: Rule1[DropUser] = rule("CATALOG DROP USER") {
     group(keyword("DROP USER") ~~ SymbolicNameString) ~~>> (ast.DropUser(_))
   }
@@ -99,13 +107,6 @@ trait Statement extends Parser
     // ALTER USER username setStatus
     group(keyword("ALTER USER") ~~ SymbolicNameString ~~ setStatus) ~~>>
       ((userName, suspended) => ast.AlterUser(userName, None, None, None, Some(suspended)))
-  }
-
-  def validUsername: Rule1[String] = {
-    SymbolicNameString ~~> { userName =>
-      UserNameValidator.assertValidUsername(userName)
-      userName
-    }
   }
 
   def optionalRequirePasswordChange: Rule1[Option[Boolean]] = {
@@ -144,8 +145,15 @@ trait Statement extends Parser
   }
 
   def CreateRole: Rule1[CreateRole] = rule("CATALOG CREATE ROLE") {
-    group(keyword("CREATE ROLE") ~~ SymbolicNameString ~~
+    group(keyword("CREATE ROLE") ~~ validRoleName ~~
       optional(keyword("AS COPY OF") ~~ SymbolicNameString)) ~~>> (ast.CreateRole(_, _))
+  }
+
+  def validRoleName: Rule1[String] = {
+    SymbolicNameString ~~> { roleName =>
+      if (roleName.equals("")) throw new InvalidArgumentException("The provided role name is empty.")
+      roleName
+    }
   }
 
   def DropRole: Rule1[DropRole] = rule("CATALOG DROP ROLE") {
@@ -162,25 +170,25 @@ trait Statement extends Parser
       keyword("FROM") ~~ SymbolicNamesList) ~~>> (ast.RevokeRolesFromUsers(_, _))
   }
 
-  //`GRANT TRAVERSE ON GRAPH foo NODES A (*) TO role1`
+  //`GRANT TRAVERSE ON GRAPH foo NODES A (*) TO role`
   def GrantTraverse: Rule1[GrantTraverse] = rule("CATALOG GRANT TRAVERSE") {
     group(keyword("GRANT TRAVERSE") ~~ keyword("ON GRAPH") ~~ GraphName ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNameString) ~~>>
       ((scope, qualifier, grantee) => ast.GrantTraverse(scope, qualifier, grantee))
   }
 
-  //`REVOKE TRAVERSE ON GRAPH foo NODES A (*) FROM role1`
+  //`REVOKE TRAVERSE ON GRAPH foo NODES A (*) FROM role`
   def RevokeTraverse: Rule1[RevokeTraverse] = rule("CATALOG REVOKE TRAVERSE") {
     group(keyword("REVOKE TRAVERSE") ~~ keyword("ON GRAPH") ~~ GraphName ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNameString) ~~>>
       ((scope, qualifier, grantee) => ast.RevokeTraverse(scope, qualifier, grantee))
   }
 
-  //`GRANT READ (a) ON GRAPH foo NODES A (*) TO role1`
+  //`GRANT READ (a) ON GRAPH foo NODES A (*) TO role`
   def GrantRead: Rule1[GrantRead] = rule("GRANT READ") {
     group(keyword("GRANT READ") ~~ PrivilegeProperty ~~ keyword("ON GRAPH") ~~ GraphName ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNameString) ~~>>
       ((prop, scope, qualifier, grantee) => ast.GrantRead(prop, scope, qualifier, grantee))
   }
 
-  //`REVOKE READ (a) ON GRAPH foo NODES A (*) FROM role1`
+  //`REVOKE READ (a) ON GRAPH foo NODES A (*) FROM role`
   def RevokeRead: Rule1[RevokeRead] = rule("REVOKE READ") {
     group(keyword("REVOKE READ") ~~ PrivilegeProperty ~~ keyword("ON GRAPH") ~~ GraphName ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNameString) ~~>>
       ((prop, scope, qualifier, grantee) => ast.RevokeRead(prop, scope, qualifier, grantee))
@@ -220,7 +228,14 @@ trait Statement extends Parser
   }
 
   def CreateDatabase: Rule1[CreateDatabase] = rule("CATALOG CREATE DATABASE") {
-    group(keyword("CREATE DATABASE") ~~ SymbolicNameString) ~~>> (ast.CreateDatabase(_))
+    group(keyword("CREATE DATABASE") ~~ validDatabaseName) ~~>> (ast.CreateDatabase(_))
+  }
+
+  def validDatabaseName: Rule1[String] = {
+    SymbolicNameString ~~> { name =>
+      if (name.equals("")) throw new InvalidArgumentException("The provided database name is empty.")
+      name
+    }
   }
 
   def DropDatabase: Rule1[DropDatabase] = rule("CATALOG DROP DATABASE") {
