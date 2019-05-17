@@ -255,14 +255,56 @@ class PrettifierIT extends CypherFunSuite {
       "show  user `$aB%x`  privileges" ->
         "CATALOG SHOW USER `$aB%x` PRIVILEGES",
 
+      "show user `$user` privileges" ->
+        "CATALOG SHOW USER `$user` PRIVILEGES",
+
       "show role abc privileges" ->
         "CATALOG SHOW ROLE abc PRIVILEGES",
 
       "show  role `$aB%x`  privileges" ->
         "CATALOG SHOW ROLE `$aB%x` PRIVILEGES",
 
+      "show role `$role` privileges" ->
+        "CATALOG SHOW ROLE `$role` PRIVILEGES",
+
+      "grant traverse on graph * to role" ->
+        "CATALOG GRANT TRAVERSE ON GRAPH * NODES * (*) TO role",
+
+      "grant traverse on graph * nodes * to role" ->
+        "CATALOG GRANT TRAVERSE ON GRAPH * NODES * (*) TO role",
+
+      "grant traverse on graph * nodes * (*) to role" ->
+        "CATALOG GRANT TRAVERSE ON GRAPH * NODES * (*) TO role",
+
       "grant traverse on graph foo nodes * (*) to role" ->
         "CATALOG GRANT TRAVERSE ON GRAPH foo NODES * (*) TO role",
+
+      "grant traverse on graph foo nodes A (*) to role" ->
+        "CATALOG GRANT TRAVERSE ON GRAPH foo NODES A (*) TO role",
+
+      "grant traverse on graph `#%¤` nodes `()/&` (*) to role" ->
+        "CATALOG GRANT TRAVERSE ON GRAPH `#%¤` NODES `()/&` (*) TO role",
+
+      "grant read (*) on graph * to role" ->
+        "CATALOG GRANT READ (*) ON GRAPH * NODES * (*) TO role",
+
+      "grant read (*) on graph * nodes * to role" ->
+        "CATALOG GRANT READ (*) ON GRAPH * NODES * (*) TO role",
+
+      "grant read (*) on graph * nodes * (*) to role" ->
+        "CATALOG GRANT READ (*) ON GRAPH * NODES * (*) TO role",
+
+      "grant read (*) on graph foo nodes * (*) to role" ->
+        "CATALOG GRANT READ (*) ON GRAPH foo NODES * (*) TO role",
+
+      "grant read (*) on graph foo nodes A (*) to role" ->
+        "CATALOG GRANT READ (*) ON GRAPH foo NODES A (*) TO role",
+
+      "grant read (bar) on graph foo nodes A (*) to role" ->
+        "CATALOG GRANT READ (bar) ON GRAPH foo NODES A (*) TO role",
+
+      "grant read ( `&bar` ) on graph `#%¤` nodes `()/&` (*) to role" ->
+        "CATALOG GRANT READ (`&bar`) ON GRAPH `#%¤` NODES `()/&` (*) TO role",
 
       "catalog show database foO_Bar_42" ->
         "CATALOG SHOW DATABASE foO_Bar_42",

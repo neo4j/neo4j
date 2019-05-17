@@ -321,7 +321,7 @@ object Prettifier {
   def extractScope(scope: ShowPrivilegeScope): String = {
     scope match {
       case ShowUserPrivileges(name) => s"USER ${escapeName(name)}"
-      case ShowRolePrivileges(name) => s"USER ${escapeName(name)}"
+      case ShowRolePrivileges(name) => s"ROLE ${escapeName(name)}"
       case ShowAllPrivileges() => "ALL"
       case _ => "<unknown>"
     }
@@ -357,7 +357,8 @@ object Prettifier {
       name
     else {
       val c = name.chars().toArray.toSeq
-      if (Character.isJavaIdentifierStart(c.head) && (c.tail.isEmpty || c.tail.forall(Character.isJavaIdentifierPart)))
+      if (Character.isJavaIdentifierStart(c.head) && Character.getType(c.head) != Character.CURRENCY_SYMBOL &&
+        (c.tail.isEmpty || c.tail.forall(Character.isJavaIdentifierPart)))
         name
       else
         s"`$name`"
