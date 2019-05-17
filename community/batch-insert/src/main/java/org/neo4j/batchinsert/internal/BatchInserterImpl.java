@@ -53,6 +53,8 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.IteratorWrapper;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -134,10 +136,8 @@ import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.TokenStore;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -202,7 +202,6 @@ public class BatchInserterImpl implements BatchInserter
     private final FileSystemAbstraction fileSystem;
     private final Monitors monitors;
     private final JobScheduler jobScheduler;
-    private final CountsTracker counts;
     private final SchemaRuleAccess schemaRuleAccess;
     private boolean labelsTouched;
     private boolean isShutdown;
@@ -285,6 +284,7 @@ public class BatchInserterImpl implements BatchInserter
 
             maxNodeId = recordFormats.node().getMaxId();
 
+//<<<<<<< HEAD
             if ( dump )
             {
                 dumpConfiguration( config, System.out );
@@ -304,10 +304,6 @@ public class BatchInserterImpl implements BatchInserter
             RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
             schemaStore = neoStores.getSchemaStore();
             labelTokenStore = neoStores.getLabelTokenStore();
-            counts = new CountsTracker( logService.getInternalLogProvider(), fileSystem, pageCache, config, this.databaseLayout,
-                EmptyVersionContextSupplier.EMPTY );
-            counts.setInitializer( DataInitializer.empty() );
-            life.add( counts );
 
             monitors = new Monitors();
 
@@ -579,7 +575,10 @@ public class BatchInserterImpl implements BatchInserter
 
     private void rebuildCounts()
     {
-        CountsComputer.recomputeCounts( neoStores, counts, pageCache, databaseLayout );
+        try ( GBPTreeCountsStore counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStoreA(), RecoveryCleanupWorkCollector.immediate(),
+                new CountsComputer( neoStores, pageCache, databaseLayout ), false ) )
+        {   // Just let it rebuild itself here
+        }
     }
 
     private void createEmptyTransactionLog()

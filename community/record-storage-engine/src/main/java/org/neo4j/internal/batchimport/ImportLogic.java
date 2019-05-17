@@ -51,6 +51,7 @@ import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.batchimport.staging.ExecutionSupervisors;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
+import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -497,22 +498,30 @@ public class ImportLogic implements Closeable
      */
     public void buildCountsStore()
     {
-        // Count nodes per label and labels per node
-        try ( CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
-                neoStore.getLastCommittedTransactionId() ) )
+        neoStore.buildCountsStore( new CountsBuilder()
         {
-            MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
-            nodeLabelsCache = new NodeLabelsCache( numberArrayFactory, neoStore.getLabelRepository().getHighId() );
-            MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, nodeLabelsCache );
-            executeStage( new NodeCountsAndLabelIndexBuildStage( config, nodeLabelsCache, neoStore.getNodeStore(),
-                    neoStore.getLabelRepository().getHighId(), countsUpdater, progressMonitor.startSection( "Nodes" ),
-                    neoStore.getLabelScanStore(), memoryUsageStats ) );
-            // Count label-[type]->label
-            executeStage( new RelationshipCountsStage( config, nodeLabelsCache, neoStore.getRelationshipStore(),
-                    neoStore.getLabelRepository().getHighId(),
-                    neoStore.getRelationshipTypeRepository().getHighId(),
-                    countsUpdater, numberArrayFactory, progressMonitor.startSection( "Relationships" ) ) );
-        }
+            @Override
+            public void initialize( CountsAccessor.Updater updater )
+            {
+                MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
+                nodeLabelsCache = new NodeLabelsCache( numberArrayFactory, neoStore.getLabelRepository().getHighId() );
+                MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, nodeLabelsCache );
+                executeStage( new NodeCountsAndLabelIndexBuildStage( config, nodeLabelsCache, neoStore.getNodeStore(),
+                        neoStore.getLabelRepository().getHighId(), updater, progressMonitor.startSection( "Nodes" ),
+                        neoStore.getLabelScanStore(), memoryUsageStats ) );
+                // Count label-[type]->label
+                executeStage( new RelationshipCountsStage( config, nodeLabelsCache, neoStore.getRelationshipStore(),
+                        neoStore.getLabelRepository().getHighId(),
+                        neoStore.getRelationshipTypeRepository().getHighId(),
+                        updater, numberArrayFactory, progressMonitor.startSection( "Relationships" ) ) );
+            }
+
+            @Override
+            public long lastCommittedTxId()
+            {
+                return neoStore.getLastCommittedTransactionId();
+            }
+        } );
     }
 
     public void success()

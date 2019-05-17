@@ -22,7 +22,6 @@ package org.neo4j.consistency;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.UncheckedIOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -38,8 +37,11 @@ import org.neo4j.consistency.statistics.DefaultCounts;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.statistics.VerboseStatistics;
 import org.neo4j.consistency.store.DirectStoreAccess;
+import org.neo4j.counts.CountsStore;
 import org.neo4j.function.Suppliers;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.counts.CountsBuilder;
+import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.index.label.FullStoreChangeStream;
@@ -59,7 +61,7 @@ import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.counts.ReadOnlyCountsTracker;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -192,25 +194,18 @@ public class ConsistencyCheckService
         config.set( GraphDatabaseSettings.pagecache_warmup_enabled, false );
 
         LifeSupport life = new LifeSupport();
-        StoreFactory factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem, immediate() ),
-                pageCache, fileSystem, logProvider );
-        ReadOnlyCountsTracker counts = new ReadOnlyCountsTracker( logProvider, fileSystem, pageCache, config, databaseLayout );
-        try
-        {
-            counts.init();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+        StoreFactory factory =
+                new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem, immediate() ), pageCache, fileSystem, logProvider );
+        CountsStore counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStoreA(), RecoveryCleanupWorkCollector.ignore(),
+                new RebuildPreventingCountsInitializer(), true );
         // Don't start the counts store here as part of life, instead only shut down. This is because it's better to let FullCheck
         // start it and add its missing/broken detection where it can report to user.
         life.add( new LifecycleAdapter()
         {
             @Override
-            public void shutdown() throws Exception
+            public void shutdown()
             {
-                counts.shutdown();
+                counts.close();
             }
         } );
 
@@ -374,5 +369,20 @@ public class ConsistencyCheckService
     public static int defaultConsistencyCheckThreadsNumber()
     {
         return Math.max( 1, Runtime.getRuntime().availableProcessors() - 1 );
+    }
+
+    private class RebuildPreventingCountsInitializer implements CountsBuilder
+    {
+        @Override
+        public void initialize( CountsTracker.Updater updater )
+        {
+            throw new UnsupportedOperationException( "Counts store needed rebuild, consistency checker will instead report broken or missing counts store" );
+        }
+
+        @Override
+        public long lastCommittedTxId()
+        {
+            return 0;
+        }
     }
 }

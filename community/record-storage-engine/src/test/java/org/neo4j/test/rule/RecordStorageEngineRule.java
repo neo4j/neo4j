@@ -23,6 +23,7 @@ import java.util.function.Function;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdController;
@@ -38,7 +39,6 @@ import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.ReentrantLockService;
@@ -233,7 +233,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer )
         {
             super( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics, indexConfigCompleter,
-                    lockService, databaseHealth, idGeneratorFactory, idController, EmptyVersionContextSupplier.EMPTY, true );
+                    lockService, databaseHealth, idGeneratorFactory, idController, RecoveryCleanupWorkCollector.immediate(), true );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

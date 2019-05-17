@@ -36,11 +36,14 @@ import org.neo4j.consistency.statistics.DefaultCounts;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.statistics.VerboseStatistics;
 import org.neo4j.consistency.store.DirectStoreAccess;
+import org.neo4j.counts.CountsStore;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.counts.CountsBuilder;
+import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.NativeLabelScanStore;
@@ -64,8 +67,6 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.TokenStore;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.counts.ReadOnlyCountsTracker;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -78,6 +79,7 @@ import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
@@ -140,8 +142,8 @@ public abstract class GraphStoreFixture implements AutoCloseable
     private final PageCache pageCache;
     private final TestDirectory testDirectory;
     private LabelScanStore labelScanStore;
-    private ReadOnlyCountsTracker counts;
     private ThreadPoolJobScheduler jobScheduler;
+    private CountsStore counts;
 
     private GraphStoreFixture( boolean keepStatistics, String formatName, PageCache pageCache, TestDirectory testDirectory )
     {
@@ -188,7 +190,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
             fileSystem = new DefaultFileSystemAbstraction();
             jobScheduler = new ThreadPoolJobScheduler( "Fixture-" );
             LogProvider logProvider = NullLogProvider.getInstance();
-            Config config = Config.defaults( GraphDatabaseSettings.read_only, readOnly ? true : false );
+            Config config = Config.defaults( GraphDatabaseSettings.read_only, readOnly );
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
             StoreFactory storeFactory = new StoreFactory(
                     testDirectory.databaseLayout(), config, idGeneratorFactory, pageCache, fileSystem, logProvider );
@@ -210,6 +212,17 @@ public abstract class GraphStoreFixture implements AutoCloseable
             fixtureLife.start();
             storeLife.start();
 
+            CountsStore counts =
+                    new GBPTreeCountsStore( pageCache, databaseLayout().countStoreA(), RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, false );
+            storeLife.add( new LifecycleAdapter()
+            {
+                @Override
+                public void start() throws Exception
+                {
+                    counts.start();
+                }
+            } );
+
             IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE,
                     () -> new RecordStorageReader( nativeStores.getRawNeoStores() ) );
 
@@ -222,20 +235,11 @@ public abstract class GraphStoreFixture implements AutoCloseable
         return directStoreAccess;
     }
 
-    public CountsTracker counts()
+    public CountsStore counts()
     {
         if ( counts == null )
         {
-            Config config = Config.defaults( GraphDatabaseSettings.read_only, true );
-            counts = new ReadOnlyCountsTracker( NullLogProvider.getInstance(), fileSystem, pageCache, config, databaseLayout() );
-            try
-            {
-                counts.init();
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
+            counts = new GBPTreeCountsStore( pageCache, databaseLayout().countStoreA(), RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, true );
         }
         return counts;
     }
@@ -619,7 +623,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
             directStoreAccess = null;
             if ( counts != null )
             {
-                counts.shutdown();
+                counts.close();
                 counts = null;
             }
         }

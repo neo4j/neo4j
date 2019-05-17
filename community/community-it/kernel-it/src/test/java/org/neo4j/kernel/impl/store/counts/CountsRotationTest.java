@@ -43,6 +43,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsStore;
 import org.neo4j.counts.CountsVisitor;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
@@ -195,7 +196,7 @@ public class CountsRotationTest
 
         DependencyResolver resolver = db.getDependencyResolver();
         RecordStorageEngine storageEngine = resolver.resolveDependency( RecordStorageEngine.class );
-        CountsTracker countStore = (CountsTracker) storageEngine.countsAccessor();
+        CountsStore countStore = (CountsStore) storageEngine.countsAccessor();
 
         AtomicBoolean workerContinueFlag = new AtomicBoolean( true );
         AtomicLong lookupsCounter = new AtomicLong();
@@ -223,15 +224,15 @@ public class CountsRotationTest
         managementService.shutdown();
     }
 
-    private static ThrowingFunction<CountsTracker,Void,RuntimeException> countStoreLookup(
+    private static ThrowingFunction<CountsStore,Void,RuntimeException> countStoreLookup(
             AtomicBoolean workerContinueFlag, AtomicLong lookups )
     {
-        return countsTracker ->
+        return counts ->
         {
             while ( workerContinueFlag.get() )
             {
                 Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
-                countsTracker.get( CountsKeyFactory.nodeKey( 0 ), register );
+                counts.nodeCount( 0, register );
                 lookups.incrementAndGet();
             }
             return null;
@@ -310,7 +311,7 @@ public class CountsRotationTest
         }
 
         // on the other hand the tracker should read the correct value by merging data on disk and data in memory
-        final CountsTracker tracker = (CountsTracker) db.getDependencyResolver().resolveDependency( CountsAccessor.class );
+        final CountsStore tracker = db.getDependencyResolver().resolveDependency( CountsStore.class );
         assertEquals( 1 + 1, tracker.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
 
         int labelId;

@@ -19,32 +19,24 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import java.util.Optional;
-
-import org.neo4j.counts.CountsAccessor;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.counts.CountsStore;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
-public class CountsStoreBatchTransactionApplier extends BatchTransactionApplier.Adapter
+class CountsStoreBatchTransactionApplier extends BatchTransactionApplier.Adapter
 {
-    private final CountsTracker countsTracker;
-    private CountsTracker.Updater countsUpdater;
+    private final CountsStore countsStore;
     private final TransactionApplicationMode mode;
 
-    public CountsStoreBatchTransactionApplier( CountsTracker countsTracker, TransactionApplicationMode mode )
+    CountsStoreBatchTransactionApplier( CountsStore countsStore, TransactionApplicationMode mode )
     {
-        this.countsTracker = countsTracker;
+        this.countsStore = countsStore;
         this.mode = mode;
     }
 
     @Override
     public TransactionApplier startTx( CommandsToApply transaction )
     {
-        Optional<CountsAccessor.Updater> result = countsTracker.apply( transaction.transactionId() );
-        result.ifPresent( updater -> this.countsUpdater = updater );
-        assert this.countsUpdater != null || mode == TransactionApplicationMode.RECOVERY;
-
-        return new CountsStoreTransactionApplier( mode, countsUpdater );
+        return new CountsStoreTransactionApplier( mode, countsStore.apply( transaction.transactionId() ) );
     }
 }

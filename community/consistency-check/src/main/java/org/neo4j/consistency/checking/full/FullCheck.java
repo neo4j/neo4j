@@ -39,12 +39,11 @@ import org.neo4j.consistency.store.CacheSmallStoresRecordAccess;
 import org.neo4j.consistency.store.DirectRecordAccess;
 import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.consistency.store.RecordAccess;
+import org.neo4j.counts.CountsStore;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -87,13 +86,13 @@ public class FullCheck
         this.startCountsStore = startCountsStore;
     }
 
-    public ConsistencySummaryStatistics execute( DirectStoreAccess stores, CountsTracker counts, Log log )
+    public ConsistencySummaryStatistics execute( DirectStoreAccess stores, CountsStore counts, Log log )
             throws ConsistencyCheckIncompleteException
     {
         return execute( stores, counts, log, NO_MONITOR );
     }
 
-    ConsistencySummaryStatistics execute( DirectStoreAccess stores, CountsTracker counts, Log log, Monitor reportMonitor )
+    ConsistencySummaryStatistics execute( DirectStoreAccess stores, CountsStore counts, Log log, Monitor reportMonitor )
             throws ConsistencyCheckIncompleteException
     {
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
@@ -117,7 +116,6 @@ public class FullCheck
             {
                 // Perhaps other read-only use cases thinks it's fine to just rebuild an in-memory counts store,
                 // but the consistency checker should instead prevent rebuild and report that the counts store is broken or missing
-                counts.setInitializer( new RebuildPreventingCountsInitializer() );
                 try
                 {
                     counts.start();
@@ -188,20 +186,5 @@ public class FullCheck
             records[i] = store.getRecord( i, store.newRecord(), FORCE );
         }
         return records;
-    }
-
-    private static class RebuildPreventingCountsInitializer implements DataInitializer<CountsTracker.Updater>
-    {
-        @Override
-        public void initialize( CountsTracker.Updater updater )
-        {
-            throw new UnsupportedOperationException( "Counts store needed rebuild, consistency checker will instead report broken or missing counts store" );
-        }
-
-        @Override
-        public long initialVersion()
-        {
-            return 0;
-        }
     }
 }

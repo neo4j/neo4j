@@ -26,14 +26,14 @@ import org.neo4j.internal.batchimport.NodeCountsStage;
 import org.neo4j.internal.batchimport.RelationshipCountsStage;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 
-public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
+public class CountsComputer implements CountsBuilder
 {
     public static void recomputeCounts( NeoStores stores, CountsTracker counts, PageCache pageCache, DatabaseLayout databaseLayout )
     {
@@ -110,7 +110,7 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
     }
 
     @Override
-    public long initialVersion()
+    public long lastCommittedTxId()
     {
         return lastCommittedTransactionId;
     }

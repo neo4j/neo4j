@@ -26,6 +26,7 @@ import java.util.function.Function;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.common.EntityType;
+import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -36,7 +37,6 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -61,13 +61,13 @@ public class RecordStorageReader implements StorageReader
     private final RelationshipStore relationshipStore;
     private final RelationshipGroupStore relationshipGroupStore;
     private final PropertyStore propertyStore;
-    private final CountsTracker counts;
+    private final CountsAccessor counts;
     private final MetaDataStore metaDataStore;
     private final SchemaCache schemaCache;
 
     private boolean closed;
 
-    RecordStorageReader( TokenHolders tokenHolders, NeoStores neoStores, CountsTracker counts, SchemaCache schemaCache )
+    RecordStorageReader( TokenHolders tokenHolders, NeoStores neoStores, CountsAccessor counts, SchemaCache schemaCache )
     {
         this.tokenHolders = tokenHolders;
         this.nodeStore = neoStores.getNodeStore();

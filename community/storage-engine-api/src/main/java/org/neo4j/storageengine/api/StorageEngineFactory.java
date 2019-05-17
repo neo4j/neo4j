@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -34,7 +35,6 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
@@ -75,8 +75,8 @@ public interface StorageEngineFactory
      */
     StorageEngine instantiate( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, TokenHolders tokenHolders,
             SchemaState schemaState, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter, LockService lockService,
-            IdGeneratorFactory idGeneratorFactory, IdController idController, DatabaseHealth databaseHealth, VersionContextSupplier versionContextSupplier,
-            LogProvider logProvider, boolean createStoreIfNotExists );
+            IdGeneratorFactory idGeneratorFactory, IdController idController, DatabaseHealth databaseHealth,
+            LogProvider logProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean createStoreIfNotExists );
 
     /**
      * Lists files of a specific storage location.

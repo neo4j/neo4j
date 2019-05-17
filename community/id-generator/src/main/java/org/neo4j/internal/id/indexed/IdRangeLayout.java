@@ -30,13 +30,12 @@ import org.neo4j.util.Preconditions;
 class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
 {
     private final int longsPerEntry;
-    private final int idsPerEntry;
 
     IdRangeLayout( int idsPerEntry )
     {
+        super( true, 3735929054L + idsPerEntry, 1, 2 );
         Preconditions.checkArgument( Integer.bitCount( idsPerEntry ) == 1, "idsPerEntry must be power of 2, was %d", idsPerEntry );
         this.longsPerEntry = ((idsPerEntry - 1) / (IdRange.BITSET_SIZE)) + 1;
-        this.idsPerEntry = idsPerEntry;
     }
 
     @Override
@@ -119,30 +118,6 @@ class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
                 group[ii] = cursor.getLong();
             }
         }
-    }
-
-    @Override
-    public boolean fixedSize()
-    {
-        return true;
-    }
-
-    @Override
-    public long identifier()
-    {
-        return 3735929054L + idsPerEntry;
-    }
-
-    @Override
-    public int majorVersion()
-    {
-        return 1;
-    }
-
-    @Override
-    public int minorVersion()
-    {
-        return 2;
     }
 
     @Override

@@ -104,6 +104,11 @@
             <artifactId>neo4j-monitoring</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-index</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
 </project>

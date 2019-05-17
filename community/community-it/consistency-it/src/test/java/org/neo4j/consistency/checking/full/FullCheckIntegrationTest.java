@@ -54,6 +54,7 @@ import org.neo4j.consistency.checking.GraphStoreFixture.IdGenerator;
 import org.neo4j.consistency.checking.GraphStoreFixture.TransactionDataBuilder;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.store.DirectStoreAccess;
+import org.neo4j.counts.CountsStore;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.Direction;
@@ -2221,7 +2222,7 @@ public class FullCheckIntegrationTest
         return check( fixture.readOnlyDirectStoreAccess(), fixture.counts() );
     }
 
-    private ConsistencySummaryStatistics check( DirectStoreAccess stores, CountsTracker counts ) throws ConsistencyCheckIncompleteException
+    private ConsistencySummaryStatistics check( DirectStoreAccess stores, CountsStore counts ) throws ConsistencyCheckIncompleteException
     {
         Config config = config();
         final var consistencyFlags = new ConsistencyFlags( true, true, true, true );

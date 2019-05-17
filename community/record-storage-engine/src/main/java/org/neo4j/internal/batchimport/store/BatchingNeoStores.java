@@ -26,6 +26,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.function.Predicate;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
@@ -34,6 +35,8 @@ import org.neo4j.internal.batchimport.store.BatchingTokenRepository.BatchingLabe
 import org.neo4j.internal.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 import org.neo4j.internal.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 import org.neo4j.internal.batchimport.store.io.IoTracer;
+import org.neo4j.internal.counts.CountsBuilder;
+import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -60,13 +63,10 @@ import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
-import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -111,12 +111,10 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private final boolean externalPageCache;
     private final IdGeneratorFactory idGeneratorFactory;
     private final IdGeneratorFactory tempIdGeneratorFactory;
-    private final Lifespan countsStoreLife = new Lifespan();
 
     // Some stores are considered temporary during the import and will be reordered/restructured
     // into the main store. These temporary stores will live here
     private NeoStores neoStores;
-    private CountsTracker countsStore;
     private NeoStores temporaryNeoStores;
     private BatchingPropertyKeyTokenRepository propertyKeyRepository;
     private BatchingLabelTokenRepository labelRepository;
@@ -234,9 +232,6 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private void instantiateStores() throws IOException
     {
         neoStores = newStoreFactory( databaseLayout, idGeneratorFactory ).openAllNeoStores( true );
-        countsStore = new CountsTracker( logProvider, fileSystem, pageCache, neo4jConfig, databaseLayout, EmptyVersionContextSupplier.EMPTY );
-        countsStore.setInitializer( DataInitializer.empty( initialIds.lastCommittedTransactionId() ) );
-        countsStoreLife.add( countsStore );
         propertyKeyRepository = new BatchingPropertyKeyTokenRepository(
                 neoStores.getPropertyKeyTokenStore() );
         labelRepository = new BatchingLabelTokenRepository(
@@ -353,9 +348,9 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         return neoStores.getRelationshipGroupStore();
     }
 
-    public CountsTracker getCountsStore()
+    public void buildCountsStore( CountsBuilder builder )
     {
-        return countsStore;
+        new GBPTreeCountsStore( pageCache, databaseLayout.countStoreA(), RecoveryCleanupWorkCollector.immediate(), builder, false ).close();
     }
 
     @Override
@@ -375,7 +370,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
         // Close the neo store
         life.shutdown();
-        closeAll( countsStoreLife, neoStores, temporaryNeoStores );
+        closeAll( neoStores, temporaryNeoStores );
         if ( !externalPageCache )
         {
             pageCache.close();

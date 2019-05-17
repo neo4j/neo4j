@@ -21,10 +21,8 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
-
 import org.neo4j.counts.CountsAccessor;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.counts.CountsStore;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -39,10 +37,10 @@ class CountsStoreTransactionApplierTest
     void shouldNotifyCacheAccessOnHowManyUpdatesOnCountsWeHadSoFar() throws Exception
     {
         // GIVEN
-        final CountsTracker tracker = mock( CountsTracker.class );
+        final CountsStore counts = mock( CountsStore.class );
         final CountsAccessor.Updater updater = mock( CountsAccessor.Updater.class );
-        when( tracker.apply( anyLong() ) ).thenReturn( Optional.of( updater ) );
-        final CountsStoreBatchTransactionApplier applier = new CountsStoreBatchTransactionApplier( tracker,
+        when( counts.apply( anyLong() ) ).thenReturn( updater );
+        final CountsStoreBatchTransactionApplier applier = new CountsStoreBatchTransactionApplier( counts,
                 TransactionApplicationMode.INTERNAL );
 
         // WHEN

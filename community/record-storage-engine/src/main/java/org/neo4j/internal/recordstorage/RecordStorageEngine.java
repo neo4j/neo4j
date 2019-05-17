@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,6 +30,9 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.counts.CountsBuilder;
+import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGenerator;
@@ -49,17 +51,13 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.counts.ReadOnlyCountsTracker;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
-import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -98,6 +96,7 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_REC
 public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
     private final NeoStores neoStores;
+    private final DatabaseLayout databaseLayout;
     private final TokenHolders tokenHolders;
     private final Health databaseHealth;
     private final SchemaCache schemaCache;
@@ -110,7 +109,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSync;
     private WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
     private final IdController idController;
-    private final CountsTracker countsStore;
+    private final GBPTreeCountsStore countsStore;
     private final int denseNodeThreshold;
     private final Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
 
@@ -131,9 +130,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             Health databaseHealth,
             IdGeneratorFactory idGeneratorFactory,
             IdController idController,
-            VersionContextSupplier versionContextSupplier,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             boolean createStoreIfNotExists )
     {
+        this.databaseLayout = databaseLayout;
         this.tokenHolders = tokenHolders;
         this.schemaState = schemaState;
         this.lockService = lockService;
@@ -158,7 +158,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             denseNodeThreshold = config.get( GraphDatabaseSettings.dense_node_threshold );
 
-            countsStore = openCountsStore( fs, pageCache, databaseLayout, config, logProvider, versionContextSupplier );
+            countsStore = openCountsStore( pageCache, databaseLayout, config, logProvider, recoveryCleanupWorkCollector );
         }
         catch ( Throwable failure )
         {
@@ -167,14 +167,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
     }
 
-    private CountsTracker openCountsStore( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, Config config, LogProvider logProvider,
-            VersionContextSupplier versionContextSupplier )
+    private GBPTreeCountsStore openCountsStore( PageCache pageCache, DatabaseLayout layout, Config config, LogProvider logProvider,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         boolean readOnly = config.get( GraphDatabaseSettings.read_only );
-        CountsTracker counts = readOnly
-                               ? new ReadOnlyCountsTracker( logProvider, fs, pageCache, config, layout )
-                               : new CountsTracker( logProvider, fs, pageCache, config, layout, versionContextSupplier );
-        counts.setInitializer( new DataInitializer<>()
+        return new GBPTreeCountsStore( pageCache, layout.countStoreA(), recoveryCleanupWorkCollector, new CountsBuilder()
         {
             private final Log log = logProvider.getLog( MetaDataStore.class );
 
@@ -187,12 +184,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             }
 
             @Override
-            public long initialVersion()
+            public long lastCommittedTxId()
             {
                 return neoStores.getMetaDataStore().getLastCommittedTransactionId();
             }
-        } );
-        return counts;
+        }, readOnly );
     }
 
     @Override
@@ -338,9 +334,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public void init() throws Exception
+    public void init()
     {
-        countsStore.init();
     }
 
     @Override
@@ -360,19 +355,19 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void stop() throws Exception
     {
-        executeAll( idController::stop, countsStore::stop );
+        executeAll( idController::stop );
     }
 
     @Override
     public void shutdown() throws Exception
     {
-        executeAll( countsStore::shutdown, neoStores::close );
+        executeAll( countsStore::close, neoStores::close );
     }
 
     @Override
     public void flushAndForce( IOLimiter limiter ) throws IOException
     {
-        countsStore.rotate( neoStores.getMetaDataStore().getLastCommittedTransactionId() );
+        countsStore.checkpoint( limiter);
         neoStores.flush( limiter );
     }
 
@@ -406,7 +401,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public Collection<StoreFileMetadata> listStorageFiles()
     {
         List<StoreFileMetadata> files = new ArrayList<>();
-        addCountStoreFiles( files );
+        files.add( new StoreFileMetadata( databaseLayout.countStoreA(), RecordFormat.NO_RECORD_SIZE ) );
         for ( StoreType type : StoreType.values() )
         {
             final RecordStore<AbstractBaseRecord> recordStore = neoStores.getRecordStore( type );
@@ -415,17 +410,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             files.add( metadata );
         }
         return files;
-    }
-
-    private void addCountStoreFiles( List<StoreFileMetadata> files )
-    {
-        Iterable<File> countStoreFiles = countsStore.allFiles();
-        for ( File countStoreFile : countStoreFiles )
-        {
-            StoreFileMetadata countStoreFileMetadata = new StoreFileMetadata( countStoreFile,
-                    RecordFormat.NO_RECORD_SIZE );
-            files.add( countStoreFileMetadata );
-        }
     }
 
     /**

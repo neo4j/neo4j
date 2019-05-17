@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.helpers.Exceptions;
@@ -46,7 +45,6 @@ import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockGroup;
@@ -147,22 +145,6 @@ class RecordStorageEngineTest
             exception = exception.getCause();
         }
         assertThat( exception, is( applicationError ) );
-    }
-
-    @Test
-    @Timeout( 30 )
-    void obtainCountsStoreResetterAfterFailedTransaction() throws Exception
-    {
-        RecordStorageEngine engine = buildRecordStorageEngine();
-        Exception applicationError = executeFailingTransaction( engine );
-        assertNotNull( applicationError );
-
-        CountsTracker countsStore = (CountsTracker) engine.countsAccessor();
-        // possible to obtain a resetting updater that internally has a write lock on the counts store
-        try ( CountsAccessor.Updater updater = countsStore.reset( 0 ) )
-        {
-            assertNotNull( updater );
-        }
     }
 
     @Test

@@ -384,8 +384,8 @@ public class Database extends LifecycleAdapter
 
             boolean storageExists = storageEngineFactory.storageExists( fs, databaseLayout, databasePageCache );
             storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, databaseConfig, databasePageCache, tokenHolders, databaseSchemaState,
-                    constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, idController, databaseHealth, versionContextSupplier,
-                    internalLogProvider, !storageExists );
+                    constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, idController, databaseHealth, internalLogProvider,
+                    recoveryCleanupWorkCollector, !storageExists );
 
             life.add( storageEngine );
             life.add( storageEngine.schemaAndTokensLifecycle() );

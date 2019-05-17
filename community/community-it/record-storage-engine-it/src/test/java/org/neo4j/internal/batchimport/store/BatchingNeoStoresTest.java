@@ -29,6 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.id.DefaultIdController;
@@ -327,7 +328,7 @@ class BatchingNeoStoresTest
                             new StandardConstraintSemantics(), indexConfigCompleter, LockService.NO_LOCK_SERVICE,
                             new DatabaseHealth( new DatabasePanicEventGenerator( new DatabaseEventListeners( nullLog ), DEFAULT_DATABASE_NAME ), nullLog ),
                             new DefaultIdGeneratorFactory( fileSystem, immediate() ), new DefaultIdController(),
-                            EmptyVersionContextSupplier.EMPTY, true ) );
+                            RecoveryCleanupWorkCollector.immediate(), true ) );
             // Create the relationship type token
             TxState txState = new TxState();
             NeoStores neoStores = storageEngine.testAccessNeoStores();
