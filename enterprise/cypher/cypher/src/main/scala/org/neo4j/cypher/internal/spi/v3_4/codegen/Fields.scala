@@ -37,6 +37,5 @@ case class Fields(entityAccessor: FieldReference,
                   propertyCursor: FieldReference,
                   dataRead: FieldReference,
                   tokenRead: FieldReference,
-                  schemaRead: FieldReference,
-                  closeables: FieldReference
+                  schemaRead: FieldReference
                  )

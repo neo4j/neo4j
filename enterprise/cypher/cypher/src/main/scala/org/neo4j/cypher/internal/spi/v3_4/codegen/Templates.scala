@@ -33,7 +33,6 @@ import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen._
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelationshipStream}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.Namer
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{Completable, Provider}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.using
 import org.neo4j.cypher.internal.javacompat.ResultRowImpl
@@ -45,7 +44,6 @@ import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.exceptions.{EntityNotFoundException, KernelException}
-import org.neo4j.io.IOUtils
 import org.neo4j.kernel.api.SilentTokenNameLookup
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
@@ -113,9 +111,10 @@ object Templates {
     methodReference(typeRef[IntStream], typeRef[IntStream], "of", typeRef[Array[Int]]),
     Expression.newArray(typeRef[Int], values: _*))
 
-  def handleEntityNotFound[V](generate: CodeBlock, fields: Fields, namer: Namer)
+  def handleEntityNotFound[V](generate: CodeBlock, fields: Fields, finalizers: Seq[Boolean => CodeBlock => Unit])
                              (happyPath: CodeBlock => V)(onFailure: CodeBlock => V): V = {
     var result = null.asInstanceOf[V]
+
     generate.tryCatch(new Consumer[CodeBlock] {
       override def accept(innerBody: CodeBlock): Unit = result = happyPath(innerBody)
     }, new Consumer[CodeBlock] {
@@ -123,14 +122,13 @@ object Templates {
         result = onFailure(innerError)
         innerError.continueIfPossible()
       }
-    }, param[EntityNotFoundException](namer.newVarName()))
+    }, param[EntityNotFoundException]("enf"))
     result
   }
 
-  def handleKernelExceptions[V](generate: CodeBlock, fields: Fields, namer: Namer)
+  def handleKernelExceptions[V](generate: CodeBlock, fields: Fields, finalizers: Seq[Boolean => CodeBlock => Unit])
                          (block: CodeBlock => V): V = {
     var result = null.asInstanceOf[V]
-    val e = namer.newVarName()
 
     generate.tryCatch(new Consumer[CodeBlock] {
       override def accept(body: CodeBlock) = {
@@ -138,19 +136,20 @@ object Templates {
       }
     }, new Consumer[CodeBlock]() {
       override def accept(handle: CodeBlock) = {
+        finalizers.foreach(block => block(false)(handle))
         handle.throwException(Expression.invoke(
           Expression.newInstance(typeRef[CypherExecutionException]),
           MethodReference.constructorReference(typeRef[CypherExecutionException], typeRef[String], typeRef[Throwable]),
           Expression
-            .invoke(handle.load(e), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
+            .invoke(handle.load("e"), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
                     Expression.invoke(
                       Expression.newInstance(typeRef[SilentTokenNameLookup]),
                       MethodReference
                         .constructorReference(typeRef[SilentTokenNameLookup], typeRef[TokenRead]),
-                      Expression.get(handle.self(), fields.tokenRead))), handle.load(e)
+                      Expression.get(handle.self(), fields.tokenRead))), handle.load("e")
         ))
       }
-    }, param[KernelException](e))
+    }, param[KernelException]("e"))
 
     result
   }
@@ -191,8 +190,6 @@ object Templates {
     put(self(classHandle), typeRef[MapValue], "params", load("params", typeRef[MapValue])).
     put(self(classHandle), typeRef[EmbeddedProxySPI], "proxySpi",
              invoke(load("queryContext", typeRef[QueryContext]), method[QueryContext, EmbeddedProxySPI]("entityAccessor"))).
-    put(self(classHandle), typeRef[java.util.ArrayList[AutoCloseable]], "closeables",
-        createNewInstance(typeRef[java.util.ArrayList[AutoCloseable]])).
     build()
 
   def getOrLoadCursors(clazz: ClassGenerator, fields: Fields) = {
@@ -317,8 +314,6 @@ object Templates {
       using(generate.ifStatement(Expression.notNull(propertyCursor))) { block =>
         block.expression(Expression.invoke(propertyCursor, method[PropertyCursor, Unit]("close")))
       }
-      generate.expression(Expression.invoke(methodReference(typeRef[IOUtils], typeRef[Unit], "closeAllUnchecked",
-                                                            typeRef[util.Collection[_]]), Expression.get(generate.self(), fields.closeables)))
     }
   }
 

@@ -35,8 +35,8 @@ import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{AnyValueType, BoolType, CodeGenType, CypherCodeGenType, FloatType, ListReferenceType, LongType, ReferenceType, RepresentationType, Parameter => _}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{CodeGenContext, QueryExecutionEvent}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.Completable
 import org.neo4j.cypher.internal.frontend.v3_4.helpers._
+import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedMethodStructure.CompletableFinalizer
 import org.neo4j.cypher.internal.spi.v3_4.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_4.codegen.Templates._
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
@@ -60,19 +60,27 @@ object GeneratedMethodStructure {
 
 class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux: AuxGenerator, tracing: Boolean = true,
                                events: List[String] = List.empty,
+                               onClose: Seq[CompletableFinalizer] = Seq.empty,
                                locals: mutable.Map[String, LocalVariable] = mutable.Map.empty
                               )(implicit context: CodeGenContext)
   extends MethodStructure[Expression] {
 
   import GeneratedQueryStructure._
   import TypeReference.parameterizedType
+
+  private val _finalizers: mutable.ArrayBuffer[CompletableFinalizer] = mutable.ArrayBuffer()
+  _finalizers.appendAll(onClose)
+
+  def finalizers: Seq[CompletableFinalizer] = _finalizers
+
   private def copy(fields: Fields = fields,
                    generator: CodeBlock = generator,
                    aux: AuxGenerator = aux,
                    tracing: Boolean = tracing,
                    events: List[String] = events,
+                   onClose: Seq[CompletableFinalizer] = _finalizers,
                    locals: mutable.Map[String, LocalVariable] = locals): GeneratedMethodStructure = new GeneratedMethodStructure(
-    fields, generator, aux, tracing, events, locals)
+    fields, generator, aux, tracing, events, onClose, locals)
 
   private case class HashTable(valueType: TypeReference, listType: TypeReference, tableType: TypeReference,
                                get: MethodReference, put: MethodReference, add: MethodReference)
@@ -130,13 +138,17 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def allNodesScan(cursorName: String) = {
     generator.assign(typeRef[NodeCursor], cursorName, invoke(cursors, method[CursorFactory, NodeCursor]("allocateNodeCursor")))
-    generator.expression(pop(invoke(get(generator.self(), fields.closeables), Methods.listAdd, generator.load(cursorName))))
+    _finalizers.append((_: Boolean) => (block) =>
+      block.expression(
+        invoke(block.load(cursorName), method[NodeCursor, Unit]("close"))))
     generator.expression(invoke(dataRead, method[Read, Unit]("allNodesScan", typeRef[NodeCursor]), generator.load(cursorName) ))
   }
 
   override def labelScan(cursorName: String, labelIdVar: String) = {
     generator.assign(typeRef[NodeLabelIndexCursor], cursorName, invoke(cursors, method[CursorFactory, NodeLabelIndexCursor]("allocateNodeLabelIndexCursor")))
-    generator.expression(pop(invoke(get(generator.self(), fields.closeables), Methods.listAdd, generator.load(cursorName))))
+    _finalizers.append((_: Boolean) => (block) =>
+      block.expression(
+        invoke(block.load(cursorName), method[NodeLabelIndexCursor, Unit]("close"))))
     generator.expression(invoke(dataRead, method[Read, Unit]("nodeLabelScan", typeRef[Int], typeRef[NodeLabelIndexCursor]),
                                 generator.load(labelIdVar), generator.load(cursorName) ))
   }
@@ -231,12 +243,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         invoke(generator.load(event),
                method[QueryExecutionEvent, Unit]("close")))
     }
-    //close all cursors
-    generator.expression(invoke(generator.self(), methodReference(generator.owner(), TypeReference.VOID,
-                                                                  "closeCursors")))
-    generator.expression(invoke(Expression.get(generator.self(), fields.closeable),
-                                method[Completable, Unit]("completed", typeRef[Boolean]),
-                                Expression.constant(true)))
+    _finalizers.foreach(codeBlock => codeBlock(true)(generator))
     generator.returns()
   }
 
@@ -344,28 +351,24 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def visitorAccept() = tryCatch(generator) { onSuccess => {
     using(onSuccess.ifStatement(not(invoke(onSuccess.load("visitor"),
-                                           visit, onSuccess.load("row"))))) { body =>
-      // NOTE: we are in this if-block if the visitor decided to terminate early (by returning false)
-      //close all outstanding events
-      for (event <- events) {
-        body.expression(invoke(generator.load(event),
-                               method[QueryExecutionEvent, Unit]("close")))
+                                         visit, onSuccess.load("row"))))) { body =>
+        // NOTE: we are in this if-block if the visitor decided to terminate early (by returning false)
+        //close all outstanding events
+        for (event <- events) {
+          body.expression(invoke(generator.load(event),
+                                 method[QueryExecutionEvent, Unit]("close")))
+        }
+        _finalizers.foreach(block => block(true)(body))
+        body.returns()
       }
-      //close all cursors
-      body.expression(invoke(generator.self(), methodReference(body.owner(), TypeReference.VOID,
-                                                               "closeCursors")))
-      body.expression(invoke(Expression.get(body.self(), fields.closeable),
-                             method[Completable, Unit]("completed", typeRef[Boolean]),
-                             Expression.constant(true)))
-      body.returns()
     }
-  }
   }(exception = param[Throwable]("e")) { onError =>
     for (event <- events) {
       onError.expression(
         invoke(onError.load(event),
                method[QueryExecutionEvent, Unit]("close")))
     }
+    _finalizers.foreach(block => block(false)(onError))
     onError.throwException(onError.load("e"))
   }
 
@@ -563,7 +566,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                                        typeRef[NodeCursor], typeRef[Long], typeRef[Direction]),
                        dataRead, cursors, nodeCursor, forceLong(nodeVar, nodeVarType), dir(direction))
                      )
-    generator.expression(pop(invoke(get(generator.self(), fields.closeables), Methods.listAdd, generator.load(iterVar))))
+    _finalizers.append((_: Boolean) => (block) =>
+      block.expression(
+        invoke(block.load(iterVar), method[RelationshipSelectionCursor, Unit]("close"))))
   }
 
   override def nodeGetRelationshipsWithDirectionAndTypes(iterVar: String, nodeVar: String, nodeVarType: CodeGenType,
@@ -577,7 +582,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                                        typeRef[NodeCursor], typeRef[Long], typeRef[Direction], typeRef[Array[Int]]),
                        dataRead, cursors, nodeCursor, forceLong(nodeVar, nodeVarType), dir(direction),
                        newArray(typeRef[Int], typeVars.map(generator.load): _*)) )
-    generator.expression(pop(invoke(get(generator.self(), fields.closeables), Methods.listAdd, generator.load(iterVar))))
+    _finalizers.append((_: Boolean) => (block) =>
+      block.expression(
+        invoke(block.load(iterVar), method[RelationshipSelectionCursor, Unit]("close"))))
   }
 
   override def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, direction: SemanticDirection,
@@ -586,7 +593,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                                                                            dataRead, cursors, nodeCursor,
                                                                            forceLong(fromNode, fromNodeType),
                                                                            dir(direction),  forceLong(toNode, toNodeType)))
-    generator.expression(pop(invoke(get(generator.self(), fields.closeables), Methods.listAdd, generator.load(iterVar))))
+    _finalizers.append((_: Boolean) => (block) =>
+      block.expression(
+        invoke(block.load(iterVar), method[RelationshipSelectionCursor, Unit]("close"))))
   }
 
   override def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, direction: SemanticDirection,
@@ -597,7 +606,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                                                                              forceLong(fromNode, fromNodeType),
                                                                              dir(direction),  forceLong(toNode, toNodeType),
                                                                              newArray(typeRef[Int], typeVars.map(generator.load): _*)))
-    generator.expression(pop(invoke(get(generator.self(), fields.closeables), Methods.listAdd, generator.load(iterVar))))
+    _finalizers.append((_: Boolean) => (block) =>
+      block.expression(
+        invoke(block.load(iterVar), method[RelationshipSelectionCursor, Unit]("close"))))
   }
 
   override def loadVariable(varName: String) = generator.load(varName)
@@ -785,6 +796,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     if (codeGenTypes.size == 1 && codeGenTypes.head.repr == LongType) {
       generator.assign(generator.declare(typeRef[PrimitiveLongSet], name),
                        invoke(method[Primitive, PrimitiveLongSet]("longSet")))
+      _finalizers.append((_: Boolean) => (block) =>
+                           block.expression(
+                             invoke(block.load(name), method[PrimitiveLongSet, Unit]("close"))))
 
     } else {
       generator.assign(generator.declare(typeRef[JHashSet[Object]], name),
@@ -886,6 +900,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     if (keyTypes.size == 1 && keyTypes.head.repr == LongType) {
       generator.assign(generator.declare(typeRef[PrimitiveLongLongMap], name),
                        invoke(method[Primitive, PrimitiveLongLongMap]("longLongMap")))
+      _finalizers.append((_: Boolean) => (block) =>
+                           block.expression(
+                             invoke(block.load(name), method[PrimitiveLongLongMap, Unit]("close"))))
     } else {
       val local = generator.declare(typeRef[JHashMap[Object, java.lang.Long]], name)
       generator.assign(local, createNewInstance(typeRef[JHashMap[Object, java.lang.Long]]))
@@ -1424,7 +1441,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def hasLabel(nodeVar: String, labelVar: String, predVar: String) = {
     val local = locals(predVar)
 
-    handleEntityNotFound(generator, fields, context.namer) { inner =>
+    handleEntityNotFound(generator, fields, _finalizers) { inner =>
       val invoked =
         invoke(
           methodReference(typeRef[CompiledCursorUtils],
@@ -1443,7 +1460,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def relType(relVar: String, typeVar: String) = {
     val variable = locals(typeVar)
     val typeOfRel = invoke(generator.load(relCursor(relVar)),  method[RelationshipSelectionCursor, Int]("type"))
-    handleKernelExceptions(generator, fields, context.namer) { inner =>
+    handleKernelExceptions(generator, fields, _finalizers) { inner =>
       val res = invoke(tokenRead, relationshipTypeGetName, typeOfRel)
       inner.assign(variable, res)
       generator.load(variable.name())
@@ -1471,7 +1488,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def nodeGetPropertyForVar(nodeVar: String, nodeVarType: CodeGenType, propIdVar: String, propValueVar: String) = {
     val local = locals(propValueVar)
-    handleEntityNotFound(generator, fields, context.namer) { body =>
+    handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local,
                     invoke(
                       methodReference(typeRef[CompiledCursorUtils],
@@ -1487,7 +1504,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def nodeGetPropertyById(nodeVar: String, nodeVarType: CodeGenType, propId: Int, propValueVar: String) = {
     val local = locals(propValueVar)
-    handleEntityNotFound(generator, fields, context.namer) { body =>
+    handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local,
                     invoke(
                       methodReference(typeRef[CompiledCursorUtils],
@@ -1522,7 +1539,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def relationshipGetPropertyForVar(relIdVar: String, relVarType: CodeGenType, propIdVar: String, propValueVar: String) = {
     val local = locals(propValueVar)
-    handleEntityNotFound(generator, fields, context.namer) { body =>
+    handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local,
                     invoke(
                       methodReference(typeRef[CompiledCursorUtils],
@@ -1538,7 +1555,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def relationshipGetPropertyById(relIdVar: String, relVarType: CodeGenType, propId: Int, propValueVar: String) = {
     val local = locals(propValueVar)
-    handleEntityNotFound(generator, fields, context.namer) { body =>
+    handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local,
                     invoke(
                       methodReference(typeRef[CompiledCursorUtils],
@@ -1568,17 +1585,21 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def indexSeek(cursorName: String, indexReference: String, value: Expression, codeGenType: CodeGenType) = {
     val local = generator.declare(typeRef[NodeValueIndexCursor], cursorName)
     generator.assign(local, constant(null))
+    _finalizers.append((_: Boolean) => (block) =>
+      using(block.ifStatement(Expression.notNull(block.load(cursorName)))) { inner =>
+        inner.expression(
+          invoke(inner.load(cursorName), method[NodeValueIndexCursor, Unit]("close")))
+      })
     val boxedValue =
       if (codeGenType.isPrimitive) Expression.box(value) else value
-    handleKernelExceptions(generator, fields, context.namer) { body =>
+    handleKernelExceptions(generator, fields, _finalizers) { body =>
       val index = body.load(indexReference)
       body.assign(local,
                   invoke(
                     methodReference(typeRef[CompiledIndexUtils], typeRef[NodeValueIndexCursor], "indexSeek",
                                     typeRef[Read], typeRef[CursorFactory], typeRef[CapableIndexReference], typeRef[AnyRef]),
                     dataRead, cursors, index, boxedValue)
-                  )
-      body.expression(pop(invoke(get(generator.self(), fields.closeables), Methods.listAdd, generator.load(cursorName))))
+      )
     }
   }
 

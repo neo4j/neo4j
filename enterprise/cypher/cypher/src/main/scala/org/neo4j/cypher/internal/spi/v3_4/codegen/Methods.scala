@@ -89,7 +89,6 @@ object Methods {
   val mapContains: MethodReference = method[util.Map[String, Object], Boolean]("containsKey", typeRef[Object])
   val setContains: MethodReference = method[util.Set[Object], Boolean]("contains", typeRef[Object])
   val setAdd: MethodReference = method[util.Set[Object], Boolean]("add", typeRef[Object])
-  val listAdd: MethodReference = method[util.List[Object], Boolean]("add", typeRef[Object])
   val labelGetForName: MethodReference = method[TokenRead, Int]("nodeLabel", typeRef[String])
   val propertyKeyGetForName: MethodReference = method[TokenRead, Int]("propertyKey", typeRef[String])
   val coerceToPredicate: MethodReference = method[CompiledConversionUtils, Boolean]("coerceToPredicate", typeRef[Object])

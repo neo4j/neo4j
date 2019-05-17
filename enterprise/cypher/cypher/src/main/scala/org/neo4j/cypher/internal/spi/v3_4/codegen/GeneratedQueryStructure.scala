@@ -23,7 +23,6 @@
 package org.neo4j.cypher.internal.spi.v3_4.codegen
 
 import java.lang.reflect.Modifier
-import java.util.function.Consumer
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
 import org.neo4j.codegen.Expression.{constant, invoke, newArray, newInstance}
@@ -155,37 +154,25 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
                         clazz: ClassGenerator,
                         fields: Fields,
                         conf: CodeGenConfiguration)(implicit codeGenContext: CodeGenContext) = {
-    val exceptionVar = codeGenContext.namer.newVarName()
     using(clazz.generate(MethodDeclaration.method(typeRef[Unit], "accept",
-                                                  Parameter.param(parameterizedType(classOf[QueryResultVisitor[_]],
-                                                                                    typeParameter("E")), "visitor")).
+      Parameter.param(parameterizedType(classOf[QueryResultVisitor[_]],
+        typeParameter("E")), "visitor")).
       parameterizedWith("E", extending(typeRef[Exception])).
-      throwsException(typeParameter("E")))) { b: CodeBlock =>
-      b.tryCatch(new Consumer[CodeBlock] {
-        override def accept(codeBlock: CodeBlock): Unit = {
-          val structure = new GeneratedMethodStructure(fields, codeBlock,
-                                                       new AuxGenerator(conf.packageName, generator))
-          codeBlock.assign(typeRef[ResultRecord], "row",
-                           invoke(newInstance(typeRef[ResultRecord]),
-                                  MethodReference.constructorReference(typeRef[ResultRecord], typeRef[Int]),
-                                  constant(codeGenContext.numberOfColumns()))
-                           )
-          methodStructure(structure)
-          codeBlock.expression(invoke(codeBlock.self(), methodReference(codeBlock.owner(), TypeReference.VOID,
-                                                                        "closeCursors")))
-          codeBlock.expression(invoke(Expression.get(codeBlock.self(), fields.closeable),
-                                      method[Completable, Unit]("completed", typeRef[Boolean]),
-                                      Expression.constant(true)))
-        }}, new Consumer[CodeBlock] {
-        override def accept(codeBlock: CodeBlock): Unit = {
-          codeBlock.expression(invoke(codeBlock.self(), methodReference(codeBlock.owner(), TypeReference.VOID,
-                                                                        "closeCursors")))
-          codeBlock.expression(invoke(Expression.get(codeBlock.self(), fields.closeable),
-                                      method[Completable, Unit]("completed", typeRef[Boolean]),
-                                      Expression.constant(false)))
-          codeBlock.throwException(codeBlock.load(exceptionVar))
-        }
-      }, param[Throwable](exceptionVar))
+      throwsException(typeParameter("E")))) { (codeBlock: CodeBlock) =>
+      val structure = new GeneratedMethodStructure(fields, codeBlock, new AuxGenerator(conf.packageName, generator), onClose =
+        Seq((success: Boolean) => (block: CodeBlock) => {
+          block.expression(invoke(block.self(), methodReference(block.owner(), TypeReference.VOID, "closeCursors")))
+          val target = Expression.get(block.self(), fields.closeable)
+          val reference = method[Completable, Unit]("completed", typeRef[Boolean])
+          block.expression(invoke(target, reference, Expression.constant(success)))
+        }))
+      codeBlock.assign(typeRef[ResultRecord], "row",
+                       invoke(newInstance(typeRef[ResultRecord]),
+                              MethodReference.constructorReference(typeRef[ResultRecord], typeRef[Int]),
+                              constant(codeGenContext.numberOfColumns()))
+                      )
+      methodStructure(structure)
+      structure.finalizers.foreach(_ (true)(codeBlock))
     }
   }
 
@@ -229,8 +216,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       propertyCursor = clazz.field(typeRef[PropertyCursor], "propertyCursor"),
       dataRead =  clazz.field(typeRef[Read], "dataRead"),
       tokenRead =  clazz.field(typeRef[TokenRead], "tokenRead"),
-      schemaRead =  clazz.field(typeRef[SchemaRead], "schemaRead"),
-      closeables = clazz.field(typeRef[java.util.ArrayList[AutoCloseable]], "closeables")
+      schemaRead =  clazz.field(typeRef[SchemaRead], "schemaRead")
       )
   }
 
