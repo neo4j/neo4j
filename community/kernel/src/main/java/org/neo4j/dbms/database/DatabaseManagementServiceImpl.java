@@ -63,25 +63,25 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
     @Override
     public void createDatabase( String name )
     {
-        databaseManager.createDatabase( new DatabaseId( name ) );
+        systemDatabaseExecute( "CREATE DATABASE " + name );
     }
 
     @Override
     public void dropDatabase( String name )
     {
-        databaseManager.dropDatabase( new DatabaseId( name ) );
+        systemDatabaseExecute( "DROP DATABASE " + name );
     }
 
     @Override
     public void startDatabase( String name )
     {
-        databaseManager.startDatabase( new DatabaseId( name ) );
+        systemDatabaseExecute( "START DATABASE " + name );
     }
 
     @Override
     public void shutdownDatabase( String name )
     {
-        databaseManager.stopDatabase( new DatabaseId( name ) );
+        systemDatabaseExecute( "STOP DATABASE " + name );
     }
 
     @Override
@@ -130,6 +130,11 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
             log.error( message, throwable );
             throw new RuntimeException( message, throwable );
         }
+    }
+
+    private void systemDatabaseExecute( String query )
+    {
+        database( SYSTEM_DATABASE_NAME ).execute( query );
     }
 
     private static void validateDatabaseName( String databaseName )

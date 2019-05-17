@@ -31,7 +31,7 @@ public class DatabaseId implements Comparable<DatabaseId>
     public DatabaseId( String name )
     {
         requireNonNull( name, "Database name should be not null." );
-        this.name = name;
+        this.name = name.toLowerCase();
     }
 
     public String name()

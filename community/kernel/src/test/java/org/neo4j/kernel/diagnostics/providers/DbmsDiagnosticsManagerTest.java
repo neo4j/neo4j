@@ -129,7 +129,7 @@ class DbmsDiagnosticsManagerTest
 
     private void assertContainsDatabaseDiagnostics()
     {
-        logProvider.assertContainsMessageContaining( "Database: " + DEFAULT_DATABASE_NAME );
+        logProvider.assertContainsMessageContaining( "Database: " + DEFAULT_DATABASE_NAME.toLowerCase() );
         logProvider.assertContainsMessageContaining( "Version" );
         logProvider.assertContainsMessageContaining( "Store files" );
         logProvider.assertContainsMessageContaining( "Transaction log" );

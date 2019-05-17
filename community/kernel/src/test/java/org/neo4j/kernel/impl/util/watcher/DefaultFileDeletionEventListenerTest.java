@@ -48,9 +48,9 @@ class DefaultFileDeletionEventListenerTest
         listener.fileDeleted( key, "anotherDirectory" );
 
         internalLogProvider.assertLogStringContains(
-                "'testFile' which belongs to the 'testDatabase' database was deleted while it was running." );
+                "'testFile' which belongs to the 'testdatabase' database was deleted while it was running." );
         internalLogProvider.assertLogStringContains(
-                "'anotherDirectory' which belongs to the 'testDatabase' database was deleted while it was running." );
+                "'anotherDirectory' which belongs to the 'testdatabase' database was deleted while it was running." );
     }
 
     @Test
