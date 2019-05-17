@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.parser
 
 import org.neo4j.cypher.internal.v4_0.ast
-import org.neo4j.cypher.internal.v4_0.ast.{AllGraphsScope, AstConstructionTestSupport}
+import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.expressions.{Parameter => Param}
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.parboiled.scala.Rule1

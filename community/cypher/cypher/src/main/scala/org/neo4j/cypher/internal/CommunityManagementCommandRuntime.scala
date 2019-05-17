@@ -34,7 +34,7 @@ import org.neo4j.values.virtual.VirtualValues
 case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEngine) extends ManagementCommandRuntime {
   override def name: String = "community management-commands"
 
-  override def compileToExecutable(state: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
+  override def compileToExecutable(state: LogicalQuery, context: RuntimeContext, username: String): ExecutionPlan = {
 
     def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
       throw new CantCompileQueryException(
@@ -43,12 +43,12 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
 
     val (withSlottedParameters, parameterMapping) = slottedParameters(state.logicalPlan) // TODO should this be here???????
 
-    logicalToExecutable.applyOrElse(withSlottedParameters, throwCantCompile).apply(context, parameterMapping)
+    logicalToExecutable.applyOrElse(withSlottedParameters, throwCantCompile).apply(context, parameterMapping, username)
   }
 
-  val logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, Map[String, Int]) => ExecutionPlan] = {
+  val logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, Map[String, Int], String) => ExecutionPlan] = {
     // SHOW USERS
-    case ShowUsers() => (_, _) =>
+    case ShowUsers() => (_, _, _) =>
       SystemCommandExecutionPlan("ShowUsers", normalExecutionEngine,
         """MATCH (u:User)
           |RETURN u.name as user""".stripMargin,
@@ -56,17 +56,17 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
       )
 
     // SHOW DATABASES
-    case ShowDatabases() => (_, _) =>
+    case ShowDatabases() => (_, _, _) =>
       SystemCommandExecutionPlan("ShowDatabases", normalExecutionEngine,
         "MATCH (d:Database) RETURN d.name as name, d.status as status, d.default as default", VirtualValues.EMPTY_MAP)
 
     // SHOW DATABASE foo
-    case ShowDatabase(dbName) => (_, _) =>
+    case ShowDatabase(dbName) => (_, _, _) =>
       SystemCommandExecutionPlan("ShowDatabase", normalExecutionEngine,
         "MATCH (d:Database {name: $name}) RETURN d.name as name, d.status as status, d.default as default", VirtualValues.map(Array("name"), Array(Values.stringValue(dbName))))
 
     // START DATABASE foo
-    case StartDatabase(dbName) => (_, _) =>
+    case StartDatabase(dbName) => (_, _, _) =>
       UpdatingSystemCommandExecutionPlan("StartDatabase", normalExecutionEngine,
         """OPTIONAL MATCH (d:Database {name: $name})
           |OPTIONAL MATCH (d2:Database {name: $name, status: $oldStatus})
@@ -86,7 +86,7 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
       )
 
     // STOP DATABASE foo
-    case StopDatabase(dbName) => (_, _) =>
+    case StopDatabase(dbName) => (_, _, _) =>
       UpdatingSystemCommandExecutionPlan("StopDatabase", normalExecutionEngine,
         """OPTIONAL MATCH (d:Database {name: $name})
           |OPTIONAL MATCH (d2:Database {name: $name, status: $oldStatus})

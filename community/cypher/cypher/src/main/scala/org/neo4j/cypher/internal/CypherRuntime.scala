@@ -49,9 +49,10 @@ trait CypherRuntime[-CONTEXT <: RuntimeContext] {
     *
     * @param logicalQuery the logical query to compile
     * @param context the compilation context
+    * @param username the name of the current user
     * @return the executable plan
     */
-  def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT): ExecutionPlan
+  def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT, username: String = null): ExecutionPlan
 
   def name: String
 }
@@ -108,7 +109,7 @@ trait RuntimeContextCreator[+CONTEXT <: RuntimeContext] {
 object UnknownRuntime extends CypherRuntime[RuntimeContext] {
   override def name: String = "unknown"
 
-  override def compileToExecutable(logicalQuery: LogicalQuery, context: RuntimeContext): ExecutionPlan =
+  override def compileToExecutable(logicalQuery: LogicalQuery, context: RuntimeContext, username: String): ExecutionPlan =
     throw new CantCompileQueryException()
 }
 
@@ -132,7 +133,7 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
     throw new RuntimeUnsupportedException(message, originalException)
   }
 
-  override def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT): ExecutionPlan = {
+  override def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT, username: String): ExecutionPlan = {
     var executionPlan: Try[ExecutionPlan] = Try(ProcedureCallOrSchemaCommandRuntime.compileToExecutable(logicalQuery, context))
     val logger = new RecordingNotificationLogger()
     for (runtime <- runtimes if executionPlan.isFailure) {

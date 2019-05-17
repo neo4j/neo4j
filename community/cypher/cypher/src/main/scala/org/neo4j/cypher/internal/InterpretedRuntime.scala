@@ -34,7 +34,7 @@ import org.neo4j.values.virtual.MapValue
 object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
   override def name: String = "interpreted"
 
-  override def compileToExecutable(query: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
+  override def compileToExecutable(query: LogicalQuery, context: RuntimeContext, username: String): ExecutionPlan = {
     val Result(logicalPlan, nExpressionSlots, availableExpressionVars) = expressionVariableAllocation.allocate(query.logicalPlan)
     val (withSlottedParameters, parameterMapping) = slottedParameters(logicalPlan)
 
