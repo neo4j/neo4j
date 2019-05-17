@@ -45,7 +45,7 @@ public class DefaultPropertyCursor implements PropertyCursor
     private AssertOpen assertOpen;
     private final CursorPool<DefaultPropertyCursor> pool;
     private AccessMode accessMode;
-    private boolean checkReadProperty = false;
+    private boolean checkReadProperty;
     private long entityReference = -1L;
 
     DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor )
