@@ -116,7 +116,7 @@ public interface AccessMode
         }
 
         @Override
-        public boolean allowsTraverseLabels( int... labels )
+        public boolean allowsTraverseLabels( long... labels )
         {
             return read;
         }
@@ -159,16 +159,7 @@ public interface AccessMode
     boolean allowsSchemaWrites();
 
     boolean allowsTraverseAllLabels();
-    boolean allowsTraverseLabels( int... labels );
-    default boolean allowsTraverseLabels( long... labels )
-    {
-        int[] asInt = new int[labels.length];
-        for ( int i = 0; i < labels.length; i++ )
-        {
-            asInt[i] = (int) labels[i];
-        }
-        return allowsTraverseLabels( asInt );
-    }
+    boolean allowsTraverseLabels( long... labels );
 
     boolean allowsReadPropertyAllLabels( int propertyKey );
     boolean allowsReadProperty( Supplier<LabelSet> labels, int propertyKey );
