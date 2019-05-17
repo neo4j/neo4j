@@ -267,6 +267,7 @@ public class SchemaStorageIT
 
         // when
         SchemaRule schemaRule = storage.loadSingleSchemaRule( 1 );
+        storage.deleteSchemaRule( schemaRule ); // Clean up after ourselves.
 
         // then
         IndexConfig actual = schemaRule.schema().getIndexConfig();
