@@ -31,11 +31,9 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.database.DatabaseManagementService;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.HostnamePort;
@@ -98,10 +96,9 @@ public class Neo4jWithSocket extends ExternalResource
         return workingDirectory;
     }
 
-    public DatabaseManager<?> getDatabaseManager()
+    public DatabaseManagementService getManagementService()
     {
-        DependencyResolver resolver = ((GraphDatabaseAPI) gdb).getDependencyResolver();
-        return resolver.resolveDependency( DatabaseManager.class );
+        return managementService;
     }
 
     @Override
