@@ -28,7 +28,6 @@
 
     <test.runner.jvm.settings.additional>
       -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=false
-      -Dorg.neo4j.kernel.impl.newapi.DefaultCursors.trackCursors=false
     </test.runner.jvm.settings.additional>
     <moduleName>org.neo4j.server</moduleName>
   </properties>
