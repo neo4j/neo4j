@@ -103,9 +103,6 @@ trait Compatibility {
     private def queryContext(transactionalContext: TransactionalContextWrapperV3_4) = {
       val ctx = new TransactionBoundQueryContext(TransactionalContextWrapperV3_1(transactionalContext.tc))(
         searchMonitor)
-      transactionalContext.statement.registerCloseableResource(new AutoCloseable {
-        override def close(): Unit = ctx.resources.close(true)
-      })
       new ExceptionTranslatingQueryContext(ctx)
     }
 
