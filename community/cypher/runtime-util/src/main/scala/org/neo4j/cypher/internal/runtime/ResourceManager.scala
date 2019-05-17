@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal.runtime
 
 import java.util
-import java.util.Collections.newSetFromMap
 
 import org.neo4j.internal.helpers.Exceptions
 
 import scala.collection.JavaConverters._
 
 class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP) extends CloseableResource {
-  private val resources: util.Set[AutoCloseable] = newSetFromMap(new util.IdentityHashMap[AutoCloseable, java.lang.Boolean]())
+  private val resources: util.Collection[AutoCloseable] = new util.ArrayList[AutoCloseable](8)
 
   def trace(resource: AutoCloseable): Unit = {
     monitor.trace(resource)
@@ -42,7 +41,7 @@ class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP) extends C
     }
   }
 
-  def allResources: collection.Set[AutoCloseable] = resources.asScala
+  def allResources: Iterable[AutoCloseable] = resources.asScala
 
   override def close(success: Boolean): Unit = {
     val iterator = resources.iterator()
