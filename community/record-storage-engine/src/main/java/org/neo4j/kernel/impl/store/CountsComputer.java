@@ -29,21 +29,11 @@ import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 
 public class CountsComputer implements CountsBuilder
 {
-    public static void recomputeCounts( NeoStores stores, CountsTracker counts, PageCache pageCache, DatabaseLayout databaseLayout )
-    {
-        MetaDataStore metaDataStore = stores.getMetaDataStore();
-        try ( CountsAccessor.Updater updater = counts.reset( metaDataStore.getLastCommittedTransactionId() ) )
-        {
-            new CountsComputer( stores, pageCache, databaseLayout ).initialize( updater );
-        }
-    }
-
     private final NodeStore nodes;
     private final RelationshipStore relationships;
     private final int highLabelId;

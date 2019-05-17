@@ -37,6 +37,7 @@ import org.neo4j.consistency.statistics.DefaultCounts;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.statistics.VerboseStatistics;
 import org.neo4j.consistency.store.DirectStoreAccess;
+import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.function.Suppliers;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -61,7 +62,6 @@ import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -374,7 +374,7 @@ public class ConsistencyCheckService
     private class RebuildPreventingCountsInitializer implements CountsBuilder
     {
         @Override
-        public void initialize( CountsTracker.Updater updater )
+        public void initialize( CountsAccessor.Updater updater )
         {
             throw new UnsupportedOperationException( "Counts store needed rebuild, consistency checker will instead report broken or missing counts store" );
         }

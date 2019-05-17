@@ -87,8 +87,8 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
+import static org.neo4j.internal.counts.CountsKey.nodeKey;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 
 @RunWith( Suite.class )
 @Suite.SuiteClasses( {ConsistencyReporterTest.TestAllReportMessages.class,

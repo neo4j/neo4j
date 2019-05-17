@@ -26,6 +26,8 @@ import org.junit.jupiter.api.Test;
 import java.util.Iterator;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.counts.CountsStore;
+import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
@@ -37,7 +39,6 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -45,8 +46,6 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -111,10 +110,9 @@ class OnlineIndexUpdatesTest
                         nullLogProvider );
 
         neoStores = storeFactory.openAllNeoStores( true );
-        CountsTracker counts =
-                new CountsTracker( NullLogProvider.getInstance(), fileSystem, pageCache, config, databaseLayout, EmptyVersionContextSupplier.EMPTY );
-        counts.setInitializer( DataInitializer.empty() );
-        life.add( counts );
+        GBPTreeCountsStore counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStoreA(), immediate(),
+                new CountsComputer( neoStores, pageCache, databaseLayout ), false );
+        life.add( CountsStore.wrapInLifecycle( counts ) );
         nodeStore = neoStores.getNodeStore();
         relationshipStore = neoStores.getRelationshipStore();
         PropertyStore propertyStore = neoStores.getPropertyStore();
@@ -122,7 +120,6 @@ class OnlineIndexUpdatesTest
         schemaCache = new SchemaCache( new StandardConstraintRuleAccessor(), index -> index );
         propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
         life.start();
-        CountsComputer.recomputeCounts( neoStores, counts, pageCache, databaseLayout );
         propertyCreator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser() );
         recordAccess = new DirectRecordAccess<>( neoStores.getPropertyStore(), Loaders.propertyLoader( propertyStore ) );
     }

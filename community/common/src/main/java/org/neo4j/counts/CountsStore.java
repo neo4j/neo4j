@@ -19,6 +19,9 @@
  */
 package org.neo4j.counts;
 
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
 public interface CountsStore extends CountsAccessor, AutoCloseable
 {
     CountsAccessor.Updater apply( long txId );
@@ -30,4 +33,22 @@ public interface CountsStore extends CountsAccessor, AutoCloseable
 
     // Not liking this method, let's get rid of it
     long txId();
+
+    static Lifecycle wrapInLifecycle( CountsStore countsStore )
+    {
+        return new LifecycleAdapter()
+        {
+            @Override
+            public void start() throws Exception
+            {
+                countsStore.start();
+            }
+
+            @Override
+            public void shutdown()
+            {
+                countsStore.close();
+            }
+        };
+    }
 }

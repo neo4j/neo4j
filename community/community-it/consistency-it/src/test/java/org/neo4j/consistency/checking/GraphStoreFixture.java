@@ -79,7 +79,6 @@ import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
@@ -214,14 +213,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
 
             CountsStore counts =
                     new GBPTreeCountsStore( pageCache, databaseLayout().countStoreA(), RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, false );
-            storeLife.add( new LifecycleAdapter()
-            {
-                @Override
-                public void start() throws Exception
-                {
-                    counts.start();
-                }
-            } );
+            storeLife.add( CountsStore.wrapInLifecycle( counts ) );
 
             IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE,
                     () -> new RecordStorageReader( nativeStores.getRawNeoStores() ) );

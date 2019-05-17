@@ -21,7 +21,7 @@ package org.neo4j.consistency.store.synthetic;
 
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
+import org.neo4j.internal.counts.CountsKey;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**

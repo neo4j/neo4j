@@ -25,7 +25,7 @@ import org.neo4j.counts.CountsVisitor;
 
 import static java.lang.String.format;
 
-class CountsKey
+public class CountsKey
 {
     static final int SIZE = Byte.BYTES +    // type
                             Long.BYTES +    // long for main data
@@ -101,6 +101,16 @@ class CountsKey
     CountsKey initializeStrayTxId( long txId )
     {
         return initialize( TYPE_STRAY_TX_ID, txId, 0 );
+    }
+
+    public static CountsKey nodeKey( int labelId )
+    {
+        return new CountsKey().initializeNode( labelId );
+    }
+
+    public static CountsKey relationshipKey( int startLabelId, int typeId, int endLabelId )
+    {
+        return new CountsKey().initializeRelationship( startLabelId, typeId, endLabelId );
     }
 
     // Implements hashCode/equals so that these instances can be keys in a map

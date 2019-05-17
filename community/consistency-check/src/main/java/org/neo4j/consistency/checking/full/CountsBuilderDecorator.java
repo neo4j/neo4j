@@ -39,13 +39,13 @@ import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsVisitor;
+import org.neo4j.internal.counts.CountsKey;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
-import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -54,8 +54,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import static org.neo4j.consistency.checking.cache.CacheSlots.NodeLabel.SLOT_IN_USE;
 import static org.neo4j.consistency.checking.cache.CacheSlots.NodeLabel.SLOT_LABEL_FIELD;
 import static org.neo4j.consistency.checking.full.NodeLabelReader.getListOfLabels;
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
+import static org.neo4j.internal.counts.CountsKey.nodeKey;
+import static org.neo4j.internal.counts.CountsKey.relationshipKey;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 class CountsBuilderDecorator extends CheckDecorator.Adapter
