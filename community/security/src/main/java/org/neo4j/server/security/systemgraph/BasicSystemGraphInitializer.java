@@ -81,6 +81,10 @@ public class BasicSystemGraphInitializer
             setupDefaultDatabasesAndConstraints();
             migrateFromAuthFile();
         }
+        else
+        {
+            updateDefaultDatabase( true );
+        }
 
         if ( nbrOfUsers() == 0 )
         {
@@ -162,16 +166,41 @@ public class BasicSystemGraphInitializer
         queryExecutor.executeQuery( "CREATE CONSTRAINT ON (r:Role) ASSERT r.name IS UNIQUE", Collections.emptyMap(), resultVisitor );
         queryExecutor.executeQuery( "CREATE CONSTRAINT ON (d:Database) ASSERT d.name IS UNIQUE", Collections.emptyMap(), resultVisitor );
 
-        newDb( defaultDbName );
-        newDb( SYSTEM_DATABASE_NAME );
+        newDb( defaultDbName, true );
+        newDb( SYSTEM_DATABASE_NAME, false );
     }
 
-    private void newDb( String dbName ) throws InvalidArgumentsException
+    protected void updateDefaultDatabase( boolean stopOld ) throws InvalidArgumentsException
+    {
+        BasicSystemGraphOperations.assertValidDbName( defaultDbName );
+
+        String statusUpdate = "";
+
+        if ( stopOld )
+        {
+            statusUpdate = ", oldDb.status = 'offline' ";
+        }
+
+        String query =
+                "OPTIONAL MATCH (oldDb {default: true}) " +
+                "WHERE oldDb:Database OR oldDb:DeletedDatabase " +
+                "SET oldDb.default = false " + statusUpdate +
+                "WITH oldDb " +
+                "MATCH (newDb:Database {name: $dbName}) " +
+                "SET newDb.default = true, newDb.status = 'online' " +
+                "RETURN 0";
+
+        Map<String,Object> params = map( "dbName", defaultDbName );
+
+        queryExecutor.executeQueryWithParamCheck( query, params, "The specified database '" + defaultDbName + "' does not exists." );
+    }
+
+    private void newDb( String dbName, boolean defaultDb ) throws InvalidArgumentsException
     {
         BasicSystemGraphOperations.assertValidDbName( dbName );
 
-        String query = "CREATE (db:Database {name: $dbName, status: 'online'})";
-        Map<String,Object> params = Collections.singletonMap( "dbName", dbName );
+        String query = "CREATE (db:Database {name: $dbName, status: 'online', default: $defaultDb })";
+        Map<String,Object> params = map( "dbName", dbName, "defaultDb", defaultDb );
 
         queryExecutor.executeQueryWithConstraint( query, params, "The specified database '" + dbName + "' already exists." );
     }

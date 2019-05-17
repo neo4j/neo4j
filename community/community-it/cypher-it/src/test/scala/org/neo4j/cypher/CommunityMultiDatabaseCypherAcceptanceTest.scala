@@ -41,7 +41,7 @@ class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite
     val result = execute("SHOW DATABASE neo4j")
 
     // THEN
-    result.toList should be(List(Map("name" -> "neo4j", "status" -> onlineStatus)))
+    result.toList should be(List(Map("name" -> "neo4j", "status" -> onlineStatus, "default" -> true)))
   }
 
   test("should list default and system databases") {
@@ -49,8 +49,9 @@ class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite
     val result = execute("SHOW DATABASES")
 
     // THEN
-    val databaseNames: Set[String] = result.columnAs("name").toSet
-    databaseNames should contain allOf("system", "neo4j")
+    result.toSet should be(Set(
+      Map("name" -> "neo4j", "status" -> onlineStatus, "default" -> true),
+      Map("name" -> "system", "status" -> onlineStatus, "default" -> false)))
   }
 
   test("should fail on create database from community") {
@@ -72,7 +73,7 @@ class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite
 
     // THEN
     val result = execute("SHOW DATABASE neo4j")
-    result.toList should be(List(Map("name" -> "neo4j", "status" -> onlineStatus)))
+    result.toList should be(List(Map("name" -> "neo4j", "status" -> onlineStatus, "default" -> true)))
   }
 
   test("should not be able to start non-existing database") {
@@ -86,7 +87,7 @@ class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite
     // WHEN
     execute("STOP DATABASE neo4j")
     val result2 = execute("SHOW DATABASE neo4j")
-    result2.toList should be(List(Map("name" -> "neo4j", "status" -> offlineStatus)))
+    result2.toList should be(List(Map("name" -> "neo4j", "status" -> offlineStatus, "default" -> true)))
   }
 
   test("should not be able to stop non-existing database") {
@@ -101,31 +102,31 @@ class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite
     // GIVEN
     execute("STOP DATABASE neo4j")
     val result = execute("SHOW DATABASE neo4j")
-    result.toList should be(List(Map("name" -> "neo4j", "status" -> offlineStatus)))
+    result.toList should be(List(Map("name" -> "neo4j", "status" -> offlineStatus, "default" -> true)))
 
     // WHEN
     execute("STOP DATABASE neo4j")
 
     // THEN
     val result2 = execute("SHOW DATABASE neo4j")
-    result2.toList should be(List(Map("name" -> "neo4j", "status" -> offlineStatus)))
+    result2.toList should be(List(Map("name" -> "neo4j", "status" -> offlineStatus, "default" -> true)))
   }
 
   test("should re-start database") {
 
     // GIVEN
     val result = execute("SHOW DATABASE neo4j")
-    result.toList should be(List(Map("name" -> "neo4j", "status" -> onlineStatus))) // make sure it was started
+    result.toList should be(List(Map("name" -> "neo4j", "status" -> onlineStatus, "default" -> true))) // make sure it was started
     execute("STOP DATABASE neo4j")
     val result2 = execute("SHOW DATABASE neo4j")
-    result2.toList should be(List(Map("name" -> "neo4j", "status" -> offlineStatus))) // and stopped
+    result2.toList should be(List(Map("name" -> "neo4j", "status" -> offlineStatus, "default" -> true))) // and stopped
 
     // WHEN
     execute("START DATABASE neo4j")
 
     // THEN
     val result3 = execute("SHOW DATABASE neo4j")
-    result3.toList should be(List(Map("name" -> "neo4j", "status" -> onlineStatus)))
+    result3.toList should be(List(Map("name" -> "neo4j", "status" -> onlineStatus, "default" -> true)))
   }
 
   protected override def initTest(): Unit = {
