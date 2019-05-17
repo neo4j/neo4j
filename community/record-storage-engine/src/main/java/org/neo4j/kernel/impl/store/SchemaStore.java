@@ -462,7 +462,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         {
             if ( key.startsWith( PROP_INDEX_CONFIG_PREFIX ) )
             {
-                configMap.put( key.replace( PROP_INDEX_CONFIG_PREFIX, "" ), props.get( key ) );
+                configMap.put( key.substring( PROP_INDEX_CONFIG_PREFIX.length() ), props.get( key ) );
             }
         }
         return IndexConfig.with( configMap );
