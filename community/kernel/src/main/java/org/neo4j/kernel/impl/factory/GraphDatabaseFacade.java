@@ -437,7 +437,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         {
             Statement statement = ktx.acquireStatement();
             NodeCursor cursor = ktx.cursors().allocateNodeCursor();
-            statement.registerCloseableResource( cursor );
             ktx.dataRead().allNodesScan( cursor );
             return new PrefetchingResourceIterator<Node>()
             {
@@ -474,7 +473,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         {
             Statement statement = ktx.acquireStatement();
             RelationshipScanCursor cursor = ktx.cursors().allocateRelationshipScanCursor();
-            statement.registerCloseableResource( cursor );
             ktx.dataRead().allRelationshipsScan( cursor );
             return new PrefetchingResourceIterator<Relationship>()
             {
@@ -718,10 +716,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             {
                 NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
                 read.nodeIndexSeek( index, cursor, IndexOrder.NONE, query );
-                NodeCursorResourceIterator<NodeValueIndexCursor> iterator =
-                        new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
-                statement.registerCloseableResource( iterator );
-                return iterator;
+
+                return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
             }
             catch ( KernelException e )
             {
@@ -753,10 +749,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             {
                 NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
                 read.nodeIndexSeek( index, cursor, IndexOrder.NONE, getReorderedIndexQueries( index.properties(), queries ) );
-                NodeCursorResourceIterator<NodeValueIndexCursor> iterator =
-                        new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
-                statement.registerCloseableResource( iterator );
-                return iterator;
+                return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
             }
             catch ( KernelException e )
             {
@@ -875,15 +868,13 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
         transaction.dataRead().nodeLabelScan( labelId, nodeLabelCursor );
 
-        NodeLabelPropertyIterator iterator = new NodeLabelPropertyIterator( transaction.dataRead(),
-                nodeLabelCursor,
-                nodeCursor,
-                propertyCursor,
-                statement,
-                this::newNodeProxy,
-                queries );
-        statement.registerCloseableResource( iterator );
-        return iterator;
+        return new NodeLabelPropertyIterator( transaction.dataRead(),
+                                                nodeLabelCursor,
+                                                nodeCursor,
+                                                propertyCursor,
+                                                statement,
+                                                this::newNodeProxy,
+                                                queries );
     }
 
     private ResourceIterator<Node> allNodesWithLabel( final Label myLabel )
@@ -899,7 +890,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         }
 
         NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor();
-        statement.registerCloseableResource( cursor );
         ktx.dataRead().nodeLabelScan( labelId, cursor );
         return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
     }
