@@ -23,6 +23,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.net.URI;
@@ -31,6 +32,7 @@ import java.util.Map;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfig;
@@ -52,11 +54,19 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
 {
     private static final String HSTS_HEADER_VALUE = "max-age=31536000; includeSubDomains; preload";
 
+    private SSLSocketFactory originalSslSocketFactory;
     private CommunityNeoServer server;
+
+    @Before
+    public void setUp()
+    {
+        originalSslSocketFactory = HttpsURLConnection.getDefaultSSLSocketFactory();
+    }
 
     @After
     public void tearDown() throws Exception
     {
+        HttpsURLConnection.setDefaultSSLSocketFactory( originalSslSocketFactory );
         if ( server != null )
         {
             server.stop();
