@@ -84,11 +84,9 @@ public class WorkSync<Material, W extends Work<Material,W>>
 
         // Try grabbing the lock to do all the work, until our work unit
         // has been completed.
-        int tryCount = 0;
         do
         {
-            tryCount++;
-            checkFailure( tryDoWork( unit, tryCount, true ) );
+            checkFailure( tryDoWork( unit, true ) );
         }
         while ( !unit.isDone() );
     }
@@ -119,7 +117,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
         WorkUnit<Material,W> unit = enqueueWork( work );
 
         // Apply the work if the lock is immediately available.
-        Throwable initialThrowable = tryDoWork( unit, 100, false );
+        Throwable initialThrowable = tryDoWork( unit, false );
 
         return new AsyncApply()
         {
@@ -130,11 +128,9 @@ public class WorkSync<Material, W extends Work<Material,W>>
             {
 
                 checkFailure( throwable );
-                int tryCount = 0;
                 while ( !unit.isDone() )
                 {
-                    tryCount++;
-                    checkFailure( throwable = tryDoWork( unit, tryCount, true ) );
+                    checkFailure( throwable = tryDoWork( unit, true ) );
                 }
             }
         };
@@ -147,9 +143,9 @@ public class WorkSync<Material, W extends Work<Material,W>>
         return unit;
     }
 
-    private Throwable tryDoWork( WorkUnit<Material,W> unit, int tryCount, boolean block )
+    private Throwable tryDoWork( WorkUnit<Material,W> unit, boolean block )
     {
-        if ( tryLock( tryCount, unit, block ) )
+        if ( tryLock( unit, block ) )
         {
             WorkUnit<Material,W> batch = grabBatch();
             try
@@ -183,9 +179,9 @@ public class WorkSync<Material, W extends Work<Material,W>>
         }
     }
 
-    private boolean tryLock( int tryCount, WorkUnit<Material,W> unit, boolean block )
+    private boolean tryLock( WorkUnit<Material,W> unit, boolean block )
     {
-        if ( lock.compareAndSet( null, Thread.currentThread() ) )
+        if ( lock.get() == null && lock.compareAndSet( null, Thread.currentThread() ) )
         {
             // Got the lock!
             return true;
@@ -193,14 +189,9 @@ public class WorkSync<Material, W extends Work<Material,W>>
 
         // Did not get the lock, spend some time until our work has either been completed,
         // or we get the lock.
-        if ( tryCount < 10 )
+        if ( block )
         {
-            // todo Java9: Thread.onSpinWait() ?
-            Thread.yield();
-        }
-        else if ( block )
-        {
-            unit.park( 10, TimeUnit.MILLISECONDS );
+            unit.park();
         }
         return false;
     }
@@ -253,13 +244,13 @@ public class WorkSync<Material, W extends Work<Material,W>>
             }
 
             WorkUnit<Material,W> tmp = batch.next;
+            //noinspection IdempotentLoopBody
             while ( tmp == null )
             {
                 // We may see 'null' via race, as work units are put on the
                 // stack before their 'next' pointers are updated. We just spin
                 // until we observe their volatile write to 'next'.
-                // todo Java9: Thread.onSpinWait() ?
-                Thread.yield();
+                Thread.onSpinWait();
                 tmp = batch.next;
             }
             batch = tmp;
@@ -292,11 +283,11 @@ public class WorkSync<Material, W extends Work<Material,W>>
             this.owner = owner;
         }
 
-        void park( long time, TimeUnit unit )
+        void park()
         {
             if ( compareAndSet( STATE_QUEUED, STATE_PARKED ) )
             {
-                LockSupport.parkNanos( unit.toNanos( time ) );
+                LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
                 compareAndSet( STATE_PARKED, STATE_QUEUED );
             }
         }
@@ -317,7 +308,10 @@ public class WorkSync<Material, W extends Work<Material,W>>
 
         void unpark()
         {
-            LockSupport.unpark( owner );
+            if ( get() != STATE_QUEUED )
+            {
+                LockSupport.unpark( owner );
+            }
         }
     }
 }
