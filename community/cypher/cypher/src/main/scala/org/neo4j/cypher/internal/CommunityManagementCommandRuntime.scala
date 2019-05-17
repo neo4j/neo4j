@@ -41,7 +41,7 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
         s"Plan is not a recognized database administration command in community edition: ${unknownPlan.getClass.getSimpleName}")
     }
 
-    val (withSlottedParameters, parameterMapping) = slottedParameters(state.logicalPlan)
+    val (withSlottedParameters, parameterMapping) = slottedParameters(state.logicalPlan) // TODO should this be here???????
 
     logicalToExecutable.applyOrElse(withSlottedParameters, throwCantCompile).apply(context, parameterMapping)
   }
