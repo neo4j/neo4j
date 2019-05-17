@@ -32,20 +32,20 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 /**
   * Results, as produced by a system command.
   */
-case class SystemCommandRuntimeResult(ctx: QueryContext, subscriber: QuerySubscriber, execution: InternalExecutionResult) extends RuntimeResult {
+case class SystemCommandRuntimeResult(ctx: QueryContext, subscriber: QuerySubscriber, execution: SystemCommandExecutionResult) extends RuntimeResult {
 
   override val fieldNames: Array[String] = execution.fieldNames()
   private var resultRequested = false
 
   // The signature mode is taking care of eagerization
 
-  override val asIterator: ResourceIterator[util.Map[String, AnyRef]] = execution.javaIterator
+  override val asIterator: ResourceIterator[util.Map[String, AnyRef]] = execution.asIterator
 
   override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {
     execution.accept(visitor)
   }
 
-  override def queryStatistics(): QueryStatistics = execution.queryStatistics()
+  override def queryStatistics(): QueryStatistics = execution.inner.queryStatistics()
 
   override def isIterable: Boolean = true
 
@@ -54,15 +54,23 @@ case class SystemCommandRuntimeResult(ctx: QueryContext, subscriber: QuerySubscr
     else if (asIterator.hasNext) ConsumptionState.HAS_MORE
     else ConsumptionState.EXHAUSTED
 
-  override def close(): Unit = execution.close()
+  override def close(): Unit = execution.inner.close()
 
   override def queryProfile(): QueryProfile = SystemCommandProfile(0)
 
-  override def request(numberOfRecords: Long): Unit = execution.request(numberOfRecords)
+  override def request(numberOfRecords: Long): Unit = execution.inner.request(numberOfRecords)
 
-  override def cancel(): Unit = execution.cancel()
+  override def cancel(): Unit = execution.inner.cancel()
 
-  override def await(): Boolean = execution.await()
+  override def await(): Boolean = execution.inner.await()
+}
+
+case class SystemCommandExecutionResult(inner: InternalExecutionResult) {
+  def fieldNames(): Array[String] = inner.fieldNames()
+
+  def asIterator: ResourceIterator[util.Map[String, AnyRef]] = inner.javaIterator
+
+  def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = inner.accept(visitor)
 }
 
 case class SystemCommandProfile(rowCount: Long) extends QueryProfile with OperatorProfile {

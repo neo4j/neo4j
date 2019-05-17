@@ -28,14 +28,16 @@ import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.QueryStatistics
-import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.kernel.impl.query.{QueryExecution, QuerySubscriber}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
 /**
   * Execution plan for performing system commands, i.e. creating databases or showing roles and users.
   */
-case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue, onError: Throwable => Unit = e => throw e)
+case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue,
+                                      resultMapper: QueryExecution => SystemCommandExecutionResult = q => SystemCommandExecutionResult(q.asInstanceOf[InternalExecutionResult]),
+                                      onError: Throwable => Unit = e => throw e)
   extends ExecutionPlan {
 
   override def run(ctx: QueryContext,
@@ -46,8 +48,8 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
                    subscriber: QuerySubscriber): RuntimeResult = {
 
     val tc = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
-    val execution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, new SystemCommandQuerySubscriber(subscriber, onError))
-    SystemCommandRuntimeResult(ctx, subscriber, execution.asInstanceOf[InternalExecutionResult])
+    val execution: QueryExecution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, new SystemCommandQuerySubscriber(subscriber, onError))
+    SystemCommandRuntimeResult(ctx, subscriber, resultMapper(execution))
   }
 
   override def runtimeName: RuntimeName = SystemCommandRuntimeName
