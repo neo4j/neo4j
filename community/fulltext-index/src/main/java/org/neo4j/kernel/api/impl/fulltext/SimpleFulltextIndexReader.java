@@ -72,6 +72,7 @@ class SimpleFulltextIndexReader extends FulltextIndexReader
     public ScoreEntityIterator query( String queryString ) throws ParseException
     {
         MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
+        multiFieldQueryParser.setAllowLeadingWildcard( true );
         Query query = multiFieldQueryParser.parse( queryString );
         return indexQuery( query );
     }
