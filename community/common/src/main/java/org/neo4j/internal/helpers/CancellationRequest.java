@@ -24,16 +24,13 @@ package org.neo4j.internal.helpers;
  * remain application dependent, but the task to be cancelled can use this to discover if cancellation has been
  * requested.
  */
-@Deprecated
 public interface CancellationRequest
 {
     /**
      * @return True iff a request for cancellation has been issued. It is assumed that the request cannot be withdrawn
      * so once this method returns true it must always return true on all subsequent calls.
      */
-    @Deprecated
     boolean cancellationRequested();
 
-    @Deprecated
     CancellationRequest NEVER_CANCELLED = () -> false;
 }

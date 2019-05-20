@@ -24,7 +24,6 @@ package org.neo4j.internal.helpers;
  * use the {@link AutoCloseable} interface and call {@link #close()} to signal completion of the task, regardless if
  * it was cancelled or completed successfully.
  */
-@Deprecated
 public interface TaskControl extends CancellationRequest, AutoCloseable
 {
     @Override

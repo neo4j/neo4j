@@ -32,7 +32,6 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <T> the type of listeners.
  */
-@Deprecated
 public class Listeners<T> implements Iterable<T>
 {
     private final List<T> listeners;
@@ -40,7 +39,6 @@ public class Listeners<T> implements Iterable<T>
     /**
      * Construct new empty listeners;
      */
-    @Deprecated
     public Listeners()
     {
         this.listeners = createListeners( emptyList() );
@@ -51,7 +49,6 @@ public class Listeners<T> implements Iterable<T>
      *
      * @param other listeners to copy.
      */
-    @Deprecated
     public Listeners( Listeners<T> other )
     {
         requireNonNull( other, "prototype listeners can't be null" );
@@ -64,7 +61,6 @@ public class Listeners<T> implements Iterable<T>
      *
      * @param listener the listener to add.
      */
-    @Deprecated
     public void add( T listener )
     {
         requireNonNull( listener, "added listener can't be null" );
@@ -77,7 +73,6 @@ public class Listeners<T> implements Iterable<T>
      *
      * @param listener the listener to remove.
      */
-    @Deprecated
     public void remove( T listener )
     {
         requireNonNull( listener, "removed listener can't be null" );
@@ -91,7 +86,6 @@ public class Listeners<T> implements Iterable<T>
      *
      * @param notification the notification to be applied to each listener.
      */
-    @Deprecated
     public void notify( Notification<T> notification )
     {
         requireNonNull( notification, "notification can't be null" );
@@ -110,7 +104,6 @@ public class Listeners<T> implements Iterable<T>
      * @param executor the executor to submit notifications to.
      * @param notification the notification to be applied to each listener.
      */
-    @Deprecated
     public void notify( Executor executor, Notification<T> notification )
     {
         requireNonNull( executor, "executor can't be null" );
@@ -153,7 +146,6 @@ public class Listeners<T> implements Iterable<T>
         return result;
     }
 
-    @Deprecated
     public interface Notification<T>
     {
         void notify( T listener );

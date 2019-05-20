@@ -22,10 +22,6 @@ package org.neo4j.internal.helpers;
 import java.math.BigDecimal;
 import java.util.Arrays;
 
-/**
- * @deprecated This class will be removed from public API in 4.0.
- */
-@Deprecated
 public class MathUtil
 {
     private static final long NON_DOUBLE_LONG = 0xFFE0_0000_0000_0000L; // doubles are exact integers up to 53 bits

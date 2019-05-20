@@ -21,10 +21,8 @@ package org.neo4j.internal.helpers.progress;
 
 import java.io.PrintWriter;
 
-@Deprecated
 public abstract class Indicator
 {
-    @Deprecated
     public static final Indicator NONE = new Indicator( 1 )
     {
         @Override
@@ -35,7 +33,6 @@ public abstract class Indicator
 
     private final int reportResolution;
 
-    @Deprecated
     public Indicator( int reportResolution )
     {
         this.reportResolution = reportResolution;
@@ -48,27 +45,22 @@ public abstract class Indicator
         return reportResolution;
     }
 
-    @Deprecated
     public void startProcess( long totalCount )
     {
     }
 
-    @Deprecated
     public void startPart( String part, long totalCount )
     {
     }
 
-    @Deprecated
     public void completePart( String part )
     {
     }
 
-    @Deprecated
     public void completeProcess()
     {
     }
 
-    @Deprecated
     public void failure( Throwable cause )
     {
     }

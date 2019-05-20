@@ -21,10 +21,6 @@ package org.neo4j.internal.helpers;
 
 import static org.neo4j.util.Preconditions.requirePositive;
 
-/**
- * @deprecated This class will be removed from public API in 4.0.
- */
-@Deprecated
 public class Numbers
 {
 
