@@ -34,6 +34,7 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -48,7 +49,6 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
@@ -133,36 +133,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     @Override
     public IndexCapability getCapability( StorageIndexReference descriptor )
     {
-        FulltextIndexDescriptor fulltextIndexDescriptor;
-        if ( descriptor instanceof FulltextIndexDescriptor )
-        {
-            // We got our own index descriptor type, so we can ask it directly.
-            fulltextIndexDescriptor = (FulltextIndexDescriptor) descriptor;
-            return new FulltextIndexCapability( fulltextIndexDescriptor.isEventuallyConsistent() );
-        }
-        SchemaDescriptor schema = descriptor.schema();
-        if ( schema.getIndexType() == IndexType.FULLTEXT )
-        {
-            // The fulltext schema descriptor is readily available with our settings.
-            // This could be the situation where the index creation is about to be committed.
-            // In that case, the schema descriptor is our own legit type, but the StoreIndexDescriptor is generic.
-            return new FulltextIndexCapability( isEventuallyConsistent( schema ) );
-        }
-        // The schema descriptor is probably a generic multi-token descriptor.
-        // This happens if it was loaded from the schema store instead of created by our provider.
-        // This would be the case when the IndexingService is starting up, and if so, we probably have an online accessor that we can ask instead.
-        FulltextIndexAccessor accessor = getOpenOnlineAccessor( descriptor );
-        if ( accessor != null )
-        {
-            fulltextIndexDescriptor = accessor.getDescriptor();
-            return new FulltextIndexCapability( fulltextIndexDescriptor.isEventuallyConsistent() );
-        }
-        // All of the above has failed, so we need to load the settings in from the storage directory of the index.
-        // This situation happens during recovery.
-        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.indexReference() );
-        fulltextIndexDescriptor = readOrInitialiseDescriptor( descriptor, defaultAnalyzerName, tokenHolders.propertyKeyTokens(),
-                indexStorage, fileSystem );
-        return new FulltextIndexCapability( fulltextIndexDescriptor.isEventuallyConsistent() );
+        return new FulltextIndexCapability( isEventuallyConsistent( descriptor.schema() ) );
     }
 
     private boolean isEventuallyConsistent( SchemaDescriptor schema )
