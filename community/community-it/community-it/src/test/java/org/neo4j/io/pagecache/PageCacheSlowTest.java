@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache;
 
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,6 +46,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.linear.LinearHistoryTracerFactory;
 import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
+import org.neo4j.test.extension.timeout.VerboseExceptionExtension;
 
 import static java.time.Duration.ofMillis;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -61,6 +63,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
+@ExtendWith( VerboseExceptionExtension.class )
 public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTestSupport<T>
 {
     private static class UpdateResult

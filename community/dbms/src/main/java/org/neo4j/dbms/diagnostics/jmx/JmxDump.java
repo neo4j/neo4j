@@ -43,9 +43,9 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
+import org.neo4j.internal.utils.DumpUtils;
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSource;
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSources;
-import org.neo4j.kernel.diagnostics.utils.DumpUtils;
 
 import static java.nio.file.Files.createTempFile;
 import static java.nio.file.Files.deleteIfExists;

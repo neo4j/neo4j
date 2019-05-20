@@ -73,13 +73,13 @@ class JUnitUsageGuardExtensionTest
         assertEquals( 0, testEvents.failed().count() );
     }
 
-    private void verifyFailureMessage( Events testEvents, String expectedMessage )
+    private static void verifyFailureMessage( Events testEvents, String expectedMessage )
     {
         testEvents.assertThatEvents().haveExactly( 1,
                 event( finishedWithFailure( instanceOf( JUnitException.class ), message( message -> message.contains( expectedMessage ) ) ) ) );
     }
 
-    private Events executeTest( Class clazz )
+    private static Events executeTest( Class clazz )
     {
         return EngineTestKit.engine( ENGINE_ID )
                 .selectors( selectClass( clazz ) ).execute()
