@@ -83,7 +83,7 @@ import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrac
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.locking.ActiveLock;
-import org.neo4j.kernel.impl.locking.ForbiddenStatementLocks;
+import org.neo4j.kernel.impl.locking.FrozenStatementLocks;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
@@ -669,7 +669,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             // Convert changes into commands and commit
             if ( hasChanges() )
             {
-                allowLockInteractions();
+                forceThawLocks();
 
                 // grab all optimistic locks now, locks can't be deferred any further
                 statementLocks.prepareForCommit( currentStatement.lockTracer() );
@@ -846,22 +846,43 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public void forbidLockInteractions()
+    public void freezeLocks()
     {
         StatementLocks locks = statementLocks;
-        if ( !(locks instanceof ForbiddenStatementLocks) )
+        if ( !(locks instanceof FrozenStatementLocks) )
         {
-            this.statementLocks = new ForbiddenStatementLocks( locks );
+            this.statementLocks = new FrozenStatementLocks( locks );
+        }
+        else
+        {
+            ((FrozenStatementLocks)locks).freeze();
         }
     }
 
     @Override
-    public void allowLockInteractions()
+    public void thawLocks()
     {
         StatementLocks locks = statementLocks;
-        if ( locks instanceof ForbiddenStatementLocks )
+        if ( locks instanceof FrozenStatementLocks )
         {
-            this.statementLocks = ((ForbiddenStatementLocks)locks).getRealStatementLocks();
+            FrozenStatementLocks frozenLocks = (FrozenStatementLocks) locks;
+            if ( frozenLocks.thaw() )
+            {
+                statementLocks = frozenLocks.getRealStatementLocks();
+            }
+        }
+        else
+        {
+            throw new IllegalStateException( "Attempted to thaw Transaction locks that were not frozen." );
+        }
+    }
+
+    private void forceThawLocks()
+    {
+        StatementLocks locks = statementLocks;
+        if ( locks instanceof FrozenStatementLocks )
+        {
+            statementLocks = ((FrozenStatementLocks) locks).getRealStatementLocks();
         }
     }
 
@@ -989,7 +1010,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         terminationReleaseLock.lock();
         try
         {
-            allowLockInteractions();
+            forceThawLocks();
             statementLocks.close();
             statementLocks = null;
             terminationReason = null;
@@ -1090,9 +1111,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
         else
         {
-            if ( locks instanceof ForbiddenStatementLocks )
+            if ( locks instanceof FrozenStatementLocks )
             {
-                locks = ((ForbiddenStatementLocks)locks).getRealStatementLocks();
+                locks = ((FrozenStatementLocks)locks).getRealStatementLocks();
             }
             lockSessionId = String.valueOf( locks.pessimistic().getLockSessionId() );
         }

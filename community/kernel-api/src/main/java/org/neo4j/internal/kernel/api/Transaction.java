@@ -22,7 +22,7 @@ package org.neo4j.internal.kernel.api;
 import java.util.Map;
 import java.util.Optional;
 
-import org.neo4j.internal.kernel.api.exceptions.ForbiddenLockInteractionException;
+import org.neo4j.internal.kernel.api.exceptions.FrozenLocksException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -136,18 +136,19 @@ public interface Transaction extends AutoCloseable
 
     /**
      * Forbid acquisition and releasing of locks on this transaction. Any call through the kernel API that
-     * requires a lock to be acquired of release will throw a {@link ForbiddenLockInteractionException}.
+     * requires a lock to be acquired or released will throw a {@link FrozenLocksException}. Calling `freezeLocks`
+     * several times will nest the freezing.
      *
-     * Callers of this method must guarantee to also call {@link Transaction#allowLockInteractions()} before
-     * committing the transaction, otherwise the transaction will rollback.
+     * A transaction can be opened to new lock interactions again by calling {@link Transaction#thawLocks()}
+     * once for every freeze.
      */
-    void forbidLockInteractions();
+    void freezeLocks();
 
     /**
-     * Allow acquisition and releasing of locks on this transaction. Restores the Transaction to normal operation
-     * after a call to {@link Transaction#forbidLockInteractions()}.
+     * Allow acquisition and releasing of locks on this transaction. Thaws one nesting of {@link Transaction#freezeLocks()},
+     * which restores the Transaction to normal operation if there has been the same number of freeze and thaw calls.
      */
-    void allowLockInteractions();
+    void thawLocks();
 
     /**
      * @return The cursor factory

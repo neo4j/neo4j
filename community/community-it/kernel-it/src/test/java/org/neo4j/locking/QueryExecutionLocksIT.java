@@ -584,15 +584,15 @@ class QueryExecutionLocksIT
         }
 
         @Override
-        public void forbidLockInteractions()
+        public void freezeLocks()
         {
-            internal.forbidLockInteractions();
+            internal.freezeLocks();
         }
 
         @Override
-        public void allowLockInteractions()
+        public void thawLocks()
         {
-            internal.allowLockInteractions();
+            internal.thawLocks();
         }
 
         @Override

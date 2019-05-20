@@ -127,13 +127,13 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public void forbidLockInteractions()
+    public void freezeLocks()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public void allowLockInteractions()
+    public void thawLocks()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

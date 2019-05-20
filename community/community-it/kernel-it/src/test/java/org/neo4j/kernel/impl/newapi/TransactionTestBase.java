@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.internal.kernel.api.exceptions.ForbiddenLockInteractionException;
+import org.neo4j.internal.kernel.api.exceptions.FrozenLocksException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.test.assertion.Assert;
@@ -105,7 +105,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
     }
 
     @Test
-    void shouldForbidLockInteractions() throws Exception
+    void shouldFreezeLockInteractions() throws Exception
     {
         // GIVEN
         int label;
@@ -124,15 +124,15 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
             assertAllowedLocks( label, propertyKey, tx );
 
             // WHEN
-            tx.forbidLockInteractions();
+            tx.freezeLocks();
 
             // THEN
-            assertForbiddenLocks( label, propertyKey, tx );
+            assertFrozenLocks( label, propertyKey, tx );
         }
     }
 
     @Test
-    void shouldAllowLockInteractions() throws Exception
+    void shouldThawLockInteractions() throws Exception
     {
         // GIVEN
         int label;
@@ -149,8 +149,8 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
         try ( Transaction tx = beginTransaction() )
         {
             // WHEN
-            tx.forbidLockInteractions();
-            tx.allowLockInteractions();
+            tx.freezeLocks();
+            tx.thawLocks();
 
             // THEN
             assertAllowedLocks( label, propertyKey, tx );
@@ -158,7 +158,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
     }
 
     @Test
-    void shouldForbidLockInteractionsIdempotently() throws Exception
+    void shouldNestFreezeLocks() throws Exception
     {
         // GIVEN
         int label;
@@ -175,33 +175,36 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
         try ( Transaction tx = beginTransaction() )
         {
             // WHEN
-            tx.forbidLockInteractions();
-            tx.forbidLockInteractions();
-            tx.forbidLockInteractions();
-            tx.forbidLockInteractions();
+            tx.freezeLocks();
+            tx.freezeLocks();
+            tx.freezeLocks();
+            tx.freezeLocks();
 
             // THEN
-            assertForbiddenLocks( label, propertyKey, tx );
+            assertFrozenLocks( label, propertyKey, tx );
 
             // WHEN
-            tx.allowLockInteractions();
-            tx.allowLockInteractions();
-            tx.allowLockInteractions();
-            tx.allowLockInteractions();
+            tx.thawLocks();
+            assertFrozenLocks( label, propertyKey, tx );
+            tx.thawLocks();
+            assertFrozenLocks( label, propertyKey, tx );
+            tx.thawLocks();
+            assertFrozenLocks( label, propertyKey, tx );
+            tx.thawLocks();
 
             // THEN
             assertAllowedLocks( label, propertyKey, tx );
 
             // WHEN
-            tx.forbidLockInteractions();
+            tx.freezeLocks();
 
             // THEN
-            assertForbiddenLocks( label, propertyKey, tx );
+            assertFrozenLocks( label, propertyKey, tx );
         }
     }
 
     @Test
-    void shouldCommitOnForbiddenLocks() throws Exception
+    void shouldCommitOnFrozenLocks() throws Exception
     {
         // GIVEN
         long node;
@@ -211,7 +214,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
             node = tx.dataWrite().nodeCreate();
 
             // WHEN
-            tx.forbidLockInteractions();
+            tx.freezeLocks();
             tx.success();
         }
 
@@ -219,15 +222,17 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
         assertNodeExists( node );
     }
 
+    // HELPERS
+
     private void assertAllowedLocks( int label, int propertyKey, Transaction tx )
     {
         tx.schemaRead().index( label, propertyKey ); // acquires shared schema lock, but that's fine again
     }
 
-    private void assertForbiddenLocks( int label, int propertyKey, Transaction tx )
+    private void assertFrozenLocks( int label, int propertyKey, Transaction tx )
     {
         Assert.assertException( () -> tx.schemaRead().index( label, propertyKey ), // acquires shared schema lock
-                                ForbiddenLockInteractionException.class );
+                                FrozenLocksException.class );
     }
 
     private void assertNoNode( long nodeId ) throws TransactionFailureException

@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.locking;
 
 import java.util.stream.Stream;
 
-import org.neo4j.internal.kernel.api.exceptions.ForbiddenLockInteractionException;
+import org.neo4j.internal.kernel.api.exceptions.FrozenLocksException;
 import org.neo4j.lock.LockTracer;
 
 /**
@@ -30,13 +30,15 @@ import org.neo4j.lock.LockTracer;
  * while reading from the transaction in parallel, which would be dangerous since LockClients
  * are not thread safe.
  */
-public class ForbiddenStatementLocks implements StatementLocks
+public class FrozenStatementLocks implements StatementLocks
 {
     private final StatementLocks realStatementLocks;
+    private int nesting;
 
-    public ForbiddenStatementLocks( StatementLocks realStatementLocks )
+    public FrozenStatementLocks( StatementLocks realStatementLocks )
     {
         this.realStatementLocks = realStatementLocks;
+        this.nesting = 1;
     }
 
     public StatementLocks getRealStatementLocks()
@@ -49,19 +51,19 @@ public class ForbiddenStatementLocks implements StatementLocks
     @Override
     public Locks.Client pessimistic()
     {
-        throw new ForbiddenLockInteractionException( realStatementLocks.pessimistic().getLockSessionId() );
+        throw new FrozenLocksException( realStatementLocks.pessimistic().getLockSessionId() );
     }
 
     @Override
     public Locks.Client optimistic()
     {
-        throw new ForbiddenLockInteractionException( realStatementLocks.pessimistic().getLockSessionId() );
+        throw new FrozenLocksException( realStatementLocks.pessimistic().getLockSessionId() );
     }
 
     @Override
     public void prepareForCommit( LockTracer lockTracer )
     {
-        throw new ForbiddenLockInteractionException( realStatementLocks.pessimistic().getLockSessionId() );
+        throw new FrozenLocksException( realStatementLocks.pessimistic().getLockSessionId() );
     }
 
     @Override
@@ -73,7 +75,7 @@ public class ForbiddenStatementLocks implements StatementLocks
     @Override
     public void close()
     {
-        throw new ForbiddenLockInteractionException( realStatementLocks.pessimistic().getLockSessionId() );
+        throw new FrozenLocksException( realStatementLocks.pessimistic().getLockSessionId() );
     }
 
     @Override
@@ -86,5 +88,16 @@ public class ForbiddenStatementLocks implements StatementLocks
     public long activeLockCount()
     {
         return realStatementLocks.activeLockCount();
+    }
+
+    public void freeze()
+    {
+        nesting++;
+    }
+
+    public boolean thaw()
+    {
+        nesting--;
+        return nesting == 0;
     }
 }

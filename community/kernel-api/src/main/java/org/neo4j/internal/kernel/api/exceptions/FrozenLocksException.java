@@ -23,15 +23,15 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
- * Indicates that some code attempted to acquire or release a Lock while lock interactions were forbidden.
+ * Indicates that some code attempted to acquire or release a Lock while lock interactions were frozen.
  *
- * @see Transaction#forbidLockInteractions()
+ * @see Transaction#freezeLocks()
  */
-public class ForbiddenLockInteractionException extends RuntimeException implements Status.HasStatus
+public class FrozenLocksException extends RuntimeException implements Status.HasStatus
 {
-    public ForbiddenLockInteractionException( int lockSessionId )
+    public FrozenLocksException( int lockSessionId )
     {
-        super( String.format( "A forbidden lock interaction has occurred on lock session %d, possibly by " +
+        super( String.format( "A interaction with a frozen lock client has occurred on lock session %d, possibly by " +
                               "concurrent access to the transaction.", lockSessionId ) );
     }
 
