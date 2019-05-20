@@ -58,4 +58,13 @@ public interface OutOfOrderSequence
      * Used in recovery. I don't like the visibility of this method at all.
      */
     void set( long number, long[] meta );
+
+    Snapshot snapshot();
+
+    interface Snapshot
+    {
+        long[] highestGapFree();
+
+        long[][] idsOutOfOrder();
+    }
 }

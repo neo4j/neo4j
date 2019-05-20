@@ -102,7 +102,12 @@ public class SequenceArray
     {
         assert itemsAhead > 0;
         itemsAhead--;
-        cursor = (cursor + 1) % capacity;
+        cursor = advanceCursor( cursor );
+    }
+
+    private int advanceCursor( int cursor )
+    {
+        return (cursor + 1) % capacity;
     }
 
     private void ensureArrayCapacity( int capacity )
@@ -137,7 +142,7 @@ public class SequenceArray
         return builder.toString();
     }
 
-    public boolean seen( long baseNumber, long number, long[] meta )
+    boolean seen( long baseNumber, long number, long[] meta )
     {
         int diff = (int) (number - baseNumber);
         int index = cursor + diff - 1;
@@ -157,5 +162,29 @@ public class SequenceArray
 
         long[] metaCopy = Arrays.copyOfRange( arrayRef, absIndex + 1, absIndex + longsPerItem );
         return Arrays.equals( meta, metaCopy );
+    }
+
+    long[][] snapshot()
+    {
+        long[][] temp = new long[itemsAhead][]; // worst-case size
+        int remaining = itemsAhead - 1;
+        int queueCursor = cursor + 1;
+        int resultCursor = 0;
+        while ( remaining-- > 0 )
+        {
+            int absIndex = index( queueCursor );
+            long number = array[absIndex];
+            if ( number != UNSET )
+            {
+                temp[resultCursor++] = Arrays.copyOfRange( array, absIndex, absIndex + longsPerItem );
+                queueCursor = advanceCursor( queueCursor );
+            }
+        }
+        if ( resultCursor < temp.length )
+        {
+            // shrink to actual size
+            temp = Arrays.copyOf( temp, resultCursor );
+        }
+        return temp;
     }
 }

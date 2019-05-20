@@ -21,13 +21,16 @@ package org.neo4j.util.concurrent;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongFunction;
 
 import static java.lang.Integer.max;
+import static java.lang.Thread.sleep;
 import static java.util.Arrays.copyOfRange;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -173,6 +176,84 @@ class ArrayQueueOutOfOrderSequenceTest
 
         sequence.offer( 42L, EMPTY_META );
         assertEquals( 42L, sequence.highestEverSeen() );
+    }
+
+    @Test
+    void shouldSnapshotState()
+    {
+        // given
+        OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 2, 8, new long[]{1, 2} );
+        sequence.offer( 3, new long[]{3, 4} );
+        sequence.offer( 5, new long[]{5, 6} );
+        sequence.offer( 7, new long[]{7, 8} );
+        sequence.offer( 6, new long[]{6, 7} );
+
+        // when grabbing a snapshot
+        OutOfOrderSequence.Snapshot snapshot = sequence.snapshot();
+        // and making some update afterwards
+        sequence.offer( 8, new long[]{8, 9} );
+        sequence.offer( 4, new long[]{4, 5} );
+
+        // then the snapshot should contain data from when it was taken
+        assertArrayEquals( new long[]{3, 3, 4}, snapshot.highestGapFree() );
+        assertEquals( 3, snapshot.idsOutOfOrder().length );
+        assertArrayEquals( new long[]{5, 5, 6}, snapshot.idsOutOfOrder()[0] );
+        assertArrayEquals( new long[]{6, 6, 7}, snapshot.idsOutOfOrder()[1] );
+        assertArrayEquals( new long[]{7, 7, 8}, snapshot.idsOutOfOrder()[2] );
+    }
+
+    @Test
+    void shouldSnapshotUnderStress() throws Throwable
+    {
+        // given
+        OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 0, 8, new long[]{0, 0} );
+        int threads = max( 2, Runtime.getRuntime().availableProcessors() - 1 );
+        ExecutorService executorService = Executors.newFixedThreadPool( threads + 1 );
+        AtomicLong nextNumber = new AtomicLong( 1 );
+        AtomicInteger snapshots = new AtomicInteger( 10 );
+        for ( int i = 0; i < threads; i++ )
+        {
+            executorService.submit( () ->
+            {
+                while ( snapshots.get() > 0 )
+                {
+                    long number = nextNumber.getAndIncrement();
+                    sequence.offer( number, new long[]{number * 2, number * 3} );
+                }
+            } );
+        }
+        executorService.submit( new Callable<Void>()
+        {
+            @Override
+            public Void call() throws InterruptedException
+            {
+                while ( snapshots.get() > 0 )
+                {
+                    OutOfOrderSequence.Snapshot snapshot = sequence.snapshot();
+                    verifyInternallyConsistent( snapshot.highestGapFree() );
+                    for ( long[] data : snapshot.idsOutOfOrder() )
+                    {
+                        verifyInternallyConsistent( data );
+                    }
+                    sleep( 1 );
+                    snapshots.decrementAndGet();
+                }
+                return null;
+            }
+
+            private void verifyInternallyConsistent( long[] data )
+            {
+                long number = data[0];
+                for ( int i = 1; i < data.length; i++ )
+                {
+                    assertEquals( number * (1 + i), data[i] );
+                }
+            }
+        } );
+
+        // when/then verifications are made inside the race
+        executorService.shutdown();
+        executorService.awaitTermination( 10, TimeUnit.MINUTES );
     }
 
     private static void assertGet( OutOfOrderSequence sequence, long number, long[] meta )

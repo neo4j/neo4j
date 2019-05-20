@@ -118,6 +118,27 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     }
 
     @Override
+    public synchronized Snapshot snapshot()
+    {
+        long[] highestGapFree = get();
+        long[][] idsOutOfOrder = outOfOrderQueue.snapshot();
+        return new Snapshot()
+        {
+            @Override
+            public long[] highestGapFree()
+            {
+                return highestGapFree;
+            }
+
+            @Override
+            public long[][] idsOutOfOrder()
+            {
+                return idsOutOfOrder;
+            }
+        };
+    }
+
+    @Override
     public synchronized String toString()
     {
         return String.format( "out-of-order-sequence:%d %d [%s]", highestEverSeen, highestGapFreeNumber, outOfOrderQueue );
