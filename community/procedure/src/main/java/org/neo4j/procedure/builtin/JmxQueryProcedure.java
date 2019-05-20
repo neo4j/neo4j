@@ -199,7 +199,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
             else
             {
                 // Don't convert objects that are not OpenType values
-                return null;
+                return NO_VALUE;
             }
         }
         catch ( Exception e )
@@ -213,11 +213,9 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
                 ClassLoader classLoader = attributeValue.getClass().getClassLoader();
                 throw new IllegalArgumentException(
                         format(
-                                "value=%s%n" +
                                 "class=%s%n" +
                                 "classLoader=%s%n" +
                                 "classLoader-name=%s%n",
-                                attributeValue.toString(),
                                 attributeValue.getClass().getName(),
                                 classLoader != null ? classLoader.toString() : "null",
                                 classLoader != null ? classLoader.getName() : "null" ), e );
