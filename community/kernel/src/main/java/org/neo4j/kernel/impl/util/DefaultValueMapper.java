@@ -31,10 +31,8 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.values.ValueMapper;
-import org.neo4j.values.virtual.NodeReference;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
-import org.neo4j.values.virtual.RelationshipReference;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
@@ -53,8 +51,6 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
     @Override
     public Node mapNode( VirtualNodeValue value )
     {
-        assert !(value instanceof NodeReference);
-
         if ( value instanceof NodeProxyWrappingNodeValue )
         { // this is the back door through which "virtual nodes" slip
             return ((NodeProxyWrappingNodeValue) value).nodeProxy();
@@ -65,8 +61,6 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
     @Override
     public Relationship mapRelationship( VirtualRelationshipValue value )
     {
-        assert !(value instanceof RelationshipReference);
-
         if ( value instanceof RelationshipProxyWrappingValue )
         { // this is the back door through which "virtual relationships" slip
             return ((RelationshipProxyWrappingValue) value).relationshipProxy();

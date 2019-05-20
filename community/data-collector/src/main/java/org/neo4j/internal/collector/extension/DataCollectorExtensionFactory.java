@@ -20,6 +20,7 @@
 package org.neo4j.internal.collector.extension;
 
 import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.collector.DataCollector;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -40,6 +41,8 @@ public class DataCollectorExtensionFactory extends ExtensionFactory<DataCollecto
         JobScheduler jobScheduler();
 
         Database database();
+
+        Config config();
     }
 
     public DataCollectorExtensionFactory()
@@ -50,6 +53,9 @@ public class DataCollectorExtensionFactory extends ExtensionFactory<DataCollecto
     @Override
     public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
     {
-        return new DataCollector( dependencies.database(), dependencies.jobScheduler(), dependencies.monitors() );
+        return new DataCollector( dependencies.database(),
+                                  dependencies.jobScheduler(),
+                                  dependencies.monitors(),
+                                  dependencies.config() );
     }
 }

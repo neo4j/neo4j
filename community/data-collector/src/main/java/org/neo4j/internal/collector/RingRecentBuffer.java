@@ -22,6 +22,8 @@ package org.neo4j.internal.collector;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
+import org.neo4j.util.Preconditions;
+
 /**
  * Implementation of {@link RecentBuffer} using ring buffer.
  */
@@ -35,9 +37,14 @@ public class RingRecentBuffer<T> implements RecentBuffer<T>
     private final AtomicLong consumeCount;
     private final AtomicLong dropEvents;
 
-    public RingRecentBuffer( int bitSize )
+    public RingRecentBuffer( int size )
     {
-        size = 1 << bitSize;
+        if ( size > 0 )
+        {
+            Preconditions.requirePowerOfTwo( size );
+        }
+
+        this.size = size;
         mask = size - 1;
 
         //noinspection unchecked
@@ -63,6 +70,11 @@ public class RingRecentBuffer<T> implements RecentBuffer<T>
     @Override
     public void produce( T t )
     {
+        if ( size == 0 )
+        {
+            return;
+        }
+
         long produceNumber = produceCount.getAndIncrement();
         int offset = (int) (produceNumber & mask);
         VolatileRef<T> volatileRef = data[offset];
@@ -109,6 +121,11 @@ public class RingRecentBuffer<T> implements RecentBuffer<T>
     @Override
     public void clear()
     {
+        if ( size == 0 )
+        {
+            return;
+        }
+
         for ( VolatileRef<T> volatileRef : data )
         {
             volatileRef.ref = null;
@@ -120,6 +137,11 @@ public class RingRecentBuffer<T> implements RecentBuffer<T>
     @Override
     public void foreach( Consumer<T> consumer )
     {
+        if ( size == 0 )
+        {
+            return;
+        }
+
         long snapshotProduce = produceCount.get();
         long snapshotConsume = Math.max( consumeCount.get(), snapshotProduce - size );
         for ( long i = snapshotConsume; i < snapshotProduce; i++ )

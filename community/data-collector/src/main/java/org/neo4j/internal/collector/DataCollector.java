@@ -21,6 +21,8 @@ package org.neo4j.internal.collector;
 
 import java.util.Collections;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
@@ -35,10 +37,12 @@ public class DataCollector extends LifecycleAdapter
     private final Database database;
     private final QueryCollector queryCollector;
 
-    public DataCollector( Database database, JobScheduler jobScheduler, Monitors monitors )
+    public DataCollector( Database database, JobScheduler jobScheduler, Monitors monitors, Config config )
     {
         this.database = database;
-        this.queryCollector = new QueryCollector( jobScheduler );
+        this.queryCollector = new QueryCollector( jobScheduler,
+                                                  config.get( GraphDatabaseSettings.data_collector_max_recent_query_count ),
+                                                  config.get( GraphDatabaseSettings.data_collector_max_query_text_size ) );
         try
         {
             this.queryCollector.collect( Collections.emptyMap() );
