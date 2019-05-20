@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -55,6 +56,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -84,6 +86,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.ArrayUtil.join;
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.helpers.Exceptions.withMessage;
@@ -2001,6 +2005,27 @@ public class ImportToolTest
             assertThat( e.getMessage(), containsString( "in addition to" ) );
             assertThat( e.getMessage(), containsString( ImportTool.Options.FILE.argument() ) );
         }
+    }
+
+    @Test
+    public void shouldCreateDebugLogInExpectedPlace() throws Exception
+    {
+        // The ImportTool is more embedded-db-focused where typically the debug.log ends up in in a `logs/debug.log` next to the db directory,
+        // i.e. in <dbDir>/../logs/debug.log
+
+        // given
+        String dbDir = dbRule.getDatabaseDirAbsolutePath();
+        importTool(
+                "--into", dbDir,
+                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds(), TRUE ).getAbsolutePath() );
+
+        // THEN go and read the debug.log where it's expected to be and see if there's an IMPORT DONE line in it
+        File dbDirParent = new File( dbDir ).getParentFile();
+        File logsDir = new File( dbDirParent, logs_directory.getDefaultValue() );
+        File internalLogFile = new File( logsDir, Config.defaults().get( store_internal_log_path ).getName() );
+        assertTrue( internalLogFile.exists() );
+        List<String> lines = Files.readAllLines( internalLogFile.toPath() );
+        assertTrue( lines.stream().anyMatch( line -> line.contains( "Import completed successfully" ) ) );
     }
 
     private static void assertContains( List<String> errorLines, String string )

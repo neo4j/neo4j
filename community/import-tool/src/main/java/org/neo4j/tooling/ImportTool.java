@@ -81,7 +81,6 @@ import org.neo4j.unsafe.impl.batchimport.staging.SpectrumExecutionMonitor;
 import static java.lang.String.format;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.util.Arrays.asList;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.helpers.Format.bytes;
@@ -418,7 +417,6 @@ public class ImportTool
         OutputStream badOutput = null;
         IdType idType;
         org.neo4j.unsafe.impl.batchimport.Configuration configuration;
-        File logsDir;
         File badFile = null;
         Long maxMemory;
         Boolean defaultHighIO;
@@ -431,9 +429,6 @@ public class ImportTool
 
             storeDir = args.interpretOption( Options.STORE_DIR.key(), Converters.mandatory(),
                     Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE );
-            Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, storeDir.getAbsolutePath() );
-            logsDir = config.get( GraphDatabaseSettings.logs_directory );
-            fs.mkdirs( logsDir );
 
             skipBadEntriesLogging = args.getBoolean( Options.SKIP_BAD_ENTRIES_LOGGING.key(),
                     (Boolean) Options.SKIP_BAD_ENTRIES_LOGGING.defaultValue(), false);
@@ -471,6 +466,7 @@ public class ImportTool
                     Converters.toFile(), Validators.REGEX_FILE_EXISTS ) );
             dbConfig.augment( loadDbConfig( args.interpretOption( Options.ADDITIONAL_CONFIG.key(), Converters.optional(),
                     Converters.toFile(), Validators.REGEX_FILE_EXISTS ) ) );
+            dbConfig.augment( GraphDatabaseSettings.neo4j_home, storeDir.getCanonicalFile().getParentFile().getAbsolutePath() );
             boolean allowCacheOnHeap = args.getBoolean( Options.CACHE_ON_HEAP.key(),
                     (Boolean) Options.CACHE_ON_HEAP.defaultValue() );
             configuration = importConfiguration(
@@ -483,7 +479,7 @@ public class ImportTool
             in = defaultSettingsSuitableForTests ? new ByteArrayInputStream( EMPTY_BYTE_ARRAY ) : System.in;
             boolean detailedPrinting = args.getBoolean( Options.DETAILED_PROGRESS.key(), (Boolean) Options.DETAILED_PROGRESS.defaultValue() );
 
-            doImport( out, err, in, DatabaseLayout.of( storeDir ), logsDir, badFile, fs, nodesFiles, relationshipsFiles,
+            doImport( out, err, in, DatabaseLayout.of( storeDir ), badFile, fs, nodesFiles, relationshipsFiles,
                     enableStacktrace, input, dbConfig, badOutput, configuration, detailedPrinting );
 
             success = true;
@@ -552,7 +548,7 @@ public class ImportTool
         return null;
     }
 
-    public static void doImport( PrintStream out, PrintStream err, InputStream in, DatabaseLayout databaseLayout, File logsDir, File badFile,
+    public static void doImport( PrintStream out, PrintStream err, InputStream in, DatabaseLayout databaseLayout, File badFile,
                                  FileSystemAbstraction fs, Collection<Option<File[]>> nodesFiles,
                                  Collection<Option<File[]>> relationshipsFiles, boolean enableStacktrace, Input input,
                                  Config dbConfig, OutputStream badOutput,
@@ -561,7 +557,6 @@ public class ImportTool
         boolean success;
         LifeSupport life = new LifeSupport();
 
-        dbConfig.augment( logs_directory, logsDir.getCanonicalPath() );
         File internalLogFile = dbConfig.get( store_internal_log_path );
         LogService logService = life.add( StoreLogService.withInternalLog( internalLogFile ).build( fs ) );
         final JobScheduler jobScheduler = life.add( createScheduler() );

@@ -104,7 +104,6 @@ class CsvImporter implements Importer
     {
         FileSystemAbstraction fs = outsideWorld.fileSystem();
         File storeDir = databaseConfig.get( GraphDatabaseSettings.database_path );
-        File logsDir = databaseConfig.get( GraphDatabaseSettings.logs_directory );
         File reportFile = new File( reportFileName );
 
         OutputStream badOutput = new BufferedOutputStream( fs.openAsOutputStream( reportFile, false ) );
@@ -126,7 +125,7 @@ class CsvImporter implements Importer
                 badCollector,
                 new CsvInput.PrintingMonitor( outsideWorld.outStream() ) );
 
-        ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), outsideWorld.inStream(), DatabaseLayout.of( storeDir ), logsDir,
+        ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), outsideWorld.inStream(), DatabaseLayout.of( storeDir ),
                 reportFile, fs, nodesFiles, relationshipsFiles, false, input, this.databaseConfig, badOutput, configuration, false );
     }
 
