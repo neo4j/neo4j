@@ -47,8 +47,20 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
 
   override def processRow(row: ExecutionContext): Unit = {
     val groupingValue: AnyValue = groupingFunction(row, state)
-    val aggregationFunctions = resultMap.computeIfAbsent(groupingValue, _ => aggregations.map(_.expression.createAggregationFunction))
-    aggregationFunctions.foreach(func => func(row, state))
+    val aggregationFunctions = resultMap.computeIfAbsent(groupingValue, _ => {
+      val functions = new Array[AggregationFunction](aggregations.length)
+      var i = 0
+      while (i < aggregations.length) {
+        functions(i) = aggregations(i).expression.createAggregationFunction
+        i += 1
+      }
+      functions
+    })
+    var i = 0
+    while (i < aggregationFunctions.length) {
+      aggregationFunctions(i)(row, state)
+      i += 1
+    }
   }
 
   override def result(): Iterator[ExecutionContext] = {

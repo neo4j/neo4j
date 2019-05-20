@@ -41,7 +41,11 @@ class NonGroupingAggTable(aggregations: Array[AggregatingCol],
   }
 
   override def processRow(row: ExecutionContext): Unit = {
-    aggregationFunctions.foreach(func => func(row, state))
+    var i = 0
+    while (i < aggregationFunctions.length) {
+      aggregationFunctions(i)(row, state)
+      i += 1
+    }
   }
 
   override def result(): Iterator[ExecutionContext] = {

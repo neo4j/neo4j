@@ -54,17 +54,17 @@ trait OrderedInputPipe {
 
       override def next(): ExecutionContext = {
         if (inputState.firstRowOfNextChunk == null && inputState.resultRowsOfChunk.isEmpty) {
-          populateTableAndReturnFirstRow(None)
+          populateTableAndReturnFirstRow(null)
         } else if (inputState.resultRowsOfChunk.hasNext) {
           inputState.resultRowsOfChunk.next()
         } else {
-          populateTableAndReturnFirstRow(Some(inputState.firstRowOfNextChunk))
+          populateTableAndReturnFirstRow(inputState.firstRowOfNextChunk)
         }
       }
 
-      def populateTableAndReturnFirstRow(maybeFirstRow: Option[ExecutionContext]): ExecutionContext = {
+      def populateTableAndReturnFirstRow(maybeFirstRow: ExecutionContext): ExecutionContext = {
         receiver.clear()
-        val firstRow = maybeFirstRow.getOrElse(input.next())
+        val firstRow = if (maybeFirstRow == null) input.next() else maybeFirstRow
         var currentRow = firstRow
 
         while (currentRow != null && receiver.isSameChunk(firstRow, currentRow)) {
