@@ -50,7 +50,19 @@
     </licenses>
 
     <dependencies>
-        <!-- Main dependencies -->
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>annotations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>annotations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-command-line</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
@@ -86,6 +98,12 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>import-test-utils</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>io-test-utils</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

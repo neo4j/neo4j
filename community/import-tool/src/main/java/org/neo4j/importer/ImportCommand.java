@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.commandline.dbms;
+package org.neo4j.importer;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
