@@ -54,69 +54,12 @@ public abstract class ArrayUtil
         boolean itemEquals( Object firstArray, Object otherArray );
     }
 
-    public static final ArrayEquality DEFAULT_ARRAY_EQUALITY = new ArrayEquality()
+    private static final ArrayEquality DEFAULT_ARRAY_EQUALITY = new ArrayEquality()
     {
         @Override
         public boolean typeEquals( Class<?> firstType, Class<?> otherType )
         {
             return firstType == otherType;
-        }
-
-        @Override
-        public boolean itemEquals( Object lhs, Object rhs )
-        {
-            return Objects.equals( lhs, rhs );
-        }
-    };
-
-    public static final ArrayEquality BOXING_AWARE_ARRAY_EQUALITY = new ArrayEquality()
-    {
-        @Override
-        public boolean typeEquals( Class<?> firstType, Class<?> otherType )
-        {
-            return boxedType( firstType ) == boxedType( otherType );
-        }
-
-        private Class<?> boxedType( Class<?> type )
-        {
-            if ( !type.isPrimitive() )
-            {
-                return type;
-            }
-
-            if ( type.equals( Boolean.TYPE ) )
-            {
-                return Boolean.class;
-            }
-            if ( type.equals( Byte.TYPE ) )
-            {
-                return Byte.class;
-            }
-            if ( type.equals( Short.TYPE ) )
-            {
-                return Short.class;
-            }
-            if ( type.equals( Character.TYPE ) )
-            {
-                return Character.class;
-            }
-            if ( type.equals( Integer.TYPE ) )
-            {
-                return Integer.class;
-            }
-            if ( type.equals( Long.TYPE ) )
-            {
-                return Long.class;
-            }
-            if ( type.equals( Float.TYPE ) )
-            {
-                return Float.class;
-            }
-            if ( type.equals( Double.TYPE ) )
-            {
-                return Double.class;
-            }
-            throw new IllegalArgumentException( "Oops, forgot to include a primitive type " + type );
         }
 
         @Override
@@ -392,6 +335,7 @@ public abstract class ArrayUtil
      * @return a concatenated array where {@code first} as the item at index {@code 0} and the additional
      * items following it.
      */
+    @SafeVarargs
     public static <T> T[] concat( T first, T... additional )
     {
         @SuppressWarnings( "unchecked" )
@@ -409,6 +353,7 @@ public abstract class ArrayUtil
      * @param <T> the type of the array items
      * @return a concatenated array and the additional items following it.
      */
+    @SafeVarargs
     public static <T> T[] concat( T[] initial, T... additional )
     {
         @SuppressWarnings( "unchecked" )
@@ -426,6 +371,7 @@ public abstract class ArrayUtil
      * @param <T> the type of the array items
      * @return the concatenated array
      */
+    @SafeVarargs
     public static <T> T[] concatArrays( T[] initial, T[]... additional )
     {
         int length = initial.length;
@@ -473,6 +419,7 @@ public abstract class ArrayUtil
         return -1;
     }
 
+    @SafeVarargs
     public static <T> T[] without( T[] source, T... toRemove )
     {
         T[] result = source.clone();

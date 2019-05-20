@@ -101,7 +101,7 @@ public final class Strings
     }
 
     /**
-     * Joining independent lines from provided elements into one line with {@link java.lang.System#lineSeparator} after
+     * Joining independent lines from provided elements into one line with {@link System#lineSeparator()} after
      * each element
      * @param elements - lines to join
      * @return joined line
