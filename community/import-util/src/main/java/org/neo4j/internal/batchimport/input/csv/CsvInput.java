@@ -20,9 +20,12 @@
 package org.neo4j.internal.batchimport.input.csv;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.ToIntFunction;
 
 import org.neo4j.collection.RawIterator;
@@ -62,6 +65,7 @@ public class CsvInput implements Input
     private final Header.Factory relationshipHeaderFactory;
     private final IdType idType;
     private final Configuration config;
+    private final Monitor monitor;
     private final Groups groups;
 
     /**
@@ -75,19 +79,20 @@ public class CsvInput implements Input
      * @param relationshipHeaderFactory factory for reading relationship headers.
      * @param idType {@link IdType} to expect in id fields of node and relationship input.
      * @param config CSV configuration.
+     * @param monitor {@link Monitor} for internal events.
      */
     public CsvInput(
             Iterable<DataFactory> nodeDataFactory, Header.Factory nodeHeaderFactory,
             Iterable<DataFactory> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
-            IdType idType, Configuration config )
+            IdType idType, Configuration config, Monitor monitor )
     {
-        this( nodeDataFactory, nodeHeaderFactory, relationshipDataFactory, relationshipHeaderFactory, idType, config, new Groups() );
+        this( nodeDataFactory, nodeHeaderFactory, relationshipDataFactory, relationshipHeaderFactory, idType, config, monitor, new Groups() );
     }
 
     CsvInput(
             Iterable<DataFactory> nodeDataFactory, Header.Factory nodeHeaderFactory,
             Iterable<DataFactory> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
-            IdType idType, Configuration config, Groups groups )
+            IdType idType, Configuration config, Monitor monitor, Groups groups )
     {
         assertSaneConfiguration( config );
 
@@ -97,9 +102,11 @@ public class CsvInput implements Input
         this.relationshipHeaderFactory = relationshipHeaderFactory;
         this.idType = idType;
         this.config = config;
+        this.monitor = monitor;
         this.groups = groups;
 
         verifyHeaders();
+        warnAboutDuplicateSourceFiles();
     }
 
     /**
@@ -138,6 +145,44 @@ public class CsvInput implements Input
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
+        }
+    }
+
+    private void warnAboutDuplicateSourceFiles()
+    {
+        try
+        {
+            Set<String> seenSourceFiles = new HashSet<>();
+            warnAboutDuplicateSourceFiles( seenSourceFiles, nodeDataFactory );
+            warnAboutDuplicateSourceFiles( seenSourceFiles, relationshipDataFactory );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    private void warnAboutDuplicateSourceFiles( Set<String> seenSourceFiles, Iterable<DataFactory> dataFactories ) throws IOException
+    {
+        for ( DataFactory dataFactory : dataFactories )
+        {
+            RawIterator<CharReadable,IOException> stream = dataFactory.create( config ).stream();
+            while ( stream.hasNext() )
+            {
+                try ( CharReadable source = stream.next() )
+                {
+                    warnAboutDuplicateSourceFiles( seenSourceFiles, source );
+                }
+            }
+        }
+    }
+
+    private void warnAboutDuplicateSourceFiles( Set<String> seenSourceFiles, CharReadable source )
+    {
+        String sourceDescription = source.sourceDescription();
+        if ( !seenSourceFiles.add( sourceDescription ) )
+        {
+            monitor.duplicateSourceFile( sourceDescription );
         }
     }
 
@@ -267,6 +312,33 @@ public class CsvInput implements Input
             return extractors.long_();
         default:
             throw new IllegalArgumentException( "Unsupported id type " + idType );
+        }
+    }
+
+    public interface Monitor
+    {
+        /**
+         * Reports that a given source file has been specified more than one time.
+         * @param sourceFile source file that is a duplicate.
+         */
+        void duplicateSourceFile( String sourceFile );
+    }
+
+    public static final Monitor NO_MONITOR = source -> {};
+
+    public static class PrintingMonitor implements Monitor
+    {
+        private final PrintStream out;
+
+        public PrintingMonitor( PrintStream out )
+        {
+            this.out = out;
+        }
+
+        @Override
+        public void duplicateSourceFile( String sourceFile )
+        {
+            out.println( String.format( "WARN: source file %s has been specified multiple times, this may result in unwanted duplicates", sourceFile ) );
         }
     }
 }

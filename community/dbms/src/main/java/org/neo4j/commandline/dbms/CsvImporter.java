@@ -120,7 +120,8 @@ class CsvImporter implements Importer
 
             CsvInput input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader( defaultTimeZone ),
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader( defaultTimeZone ), idType,
-                    new WrappedCsvInputConfigurationForNeo4jAdmin( csvConfiguration( args, false ) ) );
+                    new WrappedCsvInputConfigurationForNeo4jAdmin( csvConfiguration( args, false ) ),
+                    new CsvInput.PrintingMonitor( outsideWorld.outStream() ) );
 
             ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), outsideWorld.inStream(), databaseLayout, logsDir, reportFile, fs,
                     nodesFiles, relationshipsFiles, false, input, this.databaseConfig, badCollector, configuration, false );

@@ -160,7 +160,8 @@ class CsvInputBatchImportIT
                 DataFactories.datas( DataFactories.data( InputEntityDecorators.NO_DECORATOR, defaultCharset(), relationships ) ),
                 DataFactories.defaultFormatRelationshipFileHeader( testDefaultTimeZone ),
                 idType,
-                configuration );
+                configuration,
+                CsvInput.NO_MONITOR );
     }
 
     private static org.neo4j.internal.batchimport.input.csv.Configuration lowBufferSize(

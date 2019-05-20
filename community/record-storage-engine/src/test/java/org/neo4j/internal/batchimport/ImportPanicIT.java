@@ -85,7 +85,8 @@ public class ImportPanicIT
                     nodeData, DataFactories.defaultFormatNodeFileHeader(),
                     DataFactories.datas(), DataFactories.defaultFormatRelationshipFileHeader(),
                     IdType.ACTUAL,
-                    csvConfigurationWithLowBufferSize() );
+                    csvConfigurationWithLowBufferSize(),
+                    CsvInput.NO_MONITOR );
             importer.doImport( brokenCsvInput );
             fail( "Should have failed properly" );
         }
