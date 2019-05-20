@@ -104,7 +104,6 @@ class CsvImporter implements Importer
     public void doImport() throws IOException
     {
         FileSystemAbstraction fs = outsideWorld.fileSystem();
-        File logsDir = databaseConfig.get( GraphDatabaseSettings.logs_directory );
         File reportFile = new File( reportFileName );
 
         OutputStream badOutput = new BufferedOutputStream( fs.openAsOutputStream( reportFile, false ) );
@@ -123,7 +122,7 @@ class CsvImporter implements Importer
                     new WrappedCsvInputConfigurationForNeo4jAdmin( csvConfiguration( args, false ) ),
                     new CsvInput.PrintingMonitor( outsideWorld.outStream() ) );
 
-            ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), outsideWorld.inStream(), databaseLayout, logsDir, reportFile, fs,
+            ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), outsideWorld.inStream(), databaseLayout, reportFile, fs,
                     nodesFiles, relationshipsFiles, false, input, this.databaseConfig, badCollector, configuration, false );
         }
     }

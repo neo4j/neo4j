@@ -82,7 +82,6 @@ import org.neo4j.scheduler.JobScheduler;
 import static java.lang.String.format;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.util.Arrays.asList;
-import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
@@ -419,7 +418,6 @@ public class ImportTool
         OutputStream badOutput = null;
         IdType idType;
         org.neo4j.internal.batchimport.Configuration configuration;
-        File logsDir;
         File badFile = null;
         Long maxMemory;
         Boolean defaultHighIO;
@@ -467,8 +465,6 @@ public class ImportTool
 
             dbConfig = buildDbConfig( args, databaseDirectory );
 
-            logsDir = dbConfig.get( GraphDatabaseSettings.logs_directory );
-            fs.mkdirs( logsDir );
             DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory, LayoutConfig.of( dbConfig ) );
             boolean allowCacheOnHeap = args.getBoolean( Options.CACHE_ON_HEAP.key(),
                     (Boolean) Options.CACHE_ON_HEAP.defaultValue() );
@@ -482,7 +478,7 @@ public class ImportTool
             in = defaultSettingsSuitableForTests ? new ByteArrayInputStream( EMPTY_BYTE_ARRAY ) : System.in;
             boolean detailedPrinting = args.getBoolean( Options.DETAILED_PROGRESS.key(), (Boolean) Options.DETAILED_PROGRESS.defaultValue() );
 
-            doImport( out, err, in, databaseLayout, logsDir, badFile, fs, nodesFiles, relationshipsFiles,
+            doImport( out, err, in, databaseLayout, badFile, fs, nodesFiles, relationshipsFiles,
                     enableStacktrace, input, dbConfig, badCollector, configuration, detailedPrinting );
         }
         catch ( IllegalArgumentException e )
@@ -559,7 +555,7 @@ public class ImportTool
         return null;
     }
 
-    public static void doImport( PrintStream out, PrintStream err, InputStream in, DatabaseLayout databaseLayout, File logsDir, File badFile,
+    public static void doImport( PrintStream out, PrintStream err, InputStream in, DatabaseLayout databaseLayout, File badFile,
                                  FileSystemAbstraction fs, Collection<Option<File[]>> nodesFiles,
                                  Collection<Option<File[]>> relationshipsFiles, boolean enableStacktrace, Input input,
                                  Config dbConfig, Collector badCollector,
@@ -568,7 +564,6 @@ public class ImportTool
         boolean success;
         LifeSupport life = new LifeSupport();
 
-        dbConfig.augment( logs_directory, logsDir.getCanonicalPath() );
         File internalLogFile = dbConfig.get( store_internal_log_path );
         LogService logService = life.add( StoreLogService.withInternalLog( internalLogFile ).build( fs ) );
         final JobScheduler jobScheduler = life.add( createScheduler() );

@@ -44,6 +44,7 @@ import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 
 import org.neo4j.common.Validator;
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -82,6 +83,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
+import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
@@ -2091,6 +2094,27 @@ public class ImportToolTest
             assertThat( e.getMessage(), containsString( "in addition to" ) );
             assertThat( e.getMessage(), containsString( ImportTool.Options.FILE.argument() ) );
         }
+    }
+
+    @Test
+    public void shouldCreateDebugLogInExpectedPlace() throws Exception
+    {
+        // The ImportTool is more embedded-db-focused where typically the debug.log ends up in in a `logs/debug.log` next to the db directory,
+        // i.e. in <dbDir>/../logs/debug.log
+
+        // given
+        String dbDir = dbRule.getDatabaseDirAbsolutePath();
+        importTool(
+                "--into", dbDir,
+                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds(), TRUE ).getAbsolutePath() );
+
+        // THEN go and read the debug.log where it's expected to be and see if there's an IMPORT DONE line in it
+        File dbDirParent = new File( dbDir );
+        File logsDir = new File( dbDirParent, logs_directory.getDefaultValue() );
+        File internalLogFile = new File( logsDir, Config.defaults().get( store_internal_log_path ).getName() );
+        assertTrue( internalLogFile.exists() );
+        List<String> lines = Files.readAllLines( internalLogFile.toPath() );
+        assertTrue( lines.stream().anyMatch( line -> line.contains( "Import completed successfully" ) ) );
     }
 
     private static void assertContains( List<String> errorLines, String string )
