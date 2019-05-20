@@ -67,6 +67,7 @@ public class FulltextIndexReader implements IndexReader
     {
         FulltextIndexDescriptor descriptor = getDescriptor();
         MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( descriptor.propertyNames(), descriptor.analyzer() );
+        multiFieldQueryParser.setAllowLeadingWildcard( true );
         return multiFieldQueryParser.parse( query );
     }
 
