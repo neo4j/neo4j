@@ -261,7 +261,7 @@ public class SchemaStorageIT
                 "value.doubleArray", Values.doubleArray( new double[]{0.4, 0.6, 1.0} ),
                 "value.boolean", Values.booleanValue( true )
         ) );
-        SchemaDescriptor schema = SchemaDescriptor.withIndexConfig( forLabel( labelId( LABEL1 ), propId( PROP1 ) ), expected );
+        SchemaDescriptor schema = forLabel( labelId( LABEL1 ), propId( PROP1 ) ).withIndexConfig( expected );
         StoreIndexDescriptor storeIndexDescriptor = forSchema( schema ).withId( 1 );
         storage.writeSchemaRule( storeIndexDescriptor );
 

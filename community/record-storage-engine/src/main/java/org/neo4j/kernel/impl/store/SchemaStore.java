@@ -442,9 +442,9 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
             switch ( entityType )
             {
             case NODE:
-                return SchemaDescriptor.withIndexConfig( SchemaDescriptor.forLabel( singleEntityId( entityIds ), propertyIds ), indexConfig );
+                return SchemaDescriptor.forLabel( singleEntityId( entityIds ), propertyIds ).withIndexConfig( indexConfig );
             case RELATIONSHIP:
-                return SchemaDescriptor.withIndexConfig( SchemaDescriptor.forRelType( singleEntityId( entityIds ), propertyIds ), indexConfig );
+                return SchemaDescriptor.forRelType( singleEntityId( entityIds ), propertyIds ).withIndexConfig( indexConfig );
             default:
                 throw new MalformedSchemaRuleException( "Unrecognised entity type: " + entityType );
             }
