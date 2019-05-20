@@ -135,6 +135,16 @@ class InvalidNodePattern(
                           position: InputPosition
 ) extends NodePattern(Some(id), Seq.empty, None)(position) {
 
+  override def productPrefix: String = "InvalidNodePattern"
+
+  override def productArity: Int = 1
+
+  override def productIterator: Iterator[Any] = Iterator(id)
+
+  override def productElement(n: Int): Any = productIterator.toList(n)
+
+  override def toString: String = s"$productPrefix(${productIterator.mkString(",")})"
+
   override def canEqual(other: Any): Boolean = other.isInstanceOf[InvalidNodePattern]
 
   override def equals(other: Any): Boolean = other match {
