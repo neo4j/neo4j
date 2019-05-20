@@ -45,8 +45,10 @@ public class DefaultPropertyCursor implements PropertyCursor
     private AssertOpen assertOpen;
     private final CursorPool<DefaultPropertyCursor> pool;
     private AccessMode accessMode;
-    private boolean checkReadProperty;
-    private long entityReference = -1L;
+    private long entityReference = NO_ENTITY;
+
+    private static final long NO_ENTITY = -1L;
+    private static final long NODE_MARKER = 1L << 62;
 
     DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor )
     {
@@ -60,8 +62,7 @@ public class DefaultPropertyCursor implements PropertyCursor
 
         init( read, assertOpen );
         storeCursor.initNodeProperties( reference );
-        checkReadProperty = true;
-        this.entityReference = nodeReference;
+        this.entityReference = nodeReference | NODE_MARKER;
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -82,7 +83,6 @@ public class DefaultPropertyCursor implements PropertyCursor
 
         init( read, assertOpen );
         storeCursor.initRelationshipProperties( reference );
-        checkReadProperty = false;
         entityReference = relationshipReference;
 
         // Transaction state
@@ -102,8 +102,7 @@ public class DefaultPropertyCursor implements PropertyCursor
     {
         init( read, assertOpen );
         storeCursor.initGraphProperties();
-        checkReadProperty = false;
-        entityReference = -1L;
+        entityReference = NO_ENTITY;
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -132,17 +131,18 @@ public class DefaultPropertyCursor implements PropertyCursor
         this.accessMode = read.ktx.securityContext().mode();
     }
 
-    boolean allowedForNode( int propertyKey )
+    boolean allowed()
     {
-        if ( checkReadProperty )
+        int propertyKey = propertyKey();
+        if ( !accessMode.allowsPropertyReads( propertyKey ) )
         {
-            return accessMode.allowsPropertyReads( propertyKey ) &&
-                   accessMode.allowsReadProperty( new NodeLabels( entityReference, read ), propertyKey );
+            return false;
         }
-        else
+        if ( isNode() )
         {
-            return true;
+            return accessMode.allowsReadProperty( new NodeLabels( nodeReference(), read ), propertyKey );
         }
+        return true;
     }
 
     @Override
@@ -165,7 +165,7 @@ public class DefaultPropertyCursor implements PropertyCursor
         while ( storeCursor.next() )
         {
             boolean skip = propertiesState != null && propertiesState.isPropertyChangedOrRemoved( storeCursor.propertyKey() );
-            if ( !skip && allowedForNode( propertyKey() ) )
+            if ( !skip && allowed( ) )
             {
                 return true;
             }
@@ -246,6 +246,16 @@ public class DefaultPropertyCursor implements PropertyCursor
     public void release()
     {
         storeCursor.close();
+    }
+
+    private boolean isNode()
+    {
+        return (entityReference & NODE_MARKER) != 0;
+    }
+
+    private long nodeReference()
+    {
+        return entityReference & ~NODE_MARKER;
     }
 
     private class NodeLabels implements Supplier<LabelSet>
