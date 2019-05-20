@@ -27,7 +27,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
 import static org.neo4j.io.layout.StoreLayoutConfig.NOT_CONFIGURED;
@@ -120,14 +119,9 @@ public class DatabaseLayout
         return file( DatabaseFile.LABEL_SCAN_STORE.getName() );
     }
 
-    public File countStoreA()
+    public File countStore()
     {
-        return file( DatabaseFile.COUNTS_STORE_A.getName() );
-    }
-
-    public File countStoreB()
-    {
-        return file( DatabaseFile.COUNTS_STORE_B.getName() );
+        return file( DatabaseFile.COUNTS_STORE.getName() );
     }
 
     public File propertyStringStore()
@@ -216,7 +210,7 @@ public class DatabaseLayout
     public Set<File> storeFiles()
     {
         return Arrays.stream( DatabaseFile.values() )
-                .flatMap( this::file )
+                .map( this::file )
                 .collect( Collectors.toSet() );
     }
 
@@ -230,15 +224,14 @@ public class DatabaseLayout
         return new File( databaseDirectory, fileName );
     }
 
-    public Stream<File> file( DatabaseFile databaseFile )
+    public File file( DatabaseFile databaseFile )
     {
-        Iterable<String> names = databaseFile.getNames();
-        return StreamSupport.stream( names.spliterator(), false ).map( this::file );
+        return file( databaseFile.getName() );
     }
 
     public Stream<File> allFiles( DatabaseFile databaseFile )
     {
-        return Stream.concat( idFile( databaseFile ).stream(), file( databaseFile ) );
+        return Stream.concat( idFile( databaseFile ).stream(), Stream.of( file( databaseFile ) ) );
     }
 
     public File[] listDatabaseFiles( FileFilter filter )

@@ -19,11 +19,7 @@
  */
 package org.neo4j.io.layout;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
-
-import org.neo4j.util.Preconditions;
 
 import static java.util.Objects.requireNonNull;
 
@@ -67,39 +63,31 @@ public enum DatabaseFile
 
     SCHEMA_STORE( DatabaseFileNames.SCHEMA_STORE ),
 
-    COUNTS_STORES( false, DatabaseFileNames.COUNTS_STORE_A, DatabaseFileNames.COUNTS_STORE_B ),
-    COUNTS_STORE_A( false, DatabaseFileNames.COUNTS_STORE_A ),
-    COUNTS_STORE_B( false, DatabaseFileNames.COUNTS_STORE_B ),
+    COUNTS_STORE( DatabaseFileNames.COUNTS_STORE, false ),
 
     METADATA_STORE( DatabaseFileNames.METADATA_STORE ),
 
-    INDEX_STATISTICS_STORE( false, DatabaseFileNames.INDEX_STATISTICS_STORE ),
+    INDEX_STATISTICS_STORE( DatabaseFileNames.INDEX_STATISTICS_STORE, false ),
 
-    LABEL_SCAN_STORE( false, DatabaseFileNames.LABEL_SCAN_STORE );
+    LABEL_SCAN_STORE( DatabaseFileNames.LABEL_SCAN_STORE, false );
 
-    private final List<String> names;
+    private final String name;
     private final boolean hasIdFile;
 
     DatabaseFile( String name )
     {
-        this( true, name );
+        this( name, true );
     }
 
-    DatabaseFile( boolean hasIdFile, String... names )
+    DatabaseFile( String name, boolean hasIdFile )
     {
-        this.names = Arrays.asList( names );
+        this.name = name;
         this.hasIdFile = hasIdFile;
-    }
-
-    Iterable<String> getNames()
-    {
-        return names;
     }
 
     public String getName()
     {
-        Preconditions.checkState( names.size() == 1, "Database file has more then one file names." );
-        return names.get( 0 );
+        return name;
     }
 
     public boolean hasIdFile()
@@ -120,7 +108,7 @@ public enum DatabaseFile
         DatabaseFile[] databaseFiles = DatabaseFile.values();
         for ( DatabaseFile databaseFile : databaseFiles )
         {
-            if ( databaseFile.names.contains( name ) )
+            if ( databaseFile.name.equals( name ) )
             {
                 return Optional.of( databaseFile );
             }

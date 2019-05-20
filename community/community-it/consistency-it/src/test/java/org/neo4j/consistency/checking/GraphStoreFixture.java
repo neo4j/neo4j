@@ -212,7 +212,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
             storeLife.start();
 
             CountsStore counts =
-                    new GBPTreeCountsStore( pageCache, databaseLayout().countStoreA(), RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, false );
+                    new GBPTreeCountsStore( pageCache, databaseLayout().countStore(), RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, false );
             storeLife.add( CountsStore.wrapInLifecycle( counts ) );
 
             IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE,
@@ -231,7 +231,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
     {
         if ( counts == null )
         {
-            counts = new GBPTreeCountsStore( pageCache, databaseLayout().countStoreA(), RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, true );
+            counts = new GBPTreeCountsStore( pageCache, databaseLayout().countStore(), RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, true );
         }
         return counts;
     }

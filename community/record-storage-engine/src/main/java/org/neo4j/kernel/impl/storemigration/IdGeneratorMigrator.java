@@ -98,7 +98,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         for ( StoreType storeType : StoreType.values() )
         {
             // See if it exists in migration directory, otherwise it must be in the db directory
-            List<StoreType> list = fileSystem.fileExists( migrationLayout.file( storeType.getDatabaseFile() ).findFirst().get() )
+            List<StoreType> list = fileSystem.fileExists( migrationLayout.file( storeType.getDatabaseFile() ) )
                                    ? storesInMigrationDirectory
                                    : storesInDbDirectory;
             list.add( storeType );
@@ -144,7 +144,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         Set<File> createdStores = new HashSet<>();
         StoreType[] storesToCreate = Stream.of( StoreType.values() ).filter( t ->
         {
-            File file = layout.file( t.getDatabaseFile() ).findFirst().get();
+            File file = layout.file( t.getDatabaseFile() );
             boolean exists = fileSystem.fileExists( file );
             if ( !exists )
             {

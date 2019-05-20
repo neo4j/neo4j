@@ -316,7 +316,7 @@ class MemoryRecommendationsCommandTest
         MutableLong luceneTotal = new MutableLong();
         for ( StoreType storeType : StoreType.values() )
         {
-            long length = databaseLayout.file( storeType.getDatabaseFile() ).mapToLong( File::length ).sum();
+            long length = databaseLayout.file( storeType.getDatabaseFile() ).length();
             pageCacheTotal.add( length );
         }
 

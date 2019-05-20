@@ -252,7 +252,6 @@ class IndexSamplingIntegrationTest
     private void triggerIndexResamplingOnNextStartup()
     {
         // Trigger index resampling on next at startup
-        deleteFile( testDirectory.databaseLayout().countStoreA() );
-        deleteFile( testDirectory.databaseLayout().countStoreB() );
+        deleteFile( testDirectory.databaseLayout().countStore() );
     }
 }

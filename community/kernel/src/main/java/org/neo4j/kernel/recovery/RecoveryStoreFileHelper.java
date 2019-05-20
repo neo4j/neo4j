@@ -41,10 +41,8 @@ class RecoveryStoreFileHelper
     static StoreFilesInfo checkStoreFiles( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem )
     {
         Set<File> storeFiles = databaseLayout.storeFiles();
-        // count store files will be checked separately since presence of both files is not required
-        storeFiles.remove( databaseLayout.countStoreA() );
-        storeFiles.remove( databaseLayout.countStoreB() );
-        // index statistics and label scan store are not mandatory stores to have
+        // count store, index statistics and label scan store are not mandatory stores to have since they can be automatically rebuilt
+        storeFiles.remove( databaseLayout.countStore() );
         storeFiles.remove( databaseLayout.indexStatisticsStore() );
         storeFiles.remove( databaseLayout.labelScanStore() );
         return collectStoreFilesInfo( fileSystem, storeFiles );

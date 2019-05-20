@@ -28,8 +28,7 @@ final class DatabaseFileNames
 
     static final String LABEL_SCAN_STORE = "neostore.labelscanstore.db";
 
-    static final String COUNTS_STORE_A = "neostore.counts.db.a";
-    static final String COUNTS_STORE_B = "neostore.counts.db.b";
+    static final String COUNTS_STORE = "neostore.counts.db";
 
     static final String NODE_STORE = "neostore.nodestore.db";
     static final String NODE_LABELS_STORE = "neostore.nodestore.db.labels";

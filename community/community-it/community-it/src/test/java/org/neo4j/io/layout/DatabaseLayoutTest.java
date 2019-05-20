@@ -106,8 +106,7 @@ class DatabaseLayoutTest
     {
         DatabaseLayout layout = testDirectory.databaseLayout();
         assertEquals( "neostore", layout.metadataStore().getName() );
-        assertEquals( "neostore.counts.db.a", layout.countStoreA().getName() );
-        assertEquals( "neostore.counts.db.b", layout.countStoreB().getName() );
+        assertEquals( "neostore.counts.db", layout.countStore().getName() );
         assertEquals( "neostore.labelscanstore.db", layout.labelScanStore().getName() );
         assertEquals( "neostore.labeltokenstore.db", layout.labelTokenStore().getName() );
         assertEquals( "neostore.labeltokenstore.db.names", layout.labelTokenNamesStore().getName() );
@@ -152,8 +151,7 @@ class DatabaseLayoutTest
         DatabaseLayout layout = testDirectory.databaseLayout();
         Set<String> files = layout.storeFiles().stream().map( File::getName ).collect( toSet() );
         assertThat( files, hasItem( "neostore" ) );
-        assertThat( files, hasItem( "neostore.counts.db.a" ) );
-        assertThat( files, hasItem( "neostore.counts.db.b" ) );
+        assertThat( files, hasItem( "neostore.counts.db" ) );
         assertThat( files, hasItem( "neostore.labelscanstore.db" ) );
         assertThat( files, hasItem( "neostore.labeltokenstore.db" ) );
         assertThat( files, hasItem( "neostore.labeltokenstore.db.names" ) );
@@ -177,8 +175,8 @@ class DatabaseLayoutTest
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         DatabaseFile nodeStore = DatabaseFile.NODE_STORE;
         List<File> allNodeStoreFile = databaseLayout.allFiles( nodeStore ).collect( toList() );
-        File[] nodeStoreStoreFiles = databaseLayout.file( nodeStore ).toArray( File[]::new );
-        assertThat( allNodeStoreFile, hasItems( nodeStoreStoreFiles ) );
+        File nodeStoreStoreFile = databaseLayout.file( nodeStore );
+        assertThat( allNodeStoreFile, hasItem( nodeStoreStoreFile ) );
     }
 
     @Test
@@ -198,10 +196,10 @@ class DatabaseLayoutTest
         DatabaseFile[] databaseFiles = DatabaseFile.values();
         for ( DatabaseFile databaseFile : databaseFiles )
         {
-            assertNotNull( layout.file( databaseFile ).findAny().orElseThrow( () -> new RuntimeException( "Mapping was expected to be found" ) ) );
+            assertNotNull( layout.file( databaseFile ) );
         }
 
-        File metadata = layout.file( DatabaseFile.METADATA_STORE ).findFirst().orElseThrow( () -> new RuntimeException( "Mapping was expected to be found" ) );
+        File metadata = layout.file( DatabaseFile.METADATA_STORE );
         assertEquals( "neostore", metadata.getName() );
     }
 

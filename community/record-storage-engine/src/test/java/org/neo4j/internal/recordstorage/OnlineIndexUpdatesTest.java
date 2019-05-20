@@ -110,7 +110,7 @@ class OnlineIndexUpdatesTest
                         nullLogProvider );
 
         neoStores = storeFactory.openAllNeoStores( true );
-        GBPTreeCountsStore counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStoreA(), immediate(),
+        GBPTreeCountsStore counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), immediate(),
                 new CountsComputer( neoStores, pageCache, databaseLayout ), false );
         life.add( CountsStore.wrapInLifecycle( counts ) );
         nodeStore = neoStores.getNodeStore();

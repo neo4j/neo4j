@@ -75,8 +75,7 @@ class DatabaseFileListingTest
             "debug.log",
             "neostore",
             "neostore.id",
-            "neostore.counts.db.a",
-            "neostore.counts.db.b",
+            "neostore.counts.db",
             "neostore.labelscanstore.db",
             "neostore.labeltokenstore.db",
             "neostore.labeltokenstore.db.id",
@@ -192,7 +191,6 @@ class DatabaseFileListingTest
         DatabaseLayout layout = database.getDatabaseLayout();
         Set<File> expectedFiles = layout.storeFiles();
         // there was no rotation
-        expectedFiles.remove( layout.countStoreB() );
         ResourceIterator<StoreFileMetadata> storeFiles = database.listStoreFiles( false );
         Set<File> listedStoreFiles = storeFiles.stream()
                 .map( StoreFileMetadata::file )

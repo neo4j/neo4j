@@ -127,8 +127,9 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             throw new IOException( "No storage present at " + databaseLayout + " on " + fileSystem );
         }
 
-        return Arrays.stream( StoreType.values() ).flatMap( t -> databaseLayout.file( t.getDatabaseFile() ) )
-                                            .filter( fileSystem::fileExists ).collect( Collectors.toList() );
+        return Arrays.stream( StoreType.values() )
+                .map( t -> databaseLayout.file( t.getDatabaseFile() ) )
+                .filter( fileSystem::fileExists ).collect( Collectors.toList() );
     }
 
     @Override

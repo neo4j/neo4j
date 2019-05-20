@@ -179,7 +179,7 @@ class CsvInputEstimateCalculationIT
 
     private long sizeOf( DatabaseFile file )
     {
-        return directory.databaseLayout().file( file ).mapToLong( File::length ).sum();
+        return directory.databaseLayout().file( file ).length();
     }
 
     private Input generateData() throws IOException

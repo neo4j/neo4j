@@ -1863,7 +1863,7 @@ class ImportCommandTest
             // THEN the store files should be there
             for ( StoreType storeType : StoreType.values() )
             {
-                testDirectory.databaseLayout().file( storeType.getDatabaseFile() ).forEach( f -> assertTrue( f.exists() ) );
+                assertTrue( testDirectory.databaseLayout().file( storeType.getDatabaseFile() ).exists() );
             }
 
             List<String> errorLines = suppressOutput.getErrorVoice().lines();

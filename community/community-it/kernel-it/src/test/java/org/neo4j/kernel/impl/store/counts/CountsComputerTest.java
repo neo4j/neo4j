@@ -289,14 +289,9 @@ class CountsComputerTest
         }
     }
 
-    private File alphaStoreFile()
+    private File countsStoreFile()
     {
-        return testDirectory.databaseLayout().countStoreA();
-    }
-
-    private File betaStoreFile()
-    {
-        return testDirectory.databaseLayout().countStoreB();
+        return testDirectory.databaseLayout().countStore();
     }
 
     private static long getLastTxId( GraphDatabaseAPI db )
@@ -331,8 +326,7 @@ class CountsComputerTest
 
     private void cleanupCountsForRebuilding()
     {
-        fileSystem.deleteFile( alphaStoreFile() );
-        fileSystem.deleteFile( betaStoreFile() );
+        fileSystem.deleteFile( countsStoreFile() );
     }
 
     private GBPTreeCountsStore createCountsStore()
@@ -342,7 +336,7 @@ class CountsComputerTest
 
     private GBPTreeCountsStore createCountsStore( CountsBuilder builder )
     {
-        return new GBPTreeCountsStore( pageCache, testDirectory.databaseLayout().countStoreA(), immediate(), builder, false );
+        return new GBPTreeCountsStore( pageCache, testDirectory.databaseLayout().countStore(), immediate(), builder, false );
     }
 
     private void rebuildCounts( long lastCommittedTransactionId )

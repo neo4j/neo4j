@@ -198,7 +198,7 @@ class RecoveryRequiredCheckerTest
     }
 
     @Test
-    void recoveryNotRequiredWhenCountStoreAIsMissing() throws Exception
+    void recoveryNotRequiredWhenCountStoreIsMissing() throws Exception
     {
         startStopAndCreateDefaultData();
 
@@ -208,23 +208,7 @@ class RecoveryRequiredCheckerTest
         RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
         assertFalse( checker.isRecoveryRequiredAt( databaseLayout ) );
 
-        fileSystem.deleteFileOrThrow( databaseLayout.countStoreA() );
-
-        assertFalse( checker.isRecoveryRequiredAt( databaseLayout ) );
-    }
-
-    @Test
-    void recoveryNotRequiredWhenCountStoreBIsMissing() throws Exception
-    {
-        startStopAndCreateDefaultData();
-
-        assertStoreFilesExist();
-
-        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
-        RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
-        assertFalse( checker.isRecoveryRequiredAt( databaseLayout ) );
-
-        fileSystem.deleteFileOrThrow( databaseLayout.countStoreB() );
+        fileSystem.deleteFileOrThrow( databaseLayout.countStore() );
 
         assertFalse( checker.isRecoveryRequiredAt( databaseLayout ) );
     }

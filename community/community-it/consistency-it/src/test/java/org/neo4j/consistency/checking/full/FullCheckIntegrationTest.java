@@ -94,7 +94,6 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -2057,9 +2056,8 @@ public class FullCheckIntegrationTest
     private void shouldReportBadCountsStore( ThrowingFunction<File,Boolean,IOException> fileAction ) throws Exception
     {
         // given
-        boolean aCorrupted = fileAction.apply( fixture.databaseLayout().countStoreA() );
-        boolean bCorrupted = fileAction.apply( fixture.databaseLayout().countStoreB() );
-        assertTrue( aCorrupted || bCorrupted );
+        boolean corrupted = fileAction.apply( fixture.databaseLayout().countStore() );
+        assertTrue( corrupted );
 
         // When
         ConsistencySummaryStatistics stats = check();
