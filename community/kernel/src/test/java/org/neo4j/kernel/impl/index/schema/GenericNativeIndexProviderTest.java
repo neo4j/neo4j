@@ -21,6 +21,9 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexConfig;
@@ -29,9 +32,20 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DoubleArray;
+import org.neo4j.values.storable.IntValue;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.neo4j.kernel.impl.index.schema.SpatialIndexConfig.CODE;
+import static org.neo4j.kernel.impl.index.schema.SpatialIndexConfig.DIMENSIONS;
+import static org.neo4j.kernel.impl.index.schema.SpatialIndexConfig.MAX;
+import static org.neo4j.kernel.impl.index.schema.SpatialIndexConfig.MAX_LEVELS;
+import static org.neo4j.kernel.impl.index.schema.SpatialIndexConfig.MIN;
+import static org.neo4j.kernel.impl.index.schema.SpatialIndexConfig.TABLE_ID;
+import static org.neo4j.kernel.impl.index.schema.SpatialIndexConfig.key;
 
 class GenericNativeIndexProviderTest
 {
@@ -53,13 +67,66 @@ class GenericNativeIndexProviderTest
         assertEquals( 0, sinfulIndexConfig.entries().count( p -> true ), "expected sinful index config to have no entries" );
         for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
         {
-            String prefix = SpatialIndexConfig.SPATIAL_CONFIG_PREFIX + "." + crs.getName();
-            assertNotNull( blessedIndexConfig.get( prefix + ".tableId" ) );
-            assertNotNull( blessedIndexConfig.get( prefix + ".code" ) );
-            assertNotNull( blessedIndexConfig.get( prefix + ".dimensions" ) );
-            assertNotNull( blessedIndexConfig.get( prefix + ".maxLevels" ) );
-            assertNotNull( blessedIndexConfig.get( prefix + ".min" ) );
-            assertNotNull( blessedIndexConfig.get( prefix + ".max" ) );
+            assertNotNull( blessedIndexConfig.get( key( crs.getName(), TABLE_ID ) ) );
+            assertNotNull( blessedIndexConfig.get( key( crs.getName(), CODE ) ) );
+            assertNotNull( blessedIndexConfig.get( key( crs.getName(), DIMENSIONS ) ) );
+            assertNotNull( blessedIndexConfig.get( key( crs.getName(), MAX_LEVELS ) ) );
+            assertNotNull( blessedIndexConfig.get( key( crs.getName(), MIN ) ) );
+            assertNotNull( blessedIndexConfig.get( key( crs.getName(), MAX ) ) );
+        }
+    }
+
+    @Test
+    void blessMustNotOverrideExistingSettings() throws MisconfiguredIndexException
+    {
+        // Given
+        GenericNativeIndexProvider provider = new GenericNativeIndexProvider( IndexDirectoryStructure.NONE, null, null, null, null, false, Config.defaults() );
+        Map<String,Value> existingSettings = new HashMap<>();
+        CoordinateReferenceSystem existingCrs = CoordinateReferenceSystem.Cartesian;
+        IntValue tableId = Values.intValue( existingCrs.getTable().getTableId() );
+        IntValue code = Values.intValue( existingCrs.getCode() );
+        IntValue dimension = Values.intValue( existingCrs.getDimension() );
+        IntValue maxLevels = Values.intValue( 0 );
+        DoubleArray min = Values.doubleArray( new double[]{0, 0} );
+        DoubleArray max = Values.doubleArray( new double[]{1, 1} );
+        existingSettings.put( key( existingCrs.getName(), TABLE_ID ), tableId );
+        existingSettings.put( key( existingCrs.getName(), CODE ), code );
+        existingSettings.put( key( existingCrs.getName(), DIMENSIONS ), dimension );
+        existingSettings.put( key( existingCrs.getName(), MAX_LEVELS ), maxLevels );
+        existingSettings.put( key( existingCrs.getName(), MIN ), min );
+        existingSettings.put( key( existingCrs.getName(), MAX ), max );
+        IndexConfig existingIndexConfig = IndexConfig.with( existingSettings );
+        LabelSchemaDescriptor sinfulSchema = SchemaDescriptor.forLabel( 1, 1 ).withIndexConfig( existingIndexConfig );
+        IndexDescriptor sinfulDescriptor = IndexDescriptorFactory.forSchema( sinfulSchema, IndexProviderDescriptor.UNDECIDED );
+
+        // When
+        IndexDescriptor blessesDescriptor = provider.bless( sinfulDescriptor );
+        SchemaDescriptor blessedSchema = blessesDescriptor.schema();
+
+        // Then
+        IndexConfig blessedIndexConfig = blessedSchema.getIndexConfig();
+        for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
+        {
+            if ( crs.equals( existingCrs ) )
+            {
+                // Assert value
+                assertEquals( tableId, blessedIndexConfig.get( key( crs.getName(), TABLE_ID ) ) );
+                assertEquals( code, blessedIndexConfig.get( key( crs.getName(), CODE ) ) );
+                assertEquals( dimension, blessedIndexConfig.get( key( crs.getName(), DIMENSIONS ) ) );
+                assertEquals( maxLevels, blessedIndexConfig.get( key( crs.getName(), MAX_LEVELS ) ) );
+                assertEquals( min, blessedIndexConfig.get( key( crs.getName(), MIN ) ) );
+                assertEquals( max, blessedIndexConfig.get( key( crs.getName(), MAX ) ) );
+            }
+            else
+            {
+                // Simply assert not null
+                assertNotNull( blessedIndexConfig.get( key( crs.getName(), TABLE_ID ) ) );
+                assertNotNull( blessedIndexConfig.get( key( crs.getName(), CODE ) ) );
+                assertNotNull( blessedIndexConfig.get( key( crs.getName(), DIMENSIONS ) ) );
+                assertNotNull( blessedIndexConfig.get( key( crs.getName(), MAX_LEVELS ) ) );
+                assertNotNull( blessedIndexConfig.get( key( crs.getName(), MIN ) ) );
+                assertNotNull( blessedIndexConfig.get( key( crs.getName(), MAX ) ) );
+            }
         }
     }
 }

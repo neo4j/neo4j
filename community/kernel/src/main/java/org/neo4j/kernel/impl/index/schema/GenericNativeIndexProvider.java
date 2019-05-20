@@ -20,9 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.configuration.Config;
@@ -46,7 +43,6 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
-import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsReader;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -154,21 +150,10 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     @Override
     GenericLayout layout( StorageIndexReference descriptor, File storeFile )
     {
-        try
-        {
-            int numberOfSlots = descriptor.schema().getPropertyIds().length;
-            Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings = new HashMap<>();
-            if ( storeFile != null && fs.fileExists( storeFile ) )
-            {
-                // The index file exists and is sane so use it to read header information from.
-                GBPTree.readHeader( pageCache, storeFile, new NativeIndexHeaderReader( new SpaceFillingCurveSettingsReader( settings ) ) );
-            }
-            return new GenericLayout( numberOfSlots, new IndexSpecificSpaceFillingCurveSettingsCache( configuredSettings, settings ) );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+        int numberOfSlots = descriptor.schema().getPropertyIds().length;
+        IndexConfig indexConfig = descriptor.schema().getIndexConfig();
+        Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings = SpatialIndexConfig.extractSpatialConfig( indexConfig );
+        return new GenericLayout( numberOfSlots, new IndexSpecificSpaceFillingCurveSettingsCache( configuredSettings, settings ) );
     }
 
     @Override
