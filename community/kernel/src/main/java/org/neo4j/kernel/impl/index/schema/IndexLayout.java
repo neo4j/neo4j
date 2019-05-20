@@ -24,21 +24,15 @@ import org.neo4j.io.pagecache.PageCursor;
 
 abstract class IndexLayout<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends Layout.Adapter<KEY,VALUE>
 {
-    private final long identifier;
-    private final int majorVersion;
-    private final int minorVersion;
-
     // allows more control of the identifier, needed for legacy reasons for the two number layouts
-    IndexLayout( long identifier, int majorVersion, int minorVersion )
+    IndexLayout( boolean fixedSize, long identifier, int majorVersion, int minorVersion )
     {
-        this.identifier = identifier;
-        this.majorVersion = majorVersion;
-        this.minorVersion = minorVersion;
+        super( fixedSize, identifier, majorVersion, minorVersion );
     }
 
-    IndexLayout( String layoutName, int majorVersion, int minorVersion )
+    IndexLayout( boolean fixedSize, String layoutName, int majorVersion, int minorVersion )
     {
-        this( Layout.namedIdentifier( layoutName, NativeIndexValue.SIZE ), majorVersion, minorVersion );
+        this( fixedSize, Layout.namedIdentifier( layoutName, NativeIndexValue.SIZE ), majorVersion, minorVersion );
     }
 
     @Override
@@ -63,30 +57,6 @@ abstract class IndexLayout<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     public void readValue( PageCursor cursor, NativeIndexValue into, int valueSize )
     {
         // nothing to read
-    }
-
-    @Override
-    public boolean fixedSize()
-    {
-        return true; // for the most case
-    }
-
-    @Override
-    public long identifier()
-    {
-        return identifier;
-    }
-
-    @Override
-    public int majorVersion()
-    {
-        return majorVersion;
-    }
-
-    @Override
-    public int minorVersion()
-    {
-        return minorVersion;
     }
 
     @Override

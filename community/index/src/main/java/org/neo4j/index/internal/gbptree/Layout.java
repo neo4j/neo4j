@@ -214,6 +214,43 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
      */
     abstract class Adapter<KEY, VALUE> implements Layout<KEY,VALUE>
     {
+        private final boolean fixedSize;
+        private final long identifier;
+        private final int majorVersion;
+        private final int minorVersion;
+
+        protected Adapter( boolean fixedSize, long identifier, int majorVersion, int minorVersion )
+        {
+            this.fixedSize = fixedSize;
+            this.identifier = identifier;
+            this.majorVersion = majorVersion;
+            this.minorVersion = minorVersion;
+        }
+
+        @Override
+        public boolean fixedSize()
+        {
+            return fixedSize;
+        }
+
+        @Override
+        public long identifier()
+        {
+            return identifier;
+        }
+
+        @Override
+        public int majorVersion()
+        {
+            return majorVersion;
+        }
+
+        @Override
+        public int minorVersion()
+        {
+            return minorVersion;
+        }
+
         @Override
         public String toString()
         {

@@ -38,6 +38,11 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 class LabelScanLayout extends Layout.Adapter<LabelScanKey,LabelScanValue>
 {
+    LabelScanLayout()
+    {
+        super( true, Layout.namedIdentifier( IDENTIFIER_NAME, LabelScanValue.RANGE_SIZE ), 0, 1 );
+    }
+
     /**
      * Name part of the {@link #identifier()} value.
      */
@@ -127,29 +132,5 @@ class LabelScanLayout extends Layout.Adapter<LabelScanKey,LabelScanValue>
     public void readValue( PageCursor cursor, LabelScanValue into, int valueSize )
     {
         into.bits = cursor.getLong();
-    }
-
-    @Override
-    public boolean fixedSize()
-    {
-        return true;
-    }
-
-    @Override
-    public long identifier()
-    {
-        return Layout.namedIdentifier( IDENTIFIER_NAME, LabelScanValue.RANGE_SIZE );
-    }
-
-    @Override
-    public int majorVersion()
-    {
-        return 0;
-    }
-
-    @Override
-    public int minorVersion()
-    {
-        return 1;
     }
 }

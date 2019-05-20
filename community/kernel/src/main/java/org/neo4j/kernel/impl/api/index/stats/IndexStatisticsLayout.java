@@ -28,6 +28,11 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 class IndexStatisticsLayout extends Layout.Adapter<IndexStatisticsKey,IndexStatisticsValue>
 {
+    IndexStatisticsLayout()
+    {
+        super( true, 556677, 0, 2 );
+    }
+
     @Override
     public IndexStatisticsKey newKey()
     {
@@ -87,30 +92,6 @@ class IndexStatisticsLayout extends Layout.Adapter<IndexStatisticsKey,IndexStati
         into.setSampleSize( cursor.getLong() );
         into.setUpdatesCount( cursor.getLong() );
         into.setIndexSize( cursor.getLong() );
-    }
-
-    @Override
-    public boolean fixedSize()
-    {
-        return true;
-    }
-
-    @Override
-    public long identifier()
-    {
-        return 556677;
-    }
-
-    @Override
-    public int majorVersion()
-    {
-        return 0;
-    }
-
-    @Override
-    public int minorVersion()
-    {
-        return 2;
     }
 
     @Override

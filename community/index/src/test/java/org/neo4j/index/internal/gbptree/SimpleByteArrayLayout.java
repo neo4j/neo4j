@@ -49,6 +49,7 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
 
     private SimpleByteArrayLayout( boolean useFirstLongAsSeed, int largeEntriesSize, long largeEntryModulo )
     {
+        super( false, 666, 0, 0 );
         this.useFirstLongAsSeed = useFirstLongAsSeed;
         this.largeEntriesSize = largeEntriesSize;
         this.largeEntryModulo = largeEntryModulo;
@@ -125,12 +126,6 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
     }
 
     @Override
-    public boolean fixedSize()
-    {
-        return false;
-    }
-
-    @Override
     public void minimalSplitter( RawBytes left, RawBytes right, RawBytes into )
     {
         long leftSeed = keySeed( left );
@@ -156,24 +151,6 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
             int targetLength = firstIndexToDiffer + 1;
             copyKey( right, into, targetLength );
         }
-    }
-
-    @Override
-    public long identifier()
-    {
-        return 666;
-    }
-
-    @Override
-    public int majorVersion()
-    {
-        return 0;
-    }
-
-    @Override
-    public int minorVersion()
-    {
-        return 0;
     }
 
     @Override

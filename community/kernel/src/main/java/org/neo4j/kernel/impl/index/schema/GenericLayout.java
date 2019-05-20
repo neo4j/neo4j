@@ -30,7 +30,7 @@ class GenericLayout extends IndexLayout<GenericKey,NativeIndexValue>
 
     GenericLayout( int numberOfSlots, IndexSpecificSpaceFillingCurveSettings spatialSettings )
     {
-        super( Layout.namedIdentifier( "NSIL", numberOfSlots ), 0, 5 );
+        super( false, Layout.namedIdentifier( "NSIL", numberOfSlots ), 0, 5 );
         this.numberOfSlots = numberOfSlots;
         this.spatialSettings = spatialSettings;
     }
@@ -68,12 +68,6 @@ class GenericLayout extends IndexLayout<GenericKey,NativeIndexValue>
     public void readKey( PageCursor cursor, GenericKey into, int keySize )
     {
         into.get( cursor, keySize );
-    }
-
-    @Override
-    public boolean fixedSize()
-    {
-        return false;
     }
 
     @Override
