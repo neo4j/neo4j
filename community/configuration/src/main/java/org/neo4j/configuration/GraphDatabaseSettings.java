@@ -626,7 +626,7 @@ public class GraphDatabaseSettings implements LoadableConfig
             "native-btree-1.0: All value types and arrays of all value types, even composite keys, are stored in one native index. " +
             "lucene+native-3.0: Like native-btree-1.0 but single property strings are stored in Lucene. " +
             "A native index has faster updates, less heap and CPU usage compared to a Lucene index. " +
-            "A native index has some limitations around key size and reduced performance of CONTAINS and ENDS WITH string index queries, " +
+            "A native index has some limitations around key size and slower execution of CONTAINS and ENDS WITH string index queries, " +
             "compared to a Lucene index. " +
             "A more detailed description about the different index providers can be found in documentation." )
     public static final Setting<String> default_schema_provider = setting( "dbms.index.default_schema_provider", STRING, NATIVE_BTREE10.providerName() );
