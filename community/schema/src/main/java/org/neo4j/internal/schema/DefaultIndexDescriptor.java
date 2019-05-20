@@ -56,12 +56,13 @@ public class DefaultIndexDescriptor implements IndexDescriptor
 
     protected DefaultIndexDescriptor( DefaultIndexDescriptor descriptor )
     {
-        this.schema = descriptor.schema;
-        this.providerKey = descriptor.providerKey;
-        this.providerVersion = descriptor.providerVersion;
-        this.name = descriptor.name;
-        this.isUnique = descriptor.isUnique;
-        this.isEventuallyConsistent = descriptor.isEventuallyConsistent;
+        this( descriptor.schema,
+                descriptor.providerKey,
+                descriptor.providerVersion,
+                descriptor.name,
+                descriptor.isUnique,
+                descriptor.isEventuallyConsistent
+        );
     }
 
     public DefaultIndexDescriptor( SchemaDescriptor schema, boolean isUnique )
