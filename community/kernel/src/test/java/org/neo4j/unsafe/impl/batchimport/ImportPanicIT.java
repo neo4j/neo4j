@@ -91,7 +91,7 @@ public class ImportPanicIT
                     datas(), defaultFormatRelationshipFileHeader(),
                     IdType.ACTUAL,
                     csvConfigurationWithLowBufferSize(),
-                    new BadCollector( NullOutputStream.NULL_OUTPUT_STREAM, 0, 0 ) );
+                    new BadCollector( NullOutputStream.NULL_OUTPUT_STREAM, 0, 0 ), CsvInput.NO_MONITOR );
             importer.doImport( brokenCsvInput );
             fail( "Should have failed properly" );
         }
