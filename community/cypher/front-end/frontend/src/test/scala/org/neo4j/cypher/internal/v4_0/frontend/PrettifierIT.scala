@@ -243,6 +243,18 @@ class PrettifierIT extends CypherFunSuite {
       "drop role `ab%$c`" ->
         "CATALOG DROP ROLE `ab%$c`",
 
+      "grant role abc to xyz" ->
+        "CATALOG GRANT ROLE abc TO xyz",
+
+      "grant role `ab%$c` to `x%^yz`" ->
+        "CATALOG GRANT ROLE `ab%$c` TO `x%^yz`",
+
+      "revoke role abc from xyz" ->
+        "CATALOG REVOKE ROLE abc FROM xyz",
+
+      "revoke role `ab%$c` from `x%^yz`" ->
+        "CATALOG REVOKE ROLE `ab%$c` FROM `x%^yz`",
+
       "show privileges" ->
         "CATALOG SHOW ALL PRIVILEGES",
 

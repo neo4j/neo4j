@@ -75,6 +75,10 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
       case GrantRolesToUsers(roleNames, userNames) =>
         Some(plans.GrantRolesToUsers(roleNames, userNames))
 
+      // REVOKE roles FROM users
+      case RevokeRolesFromUsers(roleNames, userNames) =>
+        Some(plans.RevokeRolesFromUsers(roleNames, userNames))
+
       // GRANT TRAVERSE ON GRAPH foo NODES A (*) TO role
       case GrantTraverse(database, label, roleName) =>
         Some(plans.GrantTraverse(database, label, roleName))

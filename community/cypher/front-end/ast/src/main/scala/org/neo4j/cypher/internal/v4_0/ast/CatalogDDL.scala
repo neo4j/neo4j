@@ -127,6 +127,15 @@ final case class GrantRolesToUsers(roleNames: Seq[String], userNames: Seq[String
       SemanticState.recordCurrentScope(this)
 }
 
+final case class RevokeRolesFromUsers(roleNames: Seq[String], userNames: Seq[String])(val position: InputPosition) extends MultiDatabaseDDL {
+
+  override def name = "CATALOG REVOKE ROLE"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
 sealed trait ActionResource
 
 final case class PropertyResource(property: String)(val position: InputPosition) extends ActionResource

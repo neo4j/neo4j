@@ -68,6 +68,7 @@ case class ShowRoles(withUsers: Boolean, showAll: Boolean)(implicit idGen: IdGen
 case class CreateRole(roleName: String, from: Option[String])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
 case class DropRole(roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
 case class GrantRolesToUsers(roleNames: Seq[String], userNames: Seq[String])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
+case class RevokeRolesFromUsers(roleNames: Seq[String], userNames: Seq[String])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
 case class GrantTraverse(database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
 case class GrantRead(resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
 case class ShowPrivileges(scope: ShowPrivilegeScope)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)

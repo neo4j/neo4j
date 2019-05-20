@@ -185,6 +185,11 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val users = userNames.map(Prettifier.escapeName).map(User)
         PlanDescriptionImpl(id, "GrantRolesToUsers", NoChildren, roles ++ users, variables)
 
+      case RevokeRolesFromUsers(roleNames, userNames) =>
+        val roles = roleNames.map(Prettifier.escapeName).map(Role)
+        val users = userNames.map(Prettifier.escapeName).map(User)
+        PlanDescriptionImpl(id, "RevokeRolesFromUsers", NoChildren, roles ++ users, variables)
+
       case GrantTraverse(database, qualifier, roleName) =>
         val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
         PlanDescriptionImpl(id, "GrantTraverse", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)

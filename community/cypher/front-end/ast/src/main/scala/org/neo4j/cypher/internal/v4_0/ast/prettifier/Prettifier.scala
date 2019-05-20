@@ -109,6 +109,9 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case x @ GrantRolesToUsers(roleNames, userNames) =>
       s"${x.name} ${roleNames.map(Prettifier.escapeName).mkString("," )} TO ${userNames.map(Prettifier.escapeName).mkString(", ")}"
 
+    case x @ RevokeRolesFromUsers(roleNames, userNames) =>
+      s"${x.name} ${roleNames.map(Prettifier.escapeName).mkString("," )} FROM ${userNames.map(Prettifier.escapeName).mkString(", ")}"
+
     case x @ GrantTraverse(dbScope, qualifier, roleName) =>
       val (dbName, label) = Prettifier.extractScope(dbScope, qualifier)
       s"${x.name} ON GRAPH $dbName NODES $label (*) TO ${Prettifier.escapeName(roleName)}"

@@ -255,6 +255,70 @@ class SecurityDDLParserTest
     yields(ast.DropRole("foo"))
   }
 
+  test("CATALOG GRANT ROLE foo TO abc") {
+    yields(ast.GrantRolesToUsers(Seq("foo"), Seq("abc")))
+  }
+
+  test("GRANT ROLE foo TO abc") {
+    yields(ast.GrantRolesToUsers(Seq("foo"), Seq("abc")))
+  }
+
+  test("GRANT ROLES foo TO abc") {
+    yields(ast.GrantRolesToUsers(Seq("foo"), Seq("abc")))
+  }
+
+  test("GRANT ROLES `$f00`,bar TO abc,`$a&c`") {
+    yields(ast.GrantRolesToUsers(Seq("$f00", "bar"), Seq("abc", "$a&c")))
+  }
+
+  test("GRANT ROLES $f00 TO abc") {
+    failsToParse
+  }
+
+  test("GRANT ROLES foo") {
+    failsToParse
+  }
+
+  test("GRANT ROLES foo TO") {
+    failsToParse
+  }
+
+  test("GRANT ROLES foo FROM abc") {
+    failsToParse
+  }
+
+  test("CATALOG REVOKE ROLE foo FROM abc") {
+    yields(ast.RevokeRolesFromUsers(Seq("foo"), Seq("abc")))
+  }
+
+  test("REVOKE ROLE foo FROM abc") {
+    yields(ast.RevokeRolesFromUsers(Seq("foo"), Seq("abc")))
+  }
+
+  test("REVOKE ROLES foo FROM abc") {
+    yields(ast.RevokeRolesFromUsers(Seq("foo"), Seq("abc")))
+  }
+
+  test("REVOKE ROLES `$f00`,bar FROM abc,`$a&c`") {
+    yields(ast.RevokeRolesFromUsers(Seq("$f00", "bar"), Seq("abc", "$a&c")))
+  }
+
+  test("REVOKE ROLES $f00 FROM abc") {
+    failsToParse
+  }
+
+  test("REVOKE ROLES foo") {
+    failsToParse
+  }
+
+  test("REVOKE ROLES foo FROM") {
+    failsToParse
+  }
+
+  test("REVOKE ROLES foo TO abc") {
+    failsToParse
+  }
+
   test("SHOW PRIVILEGES") {
     yields(ast.ShowPrivileges(ast.ShowAllPrivileges() _))
   }
