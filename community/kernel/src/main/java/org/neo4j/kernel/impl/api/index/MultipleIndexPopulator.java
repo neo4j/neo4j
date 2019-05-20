@@ -35,8 +35,8 @@ import java.util.stream.IntStream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.helpers.collection.Pair;
-import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.SchemaDescriptor;

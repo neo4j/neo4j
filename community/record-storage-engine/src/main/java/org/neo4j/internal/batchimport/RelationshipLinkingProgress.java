@@ -27,7 +27,7 @@ import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.Stat;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 
-import static org.neo4j.helpers.ArrayUtil.array;
+import static org.neo4j.internal.helpers.ArrayUtil.array;
 
 /**
  * Able to provide {@link Keys#progress}. Mutable and thread-safe, use {@link #add(long)} to move progress forwards.

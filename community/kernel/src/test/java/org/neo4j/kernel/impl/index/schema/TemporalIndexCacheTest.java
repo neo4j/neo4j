@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.test.Race;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -38,7 +38,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.values.storable.ValueGroup.DATE;
 import static org.neo4j.values.storable.ValueGroup.DURATION;
 import static org.neo4j.values.storable.ValueGroup.LOCAL_DATE_TIME;

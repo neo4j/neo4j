@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.{compiler, _}
 import org.neo4j.cypher.{CypherPlannerOption, CypherUpdateStrategy}
-import org.neo4j.helpers.collection.Pair
+import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.Log
 import org.neo4j.monitoring.Monitors

@@ -22,12 +22,12 @@ package org.neo4j.internal.batchimport;
 import java.util.Arrays;
 import java.util.Iterator;
 
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.batchimport.staging.PullingProducerStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
-import static org.neo4j.helpers.collection.Iterators.prefetching;
+import static org.neo4j.internal.helpers.collection.Iterators.prefetching;
 
 /**
  * Reads {@link RelationshipGroupRecord group records} from {@link RelationshipGroupCache}, sending

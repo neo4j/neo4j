@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.values.AnyValue;
 
 import static org.hamcrest.MatcherAssert.assertThat;

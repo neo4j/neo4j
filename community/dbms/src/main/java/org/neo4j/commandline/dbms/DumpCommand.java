@@ -44,7 +44,7 @@ import static java.lang.String.format;
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.LayoutConfig.of;
-import static org.neo4j.helpers.Strings.joinAsLines;
+import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 
 public class DumpCommand implements AdminCommand

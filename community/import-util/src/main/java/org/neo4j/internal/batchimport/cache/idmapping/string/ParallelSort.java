@@ -25,11 +25,11 @@ import org.eclipse.collections.impl.stack.mutable.primitive.LongArrayStack;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.internal.batchimport.Utils;
 import org.neo4j.internal.batchimport.cache.LongArray;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 
-import static org.neo4j.helpers.Numbers.safeCastLongToInt;
+import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 
 /**
  * Sorts input data by dividing up into chunks and sort each chunk in parallel. Each chunk is sorted

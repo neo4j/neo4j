@@ -49,7 +49,7 @@ import org.neo4j.server.http.cypher.TransactionStateChecker;
 import org.neo4j.server.http.cypher.TransitionalPeriodTransactionMessContainer;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.helpers.collection.MapUtil.genericMap;
+import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 
 public class Neo4jJsonCodec extends ObjectMapper
 {

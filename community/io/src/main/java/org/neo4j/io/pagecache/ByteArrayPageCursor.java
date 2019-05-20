@@ -23,7 +23,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.neo4j.helpers.Exceptions;
+import org.neo4j.internal.helpers.Exceptions;
 
 /**
  * Wraps a byte array and present it as a PageCursor.

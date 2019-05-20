@@ -28,7 +28,6 @@ import java.util.function.LongFunction;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.function.Factory;
-import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.internal.batchimport.HighestId;
 import org.neo4j.internal.batchimport.Utils;
 import org.neo4j.internal.batchimport.cache.ByteArray;
@@ -42,6 +41,7 @@ import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;

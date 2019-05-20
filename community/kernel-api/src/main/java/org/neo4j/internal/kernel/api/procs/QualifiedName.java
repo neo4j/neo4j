@@ -22,7 +22,7 @@ package org.neo4j.internal.kernel.api.procs;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterables;
 
 import static java.util.Arrays.asList;
 

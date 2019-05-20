@@ -22,8 +22,8 @@ package org.neo4j.configuration.connectors;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.internal.helpers.HostnamePort;
+import org.neo4j.internal.helpers.ListenSocketAddress;
 
 /**
  * Connector tracker that keeps information about local address that any configured connector get during bootstrapping.

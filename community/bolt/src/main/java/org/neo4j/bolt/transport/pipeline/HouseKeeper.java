@@ -24,7 +24,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.EventExecutorGroup;
 
 import org.neo4j.bolt.runtime.BoltConnection;
-import org.neo4j.helpers.Exceptions;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.logging.Log;
 
 public class HouseKeeper extends ChannelInboundHandlerAdapter

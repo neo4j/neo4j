@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.List;
 
 import static java.util.Collections.emptyList;
-import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.internal.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 public class NodeRecord extends PrimitiveRecord

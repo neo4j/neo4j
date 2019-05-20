@@ -81,8 +81,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
-import static org.neo4j.helpers.ArrayUtil.single;
-import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.internal.helpers.ArrayUtil.single;
+import static org.neo4j.internal.helpers.collection.Iterables.filter;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 /**

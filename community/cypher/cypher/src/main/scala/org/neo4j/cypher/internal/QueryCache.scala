@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal
 
 import com.github.benmanes.caffeine.cache.{Cache, Caffeine}
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
-import org.neo4j.helpers.collection.Pair
+import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 

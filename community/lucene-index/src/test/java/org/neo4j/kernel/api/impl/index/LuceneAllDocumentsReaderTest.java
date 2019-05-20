@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

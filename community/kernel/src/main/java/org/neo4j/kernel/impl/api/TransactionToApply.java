@@ -24,7 +24,7 @@ import java.util.Iterator;
 import java.util.function.LongConsumer;
 
 import org.neo4j.common.HexPrinter;
-import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -35,7 +35,7 @@ import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
-import static org.neo4j.helpers.Format.date;
+import static org.neo4j.internal.helpers.Format.date;
 
 /**
  * A chain of transactions to apply. Transactions form a linked list, each pointing to the {@link #next()}

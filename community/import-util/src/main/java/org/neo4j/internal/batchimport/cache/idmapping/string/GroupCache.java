@@ -23,10 +23,10 @@ import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.input.Group;
 
-import static org.neo4j.helpers.Numbers.safeCastIntToUnsignedByte;
-import static org.neo4j.helpers.Numbers.safeCastIntToUnsignedShort;
-import static org.neo4j.helpers.Numbers.unsignedByteToInt;
-import static org.neo4j.helpers.Numbers.unsignedShortToInt;
+import static org.neo4j.internal.helpers.Numbers.safeCastIntToUnsignedByte;
+import static org.neo4j.internal.helpers.Numbers.safeCastIntToUnsignedShort;
+import static org.neo4j.internal.helpers.Numbers.unsignedByteToInt;
+import static org.neo4j.internal.helpers.Numbers.unsignedShortToInt;
 
 /**
  * Cache for keeping nodeId --> groupId mapping.

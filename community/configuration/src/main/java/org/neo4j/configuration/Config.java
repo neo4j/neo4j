@@ -64,7 +64,7 @@ import static org.neo4j.configuration.connectors.Connector.ConnectorType.BOLT;
 import static org.neo4j.configuration.connectors.Connector.ConnectorType.HTTP;
 import static org.neo4j.configuration.connectors.HttpConnector.Encryption.NONE;
 import static org.neo4j.configuration.connectors.HttpConnector.Encryption.TLS;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 /**
  * This class holds the overall configuration of a Neo4j database instance. Use the accessors to convert the internal

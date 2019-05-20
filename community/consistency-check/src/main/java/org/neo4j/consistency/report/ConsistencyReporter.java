@@ -51,7 +51,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.helpers.Exceptions.stringify;
+import static org.neo4j.internal.helpers.Exceptions.stringify;
 
 public class ConsistencyReporter implements ConsistencyReport.Reporter
 {

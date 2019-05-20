@@ -26,13 +26,13 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
 
-import org.neo4j.helpers.collection.Pair;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.stats.Key;
 import org.neo4j.internal.batchimport.stats.Stat;
+import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 
-import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
+import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 
 /**
  * Default implementation of {@link StageControl}

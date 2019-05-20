@@ -25,15 +25,15 @@ import org.mockito.InOrder;
 
 import java.io.IOException;
 
-import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.internal.batchimport.input.csv.Decorator;
+import org.neo4j.internal.helpers.ArrayUtil;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 
 class InputEntityDecoratorsTest
 {

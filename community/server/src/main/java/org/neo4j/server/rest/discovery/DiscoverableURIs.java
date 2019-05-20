@@ -32,7 +32,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.internal.helpers.AdvertisedSocketAddress;
 
 import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.HIGH;
 import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.HIGHEST;

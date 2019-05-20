@@ -24,8 +24,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.LimitingResourceIterable;
+import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.LimitingResourceIterable;
 
 public abstract class TraversalPathFinder implements PathFinder<Path>
 {

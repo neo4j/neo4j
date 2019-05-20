@@ -24,7 +24,7 @@ import java.net.SocketAddress;
 
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 
-import static org.neo4j.helpers.SocketAddress.format;
+import static org.neo4j.internal.helpers.SocketAddress.format;
 
 /**
  * @see ClientConnectionInfo Parent class for documentation and tests.

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.neo4j.helpers.collection.LruCache;
+import org.neo4j.internal.helpers.collection.LruCache;
 
 public class LogHeaderCache
 {

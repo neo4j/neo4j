@@ -34,12 +34,12 @@ import org.neo4j.commandline.dbms.config.WrappedBatchImporterConfigurationForNeo
 import org.neo4j.commandline.dbms.config.WrappedCsvInputConfigurationForNeo4jAdmin;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.helpers.Args;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.input.BadCollector;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.csv.CsvInput;
+import org.neo4j.internal.helpers.Args;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.tooling.ImportTool;

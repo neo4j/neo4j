@@ -65,8 +65,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.helpers.collection.Iterables.addAll;
-import static org.neo4j.helpers.collection.Iterables.append;
+import static org.neo4j.internal.helpers.collection.Iterables.addAll;
+import static org.neo4j.internal.helpers.collection.Iterables.append;
 import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
 
 public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder

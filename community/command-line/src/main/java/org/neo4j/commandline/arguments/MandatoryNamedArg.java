@@ -21,7 +21,7 @@ package org.neo4j.commandline.arguments;
 
 import java.util.Collection;
 
-import org.neo4j.helpers.Args;
+import org.neo4j.internal.helpers.Args;
 
 import static org.neo4j.kernel.impl.util.Converters.identity;
 import static org.neo4j.kernel.impl.util.Converters.mandatory;

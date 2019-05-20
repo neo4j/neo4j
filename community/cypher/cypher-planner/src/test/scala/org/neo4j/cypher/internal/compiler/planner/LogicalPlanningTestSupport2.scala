@@ -46,7 +46,7 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.{Attribute, Attributes}
 import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Cost, PropertyKeyId}
-import org.neo4j.helpers.collection.Visitable
+import org.neo4j.internal.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 import org.scalatest.matchers.{BeMatcher, MatchResult}
 

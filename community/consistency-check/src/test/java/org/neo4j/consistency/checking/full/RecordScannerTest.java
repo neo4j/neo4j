@@ -23,9 +23,9 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.statistics.Statistics;
-import org.neo4j.helpers.collection.BoundedIterable;
-import org.neo4j.helpers.progress.ProgressListener;
-import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.internal.helpers.collection.BoundedIterable;
+import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 
 import static java.util.Arrays.asList;
 import static org.mockito.ArgumentMatchers.anyLong;

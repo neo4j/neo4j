@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.runtime.{ExecutionMode, ExplainMode, InternalQu
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, ResourceIterator}
-import org.neo4j.helpers.collection.Iterators
+import org.neo4j.internal.helpers.collection.Iterators
 
 abstract class EmptyExecutionResult(val fieldNames: Array[String],
                                     val planDescription: InternalPlanDescription,

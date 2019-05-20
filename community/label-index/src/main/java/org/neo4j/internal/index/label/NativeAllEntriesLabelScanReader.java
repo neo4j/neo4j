@@ -28,10 +28,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.IntFunction;
 
-import org.neo4j.helpers.collection.BoundedIterable;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
+import org.neo4j.internal.helpers.collection.BoundedIterable;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 
 import static java.lang.Long.min;
 import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;

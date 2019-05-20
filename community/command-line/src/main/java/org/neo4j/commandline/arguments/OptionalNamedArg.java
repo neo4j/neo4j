@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import org.neo4j.helpers.Args;
+import org.neo4j.internal.helpers.Args;
 
 import static org.neo4j.kernel.impl.util.Converters.identity;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;

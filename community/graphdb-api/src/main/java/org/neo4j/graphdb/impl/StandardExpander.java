@@ -39,15 +39,15 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.traversal.BranchState;
-import org.neo4j.helpers.collection.ArrayIterator;
-import org.neo4j.helpers.collection.FilteringIterator;
-import org.neo4j.helpers.collection.MappingResourceIterator;
-import org.neo4j.helpers.collection.NestingResourceIterator;
+import org.neo4j.internal.helpers.collection.ArrayIterator;
+import org.neo4j.internal.helpers.collection.FilteringIterator;
+import org.neo4j.internal.helpers.collection.MappingResourceIterator;
+import org.neo4j.internal.helpers.collection.NestingResourceIterator;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.graphdb.traversal.Paths.singleNodePath;
-import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
-import static org.neo4j.helpers.collection.ResourceClosingIterator.newResourceIterator;
+import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
+import static org.neo4j.internal.helpers.collection.ResourceClosingIterator.newResourceIterator;
 
 public abstract class StandardExpander implements PathExpander
 {

@@ -35,8 +35,8 @@ import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
-import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.internal.helpers.HostnamePort;
+import org.neo4j.internal.helpers.collection.MapUtil;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;

@@ -35,7 +35,7 @@ import java.util.TreeMap;
 import javax.annotation.Nullable;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -60,7 +60,7 @@ import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 
-import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.internal.helpers.collection.Iterables.map;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**

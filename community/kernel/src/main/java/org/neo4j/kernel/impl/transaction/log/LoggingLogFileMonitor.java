@@ -28,7 +28,7 @@ import org.neo4j.kernel.recovery.RecoveryStartInformationProvider;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
-import static org.neo4j.helpers.Format.duration;
+import static org.neo4j.internal.helpers.Format.duration;
 
 public class LoggingLogFileMonitor implements LogFileCreationMonitor, RecoveryMonitor,
         RecoveryStartInformationProvider.Monitor

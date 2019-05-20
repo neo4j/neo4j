@@ -30,7 +30,7 @@ import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.{CypherException, CypherExecutionException}
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, ResourceIterator, Result}
-import org.neo4j.helpers.collection.Iterators
+import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor

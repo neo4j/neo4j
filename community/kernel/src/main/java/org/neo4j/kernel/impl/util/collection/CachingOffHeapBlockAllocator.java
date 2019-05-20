@@ -29,8 +29,8 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.util.VisibleForTesting;
 
-import static org.neo4j.helpers.Numbers.isPowerOfTwo;
-import static org.neo4j.helpers.Numbers.log2floor;
+import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
+import static org.neo4j.internal.helpers.Numbers.log2floor;
 import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.util.Preconditions.requirePositive;
 import static org.neo4j.util.Preconditions.requirePowerOfTwo;

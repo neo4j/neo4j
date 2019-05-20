@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.coreapi.schema;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterables;
 
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;

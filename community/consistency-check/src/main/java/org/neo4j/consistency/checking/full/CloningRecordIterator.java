@@ -22,7 +22,7 @@ package org.neo4j.consistency.checking.full;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.Resource;
-import org.neo4j.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 public class CloningRecordIterator<R extends AbstractBaseRecord> extends PrefetchingResourceIterator<R>

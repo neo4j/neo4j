@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.string.UTF8;

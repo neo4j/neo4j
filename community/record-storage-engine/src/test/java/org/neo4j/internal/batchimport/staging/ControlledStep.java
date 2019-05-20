@@ -24,13 +24,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.batchimport.stats.DetailLevel;
 import org.neo4j.internal.batchimport.stats.Key;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.Stat;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.internal.batchimport.stats.StepStats;
+import org.neo4j.internal.helpers.collection.MapUtil;
 
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;

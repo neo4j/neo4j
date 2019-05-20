@@ -24,8 +24,8 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
-import org.neo4j.helpers.Format;
-import org.neo4j.helpers.Listeners;
+import org.neo4j.internal.helpers.Format;
+import org.neo4j.internal.helpers.Listeners;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;

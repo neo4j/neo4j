@@ -68,8 +68,8 @@ import static java.lang.Long.max;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.function.Predicates.alwaysTrue;
-import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.auto;
+import static org.neo4j.internal.helpers.Format.duration;
 import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.io.IOUtils.closeAll;
 

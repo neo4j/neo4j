@@ -27,7 +27,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 
 import org.neo4j.common.HexPrinter;
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.internal.helpers.HostnamePort;
 
 public class SocketConnection implements TransportConnection
 {

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.recovery;
 
-import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 
 /**

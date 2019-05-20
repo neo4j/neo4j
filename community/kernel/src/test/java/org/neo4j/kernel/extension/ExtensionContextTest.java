@@ -44,7 +44,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.helpers.collection.Iterables.iterable;
+import static org.neo4j.internal.helpers.collection.Iterables.iterable;
 
 @ExtendWith( TestDirectoryExtension.class )
 class ExtensionContextTest

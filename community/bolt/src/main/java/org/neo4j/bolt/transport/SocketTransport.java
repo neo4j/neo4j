@@ -25,7 +25,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.handler.ssl.SslContext;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.internal.helpers.ListenSocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.logging.LogProvider;
 

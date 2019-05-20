@@ -28,7 +28,7 @@ import org.neo4j.function.Predicates;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.neo4j.helpers.collection.Iterables.asArray;
+import static org.neo4j.internal.helpers.collection.Iterables.asArray;
 
 public class IndexSamplingJobQueueTest
 {

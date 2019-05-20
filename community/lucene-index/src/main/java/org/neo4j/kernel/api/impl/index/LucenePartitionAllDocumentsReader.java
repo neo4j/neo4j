@@ -32,8 +32,8 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.helpers.collection.BoundedIterable;
-import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.internal.helpers.collection.BoundedIterable;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 
 /**
  * Provides a view of all {@link Document}s in a single partition.

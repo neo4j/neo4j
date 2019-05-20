@@ -38,8 +38,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.function.Factory;
-import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.Strings;
+import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.internal.helpers.Strings;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;

@@ -36,7 +36,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
-import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 public abstract class AuthorizationFilter implements Filter
 {

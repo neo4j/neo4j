@@ -32,12 +32,12 @@ import java.util.Map;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.helpers.PortBindException;
+import org.neo4j.internal.helpers.ListenSocketAddress;
+import org.neo4j.internal.helpers.NamedThreadFactory;
+import org.neo4j.internal.helpers.PortBindException;
 import org.neo4j.logging.NullLog;
 
-import static org.neo4j.helpers.collection.MapUtil.genericMap;
+import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 
 public class NettyServerTest
 {

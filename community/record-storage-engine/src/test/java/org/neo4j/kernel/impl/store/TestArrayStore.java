@@ -30,7 +30,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;

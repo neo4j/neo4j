@@ -31,7 +31,7 @@ import org.neo4j.util.concurrent.AsyncEvent;
 import org.neo4j.util.concurrent.AsyncEvents;
 
 import static java.lang.String.format;
-import static org.neo4j.helpers.Exceptions.withMessage;
+import static org.neo4j.internal.helpers.Exceptions.withMessage;
 
 public class BadCollector implements Collector
 {

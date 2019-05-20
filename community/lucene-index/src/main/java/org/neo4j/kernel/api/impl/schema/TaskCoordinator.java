@@ -23,9 +23,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.neo4j.function.Factory;
-import org.neo4j.helpers.Cancelable;
-import org.neo4j.helpers.CancellationRequest;
-import org.neo4j.helpers.TaskControl;
+import org.neo4j.internal.helpers.Cancelable;
+import org.neo4j.internal.helpers.CancellationRequest;
+import org.neo4j.internal.helpers.TaskControl;
 
 /**
  * Represents a collection point for various {@link TaskControl} instances that need to be waited on and potentially

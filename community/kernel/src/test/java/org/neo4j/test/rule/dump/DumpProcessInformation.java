@@ -28,14 +28,14 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.neo4j.helpers.Args;
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.helpers.Args;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.hamcrest.Matchers.isIn;
-import static org.neo4j.helpers.Format.time;
+import static org.neo4j.internal.helpers.Format.time;
 
 public class DumpProcessInformation
 {

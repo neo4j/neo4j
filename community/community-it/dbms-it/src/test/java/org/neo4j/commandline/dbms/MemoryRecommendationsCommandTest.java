@@ -79,9 +79,9 @@ import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provi
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.Settings.BYTES;
 import static org.neo4j.configuration.Settings.buildSetting;
-import static org.neo4j.helpers.collection.MapUtil.load;
-import static org.neo4j.helpers.collection.MapUtil.store;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.internal.helpers.collection.MapUtil.load;
+import static org.neo4j.internal.helpers.collection.MapUtil.store;
+import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.exbiBytes;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;

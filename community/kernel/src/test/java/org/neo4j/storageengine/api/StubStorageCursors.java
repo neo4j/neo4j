@@ -41,7 +41,7 @@ import static java.lang.Math.toIntExact;
 import static java.util.Collections.emptyIterator;
 import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.helpers.collection.MapUtil.genericMap;
+import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
 
 /**

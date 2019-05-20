@@ -30,7 +30,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.genericMap;
+import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public class CursorPropertyAccessorTest

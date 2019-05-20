@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.graphdb.index.IndexPopulationProgress;
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.helpers.collection.Pair;
 
 import static java.lang.String.format;
 

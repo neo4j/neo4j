@@ -22,7 +22,7 @@ package org.neo4j.internal.recordstorage;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.util.IntCounter;
 import org.neo4j.util.LocalIntCounter;
 

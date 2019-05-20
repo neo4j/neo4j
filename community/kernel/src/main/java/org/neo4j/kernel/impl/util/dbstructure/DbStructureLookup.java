@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.util.dbstructure;
 
 import java.util.Iterator;
 
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.helpers.collection.Pair;
 
 public interface DbStructureLookup
 {

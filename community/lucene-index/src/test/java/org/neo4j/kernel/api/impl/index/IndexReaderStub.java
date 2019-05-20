@@ -46,7 +46,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.internal.helpers.collection.MapUtil;
 
 public class IndexReaderStub extends LeafReader
 {

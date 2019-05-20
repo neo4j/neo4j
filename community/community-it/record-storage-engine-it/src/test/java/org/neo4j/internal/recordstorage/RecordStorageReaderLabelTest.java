@@ -28,7 +28,7 @@ import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.new
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 /**
  * Test read access to committed label data.

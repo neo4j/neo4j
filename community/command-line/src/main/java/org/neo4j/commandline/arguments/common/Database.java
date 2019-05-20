@@ -24,7 +24,7 @@ import java.io.File;
 
 import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.helpers.Args;
+import org.neo4j.internal.helpers.Args;
 
 public class Database extends OptionalNamedArg
 {

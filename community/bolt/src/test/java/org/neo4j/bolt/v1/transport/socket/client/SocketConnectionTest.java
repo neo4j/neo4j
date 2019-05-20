@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
 
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.internal.helpers.HostnamePort;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;

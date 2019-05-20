@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.index.NodeValueIndexProgressor;
 
 import static org.neo4j.collection.PrimitiveLongResourceCollections.iterator;
 import static org.neo4j.graphdb.Resource.EMPTY;
-import static org.neo4j.helpers.collection.Iterators.array;
+import static org.neo4j.internal.helpers.collection.Iterators.array;
 
 public class NodeIdsIndexReaderQueryAnswer implements Answer
 {

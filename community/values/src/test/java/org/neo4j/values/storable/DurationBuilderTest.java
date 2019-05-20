@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.helpers.collection.MapUtil.entry;
+import static org.neo4j.internal.helpers.collection.MapUtil.entry;
 import static org.neo4j.values.storable.DurationValue.build;
 import static org.neo4j.values.storable.DurationValue.parse;
 import static org.neo4j.values.storable.Values.of;

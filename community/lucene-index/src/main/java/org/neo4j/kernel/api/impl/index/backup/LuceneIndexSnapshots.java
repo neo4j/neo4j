@@ -32,9 +32,9 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterables;
 
-import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
+import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
 
 /**
  * Create iterators over Lucene index files for a particular {@link IndexCommit index commit}.

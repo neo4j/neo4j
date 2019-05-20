@@ -48,7 +48,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.neo4j.helpers.Numbers.safeCastLongToInt;
+import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.ShortArray.LONG;

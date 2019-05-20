@@ -22,7 +22,7 @@ package org.neo4j.internal.batchimport.cache;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.memory.MemoryAllocationTracker;
 
-import static org.neo4j.helpers.Numbers.isPowerOfTwo;
+import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
 
 public abstract class OffHeapNumberArray<N extends NumberArray<N>> extends BaseNumberArray<N>
 {

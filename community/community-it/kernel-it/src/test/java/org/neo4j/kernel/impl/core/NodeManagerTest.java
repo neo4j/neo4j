@@ -40,7 +40,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.helpers.collection.Iterators.addToCollection;
+import static org.neo4j.internal.helpers.collection.Iterators.addToCollection;
 
 public class NodeManagerTest
 {

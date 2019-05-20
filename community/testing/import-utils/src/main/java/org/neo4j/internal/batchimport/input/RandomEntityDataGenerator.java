@@ -21,7 +21,6 @@ package org.neo4j.internal.batchimport.input;
 
 import java.util.List;
 
-import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.internal.batchimport.GeneratingInputIterator;
 import org.neo4j.internal.batchimport.InputIterator;
 import org.neo4j.internal.batchimport.RandomsStates;
@@ -29,6 +28,7 @@ import org.neo4j.internal.batchimport.input.csv.Deserialization;
 import org.neo4j.internal.batchimport.input.csv.Header;
 import org.neo4j.internal.batchimport.input.csv.Header.Entry;
 import org.neo4j.internal.batchimport.input.csv.Type;
+import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.values.storable.RandomValues;
 
 import static java.lang.Integer.min;

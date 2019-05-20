@@ -22,8 +22,8 @@ package org.neo4j.values.storable;
 import java.util.Objects;
 
 import org.neo4j.graphdb.spatial.CRS;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.values.utils.InvalidValuesArgumentException;
-import org.neo4j.helpers.collection.Iterables;
 
 public class CoordinateReferenceSystem implements CRS
 {

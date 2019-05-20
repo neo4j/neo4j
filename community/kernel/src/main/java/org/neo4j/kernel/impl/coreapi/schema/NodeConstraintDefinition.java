@@ -27,7 +27,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl.labelNameList;
 
 abstract class NodeConstraintDefinition extends MultiPropertyConstraintDefinition

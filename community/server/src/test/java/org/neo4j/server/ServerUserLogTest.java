@@ -47,9 +47,9 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
@@ -61,7 +61,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.store_user_log_max_a
 import static org.neo4j.configuration.GraphDatabaseSettings.store_user_log_rotation_delay;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_user_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_user_log_to_stdout;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerBootstrapper.OK;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )

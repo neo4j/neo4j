@@ -33,7 +33,7 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.function.Predicates;
-import org.neo4j.helpers.Exceptions;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -44,7 +44,7 @@ import org.neo4j.util.FeatureToggles;
 import static java.lang.Integer.min;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
-import static org.neo4j.helpers.NamedThreadFactory.daemon;
+import static org.neo4j.internal.helpers.NamedThreadFactory.daemon;
 
 /**
  * A {@link MultipleIndexPopulator} that gathers all incoming updates from the {@link IndexStoreView} in batches of

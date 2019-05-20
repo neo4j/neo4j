@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.result;
 
-import org.neo4j.helpers.MathUtil;
+import org.neo4j.internal.helpers.MathUtil;
 
 /**
  * Profile for a operator during a query execution.

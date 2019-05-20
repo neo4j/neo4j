@@ -44,7 +44,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.Exceptions.rootCause;
+import static org.neo4j.internal.helpers.Exceptions.rootCause;
 
 public class GraphDatabaseShutdownTest
 {

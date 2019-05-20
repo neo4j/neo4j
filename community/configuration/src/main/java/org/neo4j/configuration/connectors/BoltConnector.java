@@ -26,8 +26,8 @@ import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.ReplacedBy;
 import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.internal.helpers.AdvertisedSocketAddress;
+import org.neo4j.internal.helpers.ListenSocketAddress;
 
 import static org.neo4j.configuration.Settings.DURATION;
 import static org.neo4j.configuration.Settings.INTEGER;

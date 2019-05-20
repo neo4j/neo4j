@@ -23,7 +23,7 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.IOException;
 
-import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.index.label.FullStoreChangeStream;
 import org.neo4j.internal.index.label.LabelScanWriter;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;

@@ -25,7 +25,7 @@ import java.util.List;
 import org.neo4j.annotations.service.Service;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -34,7 +34,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.NamedService;
 
-import static org.neo4j.helpers.collection.Iterables.asList;
+import static org.neo4j.internal.helpers.collection.Iterables.asList;
 
 @Service
 public abstract class QueryEngineProvider implements NamedService

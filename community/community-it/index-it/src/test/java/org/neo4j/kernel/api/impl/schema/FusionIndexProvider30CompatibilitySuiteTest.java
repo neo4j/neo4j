@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.factory.OperationalMode;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 public class FusionIndexProvider30CompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
 {

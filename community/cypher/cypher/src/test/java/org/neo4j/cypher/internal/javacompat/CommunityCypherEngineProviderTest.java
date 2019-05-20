@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ServiceLoader;
 
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 
 import static java.util.ServiceLoader.load;

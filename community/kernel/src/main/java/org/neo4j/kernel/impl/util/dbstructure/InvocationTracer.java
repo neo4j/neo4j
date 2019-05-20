@@ -24,7 +24,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
-import org.neo4j.helpers.collection.Visitable;
+import org.neo4j.internal.helpers.collection.Visitable;
 
 public class InvocationTracer<C> implements InvocationHandler, AutoCloseable
 {

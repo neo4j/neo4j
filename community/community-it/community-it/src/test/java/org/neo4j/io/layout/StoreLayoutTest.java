@@ -35,7 +35,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 
 @ExtendWith( TestDirectoryExtension.class )
 class StoreLayoutTest

@@ -38,12 +38,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongFunction;
 
 import org.neo4j.function.Factory;
-import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.RepeatRule;
@@ -61,7 +61,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.count;
-import static org.neo4j.helpers.progress.ProgressListener.NONE;
+import static org.neo4j.internal.helpers.progress.ProgressListener.NONE;
 
 @RunWith( Parameterized.class )
 public class EncodingIdMapperTest

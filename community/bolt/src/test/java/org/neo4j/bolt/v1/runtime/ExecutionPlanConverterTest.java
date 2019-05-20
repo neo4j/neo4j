@@ -27,8 +27,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
-import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.virtual.MapValue;

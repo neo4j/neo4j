@@ -23,11 +23,11 @@ import org.eclipse.collections.api.iterator.LongIterator;
 
 import java.util.function.LongFunction;
 
-import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 
 /**
  * After {@link IdMapper#prepare(LongFunction, Collector, ProgressListener)} any duplicate input ids have been

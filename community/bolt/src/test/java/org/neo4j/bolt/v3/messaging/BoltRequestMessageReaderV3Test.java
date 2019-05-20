@@ -49,7 +49,7 @@ import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.newNeo4
 import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.requestMessageReader;
 import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
-import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 class BoltRequestMessageReaderV3Test

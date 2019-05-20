@@ -28,7 +28,7 @@ import org.neo4j.consistency.statistics.Counts;
 import org.neo4j.consistency.store.DirectRecordReference;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
-import org.neo4j.helpers.ArrayUtil;
+import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
@@ -41,7 +41,7 @@ import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.S
 import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.SLOT_SOURCE_OR_TARGET;
 import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.SOURCE;
 import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.TARGET;
-import static org.neo4j.helpers.ArrayUtil.union;
+import static org.neo4j.internal.helpers.ArrayUtil.union;
 
 public class RelationshipRecordCheck extends
         PrimitiveRecordCheck<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport>

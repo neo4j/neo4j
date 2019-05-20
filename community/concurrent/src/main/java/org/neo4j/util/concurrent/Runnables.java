@@ -19,7 +19,7 @@
  */
 package org.neo4j.util.concurrent;
 
-import org.neo4j.helpers.Exceptions;
+import org.neo4j.internal.helpers.Exceptions;
 
 public class Runnables
 {

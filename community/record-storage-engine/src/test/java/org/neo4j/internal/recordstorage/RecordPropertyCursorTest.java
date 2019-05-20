@@ -29,7 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.helpers.collection.IteratorWrapper;
+import org.neo4j.internal.helpers.collection.IteratorWrapper;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -43,7 +43,7 @@ import org.neo4j.values.storable.Value;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.Iterators.iterator;
+import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 
 public class RecordPropertyCursorTest
 {

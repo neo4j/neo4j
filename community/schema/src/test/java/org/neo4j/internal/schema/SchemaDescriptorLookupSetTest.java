@@ -33,7 +33,7 @@ import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -41,7 +41,7 @@ import org.neo4j.test.rule.RandomRule;
 import static java.util.Arrays.stream;
 import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
 
 @ExtendWith( RandomExtension.class )

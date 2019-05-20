@@ -22,7 +22,7 @@ package org.neo4j.batchinsert.internal;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;

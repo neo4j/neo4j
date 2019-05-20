@@ -24,7 +24,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.consistency.checking.full.MultiPassStore;
-import org.neo4j.helpers.collection.FilteringIterator;
+import org.neo4j.internal.helpers.collection.FilteringIterator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;

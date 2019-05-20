@@ -22,7 +22,7 @@ package org.neo4j.server.modules;
 import java.util.ArrayList;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;

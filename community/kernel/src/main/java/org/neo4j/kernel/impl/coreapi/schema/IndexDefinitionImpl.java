@@ -30,7 +30,7 @@ import org.neo4j.internal.kernel.api.IndexReference;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
-import static org.neo4j.helpers.collection.Iterables.stream;
+import static org.neo4j.internal.helpers.collection.Iterables.stream;
 
 public class IndexDefinitionImpl implements IndexDefinition
 {

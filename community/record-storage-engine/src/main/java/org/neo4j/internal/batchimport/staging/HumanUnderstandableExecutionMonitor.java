@@ -42,13 +42,13 @@ import static java.lang.Integer.min;
 import static java.lang.Long.max;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-import static org.neo4j.helpers.Format.count;
-import static org.neo4j.helpers.Format.date;
-import static org.neo4j.helpers.Format.duration;
-import static org.neo4j.helpers.collection.Iterables.last;
 import static org.neo4j.internal.batchimport.ImportMemoryCalculator.defensivelyPadMemoryEstimate;
 import static org.neo4j.internal.batchimport.ImportMemoryCalculator.estimatedCacheSize;
 import static org.neo4j.internal.batchimport.cache.GatheringMemoryStatsVisitor.totalMemoryUsageOf;
+import static org.neo4j.internal.helpers.Format.count;
+import static org.neo4j.internal.helpers.Format.date;
+import static org.neo4j.internal.helpers.Format.duration;
+import static org.neo4j.internal.helpers.collection.Iterables.last;
 import static org.neo4j.io.ByteUnit.bytesToString;
 
 /**

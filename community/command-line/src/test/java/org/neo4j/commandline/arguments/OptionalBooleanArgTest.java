@@ -21,7 +21,7 @@ package org.neo4j.commandline.arguments;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.helpers.Args;
+import org.neo4j.internal.helpers.Args;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

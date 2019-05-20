@@ -46,8 +46,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
+import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 
 @ExtendWith( TestDirectoryExtension.class )

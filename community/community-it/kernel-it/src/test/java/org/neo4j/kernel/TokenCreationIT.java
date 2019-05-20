@@ -36,7 +36,7 @@ import org.neo4j.test.extension.Inject;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.helpers.collection.Iterables.asSet;
+import static org.neo4j.internal.helpers.collection.Iterables.asSet;
 
 /**
  * Token creation should be able to handle cases of concurrent token creation

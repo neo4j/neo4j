@@ -30,7 +30,7 @@ import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;

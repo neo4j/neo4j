@@ -24,13 +24,13 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.internal.helpers.AdvertisedSocketAddress;
+import org.neo4j.internal.helpers.ListenSocketAddress;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.Settings.advertisedAddress;
 import static org.neo4j.configuration.Settings.listenAddress;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 class AdvertisedAddressSettingsTest
 {

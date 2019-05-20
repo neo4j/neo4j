@@ -27,7 +27,7 @@ import java.util.StringJoiner;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.StorageIndexReference;
 
-import static org.neo4j.helpers.Format.duration;
+import static org.neo4j.internal.helpers.Format.duration;
 
 public class LoggingMonitor implements IndexProvider.Monitor
 {

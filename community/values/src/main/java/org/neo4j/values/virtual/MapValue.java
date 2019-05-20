@@ -32,7 +32,7 @@ import java.util.function.BiFunction;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.function.ThrowingBiConsumer;
-import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.Comparison;

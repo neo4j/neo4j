@@ -22,17 +22,17 @@ package org.neo4j.internal.batchimport.staging;
 import java.io.PrintStream;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.batchimport.stats.DetailLevel;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.internal.batchimport.stats.StepStats;
+import org.neo4j.internal.helpers.collection.Pair;
 
 import static java.lang.Math.pow;
 import static java.lang.String.format;
-import static org.neo4j.helpers.Format.date;
-import static org.neo4j.helpers.Format.duration;
-import static org.neo4j.helpers.collection.Iterables.last;
+import static org.neo4j.internal.helpers.Format.date;
+import static org.neo4j.internal.helpers.Format.duration;
+import static org.neo4j.internal.helpers.collection.Iterables.last;
 
 /**
  * This is supposed to be a beautiful one-line {@link ExecutionMonitor}, looking like:

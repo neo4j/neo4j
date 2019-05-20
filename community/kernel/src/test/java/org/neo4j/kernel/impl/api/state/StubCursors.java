@@ -25,7 +25,7 @@ import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import java.util.Iterator;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterables;
 
 /**
  * Stub cursors to be used for testing.

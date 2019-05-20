@@ -68,7 +68,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.configuration.Settings.BOOLEAN;
 import static org.neo4j.configuration.Settings.STRING;
 import static org.neo4j.configuration.Settings.setting;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 @ExtendWith( TestDirectoryExtension.class )
 class ConfigTest

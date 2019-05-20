@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.function.Function;
 
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 

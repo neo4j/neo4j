@@ -19,7 +19,6 @@
  */
 package org.neo4j.server;
 
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -37,8 +36,8 @@ import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpConnector.Encryption;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.internal.helpers.AdvertisedSocketAddress;
+import org.neo4j.internal.helpers.ListenSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -58,16 +57,16 @@ import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.GraphFactory;
 import org.neo4j.server.database.LifecycleManagingDatabase;
+import org.neo4j.server.http.cypher.TransactionFacade;
+import org.neo4j.server.http.cypher.TransactionHandleRegistry;
+import org.neo4j.server.http.cypher.TransactionRegistry;
+import org.neo4j.server.http.cypher.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;
-import org.neo4j.server.http.cypher.TransactionFacade;
-import org.neo4j.server.http.cypher.TransactionHandleRegistry;
-import org.neo4j.server.http.cypher.TransactionRegistry;
-import org.neo4j.server.http.cypher.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.web.RotatingRequestLog;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;

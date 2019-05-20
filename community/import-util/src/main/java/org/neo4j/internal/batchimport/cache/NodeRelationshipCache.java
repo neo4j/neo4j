@@ -28,8 +28,8 @@ import org.neo4j.internal.batchimport.cache.idmapping.string.BigIdTracker;
 
 import static java.lang.Long.min;
 import static java.lang.Math.toIntExact;
-import static org.neo4j.helpers.Numbers.safeCastIntToUnsignedShort;
-import static org.neo4j.helpers.Numbers.unsignedShortToInt;
+import static org.neo4j.internal.helpers.Numbers.safeCastIntToUnsignedShort;
+import static org.neo4j.internal.helpers.Numbers.unsignedShortToInt;
 
 /**
  * Caches of parts of node store and relationship group store. A crucial part of batch import where

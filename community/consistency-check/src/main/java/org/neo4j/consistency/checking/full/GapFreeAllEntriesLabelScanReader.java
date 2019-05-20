@@ -21,7 +21,7 @@ package org.neo4j.consistency.checking.full;
 
 import java.util.Iterator;
 
-import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.index.label.AllEntriesLabelScanReader;
 import org.neo4j.internal.index.label.NodeLabelRange;
 

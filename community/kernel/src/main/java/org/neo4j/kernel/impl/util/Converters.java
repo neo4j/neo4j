@@ -30,8 +30,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 
-import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.internal.helpers.AdvertisedSocketAddress;
+import org.neo4j.internal.helpers.HostnamePort;
 
 public class Converters
 {

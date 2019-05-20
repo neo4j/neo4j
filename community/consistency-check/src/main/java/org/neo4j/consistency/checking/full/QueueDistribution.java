@@ -20,7 +20,7 @@
 package org.neo4j.consistency.checking.full;
 
 import org.neo4j.consistency.checking.full.RecordDistributor.RecordConsumer;
-import org.neo4j.helpers.Exceptions;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 /**

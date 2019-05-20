@@ -60,8 +60,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.helpers.PortBindException;
+import org.neo4j.internal.helpers.ListenSocketAddress;
+import org.neo4j.internal.helpers.PortBindException;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;

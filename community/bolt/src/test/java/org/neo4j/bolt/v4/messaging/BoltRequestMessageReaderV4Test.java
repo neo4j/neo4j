@@ -51,7 +51,7 @@ import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSA
 import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.encode;
 import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.newNeo4jPack;
 import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.requestMessageReader;
-import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 

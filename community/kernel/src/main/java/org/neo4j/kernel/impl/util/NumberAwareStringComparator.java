@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.util;
 import java.util.Comparator;
 import java.util.Iterator;
 
-import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 
 /**
  * Comparator for strings that may, or may not, contain groups of digits representing numbers and where

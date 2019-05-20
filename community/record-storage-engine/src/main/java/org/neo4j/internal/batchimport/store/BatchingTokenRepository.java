@@ -28,7 +28,7 @@ import java.util.TreeMap;
 import java.util.function.IntFunction;
 import java.util.function.ToIntFunction;
 
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;

@@ -22,9 +22,9 @@ package org.neo4j.internal.batchimport.staging;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.stats.Keys;
+import org.neo4j.internal.helpers.collection.Pair;
 
 import static java.lang.Integer.min;
 import static java.lang.Math.max;

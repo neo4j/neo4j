@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.traversal;
 
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
 
 abstract class AbstractTraverserIterator extends PrefetchingResourceIterator<Path> implements TraverserIterator
 {

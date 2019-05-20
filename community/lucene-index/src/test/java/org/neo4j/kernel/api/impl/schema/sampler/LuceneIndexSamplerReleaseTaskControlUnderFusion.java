@@ -26,6 +26,7 @@ import org.junit.Test;
 import java.io.IOException;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.helpers.TaskControl;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
@@ -90,10 +91,10 @@ public class LuceneIndexSamplerReleaseTaskControlUnderFusion
      * This test come from a support case where dropping an index would block forever after index sampling failed.
      * <p>
      * A fusion index has multiple {@link IndexSampler index samplers} that are called sequentially. If one fails, then the other will never be invoked.
-     * This was a problem for {@link LuceneIndexSampler}. It owns a {@link org.neo4j.helpers.TaskControl} that it will try to release in try-finally
+     * This was a problem for {@link LuceneIndexSampler}. It owns a {@link TaskControl} that it will try to release in try-finally
      * in {@link LuceneIndexSampler#sampleIndex()}. But it never gets here because a prior {@link IndexSampler} fails.
      * <p>
-     * Because the {@link org.neo4j.helpers.TaskControl} was never released the lucene accessor would block forever, waiting for
+     * Because the {@link TaskControl} was never released the lucene accessor would block forever, waiting for
      * {@link TaskCoordinator#awaitCompletion()}.
      * <p>
      * This situation was solved by making {@link IndexSampler} {@link java.io.Closeable} and include it in try-with-resource together with

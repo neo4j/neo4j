@@ -33,7 +33,7 @@ import java.time.temporal.TemporalAmount;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.helpers.ArrayUtil;
+import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.rule.concurrent.ThreadingExtension;

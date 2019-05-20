@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.store.allocator;
 import java.util.Collection;
 import java.util.Iterator;
 
-import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 

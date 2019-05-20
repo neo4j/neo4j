@@ -38,7 +38,7 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.arguments.common.Database;
 import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
-import org.neo4j.helpers.Args;
+import org.neo4j.internal.helpers.Args;
 
 import static java.lang.String.format;
 

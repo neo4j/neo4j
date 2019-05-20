@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
 import org.neo4j.cypher.internal.v4_0.expressions.functions.FunctionInfo
 import org.neo4j.cypher.{ParameterNotFoundException, exceptionHandler}
 import org.neo4j.graphdb.Result
-import org.neo4j.helpers.collection.Pair
+import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.query.{FunctionInformation, QueryExecution, QuerySubscriber, TransactionalContext}

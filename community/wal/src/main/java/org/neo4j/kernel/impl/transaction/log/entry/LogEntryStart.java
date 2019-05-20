@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import java.util.Arrays;
 import java.util.TimeZone;
 
-import org.neo4j.helpers.Format;
+import org.neo4j.internal.helpers.Format;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;

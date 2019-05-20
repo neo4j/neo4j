@@ -19,7 +19,7 @@
  */
 package org.neo4j.function;
 
-import org.neo4j.helpers.Exceptions;
+import org.neo4j.internal.helpers.Exceptions;
 
 /**
  * An action that takes no parameters and returns no values, but may have a side-effect and may throw an exception.

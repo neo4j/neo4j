@@ -24,7 +24,7 @@ import java.util.EnumMap;
 import java.util.StringJoiner;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.TimeUtil;
+import org.neo4j.internal.helpers.TimeUtil;
 import org.neo4j.logging.Log;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.VisibleForTesting;

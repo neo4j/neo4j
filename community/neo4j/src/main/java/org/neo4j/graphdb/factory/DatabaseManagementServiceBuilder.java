@@ -52,7 +52,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.service.Services;
 
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 /**
  * Creates a {@link DatabaseManagementService} with Community Edition features.

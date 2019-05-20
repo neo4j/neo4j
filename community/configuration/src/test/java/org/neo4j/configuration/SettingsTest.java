@@ -59,7 +59,7 @@ import static org.neo4j.configuration.Settings.min;
 import static org.neo4j.configuration.Settings.pathSetting;
 import static org.neo4j.configuration.Settings.range;
 import static org.neo4j.configuration.Settings.setting;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 class SettingsTest
 {

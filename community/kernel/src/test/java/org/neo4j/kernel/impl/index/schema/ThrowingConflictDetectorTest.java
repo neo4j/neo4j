@@ -29,7 +29,7 @@ import org.neo4j.values.storable.Values;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.neo4j.helpers.ArrayUtil.array;
+import static org.neo4j.internal.helpers.ArrayUtil.array;
 
 public class ThrowingConflictDetectorTest
 {

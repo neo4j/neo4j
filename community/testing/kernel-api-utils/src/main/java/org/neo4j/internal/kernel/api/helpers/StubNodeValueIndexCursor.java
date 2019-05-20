@@ -21,7 +21,7 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import java.util.Iterator;
 
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.values.storable.Value;
 
 public class StubNodeValueIndexCursor extends NodeValueIndexCursorAdapter

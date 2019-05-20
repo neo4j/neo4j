@@ -30,7 +30,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.PortUtils;
 import org.neo4j.test.server.ExclusiveServerTestBase;

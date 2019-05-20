@@ -27,7 +27,7 @@ import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 /**
  * Test reading committed node and relationships from disk.

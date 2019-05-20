@@ -21,13 +21,13 @@ package org.neo4j.internal.batchimport;
 
 import java.util.function.LongFunction;
 
-import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.staging.LonelyProcessingStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 
 /**
  * Preparation of an {@link IdMapper}, {@link IdMapper#prepare(LongFunction, Collector, ProgressListener)}

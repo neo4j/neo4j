@@ -27,8 +27,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.exceptions.UnderlyingStorageException;
-import org.neo4j.helpers.collection.Pair;
-import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;

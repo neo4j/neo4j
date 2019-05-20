@@ -34,7 +34,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.Iterators.asCollection;
+import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 
 public class PropertyIT extends KernelIntegrationTest
 {

@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.statistics;
 
-import org.neo4j.helpers.Format;
+import org.neo4j.internal.helpers.Format;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;

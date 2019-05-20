@@ -45,7 +45,7 @@ import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.helpers.collection.Iterators.map;
+import static org.neo4j.internal.helpers.collection.Iterators.map;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 

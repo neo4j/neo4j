@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
-import org.neo4j.helpers.Args;
+import org.neo4j.internal.helpers.Args;
 
 import static java.lang.String.format;
 import static org.neo4j.commandline.Util.neo4jVersion;

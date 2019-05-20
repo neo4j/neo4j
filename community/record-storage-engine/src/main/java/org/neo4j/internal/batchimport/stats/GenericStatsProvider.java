@@ -22,7 +22,7 @@ package org.neo4j.internal.batchimport.stats;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.helpers.collection.Pair;
 
 import static java.lang.String.format;
 

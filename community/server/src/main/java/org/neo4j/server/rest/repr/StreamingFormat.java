@@ -22,7 +22,7 @@ package org.neo4j.server.rest.repr;
 import java.io.OutputStream;
 import javax.ws.rs.core.MediaType;
 
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.internal.helpers.collection.MapUtil;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 

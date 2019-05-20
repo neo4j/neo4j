@@ -26,8 +26,8 @@ import java.util.function.Predicate;
 
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.id.IdRange;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.id.IdType;

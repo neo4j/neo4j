@@ -37,8 +37,8 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.Iterators.count;
-import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.helpers.collection.Iterators.count;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 public class BatchInsertionIT
 {

@@ -29,7 +29,7 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.server.NeoServer;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
 @Path( VersionAndEditionService.SERVER_PATH )

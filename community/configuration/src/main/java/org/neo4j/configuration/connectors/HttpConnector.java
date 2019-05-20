@@ -22,8 +22,8 @@ package org.neo4j.configuration.connectors;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.ReplacedBy;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.internal.helpers.AdvertisedSocketAddress;
+import org.neo4j.internal.helpers.ListenSocketAddress;
 
 import static org.neo4j.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.configuration.Settings.advertisedAddress;

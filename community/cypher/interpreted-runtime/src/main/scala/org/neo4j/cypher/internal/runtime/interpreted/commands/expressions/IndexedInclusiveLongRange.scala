@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.helpers.ArrayUtil
+import org.neo4j.internal.helpers.ArrayUtil
 
 import scala.collection.immutable
 

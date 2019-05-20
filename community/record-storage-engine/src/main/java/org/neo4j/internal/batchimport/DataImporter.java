@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
 
-import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Input;
@@ -48,6 +47,7 @@ import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.internal.batchimport.stats.StepStats;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.batchimport.store.io.IoMonitor;
+import org.neo4j.internal.helpers.NamedThreadFactory;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;

@@ -21,11 +21,11 @@ package org.neo4j.internal.batchimport.cache.idmapping.string;
 
 import java.util.function.LongFunction;
 
-import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 
 /**
  * {@link EncodingIdMapper} is an index where arbitrary ids, be it {@link String} or {@code long} or whatever

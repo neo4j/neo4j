@@ -28,12 +28,12 @@ import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Extractors.LongExtractor;
 import org.neo4j.csv.reader.Mark;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.UnexpectedEndOfInputException;
+import org.neo4j.internal.helpers.Exceptions;
 
 import static java.lang.String.format;
 

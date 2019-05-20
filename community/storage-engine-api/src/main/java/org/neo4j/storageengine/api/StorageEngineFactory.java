@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.schema.SchemaState;

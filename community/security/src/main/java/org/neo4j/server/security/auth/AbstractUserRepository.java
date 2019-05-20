@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.security.User;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
-import static org.neo4j.helpers.collection.MapUtil.trimToList;
+import static org.neo4j.internal.helpers.collection.MapUtil.trimToList;
 
 public abstract class AbstractUserRepository extends LifecycleAdapter implements UserRepository
 {

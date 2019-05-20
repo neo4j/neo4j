@@ -21,7 +21,7 @@ package org.neo4j.internal.batchimport.staging;
 
 import java.util.function.Supplier;
 
-import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
+import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 
 /**
  * A simple {@link StageControl} for tests with multiple steps and where an error or assertion failure

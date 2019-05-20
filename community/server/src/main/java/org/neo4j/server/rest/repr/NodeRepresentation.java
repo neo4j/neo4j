@@ -23,11 +23,11 @@ import java.util.Collection;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.IterableWrapper;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.server.http.cypher.TransactionStateChecker;
 
-import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 public final class NodeRepresentation extends ObjectRepresentation implements ExtensibleRepresentation,
         EntityRepresentation

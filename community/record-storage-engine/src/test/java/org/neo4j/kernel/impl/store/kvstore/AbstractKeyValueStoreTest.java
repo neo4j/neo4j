@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.function.IOFunction;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingSupplier;
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;

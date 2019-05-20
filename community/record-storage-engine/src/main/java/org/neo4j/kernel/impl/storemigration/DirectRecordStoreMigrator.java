@@ -25,7 +25,7 @@ import java.util.Map;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.helpers.ArrayUtil;
+import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.neo4j.helpers.ArrayUtil.contains;
+import static org.neo4j.internal.helpers.ArrayUtil.contains;
 
 /**
  * Idea is to migrate a {@link NeoStores} store by store, record by record in a sequential fashion for

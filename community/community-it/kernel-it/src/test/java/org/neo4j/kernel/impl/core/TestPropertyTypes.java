@@ -37,8 +37,8 @@ import java.util.Arrays;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.helpers.Strings;
+import org.neo4j.internal.helpers.ArrayUtil;
+import org.neo4j.internal.helpers.Strings;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;

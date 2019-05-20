@@ -22,8 +22,8 @@ package org.neo4j.internal.recordstorage;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionIdStore;

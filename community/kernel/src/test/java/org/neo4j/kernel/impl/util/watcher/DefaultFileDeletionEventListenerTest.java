@@ -32,7 +32,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 
 import static org.mockito.Mockito.mock;
-import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 
 class DefaultFileDeletionEventListenerTest
 {

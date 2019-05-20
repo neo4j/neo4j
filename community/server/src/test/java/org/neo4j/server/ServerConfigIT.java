@@ -26,7 +26,7 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 
 import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.internal.helpers.ListenSocketAddress;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.PortUtils;
 import org.neo4j.test.server.ExclusiveServerTestBase;

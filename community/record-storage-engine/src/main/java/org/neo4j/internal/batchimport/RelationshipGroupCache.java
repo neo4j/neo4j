@@ -21,11 +21,11 @@ package org.neo4j.internal.batchimport;
 
 import java.util.Iterator;
 
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.cache.LongArray;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
 import static java.lang.Long.max;

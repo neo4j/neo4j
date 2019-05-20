@@ -39,7 +39,7 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.Iterators.count;
+import static org.neo4j.internal.helpers.collection.Iterators.count;
 
 @RunWith( Parameterized.class )
 public class IndexTxStateLookupTest

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.internal.helpers.collection.IterableWrapper;
 import org.neo4j.internal.recordstorage.RecordAccess;
 import org.neo4j.kernel.impl.transaction.state.RelationshipCreatorTest.Tracker;
 

@@ -25,12 +25,12 @@ import java.util.stream.Stream;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.NoRecordFormat;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
-import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 import static java.util.stream.Collectors.toSet;
-import static org.neo4j.helpers.ArrayUtil.contains;
+import static org.neo4j.internal.helpers.ArrayUtil.contains;
 
 /**
  * Base class for simpler implementation of {@link RecordFormats}.

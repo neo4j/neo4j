@@ -26,7 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.internal.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.Neo4jError;
 

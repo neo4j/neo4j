@@ -22,7 +22,7 @@ package org.neo4j.commandline.arguments.common;
 
 import org.neo4j.commandline.Util;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
-import org.neo4j.helpers.Args;
+import org.neo4j.internal.helpers.Args;
 
 public class OptionalCanonicalPath extends OptionalNamedArg
 {

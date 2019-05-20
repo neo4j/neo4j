@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
-import org.neo4j.helpers.Exceptions;
+import org.neo4j.internal.helpers.Exceptions;
 
 /**
  * Selects an instance given a certain slot.

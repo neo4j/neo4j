@@ -76,8 +76,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.helpers.ArrayUtil.concat;
-import static org.neo4j.helpers.collection.Iterables.asList;
+import static org.neo4j.internal.helpers.ArrayUtil.concat;
+import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.test.Unzip.unzip;
 
 @ExtendWith( TestDirectoryExtension.class )

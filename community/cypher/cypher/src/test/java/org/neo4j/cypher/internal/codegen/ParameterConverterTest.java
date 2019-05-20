@@ -34,7 +34,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;

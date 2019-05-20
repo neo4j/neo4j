@@ -40,7 +40,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.csv.reader.Readables.wrap;
-import static org.neo4j.helpers.ArrayUtil.array;
+import static org.neo4j.internal.helpers.ArrayUtil.array;
 
 public class DataFactoriesTest
 {

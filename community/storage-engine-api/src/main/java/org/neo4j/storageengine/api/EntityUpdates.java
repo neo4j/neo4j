@@ -32,7 +32,7 @@ import java.util.Objects;
 
 import org.neo4j.collection.PrimitiveArrays;
 import org.neo4j.common.EntityType;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;

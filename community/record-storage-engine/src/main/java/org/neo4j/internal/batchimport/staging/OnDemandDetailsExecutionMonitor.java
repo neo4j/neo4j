@@ -34,12 +34,12 @@ import java.util.function.Consumer;
 import java.util.function.LongFunction;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.helpers.Format;
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.batchimport.stats.DetailLevel;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.Stat;
 import org.neo4j.internal.batchimport.stats.StepStats;
+import org.neo4j.internal.helpers.Format;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.monitoring.VmPauseMonitor;
@@ -48,8 +48,8 @@ import org.neo4j.scheduler.JobScheduler;
 
 import static java.lang.Long.max;
 import static java.lang.System.currentTimeMillis;
-import static org.neo4j.helpers.Format.date;
-import static org.neo4j.helpers.Format.duration;
+import static org.neo4j.internal.helpers.Format.date;
+import static org.neo4j.internal.helpers.Format.duration;
 import static org.neo4j.io.ByteUnit.bytesToString;
 
 /**

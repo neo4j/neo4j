@@ -32,7 +32,7 @@ import java.util.Map;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 

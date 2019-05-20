@@ -35,7 +35,7 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorLookupSet;

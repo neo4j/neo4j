@@ -26,7 +26,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.api.security.AuthToken;
 
-import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 public abstract class AuthTokenDecoderTest
 {

@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.internal.helpers.collection.MapUtil;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_BLOCK_SIZE;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_LABEL_BLOCK_SIZE;

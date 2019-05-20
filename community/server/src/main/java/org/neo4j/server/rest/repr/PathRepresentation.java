@@ -25,7 +25,7 @@ import java.util.Iterator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.internal.helpers.collection.IterableWrapper;
 
 public class PathRepresentation<P extends Path> extends ObjectRepresentation // implements
                                                                              // ExtensibleRepresentation

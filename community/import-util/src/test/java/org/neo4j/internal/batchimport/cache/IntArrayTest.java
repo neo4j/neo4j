@@ -33,7 +33,7 @@ import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.PageCache;
 
 import static java.lang.System.currentTimeMillis;

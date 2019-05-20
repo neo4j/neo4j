@@ -29,8 +29,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;

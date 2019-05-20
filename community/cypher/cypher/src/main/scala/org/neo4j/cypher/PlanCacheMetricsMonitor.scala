@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.StringCacheMonitor
-import org.neo4j.helpers.collection.Pair
+import org.neo4j.internal.helpers.collection.Pair
 
 class PlanCacheMetricsMonitor extends StringCacheMonitor {
   private val counter = new AtomicLong()

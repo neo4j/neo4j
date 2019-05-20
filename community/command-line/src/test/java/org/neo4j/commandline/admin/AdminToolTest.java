@@ -25,7 +25,7 @@ import org.mockito.InOrder;
 import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.arguments.Arguments;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterables;
 
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;

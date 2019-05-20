@@ -44,7 +44,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.Suppliers.singleton;
-import static org.neo4j.helpers.Numbers.safeCastLongToInt;
+import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 
 @Execution( CONCURRENT )
 class DelayedBufferTest

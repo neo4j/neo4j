@@ -21,7 +21,7 @@ package org.neo4j.test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 
 public class BatchTransaction implements AutoCloseable
 {

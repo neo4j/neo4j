@@ -33,7 +33,7 @@ import java.util.function.Predicate;
 import javax.ws.rs.core.MediaType;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
 

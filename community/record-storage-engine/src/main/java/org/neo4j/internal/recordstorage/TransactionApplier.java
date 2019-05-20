@@ -21,7 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
 
-import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.storageengine.api.StorageCommand;
 
 /**

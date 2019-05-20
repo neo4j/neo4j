@@ -26,7 +26,7 @@ import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.helpers.collection.Pair;
 
 abstract class RotationState<Key> extends ProgressiveState<Key>
 {

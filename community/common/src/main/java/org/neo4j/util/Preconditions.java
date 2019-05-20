@@ -20,7 +20,7 @@
 package org.neo4j.util;
 
 import static java.lang.String.format;
-import static org.neo4j.helpers.Numbers.isPowerOfTwo;
+import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
 
 /**
  * A set of static convenience methods for checking ctor/method parameters or state.

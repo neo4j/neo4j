@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.v4_0.util.IncomparableValuesException;
 import org.neo4j.cypher.internal.v4_0.util.UnorderableValueException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.helpers.MathUtil;
+import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValues;

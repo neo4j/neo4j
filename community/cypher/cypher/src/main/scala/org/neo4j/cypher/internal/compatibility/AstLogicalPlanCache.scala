@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
-import org.neo4j.helpers.collection.Pair
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
+import org.neo4j.internal.helpers.collection.Pair
 
 /**
   * Cache which stores logical plans indexed by an AST statement.

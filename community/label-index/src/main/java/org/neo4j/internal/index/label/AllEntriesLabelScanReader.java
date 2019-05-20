@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.index.label;
 
-import org.neo4j.helpers.collection.BoundedIterable;
+import org.neo4j.internal.helpers.collection.BoundedIterable;
 
 /**
  * Iterates over all label data in a label index.

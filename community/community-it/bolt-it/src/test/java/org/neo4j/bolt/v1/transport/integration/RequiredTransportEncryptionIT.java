@@ -35,7 +35,7 @@ import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.internal.helpers.HostnamePort;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;

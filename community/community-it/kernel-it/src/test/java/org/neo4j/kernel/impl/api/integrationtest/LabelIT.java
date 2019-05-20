@@ -29,7 +29,7 @@ import org.neo4j.token.api.NamedToken;
 
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.Iterators.asCollection;
+import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 
 public class LabelIT extends KernelIntegrationTest
 {

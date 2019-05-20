@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.token.TokenHolders;
 
-import static org.neo4j.helpers.Numbers.safeCastLongToInt;
+import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 
 public class MandatoryProperties
 {

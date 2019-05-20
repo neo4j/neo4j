@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.exception;
 
-import org.neo4j.helpers.Exceptions;
-import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.server.ServerStartupException;
+import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 
 import static java.lang.String.format;
 

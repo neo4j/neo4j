@@ -35,7 +35,7 @@ import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
-import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.test.AuthTokenUtil.assertAuthTokenMatches;
 
 class InitMessageDecoderTest extends AuthTokenDecoderTest

@@ -45,9 +45,9 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.forced_kernel_id;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
-import static org.neo4j.helpers.collection.Iterators.single;
-import static org.neo4j.helpers.collection.MapUtil.store;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.internal.helpers.collection.Iterators.single;
+import static org.neo4j.internal.helpers.collection.MapUtil.store;
+import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.verifyConnector;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 

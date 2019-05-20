@@ -29,8 +29,8 @@ import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChanne
 import org.neo4j.kernel.impl.transaction.log.ServiceLoadingCommandReaderFactory;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 
-import static org.neo4j.helpers.Exceptions.throwIfInstanceOf;
-import static org.neo4j.helpers.Exceptions.withMessage;
+import static org.neo4j.internal.helpers.Exceptions.throwIfInstanceOf;
+import static org.neo4j.internal.helpers.Exceptions.withMessage;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntrySanity.logEntryMakesSense;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.byVersion;
 

@@ -35,7 +35,7 @@ import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.commandline.arguments.OptionalNamedArgWithMetadata;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.LayoutConfig;
-import org.neo4j.helpers.Args;
+import org.neo4j.internal.helpers.Args;
 import org.neo4j.io.layout.DatabaseLayout;
 
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;

@@ -47,7 +47,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.Exceptions.contains;
+import static org.neo4j.internal.helpers.Exceptions.contains;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 class TransactionRepresentationCommitProcessTest

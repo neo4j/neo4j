@@ -23,11 +23,11 @@ import org.eclipse.collections.api.iterator.LongIterator;
 
 import java.util.function.LongFunction;
 
-import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 
 /**
  * Maps input node ids as specified by data read into {@link InputEntityVisitor} into actual node ids.

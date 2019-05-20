@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.util.TimeZone;
 
-import org.neo4j.helpers.Format;
+import org.neo4j.internal.helpers.Format;
 
 public abstract class AbstractLogEntry implements LogEntry
 {

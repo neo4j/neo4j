@@ -51,8 +51,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.helpers.collection.ArrayIterator;
-import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.internal.helpers.collection.ArrayIterator;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;

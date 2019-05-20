@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;

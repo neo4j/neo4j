@@ -41,9 +41,9 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
-import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 
-import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.internal.helpers.collection.Iterables.option;
 
 public class AStar implements PathFinder<WeightedPath>
 {

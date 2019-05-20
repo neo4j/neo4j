@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 abstract class DeadState<Key> extends ProgressiveState<Key>

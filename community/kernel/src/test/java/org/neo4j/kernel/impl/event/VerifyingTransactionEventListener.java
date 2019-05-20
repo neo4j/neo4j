@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.event;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterables;
 
 public class VerifyingTransactionEventListener implements TransactionEventListener<Object>
 {

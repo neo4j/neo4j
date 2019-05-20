@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime
 import java.util
 import java.util.Collections.newSetFromMap
 
-import org.neo4j.helpers.Exceptions
+import org.neo4j.internal.helpers.Exceptions
 
 import scala.collection.JavaConverters._
 

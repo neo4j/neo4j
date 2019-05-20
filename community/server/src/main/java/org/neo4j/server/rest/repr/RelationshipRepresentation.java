@@ -20,10 +20,10 @@
 package org.neo4j.server.rest.repr;
 
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.internal.helpers.collection.IterableWrapper;
 import org.neo4j.server.http.cypher.TransactionStateChecker;
 
-import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 public final class RelationshipRepresentation extends ObjectRepresentation implements ExtensibleRepresentation,
         EntityRepresentation

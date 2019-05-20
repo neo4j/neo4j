@@ -29,7 +29,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.recordstorage.CommandReading.DynamicRecordAdder;
 import org.neo4j.internal.recordstorage.legacy.IndexCommand;
@@ -58,7 +58,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaRuleSerialization35;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 
-import static org.neo4j.helpers.Numbers.unsignedShortToInt;
+import static org.neo4j.internal.helpers.Numbers.unsignedShortToInt;
 import static org.neo4j.internal.recordstorage.CommandReading.COLLECTION_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;

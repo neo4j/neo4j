@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.logging.Log;
 
 import static java.util.Collections.singletonList;

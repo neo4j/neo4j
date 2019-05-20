@@ -24,7 +24,7 @@ import java.util.Iterator;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.InvalidRecordException;

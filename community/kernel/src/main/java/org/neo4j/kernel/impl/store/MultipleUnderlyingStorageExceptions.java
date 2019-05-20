@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.neo4j.exceptions.UnderlyingStorageException;
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
 import static java.lang.String.format;

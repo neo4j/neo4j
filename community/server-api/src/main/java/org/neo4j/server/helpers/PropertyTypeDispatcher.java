@@ -26,7 +26,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.helpers.collection.ArrayIterator;
+import org.neo4j.internal.helpers.collection.ArrayIterator;
 
 /*
  * THIS CLASS SHOULD BE MOVED TO KERNEL ASAP!!!

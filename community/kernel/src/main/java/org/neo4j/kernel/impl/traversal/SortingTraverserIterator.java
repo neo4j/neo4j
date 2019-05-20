@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.TraversalBranch;
-import org.neo4j.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
 
 class SortingTraverserIterator extends PrefetchingResourceIterator<Path> implements TraverserIterator
 {

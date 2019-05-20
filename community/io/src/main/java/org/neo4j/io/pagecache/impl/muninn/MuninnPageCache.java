@@ -55,7 +55,7 @@ import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.lang.String.format;
-import static org.neo4j.helpers.Numbers.isPowerOfTwo;
+import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.util.FeatureToggles.getInteger;
 

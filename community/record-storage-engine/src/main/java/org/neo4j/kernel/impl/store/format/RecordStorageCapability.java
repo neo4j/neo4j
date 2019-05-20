@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.store.format;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
-import static org.neo4j.helpers.ArrayUtil.contains;
+import static org.neo4j.internal.helpers.ArrayUtil.contains;
 
 /**
  * A collection of high level capabilities a store can have, should not be more granular than necessary

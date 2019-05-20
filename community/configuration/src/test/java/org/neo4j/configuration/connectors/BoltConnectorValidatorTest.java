@@ -38,7 +38,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.connectors.Connector.ConnectorType.BOLT;
 import static org.neo4j.configuration.connectors.ConnectorValidator.DEPRECATED_CONNECTOR_MSG;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 class BoltConnectorValidatorTest
 {

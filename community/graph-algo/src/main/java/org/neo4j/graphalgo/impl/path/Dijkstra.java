@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.util.NoneStrictMath;
 
 import static org.neo4j.graphalgo.impl.util.PathInterestFactory.single;
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.helpers.collection.Iterators.firstOrNull;
+import static org.neo4j.internal.helpers.collection.Iterators.firstOrNull;
 
 /**
  * Find (one or some) simple shortest path(s) between two nodes.

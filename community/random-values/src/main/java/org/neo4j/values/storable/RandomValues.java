@@ -47,7 +47,7 @@ import static java.time.LocalDate.ofEpochDay;
 import static java.time.LocalTime.ofNanoOfDay;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.DAYS;
-import static org.neo4j.helpers.Numbers.ceilingPowerOfTwo;
+import static org.neo4j.internal.helpers.Numbers.ceilingPowerOfTwo;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateValue.date;
 import static org.neo4j.values.storable.DurationValue.duration;

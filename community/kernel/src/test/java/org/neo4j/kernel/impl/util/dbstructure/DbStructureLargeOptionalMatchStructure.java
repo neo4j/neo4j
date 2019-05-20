@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.util.dbstructure;
 
-import org.neo4j.helpers.collection.Visitable;
+import org.neo4j.internal.helpers.collection.Visitable;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 
 //

@@ -31,7 +31,7 @@ import org.neo4j.graphdb.config.SettingValidator;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.strict_config_validation;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 /**
  * Validates individual settings by delegating to the settings themselves without taking other aspects into

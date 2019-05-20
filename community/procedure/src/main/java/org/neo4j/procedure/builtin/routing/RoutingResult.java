@@ -22,7 +22,7 @@ package org.neo4j.procedure.builtin.routing;
 import java.util.List;
 import java.util.Objects;
 
-import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.internal.helpers.AdvertisedSocketAddress;
 
 /**
  * The outcome of applying a load balancing plugin, which will be used by client

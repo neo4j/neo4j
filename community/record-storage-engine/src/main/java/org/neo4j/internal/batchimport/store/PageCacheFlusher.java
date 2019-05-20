@@ -22,7 +22,7 @@ package org.neo4j.internal.batchimport.store;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.util.concurrent.BinaryLatch;
 
-import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
+import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 
 /**
  * A dedicated thread which constantly call {@link PageCache#flushAndForce()} until a call to {@link #halt()} is made.

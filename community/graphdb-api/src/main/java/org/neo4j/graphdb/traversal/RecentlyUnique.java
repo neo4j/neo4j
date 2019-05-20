@@ -20,7 +20,7 @@
 package org.neo4j.graphdb.traversal;
 
 import org.neo4j.graphdb.Path;
-import org.neo4j.helpers.collection.LruCache;
+import org.neo4j.internal.helpers.collection.LruCache;
 
 /**
  * Filters on items with a recency within limits of {@link #DEFAULT_RECENT_SIZE}.

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
-import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.lock.LockService;

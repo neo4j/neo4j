@@ -29,13 +29,13 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
-import static org.neo4j.helpers.collection.Iterators.resourceIterator;
+import static org.neo4j.internal.helpers.collection.Iterators.resourceIterator;
 
 public class SchemaAndIndexingFileIndexListing
 {

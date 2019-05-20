@@ -33,7 +33,7 @@ import org.neo4j.test.extension.Inject;
 import static java.nio.ByteBuffer.allocate;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
 class TestEphemeralFileChannel

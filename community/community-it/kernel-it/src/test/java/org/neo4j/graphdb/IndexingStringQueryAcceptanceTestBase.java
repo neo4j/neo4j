@@ -36,7 +36,7 @@ import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 public abstract class IndexingStringQueryAcceptanceTestBase
 {

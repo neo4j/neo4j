@@ -24,7 +24,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.helpers.SocketAddress;
+import org.neo4j.internal.helpers.SocketAddress;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 
 import static org.hamcrest.MatcherAssert.assertThat;

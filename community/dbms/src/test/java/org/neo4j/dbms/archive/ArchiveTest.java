@@ -42,7 +42,7 @@ import static java.nio.file.Files.isDirectory;
 import static java.util.Optional.of;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.function.Predicates.alwaysFalse;
-import static org.neo4j.helpers.collection.Pair.pair;
+import static org.neo4j.internal.helpers.collection.Pair.pair;
 
 @ExtendWith( TestDirectoryExtension.class )
 class ArchiveTest

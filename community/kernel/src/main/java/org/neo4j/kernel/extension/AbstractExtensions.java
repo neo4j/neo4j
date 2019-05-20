@@ -32,7 +32,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static java.util.stream.Collectors.toList;
-import static org.neo4j.helpers.collection.Iterables.stream;
+import static org.neo4j.internal.helpers.collection.Iterables.stream;
 
 public abstract class AbstractExtensions extends DependencyResolver.Adapter implements Lifecycle
 {

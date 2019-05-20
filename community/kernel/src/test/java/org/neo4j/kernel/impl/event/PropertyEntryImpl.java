@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.event;
 
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.event.PropertyEntry;
-import org.neo4j.helpers.Strings;
+import org.neo4j.internal.helpers.Strings;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;

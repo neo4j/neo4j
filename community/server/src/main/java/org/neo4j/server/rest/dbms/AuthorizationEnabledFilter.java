@@ -50,7 +50,7 @@ import org.neo4j.string.UTF8;
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
-import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 import static org.neo4j.server.web.XForwardUtil.X_FORWARD_HOST_HEADER_KEY;
 import static org.neo4j.server.web.XForwardUtil.X_FORWARD_PROTO_HEADER_KEY;

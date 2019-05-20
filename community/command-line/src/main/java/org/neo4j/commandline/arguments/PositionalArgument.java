@@ -19,7 +19,7 @@
  */
 package org.neo4j.commandline.arguments;
 
-import org.neo4j.helpers.Args;
+import org.neo4j.internal.helpers.Args;
 
 public interface PositionalArgument
 {

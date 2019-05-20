@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.StringCacheMonitor
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.{Label, QueryExecutionException}
-import org.neo4j.helpers.collection.Pair
+import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.scalatest.prop.TableDrivenPropertyChecks
 

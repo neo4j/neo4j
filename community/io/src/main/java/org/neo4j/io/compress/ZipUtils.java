@@ -29,7 +29,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 

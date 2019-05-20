@@ -22,7 +22,7 @@ package org.neo4j.server.web;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.internal.helpers.AdvertisedSocketAddress;
 
 public class SimpleUriBuilder
 {

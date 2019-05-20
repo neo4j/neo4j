@@ -33,8 +33,8 @@ import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.helpers.collection.Iterators.loop;
-import static org.neo4j.helpers.collection.Iterators.single;
+import static org.neo4j.internal.helpers.collection.Iterators.loop;
+import static org.neo4j.internal.helpers.collection.Iterators.single;
 
 public class DropBrokenUniquenessConstraintIT
 {

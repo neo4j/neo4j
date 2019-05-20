@@ -21,15 +21,15 @@ package org.neo4j.kernel.impl.util.dbstructure;
 
 import org.junit.Test;
 
-import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.Pair.of;
+import static org.neo4j.internal.helpers.collection.Pair.of;
 
 public class DbStructureCollectorTest
 {

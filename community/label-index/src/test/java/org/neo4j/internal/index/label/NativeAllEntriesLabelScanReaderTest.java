@@ -32,8 +32,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.IntFunction;
 
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.index.internal.gbptree.Seeker;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;

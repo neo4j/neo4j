@@ -23,8 +23,8 @@ import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 
-import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.internal.helpers.HostnamePort;
+import org.neo4j.internal.helpers.ListenSocketAddress;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

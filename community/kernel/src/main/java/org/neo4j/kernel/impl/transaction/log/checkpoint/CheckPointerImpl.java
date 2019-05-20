@@ -36,7 +36,7 @@ import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static java.lang.System.currentTimeMillis;
-import static org.neo4j.helpers.Format.duration;
+import static org.neo4j.internal.helpers.Format.duration;
 
 public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
 {

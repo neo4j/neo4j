@@ -21,7 +21,7 @@ package org.neo4j.monitoring;
 
 import java.util.Objects;
 
-import org.neo4j.helpers.Exceptions;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 

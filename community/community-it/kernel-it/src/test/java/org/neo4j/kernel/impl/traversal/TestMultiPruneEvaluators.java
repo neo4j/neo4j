@@ -36,7 +36,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
-import static org.neo4j.helpers.collection.Iterators.count;
+import static org.neo4j.internal.helpers.collection.Iterators.count;
 
 public class TestMultiPruneEvaluators extends TraversalTestBase
 {

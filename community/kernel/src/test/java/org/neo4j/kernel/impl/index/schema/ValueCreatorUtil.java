@@ -32,7 +32,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.rule.RandomRule;
