@@ -72,7 +72,7 @@ public class SpaceFillingCurveSettings
     int maxLevels;
     Envelope extents;
 
-    SpaceFillingCurveSettings( int dimensions, Envelope extents, int maxLevels )
+    public SpaceFillingCurveSettings( int dimensions, Envelope extents, int maxLevels )
     {
         this.dimensions = dimensions;
         this.extents = extents;
