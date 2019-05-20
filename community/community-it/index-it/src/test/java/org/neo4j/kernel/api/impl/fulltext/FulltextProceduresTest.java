@@ -2191,6 +2191,93 @@ public class FulltextProceduresTest
         }
     }
 
+    @Test
+    public void mustSupportWildcardEndsLikeStartsWith()
+    {
+        db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            createSimpleNodesIndex();
+            tx.success();
+        }
+        LongHashSet ids = new LongHashSet();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( LABEL );
+            node.setProperty( PROP, "abcdef" );
+            ids.add( node.getId() );
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( LABEL );
+            node.setProperty( PROP, "abcxyz" );
+            ids.add( node.getId() );
+
+            assertQueryFindsIds( db, true, "nodes", "abc*", ids );
+
+            tx.success();
+        }
+    }
+
+    @Test
+    public void mustSupportWildcardBeginningsLikeEndsWith()
+    {
+        db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            createSimpleNodesIndex();
+            tx.success();
+        }
+        LongHashSet ids = new LongHashSet();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( LABEL );
+            node.setProperty( PROP, "defabc" );
+            ids.add( node.getId() );
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( LABEL );
+            node.setProperty( PROP, "xyzabc" );
+            ids.add( node.getId() );
+
+            assertQueryFindsIds( db, true, "nodes", "*abc", ids );
+
+            tx.success();
+        }
+    }
+
+    @Test
+    public void mustSupportWildcardBeginningsAndEndsLikeContains()
+    {
+        db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            createSimpleNodesIndex();
+            tx.success();
+        }
+        LongHashSet ids = new LongHashSet();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( LABEL );
+            node.setProperty( PROP, "defabcdef" );
+            ids.add( node.getId() );
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( LABEL );
+            node.setProperty( PROP, "xyzabcxyz" );
+            ids.add( node.getId() );
+
+            assertQueryFindsIds( db, true, "nodes", "*abc*", ids );
+
+            tx.success();
+        }
+    }
+
     private void assertNoIndexSeeks( Result result )
     {
         assertThat( result.stream().count(), is( 1L ) );
