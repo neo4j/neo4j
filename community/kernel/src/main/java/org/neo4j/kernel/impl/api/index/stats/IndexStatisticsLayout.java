@@ -110,7 +110,7 @@ class IndexStatisticsLayout extends Layout.Adapter<IndexStatisticsKey,IndexStati
     @Override
     public int minorVersion()
     {
-        return 1;
+        return 2;
     }
 
     @Override
