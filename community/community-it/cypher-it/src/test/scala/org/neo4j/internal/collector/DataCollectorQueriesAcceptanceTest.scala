@@ -21,6 +21,8 @@ package org.neo4j.internal.collector
 
 import java.nio.file.Files
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.graphdb.{Node, Path, Relationship}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.mutable.ArrayBuffer
@@ -201,7 +203,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> "BrassLeg"))
     execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> 2))
     execute("WITH 42 AS x RETURN x")
-    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> List(3.1, 3.2)))
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> 3.1))
     execute("WITH 42 AS x RETURN x")
 
     // when
@@ -216,7 +218,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
           "invocations" -> beInvocationsInOrder(
             Map("param" -> "BrassLeg"),
             Map("param" -> Long.box(2)),
-            Map("param" -> List(3.1, 3.2))
+            Map("param" -> Double.box(3.1))
           )
         )
       ),
@@ -235,7 +237,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> "BrassLeg"))
     execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> 2))
     execute("WITH 42 AS x RETURN x")
-    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> List(3.1, 3.2)))
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> 3.1))
     execute("WITH 42 AS x RETURN x")
 
     // when
@@ -259,7 +261,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> "BrassLeg"))
     execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> 2))
     execute("WITH 42 AS x RETURN x")
-    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> List(3.1, 3.2)))
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> 3.1))
     execute("WITH 42 AS x RETURN x")
     execute("WITH 42 AS x RETURN x")
     execute("WITH 42 AS x RETURN x")
@@ -294,6 +296,213 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     execute("CALL db.stats.retrieve('QUERIES', {maxIndications: -1})").toList // non-related arguments is fine
     assertInvalidArgument("CALL db.stats.retrieve('QUERIES', {maxInvocations: 'non-integer'})") // non-integer is not fine
     assertInvalidArgument("CALL db.stats.retrieve('QUERIES', {maxInvocations: -1})") // negative integer is not fine
+  }
+
+  test("should limit the collected query text size") {
+    // given
+    val largeQuery = (0 until 1000).map(i => s"CREATE (n$i) ").mkString("\n")
+    execute(largeQuery)
+
+    // when
+    val res = execute("CALL db.stats.retrieve('QUERIES')").toList
+
+    // then
+    res should beListWithoutOrder(
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> largeQuery.take(10000)
+        )
+      )
+    )
+  }
+
+  test("should limit the collected query text size by configured max_query_text_size") {
+    // given
+    restartWithConfig(Map(GraphDatabaseSettings.data_collector_max_query_text_size -> "33"))
+    val largeQuery = (0 until 10).map(i => s"CREATE (n$i) ").mkString("\n")
+    execute(largeQuery)
+
+    // when
+    val res = execute("CALL db.stats.retrieve('QUERIES')").toList
+
+    // then
+    res should beListWithoutOrder(
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> largeQuery.take(33)
+        )
+      )
+    )
+  }
+
+  test("should drop query text on max_query_text_size=0") {
+    // given
+    restartWithConfig(Map(GraphDatabaseSettings.data_collector_max_query_text_size -> "0"))
+    execute("RETURN 1")
+
+    // when
+    val res = execute("CALL db.stats.retrieve('QUERIES')").toList
+
+    // then
+    res should beListWithoutOrder(
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining("query" -> "")
+      )
+    )
+  }
+
+  test("should distinguish queries even though dropped query text is not unique") {
+    // given
+    restartWithConfig(Map(GraphDatabaseSettings.data_collector_max_query_text_size -> "6"))
+    execute("RETURN 1+1 AS a", params = Map("p" -> 1))
+    execute("RETURN 1+2 AS a", params = Map("p" -> 2))
+    execute("RETURN 1+3 AS a", params = Map("p" -> 3))
+
+    // when
+    val res = execute("CALL db.stats.retrieve('QUERIES')").toList
+
+    // then
+    res.size shouldBe 3
+    res should beListWithoutOrder(
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> "RETURN",
+          "invocations" -> beInvocationsInOrder(Map("p" -> 1))
+        )
+      ),
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> "RETURN",
+          "invocations" -> beInvocationsInOrder(Map("p" -> 2))
+        )
+      ),
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> "RETURN",
+          "invocations" -> beInvocationsInOrder(Map("p" -> 3))
+        )
+      )
+    )
+  }
+
+  test("should limit the collected query parameter sizes") {
+    // given
+    val entities = execute(
+      """CREATE (node:A {p: 'startNode'})-[relationship:R {p: 'rel'}]->(_:B {p: 'endNode'})
+        |WITH node, relationship
+        |MATCH path=()-->()
+        |RETURN node, relationship, path
+      """.stripMargin).single
+
+    val node = entities("node").asInstanceOf[Node]
+    val relationship = entities("relationship").asInstanceOf[Relationship]
+    val path = entities("path").asInstanceOf[Path]
+
+    val longString: String = "".padTo(200, 'x')
+    val query = "RETURN $param"
+    execute(query, params = Map("param" -> longString))
+    execute(query, params = Map("param" -> List(1,2,3)))
+    execute(query, params = Map("param" -> Map("x" -> 1)))
+    execute(query, params = Map("param" -> node))
+    execute(query, params = Map("param" -> relationship))
+    execute(query, params = Map("param" -> path))
+
+    // when
+    val res = execute("CALL db.stats.retrieve('QUERIES')").toList
+
+    // then
+    res should beListWithoutOrder(
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> query,
+          "invocations" -> beInvocationsInOrder(
+            Map("param" -> longString.take(100)),
+            Map("param" -> "§LIST[3]"),
+            Map("param" -> "§MAP[1]"),
+            Map("param" -> node),
+            Map("param" -> relationship),
+            Map("param" -> "§PATH[1]")
+          )
+        )
+      )
+    )
+  }
+
+  test("should limit the collected query parameter key length") {
+    // given
+    val MAX_PARAM_NAME_LENGTH = 1000
+    val longParamName: String = "".padTo(MAX_PARAM_NAME_LENGTH+3, 'x')
+    val query = "RETURN $"+longParamName
+    execute(query, params = Map(longParamName -> 2))
+
+    // when
+    val res = execute("CALL db.stats.retrieve('QUERIES')").toList
+
+    // then
+    res should beListWithoutOrder(
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> query,
+          "invocations" -> beInvocationsInOrder(
+            Map(longParamName.take(MAX_PARAM_NAME_LENGTH) -> 2)
+          )
+        )
+      )
+    )
+  }
+
+  test("should respect the configured max_recent_query_count") {
+    // given
+    restartWithConfig(Map(GraphDatabaseSettings.data_collector_max_recent_query_count -> "4"))
+    execute("RETURN 1")
+    execute("RETURN 1, 2")
+    execute("RETURN 1, 2, 3")
+    execute("RETURN 1, 2, 3, 4")
+    execute("RETURN 1, 2, 3, 4, 5")
+
+    // when
+    val res = execute("CALL db.stats.retrieve('QUERIES')").toList
+
+    // then
+    res.size shouldBe 4
+    res should beListWithoutOrder(
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining("query" -> "RETURN 1, 2")
+      ),
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining("query" -> "RETURN 1, 2, 3")
+      ),
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining("query" -> "RETURN 1, 2, 3, 4")
+      ),
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining("query" -> "RETURN 1, 2, 3, 4, 5")
+      )
+    )
+  }
+
+  test("should not collect queries for max_recent_query_count=0") {
+    // given
+    restartWithConfig(Map(GraphDatabaseSettings.data_collector_max_recent_query_count -> "0"))
+    execute("RETURN 1")
+
+    // when
+    val res = execute("CALL db.stats.retrieve('QUERIES')").toList
+
+    // then
+    res.size shouldBe 0
   }
 
   test("[retrieveAllAnonymized] should anonymize tokens inside queries") {
@@ -413,7 +622,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
           "invocations" -> beInvocationsInOrder(
             "4ac156c0", // Map("user" -> "BrassLeg", "name" -> "George")
             "b439d06c", // Map("user" -> 2, "name" -> "Glinda")
-            "e5adc9ad"  // Map("user" -> List(3.1, 3.2), "name" -> "Kim")
+            "8e2eb26e"  // Map("user" -> List(3.1, 3.2), "name" -> "Kim")
           )
         )
       ),
@@ -422,7 +631,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
         "data" -> beMapContaining(
           "query" -> "RETURN $param0, $param1, $param0 + $param1",
           "invocations" -> beInvocationsInOrder(
-            "e5adc9ad" // Map("user" -> List(3.1, 3.2), "name" -> "Kim")
+            "8e2eb26e" // Map("user" -> List(3.1, 3.2), "name" -> "Kim")
           )
         )
       )

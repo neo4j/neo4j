@@ -42,8 +42,8 @@ class RingRecentBufferTest
     @Test
     void shouldJustWork()
     {
-        int bufferBitSize = 2;
-        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferBitSize );
+        int bufferSize = 4;
+        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferSize );
 
         buffer.foreach( l -> fail( "boom" ) );
 
@@ -66,13 +66,27 @@ class RingRecentBufferTest
     }
 
     @Test
+    void shouldHandleSize0()
+    {
+        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( 0 );
+
+        buffer.foreach( l -> fail( "boom" ) );
+        buffer.clear();
+
+        buffer.produce( 0L );
+        buffer.foreach( l -> fail( "boom" ) );
+        buffer.clear();
+
+        assertEquals( 0, buffer.numSilentQueryDrops() );
+    }
+
+    @Test
     void shouldNotReadSameElementTwice() throws ExecutionException, InterruptedException
     {
         // given
         int n = 1000;
-        int bufferBitSize = 4;
-        int bufferSize = 1 << bufferBitSize;
-        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferBitSize );
+        int bufferSize = 16;
+        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferSize );
         ExecutorService executor = Executors.newFixedThreadPool( 2 );
 
         try
@@ -108,8 +122,8 @@ class RingRecentBufferTest
     {
         // given
         int n = 1000000;
-        int bufferBitSize = 4;
-        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferBitSize );
+        int bufferSize = 16;
+        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferSize );
         ExecutorService executor = Executors.newFixedThreadPool( 2 );
 
         try
@@ -141,8 +155,8 @@ class RingRecentBufferTest
     {
         // given
         int n = 1000000;
-        int bufferBitSize = 4;
-        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferBitSize );
+        int bufferSize = 16;
+        RingRecentBuffer<Long> buffer = new RingRecentBuffer<>( bufferSize );
         ExecutorService executor = Executors.newFixedThreadPool( 4 );
 
         try

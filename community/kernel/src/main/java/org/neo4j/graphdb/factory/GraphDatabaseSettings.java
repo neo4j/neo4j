@@ -414,6 +414,29 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Integer> cypher_worker_count =
             setting( "unsupported.cypher.number_of_workers", INTEGER, "0" );
 
+    @Description( "Max number of recent queries to collect in the data collector module. Will round down to the" +
+            " nearest power of two. The default number (8192 query invocations) " +
+            " was chosen as a trade-off between getting a useful amount of queries, and not" +
+            " wasting too much heap. Even with a buffer full of unique queries, the estimated" +
+            " footprint lies in tens of MBs. If the buffer is full of cached queries, the" +
+            " retained size was measured to 265 kB. Setting this to 0 will disable data collection" +
+            " of queries completely." )
+    @Internal
+    public static final Setting<Integer> data_collector_max_recent_query_count =
+            buildSetting( "unsupported.datacollector.max_recent_query_count", INTEGER, "8192" )
+                    .constraint( min( 0 ) ).build();
+
+    @Description( "Sets the upper limit for how much of the query text that will be retained by the query collector." +
+            " For queries longer than the limit, only a prefix of size limit will be retained by the collector." +
+            " Lowering this value will reduce the memory footprint of collected query invocations under loads with" +
+            " many queries with long query texts, which could occur for generated queries. The downside is that" +
+            " on retrieving queries by `db.stats.retrieve`, queries longer than this max size would be returned" +
+            " incomplete. Setting this to 0 will completely drop query texts from the collected queries." )
+    @Internal
+    public static final Setting<Integer> data_collector_max_query_text_size =
+            buildSetting( "unsupported.datacollector.max_query_text_size", INTEGER, "10000" )
+                    .constraint( min( 0 ) ).build();
+
     @Description( "The maximum amount of time to wait for the database to become available, when " +
                   "starting a new transaction." )
     @Internal

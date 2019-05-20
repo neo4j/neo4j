@@ -20,12 +20,10 @@
 package org.neo4j.internal.collector
 
 import java.util
-import java.util.{Spliterator, Spliterators}
 import java.util.stream.{Stream, StreamSupport}
+import java.util.{Spliterator, Spliterators}
 
 import org.neo4j.graphdb.ExecutionPlanDescription
-import org.neo4j.kernel.api.query.QuerySnapshot
-import org.neo4j.values.ValueMapper
 import org.neo4j.values.virtual.MapValue
 
 import scala.collection.mutable
@@ -45,28 +43,28 @@ object QueriesSection {
 
   case class ProfileData(dbHits: util.ArrayList[Long], rows: util.ArrayList[Long], params: util.Map[String, AnyRef])
 
-  case class QueryKey(queryText: String, plan: ExecutionPlanDescription)
+  case class QueryKey(queryText: String, fullQueryTextHash: Int, plan: ExecutionPlanDescription)
 
   class QueryData() {
     val invocations = new ArrayBuffer[SingleInvocation]
     val profiles = new ArrayBuffer[ProfileData]
   }
 
-  val QUERY_FILTER = "(?:(?i)call)\\s+(?:dbms\\.|db\\.stats\\.)".r
+  private val QUERY_FILTER = "(?:(?i)call)\\s+(?:dbms\\.|db\\.stats\\.)".r
 
-  def retrieve(querySnapshots: java.util.Iterator[QuerySnapshot],
+  def retrieve(querySnapshots: java.util.Iterator[TruncatedQuerySnapshot],
                anonymizer: QueryAnonymizer,
                maxInvocations: Int): Stream[RetrieveResult] = {
     val queries = new mutable.HashMap[QueryKey, QueryData]()
     while (querySnapshots.hasNext) {
       val snapshot = querySnapshots.next()
-      val queryString = snapshot.queryText()
+      val queryString = snapshot.queryText
       if (QUERY_FILTER.findFirstMatchIn(queryString).isEmpty) {
-        val snapshotList = queries.getOrElseUpdate(QueryKey(queryString, snapshot.queryPlan()), new QueryData())
-        snapshotList.invocations += SingleInvocation(snapshot.queryParameters(),
-                                                     snapshot.elapsedTimeMicros(),
-                                                     snapshot.compilationTimeMicros(),
-                                                     snapshot.startTimestampMillis())
+        val snapshotList = queries.getOrElseUpdate(QueryKey(queryString, snapshot.fullQueryTextHash, snapshot.queryPlan), new QueryData())
+        snapshotList.invocations += SingleInvocation(snapshot.queryParameters,
+                                                     snapshot.elapsedTimeMicros,
+                                                     snapshot.compilationTimeMicros,
+                                                     snapshot.startTimestampMillis)
       }
     }
 

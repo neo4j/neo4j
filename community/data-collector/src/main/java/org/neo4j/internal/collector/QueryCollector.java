@@ -33,37 +33,29 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
 /**
- * Simple Thread-safe query collector.
+ * Thread-safe query collector.
  *
- * Note that is has several potentially not-so-nice properties:
- *
- *  - It buffers all query data until collection is done. On high-workload systems
- *    this could use substantial memory
- *
- *  - All threads that report queries on {@link QueryCollector#endSuccess(org.neo4j.kernel.api.query.ExecutingQuery)}
- *    contend for writing to the queue, which might cause delays before the first result on highly concurrent systems
+ * Delegates to RingRecentBuffer to hard limit the number of collected queries at any point in time.
  */
-class QueryCollector extends CollectorStateMachine<Iterator<QuerySnapshot>> implements QueryExecutionMonitor
+class QueryCollector extends CollectorStateMachine<Iterator<TruncatedQuerySnapshot>> implements QueryExecutionMonitor
 {
     private volatile boolean isCollecting;
-    private final RingRecentBuffer<QuerySnapshot> queries;
+    private final RingRecentBuffer<TruncatedQuerySnapshot> queries;
     private final JobScheduler jobScheduler;
-    /**
-     * We retain at max 2^13 = 8192 queries in memory at any given time. This number
-     * was chosen as a trade-off between getting a useful amount of queries, and not
-     * wasting too much heap. Even with a buffer full of unique queries, the estimated
-     * footprint lies in tens of MBs. If the buffer is full of cached queries, the
-     * retained size was measured to 265 kB.
-     */
-    private static final int QUERY_BUFFER_SIZE_IN_BITS = 13;
+    private final int maxQueryTextSize;
 
-    QueryCollector( JobScheduler jobScheduler )
+    QueryCollector( JobScheduler jobScheduler,
+                    int maxRecentQueryCount,
+                    int maxQueryTextSize )
     {
         super( true );
         this.jobScheduler = jobScheduler;
+        this.maxQueryTextSize = maxQueryTextSize;
         isCollecting = false;
 
-        queries = new RingRecentBuffer<>( QUERY_BUFFER_SIZE_IN_BITS );
+        // Round down to the nearest power of 2
+        int queryBufferSize = Integer.highestOneBit( maxRecentQueryCount );
+        queries = new RingRecentBuffer<>( queryBufferSize );
     }
 
     long numSilentQueryDrops()
@@ -100,9 +92,9 @@ class QueryCollector extends CollectorStateMachine<Iterator<QuerySnapshot>> impl
     }
 
     @Override
-    protected Iterator<QuerySnapshot> doGetData()
+    protected Iterator<TruncatedQuerySnapshot> doGetData()
     {
-        List<QuerySnapshot> querySnapshots = new ArrayList<>();
+        List<TruncatedQuerySnapshot> querySnapshots = new ArrayList<>();
         queries.foreach( querySnapshots::add );
         return querySnapshots.iterator();
     }
@@ -119,7 +111,15 @@ class QueryCollector extends CollectorStateMachine<Iterator<QuerySnapshot>> impl
     {
         if ( isCollecting )
         {
-            queries.produce( query.snapshot() );
+            QuerySnapshot snapshot = query.snapshot();
+            queries.produce(
+                    new TruncatedQuerySnapshot( snapshot.queryText(),
+                                                snapshot.queryPlan(),
+                                                snapshot.queryParameters(),
+                                                snapshot.elapsedTimeMicros(),
+                                                snapshot.compilationTimeMicros(),
+                                                snapshot.startTimestampMillis(),
+                                                maxQueryTextSize ) );
         }
     }
 }

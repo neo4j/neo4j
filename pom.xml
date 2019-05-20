@@ -442,6 +442,26 @@
                     <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.load_csv_file_url_root</new>
                     <justification>The description annotation contained text that was not strictly correct, and this is therefor an important documentation correction.</justification>
                   </item>
+                <item>
+                  <code>java.field.addedStaticField</code>
+                  <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.data_collector_max_query_text_size</new>
+                  <justification>
+                    Adding a static field is generally not permitted because it could clash someone extending
+                    the class and adding a field with the same name. The risk that someone does that for our setting
+                    with the specific setting that we've added is so small the we think violation of the rule is the right
+                    thing to do.
+                  </justification>
+                </item>
+                <item>
+                  <code>java.field.addedStaticField</code>
+                  <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.data_collector_max_recent_query_count</new>
+                  <justification>
+                    Adding a static field is generally not permitted because it could clash someone extending
+                    the class and adding a field with the same name. The risk that someone does that for our setting
+                    with the specific setting that we've added is so small the we think violation of the rule is the right
+                    thing to do.
+                  </justification>
+                </item>
               </revapi.ignore>
               <revapi.semver.ignore>
                 <enabled>true</enabled>
