@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
@@ -34,7 +36,7 @@ import org.neo4j.values.storable.Values;
  */
 final class SpatialIndexConfig
 {
-    private static final String SPATIAL_CONFIG_PREFIX = "spatial";
+    static final String SPATIAL_CONFIG_PREFIX = "spatial";
 
     private SpatialIndexConfig()
     {
@@ -64,6 +66,17 @@ final class SpatialIndexConfig
         map.put( prefix + ".maxLevels", Values.intValue( maxLevels ) );
         map.put( prefix + ".min", Values.doubleArray( min ) );
         map.put( prefix + ".max", Values.doubleArray( max ) );
+    }
+
+    static IndexConfig addSpatialConfig( IndexConfig indexConfig, CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings )
+    {
+        Map<String,Value> spatialConfig = new HashMap<>();
+        addSpatialConfig( spatialConfig, crs, settings );
+        for ( String key : spatialConfig.keySet() )
+        {
+            indexConfig = indexConfig.withIfAbsent( key, spatialConfig.get( key ) );
+        }
+        return indexConfig;
     }
 
     private static String prefix( String crsName )

@@ -34,12 +34,15 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexLimitation;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
+import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
+import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
@@ -131,6 +134,21 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
         this.configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( config );
         this.configuration = getConfiguredSpaceFillingCurveConfiguration( config );
         this.archiveFailedIndex = config.get( GraphDatabaseSettings.archive_failed_index );
+    }
+
+    @Override
+    public IndexDescriptor bless( IndexDescriptor index ) throws MisconfiguredIndexException
+    {
+        SchemaDescriptor sinfulSchema = index.schema();
+        IndexConfig indexConfig = sinfulSchema.getIndexConfig();
+        for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
+        {
+            SpaceFillingCurveSettings spaceFillingCurveSettings = configuredSettings.forCRS( crs );
+            indexConfig = SpatialIndexConfig.addSpatialConfig( indexConfig, crs, spaceFillingCurveSettings );
+        }
+        SchemaDescriptor blessedSchema = sinfulSchema.withIndexConfig( indexConfig );
+        index = index.withSchemaDescriptor( blessedSchema );
+        return super.bless( index );
     }
 
     @Override
