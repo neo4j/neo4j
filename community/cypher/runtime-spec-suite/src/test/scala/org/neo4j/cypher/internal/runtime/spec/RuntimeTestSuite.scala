@@ -129,9 +129,9 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   def execute(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT],
-              input: InputValues,
+              input: InputDataStream,
               subscriber: QuerySubscriber): RuntimeResult =
-    runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (_, result) => result, subscriber)
+    runtimeTestSupport.run(logicalQuery, runtime, input, (_, result) => result, subscriber)
 
   def execute(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT],

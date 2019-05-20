@@ -91,7 +91,7 @@ abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](edition: 
   private def count(logicalQuery: LogicalQuery, request: () => Int): Int = {
     val subscriber = new TestSubscriber
     val data = inputValues((1 to sizeHint).map(Array[Any](_)):_*)
-    val runtimeResult = execute(logicalQuery, runtime, data, subscriber)
+    val runtimeResult = execute(logicalQuery, runtime, data.stream(), subscriber)
     var hasMore = true
     while (hasMore) {
       val requested = request()

@@ -156,6 +156,32 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
     subscriber.isCompleted shouldBe false
   }
 
+  test("should not exhaust input when there is no demand") {
+    // Given
+    val (nodes, _) = circleGraph(10000)
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expand("(x)-->(y)")
+      .input(nodes = Seq("x"))
+      .build()
+    val stream = batchedInputValues(1, nodes.map(Array[Any](_)): _*).stream()
+
+
+    // When
+    val result = execute(logicalQuery, runtime, stream, new TestSubscriber)
+
+    // Then
+    result.request(3)
+    result.await() shouldBe true
+    //we shouldn't have exhausted the entire input
+    stream.hasMore shouldBe true
+
+    //However if we demand the rest of the data we should
+    result.request(9998)
+    result.await() shouldBe false
+    stream.hasMore shouldBe false
+  }
+
   private def runtimeResult(subscriber: QuerySubscriber, data: Array[Any]*): RuntimeResult = {
     val variables = (1 to data.head.length).map(i => s"v$i")
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -163,6 +189,6 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
       .input(variables = variables)
       .build()
 
-    execute(logicalQuery, runtime, inputValues(data: _*), subscriber)
+    execute(logicalQuery, runtime, inputValues(data: _*).stream(), subscriber)
   }
 }
