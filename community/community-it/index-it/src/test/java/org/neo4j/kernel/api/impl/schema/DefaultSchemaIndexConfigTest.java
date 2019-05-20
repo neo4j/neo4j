@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -26,6 +28,7 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -37,12 +40,18 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
+import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -53,7 +62,16 @@ public class DefaultSchemaIndexConfigTest
 {
     private static final String KEY = "key";
     private static final TestLabels LABEL = TestLabels.LABEL_ONE;
-    private static final DatabaseManagementServiceBuilder dbBuilder = new TestDatabaseManagementServiceBuilder().impermanent();
+
+    @Rule
+    public TestDirectory directory = TestDirectory.testDirectory();
+    private DatabaseManagementServiceBuilder dbBuilder;
+
+    @Before
+    public void setup()
+    {
+        dbBuilder = new TestDatabaseManagementServiceBuilder( directory.storeDir() );
+    }
 
     @Parameterized.Parameters( name = "{0}" )
     public static List<GraphDatabaseSettings.SchemaIndex> providers()
@@ -86,6 +104,89 @@ public class DefaultSchemaIndexConfigTest
         {
             managementService.shutdown();
         }
+    }
+
+    @Test
+    public void indexShouldHaveIndexConfig() throws IndexNotFoundKernelException
+    {
+        DatabaseManagementServiceBuilder
+                databaseManagementServiceBuilder = dbBuilder.setConfig( default_schema_provider, provider == null ? null : provider.providerName() );
+        DatabaseManagementService managementService = databaseManagementServiceBuilder.build();
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
+        try
+        {
+            // when
+            createIndex( db );
+
+            // then
+            validateIndexConfig( db );
+        }
+        finally
+        {
+            managementService.shutdown();
+        }
+
+        managementService = databaseManagementServiceBuilder.build();
+        db = managementService.database( DEFAULT_DATABASE_NAME );
+        try
+        {
+            validateIndexConfig( db );
+        }
+        finally
+        {
+            managementService.shutdown();
+        }
+    }
+
+    private void validateIndexConfig( GraphDatabaseService db ) throws IndexNotFoundKernelException
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            GraphDatabaseAPI api = (GraphDatabaseAPI) db;
+            TokenRead tokenRead = tokenRead( api );
+            IndexingService indexingService = getIndexingService( api );
+            int labelId = tokenRead.nodeLabel( LABEL.name() );
+            int propKeyId = tokenRead.propertyKey( KEY );
+            IndexProxy indexProxy = indexingService.getIndexProxy( SchemaDescriptor.forLabel( labelId, propKeyId ) );
+            Map<String,Value> indexConfig = indexProxy.indexConfig();
+
+            // Expected default values for schema index
+            assertEquals( Values.intValue( 2 ), indexConfig.get( "spatial.cartesian.tableId" ) );
+            assertEquals( Values.intValue( 7203 ), indexConfig.get( "spatial.cartesian.code" ) );
+            assertEquals( Values.intValue( 2 ), indexConfig.get( "spatial.cartesian.dimensions" ) );
+            assertEquals( Values.intValue( 30 ), indexConfig.get( "spatial.cartesian.maxLevels" ) );
+            assertEquals( Values.doubleArray( new double[]{-1000000.0, -1000000.0} ), indexConfig.get( "spatial.cartesian.min" ) );
+            assertEquals( Values.doubleArray( new double[]{1000000.0, 1000000.0} ), indexConfig.get( "spatial.cartesian.max" ) );
+            assertEquals( Values.intValue( 2 ), indexConfig.get( "spatial.cartesian-3d.tableId" ) );
+            assertEquals( Values.intValue( 9157 ), indexConfig.get( "spatial.cartesian-3d.code" ) );
+            assertEquals( Values.intValue( 3 ), indexConfig.get( "spatial.cartesian-3d.dimensions" ) );
+            assertEquals( Values.intValue( 20 ), indexConfig.get( "spatial.cartesian-3d.maxLevels" ) );
+            assertEquals( Values.doubleArray( new double[]{-1000000.0, -1000000.0, -1000000.0} ), indexConfig.get( "spatial.cartesian-3d.min" ) );
+            assertEquals( Values.doubleArray( new double[]{1000000.0, 1000000.0, 1000000.0} ), indexConfig.get( "spatial.cartesian-3d.max" ) );
+            assertEquals( Values.intValue( 1 ), indexConfig.get( "spatial.wgs-84.tableId" ) );
+            assertEquals( Values.intValue( 4326 ), indexConfig.get( "spatial.wgs-84.code" ) );
+            assertEquals( Values.intValue( 2 ), indexConfig.get( "spatial.wgs-84.dimensions" ) );
+            assertEquals( Values.intValue( 30 ), indexConfig.get( "spatial.wgs-84.maxLevels" ) );
+            assertEquals( Values.doubleArray( new double[]{-180.0, -90.0} ), indexConfig.get( "spatial.wgs-84.min" ) );
+            assertEquals( Values.doubleArray( new double[]{180.0, 90.0} ), indexConfig.get( "spatial.wgs-84.max" ) );
+            assertEquals( Values.intValue( 1 ), indexConfig.get( "spatial.wgs-84-3d.tableId" ) );
+            assertEquals( Values.intValue( 4979 ), indexConfig.get( "spatial.wgs-84-3d.code" ) );
+            assertEquals( Values.intValue( 3 ), indexConfig.get( "spatial.wgs-84-3d.dimensions" ) );
+            assertEquals( Values.intValue( 20 ), indexConfig.get( "spatial.wgs-84-3d.maxLevels" ) );
+            assertEquals( Values.doubleArray( new double[]{-180.0, -90.0, -1000000.0} ), indexConfig.get( "spatial.wgs-84-3d.min" ) );
+            assertEquals( Values.doubleArray( new double[]{180.0, 90.0, 1000000.0} ), indexConfig.get( "spatial.wgs-84-3d.max" ) );
+            tx.success();
+        }
+    }
+
+    private static IndexingService getIndexingService( GraphDatabaseAPI db )
+    {
+        return db.getDependencyResolver().resolveDependency( IndexingService.class );
+    }
+
+    private static TokenRead tokenRead( GraphDatabaseAPI db )
+    {
+        return db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( false ).tokenRead();
     }
 
     private void assertIndexProvider( GraphDatabaseService db, String expectedProviderIdentifier ) throws IndexNotFoundKernelException
