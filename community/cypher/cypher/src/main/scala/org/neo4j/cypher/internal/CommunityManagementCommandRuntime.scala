@@ -112,7 +112,6 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
 object DatabaseStatus extends Enumeration {
   type Status = TextValue
 
-  val Deleted: TextValue = Values.stringValue("deleted")
   val Online: TextValue = Values.stringValue("online")
   val Offline: TextValue = Values.stringValue("offline")
 }
