@@ -54,7 +54,6 @@ import org.neo4j.diagnostics.DiagnosticsReporter;
 import org.neo4j.diagnostics.DiagnosticsReporterProgress;
 import org.neo4j.diagnostics.InteractiveProgress;
 import org.neo4j.diagnostics.NonInteractiveProgress;
-import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -363,7 +362,7 @@ public class DiagnosticsReportCommand implements AdminCommand
                         .append( processInfo.getPhysicalMemory() ).append( ',' )
                         .append( processInfo.getCpuUsage() ).append( ',' )
                         .append( processInfo.getStartTime() ).append( ',' )
-                        .append( processInfo.getStartTime() ).append( ',' )
+                        .append( processInfo.getPriority() ).append( ',' )
                         .append( escapeCsv( processInfo.getCommand() ) ).append( '\n' );
             }
             return sb.toString();
