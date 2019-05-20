@@ -66,4 +66,22 @@ public interface CountsAccessor extends CountsVisitor.Visitable
             updater.incrementRelationshipCount( startLabelId, typeId, endLabelId, count );
         }
     }
+
+    CountsAccessor.Updater NO_OP_UPDATER = new CountsAccessor.Updater()
+    {
+        @Override
+        public void incrementNodeCount( long labelId, long delta )
+        {   // no-op
+        }
+
+        @Override
+        public void incrementRelationshipCount( long startLabelId, int typeId, long endLabelId, long delta )
+        {   // no-op
+        }
+
+        @Override
+        public void close()
+        {   // no-op
+        }
+    };
 }

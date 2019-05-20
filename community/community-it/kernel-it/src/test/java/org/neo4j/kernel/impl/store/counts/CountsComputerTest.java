@@ -382,7 +382,6 @@ class CountsComputerTest
         @Override
         public void progress( long add )
         {
-
         }
 
         @Override

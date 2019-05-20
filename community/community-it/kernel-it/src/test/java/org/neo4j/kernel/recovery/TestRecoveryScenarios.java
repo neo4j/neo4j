@@ -58,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
+import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
 class TestRecoveryScenarios
@@ -187,7 +188,7 @@ class TestRecoveryScenarios
         Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
         try ( KernelTransaction tx = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED ) )
         {
-            assertEquals( 0, tx.dataRead().countsForNode( -1 ) );
+            assertEquals( 0, tx.dataRead().countsForNode( ANY_LABEL ) );
             final TokenHolder holder = db.getDependencyResolver().resolveDependency( TokenHolders.class ).labelTokens();
             int labelId = holder.getIdByName( label.name() );
             assertEquals( 0, tx.dataRead().countsForNode( labelId ) );
@@ -315,6 +316,7 @@ class TestRecoveryScenarios
 
     private void crashAndRestart() throws Exception
     {
+//<<<<<<< HEAD
         var uncleanFs = fs.snapshot();
         try
         {
@@ -327,6 +329,10 @@ class TestRecoveryScenarios
         }
 
         managementService = databaseFactory( uncleanFs ).impermanent().build();
+//=======
+//        FileSystemAbstraction uncleanFs = fsRule.snapshot( managementService::shutdown );
+//        DatabaseManagementService managementService = databaseFactory( uncleanFs ).impermanent().build();
+//>>>>>>> Introduces GBPTreeCountsStore
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

@@ -195,7 +195,6 @@ class RecordStorageEngineTest
         // current engine files should contain everything except another count store file and label scan store
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         Set<File> allPossibleFiles = databaseLayout.storeFiles();
-        allPossibleFiles.remove( databaseLayout.countStoreB() );
         allPossibleFiles.remove( databaseLayout.labelScanStore() );
         allPossibleFiles.remove( databaseLayout.indexStatisticsStore() );
 

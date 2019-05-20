@@ -69,6 +69,10 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
             if ( !force )
             {
                 RotationTimerFactory.RotationTimer rotationTimer = timerFactory.createTimer();
+                // threshold:                version to rotate at, i.e. TransactionIdStore#getLastClosedTransactionId() at the time of flush() call
+                // preState.store.version(): highest seen applied version
+                // expected:                 number of in-flight applying transactions
+                // preState.applied():       number of applied transactions in i.e. ConcurrentMapState
                 for ( long expected = threshold - preState.store.version(), sleep = 10;
                       preState.applied() < expected; sleep = Math.min( sleep * 2, 100 ) )
                 {

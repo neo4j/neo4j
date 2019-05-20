@@ -1,0 +1,350 @@
+/*
+ * Copyright (c) 2002-2019 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.internal.counts;
+
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.LongConsumer;
+
+import org.neo4j.collection.PrimitiveLongArrayQueue;
+import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsStore;
+import org.neo4j.counts.CountsVisitor;
+import org.neo4j.exceptions.UnderlyingStorageException;
+import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.index.internal.gbptree.Seeker;
+import org.neo4j.index.internal.gbptree.Writer;
+import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.register.Register;
+import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.util.Preconditions;
+import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
+import org.neo4j.util.concurrent.OutOfOrderSequence;
+
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
+import static org.neo4j.internal.counts.CountsKey.MAX_STRAY_TX_ID;
+import static org.neo4j.internal.counts.CountsKey.MIN_STRAY_TX_ID;
+import static org.neo4j.internal.counts.TreeWriter.merge;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
+
+/**
+ * Counts store build on top of the {@link GBPTree}.
+ * Changes between checkpoints are kept in memory and written out to the tree in {@link #checkpoint(IOLimiter)}.
+ * Multiple {@link #apply(long) appliers} can run concurrently in a lock-free manner.
+ * Checkpoint will acquire a write lock, wait for currently active appliers to close while at the same time blocking new appliers to start,
+ * but doesn't wait for appliers that haven't even started yet, i.e. it doesn't require a gap-free transaction sequence to be completed.
+ */
+public class GBPTreeCountsStore implements CountsStore
+{
+    private final GBPTree<CountsKey,CountsValue> tree;
+    private final OutOfOrderSequence idSequence;
+    private final ReadWriteLock lock = new ReentrantReadWriteLock( true );
+    private final CountsLayout layout = new CountsLayout();
+    private final CountsBuilder initialCountsBuilder;
+    private final boolean readOnly;
+    private volatile ConcurrentHashMap<CountsKey,AtomicLong> changes = new ConcurrentHashMap<>();
+    private volatile TxIdInformation txIdInformation;
+    private volatile boolean started;
+
+    public GBPTreeCountsStore( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCollector,
+            CountsBuilder initialCountsBuilder, boolean readOnly )
+    {
+        this.readOnly = readOnly;
+        CountsHeader header = new CountsHeader( TransactionIdStore.BASE_TX_ID );
+        this.tree = new GBPTree<>( pageCache, file, layout, 0, NO_MONITOR, header, header, recoveryCollector );
+        boolean successful = false;
+        try
+        {
+            this.txIdInformation = readTxIdInformation( header.value() );
+            // Recreate the tx id state as it was from last checkpoint (or base if empty)
+            this.idSequence = new ArrayQueueOutOfOrderSequence( txIdInformation.highestGapFreeTxId, 200, EMPTY_LONG_ARRAY );
+            this.txIdInformation.strayTxIds.forEach( txId -> idSequence.offer( txId, EMPTY_LONG_ARRAY ) );
+            // Only care about initial counts rebuilding if the tree was created right now when opening this tree
+            // The actual rebuilding will happen in start()
+            this.initialCountsBuilder = header.wasRead() ? null : initialCountsBuilder;
+            successful = true;
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+        finally
+        {
+            if ( !successful )
+            {
+                closeAllUnchecked( tree );
+            }
+        }
+    }
+
+    // === Life cycle ===
+
+    public void start() throws Exception
+    {
+        // Execute the initial counts building if we need to, i.e. if instantiation of this counts store had to create it
+        if ( initialCountsBuilder != null )
+        {
+            Lock lock = lock( this.lock.writeLock() );
+            long txId = initialCountsBuilder.lastCommittedTxId();
+            try ( CountsAccessor.Updater updater = new CountUpdater( new TreeWriter( tree.writer(), idSequence, txId ), lock ) )
+            {
+                initialCountsBuilder.initialize( updater );
+            }
+        }
+        started = true;
+    }
+
+    @Override
+    public void close()
+    {
+        closeAllUnchecked( tree );
+    }
+
+    // === Writes ===
+
+    public CountsAccessor.Updater apply( long txId )
+    {
+        Preconditions.checkState( !readOnly, "This counts store is read-only" );
+        Lock lock = lock( this.lock.readLock() );
+
+        boolean alreadyApplied = txIdInformation.txIdIsAlreadyApplied( txId );
+        // Why have this check below? Why should we not apply transactions before started when we have an initial counts builder?
+        // Consider the following scenario:
+        // - Create node N
+        // - Checkpoint
+        // - Delete node N
+        // - Crash
+        // - Delete counts store
+        // - Startup, where recovery starts
+        // - Recovery replays deletion of N
+        // - After recovery the counts store is rebuilt from scratch
+        //
+        // The deletion of N on the empty counts store would have resulted in a count of -1, which is not OK to write to the tree,
+        // since there can never be a negative amount of, say nodes. The counts store will be rebuilt after recovery anyway,
+        // so ignore these transactions.
+        boolean inRecoveryOnEmptyCountsStore = initialCountsBuilder != null && !started;
+        if ( alreadyApplied || inRecoveryOnEmptyCountsStore )
+        {
+            lock.unlock();
+            return NO_OP_UPDATER;
+        }
+        return new CountUpdater( new MapWriter( this::readCountFromTree, changes, idSequence, txId ), lock );
+    }
+
+    public void checkpoint( IOLimiter ioLimiter ) throws IOException
+    {
+        if ( readOnly )
+        {
+            return;
+        }
+
+        // First acquire the write lock. This is a fair lock and will wait for currently applying transactions to finish.
+        // This could potentially block appliers around this point since they will respect the fairness too.
+        // The good thing is that the lock is held very very briefly.
+        Lock writeLock = lock( this.lock.writeLock() );
+
+        // When we have the lock we do two things (no updates will come in while we have it):
+        OutOfOrderSequence.Snapshot txIdSnapshot;
+        try
+        {
+            // Take a snapshot of applied transactions (but write it later, no need to write it under the lock)
+            txIdSnapshot = idSequence.snapshot();
+
+            // Take the changes and instantiate a new map for other updates to apply to after we release this lock
+            // We have to write them while we have the lock since we start from a new empty "changes" cache,
+            // otherwise an applying transaction after we've released the lock below but before writing the changes to the tree
+            // could load old counts into the new changes cache and therefore corrupt the counts store.
+            ConcurrentHashMap<CountsKey,AtomicLong> changesToWrite = changes;
+            changes = new ConcurrentHashMap<>();
+            writeCountsChanges( changesToWrite );
+        }
+        finally
+        {
+            writeLock.unlock();
+        }
+
+        // Now write the transaction information to the tree
+        writeTxIdInformationToTree( txIdSnapshot );
+
+        // Good, check-point all these changes
+        tree.checkpoint( ioLimiter, new CountsHeader( txIdSnapshot.highestGapFree()[0] ) );
+    }
+
+    private void writeCountsChanges( ConcurrentHashMap<CountsKey,AtomicLong> changes ) throws IOException
+    {
+        // Sort the entries in the natural tree order to get more performance in the writer
+        List<Map.Entry<CountsKey,AtomicLong>> changeList = new ArrayList<>( changes.entrySet() );
+        changeList.sort( ( e1, e2 ) -> layout.compare( e1.getKey(), e2.getKey() ) );
+        try ( Writer<CountsKey,CountsValue> writer = tree.writer() )
+        {
+            CountsValue value = new CountsValue();
+            for ( Map.Entry<CountsKey,AtomicLong> entry : changeList )
+            {
+                long count = entry.getValue().get();
+                merge( writer, entry.getKey(), value.initialize( count ) );
+            }
+        }
+    }
+
+    private void writeTxIdInformationToTree( OutOfOrderSequence.Snapshot txIdSnapshot ) throws IOException
+    {
+        PrimitiveLongArrayQueue strayIds = new PrimitiveLongArrayQueue();
+        visitStrayTxIdsInTree( strayIds::enqueue );
+
+        try ( Writer<CountsKey,CountsValue> writer = tree.writer() )
+        {
+            // First clear all the stray ids from the previous checkpoint
+            CountsKey key = new CountsKey();
+            CountsValue value = new CountsValue();
+            while ( !strayIds.isEmpty() )
+            {
+                long strayTxId = strayIds.dequeue();
+                writer.remove( key.initializeStrayTxId( strayTxId ) );
+            }
+
+            // And write all stray txIds into the tree
+            value.initialize( 0 );
+            long[][] strayTxIds = txIdSnapshot.idsOutOfOrder();
+            for ( long[] strayTxId : strayTxIds )
+            {
+                long txId = strayTxId[0];
+                writer.put( key.initializeStrayTxId( txId ), value );
+            }
+        }
+    }
+
+    // === Reads ===
+
+    @Override
+    public Register.DoubleLongRegister nodeCount( int labelId, Register.DoubleLongRegister target )
+    {
+        return read( new CountsKey().initializeNode( labelId ), target );
+    }
+
+    @Override
+    public Register.DoubleLongRegister relationshipCount( int startLabelId, int typeId, int endLabelId, Register.DoubleLongRegister target )
+    {
+        return read( new CountsKey().initializeRelationship( startLabelId, typeId, endLabelId ), target );
+    }
+
+    @Override
+    public void accept( CountsVisitor visitor )
+    {
+        // First visit the changes that we haven't check-pointed yet
+        for ( Map.Entry<CountsKey,AtomicLong> changedEntry : changes.entrySet() )
+        {
+            // Our simplistic approach to the changes map makes it contain 0 counts at times, we don't remove entries from it
+            if ( changedEntry.getValue().get() != 0 )
+            {
+                changedEntry.getKey().accept( visitor, changedEntry.getValue().get() );
+            }
+        }
+
+        // Then visit the remaining stored changes from the last check-point
+        try ( Seeker<CountsKey,CountsValue> seek = tree.seek( CountsKey.MIN_COUNT, CountsKey.MAX_COUNT ) )
+        {
+            while ( seek.next() )
+            {
+                CountsKey key = seek.key();
+                if ( !changes.containsKey( key ) )
+                {
+                    key.accept( visitor, seek.value().count );
+                }
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
+
+    @Override
+    public long txId()
+    {
+        return idSequence.getHighestGapFreeNumber();
+    }
+
+    private Register.DoubleLongRegister read( CountsKey key, Register.DoubleLongRegister target )
+    {
+        AtomicLong changedCount = changes.get( key );
+        long count = changedCount != null ? changedCount.get() : readCountFromTree( key );
+        // Apparently the caller expects the count to be written in the second long
+        target.write( 0, count );
+        return target;
+    }
+
+    /**
+     * Read the count from the store. For writes this is done on an unchanging tree because we have the read lock where check-pointing
+     * (where changes are written to the tree) can only be done if the write-lock is acquired. For plain unmodified reads this is read from the tree
+     * without a lock, which is fine and follows general transaction isolation guarantees.
+     * @param key count value to read from the tree.
+     * @return AtomicLong with the read count, or initialized to 0 if the count didn't exist in the tree.
+     */
+    private long readCountFromTree( CountsKey key )
+    {
+        try ( Seeker<CountsKey,CountsValue> seek = tree.seek( key, key ) )
+        {
+            return seek.next() ? seek.value().count : 0;
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    private void visitStrayTxIdsInTree( LongConsumer visitor ) throws IOException
+    {
+        try ( Seeker<CountsKey,CountsValue> seek = tree.seek( MIN_STRAY_TX_ID, MAX_STRAY_TX_ID ) )
+        {
+            while ( seek.next() )
+            {
+                visitor.accept( seek.key().first );
+            }
+        }
+    }
+
+    private TxIdInformation readTxIdInformation( long highestGapFreeTxId ) throws IOException
+    {
+        MutableLongSet strayTxIds = new LongHashSet();
+        visitStrayTxIdsInTree( strayTxIds::add );
+        return new TxIdInformation( highestGapFreeTxId, strayTxIds );
+    }
+
+    private static Lock lock( Lock lock )
+    {
+        lock.lock();
+        return lock;
+    }
+}

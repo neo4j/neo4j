@@ -29,6 +29,7 @@ public class CountsStoreTransactionApplier extends TransactionApplier.Adapter
     private final TransactionApplicationMode mode;
     private final CountsTracker.Updater countsUpdater;
     private boolean haveUpdates;
+    private boolean countsUpdaterClosed;
 
     public CountsStoreTransactionApplier( TransactionApplicationMode mode, CountsAccessor.Updater countsUpdater )
     {
@@ -39,40 +40,31 @@ public class CountsStoreTransactionApplier extends TransactionApplier.Adapter
     @Override
     public void close()
     {
-        assert countsUpdater != null || mode == TransactionApplicationMode.RECOVERY : "You must call begin first";
         closeCountsUpdaterIfOpen();
     }
 
     private void closeCountsUpdaterIfOpen()
     {
-        if ( countsUpdater != null )
-        {   // CountsUpdater is null if we're in recovery and the counts store already has had this transaction applied.
+        if ( !countsUpdaterClosed )
+        {
             countsUpdater.close();
+            countsUpdaterClosed = true;
         }
     }
 
     @Override
     public boolean visitNodeCountsCommand( Command.NodeCountsCommand command )
     {
-        assert countsUpdater != null || mode == TransactionApplicationMode.RECOVERY : "You must call begin first";
         haveUpdates = true;
-        if ( countsUpdater != null )
-        {   // CountsUpdater is null if we're in recovery and the counts store already has had this transaction applied.
-            countsUpdater.incrementNodeCount( command.labelId(), command.delta() );
-        }
+        countsUpdater.incrementNodeCount( command.labelId(), command.delta() );
         return false;
     }
 
     @Override
     public boolean visitRelationshipCountsCommand( Command.RelationshipCountsCommand command )
     {
-        assert countsUpdater != null || mode == TransactionApplicationMode.RECOVERY : "You must call begin first";
         haveUpdates = true;
-        if ( countsUpdater != null )
-        {   // CountsUpdater is null if we're in recovery and the counts store already has had this transaction applied.
-            countsUpdater.incrementRelationshipCount(
-                    command.startLabelId(), command.typeId(), command.endLabelId(), command.delta() );
-        }
+        countsUpdater.incrementRelationshipCount( command.startLabelId(), command.typeId(), command.endLabelId(), command.delta() );
         return false;
     }
 
