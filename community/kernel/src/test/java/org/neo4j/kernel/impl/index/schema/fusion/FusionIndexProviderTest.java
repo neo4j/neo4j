@@ -31,10 +31,12 @@ import java.util.EnumMap;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
 import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
@@ -49,8 +51,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.ArrayUtil.array;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -335,6 +340,26 @@ public class FusionIndexProviderTest
                 // then
                 assertEquals( InternalIndexState.POPULATING, initialState );
             }
+        }
+    }
+
+    @Test
+    public void shouldBlessWithAllProviders() throws MisconfiguredIndexException
+    {
+        // given
+        IndexDescriptor indexDescriptor = AN_INDEX;
+
+        // when
+        for ( IndexProvider aliveProvider : aliveProviders )
+        {
+            when( aliveProvider.bless( any( IndexDescriptor.class ) ) ).then( returnsFirstArg() );
+        }
+        indexDescriptor = fusionIndexProvider.bless( indexDescriptor );
+
+        // then
+        for ( IndexProvider aliveProvider : aliveProviders )
+        {
+            verify( aliveProvider, times( 1 ) ).bless( any( IndexDescriptor.class ) );
         }
     }
 
