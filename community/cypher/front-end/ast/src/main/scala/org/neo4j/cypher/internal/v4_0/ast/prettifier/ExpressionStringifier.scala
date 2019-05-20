@@ -41,7 +41,7 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
       case l: Literal =>
         l.asCanonicalStringVal
       case e: BinaryOperatorExpression =>
-        s"${parens(e, e.lhs)} ${e.canonicalOperatorSymbol} ${parens(e, e.rhs)}"
+        s"${parens(e, e.lhs)} ${operator(e)} ${parens(e, e.rhs)}"
       case Variable(v) =>
         backtick(v)
       case ListLiteral(expressions) =>
@@ -169,9 +169,10 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
 
   def node(nodePattern: NodePattern): String = {
     val name = nodePattern.variable.map(this.apply).getOrElse("")
+    val base = nodePattern.baseNode.map(this.apply).map(" COPY OF " + _).getOrElse("")
     val labels = if (nodePattern.labels.isEmpty) "" else
       nodePattern.labels.map(l => backtick(l.name)).mkString(":", ":", "")
-    val e = props(s"$name$labels", nodePattern.properties)
+    val e = props(s"$name$base$labels", nodePattern.properties)
     s"($e)"
   }
 
@@ -181,15 +182,16 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
     val types = if (relationship.types.isEmpty)
       ""
     else
-      relationship.types.map(l => backtick(l.name)).mkString(":", ":", "")
+      relationship.types.map(l => backtick(l.name)).mkString(":", "|", "")
     val name = relationship.variable.map(this.apply).getOrElse("")
+    val base = relationship.baseRel.map(this.apply).map(" COPY OF " + _).getOrElse("")
     val length = relationship.length match {
       case None => ""
       case Some(None) => "*"
       case Some(Some(Range(lower, upper))) =>
         s"*${lower.map(_.stringVal).getOrElse("")}..${upper.map(_.stringVal).getOrElse("")}"
     }
-    val info = props(s"$name$types$length", relationship.properties)
+    val info = props(s"$name$base$types$length", relationship.properties)
     if (info == "")
       s"$lArrow--$rArrow"
     else
@@ -254,6 +256,12 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
     case _ =>
       1
 
+  }
+
+  def operator(e: BinaryOperatorExpression): String = e match {
+    case s: StartsWith => "STARTS WITH"
+    case s: EndsWith => "ENDS WITH"
+    case o => e.canonicalOperatorSymbol
   }
 }
 

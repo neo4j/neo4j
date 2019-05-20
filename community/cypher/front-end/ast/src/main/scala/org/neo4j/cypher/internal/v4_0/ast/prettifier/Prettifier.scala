@@ -217,7 +217,7 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case EveryPath(element) => asString(element)
     case NamedPatternPart(variable, patternPart) => s"${mkStringOf(variable)} = ${asString(patternPart)}"
     case ShortestPaths(pattern, single) =>
-      val name = if(single) "shortestPath" else "shortestPaths"
+      val name = if(single) "shortestPath" else "allShortestPaths"
       s"$name(${asString(pattern)})"
   }
 
@@ -225,7 +225,26 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     val o = if(m.optional) "OPTIONAL " else ""
     val p = m.pattern.patternParts.map(p => asString(p)).mkString(", ")
     val w = m.where.map(w => NL + "  WHERE " + mkStringOf(w.expression)).getOrElse("")
-    s"${o}MATCH $p$w"
+    val h = m.hints.map(asString).map("  " + _).mkString(NL, NL, "")
+    s"${o}MATCH $p$h$w"
+  }
+
+  private def asString(m: UsingHint): String = {
+    m match {
+      case UsingIndexHint(v, l, ps, s) => Seq(
+        "USING INDEX ", if (s == SeekOnly) "SEEK " else "",
+        mkStringOf(v), ":", l.name,
+        ps.map(_.name).mkString("(", ",", ")")
+      ).mkString
+
+      case UsingScanHint(v, l) => Seq(
+        "USING SCAN ", mkStringOf(v), ":", l.name
+      ).mkString
+
+      case UsingJoinHint(vs) => Seq(
+        "USING JOIN ON ", vs.map(mkStringOf(_)).toIterable.mkString(", ")
+      ).mkString
+    }
   }
 
   private def asString(merge: Merge): String = {
@@ -247,9 +266,15 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case UnaliasedReturnItem(e, _) => mkStringOf(e)
   }
 
+  private def asString(r: ReturnItemsDef): String = {
+    val as = if (r.includeExisting) Seq("*") else Seq()
+    val is = r.items.map(asString)
+    (as ++ is).mkString(", ")
+  }
+
   private def asString(r: Return): String = {
     val d = if (r.distinct) " DISTINCT" else ""
-    val i = r.returnItems.items.map(asString).mkString(", ")
+    val i = asString(r.returnItems)
     val o = r.orderBy.map(NL + "  " + asString(_)).getOrElse("")
     val l = r.limit.map(NL + "  " + asString(_)).getOrElse("")
     val s = r.skip.map(NL + "  " + asString(_)).getOrElse("")
@@ -258,7 +283,7 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
 
   private def asString(w: With): String = {
     val d = if (w.distinct) " DISTINCT" else ""
-    val i = w.returnItems.items.map(asString).mkString(", ")
+    val i = asString(w.returnItems)
     val o = w.orderBy.map(NL + "  " + asString(_)).getOrElse("")
     val l = w.limit.map(NL + "  " + asString(_)).getOrElse("")
     val s = w.skip.map(NL + "  " + asString(_)).getOrElse("")
