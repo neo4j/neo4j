@@ -119,7 +119,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on two grouping columns, one ordered") {
     // given
-    val input = inputColumns(nBatches = sizeHint, batchSize = 10, _ / 10, _ % 2)
+    val input = inputColumns(nBatches = sizeHint, batchSize = 10, x => x / 10, y => y % 2)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -132,15 +132,15 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y", "c").withRows(
-      for {i <- 0 until sizeHint
-           j <- 0 to 1} yield {
-        Array(i, j, 5)
+      for {x <- 0 until sizeHint
+           y <- 0 to 1} yield {
+        Array(x, y, 5) // (x / 10, y % 2) as grouping gives 5 duplicates per group
       })
   }
 
   test("should count(*) on two grouping columns, two ordered") {
     // given
-    val input = inputColumns(nBatches = sizeHint, batchSize = 10, _ / 100, i => (i % 100) / 10)
+    val input = inputColumns(nBatches = sizeHint, batchSize = 10, x => x / 100, y => (y % 100) / 10)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -153,9 +153,9 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y", "c").withRows(
-      for {i <- 0 until sizeHint / 10
-           j <- 0 until 10} yield {
-        Array(i, j, 10)
+      for {x <- 0 until sizeHint / 10
+           y <- 0 until 10} yield {
+        Array(x, y, 10) // (x / 100, (y % 100) / 10) as grouping gives 10 duplicates per group
       })
   }
 
@@ -207,7 +207,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on three grouping columns, one ordered") {
     // given
-    val input = inputColumns(nBatches = sizeHint, batchSize = 10, _ / 10, _ % 2, _ % 2)
+    val input = inputColumns(nBatches = sizeHint, batchSize = 10, x => x / 10, y => y % 2, z => z % 2)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -220,9 +220,9 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y", "z", "c").withRows(
-      for {i <- 0 until sizeHint
-           j <- 0 to 1} yield {
-        Array(i, j, j, 5)
+      for {x <- 0 until sizeHint
+           yz <- 0 to 1} yield {
+        Array(x, yz, yz, 5) //  (x / 10, y % 2, z % 2) as grouping gives 5 duplicates per group
       })
   }
 
@@ -241,16 +241,16 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y", "z", "c").withRows(
-      for {i <- 0 until sizeHint / 10
-           j <- 0 until 10
-           k <- 0 to 1} yield {
-        Array(i, j, k, 5)
+      for {x <- 0 until sizeHint / 10
+           y <- 0 until 10
+           z <- 0 to 1} yield {
+        Array(x, y, z, 5) //  (x / 100, (y % 100) / 10, z % 2) as grouping gives 5 duplicates per group
       })
   }
 
   test("should count(*) on three grouping columns, three ordered") {
     // given
-    val input = inputColumns(nBatches = sizeHint, batchSize = 10, _ / 100, i => (i % 100) / 10, i => (i % 10) / 5)
+    val input = inputColumns(nBatches = sizeHint, batchSize = 10, x => x / 100, y => (y % 100) / 10, z => (z % 10) / 5)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -263,16 +263,16 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y", "z", "c").withRows(
-      for {i <- 0 until sizeHint / 10
-           j <- 0 until 10
-           k <- 0 to 1} yield {
-        Array(i, j, k, 5)
+      for {x <- 0 until sizeHint / 10
+           y <- 0 until 10
+           z <- 0 to 1} yield {
+        Array(x, y, z, 5) //  (x / 100, (y % 100) / 10, (z % 10) / 5) as grouping gives 5 duplicates per group
       })
   }
 
   test("should sum(x) on two grouping columns, two ordered") {
     // given
-    val input = inputColumns(nBatches = sizeHint, batchSize = 10, _ / 100, i => (i % 100) / 10, _ % 5)
+    val input = inputColumns(nBatches = sizeHint, batchSize = 10, x => x / 100, y => (y % 100) / 10, z => z % 5)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -287,7 +287,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y", "c").withRows(
       for {i <- 0 until sizeHint / 10
            j <- 0 until 10} yield {
-        Array(i, j, 20)
+        Array(i, j, List(0, 1, 2, 3, 4, 0, 1, 2, 3, 4).sum) //  (x / 100, (y % 100) / 10) as grouping gives 10 duplicates per group, with the z values [0,1,2,3,4,0,1,2,3,4]
       })
   }
 
