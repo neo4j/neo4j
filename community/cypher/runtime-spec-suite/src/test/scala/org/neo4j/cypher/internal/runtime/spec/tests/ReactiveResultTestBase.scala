@@ -158,7 +158,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
 
   test("should not exhaust input when there is no demand") {
     // Given
-    val (nodes, _) = circleGraph(10000)
+    val (nodes, _) = circleGraph(1000)
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .expand("(x)-->(y)")
@@ -166,18 +166,17 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
       .build()
     val stream = batchedInputValues(1, nodes.map(Array[Any](_)): _*).stream()
 
-
     // When
     val result = execute(logicalQuery, runtime, stream, new TestSubscriber)
 
     // Then
-    result.request(3)
+    result.request(1)
     result.await() shouldBe true
     //we shouldn't have exhausted the entire input
     stream.hasMore shouldBe true
 
     //However if we demand the rest of the data we should
-    result.request(9998)
+    result.request(9999)
     result.await() shouldBe false
     stream.hasMore shouldBe false
   }
