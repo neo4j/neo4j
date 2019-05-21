@@ -26,10 +26,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import java.io.File;
 import java.io.Flushable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -42,15 +45,22 @@ import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
+import org.neo4j.io.fs.OpenMode;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -68,6 +78,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -270,6 +281,140 @@ public class BatchingTransactionAppenderConcurrencyTest
         // THEN perform the race. The relevant assertions are made inside the contestants.
         race.go();
     }
+
+    @Test
+    public void databasePanicShouldHandleOutOfMemoryErrors() throws IOException, InterruptedException
+    {
+        final CountDownLatch panicLatch = new CountDownLatch( 1 );
+        final CountDownLatch adversaryLatch = new CountDownLatch( 1 );
+        OutOfMemoryAwareFileSystem fs = new OutOfMemoryAwareFileSystem();
+
+        life.add( new FileSystemLifecycleAdapter( fs ) );
+        DatabaseHealth slowPanicDatabaseHealth = new SlowPanickingDatabaseHealth( panicLatch, adversaryLatch );
+        LogFiles logFiles = LogFilesBuilder.builder( testDirectory.databaseLayout(), fs )
+                .withLogVersionRepository( logVersionRepository )
+                .withTransactionIdStore( transactionIdStore )
+                .build();
+        life.add( logFiles );
+        final BatchingTransactionAppender appender = life.add(
+                new BatchingTransactionAppender( logFiles, logRotation, transactionMetadataCache, transactionIdStore,
+                        explicitIndexTransactionOrdering, slowPanicDatabaseHealth ) );
+        life.start();
+
+        // Commit initial transaction
+        appender.append( tx(), LogAppendEvent.NULL );
+
+        // Try to commit one transaction, will fail during flush with OOM, but not actually panic
+        fs.shouldOOM = true;
+        Future<Long> failingTransaction = executor.submit( () -> appender.append( tx(), LogAppendEvent.NULL ) );
+        panicLatch.await();
+
+        // Try to commit one additional transaction, should fail since database has already panicked
+        fs.shouldOOM = false;
+        try
+        {
+            appender.append( tx(), new LogAppendEvent.Empty()
+            {
+                @Override
+                public LogForceWaitEvent beginLogForceWait()
+                {
+                    adversaryLatch.countDown();
+                    return super.beginLogForceWait();
+                }
+            } );
+            fail( "Should have failed since database should have panicked" );
+        }
+        catch ( IOException e )
+        {
+            assertTrue( e.getMessage().contains( "The database has encountered a critical error" ) );
+        }
+
+        // Check that we actually got an OutOfMemoryError
+        try
+        {
+            failingTransaction.get();
+            fail( "Should have failed with OutOfMemoryError error" );
+        }
+        catch ( ExecutionException e )
+        {
+            assertTrue( e.getCause() instanceof OutOfMemoryError );
+        }
+
+        // Check number of transactions, should only have one
+        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+
+        assertEquals( logFiles.getLowestLogVersion(), logFiles.getHighestLogVersion() );
+        long version = logFiles.getHighestLogVersion();
+
+        try ( LogVersionedStoreChannel channel = logFiles.openForVersion( version );
+                ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( channel );
+                LogEntryCursor cursor = new LogEntryCursor( logEntryReader, readAheadLogChannel ) )
+        {
+            LogEntry entry;
+            long numberOfTransactions = 0;
+            while ( cursor.next() )
+            {
+                entry = cursor.get();
+                if ( entry instanceof LogEntryCommit )
+                {
+                    numberOfTransactions++;
+                }
+            }
+            assertEquals( 1, numberOfTransactions );
+        }
+    }
+
+    private static class OutOfMemoryAwareFileSystem extends EphemeralFileSystemAbstraction
+    {
+        private volatile boolean shouldOOM;
+
+        @Override
+        public synchronized StoreChannel open( File fileName, OpenMode openMode ) throws IOException
+        {
+            return new DelegatingStoreChannel( super.open( fileName, openMode ) )
+            {
+                @Override
+                public void writeAll( ByteBuffer src ) throws IOException
+                {
+                    if ( shouldOOM )
+                    {
+                        // Allocation of a temporary buffer happens the first time a thread tries to write
+                        // so this is a perfectly plausible scenario.
+                        throw new OutOfMemoryError( "Temporary buffer allocation failed" );
+                    }
+                    super.writeAll( src );
+                }
+            };
+        }
+    }
+
+    private static class SlowPanickingDatabaseHealth extends DatabaseHealth
+    {
+        private final CountDownLatch panicLatch;
+        private final CountDownLatch adversaryLatch;
+
+        SlowPanickingDatabaseHealth( CountDownLatch panicLatch, CountDownLatch adversaryLatch )
+        {
+            super( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
+            this.panicLatch = panicLatch;
+            this.adversaryLatch = adversaryLatch;
+        }
+
+        @Override
+        public void panic( Throwable cause )
+        {
+            panicLatch.countDown();
+            try
+            {
+                adversaryLatch.await();
+            }
+            catch ( InterruptedException e )
+            {
+                throw new RuntimeException( e );
+            }
+            super.panic( cause );
+        }
+    };
 
     protected TransactionToApply tx()
     {
