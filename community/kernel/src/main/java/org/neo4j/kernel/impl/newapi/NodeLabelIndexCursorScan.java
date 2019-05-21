@@ -38,7 +38,7 @@ class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,Label
 
     NodeLabelIndexCursorScan( Read read, int label, LabelScan labelScan )
     {
-        super( labelScan, read );
+        super( labelScan, read, () -> read.txState().nodesWithLabelChanged( label ).getAdded().toArray() );
         if ( hasChanges )
         {
             TransactionState txState = read.txState();
@@ -50,12 +50,6 @@ class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,Label
             this.removed = LongSets.immutable.empty();
         }
         this.label = label;
-    }
-
-    @Override
-    protected long[] addedInTransaction()
-    {
-        return read.txState().nodesWithLabelChanged( label ).getAdded().toArray();
     }
 
     @Override

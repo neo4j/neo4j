@@ -29,13 +29,7 @@ final class RelationshipCursorScan extends BaseCursorScan<RelationshipScanCursor
 
     RelationshipCursorScan( AllRelationshipsScan allRelationshipsScan, Read read )
     {
-        super( allRelationshipsScan, read );
-    }
-
-    @Override
-    long[] addedInTransaction()
-    {
-        return read.txState().addedAndRemovedRelationships().getAdded().toArray();
+        super( allRelationshipsScan, read, () -> read.txState().addedAndRemovedRelationships().getAdded().toArray() );
     }
 
     @Override

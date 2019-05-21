@@ -23,6 +23,7 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import org.neo4j.collection.RangeLongIterator;
 import org.neo4j.internal.kernel.api.Cursor;
@@ -38,31 +39,22 @@ abstract class BaseCursorScan<C extends Cursor, S> implements Scan<C>
     final Read read;
     final boolean hasChanges;
     private volatile boolean addedItemsConsumed;
-    private long[] addedItemsArray;
+    private final long[] addedItemsArray;
     private final AtomicInteger addedChunk = new AtomicInteger( 0 );
 
-    BaseCursorScan( S storageScan, Read read )
+    BaseCursorScan( S storageScan, Read read, Supplier<long[]> addedIntTransaction )
     {
         this.storageScan = storageScan;
         this.read = read;
         this.hasChanges = read.hasTxStateWithChanges();
-    }
-
-    private void loadAddedItems()
-    {
-        if ( addedItemsArray == null )
-        {
-            this.addedItemsArray = hasChanges ? addedInTransaction() : EMPTY_LONG_ARRAY;
-            this.addedItemsConsumed = addedItemsArray.length == 0;
-        }
+        this.addedItemsArray = hasChanges ? addedIntTransaction.get() : EMPTY_LONG_ARRAY;
+        this.addedItemsConsumed = addedItemsArray.length == 0;
     }
 
     @Override
     public boolean reserveBatch( C cursor, int sizeHint )
     {
         requirePositive( sizeHint );
-
-        loadAddedItems();
 
         LongIterator addedItems = ImmutableEmptyLongIterator.INSTANCE;
         if ( hasChanges && !addedItemsConsumed )
@@ -83,8 +75,6 @@ abstract class BaseCursorScan<C extends Cursor, S> implements Scan<C>
         }
         return scanStore( cursor, sizeHint, addedItems );
     }
-
-    abstract long[] addedInTransaction();
 
     abstract boolean scanStore( C cursor, int sizeHint, LongIterator addedItems );
 }

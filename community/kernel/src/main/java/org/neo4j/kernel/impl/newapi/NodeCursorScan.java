@@ -28,13 +28,7 @@ final class NodeCursorScan extends BaseCursorScan<NodeCursor,AllNodeScan>
 {
     NodeCursorScan( AllNodeScan allNodeScan, Read read )
     {
-        super( allNodeScan, read );
-    }
-
-    @Override
-    long[] addedInTransaction()
-    {
-        return read.txState().addedAndRemovedNodes().getAdded().toArray();
+        super( allNodeScan, read, () -> read.txState().addedAndRemovedNodes().getAdded().toArray() );
     }
 
     @Override
