@@ -125,9 +125,9 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
             .collect {
               case e: BinaryOperatorExpression => e
             }
-            .permutations.find { cand =>
-              def hasAll = expressions.forall(cand.contains)
-              def aligns = cand.sliding(2).forall(p => p.head.rhs == p.last.lhs)
+            .permutations.find { chain =>
+              def hasAll = expressions.forall(chain.contains)
+              def aligns = chain.sliding(2).forall(p => p.head.rhs == p.last.lhs)
               hasAll && aligns
             }
 
