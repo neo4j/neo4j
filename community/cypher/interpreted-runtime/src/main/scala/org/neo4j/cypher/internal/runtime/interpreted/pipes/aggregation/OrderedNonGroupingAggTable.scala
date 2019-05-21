@@ -51,7 +51,7 @@ class OrderedNonGroupingAggTable(orderedGroupingFunction: (ExecutionContext, Que
     if (currentGroupKey == null) {
       currentGroupKey = orderedGroupingFunction(first, state)
     }
-    currentGroupKey == orderedGroupingFunction(current, state)
+    current.eq(first) || currentGroupKey == orderedGroupingFunction(current, state)
   }
 
   // This is the result of one chunk, not the whole result

@@ -56,7 +56,7 @@ class OrderedGroupingAggTable(orderedGroupingFunction: (ExecutionContext, QueryS
     if (currentGroupKey == null) {
       currentGroupKey = orderedGroupingFunction(first, state)
     }
-    currentGroupKey == orderedGroupingFunction(current, state)
+    current.eq(first) || currentGroupKey == orderedGroupingFunction(current, state)
   }
 
   override def result(): Iterator[ExecutionContext] = {
