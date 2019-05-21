@@ -22,6 +22,7 @@ package org.neo4j.consistency.checking.full;
 import java.lang.reflect.Array;
 import java.util.List;
 
+import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.ByteArrayBitsManipulator;
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.cache.CacheAccess;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -110,19 +112,29 @@ public class FullCheck
         if ( checkGraph )
         {
             CountsAccessor countsAccessor = stores.nativeStores().getCounts();
+            boolean checkCounts = true;
             if ( countsAccessor instanceof CountsTracker )
             {
                 CountsTracker tracker = (CountsTracker) countsAccessor;
+                // Perhaps other read-only use cases thinks it's fine to just rebuild an in-memory counts store,
+                // but the consistency checker should instead prevent rebuild and report that the counts store is broken or missing
+                tracker.setInitializer( new RebuildPreventingCountsInitializer() );
                 try
                 {
                     tracker.start();
                 }
                 catch ( Exception e )
                 {
-                    // let's hope it was already started :)
+                    log.error( "Counts store is missing, broken or of an older format and will not be consistency checked", e );
+                    summary.update( RecordType.COUNTS, 1, 0 );
+                    checkCounts = false;
                 }
             }
-            countsBuilder.checkCounts( countsAccessor, new ConsistencyReporter( records, report ), progressFactory );
+
+            if ( checkCounts )
+            {
+                countsBuilder.checkCounts( countsAccessor, new ConsistencyReporter( records, report ), progressFactory );
+            }
         }
 
         if ( !summary.isConsistent() )
@@ -178,5 +190,20 @@ public class FullCheck
             records[i] = store.getRecord( i, store.newRecord(), FORCE );
         }
         return records;
+    }
+
+    private class RebuildPreventingCountsInitializer implements DataInitializer<CountsAccessor.Updater>
+    {
+        @Override
+        public void initialize( CountsAccessor.Updater updater )
+        {
+            throw new UnsupportedOperationException( "Counts store needed rebuild, consistency checker will instead report broken or missing counts store" );
+        }
+
+        @Override
+        public long initialVersion()
+        {
+            return 0;
+        }
     }
 }
