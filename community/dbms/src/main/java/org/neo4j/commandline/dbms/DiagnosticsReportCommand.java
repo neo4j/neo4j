@@ -356,7 +356,7 @@ public class DiagnosticsReportCommand implements AdminCommand
                         .append( processInfo.getPhysicalMemory() ).append( ',' )
                         .append( processInfo.getCpuUsage() ).append( ',' )
                         .append( processInfo.getStartTime() ).append( ',' )
-                        .append( processInfo.getStartTime() ).append( ',' )
+                        .append( processInfo.getPriority() ).append( ',' )
                         .append( escapeCsv( processInfo.getCommand() ) ).append( '\n' );
             }
             return sb.toString();
