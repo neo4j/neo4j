@@ -27,7 +27,7 @@ import java.io.File;
 import java.util.Iterator;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.dbms.database.DatabaseManagementService;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.Kernel;

@@ -24,7 +24,7 @@ import java.util
 import org.neo4j.common.DependencyResolver
 import org.neo4j.configuration.{Config, GraphDatabaseSettings}
 import org.neo4j.cypher.internal._
-import org.neo4j.dbms.database.DatabaseManagementService
+import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.lifecycle.LifeSupport
 import org.neo4j.test.TestDatabaseManagementServiceBuilder

@@ -20,7 +20,7 @@
 package org.neo4j.server.database;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.DatabaseManagementService;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 
 @FunctionalInterface

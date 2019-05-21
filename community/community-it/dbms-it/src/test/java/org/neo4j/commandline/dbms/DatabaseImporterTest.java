@@ -28,7 +28,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.File;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.dbms.database.DatabaseManagementService;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.Args;
 import org.neo4j.io.layout.DatabaseLayout;

@@ -17,30 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.dbms.database;
+package org.neo4j.dbms.api;
 
 /**
- * General exception, thrown in the event of errors when managing individual databases.
- * @see DatabaseManagementService
+ * A {@link DatabaseManagementService} tried to perform some operation on a database, but no database with that name currently exists.
  */
-public class DatabaseManagementException extends RuntimeException
+public class DatabaseNotFoundException extends DatabaseManagementException
 {
-    public DatabaseManagementException()
+    public DatabaseNotFoundException()
     {
         super();
     }
 
-    public DatabaseManagementException( String message )
+    public DatabaseNotFoundException( String message )
     {
         super( message );
     }
 
-    public DatabaseManagementException( String message, Throwable cause )
+    public DatabaseNotFoundException( String message, Throwable cause )
     {
         super( message, cause );
     }
 
-    public DatabaseManagementException( Throwable cause )
+    public DatabaseNotFoundException( Throwable cause )
     {
         super( cause );
     }

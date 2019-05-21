@@ -17,29 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.dbms.database;
+package org.neo4j.dbms.api;
 
 /**
- * A {@link DatabaseManagementService} tried to create a new database, but a database with that name already exists.
+ * General exception, thrown in the event of errors when managing individual databases.
+ * @see DatabaseManagementService
  */
-public class DatabaseExistsException extends DatabaseManagementException
+public class DatabaseManagementException extends RuntimeException
 {
-    public DatabaseExistsException()
+    public DatabaseManagementException()
     {
         super();
     }
 
-    public DatabaseExistsException( String message )
+    public DatabaseManagementException( String message )
     {
         super( message );
     }
 
-    public DatabaseExistsException( String message, Throwable cause )
+    public DatabaseManagementException( String message, Throwable cause )
     {
         super( message, cause );
     }
 
-    public DatabaseExistsException( Throwable cause )
+    public DatabaseManagementException( Throwable cause )
     {
         super( cause );
     }

@@ -186,8 +186,7 @@
                         <groups>
                             <group>
                                 <title>Graph database</title>
-                                <packages>org.neo4j.graphdb:org.neo4j.graphdb.*
-                                </packages>
+                                <packages>org.neo4j.graphdb:org.neo4j.dbms.api</packages>
                             </group>
                             <group>
                                 <title>Query language</title>
@@ -221,11 +220,11 @@
 
                         <!-- Include the following packages... (yes, has to be one line) -->
                         <subpackages>
-                            org.neo4j.graphalgo:org.neo4j.cypher.export:org.neo4j.graphdb:org.neo4j.server.helpers:org.neo4j.server.rest.repr:org.neo4j.server.rest.web:org.neo4j.batchinsert:org.neo4j.logging:org.neo4j.procedure:org.neo4j.harness.junit
+                            org.neo4j.graphalgo:org.neo4j.cypher.export:org.neo4j.graphdb:org.neo4j.dbms.api:org.neo4j.server.helpers:org.neo4j.server.rest.repr:org.neo4j.server.rest.web:org.neo4j.batchinsert:org.neo4j.logging:org.neo4j.procedure:org.neo4j.harness.junit
                         </subpackages>
                         <!-- ...unless the package contains -->
                         <excludePackageNames>
-                            *.impl.*:*.internal.*:org.neo4j.logging.async:org.neo4j.server.rest.repr.formats:org.neo4j.server.rest.repr.util
+                            *.impl.*:*.internal.*:org.neo4j.logging.async:org.neo4j.server.rest.repr.formats:org.neo4j.server.rest.repr.util:org.neo4j.graphdb.factory:org.neo4j.graphdb.facade
                         </excludePackageNames>
                     </configuration>
                 </plugin>
@@ -261,9 +260,6 @@
                                             <item>org\.neo4j\.cypher\.export(\..+)?</item>
                                             <item>org\.neo4j\.cypher\.javacompat(\..+)?</item>
                                             <item>org\.neo4j\.graphdb(\..+)?</item>
-                                            <item>org\.neo4j\.helpers(\..+)?</item>
-                                            <item>org\.neo4j\.jmx(\..+)?</item>
-                                            <item>org\.neo4j\.management(\..+)?</item>
                                             <item>org\.neo4j\.server\.helpers(\..+)?</item>
                                             <item>org\.neo4j\.server\.plugins(\..+)?</item>
                                             <item>org\.neo4j\.server\.rest\.repr(\..+)?</item>

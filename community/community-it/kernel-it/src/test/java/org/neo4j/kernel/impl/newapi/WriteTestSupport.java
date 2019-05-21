@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.newapi;
 import java.io.File;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.dbms.database.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.internal.kernel.api.Kernel;

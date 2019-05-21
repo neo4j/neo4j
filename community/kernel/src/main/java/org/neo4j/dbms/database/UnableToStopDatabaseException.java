@@ -19,6 +19,8 @@
  */
 package org.neo4j.dbms.database;
 
+import org.neo4j.dbms.api.DatabaseManagementException;
+
 public class UnableToStopDatabaseException extends DatabaseManagementException
 {
     public UnableToStopDatabaseException()

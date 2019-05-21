@@ -25,8 +25,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.function.Predicate;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.dbms.database.DatabaseManagementService;
-import org.neo4j.graphdb.factory.DatabaseManagementServiceBuilder;
+import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.internal.id.BufferedIdController;
 import org.neo4j.internal.id.BufferingIdGeneratorFactory;
 import org.neo4j.internal.id.IdController;

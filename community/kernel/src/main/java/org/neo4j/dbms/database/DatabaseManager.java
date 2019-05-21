@@ -22,6 +22,8 @@ package org.neo4j.dbms.database;
 import java.util.Optional;
 import java.util.SortedMap;
 
+import org.neo4j.dbms.api.DatabaseExistsException;
+import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 

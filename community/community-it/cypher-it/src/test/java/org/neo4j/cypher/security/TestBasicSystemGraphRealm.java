@@ -29,7 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
-import org.neo4j.dbms.database.DatabaseManagementService;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -50,8 +50,8 @@ import org.neo4j.server.security.systemgraph.ContextSwitchingSystemGraphQueryExe
 import org.neo4j.server.security.systemgraph.QueryExecutor;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.neo4j.cypher.security.BasicSystemGraphRealmTestHelper.TestDatabaseManager;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.cypher.security.BasicSystemGraphRealmTestHelper.TestDatabaseManager;
 
 public class TestBasicSystemGraphRealm
 {

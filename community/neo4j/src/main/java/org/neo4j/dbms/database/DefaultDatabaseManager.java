@@ -22,6 +22,7 @@ package org.neo4j.dbms.database;
 import java.util.Optional;
 
 import org.neo4j.collection.Dependencies;
+import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.ModularDatabaseCreationContext;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;

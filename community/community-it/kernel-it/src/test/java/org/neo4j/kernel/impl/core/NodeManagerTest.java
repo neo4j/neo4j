@@ -26,7 +26,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-import org.neo4j.dbms.database.DatabaseManagementService;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
