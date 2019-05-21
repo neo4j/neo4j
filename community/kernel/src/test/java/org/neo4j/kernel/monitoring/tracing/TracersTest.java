@@ -54,7 +54,6 @@ class TracersTest
     void setUp()
     {
         log = logProvider.getLog( getClass() );
-        System.setProperty( "org.neo4j.helpers.Service.printServiceLoaderStackTraces", "true" );
     }
 
     @Test

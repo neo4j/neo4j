@@ -42,7 +42,7 @@ import static java.lang.String.format;
 public enum ByteUnit
 {
     /*
-    XXX Future notes: This class can potentially replace some of the functionality in org.neo4j.helpers.Format.
+    XXX Future notes: This class can potentially replace some of the functionality in org.neo4j.helpers.internal.Format.
      */
 
     Byte( 0, "B" ),
