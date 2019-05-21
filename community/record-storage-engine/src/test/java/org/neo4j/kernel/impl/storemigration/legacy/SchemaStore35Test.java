@@ -93,7 +93,7 @@ public class SchemaStore35Test
     {
         // GIVEN
         StorageIndexReference indexRule =
-                new DefaultStorageIndexReference( forLabel( 1, 4 ), PROVIDER_KEY, PROVIDER_VERSION, store.nextId(), Optional.empty(), false, null, false );
+                new DefaultStorageIndexReference( forLabel( 1, 4 ), PROVIDER_KEY, PROVIDER_VERSION, store.nextId(), Optional.empty(), false, null );
 
         // WHEN
         StorageIndexReference readIndexRule = (StorageIndexReference) SchemaRuleSerialization35.deserialize(
@@ -113,7 +113,7 @@ public class SchemaStore35Test
         // GIVEN
         int[] propertyIds = {4, 5, 6, 7};
         StorageIndexReference indexRule = new DefaultStorageIndexReference( forLabel( 2, propertyIds ), PROVIDER_KEY, PROVIDER_VERSION, store.nextId(),
-                Optional.empty(), false, null, false );
+                Optional.empty(), false, null );
 
         // WHEN
         StorageIndexReference readIndexRule = (StorageIndexReference) SchemaRuleSerialization35.deserialize(
@@ -135,7 +135,7 @@ public class SchemaStore35Test
         int[] entityTokens = {2, 3, 4};
         StorageIndexReference indexRule =
                 new DefaultStorageIndexReference( fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), entityTokens, propertyIds ),
-                        PROVIDER_KEY, PROVIDER_VERSION, store.nextId(), Optional.empty(), false, null, false );
+                        PROVIDER_KEY, PROVIDER_VERSION, store.nextId(), Optional.empty(), false, null );
 
         // WHEN
         StorageIndexReference readIndexRule =
@@ -156,7 +156,7 @@ public class SchemaStore35Test
         // GIVEN
         StorageIndexReference indexRule =
                 new DefaultStorageIndexReference( forLabel( 2, IntStream.range( 1, 200 ).toArray() ), PROVIDER_KEY, PROVIDER_VERSION, store.nextId(),
-                        Optional.empty(), false, null, false );
+                        Optional.empty(), false, null );
 
         // WHEN
         StorageIndexReference readIndexRule = (StorageIndexReference) SchemaRuleSerialization35.deserialize(
@@ -176,7 +176,7 @@ public class SchemaStore35Test
         // GIVEN
         StorageIndexReference indexRule = new DefaultStorageIndexReference(
                 fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), IntStream.range( 1, 200 ).toArray(), IntStream.range( 1, 200 ).toArray() ),
-                PROVIDER_KEY, PROVIDER_VERSION, store.nextId(), Optional.empty(), false, null, false );
+                PROVIDER_KEY, PROVIDER_VERSION, store.nextId(), Optional.empty(), false, null );
 
         // WHEN
         StorageIndexReference readIndexRule = (StorageIndexReference) SchemaRuleSerialization35.deserialize( indexRule.getId(),
@@ -229,14 +229,12 @@ public class SchemaStore35Test
 
     private StorageIndexReference indexRule( long ruleId, int labelId, int... propertyIds )
     {
-        return new DefaultStorageIndexReference( forLabel( labelId, propertyIds ), PROVIDER_KEY, PROVIDER_VERSION, ruleId, Optional.empty(), false, null,
-                false );
+        return new DefaultStorageIndexReference( forLabel( labelId, propertyIds ), PROVIDER_KEY, PROVIDER_VERSION, ruleId, Optional.empty(), false, null );
     }
 
     private StorageIndexReference uniqueIndexRule( long ruleId, long owningConstraint, int labelId, int... propertyIds )
     {
-        return new DefaultStorageIndexReference( forLabel( labelId, propertyIds ), PROVIDER_KEY, PROVIDER_VERSION, ruleId, Optional.empty(), true, null,
-                false );
+        return new DefaultStorageIndexReference( forLabel( labelId, propertyIds ), PROVIDER_KEY, PROVIDER_VERSION, ruleId, Optional.empty(), true, null );
     }
 
     private ConstraintRule constraintUniqueRule( long ruleId, long ownedIndexId, int labelId, int... propertyIds )

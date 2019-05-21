@@ -199,12 +199,6 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
             return IndexValueCapability.YES;
         }
 
-        @Override
-        public boolean isEventuallyConsistent()
-        {
-            return false;
-        }
-
         private boolean supportOrdering( ValueCategory[] valueCategories )
         {
             for ( ValueCategory valueCategory : valueCategories )

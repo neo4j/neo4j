@@ -104,12 +104,6 @@ public interface IndexReference extends IndexCapability, SchemaDescriptorSupplie
         }
 
         @Override
-        public boolean isEventuallyConsistent()
-        {
-            return false;
-        }
-
-        @Override
         public boolean isUnique()
         {
             return false;

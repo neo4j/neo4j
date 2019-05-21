@@ -179,11 +179,5 @@ public class SpatialIndexProvider extends IndexProvider
         {
             return IndexValueCapability.NO;
         }
-
-        @Override
-        public boolean isEventuallyConsistent()
-        {
-            return false;
-        }
     }
 }

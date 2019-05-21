@@ -51,24 +51,24 @@ abstract class SchemaRuleTestBase
     public static IndexDescriptor forLabel( int labelId, int... propertyIds )
     {
         return new DefaultIndexDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ),
-                PROVIDER_KEY, PROVIDER_VERSION, Optional.empty(), false, false );
+                PROVIDER_KEY, PROVIDER_VERSION, Optional.empty(), false );
     }
 
     public static IndexDescriptor namedForLabel( String name, int labelId, int... propertyIds )
     {
         return new DefaultIndexDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ),
-                PROVIDER_KEY, PROVIDER_VERSION, Optional.of( name ), false, false );
+                PROVIDER_KEY, PROVIDER_VERSION, Optional.of( name ), false );
     }
 
     public static IndexDescriptor uniqueForLabel( int labelId, int... propertyIds )
     {
         return new DefaultIndexDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ),
-                PROVIDER_KEY, PROVIDER_VERSION, Optional.empty(), true, false );
+                PROVIDER_KEY, PROVIDER_VERSION, Optional.empty(), true );
     }
 
     public static IndexDescriptor namedUniqueForLabel( String name, int labelId, int... propertyIds )
     {
         return new DefaultIndexDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ),
-                PROVIDER_KEY, PROVIDER_VERSION, Optional.empty(), true, false );
+                PROVIDER_KEY, PROVIDER_VERSION, Optional.empty(), true );
     }
 }

@@ -113,12 +113,6 @@ public class StringIndexProvider extends NativeIndexProvider<StringIndexKey,Nati
         }
 
         @Override
-        public boolean isEventuallyConsistent()
-        {
-            return false;
-        }
-
-        @Override
         public IndexLimitation[] limitations()
         {
             return limitations;

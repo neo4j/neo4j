@@ -142,7 +142,7 @@ public class Commands
     public static SchemaRuleCommand createIndexRule( String providerKey, String providerVersion,
             long id, LabelSchemaDescriptor descriptor )
     {
-        SchemaRule rule = new DefaultStorageIndexReference( descriptor, providerKey, providerVersion, id, Optional.empty(), false, null, false );
+        SchemaRule rule = new DefaultStorageIndexReference( descriptor, providerKey, providerVersion, id, Optional.empty(), false, null );
         SchemaRecord before = new SchemaRecord( id ).initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
         SchemaRecord after = new SchemaRecord( id ).initialize( true, 33 );
         return new SchemaRuleCommand( before, after, rule );

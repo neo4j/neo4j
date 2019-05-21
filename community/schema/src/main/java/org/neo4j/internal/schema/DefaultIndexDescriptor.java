@@ -35,15 +35,13 @@ public class DefaultIndexDescriptor implements IndexDescriptor
     private final String providerKey;
     private final String providerVersion;
     private final boolean isUnique;
-    private final boolean isEventuallyConsistent;
 
     public DefaultIndexDescriptor(
             SchemaDescriptor schema,
             String providerKey,
             String providerVersion,
             Optional<String> name,
-            boolean isUnique,
-            boolean isEventuallyConsistent )
+            boolean isUnique )
     {
         name.ifPresent( SchemaRule::checkName );
         this.schema = schema;
@@ -51,7 +49,6 @@ public class DefaultIndexDescriptor implements IndexDescriptor
         this.providerVersion = providerVersion;
         this.name = name;
         this.isUnique = isUnique;
-        this.isEventuallyConsistent = isEventuallyConsistent;
     }
 
     public DefaultIndexDescriptor( IndexDescriptor descriptor )
@@ -60,14 +57,13 @@ public class DefaultIndexDescriptor implements IndexDescriptor
                 descriptor.providerKey(),
                 descriptor.providerVersion(),
                 descriptor.hasUserSuppliedName() ? Optional.of( descriptor.name() ) : Optional.empty(),
-                descriptor.isUnique(),
-                descriptor.isEventuallyConsistent()
+                descriptor.isUnique()
         );
     }
 
     public DefaultIndexDescriptor( SchemaDescriptor schema, boolean isUnique )
     {
-        this( schema, "Undecided", "0", Optional.empty(), isUnique, false );
+        this( schema, "Undecided", "0", Optional.empty(), isUnique );
     }
 
     @Override
@@ -101,12 +97,6 @@ public class DefaultIndexDescriptor implements IndexDescriptor
     }
 
     @Override
-    public boolean isEventuallyConsistent()
-    {
-        return isEventuallyConsistent;
-    }
-
-    @Override
     public String providerKey()
     {
         return providerKey;
@@ -121,19 +111,13 @@ public class DefaultIndexDescriptor implements IndexDescriptor
     @Override
     public DefaultIndexDescriptor withIndexProvider( IndexProviderDescriptor indexProvider )
     {
-        return new DefaultIndexDescriptor( schema, indexProvider.getKey(), indexProvider.getVersion(), name, isUnique, isEventuallyConsistent );
+        return new DefaultIndexDescriptor( schema, indexProvider.getKey(), indexProvider.getVersion(), name, isUnique );
     }
 
     @Override
     public DefaultIndexDescriptor withSchemaDescriptor( SchemaDescriptor schema )
     {
-        return new DefaultIndexDescriptor( schema, providerKey, providerVersion, name, isUnique, isEventuallyConsistent );
-    }
-
-    @Override
-    public DefaultIndexDescriptor withEventualConsistency( boolean isEventuallyConsistent )
-    {
-        return new DefaultIndexDescriptor( schema, providerKey, providerVersion, name, isUnique, isEventuallyConsistent );
+        return new DefaultIndexDescriptor( schema, providerKey, providerVersion, name, isUnique );
     }
 
     @Override

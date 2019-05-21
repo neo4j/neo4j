@@ -38,12 +38,14 @@ import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelExcep
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
+import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -65,7 +67,6 @@ class FulltextIndexSettings
             properties.put( entry.getOne(), String.valueOf( entry.getTwo().asObject() ) );
         }
         loadPersistedSettings( properties, indexStorage, fileSystem );
-        boolean eventuallyConsistent = Boolean.parseBoolean( properties.getProperty( INDEX_CONFIG_EVENTUALLY_CONSISTENT ) );
         String analyzerName = properties.getProperty( INDEX_CONFIG_ANALYZER, defaultAnalyzerName );
         Analyzer analyzer = createAnalyzer( analyzerName );
         List<String> names = new ArrayList<>();
@@ -82,7 +83,7 @@ class FulltextIndexSettings
             }
         }
         String[] propertyNames = names.toArray( new String[0] );
-        return new FulltextIndexDescriptor( descriptor, propertyNames, analyzer, analyzerName, eventuallyConsistent );
+        return new FulltextIndexDescriptor( descriptor, propertyNames, analyzer, analyzerName );
     }
 
     private static void loadPersistedSettings( Properties settings, PartitionedIndexStorage indexStorage, FileSystemAbstraction fs )
@@ -160,5 +161,11 @@ class FulltextIndexSettings
         // Ignore any other entries that the map might contain.
 
         return config;
+    }
+
+    static boolean isEventuallyConsistent( SchemaDescriptor schema )
+    {
+        BooleanValue eventuallyConsistent = schema.getIndexConfig().getOrDefault( INDEX_CONFIG_EVENTUALLY_CONSISTENT, BooleanValue.FALSE );
+        return eventuallyConsistent.booleanValue();
     }
 }

@@ -96,7 +96,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
         StorageIndexReference rule1 = new DefaultStorageIndexReference( descriptor, RULE_ID, null );
         StorageIndexReference rule2 = new DefaultStorageIndexReference( descriptor, RULE_ID_2, null );
         StorageIndexReference rule3 = new DefaultStorageIndexReference( descriptor.schema(), descriptor.providerKey(), descriptor.providerVersion(),
-                RULE_ID, Optional.empty(), descriptor.isUnique(), null, false );
+                RULE_ID, Optional.empty(), descriptor.isUnique(), null );
 
         assertEquality( rule1, rule2 );
         assertEquality( rule1, rule3 );

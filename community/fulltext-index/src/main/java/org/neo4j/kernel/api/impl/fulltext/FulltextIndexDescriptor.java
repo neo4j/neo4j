@@ -33,15 +33,13 @@ class FulltextIndexDescriptor implements StorageIndexReference
     private final String[] propertyNames;
     private final Analyzer analyzer;
     private final String analyzerName;
-    private final boolean eventuallyConsistent;
 
-    FulltextIndexDescriptor( StorageIndexReference descriptor, String[] propertyNames, Analyzer analyzer, String analyzerName, boolean eventuallyConsistent )
+    FulltextIndexDescriptor( StorageIndexReference descriptor, String[] propertyNames, Analyzer analyzer, String analyzerName )
     {
         this.descriptor = descriptor;
         this.propertyNames = propertyNames;
         this.analyzer = analyzer;
         this.analyzerName = analyzerName;
-        this.eventuallyConsistent = eventuallyConsistent;
     }
 
     String[] propertyNames()
@@ -52,17 +50,6 @@ class FulltextIndexDescriptor implements StorageIndexReference
     public Analyzer analyzer()
     {
         return analyzer;
-    }
-
-    String analyzerName()
-    {
-        return analyzerName;
-    }
-
-    @Override
-    public boolean isEventuallyConsistent()
-    {
-        return eventuallyConsistent;
     }
 
     @Override
@@ -116,20 +103,13 @@ class FulltextIndexDescriptor implements StorageIndexReference
     @Override
     public FulltextIndexDescriptor withIndexProvider( IndexProviderDescriptor indexProvider )
     {
-        return new FulltextIndexDescriptor( descriptor.withIndexProvider( indexProvider ), propertyNames, analyzer, analyzerName, eventuallyConsistent );
+        return new FulltextIndexDescriptor( descriptor.withIndexProvider( indexProvider ), propertyNames, analyzer, analyzerName );
     }
 
     @Override
     public FulltextIndexDescriptor withSchemaDescriptor( SchemaDescriptor schema )
     {
-        return new FulltextIndexDescriptor( descriptor.withSchemaDescriptor( schema ), propertyNames, analyzer, analyzerName, eventuallyConsistent );
-    }
-
-    @Override
-    public FulltextIndexDescriptor withEventualConsistency( boolean isEventuallyConsistent )
-    {
-        return new FulltextIndexDescriptor( descriptor.withEventualConsistency( isEventuallyConsistent ),
-                propertyNames, analyzer, analyzerName, isEventuallyConsistent );
+        return new FulltextIndexDescriptor( descriptor.withSchemaDescriptor( schema ), propertyNames, analyzer, analyzerName );
     }
 
     @Override

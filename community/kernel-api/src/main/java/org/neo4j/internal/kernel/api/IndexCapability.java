@@ -61,13 +61,6 @@ public interface IndexCapability
     IndexValueCapability valueCapability( ValueCategory... valueCategories );
 
     /**
-     * It is possible for some indexes to be <em>eventually consistent</em>, meaning that they might not reflect newly committed changes.
-     *
-     * @return {@code true} if this index is eventually consistent, {@code false} otherwise.
-     */
-    boolean isEventuallyConsistent();
-
-    /**
      * @return an array of limitations that this index has. It could be anything that planning could look at and
      * either try to avoid or issue warning for.
      */
@@ -93,12 +86,6 @@ public interface IndexCapability
         public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
             return IndexValueCapability.NO;
-        }
-
-        @Override
-        public boolean isEventuallyConsistent()
-        {
-            return false;
         }
     };
 }
