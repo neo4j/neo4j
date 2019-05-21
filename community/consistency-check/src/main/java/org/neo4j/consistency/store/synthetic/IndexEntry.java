@@ -19,7 +19,11 @@
  */
 package org.neo4j.consistency.store.synthetic;
 
+import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
+
+import static java.lang.String.format;
 
 /**
  * Synthetic record type that stands in for a real record to fit in conveniently
@@ -27,9 +31,14 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
  */
 public class IndexEntry extends AbstractBaseRecord
 {
-    public IndexEntry( long nodeId )
+    private final StoreIndexDescriptor indexDescriptor;
+    private final TokenNameLookup tokenNameLookup;
+
+    public IndexEntry( StoreIndexDescriptor indexDescriptor, TokenNameLookup tokenNameLookup, long nodeId )
     {
         super( nodeId );
+        this.indexDescriptor = indexDescriptor;
+        this.tokenNameLookup = tokenNameLookup;
         setInUse( true );
     }
 
@@ -42,6 +51,6 @@ public class IndexEntry extends AbstractBaseRecord
     @Override
     public String toString()
     {
-        return "IndexEntry[nodeId=" + getId() + "]";
+        return format( "IndexEntry[nodeId=%d, index=%sm]", getId(), indexDescriptor.toString( tokenNameLookup ) );
     }
 }

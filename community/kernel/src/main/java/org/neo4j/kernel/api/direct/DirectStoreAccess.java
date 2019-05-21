@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.store.StoreAccess;
 
 public class DirectStoreAccess implements Closeable
@@ -31,13 +32,15 @@ public class DirectStoreAccess implements Closeable
     private final StoreAccess nativeStores;
     private final LabelScanStore labelScanStore;
     private final IndexProviderMap indexes;
+    private final TokenHolders tokenHolders;
 
     public DirectStoreAccess(
-            StoreAccess nativeStores, LabelScanStore labelScanStore, IndexProviderMap indexes )
+            StoreAccess nativeStores, LabelScanStore labelScanStore, IndexProviderMap indexes, TokenHolders tokenHolders )
     {
         this.nativeStores = nativeStores;
         this.labelScanStore = labelScanStore;
         this.indexes = indexes;
+        this.tokenHolders = tokenHolders;
     }
 
     public StoreAccess nativeStores()
@@ -53,6 +56,11 @@ public class DirectStoreAccess implements Closeable
     public IndexProviderMap indexes()
     {
         return indexes;
+    }
+
+    public TokenHolders tokenHolders()
+    {
+        return tokenHolders;
     }
 
     @Override

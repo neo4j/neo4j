@@ -196,7 +196,14 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             Monitors monitors = new Monitors();
             LabelScanStore labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors );
             IndexProviderMap indexes = createIndexes( pageCache, fileSystem, directory.databaseDir(), config, scheduler, logProvider, monitors);
-            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes );
+            TokenHolders tokenHolders = new TokenHolders(
+                    new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
+                    new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
+                    new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+            tokenHolders.propertyKeyTokens().setInitialTokens( neoStore.getPropertyKeyTokenStore().getTokens() );
+            tokenHolders.labelTokens().setInitialTokens( neoStore.getLabelTokenStore().getTokens() );
+            tokenHolders.relationshipTypeTokens().setInitialTokens( neoStore.getRelationshipTypeTokenStore().getTokens() );
+            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes, tokenHolders );
         }
         return directStoreAccess;
     }
