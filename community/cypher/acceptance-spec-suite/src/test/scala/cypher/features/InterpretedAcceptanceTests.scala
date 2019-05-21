@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.{Disabled, DynamicTest, TestFactory}
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
-class CostInterpretedAcceptanceTests extends BaseAcceptanceTest {
+class InterpretedAcceptanceTests extends BaseAcceptanceTest {
 
   // If you want to only run a specific feature or scenario, go to the BaseAcceptanceTest
 
