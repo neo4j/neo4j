@@ -32,9 +32,6 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.StringContainsPredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.StringSuffixPredicate;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -68,9 +65,7 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
-import static org.neo4j.values.storable.Values.stringValue;
 
 @RunWith( Parameterized.class )
 public class FusionIndexReaderTest
@@ -113,9 +108,6 @@ public class FusionIndexReaderTest
             aliveReaders[i] = mock;
             switch ( activeSlots[i] )
             {
-            case STRING:
-                readers.put( STRING, mock );
-                break;
             case NUMBER:
                 readers.put( NUMBER, mock );
                 break;
@@ -243,19 +235,6 @@ public class FusionIndexReaderTest
     }
 
     @Test
-    public void mustSelectStringForExactPredicateWithNumberValue() throws Exception
-    {
-        // given
-        for ( Object value : FusionIndexTestHelp.valuesSupportedByString() )
-        {
-            IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, value );
-
-            // then
-            verifyQueryWithCorrectReader( expectedForStrings(), indexQuery );
-        }
-    }
-
-    @Test
     public void mustSelectNumberForExactPredicateWithNumberValue() throws Exception
     {
         // given
@@ -310,16 +289,6 @@ public class FusionIndexReaderTest
     }
 
     @Test
-    public void mustSelectStringForRangeStringPredicate() throws Exception
-    {
-        // given
-        RangePredicate<?> stringRange = IndexQuery.range( PROP_KEY, "abc", true, "def", false );
-
-        // then
-        verifyQueryWithCorrectReader( expectedForStrings(), stringRange );
-    }
-
-    @Test
     public void mustSelectNumberForRangeNumericPredicate() throws Exception
     {
         // given
@@ -340,36 +309,6 @@ public class FusionIndexReaderTest
 
         // then
         verifyQueryWithCorrectReader( readers.get( SPATIAL ), geometryRange );
-    }
-
-    @Test
-    public void mustSelectStringForStringPrefixPredicate() throws Exception
-    {
-        // given
-        StringPrefixPredicate stringPrefix = IndexQuery.stringPrefix( PROP_KEY, stringValue( "abc" ) );
-
-        // then
-        verifyQueryWithCorrectReader( expectedForStrings(), stringPrefix );
-    }
-
-    @Test
-    public void mustSelectStringForStringSuffixPredicate() throws Exception
-    {
-        // given
-        StringSuffixPredicate stringPrefix = IndexQuery.stringSuffix( PROP_KEY, stringValue( "abc" ) );
-
-        // then
-        verifyQueryWithCorrectReader( expectedForStrings(), stringPrefix );
-    }
-
-    @Test
-    public void mustSelectStringForStringContainsPredicate() throws Exception
-    {
-        // given
-        StringContainsPredicate stringContains = IndexQuery.stringContains( PROP_KEY, stringValue( "abc" ) );
-
-        // then
-        verifyQueryWithCorrectReader( expectedForStrings(), stringContains );
     }
 
     @Test
@@ -461,11 +400,6 @@ public class FusionIndexReaderTest
                 verifyNoMoreInteractions( reader );
             }
         }
-    }
-
-    private IndexReader expectedForStrings()
-    {
-        return orLucene( readers.get( STRING ) );
     }
 
     private IndexReader expectedForNumbers()

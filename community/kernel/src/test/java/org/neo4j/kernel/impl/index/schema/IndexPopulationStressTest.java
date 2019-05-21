@@ -102,9 +102,6 @@ public class IndexPopulationStressTest
         // NumberIndexProvider
         parameters.add( of( "number", true, RandomValues::nextNumberValue, test ->
                 new NumberIndexProvider( test.rules.pageCache(), test.rules.fileSystem(), test.directory(), EMPTY, immediate(), false ) ) );
-        // StringIndexProvider
-        parameters.add( of( "string", true, RandomValues::nextAlphaNumericTextValue, test ->
-                new StringIndexProvider( test.rules.pageCache(), test.rules.fileSystem(), test.directory(), EMPTY, immediate(), false ) ) );
         // SpatialIndexProvider
         parameters.add( of( "spatial", false, RandomValues::nextPointValue, test ->
                 new SpatialIndexProvider( test.rules.pageCache(), test.rules.fileSystem(), test.directory(), EMPTY, immediate(), false, defaults() ) ) );

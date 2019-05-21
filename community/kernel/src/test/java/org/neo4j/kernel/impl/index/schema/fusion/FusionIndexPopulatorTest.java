@@ -62,7 +62,6 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 
 @RunWith( Parameterized.class )
@@ -105,9 +104,6 @@ public class FusionIndexPopulatorTest
             alivePopulators[i] = mock;
             switch ( aliveSlots[i] )
             {
-            case STRING:
-                populators.put( STRING, mock );
-                break;
             case NUMBER:
                 populators.put( NUMBER, mock );
                 break;

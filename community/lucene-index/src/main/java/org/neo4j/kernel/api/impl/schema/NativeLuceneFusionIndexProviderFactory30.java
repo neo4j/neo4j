@@ -85,7 +85,7 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
                 new GenericNativeIndexProvider( childDirectoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly, config );
         LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, childDirectoryStructure, monitor, config, operationalMode );
 
-        return new FusionIndexProvider( generic, EMPTY, EMPTY, EMPTY, EMPTY, lucene, new FusionSlotSelector30(),
+        return new FusionIndexProvider( generic, EMPTY, EMPTY, EMPTY, lucene, new FusionSlotSelector30(),
                 DESCRIPTOR, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex );
     }
 

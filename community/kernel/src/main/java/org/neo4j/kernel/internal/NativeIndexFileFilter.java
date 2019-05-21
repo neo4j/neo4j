@@ -54,11 +54,16 @@ public class NativeIndexFileFilter implements FileFilter
         Path schemaPath = indexRoot.relativize( path );
         int nameCount = schemaPath.getNameCount();
 
-        // - schema/index/lucene/.....
-        boolean isPureLuceneProviderFile = nameCount >= 1 && schemaPath.getName( 0 ).toString().equals( "lucene" );
+        // - schema/index/lucene
+        // - schema/index/lucene_native-1.0
+        // - schema/index/lucene_native-2.0
+        boolean isDeprecatedProviderFile = nameCount >= 1 && (
+                schemaPath.getName( 0 ).toString().equals( "lucene" ) ||
+                schemaPath.getName( 0 ).toString().equals( "lucene_native-1.0" ) ||
+                schemaPath.getName( 0 ).toString().equals( "lucene_native-2.0" ));
         // - schema/index/lucene_native-x.y/<indexId>/lucene-x.y/x/.....
         boolean isFusionLuceneProviderFile = nameCount >= 3 && schemaPath.getName( 2 ).toString().startsWith( "lucene-" );
 
-        return !isPureLuceneProviderFile && !isFusionLuceneProviderFile;
+        return !isDeprecatedProviderFile && !isFusionLuceneProviderFile;
     }
 }

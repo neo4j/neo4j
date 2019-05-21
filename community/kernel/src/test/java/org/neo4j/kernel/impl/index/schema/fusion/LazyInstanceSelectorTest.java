@@ -32,8 +32,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.values;
 
@@ -78,7 +78,7 @@ public class LazyInstanceSelectorTest
         // given
         Function<IndexSlot,String> factory = slotToStringFunction();
         LazyInstanceSelector<String> selector = new LazyInstanceSelector<>( factory );
-        selector.select( STRING );
+        selector.select( GENERIC );
 
         // when
         Consumer<String> consumer = mock( Consumer.class );
@@ -99,7 +99,7 @@ public class LazyInstanceSelectorTest
         Function<IndexSlot,String> factory = slotToStringFunction();
         LazyInstanceSelector<String> selector = new LazyInstanceSelector<>( factory );
         selector.select( NUMBER );
-        selector.select( STRING );
+        selector.select( GENERIC );
 
         // when
         Consumer<String> consumer = mock( Consumer.class );
@@ -107,7 +107,7 @@ public class LazyInstanceSelectorTest
 
         // then
         verify( consumer ).accept( String.valueOf( NUMBER ) );
-        verify( consumer ).accept( String.valueOf( STRING ) );
+        verify( consumer ).accept( String.valueOf( GENERIC ) );
         verifyNoMoreInteractions( consumer );
     }
 
@@ -118,7 +118,7 @@ public class LazyInstanceSelectorTest
         Function<IndexSlot,String> factory = slotToStringFunction();
         LazyInstanceSelector<String> selector = new LazyInstanceSelector<>( factory );
         selector.select( NUMBER );
-        selector.select( STRING );
+        selector.select( GENERIC );
 
         // when
         selector.close( mock( Consumer.class ) );

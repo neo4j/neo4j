@@ -27,7 +27,6 @@ import org.neo4j.values.storable.ValueCategory;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 
 
@@ -40,7 +39,7 @@ public class FusionSlotSelector20 implements SlotSelector
     @Override
     public void validateSatisfied( InstanceSelector<IndexProvider> instances )
     {
-        SlotSelector.validateSelectorInstances( instances, STRING, NUMBER, SPATIAL, TEMPORAL, LUCENE );
+        SlotSelector.validateSelectorInstances( instances, NUMBER, SPATIAL, TEMPORAL, LUCENE );
     }
 
     @Override
@@ -56,8 +55,6 @@ public class FusionSlotSelector20 implements SlotSelector
         {
         case NUMBER:
             return NUMBER;
-        case TEXT:
-            return STRING;
         case GEOMETRY:
             return SPATIAL;
         case TEMPORAL:

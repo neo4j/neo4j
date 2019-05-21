@@ -46,7 +46,6 @@ import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 
 /**
@@ -63,7 +62,6 @@ public class FusionIndexProvider extends IndexProvider
     public FusionIndexProvider(
             // good to be strict with specific providers here since this is dev facing
             IndexProvider genericProvider,
-            IndexProvider stringProvider,
             IndexProvider numberProvider,
             IndexProvider spatialProvider,
             IndexProvider temporalProvider,
@@ -79,16 +77,15 @@ public class FusionIndexProvider extends IndexProvider
         this.slotSelector = slotSelector;
         this.providers = new InstanceSelector<>();
         this.fs = fs;
-        fillProvidersSelector( genericProvider, stringProvider, numberProvider, spatialProvider, temporalProvider, luceneProvider );
+        fillProvidersSelector( genericProvider, numberProvider, spatialProvider, temporalProvider, luceneProvider );
         slotSelector.validateSatisfied( providers );
     }
 
     private void fillProvidersSelector( IndexProvider genericProvider,
-            IndexProvider stringProvider, IndexProvider numberProvider, IndexProvider spatialProvider,
+            IndexProvider numberProvider, IndexProvider spatialProvider,
             IndexProvider temporalProvider, IndexProvider luceneProvider )
     {
         providers.put( GENERIC, genericProvider );
-        providers.put( STRING, stringProvider );
         providers.put( NUMBER, numberProvider );
         providers.put( SPATIAL, spatialProvider );
         providers.put( TEMPORAL, temporalProvider );

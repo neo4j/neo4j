@@ -54,12 +54,6 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
                         (IndexLayoutFactory) NumberLayoutNonUnique::new,
                         NumberIndexProvider.CAPABILITY
                 },
-                {"String",
-                        stringAccessorFactory(),
-                        RandomValues.typesOfGroup( ValueGroup.TEXT ),
-                        (IndexLayoutFactory) StringLayout::new,
-                        StringIndexProvider.CAPABILITY
-                },
                 {"Date",
                         temporalAccessorFactory(),
                         RandomValues.typesOfGroup( ValueGroup.DATE ),
@@ -162,11 +156,6 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     private static AccessorFactory<NumberIndexKey,NativeIndexValue> numberAccessorFactory()
     {
         return NumberIndexAccessor::new;
-    }
-
-    private static AccessorFactory<StringIndexKey,NativeIndexValue> stringAccessorFactory()
-    {
-        return StringIndexAccessor::new;
     }
 
     private static <TK extends NativeIndexSingleValueKey<TK>> AccessorFactory<TK,NativeIndexValue> temporalAccessorFactory()

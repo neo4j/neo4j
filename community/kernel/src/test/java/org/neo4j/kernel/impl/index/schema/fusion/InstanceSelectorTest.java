@@ -32,8 +32,8 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
 
 public class InstanceSelectorTest
 {
@@ -43,7 +43,7 @@ public class InstanceSelectorTest
         // given
         InstanceSelector<String> selector = selector(
                 NUMBER, "0",
-                STRING, "1" );
+                GENERIC, "1" );
 
         // when
         String select0 = selector.select( NUMBER );
@@ -51,7 +51,7 @@ public class InstanceSelectorTest
         assertEquals( "0", select0 );
 
         // when
-        String select1 = selector.select( STRING );
+        String select1 = selector.select( GENERIC );
         // then
         assertEquals( "1", select1 );
     }
@@ -65,7 +65,7 @@ public class InstanceSelectorTest
         try
         {
             // when
-            selector.select( STRING );
+            selector.select( GENERIC );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )

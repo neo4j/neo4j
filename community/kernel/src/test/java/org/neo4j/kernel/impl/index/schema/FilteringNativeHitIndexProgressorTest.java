@@ -55,7 +55,7 @@ public class FilteringNativeHitIndexProgressorTest
             keys.add( random.nextString() );
         }
 
-        Seeker<StringIndexKey,NativeIndexValue> cursor = new ResultCursor( keys.iterator() );
+        Seeker<GenericKey,NativeIndexValue> cursor = new ResultCursor( keys.iterator() );
         NodeValueIterator valueClient = new NodeValueIterator()
         {
             @Override
@@ -66,8 +66,8 @@ public class FilteringNativeHitIndexProgressorTest
         };
         IndexQuery[] predicates = new IndexQuery[]{mock( IndexQuery.class )};
         Predicate<String> filter = string -> string.contains( "a" );
-        when( predicates[0].acceptsValue( any( Value.class ) ) ).then( invocation -> filter.test( ((TextValue)invocation.getArgument( 0 )).stringValue() ) );
-        try ( FilteringNativeHitIndexProgressor<StringIndexKey,NativeIndexValue> progressor = new FilteringNativeHitIndexProgressor<>( cursor, valueClient,
+        when( predicates[0].acceptsValue( any( Value.class ) ) ).then( invocation -> filter.test( ((TextValue) invocation.getArgument( 0 )).stringValue() ) );
+        try ( FilteringNativeHitIndexProgressor<GenericKey,NativeIndexValue> progressor = new FilteringNativeHitIndexProgressor<>( cursor, valueClient,
                 predicates ) )
         {
             valueClient.initialize( TestIndexDescriptorFactory.forLabel( 0, 0 ), progressor, predicates, IndexOrder.NONE, true, false );

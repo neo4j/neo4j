@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 
 enum FusionVersion
@@ -60,7 +59,7 @@ enum FusionVersion
                 @Override
                 IndexSlot[] aliveSlots()
                 {
-                    return new IndexSlot[]{STRING, NUMBER, SPATIAL, TEMPORAL, LUCENE};
+                    return new IndexSlot[]{NUMBER, SPATIAL, TEMPORAL, LUCENE};
                 }
 
                 @Override

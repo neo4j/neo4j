@@ -31,9 +31,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -47,7 +50,11 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 public class NativeDistinctValuesProgressorTest
 {
-    private final StringLayout layout = new StringLayout();
+    private static final Config config = Config.defaults();
+    private static final ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( config );
+    private static final IndexSpecificSpaceFillingCurveSettingsCache specificSettings =
+            new IndexSpecificSpaceFillingCurveSettingsCache( configuredSettings, new HashMap<>() );
+    private final GenericLayout layout = new GenericLayout( 1, specificSettings );
 
     @Rule
     public final RandomRule random = new RandomRule();
@@ -61,7 +68,7 @@ public class NativeDistinctValuesProgressorTest
         GatheringNodeValueClient client = new GatheringNodeValueClient();
 
         // when
-        NativeDistinctValuesProgressor<StringIndexKey,NativeIndexValue> progressor =
+        NativeDistinctValuesProgressor<GenericKey,NativeIndexValue> progressor =
                 new NativeDistinctValuesProgressor<>( source, client, layout, layout::compareValue );
         client.initialize( null, progressor, new IndexQuery[0], IndexOrder.NONE, true, false );
         Map<Value,MutableInt> expectedCounts = asDistinctCounts( strings );
@@ -112,12 +119,12 @@ public class NativeDistinctValuesProgressorTest
         return strings;
     }
 
-    private Collection<Pair<StringIndexKey,NativeIndexValue>> asHitData( Value[] strings )
+    private Collection<Pair<GenericKey,NativeIndexValue>> asHitData( Value[] strings )
     {
-        Collection<Pair<StringIndexKey,NativeIndexValue>> data = new ArrayList<>( strings.length );
+        Collection<Pair<GenericKey,NativeIndexValue>> data = new ArrayList<>( strings.length );
         for ( int i = 0; i < strings.length; i++ )
         {
-            StringIndexKey key = layout.newKey();
+            GenericKey key = layout.newKey();
             key.initialize( i );
             key.initFromValue( 0, strings[i], NEUTRAL );
             data.add( Pair.of( key, INSTANCE ) );
@@ -125,12 +132,12 @@ public class NativeDistinctValuesProgressorTest
         return data;
     }
 
-    private static class DataCursor implements Seeker<StringIndexKey,NativeIndexValue>
+    private static class DataCursor implements Seeker<GenericKey,NativeIndexValue>
     {
-        private final Iterator<Pair<StringIndexKey,NativeIndexValue>> iterator;
-        private Pair<StringIndexKey,NativeIndexValue> current;
+        private final Iterator<Pair<GenericKey,NativeIndexValue>> iterator;
+        private Pair<GenericKey,NativeIndexValue> current;
 
-        DataCursor( Collection<Pair<StringIndexKey,NativeIndexValue>> data )
+        DataCursor( Collection<Pair<GenericKey,NativeIndexValue>> data )
         {
             this.iterator = data.iterator();
         }
@@ -153,7 +160,7 @@ public class NativeDistinctValuesProgressorTest
         }
 
         @Override
-        public StringIndexKey key()
+        public GenericKey key()
         {
             return current.getKey();
         }

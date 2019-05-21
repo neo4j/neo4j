@@ -26,12 +26,10 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
-import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
-import org.neo4j.kernel.impl.index.schema.StringIndexProvider;
-import org.neo4j.kernel.impl.index.schema.TemporalIndexProvider;
+import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory30;
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.internal.NativeIndexFileFilter;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -39,6 +37,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory30.subProviderDirectoryStructure;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
 
 public class NativeIndexFileFilterTest
@@ -52,6 +51,18 @@ public class NativeIndexFileFilterTest
 
     private File storeDir;
     private NativeIndexFileFilter filter;
+    private static final IndexProviderDescriptor[] REMOVED_SUB_PROVIDERS = new IndexProviderDescriptor[]{
+            new IndexProviderDescriptor( "string", "1.0" ),
+            new IndexProviderDescriptor( "native", "1.0" ),
+            new IndexProviderDescriptor( "temporal", "1.0" ),
+            new IndexProviderDescriptor( "spatial", "1.0" )
+    };
+    private static final IndexProviderDescriptor[] REMOVE_FUSION_PROVIDERS = new IndexProviderDescriptor[]{
+            new IndexProviderDescriptor( "lucene+native", "1.0" ),
+            new IndexProviderDescriptor( "lucene+native", "2.0" )
+    };
+    private static final IndexProviderDescriptor fusion30 = NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR;
+    private static final IndexProviderDescriptor nativeBtree10 = GenericNativeIndexProvider.DESCRIPTOR;
 
     @Before
     public void before()
@@ -65,14 +76,7 @@ public class NativeIndexFileFilterTest
     {
         // given
         File dir = directoriesByProviderKey( storeDir ).forProvider( LUCENE_DESCRTIPTOR ).directoryForIndex( 1 );
-        File file = new File( dir, "some-file" );
-        createFile( file );
-
-        // when
-        boolean accepted = filter.accept( file );
-
-        // then
-        assertFalse( accepted );
+        shouldNotAcceptFileInDirectory( dir );
     }
 
     @Test
@@ -80,44 +84,57 @@ public class NativeIndexFileFilterTest
     {
         // given
         File dir = subProviderDirectoryStructure( storeDir, LUCENE_DESCRTIPTOR ).forProvider( LUCENE_DESCRTIPTOR ).directoryForIndex( 1 );
-        File file = new File( dir, "some-file" );
-        createFile( file );
-
-        // when
-        boolean accepted = filter.accept( file );
-
-        // then
-        assertFalse( accepted );
+        shouldNotAcceptFileInDirectory( dir );
     }
 
     @Test
-    public void shouldAcceptNativeStringIndexFileFromFusionProvider() throws IOException
+    public void shouldNotAcceptRemoveIndexProviderFilesUnderFusion() throws IOException
     {
-        shouldAcceptNativeIndexFileFromFusionProvider( new IndexProviderDescriptor( StringIndexProvider.KEY, "some-version" ) );
+        for ( IndexProviderDescriptor fusionProvider : REMOVE_FUSION_PROVIDERS )
+        {
+            for ( IndexProviderDescriptor subProvider : REMOVED_SUB_PROVIDERS )
+            {
+                shouldNotAcceptNativeIndexFileFromFusionProvider( fusionProvider, subProvider );
+            }
+        }
     }
 
     @Test
-    public void shouldAcceptNativeNumberIndexFileFromFusionProvider() throws IOException
+    public void shouldAcceptNativeBtreeIndexFileFromFusionProvider() throws IOException
     {
-        shouldAcceptNativeIndexFileFromFusionProvider( new IndexProviderDescriptor( NumberIndexProvider.KEY, "some-version" ) );
+        shouldAcceptNativeIndexFileFromFusionProvider( fusion30, nativeBtree10 );
     }
 
     @Test
-    public void shouldAcceptNativeSpatialIndexFileFromFusionProvider() throws IOException
+    public void shouldAcceptPureNativeBtreeIndexFile() throws IOException
     {
-        shouldAcceptNativeIndexFileFromFusionProvider( new IndexProviderDescriptor( SpatialIndexProvider.KEY, "some-version" ) );
+        shouldAcceptNativeIndexFilePure( nativeBtree10 );
     }
 
-    @Test
-    public void shouldAcceptNativeTemporalIndexFileFromFusionProvider() throws IOException
-    {
-        shouldAcceptNativeIndexFileFromFusionProvider( new IndexProviderDescriptor( TemporalIndexProvider.KEY, "some-version" ) );
-    }
-
-    private void shouldAcceptNativeIndexFileFromFusionProvider( IndexProviderDescriptor descriptor ) throws IOException
+    private void shouldAcceptNativeIndexFilePure( IndexProviderDescriptor provider ) throws IOException
     {
         // given
-        File dir = subProviderDirectoryStructure( storeDir, descriptor ).forProvider( descriptor ).directoryForIndex( 1 );
+        File dir = directoriesByProvider( storeDir ).forProvider( provider ).directoryForIndex( 1 );
+        shouldAcceptFileInDirectory( dir );
+    }
+
+    private void shouldAcceptNativeIndexFileFromFusionProvider( IndexProviderDescriptor fusionProvider, IndexProviderDescriptor subProvider ) throws IOException
+    {
+        // given
+        File dir = subProviderDirectoryStructure( storeDir, fusionProvider ).forProvider( subProvider ).directoryForIndex( 1 );
+        shouldAcceptFileInDirectory( dir );
+    }
+
+    private void shouldNotAcceptNativeIndexFileFromFusionProvider( IndexProviderDescriptor fusionProvider, IndexProviderDescriptor subProvider )
+            throws IOException
+    {
+        // given
+        File dir = subProviderDirectoryStructure( storeDir, fusionProvider ).forProvider( subProvider ).directoryForIndex( 1 );
+        shouldNotAcceptFileInDirectory( dir );
+    }
+
+    private void shouldAcceptFileInDirectory( File dir ) throws IOException
+    {
         File file = new File( dir, "some-file" );
         createFile( file );
 
@@ -125,7 +142,19 @@ public class NativeIndexFileFilterTest
         boolean accepted = filter.accept( file );
 
         // then
-        assertTrue( accepted );
+        assertTrue( "Expected to accept file " + file, accepted );
+    }
+
+    private void shouldNotAcceptFileInDirectory( File dir ) throws IOException
+    {
+        File file = new File( dir, "some-file" );
+        createFile( file );
+
+        // when
+        boolean accepted = filter.accept( file );
+
+        // then
+        assertFalse( "Did not expect to accept file " + file, accepted );
     }
 
     private void createFile( File file ) throws IOException

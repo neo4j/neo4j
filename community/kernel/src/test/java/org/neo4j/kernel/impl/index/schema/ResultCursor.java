@@ -19,17 +19,24 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.HashMap;
 import java.util.Iterator;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.Seeker;
+import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 
 import static org.neo4j.values.storable.Values.stringValue;
 
-class ResultCursor implements Seeker<StringIndexKey,NativeIndexValue>
+class ResultCursor implements Seeker<GenericKey,NativeIndexValue>
 {
+    private static final ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );
+    private static final IndexSpecificSpaceFillingCurveSettingsCache specificSettings =
+            new IndexSpecificSpaceFillingCurveSettingsCache( configuredSettings, new HashMap<>() );
     private final Iterator<String> iterator;
     private int pos = -1;
-    private StringIndexKey key;
+    private GenericKey key;
 
     ResultCursor( Iterator<String> keys )
     {
@@ -43,9 +50,9 @@ class ResultCursor implements Seeker<StringIndexKey,NativeIndexValue>
         {
             String current = iterator.next();
             pos++;
-            key = new StringIndexKey();
+            key = new GenericKey( specificSettings );
             key.initialize( pos );
-            key.from( stringValue( current ) );
+            key.initFromValue( 0, stringValue( current ), NativeIndexKey.Inclusion.NEUTRAL );
             return true;
         }
         return false;
@@ -58,7 +65,7 @@ class ResultCursor implements Seeker<StringIndexKey,NativeIndexValue>
     }
 
     @Override
-    public StringIndexKey key()
+    public GenericKey key()
     {
         return key;
     }

@@ -77,7 +77,6 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -126,9 +125,6 @@ public class FusionIndexAccessorTest
             aliveAccessors[i] = mock;
             switch ( activeSlots[i] )
             {
-            case STRING:
-                accessors.put( STRING, mock );
-                break;
             case NUMBER:
                 accessors.put( NUMBER, mock );
                 break;

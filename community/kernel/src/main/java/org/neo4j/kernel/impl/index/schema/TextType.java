@@ -28,12 +28,12 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.Math.min;
 import static org.neo4j.kernel.impl.index.schema.GenericKey.FALSE;
 import static org.neo4j.kernel.impl.index.schema.GenericKey.SIZE_STRING_LENGTH;
 import static org.neo4j.kernel.impl.index.schema.GenericKey.TRUE;
 import static org.neo4j.kernel.impl.index.schema.GenericKey.setCursorException;
 import static org.neo4j.kernel.impl.index.schema.GenericKey.toNonNegativeShortExact;
-import static org.neo4j.kernel.impl.index.schema.StringIndexKey.lexicographicalUnsignedByteArrayCompare;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 class TextType extends Type
@@ -81,7 +81,7 @@ class TextType extends Type
         int length = 0;
         if ( left.type == Types.TEXT )
         {
-            length = StringLayout.minimalLengthFromRightNeededToDifferentiateFromLeft( left.byteArray, (int) left.long0, right.byteArray, (int) right.long0 );
+            length = minimalLengthFromRightNeededToDifferentiateFromLeft( left.byteArray, (int) left.long0, right.byteArray, (int) right.long0 );
         }
         into.writeUTF8( right.byteArray, 0, length );
     }
@@ -258,5 +258,50 @@ class TextType extends Type
         joiner.add( "long2=" + state.long2 );
         joiner.add( "long3=" + state.long3 );
         joiner.add( "byteArray=" + Arrays.toString( state.byteArray ) );
+    }
+
+    /**
+     * Compare arrays byte by byte, first byte is most significant.
+     * If arrays have different length and the longer array share all bytes with the shorter array, then the longer one is larger,
+     * unless ignoreLength is set to true in which case they are considered equal.
+     */
+    private static int lexicographicalUnsignedByteArrayCompare( byte[] a, int aLength, byte[] b, int bLength, boolean ignoreLength )
+    {
+        assert a != null && b != null : "Null arrays not supported.";
+
+        if ( a == b && aLength == bLength )
+        {
+            return 0;
+        }
+
+        int length = Math.min( aLength, bLength );
+        for ( int i = 0; i < length; i++ )
+        {
+            int compare = Short.compare( (short) (a[i] & 0xFF), (short) (b[i] & 0xFF) );
+            if ( compare != 0 )
+            {
+                return compare;
+            }
+        }
+
+        return ignoreLength ? 0 : Integer.compare( aLength, bLength );
+    }
+
+    private static int minimalLengthFromRightNeededToDifferentiateFromLeft( byte[] leftBytes, int leftLength, byte[] rightBytes, int rightLength )
+    {
+        int lastEqualIndex = -1;
+        int maxLength = min( leftLength, rightLength );
+        for ( int index = 0; index < maxLength; index++ )
+        {
+            if ( leftBytes[index] != rightBytes[index] )
+            {
+                break;
+            }
+            lastEqualIndex++;
+        }
+        // Convert from last equal index to first index to differ +1
+        // Convert from index to length +1
+        // Total +2
+        return Math.min( rightLength, lastEqualIndex + 2 );
     }
 }

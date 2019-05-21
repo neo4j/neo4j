@@ -49,11 +49,6 @@ public class NativeIndexProviderTest extends NativeIndexProviderTests
                         POPULATING,
                         Values.of( 1 )
                 },
-                {"String",
-                        (ProviderFactory) StringIndexProvider::new,
-                        POPULATING,
-                        Values.of( "string" )
-                },
                 {"Spatial",
                         spatialProviderFactory(),
                         ONLINE,

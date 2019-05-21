@@ -48,7 +48,6 @@ import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 
 class FusionIndexTestHelp
@@ -137,7 +136,6 @@ class FusionIndexTestHelp
     {
         EnumMap<IndexSlot,Value[]> values = new EnumMap<>( IndexSlot.class );
         values.put( GENERIC, new Value[0] );
-        values.put( STRING, FusionIndexTestHelp.valuesSupportedByString() );
         values.put( NUMBER, FusionIndexTestHelp.valuesSupportedByNumber() );
         values.put( SPATIAL, FusionIndexTestHelp.valuesSupportedBySpatial() );
         values.put( TEMPORAL, FusionIndexTestHelp.valuesSupportedByTemporal() );

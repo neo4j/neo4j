@@ -140,7 +140,7 @@ public class LuceneIndexSamplerReleaseTaskControlUnderFusion
     private FusionIndexProvider createFusionProvider( LuceneIndexProvider luceneProvider, IndexProvider failingProvider )
     {
         SlotSelector slotSelector = SlotSelector.nullInstance;
-        return new FusionIndexProvider( failingProvider, EMPTY, EMPTY, EMPTY, EMPTY, luceneProvider,
+        return new FusionIndexProvider( failingProvider, EMPTY, EMPTY, EMPTY, luceneProvider,
                 slotSelector, providerDescriptor, directoryFactory, fs.get(), false );
     }
 

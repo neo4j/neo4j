@@ -36,12 +36,12 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
 import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.StringIndexProvider;
 import org.neo4j.kernel.impl.index.schema.TemporalIndexProvider;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
@@ -70,7 +70,6 @@ import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 
 @RunWith( Parameterized.class )
@@ -119,14 +118,9 @@ public class FusionIndexProviderTest
             switch ( aliveSlots[i] )
             {
             case GENERIC:
-                IndexProvider generic = mockProvider( StringIndexProvider.class, "generic" );
+                IndexProvider generic = mockProvider( GenericNativeIndexProvider.class, "generic" );
                 providers.put( GENERIC, generic );
                 aliveProviders[i] = generic;
-                break;
-            case STRING:
-                IndexProvider string = mockProvider( StringIndexProvider.class, "string" );
-                providers.put( STRING, string );
-                aliveProviders[i] = string;
                 break;
             case NUMBER:
                 IndexProvider number = mockProvider( NumberIndexProvider.class, "number" );
@@ -154,7 +148,6 @@ public class FusionIndexProviderTest
         }
         fusionIndexProvider = new FusionIndexProvider(
                 providers.get( GENERIC ),
-                providers.get( STRING ),
                 providers.get( NUMBER ),
                 providers.get( SPATIAL ),
                 providers.get( TEMPORAL ),
