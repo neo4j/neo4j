@@ -32,9 +32,10 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
-import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsWriter;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.Value;
+
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 
 class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIndexValue>
 {
@@ -46,7 +47,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StorageIndexReference descriptor,
             IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings, SpaceFillingCurveConfiguration configuration )
     {
-        super( pageCache, fs, indexFiles, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spaceFillingCurveSettings ) );
+        super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER );
         this.spaceFillingCurveSettings = spaceFillingCurveSettings;
         this.configuration = configuration;
         instantiateTree( recoveryCleanupWorkCollector, headerWriter );

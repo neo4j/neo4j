@@ -27,9 +27,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
-import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsWriter;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.Value;
+
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 
 class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,NativeIndexValue>
 {
@@ -41,7 +42,7 @@ class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,Native
             IndexProvider.Monitor monitor, StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
             SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex )
     {
-        super( pageCache, fs, indexFiles, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spatialSettings ) );
+        super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER );
         this.spatialSettings = spatialSettings;
         this.configuration = configuration;
         this.archiveFailedIndex = archiveFailedIndex;
