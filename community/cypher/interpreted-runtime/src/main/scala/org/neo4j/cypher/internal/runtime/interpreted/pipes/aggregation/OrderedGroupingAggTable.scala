@@ -25,15 +25,15 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.{AggregationPipe, Dis
 import org.neo4j.values.AnyValue
 
 /**
-  * Specialization of [[GroupingAggTable]] where we have grouping columns with defined order and grouping columns with undefined order.
+  * Specialization of [[GroupingAggTable]] where we have grouping columns with provided order and grouping columns without provided order.
   *
   * This table will only use the unordered grouping columns as a key in hash map. The ordered grouping columns are used to determine
   * when to use a new HashMap and discard the old one.
   *
   * @param orderedGroupingFunction a precomputed function to calculate the grouping key part of the ordered grouping columns
-  * @param orderedGroupingColumns all grouping columns that have a defined order
+  * @param orderedGroupingColumns all grouping columns that have a provided order
   * @param unorderedGroupingFunction a precomputed function to calculate the grouping key part of the unordered grouping columns
-  * @param unorderedGroupingColumns all grouping columns that do not have a defined order
+  * @param unorderedGroupingColumns all grouping columns that do not have a provided order
   * @param aggregations all aggregation columns
   */
 class OrderedGroupingAggTable(orderedGroupingFunction: (ExecutionContext, QueryState) => AnyValue,
@@ -60,7 +60,7 @@ class OrderedGroupingAggTable(orderedGroupingFunction: (ExecutionContext, QueryS
   }
 
   override def result(): Iterator[ExecutionContext] = {
-    val addOrderedKeys = AggregationPipe.computeAddKeysToResultMapFunction(orderedGroupingColumns)
+    val addOrderedKeys = AggregationPipe.computeAddKeysToResultRowFunction(orderedGroupingColumns)
     super.result().map { row =>
       addOrderedKeys(row, currentGroupKey)
       row
@@ -72,10 +72,10 @@ class OrderedGroupingAggTable(orderedGroupingFunction: (ExecutionContext, QueryS
 
 object OrderedGroupingAggTable {
   case class Factory(orderedGroupingFunction: (ExecutionContext, QueryState) => AnyValue,
-                                            orderedGroupingColumns: Array[DistinctPipe.GroupingCol],
-                                            unorderedGroupingFunction: (ExecutionContext, QueryState) => AnyValue,
-                                            unorderedGroupingColumns: Array[DistinctPipe.GroupingCol],
-                                            aggregations: Array[AggregationPipe.AggregatingCol]) extends OrderedAggregationTableFactory {
+                     orderedGroupingColumns: Array[DistinctPipe.GroupingCol],
+                     unorderedGroupingFunction: (ExecutionContext, QueryState) => AnyValue,
+                     unorderedGroupingColumns: Array[DistinctPipe.GroupingCol],
+                     aggregations: Array[AggregationPipe.AggregatingCol]) extends OrderedAggregationTableFactory {
     override def table(state: QueryState, executionContextFactory: ExecutionContextFactory): AggregationTable with OrderedChunkReceiver =
       new OrderedGroupingAggTable(orderedGroupingFunction, orderedGroupingColumns, unorderedGroupingFunction, unorderedGroupingColumns, aggregations, state, executionContextFactory)
 

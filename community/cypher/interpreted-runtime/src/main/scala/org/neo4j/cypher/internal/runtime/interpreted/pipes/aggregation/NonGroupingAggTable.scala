@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe.{Aggr
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExecutionContextFactory, Pipe, QueryState}
 
 /**
-  * This table can be used when we have no grouping columns, or the order for all grouping columns is well-defined.
+  * This table can be used when we have no grouping columns, or there is a provided order for all grouping columns.
   * @param aggregations all aggregation columns
   */
 class NonGroupingAggTable(aggregations: Array[AggregatingCol],

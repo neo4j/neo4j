@@ -77,7 +77,7 @@ case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol]
 }
 
 /**
-  * Specialization for the case that all groupingColumns are ordered.
+  * Specialization of [[OrderedDistinctPipe]] for the case that all groupingColumns are ordered.
   */
 case class AllOrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])
                        (val id: Id = Id.INVALID_ID)

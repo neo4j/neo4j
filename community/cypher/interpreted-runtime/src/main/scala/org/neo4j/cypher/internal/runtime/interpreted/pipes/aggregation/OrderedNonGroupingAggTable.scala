@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.{AggregationPipe, Dis
 import org.neo4j.values.AnyValue
 
 /**
-  * Specialization of [[NonGroupingAggTable]] where we have only grouping columns with defined order.
+  * Specialization of [[NonGroupingAggTable]] where we have only grouping columns with provided order.
   *
   * The ordered columns are used to determine chunks for which to aggregate. No Hash Map is needed.
   *
@@ -57,7 +57,7 @@ class OrderedNonGroupingAggTable(orderedGroupingFunction: (ExecutionContext, Que
   // This is the result of one chunk, not the whole result
   override def result(): Iterator[ExecutionContext] = {
     val row = resultRow()
-    AggregationPipe.computeAddKeysToResultMapFunction(orderedGroupingColumns)(row, currentGroupKey)
+    AggregationPipe.computeAddKeysToResultRowFunction(orderedGroupingColumns)(row, currentGroupKey)
     Iterator.single(row)
   }
 
@@ -66,8 +66,8 @@ class OrderedNonGroupingAggTable(orderedGroupingFunction: (ExecutionContext, Que
 
 object OrderedNonGroupingAggTable {
   case class Factory(orderedGroupingFunction: (ExecutionContext, QueryState) => AnyValue,
-                                               orderedGroupingColumns: Array[DistinctPipe.GroupingCol],
-                                               aggregations: Array[AggregationPipe.AggregatingCol]) extends OrderedAggregationTableFactory {
+                     orderedGroupingColumns: Array[DistinctPipe.GroupingCol],
+                     aggregations: Array[AggregationPipe.AggregatingCol]) extends OrderedAggregationTableFactory {
     override def table(state: QueryState, executionContextFactory: ExecutionContextFactory): AggregationTable with OrderedChunkReceiver =
       new OrderedNonGroupingAggTable(orderedGroupingFunction, orderedGroupingColumns, aggregations, state, executionContextFactory)
 

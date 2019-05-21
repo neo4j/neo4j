@@ -44,7 +44,7 @@ trait GroupingExpression {
   def computeGroupingKey(context: ExecutionContext, state: QueryState): KeyType
 
   /**
-    * Compute the grouping key for all columns that have a defined order.
+    * Compute the grouping key for all columns that have a provided order.
     *
     * @param groupingKey the whole grouping key, as obtained by [[computeGroupingKey()]]
     * @return the grouping key

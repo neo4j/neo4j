@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.{AggregationPipe, Exe
 import org.neo4j.values.AnyValue
 
 /**
-  * This table must be used when we have grouping columns, and the order for at least one grouping column is not well-defined.
+  * This table must be used when we have grouping columns, and there is no provided order for at least one grouping column.
   *
   * @param groupingColumns  all grouping columns
   * @param groupingFunction a precomputed function to calculate the grouping key of a row
@@ -39,7 +39,7 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
                        executionContextFactory: ExecutionContextFactory) extends AggregationTable {
 
   protected var resultMap: java.util.LinkedHashMap[AnyValue, Array[AggregationFunction]] = _
-  protected val addKeys: (ExecutionContext, AnyValue) => Unit = AggregationPipe.computeAddKeysToResultMapFunction(groupingColumns)
+  protected val addKeys: (ExecutionContext, AnyValue) => Unit = AggregationPipe.computeAddKeysToResultRowFunction(groupingColumns)
 
   override def clear(): Unit = {
     resultMap = new java.util.LinkedHashMap[AnyValue, Array[AggregationFunction]]()

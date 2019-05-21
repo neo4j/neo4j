@@ -93,40 +93,40 @@ object AggregationPipe {
     * Precompute a function that adds the grouping key columns to a result row.
     * The reason we precompute this is that we can specialize code depending on the amount of grouping keys.
     */
-  def computeAddKeysToResultMapFunction(groupingColumns: Array[GroupingCol]): (ExecutionContext, AnyValue) => Unit =
+  def computeAddKeysToResultRowFunction(groupingColumns: Array[GroupingCol]): (ExecutionContext, AnyValue) => Unit =
     groupingColumns.length match {
       case 0 =>
         // Do nothing
         (_, _) => ()
       case 1 =>
         val key = groupingColumns.head.key
-        (map, groupingKey) => map.set(key, groupingKey)
+        (row, groupingKey) => row.set(key, groupingKey)
       case 2 =>
         val key = groupingColumns.head.key
         val key2 = groupingColumns.last.key
-        (map, groupingKey) => {
+        (row, groupingKey) => {
           val t2 = groupingKey.asInstanceOf[ListValue]
-          map.set(key, t2.head())
-          map.set(key2, t2.last())
+          row.set(key, t2.head())
+          row.set(key2, t2.last())
         }
       case 3 =>
         val key = groupingColumns.head.key
         val key2 = groupingColumns(1).key
         val key3 = groupingColumns(2).key
-        (map, groupingKey) => {
+        (row, groupingKey) => {
           val t3 = groupingKey.asInstanceOf[ListValue]
-          map.set(key, t3.value(0))
-          map.set(key2, t3.value(1))
-          map.set(key3, t3.value(2))
+          row.set(key, t3.value(0))
+          row.set(key2, t3.value(1))
+          row.set(key3, t3.value(2))
         }
       case _ =>
-        (map, groupingKey) => {
+        (row, groupingKey) => {
           val listOfValues = groupingKey.asInstanceOf[ListValue]
           var i = 0
           while (i < groupingColumns.length) {
             val k = groupingColumns(i).key
             val value: AnyValue = listOfValues.value(i)
-            map.set(k, value)
+            row.set(k, value)
             i += 1
           }
         }

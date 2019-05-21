@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 
 /**
   * Specialization of [[EagerAggregationPipe]] that leverages the order of some or all grouping columns.
-  * Will use [[OrderedGroupingAggTable]] if some grouping columns do not have a defined order and'
-  * [[OrderedNonGroupingAggTable]] if all grouping columns have a defined order.
+  * Will use [[OrderedGroupingAggTable]] if some grouping columns do not have a provided order and
+  * [[OrderedNonGroupingAggTable]] if all grouping columns have a provided order.
   */
 case class OrderedAggregationPipe(source: Pipe,
                                   tableFactory: OrderedAggregationTableFactory)
