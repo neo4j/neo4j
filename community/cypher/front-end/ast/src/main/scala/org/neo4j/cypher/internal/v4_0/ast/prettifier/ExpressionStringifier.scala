@@ -118,19 +118,18 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
         s"case$e$items${d}end"
       case e@Ands(expressions) =>
 
-        def findChain: Option[List[Expression with BinaryOperatorExpression]] = {
-          val ops = expressions.collect {
-            case e: BinaryOperatorExpression => e.lhs -> e
-          }.toMap
+        type BinOp = Expression with BinaryOperatorExpression
 
-          def expand(lhs: Expression): List[Expression with BinaryOperatorExpression] = ops.get(lhs) match {
-            case Some(op) => op :: expand(op.rhs)
-            case None => List.empty
-          }
-
-          val chains = ops.keys.map(expand)
-          chains.find(ch => expressions.forall(ch.contains))
-        }
+        def findChain: Option[List[BinOp]] =
+          expressions.toList
+            .collect {
+              case e: BinaryOperatorExpression => e
+            }
+            .permutations.find { cand =>
+              def hasAll = expressions.forall(cand.contains)
+              def aligns = cand.sliding(2).forall(p => p.head.rhs == p.last.lhs)
+              hasAll && aligns
+            }
 
         findChain match {
           case Some(chain) =>
