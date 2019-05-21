@@ -81,12 +81,19 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   override def afterEach(): Unit = {
     DebugLog.log("")
-    runtimeTestSupport.stop()
-    managementService.shutdown()
-    afterShutdown()
+    shutdownDatabase()
+    afterTest()
   }
 
-  def afterShutdown(): Unit = {}
+  protected def shutdownDatabase(): Unit = {
+    if (managementService != null) {
+      runtimeTestSupport.stop()
+      managementService.shutdown()
+      managementService = null
+    }
+  }
+
+  def afterTest(): Unit = {}
 
   override def test(testName: String, testTags: Tag*)(testFun: => Any)(implicit pos: Position): Unit = {
     super.test(testName, Tag(runtime.name) +: testTags: _*)(testFun)
