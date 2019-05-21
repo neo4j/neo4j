@@ -50,7 +50,7 @@ public class WriteTestSupport implements KernelAPIWriteTestSupport
         try ( Transaction tx = beginTransaction() )
         {
             //We are creating these dummy tokens so that that the ones that we actually use don't get
-            //the value 0. Using 0 may hide mask bugs that are caused by default the intitalization of ints
+            //the value 0. Using 0 may hide bugs that are caused by default the initialization of ints
             TokenWrite tokenWrite = tx.tokenWrite();
             tokenWrite.propertyKeyCreateForName( "DO_NOT_USE", false );
             tokenWrite.labelCreateForName( "DO_NOT_USE", false );
