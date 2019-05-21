@@ -235,8 +235,9 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
       transactionalContext.close(true)
       tx.success()
     } catch {
-      case _: Throwable =>
+      case t: Throwable =>
         transactionalContext.close(false)
+        throw t
     } finally {
       tx.close()
     }
