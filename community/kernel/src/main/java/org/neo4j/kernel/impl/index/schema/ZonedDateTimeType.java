@@ -31,14 +31,18 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.ZONE_ID_FLAG;
-import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.ZONE_ID_MASK;
-import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.asZoneId;
-import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.asZoneOffset;
-import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.isZoneId;
-
 class ZonedDateTimeType extends Type
 {
+    // A 1 signals a named time zone is stored, a 0 that an offset is stored
+    private static final int ZONE_ID_FLAG = 0x0100_0000;
+    // Mask for offsets to remove to not collide with the flag for negative numbers
+    // It is 24 bits which allows to store all possible minute offsets
+    private static final int ZONE_ID_MASK = 0x00FF_FFFF;
+    // This is used to determine if the value is negative (after applying the bitmask)
+    private static final int ZONE_ID_HIGH = 0x0080_0000;
+    // This is ised to restore masked negative offsets to their real value
+    private static final int ZONE_ID_EXT =  0xFF00_0000;
+
     // Affected key state:
     // long0 (epochSecondUTC)
     // long1 (nanoOfSecond)
@@ -171,5 +175,27 @@ class ZonedDateTimeType extends Type
         joiner.add( "long1=" + state.long1 );
         joiner.add( "long2=" + state.long2 );
         joiner.add( "long3=" + state.long3 );
+    }
+
+    private static int asZoneOffset( int encodedZone )
+    {
+        if ( (ZONE_ID_HIGH & encodedZone) == ZONE_ID_HIGH )
+        {
+            return ZONE_ID_EXT | encodedZone;
+        }
+        else
+        {
+            return encodedZone;
+        }
+    }
+
+    private static short asZoneId( int encodedZone )
+    {
+        return (short) ( encodedZone & ZONE_ID_MASK );
+    }
+
+    private static boolean isZoneId( int encodedZone )
+    {
+        return ( encodedZone & ZONE_ID_FLAG ) != 0;
     }
 }

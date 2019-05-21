@@ -34,8 +34,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
-import org.neo4j.values.storable.RandomValues;
-import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueType;
 
 import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
@@ -48,48 +46,6 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     public static Collection<Object[]> data()
     {
         return Arrays.asList( new Object[][]{
-                {"Date",
-                        temporalAccessorFactory(),
-                        RandomValues.typesOfGroup( ValueGroup.DATE ),
-                        (IndexLayoutFactory) DateLayout::new,
-                        TemporalIndexProvider.CAPABILITY
-                },
-                {"DateTime",
-                        temporalAccessorFactory(),
-                        RandomValues.typesOfGroup( ValueGroup.ZONED_DATE_TIME ),
-                        (IndexLayoutFactory) ZonedDateTimeLayout::new,
-                        TemporalIndexProvider.CAPABILITY
-                },
-                {"Duration",
-                        temporalAccessorFactory(),
-                        RandomValues.typesOfGroup( ValueGroup.DURATION ),
-                        (IndexLayoutFactory) DurationLayout::new,
-                        TemporalIndexProvider.CAPABILITY
-                },
-                {"LocalDateTime",
-                        temporalAccessorFactory(),
-                        RandomValues.typesOfGroup( ValueGroup.LOCAL_DATE_TIME ),
-                        (IndexLayoutFactory) LocalDateTimeLayout::new,
-                        TemporalIndexProvider.CAPABILITY
-                },
-                {"LocalTime",
-                        temporalAccessorFactory(),
-                        RandomValues.typesOfGroup( ValueGroup.LOCAL_TIME ),
-                        (IndexLayoutFactory) LocalTimeLayout::new,
-                        TemporalIndexProvider.CAPABILITY
-                },
-                {"LocalDateTime",
-                        temporalAccessorFactory(),
-                        RandomValues.typesOfGroup( ValueGroup.LOCAL_DATE_TIME ),
-                        (IndexLayoutFactory) LocalDateTimeLayout::new,
-                        TemporalIndexProvider.CAPABILITY
-                },
-                {"Time",
-                        temporalAccessorFactory(),
-                        RandomValues.typesOfGroup( ValueGroup.ZONED_TIME ),
-                        (IndexLayoutFactory) ZonedTimeLayout::new,
-                        TemporalIndexProvider.CAPABILITY
-                },
                 {"Generic",
                         genericAccessorFactory(),
                         ValueType.values(),
@@ -147,11 +103,6 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     }
 
     /* Helpers */
-    private static <TK extends NativeIndexSingleValueKey<TK>> AccessorFactory<TK,NativeIndexValue> temporalAccessorFactory()
-    {
-        return TemporalIndexAccessor.PartAccessor::new;
-    }
-
     private static AccessorFactory<GenericKey,NativeIndexValue> genericAccessorFactory()
     {
         return ( pageCache, fs, storeFiles, layout, cleanup, monitor, descriptor ) ->

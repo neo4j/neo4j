@@ -102,9 +102,6 @@ public class IndexPopulationStressTest
         // SpatialIndexProvider
         parameters.add( of( "spatial", false, RandomValues::nextPointValue, test ->
                 new SpatialIndexProvider( test.rules.pageCache(), test.rules.fileSystem(), test.directory(), EMPTY, immediate(), false, defaults() ) ) );
-        // TemporalIndexProvider
-        parameters.add( of( "temporal", true, RandomValues::nextTemporalValue, test ->
-                new TemporalIndexProvider( test.rules.pageCache(), test.rules.fileSystem(), test.directory(), EMPTY, immediate(), false ) ) );
         return parameters;
     }
 

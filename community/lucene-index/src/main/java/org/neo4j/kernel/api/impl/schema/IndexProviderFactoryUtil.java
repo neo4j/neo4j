@@ -29,7 +29,6 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
-import org.neo4j.kernel.impl.index.schema.TemporalIndexProvider;
 
 import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.directoryFactory;
 
@@ -44,12 +43,6 @@ class IndexProviderFactoryUtil
             IndexProvider.Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, Config config )
     {
         return new SpatialIndexProvider( pageCache, fs, directoryStructure, monitor, recoveryCleanupWorkCollector, readOnly, config );
-    }
-
-    static TemporalIndexProvider temporalProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure,
-            IndexProvider.Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
-    {
-        return new TemporalIndexProvider( pageCache, fs, directoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
     }
 
     static LuceneIndexProvider luceneProvider( FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure, IndexProvider.Monitor monitor,

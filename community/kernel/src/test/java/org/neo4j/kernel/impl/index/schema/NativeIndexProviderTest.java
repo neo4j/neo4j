@@ -30,7 +30,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -48,11 +47,6 @@ public class NativeIndexProviderTest extends NativeIndexProviderTests
                         spatialProviderFactory(),
                         ONLINE,
                         Values.pointValue( CoordinateReferenceSystem.WGS84, 0, 0 )
-                },
-                {"Temporal",
-                        (ProviderFactory) TemporalIndexProvider::new,
-                        ONLINE,
-                        DateValue.date( 1, 1, 1 )
                 },
                 {"Generic",
                         genericProviderFactory(),

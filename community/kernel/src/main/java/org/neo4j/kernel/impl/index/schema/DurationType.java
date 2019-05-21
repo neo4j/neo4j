@@ -26,8 +26,8 @@ import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-import static org.neo4j.kernel.impl.index.schema.DurationIndexKey.AVG_DAY_SECONDS;
-import static org.neo4j.kernel.impl.index.schema.DurationIndexKey.AVG_MONTH_SECONDS;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.AVG_DAY_SECONDS;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.AVG_MONTH_SECONDS;
 
 class DurationType extends Type
 {

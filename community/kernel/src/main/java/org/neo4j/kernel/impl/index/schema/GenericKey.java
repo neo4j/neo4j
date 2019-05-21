@@ -32,8 +32,6 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
-import static org.neo4j.kernel.impl.index.schema.DurationIndexKey.AVG_DAY_SECONDS;
-import static org.neo4j.kernel.impl.index.schema.DurationIndexKey.AVG_MONTH_SECONDS;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.HIGH;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.LOW;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
@@ -93,6 +91,12 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     static final long TRUE = 1;
     static final long FALSE = 0;
     public static final int TYPE_ID_SIZE = Byte.BYTES;
+    /**
+     * An average month is 30 days, 10 hours and 30 minutes.
+     * In seconds this is (((30 * 24) + 10) * 60 + 30) * 60 = 2629800
+     */
+    static final long AVG_MONTH_SECONDS = 2_629_800;
+    static final long AVG_DAY_SECONDS = 86_400;
     private static final double[] NO_COORDINATES = new double[0];
 
     // Immutable
