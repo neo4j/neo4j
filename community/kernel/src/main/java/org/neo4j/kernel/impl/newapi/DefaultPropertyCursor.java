@@ -37,7 +37,7 @@ import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
 public class DefaultPropertyCursor implements PropertyCursor, Supplier<LabelSet>
 {
-    private static final long NO_NODE= -1L;
+    private static final long NO_NODE = -1L;
 
     private Read read;
     private StoragePropertyCursor storeCursor;
@@ -47,7 +47,7 @@ public class DefaultPropertyCursor implements PropertyCursor, Supplier<LabelSet>
     private AssertOpen assertOpen;
     private final CursorPool<DefaultPropertyCursor> pool;
     private AccessMode accessMode;
-    private long entityReference = NO_NODE;
+    private long nodeReference = NO_NODE;
     private LabelSet labels;
 
     DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor )
@@ -62,7 +62,7 @@ public class DefaultPropertyCursor implements PropertyCursor, Supplier<LabelSet>
 
         init( read, assertOpen );
         storeCursor.initNodeProperties( reference );
-        this.entityReference = nodeReference;
+        this.nodeReference = nodeReference;
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -83,7 +83,7 @@ public class DefaultPropertyCursor implements PropertyCursor, Supplier<LabelSet>
 
         init( read, assertOpen );
         storeCursor.initRelationshipProperties( reference );
-        entityReference = NO_NODE;
+        nodeReference = NO_NODE;
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -103,7 +103,7 @@ public class DefaultPropertyCursor implements PropertyCursor, Supplier<LabelSet>
     {
         init( read, assertOpen );
         storeCursor.initGraphProperties();
-        entityReference = NO_NODE;
+        nodeReference = NO_NODE;
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -255,7 +255,7 @@ public class DefaultPropertyCursor implements PropertyCursor, Supplier<LabelSet>
         {
             try ( NodeCursor nodeCursor = read.cursors().allocateFullAccessNodeCursor() )
             {
-                read.singleNode( entityReference, nodeCursor );
+                read.singleNode( nodeReference, nodeCursor );
                 nodeCursor.next();
                 labels = nodeCursor.labels();
             }
@@ -270,6 +270,6 @@ public class DefaultPropertyCursor implements PropertyCursor, Supplier<LabelSet>
 
     private boolean isNode()
     {
-        return (entityReference != NO_NODE);
+        return nodeReference != NO_NODE;
     }
 }
