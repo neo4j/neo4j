@@ -588,7 +588,12 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     private StoreIndexDescriptor[] toStoreIndexDescriptors( StorageIndexReference[] rules )
     {
-        return Stream.of( rules ).map( StoreIndexDescriptor::new ).toArray( StoreIndexDescriptor[]::new );
+        StoreIndexDescriptor[] result = new StoreIndexDescriptor[rules.length];
+        for ( int i = 0; i < rules.length; i++ )
+        {
+            result[i] = new StoreIndexDescriptor( rules[i] );
+        }
+        return result;
     }
 
     private void processUpdate( IndexUpdaterMap updaterMap, IndexEntryUpdate<SchemaDescriptor> indexUpdate ) throws IndexEntryConflictException

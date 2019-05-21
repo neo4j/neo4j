@@ -158,7 +158,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         indexConfig = addMissingDefaultIndexConfig( indexConfig );
         schema = schema.withIndexConfig( indexConfig );
         index = index.withSchemaDescriptor( schema );
-//        index = index.withEventuallyConsistent( isEventuallyConsistent( schema ) );
+        index = index.withEventualConsistency( isEventuallyConsistent( schema ) );
         return index;
     }
 
