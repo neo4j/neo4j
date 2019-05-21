@@ -19,17 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema.config;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.function.Function;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.PartialOverlapConfiguration;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
-import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.io.pagecache.PageCache;
 
 /**
  * <p>
@@ -52,17 +45,6 @@ public final class SpaceFillingCurveSettingsFactory
     {
         // Currently we support only one type of index, but in future we could support different types for different CRS
         return new SpaceFillingCurveSettings.SettingsFromConfig( envelopeSettings.getCrs().getDimension(), maxBits, envelopeSettings.asEnvelope() );
-    }
-
-    public static SpaceFillingCurveSettings fromGBPTree( File indexFile, PageCache pageCache, Function<ByteBuffer,String> onError ) throws IOException
-    {
-        SpaceFillingCurveSettings.SettingsFromIndexHeader settings = new SpaceFillingCurveSettings.SettingsFromIndexHeader();
-        GBPTree.readHeader( pageCache, indexFile, settings.headerReader( onError ) );
-        if ( settings.isFailed() )
-        {
-            throw new IOException( settings.getFailureMessage() );
-        }
-        return settings;
     }
 
     /**

@@ -29,11 +29,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 
 @RunWith( Parameterized.class )
@@ -43,11 +41,6 @@ public class NativeIndexProviderTest extends NativeIndexProviderTests
     public static Object[][] data()
     {
         return new Object[][]{
-                {"Spatial",
-                        spatialProviderFactory(),
-                        ONLINE,
-                        Values.pointValue( CoordinateReferenceSystem.WGS84, 0, 0 )
-                },
                 {"Generic",
                         genericProviderFactory(),
                         POPULATING,
@@ -60,12 +53,6 @@ public class NativeIndexProviderTest extends NativeIndexProviderTests
     {
         return ( pageCache, fs, dir, monitor, collector, readOnly ) ->
                 new GenericNativeIndexProvider( dir, pageCache, fs, monitor, collector, readOnly, Config.defaults() );
-    }
-
-    private static ProviderFactory spatialProviderFactory()
-    {
-        return ( pageCache, fs, dir, monitor, collector, readOnly ) ->
-                new SpatialIndexProvider( pageCache, fs, dir, monitor, collector, readOnly, Config.defaults() );
     }
 
     @Parameterized.Parameter
