@@ -51,6 +51,9 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
   private var comparisonCount = 0
   private val pos = InputPosition(0, 0, 0)
 
+  private val PLAN_BREAK = "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-"
+  private val LINE_ENDS_WITH_COST = Array("{}", " {", PLAN_BREAK.takeRight(2))
+
   override def report[X](projector: X => LogicalPlan,
                          input: Iterable[X],
                          inputOrdering: Ordering[X],
@@ -81,8 +84,7 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
       Row(comparisonCount, plan.id, planText, planTextWithCosts, cost, cardinality, winner.id == plan.id)
     }
 
-    val stars = "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-"
-    val divider = Row(comparisonCount, Id(0), stars, stars, Cost(0), Cardinality.SINGLE, winner = false)
+    val divider = Row(comparisonCount, Id(0), PLAN_BREAK, PLAN_BREAK, Cost(0), Cardinality.SINGLE, winner = false)
 
     rows ++= (divider +: theseRows)
     comparisonCount += 1
@@ -134,14 +136,18 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
 
     val maps: immutable.Seq[MapExpression] = rows.toIndexedSeq.reverse.flatMap {
       case Row(comparisonId: Int, planId: Id, planText: String, planCosts: String, cost: Cost, cardinality: Cardinality, winner: Boolean) =>
-        val planTestLines = planText.split(System.lineSeparator())
+        val planTextLines = planText.split(System.lineSeparator())
         val planCostLines = planCosts.split(System.lineSeparator())
 
-        val details = planCostLines zip planTestLines map {
-          case (planCost, planTxt) =>
+        val costIter = planCostLines.iterator
+
+        val details = planTextLines map {
+          planText =>
+            val planCost =
+              if (LINE_ENDS_WITH_COST.contains(planText.takeRight(2))) costIter.next() else ""
             map( values =
               "comparison" -> int(comparisonId),
-              "planDetails" -> str(planTxt),
+              "planDetails" -> str(planText),
               "planCosts" -> str(planCost)
             )
         }
