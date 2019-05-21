@@ -27,8 +27,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;

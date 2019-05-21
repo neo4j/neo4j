@@ -36,14 +36,14 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.LongSupplier;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
-import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
+import org.neo4j.io.fs.DelegatingStoreChannel;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;

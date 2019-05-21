@@ -35,8 +35,8 @@ import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.UnderlyingStorageException;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.PageCache;

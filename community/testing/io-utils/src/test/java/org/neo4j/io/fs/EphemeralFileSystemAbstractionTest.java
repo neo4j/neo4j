@@ -19,8 +19,6 @@
  */
 package org.neo4j.io.fs;
 
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-
 public class EphemeralFileSystemAbstractionTest extends FileSystemAbstractionTest
 {
     @Override

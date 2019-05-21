@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.mockfs;
+package org.neo4j.io.fs;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -32,10 +32,6 @@ import java.nio.file.OpenOption;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.neo4j.io.fs.FileHandle;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.fs.StreamFilesRecursive;
 import org.neo4j.io.fs.watcher.FileWatcher;
 
 public class DelegatingFileSystemAbstraction implements FileSystemAbstraction

@@ -21,7 +21,7 @@ package org.neo4j.test.extension;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 
 public class EphemeralFileSystemExtension extends FileSystemExtension<EphemeralFileSystemAbstraction>
 {

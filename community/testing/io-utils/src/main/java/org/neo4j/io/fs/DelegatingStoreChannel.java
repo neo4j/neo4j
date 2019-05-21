@@ -17,13 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.mockfs;
+package org.neo4j.io.fs;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileLock;
-
-import org.neo4j.io.fs.StoreChannel;
 
 public class DelegatingStoreChannel implements StoreChannel
 {

@@ -34,7 +34,6 @@ import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
 
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.is;

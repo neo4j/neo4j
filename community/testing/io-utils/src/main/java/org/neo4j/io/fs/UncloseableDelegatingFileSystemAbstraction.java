@@ -17,9 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.mockfs;
-
-import org.neo4j.io.fs.FileSystemAbstraction;
+package org.neo4j.io.fs;
 
 /**
  * File system abstraction that wraps real file system and prevent it from being closed.

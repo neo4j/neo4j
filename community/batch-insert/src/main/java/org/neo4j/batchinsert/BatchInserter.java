@@ -21,6 +21,7 @@ package org.neo4j.batchinsert;
 
 import java.util.Map;
 
+import org.neo4j.batchinsert.internal.BatchRelationship;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintCreator;

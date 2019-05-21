@@ -19,7 +19,7 @@
  */
 package org.neo4j.test.rule.fs;
 
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 
 public class EphemeralFileSystemRule extends FileSystemRule<EphemeralFileSystemAbstraction>
 {

@@ -27,9 +27,9 @@ import java.util.Map;
 
 import org.neo4j.batchinsert.internal.FileSystemClosingBatchInserter;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.MapUtil;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
 import org.neo4j.test.rule.TestDirectory;

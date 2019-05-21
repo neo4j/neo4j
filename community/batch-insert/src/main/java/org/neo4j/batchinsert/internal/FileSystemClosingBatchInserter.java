@@ -24,7 +24,6 @@ import java.io.UncheckedIOException;
 import java.util.Map;
 
 import org.neo4j.batchinsert.BatchInserter;
-import org.neo4j.batchinsert.BatchRelationship;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintCreator;

@@ -51,10 +51,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.config.Configuration;
-import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
-import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
+import org.neo4j.io.fs.DelegatingStoreChannel;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;

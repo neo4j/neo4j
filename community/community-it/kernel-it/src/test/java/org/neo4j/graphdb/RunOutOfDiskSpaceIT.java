@@ -28,9 +28,9 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.dbms.database.DatabaseManagementService;
-import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.mockfs;
+package org.neo4j.io.fs;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +36,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.neo4j.io.ByteUnit;
-import org.neo4j.io.fs.StoreChannel;
 
 import static java.nio.ByteBuffer.allocate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class EphemeralFileSystemAbstractionTest
+class EphemeralFileSystemTest
 {
     private EphemeralFileSystemAbstraction fs;
 

@@ -57,9 +57,9 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.DelegatingPagedFile;

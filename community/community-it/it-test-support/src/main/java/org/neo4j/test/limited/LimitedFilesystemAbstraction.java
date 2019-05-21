@@ -32,7 +32,7 @@ import java.nio.file.CopyOption;
 import java.nio.file.OpenOption;
 import java.util.Set;
 
-import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
+import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.impl.ChannelInputStream;

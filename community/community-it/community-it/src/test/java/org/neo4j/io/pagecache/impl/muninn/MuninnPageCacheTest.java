@@ -34,9 +34,9 @@ import java.util.concurrent.Future;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 
-import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
-import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
+import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.IOLimiter;

@@ -26,9 +26,9 @@ import java.io.File;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.id.IdController.ConditionSnapshot;
 import org.neo4j.internal.id.configuration.CommunityIdTypeConfigurationProvider;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
