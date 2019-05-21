@@ -94,7 +94,7 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
                 double[] from = geometryRangePredicate.from() == null ? null : geometryRangePredicate.from().coordinate();
                 double[] to = geometryRangePredicate.to() == null ? null : geometryRangePredicate.to().coordinate();
                 CoordinateReferenceSystem crs = geometryRangePredicate.crs();
-                SpaceFillingCurve curve = spaceFillingCurveSettings.forCrs( crs, false );
+                SpaceFillingCurve curve = spaceFillingCurveSettings.forCrs( crs );
                 List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( from, to, configuration );
                 for ( SpaceFillingCurve.LongRange range : ranges )
                 {

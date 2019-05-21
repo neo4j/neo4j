@@ -24,13 +24,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
-import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.UpdateMode;
@@ -49,7 +47,7 @@ import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.HEAP_BUFFER_F
 class IndexUpdateStorageTest
 {
     private static final IndexSpecificSpaceFillingCurveSettingsCache spatialSettings =
-            new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
+            IndexSpecificSpaceFillingCurveSettingsCache.fromConfig( Config.defaults() );
     private static final SchemaDescriptorSupplier descriptor = SchemaDescriptor.forLabel( 1, 1 );
 
     @Inject

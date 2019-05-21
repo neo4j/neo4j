@@ -26,7 +26,6 @@ import org.junit.Test;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
@@ -34,13 +33,12 @@ import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -343,8 +341,7 @@ public class GenericBlockBasedIndexPopulatorTest
     private GenericBlockBasedIndexPopulator instantiatePopulator( StoreIndexDescriptor indexDescriptor )
     {
         Config config = Config.defaults();
-        ConfiguredSpaceFillingCurveSettingsCache settingsCache = new ConfiguredSpaceFillingCurveSettingsCache( config );
-        IndexSpecificSpaceFillingCurveSettingsCache spatialSettings = new IndexSpecificSpaceFillingCurveSettingsCache( settingsCache, new HashMap<>() );
+        IndexSpecificSpaceFillingCurveSettingsCache spatialSettings = IndexSpecificSpaceFillingCurveSettingsCache.fromConfig( config );
         GenericLayout layout = new GenericLayout( 1, spatialSettings );
         SpaceFillingCurveConfiguration configuration = SpaceFillingCurveSettingsFactory.getConfiguredSpaceFillingCurveConfiguration( config );
         PageCache pc = storage.pageCache();

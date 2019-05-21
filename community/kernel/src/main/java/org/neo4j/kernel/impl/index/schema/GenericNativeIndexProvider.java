@@ -153,7 +153,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
         int numberOfSlots = descriptor.schema().getPropertyIds().length;
         IndexConfig indexConfig = descriptor.schema().getIndexConfig();
         Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings = SpatialIndexConfig.extractSpatialConfig( indexConfig );
-        return new GenericLayout( numberOfSlots, new IndexSpecificSpaceFillingCurveSettingsCache( configuredSettings, settings ) );
+        return new GenericLayout( numberOfSlots, new IndexSpecificSpaceFillingCurveSettingsCache( settings ) );
     }
 
     @Override

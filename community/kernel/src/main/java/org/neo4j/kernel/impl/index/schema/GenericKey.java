@@ -632,7 +632,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
         {
             long1 = tableId;
             long2 = code;
-            spaceFillingCurve = settings.forCrs( tableId, code, true );
+            spaceFillingCurve = settings.forCrs( tableId, code );
         }
     }
 

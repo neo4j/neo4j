@@ -26,12 +26,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.test.extension.Inject;
@@ -52,7 +50,7 @@ class IndexKeyStorageTest
 {
     private static final int BLOCK_SIZE = 2000;
     private static final IndexSpecificSpaceFillingCurveSettingsCache spatialSettings =
-            new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
+            IndexSpecificSpaceFillingCurveSettingsCache.fromConfig( Config.defaults() );
 
     @Inject
     protected TestDirectory directory;

@@ -35,7 +35,6 @@ import java.time.Period;
 import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -44,7 +43,6 @@ import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
@@ -116,7 +114,7 @@ import static org.neo4j.values.storable.Values.timeArray;
 class GenericKeyStateTest
 {
     private final IndexSpecificSpaceFillingCurveSettingsCache noSpecificIndexSettings =
-            new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
+            IndexSpecificSpaceFillingCurveSettingsCache.fromConfig( Config.defaults() );
 
     @Inject
     private static RandomRule random;
@@ -260,7 +258,7 @@ class GenericKeyStateTest
         PointValue firstPoint = random.randomValues().nextPointValue();
         PointValue equalPoint = Values.point( firstPoint );
         CoordinateReferenceSystem crs = firstPoint.getCoordinateReferenceSystem();
-        SpaceFillingCurve curve = noSpecificIndexSettings.forCrs( crs, false );
+        SpaceFillingCurve curve = noSpecificIndexSettings.forCrs( crs );
         Long spaceFillingCurveValue = curve.derivedValueFor( firstPoint.coordinate() );
         PointValue centerPoint = Values.pointValue( crs, curve.centerPointFor( spaceFillingCurveValue ) );
 
@@ -291,7 +289,7 @@ class GenericKeyStateTest
         {
             PointValue sourcePointValue = sourcePointValues[i];
             CoordinateReferenceSystem crs = sourcePointValue.getCoordinateReferenceSystem();
-            SpaceFillingCurve curve = noSpecificIndexSettings.forCrs( crs, false );
+            SpaceFillingCurve curve = noSpecificIndexSettings.forCrs( crs );
             Long spaceFillingCurveValue = curve.derivedValueFor( sourcePointValue.coordinate() );
             centerPointValues[i] = Values.pointValue( crs, curve.centerPointFor( spaceFillingCurveValue ) );
         }

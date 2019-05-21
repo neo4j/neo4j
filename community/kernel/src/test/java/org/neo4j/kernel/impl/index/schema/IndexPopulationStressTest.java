@@ -41,13 +41,14 @@ import java.util.function.Function;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -124,8 +125,8 @@ public class IndexPopulationStressTest
     @Rule
     public PageCacheAndDependenciesRule rules = new PageCacheAndDependenciesRule().with( new DefaultFileSystemRule() );
 
-    private final StoreIndexDescriptor descriptor = forSchema( forLabel( 0, 0 ), PROVIDER ).withId( 0 );
-    private final StoreIndexDescriptor descriptor2 = forSchema( forLabel( 1, 0 ), PROVIDER ).withId( 1 );
+    private StoreIndexDescriptor descriptor;
+    private StoreIndexDescriptor descriptor2;
     private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( 1000, 0.2, true );
     private final NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
     @Parameterized.Parameter
@@ -148,9 +149,11 @@ public class IndexPopulationStressTest
     }
 
     @Before
-    public void setup() throws IOException, EntityNotFoundException
+    public void setup() throws IOException, EntityNotFoundException, MisconfiguredIndexException
     {
         indexProvider = providerCreator.apply( this );
+        descriptor = indexProvider.bless( forSchema( forLabel( 0, 0 ), PROVIDER ) ).withId( 0 );
+        descriptor2 = indexProvider.bless( forSchema( forLabel( 1, 0 ), PROVIDER ) ).withId( 1 );
         rules.fileSystem().mkdirs( indexProvider.directoryStructure().rootDirectory() );
         populator = indexProvider.getPopulator( descriptor, samplingConfig );
         when( nodePropertyAccessor.getNodePropertyValue( anyLong(), anyInt() ) ).thenThrow( UnsupportedOperationException.class );

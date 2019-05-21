@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema.config;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -28,14 +29,15 @@ import org.neo4j.configuration.Config;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
 class IndexSpecificSpaceFillingCurveSettingsCacheTest
 {
-    private final ConfiguredSpaceFillingCurveSettingsCache globalSettings = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );
+    private static final Config config = Config.defaults();
+    private final ConfiguredSpaceFillingCurveSettingsCache globalSettings = new ConfiguredSpaceFillingCurveSettingsCache( config );
 
     @Test
     void shouldHaveInitialIndexSpecificSetting()
@@ -44,7 +46,7 @@ class IndexSpecificSpaceFillingCurveSettingsCacheTest
         Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> initialSettings = new HashMap<>();
         initialSettings.put( WGS84, globalSettings.forCRS( WGS84 ) );
         initialSettings.put( Cartesian, globalSettings.forCRS( Cartesian ) );
-        IndexSpecificSpaceFillingCurveSettingsCache indexSettings = new IndexSpecificSpaceFillingCurveSettingsCache( globalSettings, initialSettings );
+        IndexSpecificSpaceFillingCurveSettingsCache indexSettings = new IndexSpecificSpaceFillingCurveSettingsCache( initialSettings );
 
         // when
         ToMapSettingVisitor visitor = new ToMapSettingVisitor();
@@ -55,40 +57,16 @@ class IndexSpecificSpaceFillingCurveSettingsCacheTest
     }
 
     @Test
-    void shouldHaveInitialIndexSpecificSettingsPlusRequestedOnes()
+    void shouldThrowIfAskedForNonExistingIndexSetting()
     {
         // given
         Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> initialSettings = new HashMap<>();
         initialSettings.put( WGS84, globalSettings.forCRS( WGS84 ) );
         initialSettings.put( Cartesian, globalSettings.forCRS( Cartesian ) );
-        IndexSpecificSpaceFillingCurveSettingsCache indexSettings = new IndexSpecificSpaceFillingCurveSettingsCache( globalSettings, initialSettings );
+        IndexSpecificSpaceFillingCurveSettingsCache indexSettings = new IndexSpecificSpaceFillingCurveSettingsCache( initialSettings );
 
         // when
-        indexSettings.forCrs( Cartesian_3D, true );
-
-        // then
-        ToMapSettingVisitor visitor = new ToMapSettingVisitor();
-        indexSettings.visitIndexSpecificSettings( visitor );
-        Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> expectedSettings = new HashMap<>( initialSettings );
-        assertNull( expectedSettings.put( Cartesian_3D, globalSettings.forCRS( Cartesian_3D ) ) );
-        assertEquals( expectedSettings, visitor.map );
-    }
-
-    @Test
-    void shouldNotCreateIndexSpecificSettingForReadRequest()
-    {
-        // given
-        Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> initialSettings = new HashMap<>();
-        initialSettings.put( WGS84, globalSettings.forCRS( WGS84 ) );
-        initialSettings.put( Cartesian, globalSettings.forCRS( Cartesian ) );
-        IndexSpecificSpaceFillingCurveSettingsCache indexSettings = new IndexSpecificSpaceFillingCurveSettingsCache( globalSettings, initialSettings );
-
-        // when
-        indexSettings.forCrs( Cartesian_3D, false );
-
-        // then
-        ToMapSettingVisitor visitor = new ToMapSettingVisitor();
-        indexSettings.visitIndexSpecificSettings( visitor );
-        assertEquals( initialSettings, visitor.map );
+        IllegalStateException exception = assertThrows( IllegalStateException.class, () -> indexSettings.forCrs( Cartesian_3D ) );
+        Assertions.assertTrue( exception.getMessage().contains( "Index does not have any settings for coordinate reference system cartesian-3d" ) );
     }
 }

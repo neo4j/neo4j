@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
@@ -43,7 +42,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
@@ -68,10 +66,9 @@ import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 public class GenericAccessorPointsTest
 {
     private static final CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
-    private static final ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );
-    private static final IndexSpecificSpaceFillingCurveSettingsCache indexSettings =
-            new IndexSpecificSpaceFillingCurveSettingsCache( configuredSettings, new HashMap<>() );
-    private static final SpaceFillingCurve curve = indexSettings.forCrs( crs, true );
+    private static final Config config = Config.defaults();
+    private static final IndexSpecificSpaceFillingCurveSettingsCache indexSettings = IndexSpecificSpaceFillingCurveSettingsCache.fromConfig( config );
+    private static final SpaceFillingCurve curve = indexSettings.forCrs( crs );
 
     private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );

@@ -23,11 +23,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.HashMap;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
@@ -127,8 +125,7 @@ public class GenericIndexKeyValidatorTest
 
     private IndexSpecificSpaceFillingCurveSettingsCache spatialSettings()
     {
-        return new IndexSpecificSpaceFillingCurveSettingsCache(
-                new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
+        return IndexSpecificSpaceFillingCurveSettingsCache.fromConfig( Config.defaults() );
     }
 
     private static int actualSize( Value[] tuple, GenericKey key )
