@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.phases
 
+import org.neo4j.cypher.DatabaseManagementException
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.v4_0.ast.{MultiDatabaseDDL, Query}
@@ -39,7 +40,7 @@ object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlanState
       val unionQuery: UnionQuery = toUnionQuery(query, from.semanticTable())
       LogicalPlanState(from).copy(maybeUnionQuery = Some(unionQuery))
 
-    case ddl: MultiDatabaseDDL => throw new IllegalStateException(s"Trying to run `${ddl.name}` against non-system database.")
+    case ddl: MultiDatabaseDDL => throw new DatabaseManagementException(s"Trying to run `${ddl.name}` against non-system database.")
 
     case x => throw new InternalException(s"Expected a Query and not `$x`")
   }
