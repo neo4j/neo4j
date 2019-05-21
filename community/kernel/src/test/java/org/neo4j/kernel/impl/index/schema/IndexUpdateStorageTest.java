@@ -29,7 +29,7 @@ import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.test.extension.Inject;
@@ -46,8 +46,7 @@ import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.HEAP_BUFFER_F
 @ExtendWith( {TestDirectoryExtension.class, RandomExtension.class} )
 class IndexUpdateStorageTest
 {
-    private static final IndexSpecificSpaceFillingCurveSettingsCache spatialSettings =
-            IndexSpecificSpaceFillingCurveSettingsCache.fromConfig( Config.defaults() );
+    private static final IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
     private static final SchemaDescriptorSupplier descriptor = SchemaDescriptor.forLabel( 1, 1 );
 
     @Inject

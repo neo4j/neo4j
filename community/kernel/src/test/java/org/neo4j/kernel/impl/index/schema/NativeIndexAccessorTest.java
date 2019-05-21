@@ -33,7 +33,7 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueType;
@@ -112,8 +112,8 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
         } );
     }
 
-    private static final IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings =
-            IndexSpecificSpaceFillingCurveSettingsCache.fromConfig( Config.defaults() );
+    private static final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings =
+            IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
     private static final StandardConfiguration configuration = new StandardConfiguration();
 
     private final AccessorFactory<KEY,VALUE> accessorFactory;

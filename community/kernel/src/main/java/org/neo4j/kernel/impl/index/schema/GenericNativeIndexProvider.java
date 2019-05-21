@@ -41,7 +41,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.util.FeatureToggles;
@@ -153,7 +153,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
         int numberOfSlots = descriptor.schema().getPropertyIds().length;
         IndexConfig indexConfig = descriptor.schema().getIndexConfig();
         Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings = SpatialIndexConfig.extractSpatialConfig( indexConfig );
-        return new GenericLayout( numberOfSlots, new IndexSpecificSpaceFillingCurveSettingsCache( settings ) );
+        return new GenericLayout( numberOfSlots, new IndexSpecificSpaceFillingCurveSettings( settings ) );
     }
 
     @Override

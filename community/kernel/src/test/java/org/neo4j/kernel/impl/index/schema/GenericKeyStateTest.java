@@ -43,7 +43,7 @@ import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -113,8 +113,7 @@ import static org.neo4j.values.storable.Values.timeArray;
 @TestInstance( PER_CLASS )
 class GenericKeyStateTest
 {
-    private final IndexSpecificSpaceFillingCurveSettingsCache noSpecificIndexSettings =
-            IndexSpecificSpaceFillingCurveSettingsCache.fromConfig( Config.defaults() );
+    private final IndexSpecificSpaceFillingCurveSettings noSpecificIndexSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
 
     @Inject
     private static RandomRule random;

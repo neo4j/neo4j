@@ -29,7 +29,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -52,7 +52,7 @@ public class GenericNativeIndexPopulatorTest
         long indexId = 8;
         File indexDirectory = directoryStructure.directoryForIndex( indexId );
         StoreIndexDescriptor descriptor = IndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).withId( indexId );
-        IndexSpecificSpaceFillingCurveSettingsCache spatialSettings = mock( IndexSpecificSpaceFillingCurveSettingsCache.class );
+        IndexSpecificSpaceFillingCurveSettings spatialSettings = mock( IndexSpecificSpaceFillingCurveSettings.class );
         PageCache pageCache = storage.pageCache();
         FileSystemAbstraction fs = storage.fileSystem();
         IndexFiles.Directory indexFiles = new IndexFiles.Directory( fs, directoryStructure, indexId );

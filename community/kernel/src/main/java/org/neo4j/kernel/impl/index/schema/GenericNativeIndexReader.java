@@ -33,7 +33,7 @@ import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -45,11 +45,11 @@ import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRA
 
 class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexValue>
 {
-    private final IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings;
+    private final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings;
     private final SpaceFillingCurveConfiguration configuration;
 
     GenericNativeIndexReader( GBPTree<GenericKey,NativeIndexValue> tree, IndexLayout<GenericKey,NativeIndexValue> layout,
-            IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings,
+            IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings,
             SpaceFillingCurveConfiguration configuration )
     {
         super( tree, layout, descriptor );

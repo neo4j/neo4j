@@ -42,7 +42,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.test.rule.PageCacheRule;
@@ -67,7 +67,7 @@ public class GenericAccessorPointsTest
 {
     private static final CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
     private static final Config config = Config.defaults();
-    private static final IndexSpecificSpaceFillingCurveSettingsCache indexSettings = IndexSpecificSpaceFillingCurveSettingsCache.fromConfig( config );
+    private static final IndexSpecificSpaceFillingCurveSettings indexSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );
     private static final SpaceFillingCurve curve = indexSettings.forCrs( crs );
 
     private final DefaultFileSystemRule fs = new DefaultFileSystemRule();

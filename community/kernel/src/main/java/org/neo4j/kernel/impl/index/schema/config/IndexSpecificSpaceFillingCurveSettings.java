@@ -33,19 +33,19 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
  * Hold all spatial settings and use it to provide {@link SpaceFillingCurve} for this generic index.
  * The settings are determined at index creation time and does not change.
  */
-public class IndexSpecificSpaceFillingCurveSettingsCache
+public class IndexSpecificSpaceFillingCurveSettings
 {
     /**
      * Map of settings that are specific to this index.
      */
     private final ImmutableMap<CoordinateReferenceSystem,SpaceFillingCurveSettings> specificIndexConfigCache;
 
-    public IndexSpecificSpaceFillingCurveSettingsCache( Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> specificIndexConfigCache )
+    public IndexSpecificSpaceFillingCurveSettings( Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> specificIndexConfigCache )
     {
         this.specificIndexConfigCache = Maps.immutable.withAll( specificIndexConfigCache );
     }
 
-    public static IndexSpecificSpaceFillingCurveSettingsCache fromConfig( Config config )
+    public static IndexSpecificSpaceFillingCurveSettings fromConfig( Config config )
     {
         Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> specificIndexConfigCache = new HashMap<>();
         ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( config );
@@ -54,7 +54,7 @@ public class IndexSpecificSpaceFillingCurveSettingsCache
             specificIndexConfigCache.put( crs, configuredSettings.forCRS( crs ) );
         }
 
-        return new IndexSpecificSpaceFillingCurveSettingsCache( specificIndexConfigCache );
+        return new IndexSpecificSpaceFillingCurveSettings( specificIndexConfigCache );
     }
 
     /**

@@ -34,7 +34,7 @@ import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
-class IndexSpecificSpaceFillingCurveSettingsCacheTest
+class IndexSpecificSpaceFillingCurveSettingsTest
 {
     private static final Config config = Config.defaults();
     private final ConfiguredSpaceFillingCurveSettingsCache globalSettings = new ConfiguredSpaceFillingCurveSettingsCache( config );
@@ -46,7 +46,7 @@ class IndexSpecificSpaceFillingCurveSettingsCacheTest
         Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> initialSettings = new HashMap<>();
         initialSettings.put( WGS84, globalSettings.forCRS( WGS84 ) );
         initialSettings.put( Cartesian, globalSettings.forCRS( Cartesian ) );
-        IndexSpecificSpaceFillingCurveSettingsCache indexSettings = new IndexSpecificSpaceFillingCurveSettingsCache( initialSettings );
+        IndexSpecificSpaceFillingCurveSettings indexSettings = new IndexSpecificSpaceFillingCurveSettings( initialSettings );
 
         // when
         ToMapSettingVisitor visitor = new ToMapSettingVisitor();
@@ -63,7 +63,7 @@ class IndexSpecificSpaceFillingCurveSettingsCacheTest
         Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> initialSettings = new HashMap<>();
         initialSettings.put( WGS84, globalSettings.forCRS( WGS84 ) );
         initialSettings.put( Cartesian, globalSettings.forCRS( Cartesian ) );
-        IndexSpecificSpaceFillingCurveSettingsCache indexSettings = new IndexSpecificSpaceFillingCurveSettingsCache( initialSettings );
+        IndexSpecificSpaceFillingCurveSettings indexSettings = new IndexSpecificSpaceFillingCurveSettings( initialSettings );
 
         // when
         IllegalStateException exception = assertThrows( IllegalStateException.class, () -> indexSettings.forCrs( Cartesian_3D ) );

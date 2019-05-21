@@ -48,7 +48,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -106,7 +106,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private volatile long numberOfAppliedExternalUpdates;
 
     BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
-            IndexProvider.Monitor monitor, StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
+            IndexProvider.Monitor monitor, StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings,
             boolean archiveFailedIndex )
     {
         this( pageCache, fs, indexFiles, layout, monitor, descriptor, spatialSettings, archiveFailedIndex, parseBlockSize(), MERGE_FACTOR, NO_MONITOR,
@@ -114,7 +114,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     }
 
     BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
-            IndexProvider.Monitor monitor, StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
+            IndexProvider.Monitor monitor, StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings,
             boolean archiveFailedIndex, int blockSize, int mergeFactor, BlockStorage.Monitor blockStorageMonitor, MemoryAllocationTracker memoryTracker )
     {
         super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER );

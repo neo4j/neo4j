@@ -24,7 +24,7 @@ import java.util.Map;
 
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
-class ToMapSettingVisitor implements IndexSpecificSpaceFillingCurveSettingsCache.SettingVisitor
+class ToMapSettingVisitor implements IndexSpecificSpaceFillingCurveSettings.SettingVisitor
 {
     final Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> map = new HashMap<>();
 

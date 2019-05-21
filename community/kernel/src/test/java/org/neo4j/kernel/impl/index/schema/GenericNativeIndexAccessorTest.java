@@ -28,7 +28,7 @@ import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -50,7 +50,7 @@ public class GenericNativeIndexAccessorTest
         IndexDirectoryStructure directoryStructure = IndexDirectoryStructure.directoriesByProvider( root ).forProvider( GenericNativeIndexProvider.DESCRIPTOR );
         long indexId = 8;
         StoreIndexDescriptor descriptor = IndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).withId( indexId );
-        IndexSpecificSpaceFillingCurveSettingsCache spatialSettings = mock( IndexSpecificSpaceFillingCurveSettingsCache.class );
+        IndexSpecificSpaceFillingCurveSettings spatialSettings = mock( IndexSpecificSpaceFillingCurveSettings.class );
         FileSystemAbstraction fs = storage.fileSystem();
         IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure, descriptor.getId() );
         GenericNativeIndexAccessor accessor = new GenericNativeIndexAccessor( storage.pageCache(), fs, indexFiles, new GenericLayout( 1, spatialSettings ),

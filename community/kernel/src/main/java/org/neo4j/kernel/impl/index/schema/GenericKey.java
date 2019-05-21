@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PrimitiveArrayWriting;
@@ -96,7 +96,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     private static final double[] NO_COORDINATES = new double[0];
 
     // Immutable
-    private final IndexSpecificSpaceFillingCurveSettingsCache settings;
+    private final IndexSpecificSpaceFillingCurveSettings settings;
 
     // Mutable, meta-state
     Type type;
@@ -126,7 +126,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
      */
     SpaceFillingCurve spaceFillingCurve;
 
-    GenericKey( IndexSpecificSpaceFillingCurveSettingsCache settings )
+    GenericKey( IndexSpecificSpaceFillingCurveSettings settings )
     {
         this.settings = settings;
     }

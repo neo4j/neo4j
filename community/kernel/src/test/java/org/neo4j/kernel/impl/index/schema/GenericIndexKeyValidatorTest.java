@@ -26,7 +26,7 @@ import java.util.Arrays;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
@@ -123,9 +123,9 @@ public class GenericIndexKeyValidatorTest
         }
     }
 
-    private IndexSpecificSpaceFillingCurveSettingsCache spatialSettings()
+    private IndexSpecificSpaceFillingCurveSettings spatialSettings()
     {
-        return IndexSpecificSpaceFillingCurveSettingsCache.fromConfig( Config.defaults() );
+        return IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
     }
 
     private static int actualSize( Value[] tuple, GenericKey key )

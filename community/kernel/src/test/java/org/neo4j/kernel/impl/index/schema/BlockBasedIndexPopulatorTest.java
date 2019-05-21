@@ -40,7 +40,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -334,7 +334,7 @@ public class BlockBasedIndexPopulatorTest
 
     private BlockBasedIndexPopulator<GenericKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor, MemoryAllocationTracker memoryTracker )
     {
-        IndexSpecificSpaceFillingCurveSettingsCache spatialSettings = IndexSpecificSpaceFillingCurveSettingsCache.fromConfig( Config.defaults() );
+        IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
         GenericLayout layout = new GenericLayout( 1, spatialSettings );
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator =
                 new BlockBasedIndexPopulator<GenericKey,NativeIndexValue>( storage.pageCache(), storage.fileSystem(), indexFiles, layout, EMPTY,

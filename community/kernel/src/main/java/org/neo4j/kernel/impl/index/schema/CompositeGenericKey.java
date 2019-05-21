@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.util.StringJoiner;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -36,7 +36,7 @@ class CompositeGenericKey extends GenericKey
     @SuppressWarnings( { "unchecked", "rawtypes" } )
     private GenericKey[] states;
 
-    CompositeGenericKey( int slots, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings )
+    CompositeGenericKey( int slots, IndexSpecificSpaceFillingCurveSettings spatialSettings )
     {
         super( spatialSettings );
         states = new GenericKey[slots];

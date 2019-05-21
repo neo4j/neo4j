@@ -28,7 +28,7 @@ import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueType;
@@ -108,8 +108,8 @@ class NativeIndexPopulatorTestCases
         // { Spatial has it's own subclass because it need to override some of the test methods }
     }
 
-    private static final IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings =
-            IndexSpecificSpaceFillingCurveSettingsCache.fromConfig( Config.defaults() );
+    private static final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings =
+            IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
     private static final StandardConfiguration configuration = new StandardConfiguration();
 
     private static PopulatorFactory<NumberIndexKey,NativeIndexValue> numberPopulatorFactory()

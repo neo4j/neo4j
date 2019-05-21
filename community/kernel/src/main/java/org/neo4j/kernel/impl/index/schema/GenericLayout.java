@@ -20,14 +20,14 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 
 class GenericLayout extends IndexLayout<GenericKey,NativeIndexValue>
 {
     private final int numberOfSlots;
-    private final IndexSpecificSpaceFillingCurveSettingsCache spatialSettings;
+    private final IndexSpecificSpaceFillingCurveSettings spatialSettings;
 
-    GenericLayout( int numberOfSlots, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings )
+    GenericLayout( int numberOfSlots, IndexSpecificSpaceFillingCurveSettings spatialSettings )
     {
         super( "NSIL", 0, 5 );
         this.numberOfSlots = numberOfSlots;
@@ -81,7 +81,7 @@ class GenericLayout extends IndexLayout<GenericKey,NativeIndexValue>
         right.minimalSplitter( left, right, into );
     }
 
-    IndexSpecificSpaceFillingCurveSettingsCache getSpaceFillingCurveSettings()
+    IndexSpecificSpaceFillingCurveSettings getSpaceFillingCurveSettings()
     {
         return spatialSettings;
     }
