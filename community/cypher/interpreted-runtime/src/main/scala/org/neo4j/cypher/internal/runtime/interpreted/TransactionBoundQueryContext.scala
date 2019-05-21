@@ -365,7 +365,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def getNodesByLabelPrimitive(id: Int): LongIterator = {
     val cursor = allocateAndTraceNodeLabelIndexCursor()
     reads().nodeLabelScan(id, cursor)
-    resources.trace(cursor)
     new PrimitiveCursorIterator {
       override protected def fetchNext(): Long = if (cursor.next()) cursor.nodeReference() else -1L
 
@@ -516,7 +515,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     override def all: Iterator[NodeValue] = {
       val nodeCursor = allocateAndTraceNodeCursor()
       reads().allNodesScan(nodeCursor)
-      resources.trace(nodeCursor)
       new CursorIterator[NodeValue] {
         override protected def fetchNext(): NodeValue = {
           if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
@@ -530,7 +528,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     override def allPrimitive: LongIterator = {
       val nodeCursor = allocateAndTraceNodeCursor()
       reads().allNodesScan(nodeCursor)
-      resources.trace(nodeCursor)
       new PrimitiveCursorIterator {
         override protected def fetchNext(): Long = if (nodeCursor.next()) nodeCursor.nodeReference() else -1L
 
@@ -645,7 +642,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     override def all: Iterator[RelationshipValue] = {
       val relCursor = allocateAndTraceRelationshipScanCursor()
       reads().allRelationshipsScan(relCursor)
-      resources.trace(relCursor)
       new CursorIterator[RelationshipValue] {
         override protected def fetchNext(): RelationshipValue = {
           if (relCursor.next())
@@ -662,7 +658,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     override def allPrimitive: LongIterator = {
       val relCursor = allocateAndTraceRelationshipScanCursor()
       reads().allRelationshipsScan(relCursor)
-      resources.trace(relCursor)
       new PrimitiveCursorIterator {
         override protected def fetchNext(): Long = if (relCursor.next()) relCursor.relationshipReference() else -1L
 
