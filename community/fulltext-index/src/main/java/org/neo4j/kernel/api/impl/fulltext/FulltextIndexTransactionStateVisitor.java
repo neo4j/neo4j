@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -48,7 +49,7 @@ import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure
  */
 class FulltextIndexTransactionStateVisitor extends TxStateVisitor.Adapter
 {
-    private final FulltextIndexDescriptor descriptor;
+    private final String[] propertyNames;
     private final SchemaDescriptor schema;
     private final boolean visitingNodes;
     private final int[] entityTokenIds;
@@ -61,10 +62,10 @@ class FulltextIndexTransactionStateVisitor extends TxStateVisitor.Adapter
     private PropertyCursor propertyCursor;
     private RelationshipScanCursor relationshipCursor;
 
-    FulltextIndexTransactionStateVisitor( FulltextIndexDescriptor descriptor, MutableLongSet modifiedEntityIdsInThisTransaction,
+    FulltextIndexTransactionStateVisitor( IndexDescriptor descriptor, String[] propertyNames, MutableLongSet modifiedEntityIdsInThisTransaction,
             TransactionStateLuceneIndexWriter writer )
     {
-        this.descriptor = descriptor;
+        this.propertyNames = propertyNames;
         this.schema = descriptor.schema();
         this.modifiedEntityIdsInThisTransaction = modifiedEntityIdsInThisTransaction;
         this.writer = writer;
@@ -177,7 +178,7 @@ class FulltextIndexTransactionStateVisitor extends TxStateVisitor.Adapter
         {
             try
             {
-                writer.addDocument( documentRepresentingProperties( id, descriptor.propertyNames(), propertyValues ) );
+                writer.addDocument( documentRepresentingProperties( id, propertyNames, propertyValues ) );
             }
             catch ( IOException e )
             {

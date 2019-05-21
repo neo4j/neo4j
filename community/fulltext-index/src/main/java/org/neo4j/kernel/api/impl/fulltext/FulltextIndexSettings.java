@@ -26,26 +26,25 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.UncheckedIOException;
-import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -54,7 +53,6 @@ class FulltextIndexSettings
     private static final String INDEX_CONFIG_FILE = "fulltext-index.properties";
     static final String INDEX_CONFIG_ANALYZER = "analyzer";
     static final String INDEX_CONFIG_EVENTUALLY_CONSISTENT = "eventually_consistent";
-    private static final String INDEX_CONFIG_PROPERTY_NAMES = "propertyNames";
 
     static FulltextIndexDescriptor readOrInitialiseDescriptor( StorageIndexReference descriptor, String defaultAnalyzerName,
             TokenHolder propertyKeyTokenHolder, PartitionedIndexStorage indexStorage, FileSystemAbstraction fileSystem )
@@ -103,7 +101,7 @@ class FulltextIndexSettings
         }
     }
 
-    private static Analyzer createAnalyzer( String analyzerName )
+    static Analyzer createAnalyzer( String analyzerName )
     {
         try
         {
@@ -115,25 +113,32 @@ class FulltextIndexSettings
         }
     }
 
-    static void saveFulltextIndexSettings( FulltextIndexDescriptor descriptor, PartitionedIndexStorage indexStorage, FileSystemAbstraction fs )
-            throws IOException
+    static Analyzer createAnalyzer( IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
     {
-        File indexConfigFile = new File( indexStorage.getIndexFolder(), INDEX_CONFIG_FILE );
-        Properties settings = new Properties();
-        settings.getProperty( INDEX_CONFIG_EVENTUALLY_CONSISTENT, Boolean.toString( descriptor.isEventuallyConsistent() ) );
-        settings.setProperty( INDEX_CONFIG_ANALYZER, descriptor.analyzerName() );
-        settings.setProperty( INDEX_CONFIG_PROPERTY_NAMES, Arrays.stream( descriptor.propertyNames() ).collect( Collectors.joining( ", ", "[", "]" )) );
-        settings.setProperty( "_propertyIds", Arrays.toString( descriptor.schema().getPropertyIds() ) );
-        settings.setProperty( "_name", descriptor.name() );
-        settings.setProperty( "_schema_entityType", descriptor.schema().entityType().name() );
-        settings.setProperty( "_schema_entityTokenIds", Arrays.toString( descriptor.schema().getEntityTokenIds() ) );
-        try ( StoreChannel channel = fs.write( indexConfigFile );
-                Writer writer = fs.openAsWriter( indexConfigFile, StandardCharsets.UTF_8, false ) )
+        TextValue analyzerName = descriptor.schema().getIndexConfig().get( INDEX_CONFIG_ANALYZER );
+        if ( analyzerName == null )
         {
-            settings.store( writer, "Auto-generated file. Do not modify!" );
-            writer.flush();
-            channel.force( true );
+            throw new RuntimeException( "Index has no analyzer configured: " + descriptor.userDescription( tokenNameLookup ) );
         }
+        try
+        {
+            return Services.loadOrFail( AnalyzerProvider.class, analyzerName.stringValue() ).createAnalyzer();
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( "Could not create fulltext analyzer: " + analyzerName, e );
+        }
+    }
+
+    static String[] createPropertyNames( IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
+    {
+        int[] propertyIds = descriptor.schema().getPropertyIds();
+        String[] propertyNames = new String[propertyIds.length];
+        for ( int i = 0; i < propertyIds.length; i++ )
+        {
+            propertyNames[i] = tokenNameLookup.propertyKeyGetName( propertyIds[i] );
+        }
+        return propertyNames;
     }
 
     static IndexConfig toIndexConfig( Map<String,String> map )

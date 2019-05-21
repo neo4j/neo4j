@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexWriterConfig;
 
 import org.neo4j.configuration.Config;
@@ -28,19 +29,24 @@ import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.builder.AbstractLuceneIndexBuilder;
 import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.token.api.TokenHolder;
 
 public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextIndexBuilder>
 {
-    private final FulltextIndexDescriptor descriptor;
+    private final StorageIndexReference descriptor;
     private final TokenHolder propertyKeyTokenHolder;
+    private final Analyzer analyzer;
+    private final String[] propertyNames;
     private boolean populating;
     private IndexUpdateSink indexUpdateSink = NullIndexUpdateSink.INSTANCE;
 
-    private FulltextIndexBuilder( FulltextIndexDescriptor descriptor, Config config, TokenHolder propertyKeyTokenHolder )
+    private FulltextIndexBuilder( StorageIndexReference descriptor, Config config, TokenHolder propertyKeyTokenHolder, Analyzer analyzer, String[] propertyNames )
     {
         super( config );
         this.descriptor = descriptor;
+        this.analyzer = analyzer;
+        this.propertyNames = propertyNames;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
     }
 
@@ -51,9 +57,9 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
      * @param propertyKeyTokenHolder A token holder used to look up property key token names by id.
      * @return new FulltextIndexBuilder
      */
-    public static FulltextIndexBuilder create( FulltextIndexDescriptor descriptor, Config config, TokenHolder propertyKeyTokenHolder )
+    public static FulltextIndexBuilder create( StorageIndexReference descriptor, Config config, TokenHolder propertyKeyTokenHolder, Analyzer analyzer, String[] propertyNames )
     {
-        return new FulltextIndexBuilder( descriptor, config, propertyKeyTokenHolder );
+        return new FulltextIndexBuilder( descriptor, config, propertyKeyTokenHolder, analyzer, propertyNames );
     }
 
     /**
@@ -86,7 +92,7 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
         {
             final ReadOnlyIndexPartitionFactory partitionFactory = new ReadOnlyIndexPartitionFactory();
             LuceneFulltextIndex fulltextIndex =
-                    new LuceneFulltextIndex( storageBuilder.build(), partitionFactory, descriptor, propertyKeyTokenHolder );
+                    new LuceneFulltextIndex( storageBuilder.build(), partitionFactory, descriptor, propertyKeyTokenHolder, analyzer, propertyNames );
             return new ReadOnlyFulltextIndex( fulltextIndex );
         }
         else
@@ -94,15 +100,15 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
             Factory<IndexWriterConfig> writerConfigFactory;
             if ( populating )
             {
-                writerConfigFactory = () -> IndexWriterConfigs.population( descriptor.analyzer() );
+                writerConfigFactory = () -> IndexWriterConfigs.population( analyzer );
             }
             else
             {
-                writerConfigFactory = () -> IndexWriterConfigs.standard( descriptor.analyzer() );
+                writerConfigFactory = () -> IndexWriterConfigs.standard( analyzer );
             }
             WritableIndexPartitionFactory partitionFactory = new WritableIndexPartitionFactory( writerConfigFactory );
             LuceneFulltextIndex fulltextIndex =
-                    new LuceneFulltextIndex( storageBuilder.build(), partitionFactory, descriptor, propertyKeyTokenHolder );
+                    new LuceneFulltextIndex( storageBuilder.build(), partitionFactory, descriptor, propertyKeyTokenHolder, analyzer, propertyNames );
             return new WritableFulltextIndex( indexUpdateSink, fulltextIndex );
         }
     }
