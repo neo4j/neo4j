@@ -19,46 +19,44 @@
  */
 package org.neo4j.kernel.impl.scheduler;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.scheduler.Group;
 
 final class ThreadPoolManager
 {
-    private final Map<Group,ThreadPool> pools;
+    private final ConcurrentHashMap<Group,ThreadPool> pools;
     private final ThreadGroup topLevelGroup;
-    private boolean shutDown;
+    private boolean shutdown;
 
     ThreadPoolManager( ThreadGroup topLevelGroup )
     {
         this.topLevelGroup = topLevelGroup;
-        pools = new HashMap<>();
+        pools = new ConcurrentHashMap<>();
     }
 
-    synchronized ThreadPool getThreadPool( Group group, Integer desiredParallelism )
+    ThreadPool getThreadPool( Group group, Integer desiredParallelism )
     {
-        if ( shutDown )
+        return pools.computeIfAbsent( group, g -> createThreadPool( g, desiredParallelism ) );
+    }
+
+    private synchronized ThreadPool createThreadPool( Group group, Integer desiredParallelism )
+    {
+        if ( shutdown )
         {
             throw new IllegalStateException( "ThreadPoolManager is shutdown." );
         }
-        return pools.computeIfAbsent( group, g ->
+        if ( desiredParallelism != null )
         {
-            if ( desiredParallelism == null )
-            {
-                return new ThreadPool( g, topLevelGroup );
-            }
-            else
-            {
-                return new ThreadPool( g, topLevelGroup, desiredParallelism );
-            }
-        } );
+            return new ThreadPool( group, topLevelGroup, desiredParallelism );
+        }
+        return new ThreadPool( group, topLevelGroup );
     }
 
     synchronized InterruptedException shutDownAll()
     {
-        shutDown = true;
+        shutdown = true;
         pools.forEach( ( group, pool ) -> pool.cancelAllJobs() );
         pools.forEach( ( group, pool ) -> pool.shutDown() );
         return pools.values().stream()
