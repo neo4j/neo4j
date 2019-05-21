@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
-import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
+import org.neo4j.graphdb.schema.AnalyzerProvider;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexConfig;

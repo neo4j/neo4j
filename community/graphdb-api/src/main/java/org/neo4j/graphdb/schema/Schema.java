@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.index.IndexPopulationProgress;
 
 /**
  * Interface for managing the schema of your graph database. This currently includes

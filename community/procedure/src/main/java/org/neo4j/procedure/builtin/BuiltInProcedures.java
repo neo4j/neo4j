@@ -39,7 +39,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.index.IndexPopulationProgress;
+import org.neo4j.graphdb.schema.IndexPopulationProgress;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.IndexReference;

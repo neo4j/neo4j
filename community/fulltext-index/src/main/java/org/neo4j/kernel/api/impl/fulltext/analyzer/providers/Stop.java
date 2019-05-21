@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
 
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
+import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
 public class Stop extends AnalyzerProvider

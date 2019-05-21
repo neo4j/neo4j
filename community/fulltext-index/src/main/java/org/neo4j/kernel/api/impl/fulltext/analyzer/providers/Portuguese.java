@@ -23,7 +23,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.pt.PortugueseAnalyzer;
 
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
+import org.neo4j.graphdb.schema.AnalyzerProvider;
 
 @ServiceProvider
 public class Portuguese extends AnalyzerProvider

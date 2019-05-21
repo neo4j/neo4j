@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.impl.fulltext;
 import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
+import org.neo4j.graphdb.schema.AnalyzerProvider;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
