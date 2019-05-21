@@ -23,15 +23,10 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults._
 import org.neo4j.cypher.internal.ir.{Predicate, Selections}
+import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.{MIN_NODES_ALL_CARDINALITY, MIN_NODES_WITH_LABEL_CARDINALITY}
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor}
-import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_EQUALITY_SELECTIVITY
-import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_LIST_CARDINALITY
-import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_PROPERTY_SELECTIVITY
-import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_RANGE_SEEK_FACTOR
-import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_RANGE_SELECTIVITY
-import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_STRING_LENGTH
-import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_TYPE_SELECTIVITY
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions._
@@ -903,15 +898,16 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     result.factor should equal(0.5)
   }
 
-  test("should default to single cardinality for HasLabels with previously unknown label") {
+  test("should default to min graph cardinality for HasLabels with previously unknown label") {
     val stats = mock[GraphStatistics]
-    when(stats.nodesAllCardinality()).thenReturn(Cardinality(10))
+    when(stats.nodesAllCardinality()).thenReturn(MIN_NODES_ALL_CARDINALITY)
+    when(stats.nodesWithLabelCardinality(any())).thenReturn(MIN_NODES_WITH_LABEL_CARDINALITY)
     val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
     implicit val semanticTable: SemanticTable = SemanticTable()
     implicit val selections: Selections = mock[Selections]
 
     val expr = HasLabels(null, Seq(labelName("Foo")))(pos)
-    calculator(expr) should equal(Selectivity.of(1.0 / 10.0).get)
+    calculator(expr) should equal(Selectivity.of(10.0 / 10.0).get)
   }
 
   // HELPER METHODS

@@ -19,18 +19,19 @@
  */
 package org.neo4j.cypher.internal.spi
 
-import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor, StatisticsCompletingGraphStatistics}
+import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor, MinimumGraphStatistics}
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
-import org.neo4j.internal.kernel.api.{Read, SchemaRead}
+import org.neo4j.internal.kernel.api.{Read, SchemaRead, TokenRead}
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.cypher.internal.v4_0.util.{Cardinality, LabelId, RelTypeId, Selectivity}
 
 object TransactionBoundGraphStatistics {
-  def apply(transactionalContext: TransactionalContext): StatisticsCompletingGraphStatistics =
+  def apply(transactionalContext: TransactionalContext): MinimumGraphStatistics =
     apply(transactionalContext.kernelTransaction().dataRead(), transactionalContext.kernelTransaction().schemaRead())
 
-  def apply(read: Read, schemaRead: SchemaRead): StatisticsCompletingGraphStatistics =
-    new StatisticsCompletingGraphStatistics(new BaseTransactionBoundGraphStatistics(read, schemaRead))
+  def apply(read: Read, schemaRead: SchemaRead): MinimumGraphStatistics = {
+    new MinimumGraphStatistics(new BaseTransactionBoundGraphStatistics(read, schemaRead))
+  }
 
   private class BaseTransactionBoundGraphStatistics(read: Read, schemaRead: SchemaRead) extends GraphStatistics with IndexDescriptorCompatibility {
 
@@ -73,26 +74,14 @@ object TransactionBoundGraphStatistics {
       }
 
     override def nodesAllCardinality(): Cardinality =
-      atLeastOne(read.countsForNodeWithoutTxState(TokenRead.ANY_LABEL))
+      Cardinality(read.countsForNodeWithoutTxState(TokenRead.ANY_LABEL))
 
-    override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
-      atLeastOne(read.countsForNodeWithoutTxState(labelId))
-
-    override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
-      atLeastOne(read.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
-
-    /**
-      * Due to the way cardinality calculations work, zero is a bit dangerous, as it cancels out
-      * any cost that it multiplies with. To avoid this pitfall, we determine that the least count
-      * available is one, not zero.
-      */
-    private def atLeastOne(count: Double): Cardinality = {
-      if (count < 1)
-        Cardinality.SINGLE
-      else
-        Cardinality(count)
+    override def nodesWithLabelCardinality(maybeLabelId: Option[LabelId]): Cardinality = {
+      val count: Long = maybeLabelId.map(labelId => read.countsForNodeWithoutTxState(labelId.id)).getOrElse(0L)
+      Cardinality(count)
     }
 
-    override def nodesAllCardinality(): Cardinality = atLeastOne(read.countsForNodeWithoutTxState(-1))
+    override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+     Cardinality(read.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
   }
 }

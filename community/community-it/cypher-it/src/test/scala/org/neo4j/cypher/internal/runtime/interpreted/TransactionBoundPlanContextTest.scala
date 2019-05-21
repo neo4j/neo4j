@@ -58,14 +58,16 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     managementService.shutdown()
   }
 
-  test("statistics should default to single cardinality on empty db") {
+  test("statistics should default to minimum cardinality on empty db") {
 
     inTx(planContext => {
       val statistics = planContext.statistics
 
-      // label stats
-      statistics.nodesWithLabelCardinality(Some(LabelId(0))) should equal(Cardinality.SINGLE)
-      statistics.nodesAllCardinality() should equal(Cardinality.SINGLE)
+      // all nodes
+      statistics.nodesAllCardinality() should equal(Cardinality(10.0))
+
+      // nodes with label
+      statistics.nodesWithLabelCardinality(Some(LabelId(0))) should equal(Cardinality(10.0))
 
       // pattern stats
       Set(Some(LabelId(0)), None).foreach { label1 =>
@@ -77,7 +79,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     })
   }
 
-  test("statistics should default to single cardinality for unknown counts on nonempty db") {
+  test("statistics should default to minimum cardinality for unknown counts on nonempty db") {
 
     // given
     inTx(_ => {
@@ -94,7 +96,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
 
       // label stats
       statistics.nodesWithLabelCardinality(Some(LabelId(0))) should equal(Cardinality(100))
-      statistics.nodesWithLabelCardinality(Some(LabelId(1))) should equal(Cardinality.SINGLE)
+      statistics.nodesWithLabelCardinality(Some(LabelId(1))) should equal(Cardinality(10))
       statistics.nodesAllCardinality() should equal(Cardinality(200))
 
       // pattern stats

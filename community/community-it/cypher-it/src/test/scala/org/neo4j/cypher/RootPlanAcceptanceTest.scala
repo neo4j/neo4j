@@ -116,7 +116,8 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("EstimatedRows should be properly formatted") {
-    given("match (n) return n").planDescription.getArguments.get("EstimatedRows") should equal(1) // on missing statistics, we fake cardinality to one
+    // on missing statistics, we fake cardinality to 10
+    given("MATCH (n) RETURN n").planDescription.getArguments.get("EstimatedRows") should equal(10.0)
   }
 
   def given(query: String) = TestQuery(query)

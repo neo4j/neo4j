@@ -75,12 +75,11 @@ case class GraphStatisticsSnapshot(statsValues: Map[StatisticsKey, Double] = Map
 }
 
 case class InstrumentedGraphStatistics(inner: GraphStatistics, snapshot: MutableGraphStatisticsSnapshot) extends GraphStatistics {
-  def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
-    if(labelId.isEmpty){
-      snapshot.map.getOrElseUpdate(NodesWithLabelCardinality(None), 1)
-    } else {
-      snapshot.map.getOrElseUpdate(NodesWithLabelCardinality(labelId), inner.nodesWithLabelCardinality(labelId).amount)
-    }
+  def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = {
+    val cardinality = inner.nodesWithLabelCardinality(labelId)
+    snapshot.map.getOrElseUpdate(NodesWithLabelCardinality(labelId), cardinality.amount)
+    cardinality
+  }
 
   def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
     snapshot.map.getOrElseUpdate(

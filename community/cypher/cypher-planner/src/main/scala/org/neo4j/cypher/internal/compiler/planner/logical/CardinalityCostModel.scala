@@ -103,17 +103,6 @@ case class CardinalityCostModel(config: CypherPlannerConfiguration) extends Cost
     case _ => plan.lhs.map(p => cardinalities.get(p.id)).getOrElse(cardinalities.get(plan.id))
   }
 
-  private def minimumCardinalityEstimateForPlan(plan: LogicalPlan): Cardinality = plan match {
-    case _: AllNodesScan | _: NodeByLabelScan | _: NodeIndexScan =>
-      Cardinality(10)
-    case _: NodeIndexContainsScan | _: NodeIndexEndsWithScan =>
-      Cardinality(5)
-    case _ =>
-      Cardinality.EMPTY
-  }
-
-  private val planWithMinimumCardinalityEstimates: Boolean = config.planWithMinimumCardinalityEstimates
-
   def apply(plan: LogicalPlan, input: QueryGraphSolverInput, cardinalities: Cardinalities): Cost = {
     val cost = plan match {
       case CartesianProduct(lhs, rhs) =>
@@ -142,13 +131,8 @@ case class CardinalityCostModel(config: CypherPlannerConfiguration) extends Cost
         val lhsCost = plan.lhs.map(p => apply(p, input, cardinalities)).getOrElse(Cost(0))
         val rhsCost = plan.rhs.map(p => apply(p, input, cardinalities)).getOrElse(Cost(0))
         val planCardinality = cardinalityForPlan(plan, cardinalities)
-        val effectivePlanCardinality =
-          if (planWithMinimumCardinalityEstimates)
-            Cardinality.max(planCardinality, minimumCardinalityEstimateForPlan(plan))
-          else
-            planCardinality
         val rowCost = costPerRow(plan)
-        val costForThisPlan = effectivePlanCardinality * rowCost
+        val costForThisPlan = planCardinality * rowCost
         val totalCost = costForThisPlan + lhsCost + rhsCost
         totalCost
     }

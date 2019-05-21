@@ -302,18 +302,6 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<String> cypher_replan_algorithm = setting( "unsupported.cypher.replan_algorithm",
             optionsObeyCase( "inverse", "exponential", "none", DEFAULT ), DEFAULT );
 
-    @Description( "Enable using minimum cardinality estimates in the Cypher cost planner, so that cardinality " +
-                  "estimates for logical plan operators are not allowed to go below certain thresholds even when " +
-                  "the statistics give smaller numbers. " +
-                  "This is especially useful for large import queries that write nodes and relationships " +
-                  "into an empty or small database, where the generated query plan needs to be able to scale " +
-                  "beyond the initial statistics. Otherwise, when this is disabled, the statistics on an empty " +
-                  "or tiny database may lead the cost planner to for example pick a scan over an index seek, even " +
-                  "when an index exists, because of a lower estimated cost." )
-    @Internal
-    public static final Setting<Boolean> cypher_plan_with_minimum_cardinality_estimates =
-            setting( "unsupported.cypher.plan_with_minimum_cardinality_estimates", BOOLEAN, TRUE );
-
     @Description( "Determines if Cypher will allow using file URLs when loading data using `LOAD CSV`. Setting this "
                   + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )
     public static final Setting<Boolean> allow_file_urls = setting( "dbms.security.allow_csv_import_from_file_urls", BOOLEAN, TRUE );

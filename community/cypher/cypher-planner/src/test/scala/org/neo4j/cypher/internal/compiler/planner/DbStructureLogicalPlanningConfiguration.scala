@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.planner
 import java.util
 
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, MinimumGraphStatistics}
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
-import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId, RelTypeId}
 import org.neo4j.internal.helpers.collection
@@ -57,7 +57,7 @@ case class DbStructureLogicalPlanningConfiguration(cypherCompilerConfig: CypherP
       }
 
       override val graphStatistics: GraphStatistics =
-        new StatisticsCompletingGraphStatistics(underlyingStatistics)
+        new MinimumGraphStatistics(underlyingStatistics)
 
       override val indexes: Map[IndexDef, IndexType] = indexSet(lookup.knownIndices())
       override def procedureSignatures: Set[ProcedureSignature] = Set.empty

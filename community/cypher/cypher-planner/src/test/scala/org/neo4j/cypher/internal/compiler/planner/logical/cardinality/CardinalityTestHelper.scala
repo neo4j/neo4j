@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphProducer
 import org.neo4j.cypher.internal.ir.{QueryGraph, StrictnessMode}
-import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor}
+import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor, MinimumGraphStatistics}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.util.Cardinality.NumericCardinality
@@ -141,14 +141,14 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
 
       val statistics = new GraphStatistics {
 
-        val nodesCardinality = allNodes.
-          getOrElse(fail("All nodes not set"))
+        override def nodesAllCardinality(): Cardinality = allNodes.getOrElse(fail("All nodes not set"))
 
         def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
           Cardinality({
-            labelId.map(
-              id => getLabelName(id).map(knownLabelCardinality).getOrElse(0.0)
-            ).getOrElse(nodesCardinality)
+            labelId
+              .flatMap(getLabelName)
+              .map(knownLabelCardinality)
+              .getOrElse(MinimumGraphStatistics.MIN_NODES_WITH_LABEL)
           })
 
         def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] = {
@@ -209,8 +209,6 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
         private def getPropertyName(propertyId: PropertyKeyId) = propertyIds.collectFirst {
           case (name, id) if id == propertyId.id => name
         }
-
-        override def nodesAllCardinality(): Cardinality = nodesCardinality
       }
 
       val semanticTable: SemanticTable = {

@@ -41,10 +41,13 @@ import org.neo4j.values.storable.ValueCategory
 import scala.collection.JavaConverters._
 
 object TransactionBoundPlanContext {
-  def apply(tc: TransactionalContextWrapper, logger: InternalNotificationLogger) =
-    new TransactionBoundPlanContext(tc, logger, InstrumentedGraphStatistics(TransactionBoundGraphStatistics(tc.dataRead,
-                                                                                                            tc.schemaRead),
-      new MutableGraphStatisticsSnapshot()))
+  def apply(tc: TransactionalContextWrapper,
+            logger: InternalNotificationLogger): TransactionBoundPlanContext = {
+
+    val statistics = TransactionBoundGraphStatistics(tc.dataRead, tc.schemaRead)
+
+    new TransactionBoundPlanContext(tc, logger, InstrumentedGraphStatistics(statistics, new MutableGraphStatisticsSnapshot()))
+  }
 }
 
 class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: InternalNotificationLogger, graphStatistics: InstrumentedGraphStatistics)

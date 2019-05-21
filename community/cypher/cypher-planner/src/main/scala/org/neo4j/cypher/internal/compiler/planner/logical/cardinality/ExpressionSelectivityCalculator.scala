@@ -121,12 +121,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   }
 
   private def calculateSelectivityForLabel(label: Option[LabelId]): Selectivity = {
-    val labelCardinality =
-    if(label.isEmpty){
-      Cardinality.SINGLE
-    } else {
-      label.map(l => stats.nodesWithLabelCardinality(Some(l))).getOrElse(Cardinality.SINGLE)
-    }
+    val labelCardinality = stats.nodesWithLabelCardinality(label)
     labelCardinality / stats.nodesAllCardinality() getOrElse Selectivity.ONE
   }
 

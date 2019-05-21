@@ -73,7 +73,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     legacyCsvQuoteEscaping = false,
     csvBufferSize = Configuration.DEFAULT_BUFFER_SIZE_4MB,
     nonIndexedLabelWarningThreshold = 10000,
-    planWithMinimumCardinalityEstimates = true,
     planSystemCommands = false
   )
   val realConfig = RealLogicalPlanningConfiguration(cypherCompilerConfig)
@@ -277,7 +276,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   class given extends StubbedLogicalPlanningConfiguration(realConfig)
 
   class givenPlanWithMinimumCardinalityEnabled
-    extends StubbedLogicalPlanningConfiguration(RealLogicalPlanningConfiguration(cypherCompilerConfig.copy(planWithMinimumCardinalityEstimates = true)))
+    extends StubbedLogicalPlanningConfiguration(RealLogicalPlanningConfiguration(cypherCompilerConfig))
 
   class fromDbStructure(dbStructure: Visitable[DbStructureVisitor])
     extends DelegatingLogicalPlanningConfiguration(DbStructureLogicalPlanningConfiguration(cypherCompilerConfig)(dbStructure))

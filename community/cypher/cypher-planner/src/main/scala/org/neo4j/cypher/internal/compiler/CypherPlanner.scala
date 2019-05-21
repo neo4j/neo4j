@@ -131,5 +131,4 @@ case class CypherPlannerConfiguration(queryCacheSize: Int,
                                       legacyCsvQuoteEscaping: Boolean,
                                       csvBufferSize: Int,
                                       nonIndexedLabelWarningThreshold: Long,
-                                      planWithMinimumCardinalityEstimates: Boolean,
                                       planSystemCommands: Boolean)

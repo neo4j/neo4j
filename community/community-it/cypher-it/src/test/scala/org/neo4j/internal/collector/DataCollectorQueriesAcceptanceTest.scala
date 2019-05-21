@@ -149,7 +149,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
   test("should retrieve query execution plan and estimated rows") {
     // given
     execute("CALL db.stats.stop('QUERIES')").single
-    execute("CREATE (a), (b), (c)")
+    execute("UNWIND range(0, 19) AS i CREATE (n)")
 
     execute("CALL db.stats.collect('QUERIES')").single
     execute("MATCH (n) RETURN sum(id(n))")
@@ -177,7 +177,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
               )
             )
           ),
-          "estimatedRows" -> List(1.0, 1.0, 3.0)
+          "estimatedRows" -> List(1.0, 1.0, 20.0)
         )
       ),
       beMapContaining(

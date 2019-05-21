@@ -78,20 +78,3 @@ class DelegatingGraphStatistics(delegate: GraphStatistics) extends GraphStatisti
 
   override def nodesAllCardinality(): Cardinality = delegate.nodesAllCardinality()
 }
-
-class StatisticsCompletingGraphStatistics(delegate: GraphStatistics)
-  extends DelegatingGraphStatistics(delegate) {
-
-  override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
-    (fromLabel, toLabel) match {
-      case (Some(_), Some(_)) =>
-        // TODO: read real counts from readOperations when they are gonna be properly computed and updated
-        Cardinality.min(
-          super.patternStepCardinality(fromLabel, relTypeId, None),
-          super.patternStepCardinality(None, relTypeId, toLabel)
-        )
-      case _ =>
-        super.patternStepCardinality(fromLabel, relTypeId, toLabel)
-    }
-}
-

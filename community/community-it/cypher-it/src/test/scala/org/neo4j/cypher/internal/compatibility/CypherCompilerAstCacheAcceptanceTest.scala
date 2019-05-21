@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility.v4_0.Cypher4_0Planner
 import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, StatsDivergenceCalculator}
+import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.{MIN_NODES_ALL, MIN_NODES_WITH_LABEL}
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.v4_0.util.DummyPosition
@@ -55,7 +56,6 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       legacyCsvQuoteEscaping = false,
       csvBufferSize = CSVResources.DEFAULT_BUFFER_SIZE,
       nonIndexedLabelWarningThreshold = 10000L,
-      planWithMinimumCardinalityEstimates = true,
       planSystemCommands = false
     )
   }
@@ -240,7 +240,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     counter = new CacheCounter()
     compiler = createCompiler(plannerConfig(queryPlanTTL = 0), clock = clock)
     compiler.kernelMonitors.addMonitorListener(counter)
-    val query: String = "match (n:Person) return n"
+    val query: String = "MATCH (n:Person) RETURN n"
+    (0 until MIN_NODES_ALL).foreach { _ => createNode() }
     createLabeledNode("Person")
 
     // when
@@ -251,7 +252,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
     // when
     // we create enough nodes for NodesAllCardinality to trigger a replan
-    (0 until 5).foreach { _ => createNode() }
+    (0 until 10 * MIN_NODES_ALL).foreach { _ => createNode() }
     runQuery(query)
 
     // then
@@ -264,8 +265,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     counter = new CacheCounter()
     compiler = createCompiler(plannerConfig(queryPlanTTL = 0), clock = clock)
     compiler.kernelMonitors.addMonitorListener(counter)
-    val query: String = "match (n:Person) return n"
-    (0 until 5).foreach { _ => createLabeledNode("Person") }
+    val query: String = "MATCH (n:Person) RETURN n"
+    (0 until MIN_NODES_WITH_LABEL * 3).foreach { _ => createLabeledNode("Person") }
 
     // when
     runQuery(query)
@@ -276,7 +277,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     // when
     // we create enough nodes for NodesLabelCardinality("Dog") to trigger a replan
     // but not NodesAllCardinality or NodesLabelCardinality("Person")
-    (0 until 5).foreach { _ => createLabeledNode("Dog") }
+    (0 until MIN_NODES_WITH_LABEL * 3).foreach { _ => createLabeledNode("Dog") }
     runQuery(query)
 
     // then

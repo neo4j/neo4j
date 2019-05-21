@@ -46,7 +46,6 @@ object CypherConfiguration {
       config.get(GraphDatabaseSettings.forbid_shortestpath_common_nodes),
       config.get(GraphDatabaseSettings.csv_legacy_quote_escaping),
       config.get(GraphDatabaseSettings.csv_buffer_size),
-      config.get(GraphDatabaseSettings.cypher_plan_with_minimum_cardinality_estimates),
       CypherExpressionEngineOption(config.get(GraphDatabaseSettings.cypher_expression_engine)),
       config.get(GraphDatabaseSettings.cypher_lenient_create_relationship),
       config.get(GraphDatabaseSettings.cypher_worker_count),
@@ -86,7 +85,6 @@ case class CypherConfiguration(version: CypherVersion,
                                errorIfShortestPathHasCommonNodesAtRuntime: Boolean,
                                legacyCsvQuoteEscaping: Boolean,
                                csvBufferSize: Int,
-                               planWithMinimumCardinalityEstimates: Boolean,
                                expressionEngineOption: CypherExpressionEngineOption,
                                lenientCreateRelationship: Boolean,
                                workers: Int,
@@ -128,7 +126,6 @@ case class CypherConfiguration(version: CypherVersion,
       legacyCsvQuoteEscaping = legacyCsvQuoteEscaping,
       csvBufferSize = csvBufferSize,
       nonIndexedLabelWarningThreshold = config.get(GraphDatabaseSettings.query_non_indexed_label_warning_threshold).longValue(),
-      planWithMinimumCardinalityEstimates = planWithMinimumCardinalityEstimates,
       planSystemCommands = planSystemCommands
     )
 }
