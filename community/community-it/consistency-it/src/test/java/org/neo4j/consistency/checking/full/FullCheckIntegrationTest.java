@@ -141,6 +141,7 @@ import static org.neo4j.kernel.api.StatementConstants.ANY_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
@@ -461,7 +462,7 @@ public class FullCheckIntegrationTest
             StoreIndexDescriptor rule = rules.next();
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
             IndexPopulator populator = storeAccess.indexes().lookup( rule.providerDescriptor() )
-                .getPopulator( rule, samplingConfig );
+                .getPopulator( rule, samplingConfig, heapBufferFactory( 1024 ) );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
             populator.close( false );
         }

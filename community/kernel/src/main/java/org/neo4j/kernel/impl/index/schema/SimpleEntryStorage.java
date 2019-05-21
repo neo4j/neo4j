@@ -56,7 +56,7 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
     private final File file;
     private final FileSystemAbstraction fs;
     private final int blockSize;
-    private final ByteBufferFactory byteBufferFactory;
+    private final ByteBufferFactory.Allocator byteBufferFactory;
 
     // Resources allocated lazily upon add
     private boolean allocated;
@@ -66,7 +66,7 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
 
     private volatile long count;
 
-    SimpleEntryStorage( FileSystemAbstraction fs, File file, ByteBufferFactory byteBufferFactory, int blockSize ) throws IOException
+    SimpleEntryStorage( FileSystemAbstraction fs, File file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize ) throws IOException
     {
         this.fs = fs;
         this.file = file;
@@ -88,7 +88,7 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
         {
             return reader( new ByteArrayPageCursor( NO_ENTRIES ) );
         }
-        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( fs.open( file, OpenMode.READ ), byteBufferFactory.newBuffer( blockSize ) );
+        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( fs.open( file, OpenMode.READ ), byteBufferFactory.allocate( blockSize ) );
         PageCursor pageCursor = new ReadableChannelPageCursor( channel );
         return reader( pageCursor );
     }
@@ -162,7 +162,7 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
     {
         if ( !allocated )
         {
-            this.buffer = byteBufferFactory.newBuffer( blockSize );
+            this.buffer = byteBufferFactory.allocate( blockSize );
             this.pageCursor = new ByteArrayPageCursor( buffer );
             this.storeChannel = fs.create( file );
             this.allocated = true;

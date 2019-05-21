@@ -40,9 +40,9 @@ class GenericBlockBasedIndexPopulator extends BlockBasedIndexPopulator<GenericKe
     GenericBlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File file, IndexLayout<GenericKey,NativeIndexValue> layout,
             IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
             IndexDirectoryStructure directoryStructure, SpaceFillingCurveConfiguration configuration,
-            IndexDropAction dropAction, boolean archiveFailedIndex )
+            IndexDropAction dropAction, boolean archiveFailedIndex, ByteBufferFactory bufferFactory )
     {
-        super( pageCache, fs, file, layout, monitor, descriptor, spatialSettings, directoryStructure, dropAction, archiveFailedIndex );
+        super( pageCache, fs, file, layout, monitor, descriptor, spatialSettings, directoryStructure, dropAction, archiveFailedIndex, bufferFactory );
         this.spatialSettings = spatialSettings;
         this.configuration = configuration;
     }

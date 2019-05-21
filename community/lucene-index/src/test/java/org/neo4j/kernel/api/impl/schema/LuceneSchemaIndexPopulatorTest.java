@@ -44,11 +44,11 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
@@ -66,6 +66,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.defaultDirectoryStructure;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class LuceneSchemaIndexPopulatorTest
@@ -95,7 +96,7 @@ class LuceneSchemaIndexPopulatorTest
         indexStoreView = mock( IndexStoreView.class );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         index = IndexDescriptorFactory.forSchema( forLabel( 42, propertyKeyId ), provider.getProviderDescriptor() ).withId( 0 );
-        indexPopulator = provider.getPopulator( index, samplingConfig );
+        indexPopulator = provider.getPopulator( index, samplingConfig, heapBufferFactory( 1024 ) );
         indexPopulator.create();
     }
 

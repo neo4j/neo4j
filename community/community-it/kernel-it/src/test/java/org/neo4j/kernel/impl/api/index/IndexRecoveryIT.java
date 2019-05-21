@@ -25,7 +25,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -96,7 +95,7 @@ public class IndexRecoveryIT
 
         CountDownLatch latch = new CountDownLatch( 1 );
         when( mockedIndexProvider
-                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) )
                 .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         createIndex( myLabel );
 
@@ -110,14 +109,14 @@ public class IndexRecoveryIT
                 .thenReturn( InternalIndexState.POPULATING );
         latch = new CountDownLatch( 1 );
         when( mockedIndexProvider
-                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) )
                 .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         startDb();
 
         // Then
         assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
-        verify( mockedIndexProvider, times( 2 ) ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        verify( mockedIndexProvider, times( 2 ) ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
         verify( mockedIndexProvider, never() ).getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         latch.countDown();
     }
@@ -130,7 +129,7 @@ public class IndexRecoveryIT
 
         CountDownLatch latch = new CountDownLatch( 1 );
         when( mockedIndexProvider
-                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) )
                 .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         createIndex( myLabel );
         rotateLogsAndCheckPoint();
@@ -141,7 +140,7 @@ public class IndexRecoveryIT
         killFuture.get();
         latch = new CountDownLatch( 1 );
         when( mockedIndexProvider
-                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) )
                 .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         when( mockedIndexProvider.getInitialState( any( StoreIndexDescriptor.class ) ) )
                 .thenReturn( InternalIndexState.POPULATING );
@@ -153,7 +152,7 @@ public class IndexRecoveryIT
         assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
         verify( mockedIndexProvider, times( 2 ) )
-                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
         verify( mockedIndexProvider, never() ).getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class )
         );
         latch.countDown();
@@ -167,7 +166,7 @@ public class IndexRecoveryIT
 
         IndexPopulator populator = mock( IndexPopulator.class );
         when( mockedIndexProvider
-                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) )
                 .thenReturn( populator );
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
         IndexAccessor mockedAccessor = mock( IndexAccessor.class );
@@ -195,7 +194,7 @@ public class IndexRecoveryIT
         assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.ONLINE ) ) );
         verify( mockedIndexProvider, times( 1 ) )
-                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
         int onlineAccessorInvocationCount = 2; // once when we create the index, and once when we restart the db
         verify( mockedIndexProvider, times( onlineAccessorInvocationCount ) )
                 .getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
@@ -207,7 +206,7 @@ public class IndexRecoveryIT
     {
         // Given
         IndexPopulator indexPopulator = mock( IndexPopulator.class );
-        when( mockedIndexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( mockedIndexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) )
                 .thenReturn( indexPopulator );
         IndexAccessor indexAccessor = mock( IndexAccessor.class );
         when( mockedIndexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
@@ -228,7 +227,7 @@ public class IndexRecoveryIT
         assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.FAILED ) ) );
         verify( mockedIndexProvider, times( 2 ) )
-                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
     }
 
     private GraphDatabaseAPI db;

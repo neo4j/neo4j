@@ -104,6 +104,7 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class IndexPopulationJobTest
@@ -518,7 +519,7 @@ public class IndexPopulationJobTest
         NullLogProvider logProvider = NullLogProvider.getInstance();
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( IndexStoreView.EMPTY, logProvider, EntityType.NODE,
                 new DatabaseSchemaState( logProvider ) );
-        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false );
+        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false, heapBufferFactory( 1024 ) );
 
         // when
         populationJob.run();
@@ -566,7 +567,7 @@ public class IndexPopulationJobTest
         };
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( failingStoreView, logProvider, EntityType.NODE,
                 new DatabaseSchemaState( logProvider ) );
-        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false );
+        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false, heapBufferFactory( 1024 ) );
 
         // when
         populationJob.run();
@@ -750,7 +751,7 @@ public class IndexPopulationJobTest
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         IndexProvider indexProvider = db.getDependencyResolver().resolveDependency( DefaultIndexProviderMap.class ).getDefaultProvider();
-        return indexProvider.getPopulator( descriptor.withId( 21 ), samplingConfig );
+        return indexProvider.getPopulator( descriptor.withId( 21 ), samplingConfig, heapBufferFactory( 1024 ) );
     }
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, EntityType type, IndexDescriptor descriptor )
@@ -771,7 +772,7 @@ public class IndexPopulationJobTest
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
         MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, logProvider, type, stateHolder );
-        IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, false );
+        IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, false, heapBufferFactory( 1024 ) );
         job.addPopulator( populator, descriptor.withId( indexId ).withoutCapabilities(),
                 format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );
         return job;

@@ -27,6 +27,7 @@ import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
 import org.neo4j.storageengine.api.schema.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
@@ -43,17 +44,20 @@ public class IndexPopulationJob implements Runnable
 {
     private final IndexingService.Monitor monitor;
     private final boolean verifyBeforeFlipping;
+    private final ByteBufferFactory bufferFactory;
     private final MultipleIndexPopulator multiPopulator;
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
 
     private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
     private volatile boolean cancelled;
 
-    public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexingService.Monitor monitor, boolean verifyBeforeFlipping )
+    public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexingService.Monitor monitor, boolean verifyBeforeFlipping,
+            ByteBufferFactory bufferFactory )
     {
         this.multiPopulator = multiPopulator;
         this.monitor = monitor;
         this.verifyBeforeFlipping = verifyBeforeFlipping;
+        this.bufferFactory = bufferFactory;
     }
 
     /**
@@ -119,6 +123,7 @@ public class IndexPopulationJob implements Runnable
         {
             // will only close "additional" resources, not the actual populators, since that's managed by flip
             multiPopulator.close( true );
+            bufferFactory.close();
             doneSignal.countDown();
             currentThread().setName( oldThreadName );
         }
@@ -198,5 +203,10 @@ public class IndexPopulationJob implements Runnable
         }
         boolean completed = doneSignal.await( time, unit );
         return !completed;
+    }
+
+    public ByteBufferFactory bufferFactory()
+    {
+        return bufferFactory;
     }
 }

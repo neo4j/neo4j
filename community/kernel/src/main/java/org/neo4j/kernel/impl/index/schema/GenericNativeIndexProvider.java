@@ -156,12 +156,12 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, GenericLayout layout, StoreIndexDescriptor descriptor )
+    protected IndexPopulator newIndexPopulator( File storeFile, GenericLayout layout, StoreIndexDescriptor descriptor, ByteBufferFactory bufferFactory )
     {
         if ( blockBasedPopulation )
         {
             return new GenericBlockBasedIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
-                    directoryStructure(), configuration, dropAction, archiveFailedIndex );
+                    directoryStructure(), configuration, dropAction, archiveFailedIndex, bufferFactory );
         }
         return new WorkSyncedNativeIndexPopulator<>(
                 new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),

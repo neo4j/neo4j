@@ -69,12 +69,15 @@ import org.neo4j.kernel.api.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
+import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
+import org.neo4j.kernel.impl.index.schema.UnsafeDirectByteBufferAllocator;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.scheduler.JobScheduler;
@@ -91,6 +94,7 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
+import static org.neo4j.kernel.impl.index.schema.BlockBasedIndexPopulator.parseBlockSize;
 
 /**
  * Manages the indexes that were introduced in 2.0. These indexes depend on the normal neo4j logical log for
@@ -801,8 +805,9 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
     private IndexPopulationJob newIndexPopulationJob( EntityType type, boolean verifyBeforeFlipping )
     {
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( new LocalMemoryTracker() ), parseBlockSize() );
         MultipleIndexPopulator multiPopulator = multiPopulatorFactory.create( storeView, internalLogProvider, type, schemaState );
-        return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping );
+        return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping, bufferFactory );
     }
 
     private void startIndexPopulation( IndexPopulationJob job )

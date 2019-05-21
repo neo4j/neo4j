@@ -43,6 +43,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
+import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " IndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -69,7 +70,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
         {
             // when
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p -> p.add( Arrays.asList(
+            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p -> p.add( Arrays.asList(
                     add( 1, descriptor.schema(), "v1", "v2" ),
                     add( 2, descriptor.schema(), "v1", "v2" ) ) ) );
 
@@ -104,7 +105,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
         {
             // when
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p ->
+            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p ->
             {
                 try
                 {
@@ -134,7 +135,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
         {
             // given
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p ->
+            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p ->
             {
                 // when
                 p.add( Arrays.asList(

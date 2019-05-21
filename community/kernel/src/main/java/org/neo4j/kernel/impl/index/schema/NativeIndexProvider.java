@@ -76,7 +76,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     abstract LAYOUT layout( StoreIndexDescriptor descriptor, File storeFile );
 
     @Override
-    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
     {
         if ( readOnly )
         {
@@ -84,10 +84,11 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
         }
 
         File storeFile = nativeIndexFileFromIndexId( descriptor.getId() );
-        return newIndexPopulator( storeFile, layout( descriptor, null /*meaning don't read from this file since we're recreating it anyway*/ ), descriptor );
+        return newIndexPopulator( storeFile, layout( descriptor, null /*meaning don't read from this file since we're recreating it anyway*/ ), descriptor,
+                bufferFactory );
     }
 
-    protected abstract IndexPopulator newIndexPopulator( File storeFile, LAYOUT layout, StoreIndexDescriptor descriptor );
+    protected abstract IndexPopulator newIndexPopulator( File storeFile, LAYOUT layout, StoreIndexDescriptor descriptor, ByteBufferFactory bufferFactory );
 
     @Override
     public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException

@@ -997,11 +997,11 @@ public class IndexingServiceTest
 
         // THEN
         verify( indexProvider ).getPopulator( eq( forSchema( forLabel( 0, 0 ), PROVIDER_DESCRIPTOR ).withId( 0 ) ),
-                any( IndexSamplingConfig.class ) );
+                any( IndexSamplingConfig.class ), any() );
         verify( indexProvider ).getPopulator( eq( forSchema( forLabel( 0, 1 ), PROVIDER_DESCRIPTOR ).withId( 1 ) ),
-                any( IndexSamplingConfig.class ) );
+                any( IndexSamplingConfig.class ), any() );
         verify( indexProvider ).getPopulator( eq( forSchema( forLabel( 1, 0 ), PROVIDER_DESCRIPTOR ).withId( 2 ) ),
-                any( IndexSamplingConfig.class ) );
+                any( IndexSamplingConfig.class ), any() );
 
         waitForIndexesToComeOnline( indexing, 0, 1, 2 );
     }
@@ -1454,7 +1454,7 @@ public class IndexingServiceTest
     {
         when( indexProvider.getInitialState( any( StoreIndexDescriptor.class ) ) ).thenReturn( ONLINE );
         when( indexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
-        when( indexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( indexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) )
                 .thenReturn( populator );
         data.getsProcessedByStoreScanFrom( storeView );
         when( indexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
