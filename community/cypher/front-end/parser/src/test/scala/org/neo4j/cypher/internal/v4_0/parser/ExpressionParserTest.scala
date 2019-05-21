@@ -38,4 +38,15 @@ class ExpressionParserTest
     yields(exp.Equivalent(listOf(), listOf()))
   }
 
+  test("thing CONTAINS 'a' + 'b'") {
+    yields(exp.Contains(varFor("thing"), add(literalString("a"), literalString("b"))))
+  }
+
+  test("thing STARTS WITH 'a' + 'b'") {
+    yields(exp.StartsWith(varFor("thing"), add(literalString("a"), literalString("b"))))
+  }
+
+  test("thing ENDS WITH 'a' + 'b'") {
+    yields(exp.EndsWith(varFor("thing"), add(literalString("a"), literalString("b"))))
+  }
 }

@@ -101,42 +101,42 @@ trait Expressions extends Parser
 
   private def Expression7: Rule1[org.neo4j.cypher.internal.v4_0.expressions.Expression] = rule("an expression") {
     Expression6 ~ zeroOrMore(WS ~ (
-      group(operator("+") ~~ Expression6) ~~>> (ast.Add(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
-        | group(operator("-") ~~ Expression6) ~~>> (ast.Subtract(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
-      ))
+      group(operator("=~") ~~ Expression6) ~~>> (ast.RegexMatch(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
+        | group(keyword("IN") ~~ Expression6) ~~>> (ast.In(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
+        | group(keyword("STARTS WITH") ~~ Expression6) ~~>> (ast.StartsWith(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
+        | group(keyword("ENDS WITH") ~~ Expression6) ~~>> (ast.EndsWith(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
+        | group(keyword("CONTAINS") ~~ Expression6) ~~>> (ast.Contains(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
+        | keyword("IS NULL") ~~>> (ast.IsNull(_: org.neo4j.cypher.internal.v4_0.expressions.Expression))
+        | keyword("IS NOT NULL") ~~>> (ast.IsNotNull(_: org.neo4j.cypher.internal.v4_0.expressions.Expression))
+      ): ReductionRule1[org.neo4j.cypher.internal.v4_0.expressions.Expression, org.neo4j.cypher.internal.v4_0.expressions.Expression])
   }
 
   private def Expression6: Rule1[org.neo4j.cypher.internal.v4_0.expressions.Expression] = rule("an expression") {
     Expression5 ~ zeroOrMore(WS ~ (
-      group(operator("*") ~~ Expression5) ~~>> (ast.Multiply(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
-        | group(operator("/") ~~ Expression5) ~~>> (ast.Divide(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
-        | group(operator("%") ~~ Expression5) ~~>> (ast.Modulo(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
+      group(operator("+") ~~ Expression5) ~~>> (ast.Add(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
+        | group(operator("-") ~~ Expression5) ~~>> (ast.Subtract(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
       ))
   }
 
   private def Expression5: Rule1[org.neo4j.cypher.internal.v4_0.expressions.Expression] = rule("an expression") {
     Expression4 ~ zeroOrMore(WS ~ (
-      group(operator("^") ~~ Expression4) ~~>> (ast.Pow(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
+      group(operator("*") ~~ Expression4) ~~>> (ast.Multiply(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
+        | group(operator("/") ~~ Expression4) ~~>> (ast.Divide(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
+        | group(operator("%") ~~ Expression4) ~~>> (ast.Modulo(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
       ))
   }
 
-  private def Expression4: Rule1[org.neo4j.cypher.internal.v4_0.expressions.Expression] = rule("an expression") (
-      Expression3
-    | group(operator("+") ~~ Expression4) ~~>> (ast.UnaryAdd(_))
-    | group(operator("-") ~~ Expression4) ~~>> (ast.UnarySubtract(_))
-  )
-
-  private def Expression3: Rule1[org.neo4j.cypher.internal.v4_0.expressions.Expression] = rule("an expression") {
-    Expression2 ~ zeroOrMore(WS ~ (
-      group(operator("=~") ~~ Expression2) ~~>> (ast.RegexMatch(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
-      | group(keyword("IN") ~~ Expression2) ~~>> (ast.In(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
-      | group(keyword("STARTS WITH") ~~ Expression2) ~~>> (ast.StartsWith(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
-      | group(keyword("ENDS WITH") ~~ Expression2) ~~>> (ast.EndsWith(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
-      | group(keyword("CONTAINS") ~~ Expression2) ~~>> (ast.Contains(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
-      | keyword("IS NULL") ~~>> (ast.IsNull(_: org.neo4j.cypher.internal.v4_0.expressions.Expression))
-      | keyword("IS NOT NULL") ~~>> (ast.IsNotNull(_: org.neo4j.cypher.internal.v4_0.expressions.Expression))
-    ): ReductionRule1[org.neo4j.cypher.internal.v4_0.expressions.Expression, org.neo4j.cypher.internal.v4_0.expressions.Expression])
+  private def Expression4: Rule1[org.neo4j.cypher.internal.v4_0.expressions.Expression] = rule("an expression") {
+    Expression3 ~ zeroOrMore(WS ~ (
+      group(operator("^") ~~ Expression3) ~~>> (ast.Pow(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
+      ))
   }
+
+  private def Expression3: Rule1[org.neo4j.cypher.internal.v4_0.expressions.Expression] = rule("an expression") (
+      Expression2
+    | group(operator("+") ~~ Expression2) ~~>> (ast.UnaryAdd(_))
+    | group(operator("-") ~~ Expression2) ~~>> (ast.UnarySubtract(_))
+  )
 
   private def Expression2: Rule1[org.neo4j.cypher.internal.v4_0.expressions.Expression] = rule("an expression") {
     Expression1 ~ zeroOrMore(WS ~ (
