@@ -67,10 +67,10 @@ class CsvImporterTest
                     .withSetting( GraphDatabaseSettings.logs_directory, logDir.getAbsolutePath() ).build();
 
             CsvImporter csvImporter = new CsvImporter(
-                    Args.parse(
+                    ImportCommand.arguments().parse( new String[]{
                             String.format( "--report-file=%s", reportLocation.getAbsolutePath() ),
                             String.format( "--nodes=%s", inputFile.getAbsolutePath() ),
-                            "--delimiter=TAB" ),
+                            "--delimiter=TAB"} ).parsedArgs(),
                     config,
                     outsideWorld, databaseLayout );
             csvImporter.doImport();

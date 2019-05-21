@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling;
+package org.neo4j.importer;
 
 import java.util.function.Function;
 
@@ -27,7 +27,7 @@ import org.neo4j.csv.reader.Configuration;
  * Converts a string expression into a character to be used as delimiter, array delimiter, or quote character. Can be
  * normal characters as well as for example: '\t', '\123', and "TAB".
  */
-class CharacterConverter implements Function<String,Character>
+public class CharacterConverter implements Function<String,Character>
 {
 
     @Override

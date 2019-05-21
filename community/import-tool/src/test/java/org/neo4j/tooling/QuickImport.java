@@ -21,6 +21,8 @@ package org.neo4j.tooling;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.util.Collection;
 import java.util.Collections;
 
 import org.neo4j.batchinsert.internal.TransactionLogsInitializer;
@@ -45,7 +47,9 @@ import org.neo4j.internal.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -54,20 +58,22 @@ import org.neo4j.scheduler.JobScheduler;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
+import static org.neo4j.internal.batchimport.Configuration.calculateMaxMemoryFromPercent;
 import static org.neo4j.internal.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.internal.batchimport.staging.ExecutionMonitors.defaultVisible;
+import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
 
 /**
  * Uses all available shortcuts to as quickly as possible import as much data as possible. Usage of this
  * utility is most likely just testing behavior of some components in the face of various dataset sizes,
  * even quite big ones. Uses the import tool, or rather directly the {@link ParallelBatchImporter}.
- *
+ * <p>
  * Quick comes from gaming terminology where you sometimes just want to play a quick game, without
  * any settings or hazzle, just play.
- *
+ * <p>
  * Uses {@link DataGeneratorInput} as random data {@link Input}.
- *
+ * <p>
  * For the time being the node/relationship data can't be controlled via command-line arguments,
  * only through changing the code. The {@link DataGeneratorInput} accepts two {@link Header headers}
  * describing which sort of data it should generate.
@@ -85,7 +91,7 @@ public class QuickImport
         long relationshipCount = Settings.parseLongWithUnit( args.get( "relationships", null ) );
         int labelCount = args.getNumber( "labels", 4 ).intValue();
         int relationshipTypeCount = args.getNumber( "relationship-types", 4 ).intValue();
-        File dir = new File( args.get( ImportTool.Options.STORE_DIR.key() ) );
+        File dir = new File( args.get( "into" ) );
         long randomSeed = args.getNumber( "random-seed", currentTimeMillis() ).longValue();
         Configuration config = Configuration.COMMAS;
 
@@ -97,7 +103,7 @@ public class QuickImport
         Header relationshipHeader = parseRelationshipHeader( args, idType, extractors, groups );
 
         Config dbConfig;
-        String dbConfigFileName = args.get( ImportTool.Options.DATABASE_CONFIG.key(), null );
+        String dbConfigFileName = args.get( "db-config", null );
         if ( dbConfigFileName != null )
         {
             dbConfig = new Config.Builder().withFile( new File( dbConfigFileName ) ).build();
@@ -107,39 +113,39 @@ public class QuickImport
             dbConfig = Config.defaults();
         }
 
-        boolean highIo = args.getBoolean( ImportTool.Options.HIGH_IO.key() );
+        boolean highIo = args.getBoolean( "high-io" );
 
         LogProvider logging = NullLogProvider.getInstance();
         long pageCacheMemory = args.getNumber( "pagecache-memory",
                 org.neo4j.internal.batchimport.Configuration.MAX_PAGE_CACHE_MEMORY ).longValue();
         org.neo4j.internal.batchimport.Configuration importConfig =
                 new org.neo4j.internal.batchimport.Configuration()
-        {
-            @Override
-            public int maxNumberOfProcessors()
-            {
-                return args.getNumber( ImportTool.Options.PROCESSORS.key(), DEFAULT.maxNumberOfProcessors() ).intValue();
-            }
+                {
+                    @Override
+                    public int maxNumberOfProcessors()
+                    {
+                        return args.getNumber( "processors", DEFAULT.maxNumberOfProcessors() ).intValue();
+                    }
 
-            @Override
-            public boolean highIO()
-            {
-                return highIo;
-            }
+                    @Override
+                    public boolean highIO()
+                    {
+                        return highIo;
+                    }
 
-            @Override
-            public long pageCacheMemory()
-            {
-                return pageCacheMemory;
-            }
+                    @Override
+                    public long pageCacheMemory()
+                    {
+                        return pageCacheMemory;
+                    }
 
-            @Override
-            public long maxMemoryUsage()
-            {
-                String custom = args.get( ImportTool.Options.MAX_MEMORY.key(), (String) ImportTool.Options.MAX_MEMORY.defaultValue() );
-                return custom != null ? ImportTool.parseMaxMemory( custom ) : DEFAULT.maxMemoryUsage();
-            }
-        };
+                    @Override
+                    public long maxMemoryUsage()
+                    {
+                        String custom = args.get( "max-memory", null );
+                        return custom != null ? parseMaxMemory( custom ) : DEFAULT.maxMemoryUsage();
+                    }
+                };
 
         float factorBadNodeData = args.getNumber( "factor-bad-node-data", 0 ).floatValue();
         float factorBadRelationshipData = args.getNumber( "factor-bad-relationship-data", 0 ).floatValue();
@@ -151,7 +157,7 @@ public class QuickImport
                 factorBadNodeData, factorBadRelationshipData );
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              Lifespan life = new Lifespan() )
+                Lifespan life = new Lifespan() )
         {
             BatchImporter consumer;
             if ( args.getBoolean( "to-csv" ) )
@@ -166,10 +172,76 @@ public class QuickImport
                         new SimpleLogService( logging, logging ), defaultVisible( jobScheduler ), EMPTY, dbConfig,
                         RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR, jobScheduler, Collector.EMPTY,
                         TransactionLogsInitializer.INSTANCE );
-                ImportTool.printOverview( dir, Collections.emptyList(), Collections.emptyList(), importConfig, System.out );
+                printOverview( dir, Collections.emptyList(), Collections.emptyList(), importConfig, System.out );
             }
             consumer.doImport( input );
         }
+    }
+
+    static void printOverview( File storeDir, Collection<Args.Option<File[]>> nodesFiles,
+            Collection<Args.Option<File[]>> relationshipsFiles,
+            org.neo4j.internal.batchimport.Configuration configuration, PrintStream out )
+    {
+        out.println( "Neo4j version: " + Version.getNeo4jVersion() );
+        out.println( "Importing the contents of these files into " + storeDir + ":" );
+        printInputFiles( "Nodes", nodesFiles, out );
+        printInputFiles( "Relationships", relationshipsFiles, out );
+        out.println();
+        out.println( "Available resources:" );
+        printIndented( "Total machine memory: " + bytesToString( OsBeanUtil.getTotalPhysicalMemory() ), out );
+        printIndented( "Free machine memory: " + bytesToString( OsBeanUtil.getFreePhysicalMemory() ), out );
+        printIndented( "Max heap memory : " + bytesToString( Runtime.getRuntime().maxMemory() ), out );
+        printIndented( "Processors: " + configuration.maxNumberOfProcessors(), out );
+        printIndented( "Configured max memory: " + bytesToString( configuration.maxMemoryUsage() ), out );
+        printIndented( "High-IO: " + configuration.highIO(), out );
+        out.println();
+    }
+
+    private static void printInputFiles( String name, Collection<Args.Option<File[]>> files, PrintStream out )
+    {
+        if ( files.isEmpty() )
+        {
+            return;
+        }
+
+        out.println( name + ":" );
+        int i = 0;
+        for ( Args.Option<File[]> group : files )
+        {
+            if ( i++ > 0 )
+            {
+                out.println();
+            }
+            if ( group.metadata() != null )
+            {
+                printIndented( ":" + group.metadata(), out );
+            }
+            for ( File file : group.value() )
+            {
+                printIndented( file, out );
+            }
+        }
+    }
+
+    private static void printIndented( Object value, PrintStream out )
+    {
+        out.println( "  " + value );
+    }
+
+    private static Long parseMaxMemory( String maxMemoryString )
+    {
+        if ( maxMemoryString != null )
+        {
+            maxMemoryString = maxMemoryString.trim();
+            if ( maxMemoryString.endsWith( "%" ) )
+            {
+                int percent = Integer.parseInt( maxMemoryString.substring( 0, maxMemoryString.length() - 1 ) );
+                long result = calculateMaxMemoryFromPercent( percent );
+                return result;
+            }
+            return Settings.parseLongWithUnit( maxMemoryString );
+        }
+        return null;
     }
 
     private static Header parseNodeHeader( Args args, IdType idType, Extractors extractors, Groups groups )

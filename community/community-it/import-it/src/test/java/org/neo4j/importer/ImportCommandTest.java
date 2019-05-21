@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling;
+package org.neo4j.importer;
 
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.AfterEach;
@@ -31,6 +31,7 @@ import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,6 +46,9 @@ import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 
+import org.neo4j.commandline.admin.CommandFailed;
+import org.neo4j.commandline.admin.IncorrectUsage;
+import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.common.Validator;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -71,7 +75,6 @@ import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.internal.Version;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -98,7 +101,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_p
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.internal.batchimport.input.BadCollector.BAD_FILE_NAME;
+import static org.neo4j.importer.CsvImporter.MULTI_FILE_DELIMITER;
 import static org.neo4j.internal.helpers.ArrayUtil.join;
 import static org.neo4j.internal.helpers.Exceptions.contains;
 import static org.neo4j.internal.helpers.Exceptions.withMessage;
@@ -109,10 +112,9 @@ import static org.neo4j.internal.helpers.collection.Iterators.count;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.writeToFile;
-import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 
 @ExtendWith( {TestDirectoryExtension.class, RandomExtension.class, SuppressOutputExtension.class} )
-class ImportToolTest
+class ImportCommandTest
 {
     private static final int MAX_LABEL_ID = 4;
     private static final int RELATIONSHIP_COUNT = 10_000;
@@ -138,22 +140,6 @@ class ImportToolTest
     }
 
     @Test
-    void usageMessageIncludeExample() throws Exception
-    {
-        SuppressOutput.Voice outputVoice = suppressOutput.getOutputVoice();
-        importTool( "?" );
-        assertTrue( outputVoice.containsMessage( "Example:" ), "Usage message should include example section, but was:" + outputVoice );
-    }
-
-    @Test
-    void usageMessagePrintedOnEmptyInputParameters() throws Exception
-    {
-        SuppressOutput.Voice outputVoice = suppressOutput.getOutputVoice();
-        importTool();
-        assertTrue( outputVoice.containsMessage( "Example:" ), "Output should include usage section, but was:" + outputVoice );
-    }
-
-    @Test
     void shouldImportWithAsManyDefaultsAsAvailable() throws Exception
     {
         // GIVEN
@@ -162,8 +148,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                 "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
@@ -182,8 +167,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--delimiter", "TAB",
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
@@ -224,7 +208,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool( "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--delimiter", "TAB",
                 "--array-delimiter", "|",
@@ -275,7 +259,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool( "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--quote", "'",
                 "--nodes", data.getAbsolutePath() );
@@ -346,7 +330,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool( "--into", getDatabaseDirectory(), "--quote", "'",
+        runImport( "--quote", "'",
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", data.getAbsolutePath() );
 
@@ -405,7 +389,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool( "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--quote", "'",
                 "--nodes", data.getAbsolutePath() );
@@ -445,7 +429,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool( "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--quote", "'",
                 "--nodes", data.getAbsolutePath() );
@@ -523,7 +507,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool( "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--quote", "'",
                 "--nodes", data.getAbsolutePath() );
@@ -581,7 +565,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool( "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--quote", "'",
                 "--nodes", data.getAbsolutePath() );
@@ -622,8 +606,7 @@ class ImportToolTest
         int extraColumns = 3;
         try
         {
-            importTool(
-                    "--into", getDatabaseDirectory(),
+            runImport(
                     "--delimiter", "TAB",
                     "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
                     "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
@@ -653,9 +636,8 @@ class ImportToolTest
 
         // WHEN data file contains more columns than header file
         int extraColumns = 3;
-        importTool(
-                "--into", getDatabaseDirectory(),
-                "--bad", bad.getAbsolutePath(),
+        runImport(
+                "--report-file", bad.getAbsolutePath(),
                 "--bad-tolerance", Integer.toString( nodeIds.size() * extraColumns ),
                 "--ignore-extra-columns",
                 "--delimiter", "TAB",
@@ -681,8 +663,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", // One group with one header file and one data file
                 nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
@@ -713,8 +694,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes:" + join( firstLabels, ":" ),
                 nodeData( true, config, nodeIds, lines( 0, NODE_COUNT / 2 ) ).getAbsolutePath(),
@@ -799,8 +779,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath() );
         // no relationships
@@ -837,8 +816,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", nodeHeader( config, groupOne ) + MULTI_FILE_DELIMITER +
                            nodeData( false, config, groupOneNodeIds, TRUE ),
@@ -873,8 +851,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", nodeHeader( config, "MyGroup" ).getAbsolutePath() + MULTI_FILE_DELIMITER +
                            nodeData( false, config, groupOneNodeIds, TRUE ).getAbsolutePath(),
@@ -896,8 +873,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                 // there will be no :TYPE specified in the header of the relationships below
@@ -921,8 +897,7 @@ class ImportToolTest
         // WHEN
         try
         {
-            importTool(
-                    "--into", getDatabaseDirectory(),
+            runImport(
                     "--nodes", nodeHeaderFile.getAbsolutePath() + MULTI_FILE_DELIMITER +
                                nodeData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
                                nodeData2.getAbsolutePath() );
@@ -948,8 +923,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--skip-duplicate-nodes",
                 "--nodes", nodeHeaderFile.getAbsolutePath() + MULTI_FILE_DELIMITER +
@@ -1012,10 +986,10 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN importing data where some relationships refer to missing nodes
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--nodes", nodeData.getAbsolutePath(),
-                "--bad", bad.getAbsolutePath(),
+                "--report-file", bad.getAbsolutePath(),
+                "--skip-bad-relationships",
                 "--bad-tolerance", "2",
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--relationships", relationshipData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
@@ -1048,8 +1022,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN importing data where some relationships refer to missing nodes
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", nodeData.getAbsolutePath(),
                 "--bad-tolerance", "2",
@@ -1081,10 +1054,10 @@ class ImportToolTest
         // WHEN importing data where some relationships refer to missing nodes
         try
         {
-            importTool(
-                    "--into", getDatabaseDirectory(),
+            runImport(
                     "--nodes", nodeData.getAbsolutePath(),
-                    "--bad", bad.getAbsolutePath(),
+                    "--report-file", bad.getAbsolutePath(),
+                    "--detailed-progress",
                     "--bad-tolerance", "1",
                     "--relationships", relationshipData.getAbsolutePath() );
             fail();
@@ -1116,11 +1089,9 @@ class ImportToolTest
         // WHEN importing data where some relationships refer to missing nodes
         try
         {
-            importTool(
-                    "--into", getDatabaseDirectory(),
+            runImport(
                     "--nodes", nodeData.getAbsolutePath(),
-                    "--bad", bad.getAbsolutePath(),
-                    "--stacktrace", // trying to find flaky test origin
+                    "--report-file", bad.getAbsolutePath(),
                     "--skip-bad-relationships", "false",
                     "--relationships", relationshipData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
                                        relationshipData2.getAbsolutePath() );
@@ -1145,8 +1116,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes:My First Label:My Other Label",
                 nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
@@ -1171,8 +1141,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--input-encoding", charset.name(),
                 "--nodes", nodeData( true, config, nodeIds, TRUE, charset ).getAbsolutePath(),
@@ -1193,13 +1162,12 @@ class ImportToolTest
         // WHEN
         try
         {
-            importTool(
-                    "--into", getDatabaseDirectory(),
+            runImport(
                     "--relationships",
                     relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
             fail( "Should have failed" );
         }
-        catch ( IllegalArgumentException e )
+        catch ( IncorrectUsage e )
         {
             // THEN
             assertThat( e.getMessage(), containsString( "No node input" ) );
@@ -1216,8 +1184,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                 "--relationships", relationshipData( true, config, relationshipData.iterator(),
@@ -1254,8 +1221,7 @@ class ImportToolTest
         // WHEN
         try
         {
-            importTool(
-                    "--into", getDatabaseDirectory(),
+            runImport(
                     "--nodes", data.getAbsolutePath() );
             fail();
         }
@@ -1275,8 +1241,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", data.getAbsolutePath() );
 
@@ -1307,8 +1272,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", data.getAbsolutePath(),
                 "--trim-strings", "true" );
@@ -1333,80 +1297,19 @@ class ImportToolTest
     }
 
     @Test
-    void shouldPrintReferenceLinkOnDataImportErrors()
-    {
-        String[] versionParts = Version.getNeo4jVersion().split("-");
-        versionParts[0] = versionParts[0].substring(0, 3);
-        String docsVersion = String.join("-", versionParts);
-
-        shouldPrintReferenceLinkAsPartOfErrorMessage( nodeIds(),
-                Iterators.iterator( new RelationshipDataLine( "1", "", "type", "name" ) ),
-                "Relationship missing mandatory field 'END_ID', read more about relationship " +
-                "format in the manual:  https://neo4j.com/docs/operations-manual/" +
-                docsVersion +
-                "/tools/import/file-header-format/#import-tool-header-format-rels" );
-        shouldPrintReferenceLinkAsPartOfErrorMessage( nodeIds(),
-                Iterators.iterator( new RelationshipDataLine( "", "1", "type", "name" ) ),
-                "Relationship missing mandatory field 'START_ID', read more about relationship " +
-                "format in the manual:  https://neo4j.com/docs/operations-manual/" +
-                docsVersion +
-                "/tools/import/file-header-format/#import-tool-header-format-rels" );
-        shouldPrintReferenceLinkAsPartOfErrorMessage( nodeIds(),
-                Iterators.iterator( new RelationshipDataLine( "1", "2", "", "name" ) ),
-                "Relationship missing mandatory field 'TYPE', read more about relationship " +
-                "format in the manual:  https://neo4j.com/docs/operations-manual/" +
-                 docsVersion +
-                "/tools/import/file-header-format/#import-tool-header-format-rels" );
-        shouldPrintReferenceLinkAsPartOfErrorMessage( Arrays.asList( "1", "1" ),
-                Iterators.iterator( new RelationshipDataLine( "1", "2", "type", "name" ) ),
-                "Duplicate input ids that would otherwise clash can be put into separate id space, read more " +
-                "about how to use id spaces in the manual: https://neo4j.com/docs/operations-manual/" +
-                docsVersion +
-                "/tools/import/file-header-format/#import-tool-id-spaces" );
-    }
-
-    @Test
     void shouldCollectUnlimitedNumberOfBadEntries() throws Exception
     {
         // GIVEN
         List<String> nodeIds = Collections.nCopies( 10_000, "A" );
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(),
                 "--skip-duplicate-nodes",
-                "--bad-tolerance", "true" );
+                "--bad-tolerance=-1" );
 
         // THEN
         // all those duplicates should just be accepted using the - for specifying bad tolerance
-    }
-
-    private void shouldPrintReferenceLinkAsPartOfErrorMessage( List<String> nodeIds,
-            Iterator<RelationshipDataLine> relationshipDataLines, String message )
-    {
-        Configuration config = Configuration.COMMAS;
-        try
-        {
-            // WHEN
-            importTool(
-                    "--into", getDatabaseDirectory(),
-                    "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
-                    "--skip-bad-relationships", "false",
-                    "--relationships", relationshipData( true, config, relationshipDataLines,
-                            TRUE, true ).getAbsolutePath() );
-            fail( " Should fail during import." );
-        }
-        catch ( Exception e )
-        {
-            // EXPECT
-            assertTrue( suppressOutput.getErrorVoice().containsMessage( message ) );
-        }
-
-        for ( StoreType storeType : StoreType.values() )
-        {
-            testDirectory.databaseLayout().file( storeType.getDatabaseFile() ).forEach( File::delete );
-        }
     }
 
     @Test
@@ -1417,8 +1320,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--nodes", data.getAbsolutePath(),
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--multiline-fields", "true" );
@@ -1446,7 +1348,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool( "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", data.getAbsolutePath() );
 
@@ -1470,8 +1372,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", data.getAbsolutePath(),
                 "--ignore-empty-strings", "true" );
@@ -1499,8 +1400,7 @@ class ImportToolTest
 
         try
         {
-            importTool(
-                    "--into", getDatabaseDirectory(),
+            runImport(
                     "--nodes", data.getAbsolutePath(),
                     "--multiline-fields", "false" );
             fail( "Should have failed" );
@@ -1527,8 +1427,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", data.getAbsolutePath(),
                 "--quote", String.valueOf( weirdDelimiter ) );
@@ -1558,8 +1457,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--delimiter", "\\t",
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
@@ -1580,15 +1478,14 @@ class ImportToolTest
         // WHEN
         try
         {
-            importTool(
-                    "--into", getDatabaseDirectory(),
+            runImport(
                     "--delimiter", "\\bogus",
                     "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
                     "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                     "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
             fail( "Should have failed" );
         }
-        catch ( IllegalArgumentException e )
+        catch ( IncorrectUsage e )
         {
             // THEN
             assertThat( e.getMessage(), containsString( "bogus" ) );
@@ -1604,8 +1501,7 @@ class ImportToolTest
         // WHEN
         try
         {
-            importTool(
-                    "--into", getDatabaseDirectory(),
+            runImport(
                     "--nodes", nodeDataWithMissingQuote( 2 * unbalancedStartLine, unbalancedStartLine )
                             .getAbsolutePath() );
             fail( "Should have failed" );
@@ -1631,8 +1527,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", data.getAbsolutePath(),
                 "--quote", "\\1" );
@@ -1661,15 +1556,14 @@ class ImportToolTest
         // WHEN
         try
         {
-            importTool(
-                    "--into", getDatabaseDirectory(),
+            runImport(
                     "--nodes", nodeDataWithMissingQuote( unbalancedStartLine, unbalancedStartLine ).getAbsolutePath() );
             fail( "Should have failed" );
         }
         catch ( InputException e )
         {
             // THEN
-            assertThat( e.getMessage(), containsString( String.format( "Multi-line fields" ) ) );
+            assertThat( e.getMessage(), containsString( format( "Multi-line fields" ) ) );
         }
     }
 
@@ -1688,14 +1582,13 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN given as raw ascii
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", data.getAbsolutePath(),
                 "--quote", weirdStringDelimiter );
 
-        // THEN
         assertEquals( "~", "" + weirdDelimiter );
+        // THEN
         assertEquals( "~".charAt( 0 ), weirdDelimiter );
 
         Set<String> names = asSet( "Weird", name2 );
@@ -1721,8 +1614,7 @@ class ImportToolTest
         // WHEN
         try
         {
-            importTool(
-                    "--into", getDatabaseDirectory(),
+            runImport(
                     "--multiline-fields", "true",
                     "--nodes",
                     nodeDataWithMissingQuote( 2 * unbalancedStartLine, unbalancedStartLine ).getAbsolutePath() );
@@ -1741,7 +1633,7 @@ class ImportToolTest
 
         for ( int i = 1; i <= totalLines; i++ )
         {
-            StringBuilder line = new StringBuilder( String.format( "%d,", i ) );
+            StringBuilder line = new StringBuilder( format( "%d,", i ) );
             if ( i == unbalancedStartLine )
             {
                 // Missing the end quote
@@ -1772,8 +1664,7 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN given as string
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", data.getAbsolutePath(),
                 "--quote", weirdStringDelimiter );
@@ -1797,33 +1688,6 @@ class ImportToolTest
     }
 
     @Test
-    void shouldRespectDbConfig() throws Exception
-    {
-        // GIVEN
-        int arrayBlockSize = 10;
-        int stringBlockSize = 12;
-        File dbConfig = file( "neo4j.properties" );
-        store( Map.of(
-                GraphDatabaseSettings.array_block_size.name(), String.valueOf( arrayBlockSize ),
-                GraphDatabaseSettings.string_block_size.name(), String.valueOf( stringBlockSize ),
-                transaction_logs_root_path.name(), getTransactionLogsRoot() ), dbConfig );
-        List<String> nodeIds = nodeIds();
-
-        // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
-                "--db-config", dbConfig.getAbsolutePath(),
-                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, value -> true ).getAbsolutePath() );
-
-        // THEN
-        NeoStores stores = getDatabaseApi().getDependencyResolver()
-                .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
-        int headerSize = Standard.LATEST_RECORD_FORMATS.dynamic().getRecordHeaderSize();
-        assertEquals( arrayBlockSize + headerSize, stores.getPropertyStore().getArrayStore().getRecordSize() );
-        assertEquals( stringBlockSize + headerSize, stores.getPropertyStore().getStringStore().getRecordSize() );
-    }
-
-    @Test
     void useProvidedAdditionalConfig() throws Exception
     {
         // GIVEN
@@ -1837,8 +1701,7 @@ class ImportToolTest
         List<String> nodeIds = nodeIds();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, value -> true ).getAbsolutePath() );
 
@@ -1848,64 +1711,6 @@ class ImportToolTest
         int headerSize = Standard.LATEST_RECORD_FORMATS.dynamic().getRecordHeaderSize();
         assertEquals( arrayBlockSize + headerSize, stores.getPropertyStore().getArrayStore().getRecordSize() );
         assertEquals( stringBlockSize + headerSize, stores.getPropertyStore().getStringStore().getRecordSize() );
-    }
-
-    @Test
-    void combineProvidedDbAndAdditionalConfig() throws Exception
-    {
-        // GIVEN
-        int arrayBlockSize = 10;
-        int stringBlockSize = 12;
-        File dbConfig = file( "neo4j.properties" );
-        File additionalConfig = file( "additional.properties" );
-        store( stringMap(
-                GraphDatabaseSettings.string_block_size.name(), String.valueOf( stringBlockSize ) ), dbConfig );
-        store( stringMap(
-                GraphDatabaseSettings.array_block_size.name(), String.valueOf( arrayBlockSize ),
-                transaction_logs_root_path.name(), getTransactionLogsRoot() ), additionalConfig );
-        List<String> nodeIds = nodeIds();
-
-        // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
-                "--db-config", dbConfig.getAbsolutePath(),
-                "--additional-config", additionalConfig.getAbsolutePath(),
-                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, value -> true ).getAbsolutePath() );
-
-        // THEN
-        NeoStores stores = getDatabaseApi().getDependencyResolver()
-                .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
-        int headerSize = Standard.LATEST_RECORD_FORMATS.dynamic().getRecordHeaderSize();
-        assertEquals( arrayBlockSize + headerSize, stores.getPropertyStore().getArrayStore().getRecordSize() );
-        assertEquals( stringBlockSize + headerSize, stores.getPropertyStore().getStringStore().getRecordSize() );
-    }
-
-    @Test
-    void shouldPrintStackTraceOnInputExceptionIfToldTo() throws Exception
-    {
-        // GIVEN
-        List<String> nodeIds = nodeIds();
-        Configuration config = Configuration.COMMAS;
-
-        // WHEN data file contains more columns than header file
-        int extraColumns = 3;
-        try
-        {
-            importTool(
-                    "--into", getDatabaseDirectory(),
-                    "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
-                            nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns )
-                                    .getAbsolutePath(),
-                    "--stacktrace" );
-
-            fail( "Should have thrown exception" );
-        }
-        catch ( InputException e )
-        {
-            // THEN
-            assertTrue( suppressOutput.getErrorVoice().containsMessage( e.getClass().getName() ) );
-            assertTrue( e.getMessage().contains( "Extra column not present in header on line" ) );
-        }
     }
 
     @Test
@@ -1921,12 +1726,10 @@ class ImportToolTest
         File dbConfig = prepareDefaultConfigFile();
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", data( lines.toArray( new String[lines.size()] ) ).getAbsolutePath(),
-                "--legacy-style-quoting", "false",
-                "--stacktrace" );
+                "--legacy-style-quoting", "false");
 
         // THEN
         GraphDatabaseService db = getDatabaseApi();
@@ -1949,8 +1752,7 @@ class ImportToolTest
         // WHEN
         try
         {
-            importTool(
-                    "--into", getDatabaseDirectory(),
+            runImport(
                     "--additional-config", dbConfig.getAbsolutePath(),
                     "--nodes", data( lines.toArray( new String[lines.size()] ) ).getAbsolutePath(),
                     "--read-buffer-size", "1k"
@@ -1971,8 +1773,7 @@ class ImportToolTest
         List<String> nodeIds = nodeIds( 10 );
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(),
                 "--max-memory", "60%" );
     }
@@ -1986,11 +1787,11 @@ class ImportToolTest
         try
         {
             // WHEN
-            importTool( "--into", getDatabaseDirectory(), "--nodes",
+            runImport( "--nodes",
                     nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(), "--max-memory", "110%" );
             fail( "Should have failed" );
         }
-        catch ( IllegalArgumentException e )
+        catch ( IncorrectUsage e )
         {
             // THEN good
             assertThat( e.getMessage(), containsString( "percent" ) );
@@ -2004,8 +1805,7 @@ class ImportToolTest
         List<String> nodeIds = nodeIds( 10 );
 
         // WHEN
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(),
                 "--max-memory", "100M" );
     }
@@ -2027,10 +1827,9 @@ class ImportToolTest
         File bad = badFile();
 
         // WHEN importing data where some relationships refer to missing nodes
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--nodes", nodeData.getAbsolutePath(),
-                "--bad", bad.getAbsolutePath(),
+                "--report-file", bad.getAbsolutePath(),
                 "--skip-bad-relationships", "true",
                 "--relationships", relationshipData.getAbsolutePath() );
 
@@ -2047,11 +1846,9 @@ class ImportToolTest
 
         // WHEN data file contains more columns than header file
         int extraColumns = 3;
-        String databaseDir = getDatabaseDirectory();
         try
         {
-            importTool(
-                    "--into", databaseDir,
+            runImport(
                     "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
                             nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns ).getAbsolutePath() );
             fail( "Should have thrown exception" );
@@ -2076,19 +1873,18 @@ class ImportToolTest
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.COMMAS;
         File argumentFile = file( "args" );
-        String nodesEscapedSpaces = escapePath( nodeData( true, config, nodeIds, TRUE ).getAbsolutePath() );
-        String relationshipsEscapedSpaced = escapePath( relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
+        String nodesEscapedSpaces = nodeData( true, config, nodeIds, TRUE ).getAbsolutePath();
+        String relationshipsEscapedSpaced = relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath();
         File dbConfig = prepareDefaultConfigFile();
         String arguments = format(
-                "--additional-config %s%n" +
-                "--into %s%n" +
-                "--nodes %s --relationships %s",
-                escapePath( dbConfig.getAbsolutePath() ),
-                escapePath( getDatabaseDirectory() ), nodesEscapedSpaces, relationshipsEscapedSpaced );
+                "--additional-config \"%s\"%n" +
+                "--nodes \"%s\" --relationships \"%s\"",
+                dbConfig.getAbsolutePath(),
+                nodesEscapedSpaces, relationshipsEscapedSpaced );
         writeToFile( argumentFile, arguments, false );
 
         // when
-        importTool( "-f", argumentFile.getAbsolutePath() );
+        runImport( "-f", argumentFile.getAbsolutePath() );
 
         // then
         verifyData();
@@ -2102,8 +1898,7 @@ class ImportToolTest
         Configuration config = Configuration.COMMAS;
         File argumentFile = file( "args" );
         String arguments = format(
-                "--into %s%n" +
-                "--nodes %s --relationships %s", getDatabaseDirectory(),
+                "--nodes \"%s\" --relationships \"%s\"",
                 nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                 relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
         writeToFile( argumentFile, arguments, false );
@@ -2111,14 +1906,13 @@ class ImportToolTest
         try
         {
             // when
-            importTool( "-f", argumentFile.getAbsolutePath(), "--into", getDatabaseDirectory() );
+            runImport( "-f", argumentFile.getAbsolutePath(), "--nodes" );
             fail( "Should have failed" );
         }
-        catch ( IllegalArgumentException e )
+        catch ( IncorrectUsage e )
         {
             // then good
-            assertThat( e.getMessage(), containsString( "in addition to" ) );
-            assertThat( e.getMessage(), containsString( ImportTool.Options.FILE.argument() ) );
+            assertThat( e.getMessage(), containsString( "in addition to -f" ) );
         }
     }
 
@@ -2130,12 +1924,10 @@ class ImportToolTest
 
         // given
         String dbDir = getDatabaseDirectory();
-        importTool(
-                "--into", dbDir,
-                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds(), TRUE ).getAbsolutePath() );
+        runImport( "--nodes", nodeData( true, Configuration.COMMAS, nodeIds(), TRUE ).getAbsolutePath() );
 
         // THEN go and read the debug.log where it's expected to be and see if there's an IMPORT DONE line in it
-        File dbDirParent = new File( dbDir );
+        File dbDirParent = new File( dbDir ).getParentFile();
         File logsDir = new File( dbDirParent, logs_directory.getDefaultValue() );
         File internalLogFile = new File( logsDir, Config.defaults().get( store_internal_log_path ).getName() );
         assertTrue( internalLogFile.exists() );
@@ -2162,8 +1954,7 @@ class ImportToolTest
             writer.println( "1,2,DC,123,12" );
             writer.println( "2,1,DC,9999999999,123456789" );
         } );
-        importTool(
-                "--into", getDatabaseDirectory(),
+        runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", nodeData.getAbsolutePath(),
                 "--relationships", relationshipData.getAbsolutePath() );
@@ -2218,8 +2009,7 @@ class ImportToolTest
         } );
         try
         {
-            importTool(
-                    "--into", getDatabaseDirectory(),
+            runImport(
                     "--additional-config", dbConfig.getAbsolutePath(),
                     "--normalize-types", "false",
                     "--nodes", nodeData.getAbsolutePath(),
@@ -2622,7 +2412,7 @@ class ImportToolTest
 
     private File badFile()
     {
-        return testDirectory.databaseLayout().file( BAD_FILE_NAME );
+        return testDirectory.databaseLayout().file( ImportCommand.DEFAULT_REPORT_FILE_NAME );
     }
 
     private void writeRelationshipHeader( PrintStream writer, Configuration config,
@@ -2747,11 +2537,6 @@ class ImportToolTest
         return dbConfig;
     }
 
-    private static String escapePath( String path )
-    {
-        return path.replaceAll( " ", "\\\\ " );
-    }
-
     private GraphDatabaseAPI getDatabaseApi()
     {
         if ( managementService == null )
@@ -2766,8 +2551,14 @@ class ImportToolTest
         return testDirectory.databaseLayout().databaseDirectory().getAbsolutePath();
     }
 
-    static void importTool( String... arguments )
+    void runImport( String... arguments ) throws IOException, CommandFailed, IncorrectUsage
     {
-        ImportTool.main( arguments, true );
+        runImport( testDirectory.databaseLayout().databaseDirectory().toPath().toAbsolutePath(), arguments );
+    }
+
+    static void runImport( Path homeDir, String... arguments ) throws CommandFailed, IncorrectUsage
+    {
+        final var cmd = new ImportCommand( homeDir, homeDir.resolve( "conf" ), new RealOutsideWorld() );
+        cmd.execute( arguments );
     }
 }

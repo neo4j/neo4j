@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling;
+package org.neo4j.importer;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -37,11 +37,12 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.tooling.ImportToolTest.assertExceptionContains;
-import static org.neo4j.tooling.ImportToolTest.importTool;
+import static org.neo4j.importer.ImportCommandTest.assertExceptionContains;
+import static org.neo4j.importer.ImportCommandTest.runImport;
+import static org.neo4j.importer.RelationshipDataLine.assertExceptionContains;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
-class ImportToolNumericalFailureTest
+class ImportNumericalFailureTest
 {
     @Inject
     private TestDirectory testDirectory;
@@ -95,7 +96,7 @@ class ImportToolNumericalFailureTest
         }
 
         Exception exception = assertThrows( Exception.class,
-                () -> importTool( "--into", databaseLayout.databaseDirectory().getAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() ) );
+                () -> runImport( databaseLayout.databaseDirectory().toPath().toAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() ) );
         assertExceptionContains( exception, expectedError, InputException.class );
     }
 

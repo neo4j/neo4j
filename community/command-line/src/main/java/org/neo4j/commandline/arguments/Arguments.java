@@ -309,4 +309,9 @@ public class Arguments
         }
         throw new IllegalArgumentException( "No such argument available: " + argName );
     }
+
+    public Args parsedArgs()
+    {
+        return parsedArgs;
+    }
 }

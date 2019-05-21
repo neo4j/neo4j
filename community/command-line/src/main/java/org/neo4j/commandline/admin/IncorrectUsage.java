@@ -25,4 +25,9 @@ public class IncorrectUsage extends Exception
     {
         super( message );
     }
+
+    public IncorrectUsage( String message, Throwable cause )
+    {
+        super( message, cause );
+    }
 }

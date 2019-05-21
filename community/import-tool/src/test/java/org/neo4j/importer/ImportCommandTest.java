@@ -199,16 +199,25 @@ class ImportCommandTest
                             "                          [--id-type=<STRING|INTEGER|ACTUAL>]%n" +
                             "                          [--input-encoding=<character-set>]%n" +
                             "                          [--ignore-extra-columns[=<true|false>]]%n" +
-                            "                          [--ignore-duplicate-nodes[=<true|false>]]%n" +
-                            "                          [--ignore-missing-nodes[=<true|false>]]%n" +
                             "                          [--multiline-fields[=<true|false>]]%n" +
                             "                          [--delimiter=<delimiter-character>]%n" +
                             "                          [--array-delimiter=<array-delimiter-character>]%n" +
                             "                          [--quote=<quotation-character>]%n" +
                             "                          [--max-memory=<max-memory-that-importer-can-use>]%n" +
                             "                          [--f=<File containing all arguments to this import>]%n" +
-                            "                          [--high-io=<true/false>]%n" +
-                            "                          [--normalize-types=<true/false>]%n" +
+                            "                          [--high-io[=<true|false>]]%n" +
+                            "                          [--bad-tolerance=<max-number-of-bad-entries-or-'-1'-for-unlimited>]%n" +
+                            "                          [--cache-on-heap[=<true|false>]]%n" +
+                            "                          [--detailed-progress[=<true|false>]]%n" +
+                            "                          [--ignore-empty-strings[=<true|false>]]%n" +
+                            "                          [--legacy-style-quoting[=<true|false>]]%n" +
+                            "                          [--read-buffer-size=<bytes, e.g. 10k, 4M>]%n" +
+                            "                          [--skip-bad-entries-logging[=<true|false>]]%n" +
+                            "                          [--skip-bad-relationships[=<true|false>]]%n" +
+                            "                          [--skip-duplicate-nodes[=<true|false>]]%n" +
+                            "                          [--processors=<max processor count>]%n" +
+                            "                          [--trim-strings[=<true|false>]]%n" +
+                            "                          [--normalize-types=<true|false>]%n" +
                             "%n" +
                             "environment variables:%n" +
                             "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
@@ -253,11 +262,6 @@ class ImportCommandTest
                             "  --ignore-extra-columns=<true|false>%n" +
                             "      If un-specified columns should be ignored during the import.%n" +
                             "      [default:false]%n" +
-                            "  --ignore-duplicate-nodes=<true|false>%n" +
-                            "      If duplicate nodes should be ignored during the import. [default:false]%n" +
-                            "  --ignore-missing-nodes=<true|false>%n" +
-                            "      If relationships referring to missing nodes should be ignored during the%n" +
-                            "      import. [default:false]%n" +
                             "  --multiline-fields=<true|false>%n" +
                             "      Whether or not fields from input source can span multiple lines, i.e.%n" +
                             "      contain newline characters. [default:false]%n" +
@@ -280,9 +284,56 @@ class ImportCommandTest
                             "      line or multiple arguments per line separated by space.Arguments%n" +
                             "      containing spaces needs to be quoted.Supplying other arguments in addition%n" +
                             "      to this file argument is not supported. [default:]%n" +
-                            "  --high-io=<true/false>%n" +
+                            "  --high-io=<true|false>%n" +
                             "      Ignore environment-based heuristics, and assume that the target storage%n" +
-                            "      subsystem can support parallel IO with high throughput. [default:null]%n" +
+                            "      subsystem can support parallel IO with high throughput. [default:true]%n" +
+                            "  --bad-tolerance=<max-number-of-bad-entries-or-'-1'-for-unlimited>%n" +
+                            "      Number of bad entries before the import is considered failed. This%n" +
+                            "      tolerance threshold is about relationships referring to missing nodes.%n" +
+                            "      Format errors in input data are still treated as errors [default:1000]%n" +
+                            "  --cache-on-heap=<true|false>%n" +
+                            "      (advanced) Whether or not to allow allocating memory for the cache on%n" +
+                            "      heap. If 'false' then caches will still be allocated off-heap, but the%n" +
+                            "      additional free memory inside the JVM will not be allocated for the%n" +
+                            "      caches. This to be able to have better control over the heap memory%n" +
+                            "      [default:false]%n" +
+                            "  --detailed-progress=<true|false>%n" +
+                            "      Use the old detailed 'spectrum' progress printing [default:false]%n" +
+                            "  --ignore-empty-strings=<true|false>%n" +
+                            "      Whether or not empty string fields, i.e. \"\" from input source are ignored,%n" +
+                            "      i.e. treated as null. [default:false]%n" +
+                            "  --legacy-style-quoting=<true|false>%n" +
+                            "      Whether or not backslash-escaped quote e.g. \\\" is interpreted as inner%n" +
+                            "      quote. [default:false]%n" +
+                            "  --read-buffer-size=<bytes, e.g. 10k, 4M>%n" +
+                            "      Size of each buffer for reading input data. It has to at least be large%n" +
+                            "      enough to hold the biggest single value in the input data.%n" +
+                            "      [default:4194304]%n" +
+                            "  --skip-bad-entries-logging=<true|false>%n" +
+                            "      Whether or not to skip logging bad entries detected during import.%n" +
+                            "      [default:false]%n" +
+                            "  --skip-bad-relationships=<true|false>%n" +
+                            "      Whether or not to skip importing relationships that refers to missing node%n" +
+                            "      ids, i.e. either start or end node id/group referring to node that wasn't%n" +
+                            "      specified by the node input data. Skipped nodes will be logged, containing%n" +
+                            "      at most number of entities specified by bad-tolerance, unless otherwise%n" +
+                            "      specified by skip-bad-entries-logging option. [default:false]%n" +
+                            "  --skip-duplicate-nodes=<true|false>%n" +
+                            "      Whether or not to skip importing nodes that have the same id/group. In the%n" +
+                            "      event of multiple nodes within the same group having the same id, the%n" +
+                            "      first encountered will be imported whereas consecutive such nodes will be%n" +
+                            "      skipped. Skipped nodes will be logged, containing at most number of%n" +
+                            "      entities specified by bad-tolerance, unless otherwise specified by%n" +
+                            "      skip-bad-entries-logging option. [default:false]%n" +
+                            "  --processors=<max processor count>%n" +
+                            "      (advanced) Max number of processors used by the importer. Defaults to the%n" +
+                            "      number of available processors reported by the JVM%n" +
+                            "      skip-bad-entries-logging. There is a certain amount of minimum threads%n" +
+                            "      needed so for that reason there is no lower bound for this value. For%n" +
+                            "      optimal performance this value shouldn't be greater than the number of%n" +
+                            "      available processors. [default:null]%n" +
+                            "  --trim-strings=<true|false>%n" +
+                            "      Whether or not strings should be trimmed for whitespaces. [default:true]%n" +
                             "  --normalize-types=<true/false>%n" +
                             "      Whether or not to normalize property types to Cypher types, e.g. 'int'%n" +
                             "      becomes 'long' and 'float' becomes 'double' [default:true]%n" ),
@@ -301,7 +352,7 @@ class ImportCommandTest
             ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
             Importer importer = mock( Importer.class );
             ArgumentCaptor<Config> configArgumentCaptor = ArgumentCaptor.forClass( Config.class );
-            when( mockImporterFactory.getImporterForMode( eq( "csv" ), any( Args.class ), configArgumentCaptor.capture(), any( OutsideWorld.class ),
+            when( mockImporterFactory.createImporter( any( Args.class ), configArgumentCaptor.capture(), any( OutsideWorld.class ),
                     any( DatabaseLayout.class ) ) ).thenReturn( importer );
             ImportCommand command = new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), outsideWorld, mockImporterFactory );
 
@@ -324,7 +375,7 @@ class ImportCommandTest
             ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
             Importer importer = mock( Importer.class );
             ArgumentCaptor<Config> configArgumentCaptor = ArgumentCaptor.forClass( Config.class );
-            when( mockImporterFactory.getImporterForMode( eq( "csv" ), any( Args.class ), configArgumentCaptor.capture(), any( OutsideWorld.class ),
+            when( mockImporterFactory.createImporter( any( Args.class ), configArgumentCaptor.capture(), any( OutsideWorld.class ),
                     any( DatabaseLayout.class ) ) ).thenReturn( importer );
             ImportCommand command = new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), outsideWorld, mockImporterFactory );
 
