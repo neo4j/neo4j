@@ -75,6 +75,8 @@ trait PlanMatcher extends Matcher[InternalPlanDescription] {
 
   def withRHS(rhs: PlanMatcher): PlanMatcher
 
+  def withChildren(a: PlanMatcher, b: PlanMatcher): PlanMatcher
+
   def onTopOf(plan: PlanMatcher): PlanMatcher = withLHS(plan)
 }
 
@@ -142,6 +144,8 @@ case class PlanInTree(inner: PlanMatcher) extends PlanMatcher {
   override def withLHS(lhs: PlanMatcher): PlanMatcher = copy(inner = inner.withLHS(lhs))
 
   override def withRHS(rhs: PlanMatcher): PlanMatcher = copy(inner = inner.withRHS(rhs))
+
+  override def withChildren(a: PlanMatcher, b: PlanMatcher): PlanMatcher = copy(inner = inner.withChildren(a, b))
 }
 
 /**
@@ -205,6 +209,9 @@ case class CountInTree(expectedCount: Int, inner: PlanMatcher, atLeast: Boolean 
   override def withLHS(lhs: PlanMatcher): PlanMatcher = copy(inner = inner.withLHS(lhs))
 
   override def withRHS(rhs: PlanMatcher): PlanMatcher = copy(inner = inner.withRHS(rhs))
+
+  override def withChildren(a: PlanMatcher,
+                            b: PlanMatcher): PlanMatcher = copy(inner = inner.withChildren(a, b))
 }
 
 /**
@@ -219,7 +226,8 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
                      variables: Option[VariablesMatcher] = None,
                      other: Option[StringArgumentsMatcher] = None,
                      lhs: Option[PlanMatcher] = None,
-                     rhs: Option[PlanMatcher] = None) extends PlanMatcher {
+                     rhs: Option[PlanMatcher] = None,
+                     children: Option[(PlanMatcher, PlanMatcher)] = None) extends PlanMatcher {
 
   override def apply(plan: InternalPlanDescription): MatchResult = {
     val nameResult = name.map(_ (plan))
@@ -255,8 +263,46 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
         case Some(rhsPlan) => matcher(rhsPlan)
       }
     }
+    val childrenResult = children.map { case (aMatcher, bMatcher) =>
+      (maybeLhsPlan, maybeRhsPlan) match {
+        case (Some(lhs), Some(rhs)) =>
+          val res1a = aMatcher(lhs)
+          val res1b = bMatcher(rhs)
+          if (res1a.matches && res1b.matches) {
+            res1a
+          } else {
+            val res2a = aMatcher(rhs)
+            val res2b = bMatcher(lhs)
+            if (res2a.matches && res2b.matches) {
+              res2a
+            } else {
+              MatchResult(
+                matches = false,
+                rawFailureMessage = s"Expected $toPlanDescription\n but ${plan.name} does not have the expected children.",
+                rawNegatedFailureMessage = "")
+            }
+          }
 
-    val allResults = Seq(nameResult, estimatedRowsResult, rowsResult, dbHitsResult, timeResult, orderResult, variablesResult, otherResult, lhsResult, rhsResult).flatten
+        case (_, _) =>
+          MatchResult(
+            matches = false,
+            rawFailureMessage = s"Expected $toPlanDescription\n but ${plan.name} does not have two children.",
+            rawNegatedFailureMessage = "")
+      }
+    }
+
+    val allResults = Seq(nameResult,
+                         estimatedRowsResult,
+                         rowsResult,
+                         dbHitsResult,
+                         timeResult,
+                         orderResult,
+                         variablesResult,
+                         otherResult,
+                         lhsResult,
+                         rhsResult,
+                         childrenResult).flatten
+
     val firstMatch = allResults.collectFirst {
       case mr if mr.matches => mr
     }
@@ -329,6 +375,9 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
   override def withLHS(lhs: PlanMatcher): PlanMatcher = copy(lhs = Some(lhs))
 
   override def withRHS(rhs: PlanMatcher): PlanMatcher = copy(rhs = Some(rhs))
+
+  override def withChildren(a: PlanMatcher,
+                            b: PlanMatcher): PlanMatcher = copy(children = Some((a, b)))
 }
 
 /**
