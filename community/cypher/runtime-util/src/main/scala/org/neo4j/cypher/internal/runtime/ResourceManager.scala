@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.runtime
 import java.util
 
 import org.neo4j.internal.helpers.Exceptions
-import org.neo4j.cypher.internal.runtime.ResourceManager.CAPACITY
+import org.neo4j.cypher.internal.runtime.ResourceManager.INITIAL_CAPACITY
 
 import scala.collection.JavaConverters._
 
 class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP) extends CloseableResource {
-  private val resources: util.Collection[AutoCloseable] = new util.ArrayList[AutoCloseable](CAPACITY)
+  private val resources: util.Collection[AutoCloseable] = new util.ArrayList[AutoCloseable](INITIAL_CAPACITY)
 
   def trace(resource: AutoCloseable): Unit = {
     monitor.trace(resource)
@@ -65,7 +65,7 @@ class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP) extends C
 }
 
 object ResourceManager {
-  val CAPACITY: Int = 8
+  val INITIAL_CAPACITY: Int = 8
 }
 
 trait ResourceMonitor {
