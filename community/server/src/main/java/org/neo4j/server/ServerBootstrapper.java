@@ -21,10 +21,10 @@ package org.neo4j.server;
 
 import sun.misc.Signal;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -38,6 +38,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.HttpConnector.Encryption;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.scheduler.BufferingExecutor;
@@ -63,7 +64,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
     private static final String SIGINT = "INT";
 
     private volatile NeoServer server;
-    private volatile OutputStream userLogFileStream;
+    private volatile Closeable userLogFileStream;
     private Thread shutdownHook;
     private GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
     // in case we have errors loading/validating the configuration log to stdout
@@ -252,14 +253,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
 
     private void closeUserLogFileStream()
     {
-        try ( OutputStream stream = userLogFileStream )
-        {
-            stream.flush();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+        IOUtils.closeAllUnchecked( userLogFileStream );
     }
 
     private void addShutdownHook()
@@ -294,18 +288,17 @@ public abstract class ServerBootstrapper implements Bootstrapper
         {
             if ( rotationThreshold == 0L )
             {
-                userLogFileStream = createOrOpenAsOutputStream( fs, destination, true );
-                return builder.toOutputStream( userLogFileStream );
+                OutputStream userLog = createOrOpenAsOutputStream( fs, destination, true );
+                // Assign it to the server instance so that it gets closed when the server closes
+                this.userLogFileStream = userLog;
+                return builder.toOutputStream( userLog );
             }
-            return builder.toOutputStream(
-                    new RotatingFileOutputStreamSupplier(
-                            fs,
-                            destination,
-                            rotationThreshold,
-                            config.get( GraphDatabaseSettings.store_user_log_rotation_delay ).toMillis(),
-                            config.get( GraphDatabaseSettings.store_user_log_max_archives ),
-                            deferredExecutor )
-            );
+            RotatingFileOutputStreamSupplier rotatingUserLogSupplier = new RotatingFileOutputStreamSupplier( fs, destination, rotationThreshold,
+                    config.get( GraphDatabaseSettings.store_user_log_rotation_delay ).toMillis(),
+                    config.get( GraphDatabaseSettings.store_user_log_max_archives ), deferredExecutor );
+            // Assign it to the server instance so that it gets closed when the server closes
+            this.userLogFileStream = rotatingUserLogSupplier;
+            return builder.toOutputStream( rotatingUserLogSupplier );
         }
         catch ( IOException e )
         {
