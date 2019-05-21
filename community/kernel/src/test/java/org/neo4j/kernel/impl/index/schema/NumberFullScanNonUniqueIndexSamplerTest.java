@@ -22,11 +22,15 @@ package org.neo4j.kernel.impl.index.schema;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.HashMap;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
@@ -40,8 +44,12 @@ import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueVal
 import static org.neo4j.values.storable.RandomValues.typesOfGroup;
 import static org.neo4j.values.storable.ValueGroup.NUMBER;
 
-public class NumberFullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil<NumberIndexKey,NativeIndexValue>
+public class NumberFullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil<GenericKey,NativeIndexValue>
 {
+    private static final ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );
+    private static final IndexSpecificSpaceFillingCurveSettingsCache specificSettings =
+            new IndexSpecificSpaceFillingCurveSettingsCache( configuredSettings, new HashMap<>() );
+
     @Test
     public void shouldIncludeAllValuesInTree() throws Exception
     {
@@ -51,9 +59,9 @@ public class NumberFullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil
 
         // WHEN
         IndexSample sample;
-        try ( GBPTree<NumberIndexKey,NativeIndexValue> gbpTree = getTree() )
+        try ( GBPTree<GenericKey,NativeIndexValue> gbpTree = getTree() )
         {
-            FullScanNonUniqueIndexSampler<NumberIndexKey,NativeIndexValue> sampler =
+            FullScanNonUniqueIndexSampler<GenericKey,NativeIndexValue> sampler =
                     new FullScanNonUniqueIndexSampler<>( gbpTree, layout );
             sample = sampler.result();
         }
@@ -78,11 +86,11 @@ public class NumberFullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil
 
     private void buildTree( Value[] values ) throws IOException
     {
-        try ( GBPTree<NumberIndexKey,NativeIndexValue> gbpTree = getTree() )
+        try ( GBPTree<GenericKey,NativeIndexValue> gbpTree = getTree() )
         {
-            try ( Writer<NumberIndexKey,NativeIndexValue> writer = gbpTree.writer() )
+            try ( Writer<GenericKey,NativeIndexValue> writer = gbpTree.writer() )
             {
-                NumberIndexKey key = layout.newKey();
+                GenericKey key = layout.newKey();
                 NativeIndexValue value = layout.newValue();
                 long nodeId = 0;
                 for ( Value number : values )
@@ -99,14 +107,14 @@ public class NumberFullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil
     }
 
     @Override
-    protected ValueCreatorUtil<NumberIndexKey,NativeIndexValue> createValueCreatorUtil()
+    protected ValueCreatorUtil<GenericKey,NativeIndexValue> createValueCreatorUtil()
     {
         return new ValueCreatorUtil<>( forLabel( 42, 666 ).withId( 0 ), typesOfGroup( NUMBER ), FRACTION_DUPLICATE_NON_UNIQUE );
     }
 
     @Override
-    IndexLayout<NumberIndexKey,NativeIndexValue> createLayout()
+    IndexLayout<GenericKey,NativeIndexValue> createLayout()
     {
-        return new NumberLayoutNonUnique();
+        return new GenericLayout( 1,specificSettings );
     }
 }

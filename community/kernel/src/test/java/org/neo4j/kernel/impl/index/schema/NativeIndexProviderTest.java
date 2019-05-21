@@ -44,11 +44,6 @@ public class NativeIndexProviderTest extends NativeIndexProviderTests
     public static Object[][] data()
     {
         return new Object[][]{
-                {"Number",
-                        (ProviderFactory) NumberIndexProvider::new,
-                        POPULATING,
-                        Values.of( 1 )
-                },
                 {"Spatial",
                         spatialProviderFactory(),
                         ONLINE,

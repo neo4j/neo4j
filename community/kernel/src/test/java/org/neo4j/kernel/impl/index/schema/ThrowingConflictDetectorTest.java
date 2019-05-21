@@ -21,8 +21,13 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.Test;
 
+import java.util.HashMap;
+
+import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.ValueMerger.MergeResult;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -33,7 +38,10 @@ import static org.neo4j.internal.helpers.ArrayUtil.array;
 
 public class ThrowingConflictDetectorTest
 {
-    private final ThrowingConflictDetector<NumberIndexKey,NativeIndexValue> detector = new ThrowingConflictDetector<>( true );
+    private static final ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );
+    private static final IndexSpecificSpaceFillingCurveSettingsCache specificSettings =
+            new IndexSpecificSpaceFillingCurveSettingsCache( configuredSettings, new HashMap<>() );
+    private final ThrowingConflictDetector<GenericKey,NativeIndexValue> detector = new ThrowingConflictDetector<>( true );
 
     @Test
     public void shouldReportConflictOnSameValueAndDifferentEntityIds()
@@ -84,11 +92,11 @@ public class ThrowingConflictDetectorTest
         detector.checkConflict( array() ); // <-- should not throw conflict exception
     }
 
-    private static NumberIndexKey key( long entityId, Value value )
+    private static GenericKey key( long entityId, Value value )
     {
-        NumberIndexKey key = new NumberIndexKey();
+        GenericKey key = new GenericKey( specificSettings );
         key.initialize( entityId );
-        key.initFromValue( 0, value, NativeIndexKey.Inclusion.LOW );
+        key.initFromValue( 0, value, NativeIndexKey.Inclusion.NEUTRAL );
         return key;
     }
 }

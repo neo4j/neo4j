@@ -20,44 +20,31 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
-@RunWith( Parameterized.class )
 public class RawBitsTest
 {
-    @Parameterized.Parameter()
-    public String name;
-
-    @Parameterized.Parameter( 1 )
-    public NumberLayout layout;
-
-    @Parameterized.Parameters( name = "{0}" )
-    public static List<Object[]> layouts()
-    {
-        return asList(
-                new Object[]{"Unique",
-                        new NumberLayoutUnique()
-                },
-                new Object[]{"NonUnique",
-                        new NumberLayoutNonUnique()
-                }
-        );
-    }
+    private static final ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );
+    private static final IndexSpecificSpaceFillingCurveSettingsCache specificSettings =
+            new IndexSpecificSpaceFillingCurveSettingsCache( configuredSettings, new HashMap<>() );
+    public GenericLayout layout = new GenericLayout( 1, specificSettings );
 
     final List<Object> objects = Arrays.asList(
             Double.NEGATIVE_INFINITY,
@@ -112,7 +99,7 @@ public class RawBitsTest
     {
         // given
         List<Value> values = asValueObjects( objects );
-        List<NumberIndexKey> numberIndexKeys = asNumberIndexKeys( values );
+        List<GenericKey> numberIndexKeys = asNumberIndexKeys( values );
         Collections.shuffle( values );
         Collections.shuffle( numberIndexKeys );
 
@@ -130,19 +117,19 @@ public class RawBitsTest
     {
         // given
         List<Value> values = asValueObjects( objects );
-        List<NumberIndexKey> numberIndexKeys = asNumberIndexKeys( values );
+        List<GenericKey> numberIndexKeys = asNumberIndexKeys( values );
         values.sort( Values.COMPARATOR );
 
         // when
-        for ( NumberIndexKey numberKey : numberIndexKeys )
+        for ( GenericKey genericKey : numberIndexKeys )
         {
-            List<NumberIndexKey> withoutThisOne = new ArrayList<>( numberIndexKeys );
-            assertTrue( withoutThisOne.remove( numberKey ) );
+            List<GenericKey> withoutThisOne = new ArrayList<>( numberIndexKeys );
+            assertTrue( withoutThisOne.remove( genericKey ) );
             withoutThisOne = unmodifiableList( withoutThisOne );
             for ( int i = 0; i < withoutThisOne.size(); i++ )
             {
-                List<NumberIndexKey> withThisOneInWrongPlace = new ArrayList<>( withoutThisOne );
-                withThisOneInWrongPlace.add( i, numberKey );
+                List<GenericKey> withThisOneInWrongPlace = new ArrayList<>( withoutThisOne );
+                withThisOneInWrongPlace.add( i, genericKey );
                 withThisOneInWrongPlace.sort( layout );
                 List<Value> actual = asValues( withThisOneInWrongPlace );
 
@@ -157,18 +144,18 @@ public class RawBitsTest
     {
         // given
         List<Value> values = asValueObjects( objects );
-        List<NumberIndexKey> numberIndexKeys = asNumberIndexKeys( values );
+        List<GenericKey> numberIndexKeys = asNumberIndexKeys( values );
 
         // when
         for ( int i = 0; i < values.size(); i++ )
         {
             Value value1 = values.get( i );
-            NumberIndexKey numberIndexKey1 = numberIndexKeys.get( i );
+            GenericKey numberIndexKey1 = numberIndexKeys.get( i );
             for ( int j = 0; j < values.size(); j++ )
             {
                 // then
                 Value value2 = values.get( j );
-                NumberIndexKey numberIndexKey2 = numberIndexKeys.get( j );
+                GenericKey numberIndexKey2 = numberIndexKeys.get( j );
                 assertEquals( Values.COMPARATOR.compare( value1, value2 ),
                         layout.compare( numberIndexKey1, numberIndexKey2 ) );
                 assertEquals( Values.COMPARATOR.compare( value2, value1 ),
@@ -177,10 +164,10 @@ public class RawBitsTest
         }
     }
 
-    private List<Value> asValues( List<NumberIndexKey> numberIndexKeys )
+    private List<Value> asValues( List<GenericKey> numberIndexKeys )
     {
         return numberIndexKeys.stream()
-                .map( k -> RawBits.asNumberValue( k.rawValueBits, k.type ) )
+                .map( k -> RawBits.asNumberValue( k.long0, (byte) k.long1 ) )
                 .collect( Collectors.toList() );
     }
 
@@ -213,13 +200,14 @@ public class RawBitsTest
         return values;
     }
 
-    private List<NumberIndexKey> asNumberIndexKeys( List<Value> values )
+    private List<GenericKey> asNumberIndexKeys( List<Value> values )
     {
-        List<NumberIndexKey> numberIndexKeys = new ArrayList<>();
+        List<GenericKey> numberIndexKeys = new ArrayList<>();
         for ( Value value : values )
         {
-            NumberIndexKey key = new NumberIndexKey();
-            key.from( value );
+            GenericKey key = layout.newKey();
+            key.initialize( 0 );
+            key.initFromValue( 0, value, NEUTRAL );
             numberIndexKeys.add( key );
         }
         return numberIndexKeys;

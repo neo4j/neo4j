@@ -48,12 +48,6 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     public static Collection<Object[]> data()
     {
         return Arrays.asList( new Object[][]{
-                {"Number",
-                        numberAccessorFactory(),
-                        RandomValues.typesOfGroup( ValueGroup.NUMBER ),
-                        (IndexLayoutFactory) NumberLayoutNonUnique::new,
-                        NumberIndexProvider.CAPABILITY
-                },
                 {"Date",
                         temporalAccessorFactory(),
                         RandomValues.typesOfGroup( ValueGroup.DATE ),
@@ -153,11 +147,6 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     }
 
     /* Helpers */
-    private static AccessorFactory<NumberIndexKey,NativeIndexValue> numberAccessorFactory()
-    {
-        return NumberIndexAccessor::new;
-    }
-
     private static <TK extends NativeIndexSingleValueKey<TK>> AccessorFactory<TK,NativeIndexValue> temporalAccessorFactory()
     {
         return TemporalIndexAccessor.PartAccessor::new;

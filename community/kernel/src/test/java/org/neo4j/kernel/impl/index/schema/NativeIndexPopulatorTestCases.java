@@ -60,10 +60,6 @@ class NativeIndexPopulatorTestCases
     static Collection<Object[]> allCases()
     {
         return Arrays.asList( new Object[][]{
-                {new TestCase<>( "Number",
-                        numberPopulatorFactory(),
-                        RandomValues.typesOfGroup( ValueGroup.NUMBER ),
-                        NumberLayoutNonUnique::new )},
                 {new TestCase<>( "Date",
                         temporalPopulatorFactory(),
                         RandomValues.typesOfGroup( ValueGroup.DATE ),
@@ -107,11 +103,6 @@ class NativeIndexPopulatorTestCases
     private static final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings =
             IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
     private static final StandardConfiguration configuration = new StandardConfiguration();
-
-    private static PopulatorFactory<NumberIndexKey,NativeIndexValue> numberPopulatorFactory()
-    {
-        return NumberIndexPopulator::new;
-    }
 
     private static <TK extends NativeIndexSingleValueKey<TK>> PopulatorFactory<TK,NativeIndexValue> temporalPopulatorFactory()
     {
