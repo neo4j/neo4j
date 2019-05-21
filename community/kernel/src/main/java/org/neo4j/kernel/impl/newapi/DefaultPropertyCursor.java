@@ -35,8 +35,10 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
-public class DefaultPropertyCursor implements PropertyCursor
+public class DefaultPropertyCursor implements PropertyCursor, Supplier<LabelSet>
 {
+    private static final long NO_NODE= -1L;
+
     private Read read;
     private StoragePropertyCursor storeCursor;
     private PropertyContainerState propertiesState;
@@ -45,10 +47,8 @@ public class DefaultPropertyCursor implements PropertyCursor
     private AssertOpen assertOpen;
     private final CursorPool<DefaultPropertyCursor> pool;
     private AccessMode accessMode;
-    private long entityReference = NO_ENTITY;
-
-    private static final long NO_ENTITY = -1L;
-    private static final long NODE_MARKER = 1L << 62;
+    private long entityReference = NO_NODE;
+    private LabelSet labels;
 
     DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor )
     {
@@ -62,7 +62,7 @@ public class DefaultPropertyCursor implements PropertyCursor
 
         init( read, assertOpen );
         storeCursor.initNodeProperties( reference );
-        this.entityReference = nodeReference | NODE_MARKER;
+        this.entityReference = nodeReference;
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -83,7 +83,7 @@ public class DefaultPropertyCursor implements PropertyCursor
 
         init( read, assertOpen );
         storeCursor.initRelationshipProperties( reference );
-        entityReference = relationshipReference;
+        entityReference = NO_NODE;
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -96,13 +96,14 @@ public class DefaultPropertyCursor implements PropertyCursor
             this.propertiesState = null;
             this.txStateChangedProperties = null;
         }
+
     }
 
     void initGraph( Read read, AssertOpen assertOpen )
     {
         init( read, assertOpen );
         storeCursor.initGraphProperties();
-        entityReference = NO_ENTITY;
+        entityReference = NO_NODE;
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -122,6 +123,7 @@ public class DefaultPropertyCursor implements PropertyCursor
             this.txStateChangedProperties = null;
             this.propertiesState = null;
         }
+
     }
 
     private void init( Read read, AssertOpen assertOpen )
@@ -129,6 +131,7 @@ public class DefaultPropertyCursor implements PropertyCursor
         this.assertOpen = assertOpen;
         this.read = read;
         this.accessMode = read.ktx.securityContext().mode();
+        this.labels = null;
     }
 
     boolean allowed()
@@ -140,7 +143,7 @@ public class DefaultPropertyCursor implements PropertyCursor
         }
         if ( isNode() )
         {
-            return accessMode.allowsReadProperty( new NodeLabels( nodeReference(), read ), propertyKey );
+            return accessMode.allowsReadProperty( this, propertyKey );
         }
         return true;
     }
@@ -243,6 +246,23 @@ public class DefaultPropertyCursor implements PropertyCursor
         }
     }
 
+    @Override
+    public LabelSet get()
+    {
+        assert isNode();
+
+        if ( labels == null )
+        {
+            try ( NodeCursor nodeCursor = read.cursors().allocateFullAccessNodeCursor() )
+            {
+                read.singleNode( entityReference, nodeCursor );
+                nodeCursor.next();
+                labels = nodeCursor.labels();
+            }
+        }
+        return labels;
+    }
+
     public void release()
     {
         storeCursor.close();
@@ -250,39 +270,6 @@ public class DefaultPropertyCursor implements PropertyCursor
 
     private boolean isNode()
     {
-        return (entityReference & NODE_MARKER) != 0;
-    }
-
-    private long nodeReference()
-    {
-        return entityReference & ~NODE_MARKER;
-    }
-
-    private class NodeLabels implements Supplier<LabelSet>
-    {
-        private final long nodeReference;
-        private final Read read;
-        private LabelSet labels;
-
-        private NodeLabels( long nodeReference, Read read )
-        {
-            this.nodeReference = nodeReference;
-            this.read = read;
-        }
-
-        @Override
-        public LabelSet get()
-        {
-            if ( labels == null )
-            {
-                try ( NodeCursor nodeCursor = read.cursors().allocateFullAccessNodeCursor() )
-                {
-                    read.singleNode( nodeReference, nodeCursor );
-                    nodeCursor.next();
-                    labels = nodeCursor.labels();
-                }
-            }
-            return labels;
-        }
+        return (entityReference != NO_NODE);
     }
 }
