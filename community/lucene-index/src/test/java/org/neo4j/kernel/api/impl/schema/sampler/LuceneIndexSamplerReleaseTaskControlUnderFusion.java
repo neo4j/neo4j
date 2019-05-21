@@ -58,7 +58,6 @@ import org.neo4j.values.storable.Values;
 import static org.junit.Assert.assertSame;
 import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
 import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.defaultDirectoryStructure;
-import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.simpleNameLookup;
 import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
 import static org.neo4j.logging.NullLogProvider.getInstance;
@@ -140,7 +139,7 @@ public class LuceneIndexSamplerReleaseTaskControlUnderFusion
     private FusionIndexProvider createFusionProvider( LuceneIndexProvider luceneProvider, IndexProvider failingProvider )
     {
         SlotSelector slotSelector = SlotSelector.nullInstance;
-        return new FusionIndexProvider( failingProvider, EMPTY, EMPTY, EMPTY, luceneProvider,
+        return new FusionIndexProvider( failingProvider, luceneProvider,
                 slotSelector, providerDescriptor, directoryFactory, fs.get(), false );
     }
 

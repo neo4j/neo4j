@@ -39,10 +39,7 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
-import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.TemporalIndexProvider;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
@@ -63,14 +60,9 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.NONE;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.CATEGORY_OF;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.fill;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v30;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 
 @RunWith( Parameterized.class )
 public class FusionIndexProviderTest
@@ -90,7 +82,7 @@ public class FusionIndexProviderTest
     {
         return new FusionVersion[]
                 {
-                        v00, v10, v20
+                        v30
                 };
     }
 
@@ -122,21 +114,6 @@ public class FusionIndexProviderTest
                 providers.put( GENERIC, generic );
                 aliveProviders[i] = generic;
                 break;
-            case NUMBER:
-                IndexProvider number = mockProvider( NumberIndexProvider.class, "number" );
-                providers.put( NUMBER, number );
-                aliveProviders[i] = number;
-                break;
-            case SPATIAL:
-                IndexProvider spatial = mockProvider( SpatialIndexProvider.class, "spatial" );
-                providers.put( SPATIAL, spatial );
-                aliveProviders[i] = spatial;
-                break;
-            case TEMPORAL:
-                IndexProvider temporal = mockProvider( TemporalIndexProvider.class, "temporal" );
-                providers.put( TEMPORAL, temporal );
-                aliveProviders[i] = temporal;
-                break;
             case LUCENE:
                 IndexProvider lucene = mockProvider( IndexProvider.class, "lucene" );
                 providers.put( LUCENE, lucene );
@@ -148,9 +125,6 @@ public class FusionIndexProviderTest
         }
         fusionIndexProvider = new FusionIndexProvider(
                 providers.get( GENERIC ),
-                providers.get( NUMBER ),
-                providers.get( SPATIAL ),
-                providers.get( TEMPORAL ),
                 providers.get( LUCENE ),
                 fusionVersion.slotSelector(), DESCRIPTOR, NONE, mock( FileSystemAbstraction.class ), false );
         instanceSelector = new InstanceSelector<>( providers );
@@ -183,7 +157,7 @@ public class FusionIndexProviderTest
             }
         }
 
-        // All composite values should go to lucene
+        // All composite values should go to generic
         for ( Value firstValue : allValues )
         {
             for ( Value secondValue : allValues )
@@ -192,7 +166,7 @@ public class FusionIndexProviderTest
                 IndexProvider selected = instanceSelector.select( slotSelector.selectSlot( array( firstValue, secondValue ), CATEGORY_OF ) );
 
                 // then
-                assertSame( providers.get( LUCENE ), selected );
+                assertSame( providers.get( GENERIC ), selected );
             }
         }
     }

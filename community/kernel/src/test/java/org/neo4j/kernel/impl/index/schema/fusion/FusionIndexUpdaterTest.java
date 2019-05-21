@@ -49,13 +49,9 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.add;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.change;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.fill;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.remove;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v30;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 
 @RunWith( Parameterized.class )
 public class FusionIndexUpdaterTest
@@ -71,7 +67,7 @@ public class FusionIndexUpdaterTest
     {
         return new FusionVersion[]
                 {
-                        v00, v10, v20
+                        v30
                 };
     }
 
@@ -96,14 +92,8 @@ public class FusionIndexUpdaterTest
             aliveUpdaters[i] = mock;
             switch ( activeSlots[i] )
             {
-            case NUMBER:
-                updaters.put( NUMBER, mock );
-                break;
-            case SPATIAL:
-                updaters.put( SPATIAL, mock );
-                break;
-            case TEMPORAL:
-                updaters.put( TEMPORAL, mock );
+            case GENERIC:
+                updaters.put( GENERIC, mock );
                 break;
             case LUCENE:
                 updaters.put( LUCENE, mock );
@@ -154,7 +144,7 @@ public class FusionIndexUpdaterTest
         {
             for ( Value secondValue : allValues )
             {
-                verifyAddWithCorrectUpdater( updaters.get( LUCENE ), firstValue, secondValue );
+                verifyAddWithCorrectUpdater( updaters.get( GENERIC ), firstValue, secondValue );
             }
         }
     }
@@ -180,7 +170,7 @@ public class FusionIndexUpdaterTest
         {
             for ( Value secondValue : allValues )
             {
-                verifyRemoveWithCorrectUpdater( updaters.get( LUCENE ), firstValue, secondValue );
+                verifyRemoveWithCorrectUpdater( updaters.get( GENERIC ), firstValue, secondValue );
             }
         }
     }

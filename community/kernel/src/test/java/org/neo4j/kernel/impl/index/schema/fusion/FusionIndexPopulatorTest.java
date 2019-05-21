@@ -51,18 +51,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.internal.schema.IndexProviderDescriptor.UNDECIDED;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.add;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.fill;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyCallFail;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v30;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 
 @RunWith( Parameterized.class )
 public class FusionIndexPopulatorTest
@@ -79,7 +75,7 @@ public class FusionIndexPopulatorTest
     {
         return new FusionVersion[]
                 {
-                        v00, v10, v20
+                        v30
                 };
     }
 
@@ -104,14 +100,8 @@ public class FusionIndexPopulatorTest
             alivePopulators[i] = mock;
             switch ( aliveSlots[i] )
             {
-            case NUMBER:
-                populators.put( NUMBER, mock );
-                break;
-            case SPATIAL:
-                populators.put( SPATIAL, mock );
-                break;
-            case TEMPORAL:
-                populators.put( TEMPORAL, mock );
+            case GENERIC:
+                populators.put( GENERIC, mock );
                 break;
             case LUCENE:
                 populators.put( LUCENE, mock );
@@ -223,12 +213,12 @@ public class FusionIndexPopulatorTest
             }
         }
 
-        // All composite values should go to lucene
+        // All composite values should go to generic
         for ( Value firstValue : allValues )
         {
             for ( Value secondValue : allValues )
             {
-                verifyAddWithCorrectPopulator( populators.get( LUCENE ), firstValue, secondValue );
+                verifyAddWithCorrectPopulator( populators.get( GENERIC ), firstValue, secondValue );
             }
         }
     }

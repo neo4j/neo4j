@@ -33,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 
 public class InstanceSelectorTest
 {
@@ -42,11 +42,11 @@ public class InstanceSelectorTest
     {
         // given
         InstanceSelector<String> selector = selector(
-                NUMBER, "0",
+                LUCENE, "0",
                 GENERIC, "1" );
 
         // when
-        String select0 = selector.select( NUMBER );
+        String select0 = selector.select( LUCENE );
         // then
         assertEquals( "0", select0 );
 
@@ -60,7 +60,7 @@ public class InstanceSelectorTest
     public void shouldThrowOnNonInstantiatedSelect()
     {
         // given
-        InstanceSelector<String> selector = selector( NUMBER, "0" );
+        InstanceSelector<String> selector = selector( LUCENE, "0" );
 
         try
         {
@@ -79,7 +79,7 @@ public class InstanceSelectorTest
     public void shouldThrowOnNonInstantiatedFlatMap()
     {
         // given
-        InstanceSelector<String> selector = selector( NUMBER, "0" );
+        InstanceSelector<String> selector = selector( LUCENE, "0" );
 
         // when
         try
@@ -98,7 +98,7 @@ public class InstanceSelectorTest
     public void shouldThrowOnNonInstantiatedMap()
     {
         // given
-        InstanceSelector<String> selector = selector( NUMBER, "0" );
+        InstanceSelector<String> selector = selector( LUCENE, "0" );
 
         // when
         try
@@ -152,7 +152,7 @@ public class InstanceSelectorTest
     public void shouldThrowOnNonInstantiatedForAll()
     {
         // given
-        InstanceSelector<String> selector = selector( NUMBER, "0" );
+        InstanceSelector<String> selector = selector( LUCENE, "0" );
 
         // when
         try
@@ -186,7 +186,7 @@ public class InstanceSelectorTest
     public void shouldNotThrowOnNonInstantiatedClose()
     {
         // given
-        InstanceSelector<String> selector = selector( NUMBER, "0" );
+        InstanceSelector<String> selector = selector( LUCENE, "0" );
 
         // when
         selector.close( Integer::parseInt );

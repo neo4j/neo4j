@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
 import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.validateSelectorInstances;
 
 class FusionSlotSelectorTest
@@ -44,7 +44,7 @@ class FusionSlotSelectorTest
         InstanceSelector<IndexProvider> instanceSelector = new InstanceSelector<>( instances );
 
         // when, then
-        assertThrows( IllegalArgumentException.class, () -> validateSelectorInstances( instanceSelector, NUMBER ) );
+        assertThrows( IllegalArgumentException.class, () -> validateSelectorInstances( instanceSelector, GENERIC ) );
     }
 
     @Test
@@ -57,7 +57,7 @@ class FusionSlotSelectorTest
             instances.put( indexSlot, IndexProvider.EMPTY );
         }
         IndexProvider mockedIndxProvider = mock( IndexProvider.class );
-        instances.put( NUMBER, mockedIndxProvider );
+        instances.put( GENERIC, mockedIndxProvider );
         InstanceSelector<IndexProvider> instanceSelector = new InstanceSelector<>( instances );
 
         // when, then
@@ -74,11 +74,11 @@ class FusionSlotSelectorTest
             instances.put( indexSlot, IndexProvider.EMPTY );
         }
         IndexProvider mockedIndxProvider = mock( IndexProvider.class );
-        instances.put( NUMBER, mockedIndxProvider );
+        instances.put( GENERIC, mockedIndxProvider );
         InstanceSelector<IndexProvider> selector = new InstanceSelector<>( instances );
 
         // when
-        validateSelectorInstances( selector, NUMBER );
+        validateSelectorInstances( selector, GENERIC );
 
         // then this should be fine
     }

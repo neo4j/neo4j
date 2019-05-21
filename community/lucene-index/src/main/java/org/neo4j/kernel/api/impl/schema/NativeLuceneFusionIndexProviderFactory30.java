@@ -40,7 +40,6 @@ import org.neo4j.util.VisibleForTesting;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
-import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 
 @ServiceProvider
 public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProviderFactory
@@ -85,7 +84,7 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
                 new GenericNativeIndexProvider( childDirectoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly, config );
         LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, childDirectoryStructure, monitor, config, operationalMode );
 
-        return new FusionIndexProvider( generic, EMPTY, EMPTY, EMPTY, lucene, new FusionSlotSelector30(),
+        return new FusionIndexProvider( generic, lucene, new FusionSlotSelector30(),
                 DESCRIPTOR, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex );
     }
 

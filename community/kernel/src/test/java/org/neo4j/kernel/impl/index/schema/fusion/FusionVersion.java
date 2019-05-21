@@ -19,53 +19,23 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 
 enum FusionVersion
 {
-    v00
+    v30
             {
                 @Override
                 IndexSlot[] aliveSlots()
                 {
-                    return new IndexSlot[]{LUCENE, SPATIAL, TEMPORAL};
+                    return new IndexSlot[]{GENERIC, LUCENE};
                 }
 
                 @Override
                 SlotSelector slotSelector()
                 {
-                    return new FusionSlotSelector00();
-                }
-            },
-    v10
-            {
-                @Override
-                IndexSlot[] aliveSlots()
-                {
-                    return new IndexSlot[]{NUMBER, LUCENE, SPATIAL, TEMPORAL};
-                }
-
-                @Override
-                SlotSelector slotSelector()
-                {
-                    return new FusionSlotSelector10();
-                }
-            },
-    v20
-            {
-                @Override
-                IndexSlot[] aliveSlots()
-                {
-                    return new IndexSlot[]{NUMBER, SPATIAL, TEMPORAL, LUCENE};
-                }
-
-                @Override
-                SlotSelector slotSelector()
-                {
-                    return new FusionSlotSelector20();
+                    return new FusionSlotSelector30();
                 }
             };
 

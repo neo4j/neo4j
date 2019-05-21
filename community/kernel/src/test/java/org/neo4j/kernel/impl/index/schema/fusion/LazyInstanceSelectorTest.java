@@ -33,8 +33,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.values;
 
 public class LazyInstanceSelectorTest
@@ -98,7 +97,7 @@ public class LazyInstanceSelectorTest
         // given
         Function<IndexSlot,String> factory = slotToStringFunction();
         LazyInstanceSelector<String> selector = new LazyInstanceSelector<>( factory );
-        selector.select( NUMBER );
+        selector.select( LUCENE );
         selector.select( GENERIC );
 
         // when
@@ -106,7 +105,7 @@ public class LazyInstanceSelectorTest
         selector.close( consumer );
 
         // then
-        verify( consumer ).accept( String.valueOf( NUMBER ) );
+        verify( consumer ).accept( String.valueOf( LUCENE ) );
         verify( consumer ).accept( String.valueOf( GENERIC ) );
         verifyNoMoreInteractions( consumer );
     }
@@ -117,8 +116,7 @@ public class LazyInstanceSelectorTest
         // given
         Function<IndexSlot,String> factory = slotToStringFunction();
         LazyInstanceSelector<String> selector = new LazyInstanceSelector<>( factory );
-        selector.select( NUMBER );
-        selector.select( GENERIC );
+        selector.select( LUCENE );
 
         // when
         selector.close( mock( Consumer.class ) );
@@ -126,7 +124,7 @@ public class LazyInstanceSelectorTest
         // then
         try
         {
-            selector.select( TEMPORAL );
+            selector.select( GENERIC );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )

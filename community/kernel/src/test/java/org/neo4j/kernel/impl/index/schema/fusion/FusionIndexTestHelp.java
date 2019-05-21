@@ -46,9 +46,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 
 class FusionIndexTestHelp
 {
@@ -61,28 +58,19 @@ class FusionIndexTestHelp
                     Values.stringValue( "abcdefghijklmnopqrstuvwxyzåäö" ),
                     Values.charValue( 'S' ),
             };
-    private static final Value[] numberValues = new Value[]
+    private static final Value[] otherValues = new Value[]
             {
                     Values.byteValue( (byte) 1 ),
                     Values.shortValue( (short) 2 ),
                     Values.intValue( 3 ),
                     Values.longValue( 4 ),
                     Values.floatValue( 5.6f ),
-                    Values.doubleValue( 7.8 )
-            };
-    private static final Value[] pointValues = new Value[]
-            {
+                    Values.doubleValue( 7.8 ),
                     Values.pointValue( CoordinateReferenceSystem.Cartesian, 123.0, 456.0 ),
                     Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 123.0, 456.0, 789.0 ),
-                    Values.pointValue( CoordinateReferenceSystem.WGS84, 13.2, 56.8 )
-            };
-    private static final Value[] temporalValues = new Value[]
-            {
+                    Values.pointValue( CoordinateReferenceSystem.WGS84, 13.2, 56.8 ),
                     DateValue.epochDate( 1 ),
-                    DateValue.epochDate( 10000 )
-            };
-    private static final Value[] otherValues = new Value[]
-            {
+                    DateValue.epochDate( 10000 ),
                     Values.booleanValue( true ),
                     Values.booleanArray( new boolean[2] ),
                     Values.byteArray( new byte[]{1, 2} ),
@@ -93,28 +81,17 @@ class FusionIndexTestHelp
                     Values.doubleArray( new double[]{13.14, 15.16} ),
                     Values.charArray( new char[2] ),
                     Values.stringArray( "a", "b" ),
-                    Values.pointArray( pointValues ),
+                    Values.pointArray( new Value[]{
+                            Values.pointValue( CoordinateReferenceSystem.Cartesian, 123.0, 456.0 ),
+                            Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 123.0, 456.0, 789.0 ),
+                            Values.pointValue( CoordinateReferenceSystem.WGS84, 13.2, 56.8 )
+                    } ),
                     Values.NO_VALUE
             };
 
-    static Value[] valuesSupportedByString()
+    static Value[] valuesSupportedByLucene()
     {
         return stringValues;
-    }
-
-    static Value[] valuesSupportedByNumber()
-    {
-        return numberValues;
-    }
-
-    static Value[] valuesSupportedBySpatial()
-    {
-        return pointValues;
-    }
-
-    static Value[] valuesSupportedByTemporal()
-    {
-        return temporalValues;
     }
 
     static Value[] valuesNotSupportedBySpecificIndex()
@@ -135,11 +112,8 @@ class FusionIndexTestHelp
     static EnumMap<IndexSlot,Value[]> valuesByGroup()
     {
         EnumMap<IndexSlot,Value[]> values = new EnumMap<>( IndexSlot.class );
-        values.put( GENERIC, new Value[0] );
-        values.put( NUMBER, FusionIndexTestHelp.valuesSupportedByNumber() );
-        values.put( SPATIAL, FusionIndexTestHelp.valuesSupportedBySpatial() );
-        values.put( TEMPORAL, FusionIndexTestHelp.valuesSupportedByTemporal() );
-        values.put( LUCENE, FusionIndexTestHelp.valuesNotSupportedBySpecificIndex() );
+        values.put( GENERIC, FusionIndexTestHelp.valuesNotSupportedBySpecificIndex() );
+        values.put( LUCENE, FusionIndexTestHelp.valuesSupportedByLucene() );
         return values;
     }
 

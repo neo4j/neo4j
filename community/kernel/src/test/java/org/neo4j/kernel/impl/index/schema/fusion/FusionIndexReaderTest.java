@@ -39,13 +39,9 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.NodeIdsIndexReaderQueryAnswer;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
@@ -59,13 +55,9 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.kernel.impl.index.schema.NodeIdsIndexReaderQueryAnswer.getIndexQueryArgument;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.fill;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v30;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 
 @RunWith( Parameterized.class )
 public class FusionIndexReaderTest
@@ -82,7 +74,7 @@ public class FusionIndexReaderTest
     {
         return new FusionVersion[]
                 {
-                        v00, v10, v20
+                        v30
                 };
     }
 
@@ -108,14 +100,8 @@ public class FusionIndexReaderTest
             aliveReaders[i] = mock;
             switch ( activeSlots[i] )
             {
-            case NUMBER:
-                readers.put( NUMBER, mock );
-                break;
-            case SPATIAL:
-                readers.put( SPATIAL, mock );
-                break;
-            case TEMPORAL:
-                readers.put( TEMPORAL, mock );
+            case GENERIC:
+                readers.put( GENERIC, mock );
                 break;
             case LUCENE:
                 readers.put( LUCENE, mock );
@@ -198,16 +184,16 @@ public class FusionIndexReaderTest
         {
             for ( Value value : values.get( slot ) )
             {
-                verifyCountIndexedNodesWithCorrectReader( orLucene( readers.get( slot ) ), value );
+                verifyCountIndexedNodesWithCorrectReader( readers.get( slot ), value );
             }
         }
 
-        // When passing composite keys, they are only handled by lucene
+        // When passing composite keys, they are only handled by generic
         for ( Value firstValue : allValues )
         {
             for ( Value secondValue : allValues )
             {
-                verifyCountIndexedNodesWithCorrectReader( readers.get( LUCENE ), firstValue, secondValue );
+                verifyCountIndexedNodesWithCorrectReader( readers.get( GENERIC ), firstValue, secondValue );
             }
         }
     }
@@ -231,55 +217,14 @@ public class FusionIndexReaderTest
     public void mustSelectLuceneForCompositePredicate() throws Exception
     {
         // then
-        verifyQueryWithCorrectReader( readers.get( LUCENE ), IndexQuery.exists( 0 ), IndexQuery.exists( 1 ) );
+        verifyQueryWithCorrectReader( readers.get( GENERIC ), IndexQuery.exists( 0 ), IndexQuery.exists( 1 ) );
     }
 
     @Test
-    public void mustSelectNumberForExactPredicateWithNumberValue() throws Exception
+    public void mustSelectLuceneForExactPredicateWithStringValue() throws Exception
     {
         // given
-        for ( Object value : FusionIndexTestHelp.valuesSupportedByNumber() )
-        {
-            IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, value );
-
-            // then
-            verifyQueryWithCorrectReader( expectedForNumbers(), indexQuery );
-        }
-    }
-
-    @Test
-    public void mustSelectSpatialForExactPredicateWithSpatialValue() throws Exception
-    {
-        // given
-        assumeTrue( hasSpatialSupport() );
-        for ( Object value : FusionIndexTestHelp.valuesSupportedBySpatial() )
-        {
-            IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, value );
-
-            // then
-            verifyQueryWithCorrectReader( readers.get( SPATIAL ), indexQuery );
-        }
-    }
-
-    @Test
-    public void mustSelectTemporalForExactPredicateWithTemporalValue() throws Exception
-    {
-        // given
-        assumeTrue( hasTemporalSupport() );
-        for ( Object temporalValue : FusionIndexTestHelp.valuesSupportedByTemporal() )
-        {
-            IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, temporalValue );
-
-            // then
-            verifyQueryWithCorrectReader( readers.get( TEMPORAL ), indexQuery );
-        }
-    }
-
-    @Test
-    public void mustSelectLuceneForExactPredicateWithOtherValue() throws Exception
-    {
-        // given
-        for ( Object value : FusionIndexTestHelp.valuesNotSupportedBySpecificIndex() )
+        for ( Object value : FusionIndexTestHelp.valuesSupportedByLucene() )
         {
             IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, value );
 
@@ -289,26 +234,26 @@ public class FusionIndexReaderTest
     }
 
     @Test
-    public void mustSelectNumberForRangeNumericPredicate() throws Exception
+    public void mustSelectGenericForExactPredicateWithOtherValue() throws Exception
     {
         // given
-        RangePredicate<?> numberRange = IndexQuery.range( PROP_KEY, 0, true, 1, false );
+        for ( Object value : FusionIndexTestHelp.valuesNotSupportedBySpecificIndex() )
+        {
+            IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, value );
 
-        // then
-        verifyQueryWithCorrectReader( expectedForNumbers(), numberRange );
+            // then
+            verifyQueryWithCorrectReader( readers.get( GENERIC ), indexQuery );
+        }
     }
 
     @Test
-    public void mustSelectSpatialForRangeGeometricPredicate() throws Exception
+    public void mustSelectLuceneForRangeStringPredicate() throws Exception
     {
         // given
-        assumeTrue( hasSpatialSupport() );
-        PointValue from = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 1.0);
-        PointValue to = Values.pointValue( CoordinateReferenceSystem.Cartesian, 2.0, 2.0);
-        RangePredicate<?> geometryRange = IndexQuery.range( PROP_KEY, from, true, to, false );
+        RangePredicate<?> numberRange = IndexQuery.range( PROP_KEY, "a", true, "b", false );
 
         // then
-        verifyQueryWithCorrectReader( readers.get( SPATIAL ), geometryRange );
+        verifyQueryWithCorrectReader( readers.get( LUCENE ), numberRange );
     }
 
     @Test
@@ -400,25 +345,5 @@ public class FusionIndexReaderTest
                 verifyNoMoreInteractions( reader );
             }
         }
-    }
-
-    private IndexReader expectedForNumbers()
-    {
-        return orLucene( readers.get( NUMBER ) );
-    }
-
-    private boolean hasSpatialSupport()
-    {
-        return readers.get( SPATIAL ) != IndexReader.EMPTY;
-    }
-
-    private boolean hasTemporalSupport()
-    {
-        return readers.get( TEMPORAL ) != IndexReader.EMPTY;
-    }
-
-    private IndexReader orLucene( IndexReader reader )
-    {
-        return reader != IndexReader.EMPTY ? reader : readers.get( LUCENE );
     }
 }
