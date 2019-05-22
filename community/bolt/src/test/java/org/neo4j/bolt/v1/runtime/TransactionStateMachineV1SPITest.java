@@ -23,7 +23,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.time.Clock;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -43,7 +42,9 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.logging.NullLog;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.rule.OtherThreadRule;
+import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
+import org.neo4j.time.SystemNanoClock;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.instanceOf;
@@ -107,7 +108,7 @@ public class TransactionStateMachineV1SPITest
         long lastClosedTransactionId = 100;
         Supplier<TransactionIdStore> txIdStore = () -> fixedTxIdStore( lastClosedTransactionId );
 
-        TransactionStateMachineV1SPI txSpi = createTxSpi( txIdStore, Duration.ZERO, Clock.systemUTC() );
+        TransactionStateMachineV1SPI txSpi = createTxSpi( txIdStore, Duration.ZERO, Clocks.nanoClock() );
 
         Future<Void> result = otherThread.execute( state ->
         {
@@ -125,7 +126,8 @@ public class TransactionStateMachineV1SPITest
         return txIdStore;
     }
 
-    private static TransactionStateMachineV1SPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration, Clock clock ) throws Exception
+    private static TransactionStateMachineV1SPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration, SystemNanoClock clock )
+            throws Exception
     {
         CompositeDatabaseAvailabilityGuard compositeGuard = mock( CompositeDatabaseAvailabilityGuard.class );
         DatabaseAvailabilityGuard databaseAvailabilityGuard =
@@ -136,7 +138,7 @@ public class TransactionStateMachineV1SPITest
     }
 
     private static TransactionStateMachineV1SPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration,
-            DatabaseAvailabilityGuard availabilityGuard, Clock clock )
+            DatabaseAvailabilityGuard availabilityGuard, SystemNanoClock clock )
     {
         QueryExecutionEngine queryExecutionEngine = mock( QueryExecutionEngine.class );
 

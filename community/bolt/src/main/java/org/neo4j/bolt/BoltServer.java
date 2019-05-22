@@ -59,6 +59,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.ssl.config.SslPolicyLoader;
+import org.neo4j.time.SystemNanoClock;
 
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
@@ -71,7 +72,7 @@ public class BoltServer extends LifecycleAdapter
     private final ConnectorPortRegister connectorPortRegister;
     private final NetworkConnectionTracker connectionTracker;
     private final Config config;
-    private final Clock clock;
+    private final SystemNanoClock clock;
     private final Monitors monitors;
     private final LogService logService;
 
@@ -81,7 +82,7 @@ public class BoltServer extends LifecycleAdapter
     private final LifeSupport life = new LifeSupport();
 
     public BoltServer( DatabaseManager<?> databaseManager, JobScheduler jobScheduler,
-            ConnectorPortRegister connectorPortRegister, NetworkConnectionTracker connectionTracker, Config config, Clock clock,
+            ConnectorPortRegister connectorPortRegister, NetworkConnectionTracker connectionTracker, Config config, SystemNanoClock clock,
             Monitors monitors, LogService logService, DependencyResolver dependencyResolver )
     {
         this.databaseManager = databaseManager;
@@ -217,7 +218,7 @@ public class BoltServer extends LifecycleAdapter
         return new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, logService );
     }
 
-    private BoltStateMachineFactory createBoltFactory( Authentication authentication, Clock clock )
+    private BoltStateMachineFactory createBoltFactory( Authentication authentication, SystemNanoClock clock )
     {
         return new BoltStateMachineFactoryImpl( databaseManager, authentication, clock, config, logService );
     }

@@ -31,13 +31,14 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.TransactionalContext;
+import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
 public class TransactionStateMachineV4SPI extends TransactionStateMachineV1SPI
 {
     private final DatabaseId databaseId;
 
-    public TransactionStateMachineV4SPI( DatabaseContext db, BoltChannel boltChannel, Duration txAwaitDuration, Clock clock,
+    public TransactionStateMachineV4SPI( DatabaseContext db, BoltChannel boltChannel, Duration txAwaitDuration, SystemNanoClock clock,
             StatementProcessorReleaseManager resourceReleaseManger, DatabaseId databaseId )
     {
         super( db, boltChannel, txAwaitDuration, clock, resourceReleaseManger );

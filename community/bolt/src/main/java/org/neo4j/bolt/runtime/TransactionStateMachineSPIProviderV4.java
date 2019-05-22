@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.runtime;
 
-import java.time.Clock;
 import java.time.Duration;
 import java.util.Objects;
 
@@ -31,6 +30,7 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.time.SystemNanoClock;
 
 import static java.lang.String.format;
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_ID;
@@ -38,13 +38,13 @@ import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_ID;
 public class TransactionStateMachineSPIProviderV4 implements TransactionStateMachineSPIProvider
 {
     private final Duration txAwaitDuration;
-    private final Clock clock;
+    private final SystemNanoClock clock;
     private final BoltChannel boltChannel;
     private final DatabaseId defaultDatabaseId;
     private final DatabaseManager<?> databaseManager;
 
     public TransactionStateMachineSPIProviderV4( DatabaseManager<?> databaseManager, DatabaseId defaultDatabaseId, BoltChannel boltChannel,
-            Duration txAwaitDuration, Clock clock )
+            Duration txAwaitDuration, SystemNanoClock clock )
     {
         this.databaseManager = databaseManager;
         this.defaultDatabaseId = defaultDatabaseId;

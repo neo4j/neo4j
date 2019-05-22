@@ -21,7 +21,6 @@ package org.neo4j.bolt.runtime;
 
 import org.junit.jupiter.api.Test;
 
-import java.time.Clock;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -31,6 +30,7 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -53,7 +53,7 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
     }
 
     @Test
-    void shouldErrorIfDatabaseNotFound() throws Throwable
+    void shouldErrorIfDatabaseNotFound()
     {
         DatabaseManager<?> databaseManager = databaseManagerWithDatabase( new DatabaseId( "database" ) );
         TransactionStateMachineSPIProvider spiProvider = newSpiProvider( databaseManager );
@@ -63,7 +63,7 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
         assertThat( error.getMessage(), containsString( "Database selection by name not supported by Bolt protocol version lower than BoltV4." ) );
     }
 
-    private DatabaseManager<StandaloneDatabaseContext> databaseManagerWithDatabase( DatabaseId databaseId )
+    private static DatabaseManager<StandaloneDatabaseContext> databaseManagerWithDatabase( DatabaseId databaseId )
     {
         @SuppressWarnings( "unchecked" )
         DatabaseManager<StandaloneDatabaseContext> databaseManager = mock( DatabaseManager.class );
@@ -72,10 +72,10 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
         return databaseManager;
     }
 
-    private TransactionStateMachineSPIProvider newSpiProvider( DatabaseManager databaseManager )
+    private static TransactionStateMachineSPIProvider newSpiProvider( DatabaseManager databaseManager )
     {
         return new DefaultDatabaseTransactionStatementSPIProvider( databaseManager, new DatabaseId( "neo4j" ), mock( BoltChannel.class ),
-                Duration.ZERO, mock( Clock.class ) )
+                Duration.ZERO, mock( SystemNanoClock.class ) )
         {
             @Override
             protected TransactionStateMachineSPI newTransactionStateMachineSPI( DatabaseContext activeDatabase,

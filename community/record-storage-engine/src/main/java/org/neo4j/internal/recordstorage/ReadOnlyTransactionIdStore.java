@@ -102,12 +102,6 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void awaitClosedTransactionId( long txId, long timeoutMillis )
-    {
-        throw new UnsupportedOperationException( "Not implemented" );
-    }
-
-    @Override
     public long[] getLastClosedTransaction()
     {
         return new long[]{transactionId, logVersion, byteOffset};

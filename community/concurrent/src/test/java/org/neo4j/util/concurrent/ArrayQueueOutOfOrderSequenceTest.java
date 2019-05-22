@@ -19,25 +19,18 @@
  */
 package org.neo4j.util.concurrent;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.lang.Thread.sleep;
 import static java.lang.Thread.yield;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 class ArrayQueueOutOfOrderSequenceTest
 {
@@ -183,64 +176,6 @@ class ArrayQueueOutOfOrderSequenceTest
 
         sequence.offer( 42L, EMPTY_META );
         assertEquals( 42L, sequence.highestEverSeen() );
-    }
-
-    @Test
-    void shouldBeAbleToTimeoutWaitingForNumber() throws Exception
-    {
-        // given
-        long timeout = 10;
-        final OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 3, 5, EMPTY_META );
-
-        long startTime = System.currentTimeMillis();
-        assertThrows( TimeoutException.class, () -> sequence.await( 4, timeout ) );
-
-        long endTime = System.currentTimeMillis();
-        MatcherAssert.assertThat( endTime - startTime, greaterThanOrEqualTo( timeout ) );
-    }
-
-    @Test
-    void shouldBeAbleToReturnImmediatelyWhenNumberAvailable() throws Exception
-    {
-        // given
-        final OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 4, 5, EMPTY_META );
-
-        // when
-        sequence.await( 4, 0 );
-
-        // then: should return without exceptions
-    }
-
-    @Test
-    void shouldBeNotifiedWhenNumberAvailable() throws Exception
-    {
-        // given
-        final Semaphore done = new Semaphore( 0 );
-        final OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 3, 5, EMPTY_META );
-
-        Thread numberWaiter = new Thread( () ->
-        {
-            try
-            {
-                sequence.await( 5, 60_000 );
-            }
-            catch ( TimeoutException | InterruptedException e )
-            {
-                fail( "Should not have thrown" );
-            }
-
-            done.release();
-        } );
-
-        numberWaiter.start();
-
-        assertFalse( done.tryAcquire( 10, TimeUnit.MILLISECONDS ) );
-        sequence.offer( 4, EMPTY_META );
-        assertFalse( done.tryAcquire( 10, TimeUnit.MILLISECONDS ) );
-        sequence.offer( 5, EMPTY_META );
-        assertTrue( done.tryAcquire( 60_000, TimeUnit.MILLISECONDS ) );
-
-        numberWaiter.join();
     }
 
     private static boolean offer( OutOfOrderSequence sequence, long number, long[] meta )

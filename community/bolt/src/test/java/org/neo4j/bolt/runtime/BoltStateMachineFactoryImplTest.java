@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.time.Clock;
 import java.util.Optional;
 
 import org.neo4j.bolt.BoltChannel;
@@ -41,6 +40,8 @@ import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -53,7 +54,7 @@ import static org.mockito.Mockito.when;
 class BoltStateMachineFactoryImplTest
 {
     private static final String CUSTOM_DB_NAME = "customDbName";
-    private static final Clock CLOCK = Clock.systemUTC();
+    private static final SystemNanoClock CLOCK = Clocks.nanoClock();
     private static final BoltChannel CHANNEL = BoltTestUtil.newTestBoltChannel();
 
     @ParameterizedTest( name = "V{0}" )

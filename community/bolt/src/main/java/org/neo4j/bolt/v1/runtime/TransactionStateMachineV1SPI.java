@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
@@ -72,12 +73,12 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     private final BoltChannel boltChannel;
     private final StatementProcessorReleaseManager resourceReleaseManager;
 
-    public TransactionStateMachineV1SPI( DatabaseContext databaseContext, BoltChannel boltChannel, Duration txAwaitDuration, Clock clock,
+    public TransactionStateMachineV1SPI( DatabaseContext databaseContext, BoltChannel boltChannel, Duration txAwaitDuration, SystemNanoClock clock,
             StatementProcessorReleaseManager resourceReleaseManger )
     {
         this.txBridge = resolveDependency( databaseContext, ThreadToStatementContextBridge.class );
         this.queryExecutionEngine = resolveDependency( databaseContext, QueryExecutionEngine.class );
-        this.transactionIdTracker = newTransactionIdTracker( databaseContext );
+        this.transactionIdTracker = newTransactionIdTracker( databaseContext, clock );
         this.contextFactory = newTransactionalContextFactory( databaseContext );
         this.databaseFacade = databaseContext.databaseFacade();
         this.boltChannel = boltChannel;
@@ -169,11 +170,11 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         return tx;
     }
 
-    private static TransactionIdTracker newTransactionIdTracker( DatabaseContext databaseContext )
+    private static TransactionIdTracker newTransactionIdTracker( DatabaseContext databaseContext, SystemNanoClock clock )
     {
         Supplier<TransactionIdStore> transactionIdStoreSupplier = databaseContext.dependencies().provideDependency( TransactionIdStore.class );
         AvailabilityGuard guard = resolveDependency( databaseContext, DatabaseAvailabilityGuard.class );
-        return new TransactionIdTracker( transactionIdStoreSupplier, guard );
+        return new TransactionIdTracker( transactionIdStoreSupplier, guard, clock );
     }
 
     private static TransactionalContextFactory newTransactionalContextFactory( DatabaseContext databaseContext )

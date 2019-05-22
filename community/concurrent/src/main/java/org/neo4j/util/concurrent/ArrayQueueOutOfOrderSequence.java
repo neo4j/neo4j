@@ -19,8 +19,6 @@
  */
 package org.neo4j.util.concurrent;
 
-import java.util.concurrent.TimeoutException;
-
 /**
  * A crude, synchronized implementation of OutOfOrderSequence. Please implement a faster one if need be.
  */
@@ -97,25 +95,7 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
         return createResult( number, meta );
     }
 
-    @Override
-    public synchronized void await( long awaitedNumber, long timeoutMillis ) throws TimeoutException, InterruptedException
-    {
-        long endTime = System.currentTimeMillis() + timeoutMillis;
-        while ( awaitedNumber > highestGapFreeNumber )
-        {
-            long timeLeft = endTime - System.currentTimeMillis();
-            if ( timeLeft > 0 )
-            {
-                wait( timeLeft );
-            }
-            else
-            {
-                throw new TimeoutException( "Awaited number was not reached" );
-            }
-        }
-    }
-
-    private long[] createResult( long number, long[] meta )
+    private static long[] createResult( long number, long[] meta )
     {
         long[] result = new long[meta.length + 1];
         result[0] = number;

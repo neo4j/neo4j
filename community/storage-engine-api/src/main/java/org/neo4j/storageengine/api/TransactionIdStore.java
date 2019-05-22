@@ -19,8 +19,6 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.util.concurrent.TimeoutException;
-
 /**
  * Keeps a latest transaction id. There's one counter for {@code committed transaction id} and one for
  * {@code closed transaction id}. The committed transaction id is for writing into a log before making
@@ -110,16 +108,6 @@ public interface TransactionIdStore
      * @return highest seen gap-free {@link #transactionClosed(long, long, long) closed transaction id}.
      */
     long getLastClosedTransactionId();
-
-    /**
-     * Awaits gap-free {@link #transactionClosed(long, long, long) closed transaction id}.
-     *
-     * @param txId the awaited transaction id.
-     * @param timeoutMillis the time to wait for it.
-     * @throws InterruptedException interrupted.
-     * @throws TimeoutException timed out.
-     */
-    void awaitClosedTransactionId( long txId, long timeoutMillis ) throws InterruptedException, TimeoutException;
 
     /**
      * Returns transaction information about the last committed transaction, i.e.

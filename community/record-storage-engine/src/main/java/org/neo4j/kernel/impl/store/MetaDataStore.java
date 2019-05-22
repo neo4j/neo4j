@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.configuration.Config;
@@ -783,14 +782,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         assertNotClosed();
         checkInitialized( lastCommittingTxField.get() );
         return lastClosedTx.getHighestGapFreeNumber();
-    }
-
-    @Override
-    public void awaitClosedTransactionId( long txId, long timeoutMillis ) throws TimeoutException, InterruptedException
-    {
-        assertNotClosed();
-        checkInitialized( lastCommittingTxField.get() );
-        lastClosedTx.await( txId, timeoutMillis );
     }
 
     @Override

@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.runtime;
 
-import java.time.Clock;
 import java.time.Duration;
 
 import org.neo4j.bolt.BoltChannel;
@@ -37,6 +36,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.time.SystemNanoClock;
 
 public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
 {
@@ -44,11 +44,11 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
     private final LogService logging;
     private final Authentication authentication;
     private final Config config;
-    private final Clock clock;
+    private final SystemNanoClock clock;
     private final DatabaseId defaultDatabaseId;
 
     public BoltStateMachineFactoryImpl( DatabaseManager<?> databaseManager, Authentication authentication,
-            Clock clock, Config config, LogService logging )
+            SystemNanoClock clock, Config config, LogService logging )
     {
         this.databaseManager = databaseManager;
         this.logging = logging;

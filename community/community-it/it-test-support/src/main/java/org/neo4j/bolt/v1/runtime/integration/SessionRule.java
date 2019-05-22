@@ -27,7 +27,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
-import java.time.Clock;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -50,6 +49,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.time.Clocks;
 
 public class SessionRule implements TestRule
 {
@@ -81,7 +81,7 @@ public class SessionRule implements TestRule
                 boltFactory = new BoltStateMachineFactoryImpl(
                                         databaseManager,
                                         authentication,
-                                        Clock.systemUTC(),
+                                        Clocks.nanoClock(),
                                         config,
                                         NullLogService.getInstance()
                                     );

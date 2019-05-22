@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.runtime;
 
-import java.time.Clock;
 import java.time.Duration;
 
 import org.neo4j.bolt.BoltChannel;
@@ -28,12 +27,13 @@ import org.neo4j.bolt.v3.runtime.TransactionStateMachineV3SPI;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.time.SystemNanoClock;
 
 public class TransactionStateMachineSPIProviderV3 extends DefaultDatabaseTransactionStatementSPIProvider
 {
 
     TransactionStateMachineSPIProviderV3( DatabaseManager<?> databaseManager, DatabaseId defaultDatabaseId, BoltChannel boltChannel,
-            Duration awaitDuration, Clock clock )
+            Duration awaitDuration, SystemNanoClock clock )
     {
         super( databaseManager, defaultDatabaseId, boltChannel, awaitDuration, clock );
     }

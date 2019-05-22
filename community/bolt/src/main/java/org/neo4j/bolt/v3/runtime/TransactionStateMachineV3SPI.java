@@ -30,11 +30,12 @@ import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.TransactionalContext;
+import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
 public class TransactionStateMachineV3SPI extends TransactionStateMachineV1SPI
 {
-    public TransactionStateMachineV3SPI( DatabaseContext databaseContext, BoltChannel boltChannel, Duration txAwaitDuration, Clock clock,
+    public TransactionStateMachineV3SPI( DatabaseContext databaseContext, BoltChannel boltChannel, Duration txAwaitDuration, SystemNanoClock clock,
             StatementProcessorReleaseManager resourceReleaseManger )
     {
         super( databaseContext, boltChannel, txAwaitDuration, clock, resourceReleaseManger );

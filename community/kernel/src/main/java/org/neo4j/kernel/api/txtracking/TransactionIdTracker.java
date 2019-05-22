@@ -20,13 +20,14 @@
 package org.neo4j.kernel.api.txtracking;
 
 import java.time.Duration;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Supplier;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
@@ -37,12 +38,14 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 public class TransactionIdTracker
 {
     private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
+    private final SystemNanoClock clock;
     private final AvailabilityGuard databaseAvailabilityGuard;
 
-    public TransactionIdTracker( Supplier<TransactionIdStore> transactionIdStoreSupplier, AvailabilityGuard databaseAvailabilityGuard )
+    public TransactionIdTracker( Supplier<TransactionIdStore> transactionIdStoreSupplier, AvailabilityGuard databaseAvailabilityGuard, SystemNanoClock clock )
     {
         this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
+        this.clock = clock;
     }
 
     /**
@@ -74,28 +77,44 @@ public class TransactionIdTracker
             return;
         }
 
-        if ( !databaseAvailabilityGuard.isAvailable() )
-        {
-            throw new TransactionFailureException( Status.General.DatabaseUnavailable, "Database unavailable" );
-        }
-
+        long lastClosedTransactionId = Long.MAX_VALUE;
         try
         {
-            // await for the last closed transaction id to to have at least the expected value
-            // it has to be "last closed" and not "last committed" becase all transactions before the expected one should also be committed
-            transactionIdStore().awaitClosedTransactionId( oldestAcceptableTxId, timeout.toMillis() );
-        }
-        catch ( InterruptedException | TimeoutException e )
-        {
-            if ( e instanceof InterruptedException )
+            long endTime = Math.addExact( clock.nanos(), timeout.toNanos() );
+            while ( endTime > clock.nanos() )
             {
-                Thread.currentThread().interrupt();
+                if ( isDatabaseNotAvailable() )
+                {
+                    throw new TransactionFailureException( Status.General.DatabaseUnavailable, "Database unavailable" );
+                }
+                // await for the last closed transaction id to to have at least the expected value
+                // it has to be "last closed" and not "last committed" because all transactions before the expected one should also be committed
+                lastClosedTransactionId = transactionIdStore().getLastClosedTransactionId();
+                if ( oldestAcceptableTxId <= lastClosedTransactionId )
+                {
+                    return;
+                }
+                LockSupport.parkNanos( 100 );
             }
-
+            throw new TransactionFailureException( Status.Transaction.InstanceStateChanged,
+                    "Database not up to the requested version: %d. Latest database version is %d", oldestAcceptableTxId,
+                    lastClosedTransactionId );
+        }
+        catch ( RuntimeException e )
+        {
+            if ( isDatabaseNotAvailable() )
+            {
+                throw new TransactionFailureException( Status.General.DatabaseUnavailable, e, "Database unavailable" );
+            }
             throw new TransactionFailureException( Status.Transaction.InstanceStateChanged, e,
                     "Database not up to the requested version: %d. Latest database version is %d", oldestAcceptableTxId,
-                    transactionIdStore().getLastClosedTransactionId() );
+                    lastClosedTransactionId );
         }
+    }
+
+    private boolean isDatabaseNotAvailable()
+    {
+        return !databaseAvailabilityGuard.isAvailable();
     }
 
     private TransactionIdStore transactionIdStore()
@@ -116,7 +135,7 @@ public class TransactionIdTracker
     public long newestEncounteredTxId()
     {
         // return the "last committed" because it is the newest id
-        // "last closed" will return the last gap-free id, pottentially for some old transaction because there might be other committing transactions
+        // "last closed" will return the last gap-free id, potentially for some old transaction because there might be other committing transactions
         return transactionIdStore().getLastCommittedTransactionId();
     }
 }

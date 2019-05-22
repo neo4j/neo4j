@@ -23,7 +23,6 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import java.time.Clock;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -46,6 +45,7 @@ import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.time.Clocks;
 
 public class SessionExtension implements BeforeEachCallback, AfterEachCallback
 {
@@ -104,7 +104,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         boltFactory = new BoltStateMachineFactoryImpl(
                 databaseManager,
                 authentication,
-                Clock.systemUTC(),
+                Clocks.nanoClock(),
                 config,
                 NullLogService.getInstance()
         );

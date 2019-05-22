@@ -21,7 +21,6 @@ package org.neo4j.bolt.runtime;
 
 import org.junit.jupiter.api.Test;
 
-import java.time.Clock;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -36,6 +35,7 @@ import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -83,7 +83,7 @@ class TransactionStateMachineSPIProviderV4Test
         assertThat( error.getMessage(), containsString( "The database requested does not exist. Requested database name: 'database'." ) );
     }
 
-    private DatabaseManager<StandaloneDatabaseContext> databaseManager( DatabaseId databaseId )
+    private static DatabaseManager<StandaloneDatabaseContext> databaseManager( DatabaseId databaseId )
     {
         @SuppressWarnings( "unchecked" )
         DatabaseManager<StandaloneDatabaseContext> databaseManager = mock( DatabaseManager.class );
@@ -99,9 +99,9 @@ class TransactionStateMachineSPIProviderV4Test
         return databaseManager;
     }
 
-    private TransactionStateMachineSPIProvider newSpiProvider( DatabaseManager<?> databaseManager )
+    private static TransactionStateMachineSPIProvider newSpiProvider( DatabaseManager<?> databaseManager )
     {
         return new TransactionStateMachineSPIProviderV4( databaseManager, new DatabaseId( "neo4j" ),
-                mock( BoltChannel.class ), Duration.ZERO, mock( Clock.class ) );
+                mock( BoltChannel.class ), Duration.ZERO, mock( SystemNanoClock.class ) );
     }
 }
