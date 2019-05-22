@@ -95,10 +95,15 @@ public enum CompressionFormat
 
     public static OutputStream compress( ThrowingSupplier<OutputStream, IOException> streamSupplier ) throws IOException
     {
+        return compress( streamSupplier, ZSTD );
+    }
+
+    public static OutputStream compress( ThrowingSupplier<OutputStream, IOException> streamSupplier, CompressionFormat format ) throws IOException
+    {
         OutputStream sink = streamSupplier.get();
         try
         {
-            return new BufferedOutputStream( ZSTD.compress( sink ) );
+            return new BufferedOutputStream( format.compress( sink ) );
         }
         catch ( IOException ioe )
         {
