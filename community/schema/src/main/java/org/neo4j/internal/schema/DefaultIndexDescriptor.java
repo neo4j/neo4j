@@ -54,14 +54,14 @@ public class DefaultIndexDescriptor implements IndexDescriptor
         this.isEventuallyConsistent = isEventuallyConsistent;
     }
 
-    public DefaultIndexDescriptor( IndexDescriptor descriptor )
+    protected DefaultIndexDescriptor( DefaultIndexDescriptor descriptor )
     {
-        this( descriptor.schema(),
-                descriptor.providerKey(),
-                descriptor.providerVersion(),
-                descriptor.hasUserSuppliedName() ? Optional.of( descriptor.name() ) : Optional.empty(),
-                descriptor.isUnique(),
-                descriptor.isEventuallyConsistent()
+        this( descriptor.schema,
+                descriptor.providerKey,
+                descriptor.providerVersion,
+                descriptor.name,
+                descriptor.isUnique,
+                descriptor.isEventuallyConsistent
         );
     }
 
@@ -126,12 +126,6 @@ public class DefaultIndexDescriptor implements IndexDescriptor
 
     @Override
     public DefaultIndexDescriptor withSchemaDescriptor( SchemaDescriptor schema )
-    {
-        return new DefaultIndexDescriptor( schema, providerKey, providerVersion, name, isUnique, isEventuallyConsistent );
-    }
-
-    @Override
-    public DefaultIndexDescriptor withEventualConsistency( boolean isEventuallyConsistent )
     {
         return new DefaultIndexDescriptor( schema, providerKey, providerVersion, name, isUnique, isEventuallyConsistent );
     }

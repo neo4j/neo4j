@@ -47,7 +47,4 @@ public interface StorageIndexReference extends IndexDescriptor, SchemaRule
 
     @Override
     StorageIndexReference withSchemaDescriptor( SchemaDescriptor schema );
-
-    @Override
-    StorageIndexReference withEventualConsistency( boolean isEventuallyConsistent );
 }

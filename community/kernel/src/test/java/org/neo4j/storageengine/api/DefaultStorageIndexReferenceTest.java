@@ -25,8 +25,6 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 
 import static java.util.Optional.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 class DefaultStorageIndexReferenceTest
@@ -51,15 +49,5 @@ class DefaultStorageIndexReferenceTest
 
         assertEquals( b.schema(), forLabel( 10, 20 ) );
         assertEquals( a.schema(), forLabel( 1, 2 ) );
-    }
-
-    @Test
-    void updatingEventuallyConsistencyFlagSchemaDescriptorLeavesOriginalDescriptorUntouched()
-    {
-        DefaultStorageIndexReference a = new DefaultStorageIndexReference( forLabel( 1, 2 ), "provider-A", "1.0", 1, empty(), false, null, false );
-        DefaultStorageIndexReference b  = a.withEventualConsistency( true );
-
-        assertTrue( b.isEventuallyConsistent() );
-        assertFalse( a.isEventuallyConsistent() );
     }
 }

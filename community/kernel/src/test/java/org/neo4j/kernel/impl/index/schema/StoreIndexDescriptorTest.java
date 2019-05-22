@@ -25,8 +25,6 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 
 import static java.util.Optional.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 class StoreIndexDescriptorTest
@@ -45,7 +43,6 @@ class StoreIndexDescriptorTest
         assertEquals( a.providerVersion(), "1.0" );
         assertEquals( a.providerDescriptor(), new IndexProviderDescriptor( "provider-A", "1.0" ) );
     }
-
     @Test
     void updatingSchemaDescriptorLeavesOriginalDescriptorUntouched()
     {
@@ -55,16 +52,5 @@ class StoreIndexDescriptorTest
 
         assertEquals( b.schema(), forLabel( 10, 20 ) );
         assertEquals( a.schema(), forLabel( 1, 2 ) );
-    }
-
-    @Test
-    void updatingEventuallyConsistentFlagLeavesOriginalDescriptorUntouched()
-    {
-        StoreIndexDescriptor a = new StoreIndexDescriptor(
-                new IndexDescriptor( forLabel( 1, 2 ), false, empty(), new IndexProviderDescriptor( "provider-A", "1.0" ) ), 3, 4L );
-        StoreIndexDescriptor b  = a.withEventualConsistency( true );
-
-        assertTrue( b.isEventuallyConsistent() );
-        assertFalse( a.isEventuallyConsistent() );
     }
 }

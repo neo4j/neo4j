@@ -48,8 +48,9 @@ public class IndexDescriptor extends DefaultIndexDescriptor
 
     public IndexDescriptor( org.neo4j.internal.schema.IndexDescriptor indexDescriptor )
     {
-        super( indexDescriptor );
-        this.providerDescriptor = IndexProviderDescriptor.from( indexDescriptor );
+        this( indexDescriptor.schema(), indexDescriptor.isUnique(),
+                indexDescriptor.hasUserSuppliedName() ? Optional.of( indexDescriptor.name() ) : Optional.empty(),
+                IndexProviderDescriptor.from( indexDescriptor ) );
     }
 
     public IndexDescriptor( SchemaDescriptor schema, boolean isUnique, Optional<String> userSuppliedName, IndexProviderDescriptor providerDescriptor )
@@ -88,12 +89,6 @@ public class IndexDescriptor extends DefaultIndexDescriptor
     public IndexDescriptor withSchemaDescriptor( SchemaDescriptor schema )
     {
         return new IndexDescriptor( super.withSchemaDescriptor( schema ), providerDescriptor );
-    }
-
-    @Override
-    public IndexDescriptor withEventualConsistency( boolean isEventuallyConsistent )
-    {
-        return new IndexDescriptor( super.withEventualConsistency( isEventuallyConsistent ), providerDescriptor );
     }
 
     public IndexProviderDescriptor providerDescriptor()

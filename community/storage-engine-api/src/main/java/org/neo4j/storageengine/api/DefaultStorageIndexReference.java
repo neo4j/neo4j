@@ -109,12 +109,6 @@ public class DefaultStorageIndexReference extends DefaultIndexDescriptor impleme
     }
 
     @Override
-    public DefaultStorageIndexReference withEventualConsistency( boolean isEventuallyConsistent )
-    {
-        return new DefaultStorageIndexReference( super.withEventualConsistency( isEventuallyConsistent ), indexReference, owningConstraintReference );
-    }
-
-    @Override
     public String name()
     {
         return name.orElse( "index_" + indexReference );

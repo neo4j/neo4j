@@ -126,13 +126,6 @@ class FulltextIndexDescriptor implements StorageIndexReference
     }
 
     @Override
-    public FulltextIndexDescriptor withEventualConsistency( boolean isEventuallyConsistent )
-    {
-        return new FulltextIndexDescriptor( descriptor.withEventualConsistency( isEventuallyConsistent ),
-                propertyNames, analyzer, analyzerName, isEventuallyConsistent );
-    }
-
-    @Override
     public long indexReference()
     {
         return descriptor.indexReference();

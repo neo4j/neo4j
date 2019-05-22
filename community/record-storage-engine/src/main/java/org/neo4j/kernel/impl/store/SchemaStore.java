@@ -427,7 +427,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         }
     }
 
-    // todo Add IndexType to SchemaDescriptor
+    // todo Add IndexType and IndexConfig to SchemaDescriptor
     private static SchemaDescriptor buildSchemaDescriptor( Map<String,Value> props ) throws MalformedSchemaRuleException
     {
         String propertySchemaType = getString( PROP_SCHEMA_DESCRIPTOR_PROPERTY_SCHEMA_TYPE, props );
