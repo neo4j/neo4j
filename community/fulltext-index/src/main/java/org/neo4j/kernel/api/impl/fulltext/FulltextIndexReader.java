@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.BooleanClause;
@@ -34,6 +35,7 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
@@ -52,21 +54,25 @@ public class FulltextIndexReader implements IndexReader
 {
     private final List<SearcherReference> searchers;
     private final TokenHolder propertyKeyTokenHolder;
-    private final FulltextIndexDescriptor descriptor;
+    private final IndexDescriptor descriptor;
+    private final Analyzer analyzer;
+    private final String[] propertyNames;
     private final FulltextIndexTransactionState transactionState;
 
-    FulltextIndexReader( List<SearcherReference> searchers, TokenHolder propertyKeyTokenHolder, FulltextIndexDescriptor descriptor )
+    FulltextIndexReader( List<SearcherReference> searchers, TokenHolder propertyKeyTokenHolder, IndexDescriptor descriptor,
+            Analyzer analyzer, String[] propertyNames )
     {
         this.searchers = searchers;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.descriptor = descriptor;
-        this.transactionState = new FulltextIndexTransactionState( descriptor );
+        this.analyzer = analyzer;
+        this.propertyNames = propertyNames;
+        this.transactionState = new FulltextIndexTransactionState( descriptor, analyzer, propertyNames );
     }
 
     private Query parseFulltextQuery( String query ) throws ParseException
     {
-        FulltextIndexDescriptor descriptor = getDescriptor();
-        MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( descriptor.propertyNames(), descriptor.analyzer() );
+        MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( propertyNames, analyzer );
         multiFieldQueryParser.setAllowLeadingWildcard( true );
         return multiFieldQueryParser.parse( query );
     }
@@ -190,7 +196,7 @@ public class FulltextIndexReader implements IndexReader
         return propertyKeyTokenHolder.getTokenById( propertyKey ).name();
     }
 
-    private FulltextIndexDescriptor getDescriptor()
+    private IndexDescriptor getDescriptor()
     {
         return descriptor;
     }

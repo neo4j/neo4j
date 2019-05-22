@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.apache.lucene.analysis.Analyzer;
+
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
@@ -66,7 +67,8 @@ import org.neo4j.values.storable.Values;
 import static org.neo4j.kernel.api.exceptions.Status.General.InvalidArguments;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CONFIG_ANALYZER;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.readOrInitialiseDescriptor;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createAnalyzer;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createPropertyNames;
 
 class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
 {
@@ -78,7 +80,6 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     private final boolean defaultEventuallyConsistentSetting;
     private final Log log;
     private final IndexUpdateSink indexUpdateSink;
-    private final ConcurrentMap<StorageIndexReference,FulltextIndexAccessor> openOnlineAccessors;
     private final IndexStorageFactory indexStorageFactory;
 
     FulltextIndexProvider( IndexProviderDescriptor descriptor, IndexDirectoryStructure.Factory directoryStructureFactory,
@@ -95,7 +96,6 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         defaultAnalyzerName = config.get( FulltextConfig.fulltext_default_analyzer );
         defaultEventuallyConsistentSetting = config.get( FulltextConfig.eventually_consistent );
         indexUpdateSink = new IndexUpdateSink( scheduler, config.get( FulltextConfig.eventually_consistent_index_update_queue_max_length ) );
-        openOnlineAccessors = new ConcurrentHashMap<>();
         indexStorageFactory = buildIndexStorageFactory( fileSystem, directoryFactory );
     }
 
@@ -158,6 +158,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         indexConfig = addMissingDefaultIndexConfig( indexConfig );
         schema = schema.withIndexConfig( indexConfig );
         index = index.withSchemaDescriptor( schema );
+//        index = index.withEventuallyConsistent( isEventuallyConsistent( schema ) );
         return index;
     }
 
@@ -195,10 +196,11 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.indexReference() );
-        FulltextIndexDescriptor fulltextIndexDescriptor = readOrInitialiseDescriptor( descriptor,
-                defaultAnalyzerName, tokenHolders.propertyKeyTokens(), indexStorage, fileSystem );
+        NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
+        Analyzer analyzer = createAnalyzer( descriptor, tokenNameLookup );
+        String[] propertyNames = createPropertyNames( descriptor, tokenNameLookup );
         DatabaseIndex<FulltextIndexReader> fulltextIndex = FulltextIndexBuilder
-                .create( fulltextIndexDescriptor, config, tokenHolders.propertyKeyTokens() )
+                .create( descriptor, config, tokenHolders.propertyKeyTokens(), analyzer, propertyNames )
                 .withFileSystem( fileSystem )
                 .withOperationalMode( operationalMode )
                 .withIndexStorage( indexStorage )
@@ -209,8 +211,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
         log.debug( "Creating populator for fulltext schema index: %s", descriptor );
-        return new FulltextIndexPopulator( fulltextIndexDescriptor, fulltextIndex,
-                () -> FulltextIndexSettings.saveFulltextIndexSettings( fulltextIndexDescriptor, indexStorage, fileSystem ) );
+        return new FulltextIndexPopulator( descriptor, fulltextIndex, propertyNames );
     }
 
     @Override
@@ -218,31 +219,25 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.indexReference() );
 
-        FulltextIndexDescriptor fulltextIndexDescriptor = readOrInitialiseDescriptor( descriptor,
-                defaultAnalyzerName, tokenHolders.propertyKeyTokens(), indexStorage, fileSystem );
+        NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
+        Analyzer analyzer = createAnalyzer( descriptor, tokenNameLookup );
+        String[] propertyNames = createPropertyNames( descriptor, tokenNameLookup );
         FulltextIndexBuilder fulltextIndexBuilder = FulltextIndexBuilder
-                .create( fulltextIndexDescriptor, config, tokenHolders.propertyKeyTokens() )
+                .create( descriptor, config, tokenHolders.propertyKeyTokens(), analyzer, propertyNames )
                 .withFileSystem( fileSystem )
                 .withOperationalMode( operationalMode )
                 .withIndexStorage( indexStorage )
                 .withPopulatingMode( false );
-        if ( fulltextIndexDescriptor.isEventuallyConsistent() )
+        if ( descriptor.isEventuallyConsistent() )
         {
             fulltextIndexBuilder = fulltextIndexBuilder.withIndexUpdateSink( indexUpdateSink );
         }
         DatabaseIndex<FulltextIndexReader> fulltextIndex = fulltextIndexBuilder.build();
         fulltextIndex.open();
 
-        Runnable onClose = () -> openOnlineAccessors.remove( descriptor );
-        FulltextIndexAccessor accessor = new FulltextIndexAccessor( indexUpdateSink, fulltextIndex, fulltextIndexDescriptor, onClose );
-        openOnlineAccessors.put( descriptor, accessor );
+        FulltextIndexAccessor accessor = new FulltextIndexAccessor( indexUpdateSink, fulltextIndex, descriptor, propertyNames );
         log.debug( "Created online accessor for fulltext schema index %s: %s", descriptor, accessor );
         return accessor;
-    }
-
-    private FulltextIndexAccessor getOpenOnlineAccessor( StorageIndexReference descriptor )
-    {
-        return openOnlineAccessors.get( descriptor );
     }
 
     @Override

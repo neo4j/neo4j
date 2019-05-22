@@ -449,7 +449,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
                 throw new MalformedSchemaRuleException( "Unrecognised entity type: " + entityType );
             }
         case "PARTIAL_ANY_TOKEN": // fulltext index, presumably
-            return SchemaDescriptor.fulltext( entityType, IndexConfig.empty(), entityIds, propertyIds );
+            return SchemaDescriptor.fulltext( entityType, indexConfig, entityIds, propertyIds );
         default:
             throw new MalformedSchemaRuleException( "Did not recognize property schema type: " + propertySchemaType );
         }
