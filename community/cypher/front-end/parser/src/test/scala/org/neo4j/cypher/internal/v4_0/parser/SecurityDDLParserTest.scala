@@ -657,15 +657,15 @@ class SecurityDDLParserTest
   }
 
   test("GRANT TRAVERSE ON GRAPH * NODES * TO role") {
-    yields(ast.GrantTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH * TO role") {
-    yields(ast.GrantTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH foo TO role") {
-    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPHS foo TO role") {
@@ -673,35 +673,39 @@ class SecurityDDLParserTest
   }
 
   test("GRANT TRAVERSE ON GRAPH foo NODES * TO role") {
-    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH foo NODES A TO role") {
-    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH `*` NODES A TO role") {
-    yields(ast.GrantTraverse(ast.NamedGraphScope("*") _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.GrantTraverse(ast.NamedGraphScope("*") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH * NODES * (*) TO role") {
-    yields(ast.GrantTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH foo NODES * (*) TO role") {
-    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH * NODES A (*) TO role") {
-    yields(ast.GrantTraverse(ast.AllGraphsScope() _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.GrantTraverse(ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH foo NODES A (*) TO role") {
-    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
+  }
+
+  test("GRANT TRAVERSE ON GRAPH foo NODES A, B (*) TO role1, role2") {
+    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
   }
 
   test("GRANT TRAVERSE ON GRAPH foo NODES `A B` (*) TO role") {
-    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.LabelQualifier("A B") _, "role"))
+    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A B")) _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH foo NODES A B (*) TO role") {
@@ -729,7 +733,7 @@ class SecurityDDLParserTest
   }
 
   test("GRANT TRAVERSE ON GRAPH foo NODES A (*) TO `r:ole`") {
-    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "r:ole"))
+    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("r:ole")))
   }
 
   test("GRANT TRAVERSE ON GRAPH foo NODES A (*) TO r:ole") {
@@ -737,7 +741,7 @@ class SecurityDDLParserTest
   }
 
   test("GRANT TRAVERSE ON GRAPH `2foo` NODES A (*) TO role") {
-    yields(ast.GrantTraverse(ast.NamedGraphScope("2foo") _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.GrantTraverse(ast.NamedGraphScope("2foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH 2foo NODES A (*) TO role") {
@@ -767,43 +771,47 @@ class SecurityDDLParserTest
   }
 
   test("REVOKE TRAVERSE ON GRAPH * NODES * FROM role") {
-    yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+    yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH * FROM role") {
-    yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+    yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH foo FROM role") {
-    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH foo NODES * FROM role") {
-    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH foo NODES A FROM role") {
-    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH * NODES * (*) FROM role") {
-    yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+    yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH foo NODES * (*) FROM role") {
-    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH * NODES A (*) FROM role") {
-    yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH * NODES A FROM role") {
-    yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH foo NODES A (*) FROM role") {
-    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
+  }
+
+  test("REVOKE TRAVERSE ON GRAPH foo NODES A, B (*) FROM role1, role2") {
+    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH foo NODES A (foo) FROM role") {
@@ -829,43 +837,47 @@ class SecurityDDLParserTest
   }
 
   test("GRANT READ (*) ON GRAPH * NODES * TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT READ (*) ON GRAPH * TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT READ (*) ON GRAPH foo TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT READ (*) ON GRAPH foo NODES * TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT READ (*) ON GRAPH foo NODES A TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("GRANT READ (*) ON GRAPH * NODES * (*) TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT READ (*) ON GRAPH foo NODES * (*) TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT READ (*) ON GRAPH * NODES A (*) TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.GrantRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("GRANT READ (*) ON GRAPH foo NODES A (*) TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
+  }
+
+  test("GRANT READ (*) ON GRAPH foo NODES A, B (*) TO role1, role2") {
+    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
   }
 
   test("GRANT READ (*) ON GRAPH foo NODES `A B` (*) TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelQualifier("A B") _, "role"))
+    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A B")) _, Seq("role")))
   }
 
   test("GRANT READ (*) ON GRAPH foo NODES A B (*) TO role") {
@@ -893,7 +905,7 @@ class SecurityDDLParserTest
   }
 
   test("GRANT READ (*) ON GRAPH foo NODES * TO `r:ole`") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "r:ole"))
+    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("r:ole")))
   }
 
   test("GRANT READ (*) ON GRAPH foo NODES * TO r:ole") {
@@ -901,7 +913,7 @@ class SecurityDDLParserTest
   }
 
   test("GRANT READ (*) ON GRAPH `f:oo` NODES * TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("f:oo") _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("f:oo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT READ (*) ON GRAPH f:oo NODES * TO role") {
@@ -929,43 +941,47 @@ class SecurityDDLParserTest
   }
 
   test("GRANT READ (bar) ON GRAPH * NODES * TO role") {
-    yields(ast.GrantRead(ast.PropertyResource("bar") _, ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT READ (bar) ON GRAPH * TO role") {
-    yields(ast.GrantRead(ast.PropertyResource("bar") _, ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT READ (bar) ON GRAPH foo TO role") {
-    yields(ast.GrantRead(ast.PropertyResource("bar") _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT READ (bar) ON GRAPH foo NODES * TO role") {
-    yields(ast.GrantRead(ast.PropertyResource("bar") _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT READ (bar) ON GRAPH foo NODES A TO role") {
-    yields(ast.GrantRead(ast.PropertyResource("bar") _, ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("GRANT READ (bar) ON GRAPH * NODES * (*) TO role") {
-    yields(ast.GrantRead(ast.PropertyResource("bar") _, ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT READ (bar) ON GRAPH foo NODES * (*) TO role") {
-    yields(ast.GrantRead(ast.PropertyResource("bar") _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT READ (bar) ON GRAPH * NODES A (*) TO role") {
-    yields(ast.GrantRead(ast.PropertyResource("bar") _, ast.AllGraphsScope() _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("GRANT READ (bar) ON GRAPH foo NODES A (*) TO role") {
-    yields(ast.GrantRead(ast.PropertyResource("bar") _, ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
+  }
+
+  test("GRANT READ (foo, bar) ON GRAPH foo NODES A, B (*) TO role1, role2") {
+    yields(ast.GrantRead(ast.PropertiesResource(Seq("foo", "bar")) _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
   }
 
   test("GRANT READ (bar) ON GRAPH foo NODES `:A` (*) TO role") {
-    yields(ast.GrantRead(ast.PropertyResource("bar") _, ast.NamedGraphScope("foo") _, ast.LabelQualifier(":A") _, "role"))
+    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq(":A")) _, Seq("role")))
   }
 
   test("GRANT READ (bar) ON GRAPH foo NODES :A (*) TO role") {
@@ -997,7 +1013,7 @@ class SecurityDDLParserTest
   }
 
   test("GRANT READ (bar) ON GRAPH foo NODES * TO `r:ole`") {
-    yields(ast.GrantRead(ast.PropertyResource("bar") _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "r:ole"))
+    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("r:ole")))
   }
 
   test("GRANT READ (bar) ON GRAPH foo NODES * TO r:ole") {
@@ -1005,7 +1021,7 @@ class SecurityDDLParserTest
   }
 
   test("GRANT READ (bar) ON GRAPH `f:oo` NODES * TO role") {
-    yields(ast.GrantRead(ast.PropertyResource("bar") _, ast.NamedGraphScope("f:oo") _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("f:oo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT READ (bar) ON GRAPH f:oo NODES * TO role") {
@@ -1013,7 +1029,7 @@ class SecurityDDLParserTest
   }
 
   test("GRANT READ (`b:ar`) ON GRAPH foo NODES * TO role") {
-    yields(ast.GrantRead(ast.PropertyResource("b:ar") _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+    yields(ast.GrantRead(ast.PropertiesResource(Seq("b:ar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT READ (b:ar) ON GRAPH foo NODES * TO role") {
@@ -1079,43 +1095,47 @@ class SecurityDDLParserTest
   }
 
   test("REVOKE READ (*) ON GRAPH * NODES * FROM role") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+    yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE READ (*) ON GRAPH * FROM role") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+    yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE READ (*) ON GRAPH foo FROM role") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE READ (*) ON GRAPH foo NODES * FROM role") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE READ (*) ON GRAPH foo NODES A FROM role") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("REVOKE READ (*) ON GRAPH * NODES * (*) FROM role") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+    yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE READ (*) ON GRAPH foo NODES * (*) FROM role") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE READ (*) ON GRAPH * NODES A (*) FROM role") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("REVOKE READ (*) ON GRAPH * NODES A FROM role") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("REVOKE READ (*) ON GRAPH foo NODES A (*) FROM role") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
+  }
+
+  test("REVOKE READ (*) ON GRAPH foo NODES A, B (*) FROM role1, role2") {
+    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
   }
 
   test("REVOKE READ (*) ON GRAPH foo NODES A (foo) FROM role") {
@@ -1131,43 +1151,47 @@ class SecurityDDLParserTest
   }
 
   test("REVOKE READ (bar) ON GRAPH * NODES * FROM role") {
-    yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+    yields(ast.RevokeRead(ast.PropertiesResource(Seq("bar")) _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE READ (bar) ON GRAPH * FROM role") {
-    yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+    yields(ast.RevokeRead(ast.PropertiesResource(Seq("bar")) _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE READ (bar) ON GRAPH foo FROM role") {
-    yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+    yields(ast.RevokeRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE READ (bar) ON GRAPH foo NODES * FROM role") {
-    yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+    yields(ast.RevokeRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE READ (bar) ON GRAPH foo NODES A FROM role") {
-    yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.RevokeRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("REVOKE READ (bar) ON GRAPH * NODES * (*) FROM role") {
-    yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+    yields(ast.RevokeRead(ast.PropertiesResource(Seq("bar")) _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE READ (bar) ON GRAPH foo NODES * (*) FROM role") {
-    yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+    yields(ast.RevokeRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE READ (bar) ON GRAPH * NODES A (*) FROM role") {
-    yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.AllGraphsScope() _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.RevokeRead(ast.PropertiesResource(Seq("bar")) _, ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("REVOKE READ (bar) ON GRAPH * NODES A FROM role") {
-    yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.AllGraphsScope() _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.RevokeRead(ast.PropertiesResource(Seq("bar")) _, ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("REVOKE READ (bar) ON GRAPH foo NODES A (*) FROM role") {
-    yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+    yields(ast.RevokeRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
+  }
+
+  test("REVOKE READ (foo, bar) ON GRAPH foo NODES A, B (*) FROM role1, role2") {
+    yields(ast.RevokeRead(ast.PropertiesResource(Seq("foo", "bar")) _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
   }
 
   test("REVOKE READ (bar) ON GRAPH foo NODES A (foo) FROM role") {

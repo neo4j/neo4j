@@ -69,10 +69,10 @@ case class CreateRole(roleName: String, from: Option[String])(implicit idGen: Id
 case class DropRole(roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
 case class GrantRoleToUser(source: Option[GrantRoleToUser], roleName: String, userName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(source)
 case class RevokeRoleFromUser(source: Option[RevokeRoleFromUser], roleName: String, userNames: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(source)
-case class GrantTraverse(database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
-case class RevokeTraverse(database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
-case class GrantRead(resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
-case class RevokeRead(resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
+case class GrantTraverse(source: Option[GrantTraverse], database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
+case class RevokeTraverse(source: Option[RevokeTraverse], database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
+case class GrantRead(source: Option[GrantRead], resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
+case class RevokeRead(source: Option[RevokeRead], resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
 case class ShowPrivileges(scope: ShowPrivilegeScope)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
 
 // Database management commands

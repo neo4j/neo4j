@@ -187,19 +187,19 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case RevokeRoleFromUser(_, roleName, userName) =>
         PlanDescriptionImpl(id, "RevokeRoleFromUser", NoChildren, Seq(Role(Prettifier.escapeName(roleName)), User(Prettifier.escapeName(userName))), variables)
 
-      case GrantTraverse(database, qualifier, roleName) =>
+      case GrantTraverse(_, database, qualifier, roleName) =>
         val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
         PlanDescriptionImpl(id, "GrantTraverse", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
-      case RevokeTraverse(database, qualifier, roleName) =>
+      case RevokeTraverse(_, database, qualifier, roleName) =>
         val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
         PlanDescriptionImpl(id, "RevokeTraverse", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
-      case GrantRead(resource, database, qualifier, roleName) =>
+      case GrantRead(_, resource, database, qualifier, roleName) =>
         val (resourceText, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
         PlanDescriptionImpl(id, "GrantRead", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
-      case RevokeRead(resource, database, qualifier, roleName) =>
+      case RevokeRead(_, resource, database, qualifier, roleName) =>
         val (resourceText, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
         PlanDescriptionImpl(id, "RevokeRead", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
@@ -408,11 +408,28 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, s"VarLengthExpand($modeDescr)", children,
                             Seq(expandDescription) ++ predicatesDescription, variables)
 
+      // TODO: These are currently required in both leaf and on-child code paths, surely there is a way to not require that?
       case GrantRoleToUser(_, roleName, userName) =>
         PlanDescriptionImpl(id, "GrantRoleToUser", NoChildren, Seq(Role(Prettifier.escapeName(roleName)), User(Prettifier.escapeName(userName))), variables)
 
       case RevokeRoleFromUser(_, roleName, userName) =>
         PlanDescriptionImpl(id, "RevokeRoleFromUser", NoChildren, Seq(Role(Prettifier.escapeName(roleName)), User(Prettifier.escapeName(userName))), variables)
+
+      case GrantTraverse(_, database, qualifier, roleName) =>
+        val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
+        PlanDescriptionImpl(id, "GrantTraverse", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
+
+      case RevokeTraverse(_, database, qualifier, roleName) =>
+        val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
+        PlanDescriptionImpl(id, "RevokeTraverse", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
+
+      case GrantRead(_, resource, database, qualifier, roleName) =>
+        val (resourceText, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
+        PlanDescriptionImpl(id, "GrantRead", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
+
+      case RevokeRead(_, resource, database, qualifier, roleName) =>
+        val (resourceText, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
+        PlanDescriptionImpl(id, "RevokeRead", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }

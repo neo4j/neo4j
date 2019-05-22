@@ -134,17 +134,29 @@ final case class RevokeRolesFromUsers(roleNames: Seq[String], userNames: Seq[Str
       SemanticState.recordCurrentScope(this)
 }
 
-sealed trait ActionResource
+sealed trait ActionResource {
+  def simplify: Seq[ActionResource] = Seq(this)
+}
 
 final case class PropertyResource(property: String)(val position: InputPosition) extends ActionResource
+
+final case class PropertiesResource(properties: Seq[String])(val position: InputPosition) extends ActionResource {
+  override def simplify: Seq[ActionResource] = properties.map(PropertyResource(_)(position))
+}
 
 final case class AllResource()(val position: InputPosition) extends ActionResource
 
 final case class NoResource()(val position: InputPosition) extends ActionResource
 
-sealed trait PrivilegeQualifier
+sealed trait PrivilegeQualifier {
+  def simplify: Seq[PrivilegeQualifier] = Seq(this)
+}
 
 final case class LabelQualifier(label: String)(val position: InputPosition) extends PrivilegeQualifier
+
+final case class LabelsQualifier(labels: Seq[String])(val position: InputPosition) extends PrivilegeQualifier {
+  override def simplify: Seq[PrivilegeQualifier] = labels.map(LabelQualifier(_)(position))
+}
 
 final case class AllQualifier()(val position: InputPosition) extends PrivilegeQualifier
 
@@ -162,7 +174,7 @@ final case class ShowUserPrivileges(user: String)(val position: InputPosition) e
 
 final case class ShowAllPrivileges()(val position: InputPosition) extends ShowPrivilegeScope
 
-final case class GrantTraverse(scope: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+final case class GrantTraverse(scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])(val position: InputPosition) extends MultiDatabaseDDL {
 
   override def name = "CATALOG GRANT TRAVERSE"
 
@@ -171,7 +183,7 @@ final case class GrantTraverse(scope: GraphScope, qualifier: PrivilegeQualifier,
       SemanticState.recordCurrentScope(this)
 }
 
-final case class RevokeTraverse(scope: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+final case class RevokeTraverse(scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])(val position: InputPosition) extends MultiDatabaseDDL {
 
   override def name = "CATALOG REVOKE TRAVERSE"
 
@@ -180,7 +192,7 @@ final case class RevokeTraverse(scope: GraphScope, qualifier: PrivilegeQualifier
       SemanticState.recordCurrentScope(this)
 }
 
-final case class GrantRead(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+final case class GrantRead(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])(val position: InputPosition) extends MultiDatabaseDDL {
 
   override def name = "CATALOG GRANT READ"
 
@@ -189,7 +201,7 @@ final case class GrantRead(resource: ActionResource, scope: GraphScope, qualifie
       SemanticState.recordCurrentScope(this)
 }
 
-final case class RevokeRead(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+final case class RevokeRead(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])(val position: InputPosition) extends MultiDatabaseDDL {
 
   override def name = "CATALOG REVOKE READ"
 

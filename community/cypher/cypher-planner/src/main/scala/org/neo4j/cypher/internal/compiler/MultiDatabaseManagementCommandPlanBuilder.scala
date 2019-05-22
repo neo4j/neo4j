@@ -88,20 +88,36 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
         }
 
       // GRANT TRAVERSE ON GRAPH foo NODES A (*) TO role
-      case GrantTraverse(database, label, roleName) =>
-        Some(plans.GrantTraverse(database, label, roleName))
+      case GrantTraverse(database, labels, roleNames) =>
+        (for (roleName <- roleNames; label <- labels.simplify) yield {
+          roleName -> label
+        }).foldLeft(Option.empty[plans.GrantTraverse]) {
+          case (source, (roleName, label)) => Some(plans.GrantTraverse(source, database, label, roleName))
+        }
 
       // REVOKE TRAVERSE ON GRAPH foo NODES A (*) FROM role
-      case RevokeTraverse(database, label, roleName) =>
-        Some(plans.RevokeTraverse(database, label, roleName))
+      case RevokeTraverse(database, labels, roleNames) =>
+        (for (roleName <- roleNames; label <- labels.simplify) yield {
+          roleName -> label
+        }).foldLeft(Option.empty[plans.RevokeTraverse]) {
+          case (source, (roleName, label)) => Some(plans.RevokeTraverse(source, database, label, roleName))
+        }
 
       // GRANT READ (prop) ON GRAPH foo NODES A (*) TO role
-      case GrantRead(resource, database, label, roleName) =>
-        Some(plans.GrantRead(resource, database, label, roleName))
+      case GrantRead(resources, database, labels, roleNames) =>
+        (for (roleName <- roleNames; label <- labels.simplify; resource <- resources.simplify) yield {
+          roleName -> (label, resource)
+        }).foldLeft(Option.empty[plans.GrantRead]) {
+          case (source, (roleName, (label, resource))) => Some(plans.GrantRead(source, resource, database, label, roleName))
+        }
 
       // REVOKE READ (prop) ON GRAPH foo NODES A (*) FROM role
-      case RevokeRead(resource, database, label, roleName) =>
-        Some(plans.RevokeRead(resource, database, label, roleName))
+      case RevokeRead(resources, database, labels, roleNames) =>
+        (for (roleName <- roleNames; label <- labels.simplify; resource <- resources.simplify) yield {
+          roleName -> (label, resource)
+        }).foldLeft(Option.empty[plans.RevokeRead]) {
+          case (source, (roleName, (label, resource))) => Some(plans.RevokeRead(source, resource, database, label, roleName))
+        }
 
       // SHOW [ALL | USER user | ROLE role] PRIVILEGES
       case ShowPrivileges(scope) =>
