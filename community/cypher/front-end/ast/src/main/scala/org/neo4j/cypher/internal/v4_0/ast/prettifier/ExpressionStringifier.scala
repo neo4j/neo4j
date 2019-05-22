@@ -161,6 +161,12 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
               case n:NodePattern => node(n)
           }
         }${optionalWhereExpression.map(w => s" WHERE ${this.apply(w)}").getOrElse("")} }"
+      case e@UnaryAdd(r) =>
+        val i = parens(e, r)
+        s"+$i"
+      case e@UnarySubtract(r) =>
+        val i = parens(e, r)
+        s"-$i"
       case _ =>
         extender(ast)
     }
