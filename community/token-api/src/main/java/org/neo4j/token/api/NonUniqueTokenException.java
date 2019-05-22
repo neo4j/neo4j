@@ -19,6 +19,8 @@
  */
 package org.neo4j.token.api;
 
+import static java.lang.String.format;
+
 /**
  * This is a {@link RuntimeException} since there is no sensible way to handle this exception.
  * It signals that the database is inconsistent, or trying to perform an inconsistent operations,
@@ -26,9 +28,8 @@ package org.neo4j.token.api;
  */
 public class NonUniqueTokenException extends RuntimeException
 {
-    public NonUniqueTokenException( String tokenType, String tokenName, int tokenId, int existingId )
+    public NonUniqueTokenException( String tokenType, NamedToken newToken, NamedToken existingToken )
     {
-        super( String.format( "The %s \"%s\" is not unique, it existed with id=%d before being added with id=%d.",
-                              tokenType, tokenName, existingId, tokenId ) );
+        super( format( "The %s %s is not unique, it existed as %s.", tokenType, newToken, existingToken ) );
     }
 }

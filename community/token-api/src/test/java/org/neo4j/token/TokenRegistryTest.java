@@ -27,6 +27,7 @@ import java.util.Collection;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.NonUniqueTokenException;
 
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -57,9 +58,9 @@ class TokenRegistryTest
         registry.put( new NamedToken( INBOUND1_TYPE, 1 ) );
         registry.put( new NamedToken( INBOUND2_TYPE, 2 ) );
 
-        NonUniqueTokenException exception = assertThrows( NonUniqueTokenException.class,
-                () -> registry.put( new NamedToken( INBOUND1_TYPE, 3 ) ) );
-        assertThat( exception.getMessage(), containsString( "The testType \"inbound1\" is not unique" ) );
+        NamedToken token = new NamedToken( INBOUND1_TYPE, 3 );
+        NonUniqueTokenException exception = assertThrows( NonUniqueTokenException.class, () -> registry.put( token ) );
+        assertThat( exception.getMessage(), containsString( format( "The testType %s is not unique", token ) ) );
     }
 
     @Test
@@ -68,9 +69,9 @@ class TokenRegistryTest
         registry.put( new NamedToken( INBOUND1_TYPE, 1, true ) );
         registry.put( new NamedToken( INBOUND2_TYPE, 2, true ) );
 
-        NonUniqueTokenException exception = assertThrows( NonUniqueTokenException.class,
-                () -> registry.put( new NamedToken( INBOUND1_TYPE, 3, true ) ) );
-        assertThat( exception.getMessage(), containsString( "The testType \"inbound1\" is not unique" ) );
+        NamedToken token = new NamedToken( INBOUND1_TYPE, 3, true );
+        NonUniqueTokenException exception = assertThrows( NonUniqueTokenException.class, () -> registry.put( token ) );
+        assertThat( exception.getMessage(), containsString( format( "The testType %s is not unique", token ) ) );
     }
 
     @Test

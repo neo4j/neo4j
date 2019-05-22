@@ -69,7 +69,8 @@ public class TokenRegistry
         Registries reg = this.registries;
         if ( reg.idToToken.containsKey( token.id() ) )
         {
-            throw new NonUniqueTokenException( tokenType, token.name(), token.id(), token.id() );
+            NamedToken existingToken = reg.idToToken.get( token.id() );
+            throw new NonUniqueTokenException( tokenType, token, existingToken );
         }
 
         reg = reg.copy();
@@ -176,7 +177,8 @@ public class TokenRegistry
             }
             if ( !uniqueIds.add( token.id() ) || registries.idToToken.containsKey( token.id() ) )
             {
-                throw new NonUniqueTokenException( tokenType, token.name(), token.id(), token.id() );
+                NamedToken existingToken = registries.idToToken.get( token.id() );
+                throw new NonUniqueTokenException( tokenType, token, existingToken );
             }
         }
 
@@ -193,7 +195,8 @@ public class TokenRegistry
         if ( namesToId.containsKey( token.name() ) )
         {
             int existingKey = namesToId.get( token.name() );
-            throw new NonUniqueTokenException( tokenType, token.name(), token.id(), existingKey );
+            NamedToken existingToken = registries.idToToken.get( existingKey );
+            throw new NonUniqueTokenException( tokenType, token, existingToken );
         }
     }
 
