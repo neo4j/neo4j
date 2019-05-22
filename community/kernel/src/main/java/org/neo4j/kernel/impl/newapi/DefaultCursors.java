@@ -31,7 +31,7 @@ import static org.neo4j.util.FeatureToggles.flag;
 
 abstract class DefaultCursors
 {
-    private static final boolean DEBUG_CLOSING = flag( DefaultCursors.class, "trackCursors", false );
+    private static final boolean DEBUG_CLOSING = true;//flag( DefaultCursors.class, "trackCursors", false );
     private final Collection<CloseableStacktrace> closeables;
 
     DefaultCursors( Collection<CloseableStacktrace> closeables )
