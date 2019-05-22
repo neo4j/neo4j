@@ -252,9 +252,9 @@ public class ExecutingQuery
         return queryText;
     }
 
-    public ExecutionPlanDescription planDescription()
+    public Supplier<ExecutionPlanDescription> planDescriptionSupplier()
     {
-        return planDescriptionSupplier.get();
+        return planDescriptionSupplier;
     }
 
     public MapValue queryParameters()

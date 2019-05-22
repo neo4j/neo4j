@@ -114,7 +114,7 @@ class QueryCollector extends CollectorStateMachine<Iterator<TruncatedQuerySnapsh
             QuerySnapshot snapshot = query.snapshot();
             queries.produce(
                     new TruncatedQuerySnapshot( snapshot.queryText(),
-                                                snapshot.queryPlan(),
+                                                snapshot.queryPlanSupplier(),
                                                 snapshot.queryParameters(),
                                                 snapshot.elapsedTimeMicros(),
                                                 snapshot.compilationTimeMicros(),

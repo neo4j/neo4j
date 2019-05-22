@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.query;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
@@ -72,9 +73,9 @@ public class QuerySnapshot
         return query.queryText();
     }
 
-    public ExecutionPlanDescription queryPlan()
+    public Supplier<ExecutionPlanDescription> queryPlanSupplier()
     {
-        return query.planDescription();
+        return query.planDescriptionSupplier();
     }
 
     public MapValue queryParameters()
