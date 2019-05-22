@@ -81,7 +81,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final LogService logService;
     private final JobScheduler scheduler;
     private final TokenNameLookup tokenNameLookup;
-    private final DependencyResolver parentDependencies;
+    private final DependencyResolver globalDependencies;
     private final TokenHolders tokenHolders;
     private final Locks locks;
     private final StatementLocksFactory statementLocksFactory;
@@ -113,7 +113,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final StorageEngineFactory storageEngineFactory;
     private final ThreadToStatementContextBridge contextBridge;
 
-    public ModularDatabaseCreationContext( DatabaseId databaseId, GlobalModule globalModule, Dependencies parentDependencies,
+    public ModularDatabaseCreationContext( DatabaseId databaseId, GlobalModule globalModule, Dependencies globalDependencies,
             Monitors parentMonitors, EditionDatabaseComponents perEditionComponents, GlobalProcedures globalProcedures )
     {
         this.databaseId = databaseId;
@@ -125,7 +125,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.databaseLayout = globalModule.getStoreLayout().databaseLayout( databaseId.name() );
         this.logService = globalModule.getLogService();
         this.scheduler = globalModule.getJobScheduler();
-        this.parentDependencies =  parentDependencies;
+        this.globalDependencies = globalDependencies;
         this.tokenHolders = perEditionComponents.getTokenHolders();
         this.tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
         this.locks = perEditionComponents.getLocks();
@@ -208,9 +208,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public DependencyResolver getParentDependencies()
+    public DependencyResolver getGlobalDependencies()
     {
-        return parentDependencies;
+        return globalDependencies;
     }
 
     @Override

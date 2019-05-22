@@ -172,7 +172,7 @@ import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 public class Database extends LifecycleAdapter
 {
     private final Monitors parentMonitors;
-    private final DependencyResolver parentDependencies;
+    private final DependencyResolver globalDependencies;
     private final PageCache globalPageCache;
     private final Tracers globalTracers;
     private final Config globalConfig;
@@ -236,7 +236,7 @@ public class Database extends LifecycleAdapter
         this.databaseConfig = context.getDatabaseConfig();
         this.idGeneratorFactory = context.getIdGeneratorFactory();
         this.tokenNameLookup = context.getTokenNameLookup();
-        this.parentDependencies = context.getParentDependencies();
+        this.globalDependencies = context.getGlobalDependencies();
         this.scheduler = context.getScheduler();
         this.logService = context.getLogService();
         this.storeCopyCheckPointMutex = context.getStoreCopyCheckPointMutex();
@@ -287,7 +287,7 @@ public class Database extends LifecycleAdapter
         }
         try
         {
-            databaseDependencies = new Dependencies( parentDependencies );
+            databaseDependencies = new Dependencies( globalDependencies );
             databasePageCache = new DatabasePageCache( globalPageCache, versionContextSupplier );
             databaseMonitors = new Monitors( parentMonitors );
 

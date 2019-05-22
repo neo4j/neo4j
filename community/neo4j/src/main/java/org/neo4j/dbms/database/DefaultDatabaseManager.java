@@ -62,21 +62,17 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     @Override
     protected StandaloneDatabaseContext createDatabaseContext( DatabaseId databaseId )
     {
-        Database kernelDatabase = createKernelDatabase( databaseId, globalModule.getGlobalDependencies(), globalModule.getGlobalMonitors() );
+        DatabaseCreationContext databaseCreationContext = newDatabaseCreationContext( databaseId, globalModule.getGlobalDependencies(),
+                globalModule.getGlobalMonitors() );
+        Database kernelDatabase = new Database( databaseCreationContext );
         return new StandaloneDatabaseContext( kernelDatabase );
     }
 
-    private Database createKernelDatabase( DatabaseId databaseId, Dependencies parentDependencies, Monitors parentMonitors )
-    {
-        DatabaseCreationContext databaseCreationContext = newDatabaseCreationContext( databaseId, parentDependencies, parentMonitors );
-        return new Database( databaseCreationContext );
-    }
-
-    private DatabaseCreationContext newDatabaseCreationContext( DatabaseId databaseId, Dependencies parentDependencies, Monitors parentMonitors )
+    private DatabaseCreationContext newDatabaseCreationContext( DatabaseId databaseId, Dependencies globalDependencies, Monitors parentMonitors )
     {
         EditionDatabaseComponents editionDatabaseComponents = edition.createDatabaseComponents( databaseId );
         GlobalProcedures globalProcedures = edition.getGlobalProcedures();
-        return new ModularDatabaseCreationContext( databaseId, globalModule, parentDependencies, parentMonitors, editionDatabaseComponents, globalProcedures );
+        return new ModularDatabaseCreationContext( databaseId, globalModule, globalDependencies, parentMonitors, editionDatabaseComponents, globalProcedures );
     }
 
     @Override
