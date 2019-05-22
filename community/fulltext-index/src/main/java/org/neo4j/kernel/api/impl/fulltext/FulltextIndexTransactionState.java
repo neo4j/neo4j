@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.BooleanQuery;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
@@ -36,7 +35,6 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
@@ -68,13 +66,13 @@ class FulltextIndexTransactionState implements Closeable
     private long lastUpdateRevision;
     private SearcherReference currentSearcher;
 
-    FulltextIndexTransactionState( IndexDescriptor descriptor, Analyzer analyzer, String[] propertyNames )
+    FulltextIndexTransactionState( FulltextIndexDescriptor descriptor )
     {
         toCloseLater = new ArrayList<>();
-        writer = new TransactionStateLuceneIndexWriter( analyzer );
+        writer = new TransactionStateLuceneIndexWriter( descriptor.analyzer() );
         modifiedEntityIdsInThisTransaction = new LongHashSet();
         visitingNodes = descriptor.schema().entityType() == EntityType.NODE;
-        txStateVisitor = new FulltextIndexTransactionStateVisitor( descriptor, propertyNames, modifiedEntityIdsInThisTransaction, writer );
+        txStateVisitor = new FulltextIndexTransactionStateVisitor( descriptor, modifiedEntityIdsInThisTransaction, writer );
     }
 
     void maybeUpdate( QueryContext context )
