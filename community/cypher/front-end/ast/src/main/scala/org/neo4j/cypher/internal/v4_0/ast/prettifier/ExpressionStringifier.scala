@@ -22,6 +22,24 @@ import org.neo4j.cypher.internal.v4_0.util.InternalException
 
 case class ExpressionStringifier(extender: Expression => String = e => throw new InternalException(s"failed to pretty print $e"), alwaysParens: Boolean = false) {
   def apply(ast: Expression): String = {
+    stringify(ast)
+  }
+
+  def inner(parent: Expression)(ast: Expression) = {
+    val str = stringify(ast)
+    if (alwaysParens)
+      "(" + str + ")"
+    else {
+        val thisPrecedence = precedenceLevel(parent)
+        val argumentPrecedence = precedenceLevel(ast)
+        if (argumentPrecedence >= thisPrecedence)
+          "(" + str + ")"
+        else
+          str
+      }
+  }
+
+  private def stringify(ast: Expression): String = {
     ast match {
       case StringLiteral(txt) =>
         var containsSingle = false
@@ -41,85 +59,87 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
       case l: Literal =>
         l.asCanonicalStringVal
       case e: BinaryOperatorExpression =>
-        s"${parens(e, e.lhs)} ${operator(e)} ${parens(e, e.rhs)}"
+        s"${inner(ast)(e.lhs)} ${operator(e)} ${inner(ast)(e.rhs)}"
       case Variable(v) =>
         backtick(v)
       case ListLiteral(expressions) =>
-        expressions.map(this.apply).mkString("[", ", ", "]")
+        expressions.map(inner(ast)).mkString("[", ", ", "]")
       case FunctionInvocation(namespace, functionName, distinct, args) =>
         val ns = namespace.parts.mkString(".")
         val np = if (namespace.parts.isEmpty) "" else "."
         val ds = if (distinct) "DISTINCT " else ""
-        val as = args.map(this.apply).mkString(", ")
+        val as = args.map(inner(ast)).mkString(", ")
         s"$ns$np${functionName.name}($ds$as)"
-      case p@Property(m, k) =>
-        s"${parens(p, m)}.${backtick(k.name)}"
+      case Property(m, k) =>
+        s"${inner(ast)(m)}.${backtick(k.name)}"
       case MapExpression(items) =>
-        val is = items.map({ case (k, e) => s"${backtick(k.name)}: ${this.apply(e)}" }).mkString(", ")
+        val is = items.map({ case (k, i) => s"${backtick(k.name)}: ${inner(ast)(i)}" }).mkString(", ")
         s"{$is}"
       case Parameter(name, _) =>
         s"$$${backtick(name)}"
       case _: CountStar =>
         s"count(*)"
-      case e@IsNull(arg) =>
-        s"${parens(e, arg)} IS NULL"
-      case e@IsNotNull(arg) =>
-        s"${parens(e, arg)} IS NOT NULL"
-      case e@ContainerIndex(exp, idx) =>
-        s"${parens(e, exp)}[${this.apply(idx)}]"
+      case IsNull(arg) =>
+        s"${inner(ast)(arg)} IS NULL"
+      case IsNotNull(arg) =>
+        s"${inner(ast)(arg)} IS NOT NULL"
+      case ContainerIndex(exp, idx) =>
+        s"${inner(ast)(exp)}[${inner(ast)(idx)}]"
       case ListSlice(list, start, end) =>
-        val l = start.map(this.apply).getOrElse("")
-        val r = end.map(this.apply).getOrElse("")
-        s"${this.apply(list)}[$l..$r]"
+        val l = start.map(inner(ast)).getOrElse("")
+        val r = end.map(inner(ast)).getOrElse("")
+        s"${inner(ast)(list)}[$l..$r]"
       case PatternExpression(RelationshipsPattern(relChain)) =>
         pattern(relChain)
       case FilterExpression(scope, expression) =>
         s"filter${prettyScope(scope, expression)}"
       case AnyIterablePredicate(scope, expression) =>
         s"any${prettyScope(scope, expression)}"
-      case not@Not(arg) =>
-        s"not ${parens(not, arg)}"
+      case Not(arg) =>
+        s"not ${inner(ast)(arg)}"
       case ListComprehension(s, expression) =>
-        val v = this.apply(s.variable)
-        val p = s.innerPredicate.map(e => " WHERE " + this.apply(e)).getOrElse("")
-        val e = s.extractExpression.map(e => " | " + this.apply(e)).getOrElse("")
-        val expr = this.apply(expression)
+        val v = apply(s.variable)
+        val p = s.innerPredicate.map(pr => " WHERE " + inner(ast)(pr)).getOrElse("")
+        val e = s.extractExpression.map(ex => " | " + inner(ast)(ex)).getOrElse("")
+        val expr = inner(ast)(expression)
         s"[$v IN $expr$p$e]"
       case ExtractExpression(s, expression) =>
-        val v = this.apply(s.variable)
-        val p = s.innerPredicate.map(e => " WHERE " + this.apply(e)).getOrElse("")
-        val e = s.extractExpression.map(e => " | " + this.apply(e)).getOrElse("")
-        val expr = this.apply(expression)
+        val v = apply(s.variable)
+        val p = s.innerPredicate.map(e => " WHERE " + inner(ast)(e)).getOrElse("")
+        val e = s.extractExpression.map(e => " | " + inner(ast)(e)).getOrElse("")
+        val expr = inner(ast)(expression)
         s"extract($v IN $expr$p$e)"
       case PatternComprehension(variable, RelationshipsPattern(relChain), predicate, proj) =>
-        val v = variable.map(e => s"${this.apply(e)} = ").getOrElse("")
-        val p = predicate.map(e => " WHERE " + this.apply(e)).getOrElse("")
-        s"[$v${pattern(relChain)}$p | ${this.apply(proj)}]"
-      case e@HasLabels(arg, labels) =>
+        val v = variable.map(e => s"${inner(ast)(e)} = ").getOrElse("")
+        val p = predicate.map(e => " WHERE " + inner(ast)(e)).getOrElse("")
+        s"[$v${pattern(relChain)}$p | ${inner(ast)(proj)}]"
+      case HasLabels(arg, labels) =>
         val l = labels.map(label => backtick(label.name)).mkString(":", ":", "")
-        s"${parens(e, arg)}$l"
+        s"${inner(ast)(arg)}$l"
       case AllIterablePredicate(scope, e) =>
         s"all${prettyScope(scope, e)}"
       case NoneIterablePredicate(scope, e) =>
         s"none${prettyScope(scope, e)}"
+      case SingleIterablePredicate(scope, e) =>
+        s"single${prettyScope(scope, e)}"
       case MapProjection(variable, items) =>
         val itemsText = items.map {
-          case LiteralEntry(k, e) => s"${backtick(k.name)}: ${this.apply(e)}"
-          case VariableSelector(v) => this.apply(v)
-          case PropertySelector(v) => s".${this.apply(v)}"
+          case LiteralEntry(k, e) => s"${backtick(k.name)}: ${inner(ast)(e)}"
+          case VariableSelector(v) => apply(v)
+          case PropertySelector(v) => s".${apply(v)}"
           case AllPropertiesSelector() => ".*"
         }.mkString(", ")
-        s"${this.apply(variable)}{$itemsText}"
+        s"${apply(variable)}{$itemsText}"
       case CaseExpression(expression, alternatives, default) =>
         Seq(
           Seq("CASE"),
-          for {e <- expression.toSeq; i <- Seq(apply(e))} yield i,
-          for {(e1, e2) <- alternatives; i <- Seq("WHEN", apply(e1), "THEN", apply(e2))} yield i,
-          for {e <- default.toSeq; i <- Seq("ELSE", apply(e))} yield i,
+          for {e <- expression.toSeq; i <- Seq(inner(ast)(e))} yield i,
+          for {(e1, e2) <- alternatives; i <- Seq("WHEN", inner(ast)(e1), "THEN", inner(ast)(e2))} yield i,
+          for {e <- default.toSeq; i <- Seq("ELSE", inner(ast)(e))} yield i,
           Seq("END")
         ).flatten.mkString(" ")
 
-      case e@Ands(expressions) =>
+      case Ands(expressions) =>
 
         type BinOp = Expression with BinaryOperatorExpression
 
@@ -136,23 +156,23 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
 
         findChain match {
           case Some(chain) =>
-            val head = this.apply(chain.head)
-            val tail = chain.tail.flatMap(o => List(o.canonicalOperatorSymbol, parens(e, o.rhs)))
+            val head = apply(chain.head)
+            val tail = chain.tail.flatMap(o => List(o.canonicalOperatorSymbol, inner(ast)(o.rhs)))
             (head :: tail).mkString(" ")
           case None =>
-            expressions.map(x => parens(e, x)).mkString(" AND ")
+            expressions.map(x => inner(ast)(x)).mkString(" AND ")
         }
 
-      case e@Ors(expressions) =>
-        expressions.map(x => parens(e, x)).mkString(" OR ")
+      case Ors(expressions) =>
+        expressions.map(x => inner(ast)(x)).mkString(" OR ")
       case ShortestPathExpression(s@ShortestPaths(r:RelationshipChain, _)) =>
         s"${s.name}(${pattern(r)})"
       case ReduceExpression(ReduceScope(Variable(acc), Variable(identifier), expression), init, list) =>
         val a = backtick(acc)
         val v = backtick(identifier)
-        val i = this.apply(init)
-        val l = this.apply(list)
-        val e = this.apply(expression)
+        val i = inner(ast)(init)
+        val l = inner(ast)(list)
+        val e = inner(ast)(expression)
         s"reduce($a = $i, $v IN $l | $e)"
       case _: ExtractScope | _: FilterScope | _: ReduceScope =>
         // These are not really expressions, they are part of expressions
@@ -163,25 +183,16 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
               case r:RelationshipChain => pattern(r)
               case n:NodePattern => node(n)
           }
-        }${optionalWhereExpression.map(w => s" WHERE ${this.apply(w)}").getOrElse("")} }"
-      case e@UnaryAdd(r) =>
-        val i = parens(e, r)
+        }${optionalWhereExpression.map(w => s" WHERE ${inner(ast)(w)}").getOrElse("")} }"
+      case UnaryAdd(r) =>
+        val i = inner(ast)(r)
         s"+$i"
-      case e@UnarySubtract(r) =>
-        val i = parens(e, r)
+      case UnarySubtract(r) =>
+        val i = inner(ast)(r)
         s"-$i"
       case _ =>
         extender(ast)
     }
-  }
-
-  private def parens(caller: Expression, argument: Expression) = {
-    val thisPrecedence = precedenceLevel(caller)
-    val argumentPrecedence = precedenceLevel(argument)
-    if (argumentPrecedence >= thisPrecedence || alwaysParens)
-      s"(${this.apply(argument)})"
-    else
-      this.apply(argument)
   }
 
   private def prettyScope(s: FilterScope, expression: Expression) = {
@@ -194,13 +205,13 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
   private def props(prepend: String, e: Option[Expression]): String = {
     e.map(e => {
       val separator = if(prepend.isEmpty) "" else " "
-      s"$prepend$separator${this.apply(e)}"
+      s"$prepend$separator${apply(e)}"
     }).getOrElse(prepend)
   }
 
   def node(nodePattern: NodePattern): String = {
-    val name = nodePattern.variable.map(this.apply).getOrElse("")
-    val base = nodePattern.baseNode.map(this.apply).map(" COPY OF " + _).getOrElse("")
+    val name = nodePattern.variable.map(apply).getOrElse("")
+    val base = nodePattern.baseNode.map(apply).map(" COPY OF " + _).getOrElse("")
     val labels = if (nodePattern.labels.isEmpty) "" else
       nodePattern.labels.map(l => backtick(l.name)).mkString(":", ":", "")
     val e = props(s"$name$base$labels", nodePattern.properties)
@@ -214,8 +225,8 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
       ""
     else
       relationship.types.map(l => backtick(l.name)).mkString(":", "|", "")
-    val name = relationship.variable.map(this.apply).getOrElse("")
-    val base = relationship.baseRel.map(this.apply).map(" COPY OF " + _).getOrElse("")
+    val name = relationship.variable.map(apply).getOrElse("")
+    val base = relationship.baseRel.map(apply).map(" COPY OF " + _).getOrElse("")
     val length = relationship.length match {
       case None => ""
       case Some(None) => "*"
