@@ -58,6 +58,11 @@ public final class CommonMatchers
         return new ExceptionMessageMatcher( matcher );
     }
 
+    public static Matcher<Throwable> throwableWithMessage( Class<? extends Throwable> expectedType, Matcher<String> messageMatcher )
+    {
+        return new ThrowableWithMessageMatcher( expectedType, messageMatcher );
+    }
+
     /**
      * Checks that exception has expected array or suppressed exceptions.
      *
