@@ -407,6 +407,54 @@ class SecurityDDLParserTest
     failsToParse
   }
 
+  test("REVOKE TRAVERSE GRAPH * NODES * (*) FROM role") {
+    failsToParse
+  }
+
+  test("REVOKE TRAVERSE ON GRAPH * NODES * (*)") {
+    failsToParse
+  }
+
+  test("REVOKE TRAVERSE ON GRAPH * NODES * FROM role") {
+    yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+  }
+
+  test("REVOKE TRAVERSE ON GRAPH * FROM role") {
+    yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+  }
+
+  test("REVOKE TRAVERSE ON GRAPH foo FROM role") {
+    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+  }
+
+  test("REVOKE TRAVERSE ON GRAPH foo NODES * FROM role") {
+    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+  }
+
+  test("REVOKE TRAVERSE ON GRAPH foo NODES A FROM role") {
+    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+  }
+
+  test("REVOKE TRAVERSE ON GRAPH * NODES * (*) FROM role") {
+    yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+  }
+
+  test("REVOKE TRAVERSE ON GRAPH foo NODES * (*) FROM role") {
+    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+  }
+
+  test("REVOKE TRAVERSE ON GRAPH * NODES A (*) FROM role") {
+    yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.LabelQualifier("A") _, "role"))
+  }
+
+  test("REVOKE TRAVERSE ON GRAPH foo NODES A (*) FROM role") {
+    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+  }
+
+  test("REVOKE TRAVERSE ON GRAPH foo NODES A (foo) FROM role") {
+    failsToParse
+  }
+
   test("GRANT READ (*) GRAPH * NODES * (*) TO role") {
     failsToParse
   }
@@ -500,6 +548,102 @@ class SecurityDDLParserTest
   }
 
   test("GRANT READ (bar) ON GRAPH foo NODES A (foo) TO role") {
+    failsToParse
+  }
+
+  test("REVOKE READ (*) GRAPH * NODES * (*) FROM role") {
+    failsToParse
+  }
+
+  test("REVOKE READ (*) ON GRAPH * NODES * (*)") {
+    failsToParse
+  }
+
+  test("REVOKE READ (*) ON GRAPH * NODES * FROM role") {
+    yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+  }
+
+  test("REVOKE READ (*) ON GRAPH * FROM role") {
+    yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+  }
+
+  test("REVOKE READ (*) ON GRAPH foo FROM role") {
+    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+  }
+
+  test("REVOKE READ (*) ON GRAPH foo NODES * FROM role") {
+    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+  }
+
+  test("REVOKE READ (*) ON GRAPH foo NODES A FROM role") {
+    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+  }
+
+  test("REVOKE READ (*) ON GRAPH * NODES * (*) FROM role") {
+    yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+  }
+
+  test("REVOKE READ (*) ON GRAPH foo NODES * (*) FROM role") {
+    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+  }
+
+  test("REVOKE READ (*) ON GRAPH * NODES A (*) FROM role") {
+    yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.LabelQualifier("A") _, "role"))
+  }
+
+  test("REVOKE READ (*) ON GRAPH foo NODES A (*) FROM role") {
+    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+  }
+
+  test("REVOKE READ (*) ON GRAPH foo NODES A (foo) FROM role") {
+    failsToParse
+  }
+
+  test("REVOKE READ (bar) GRAPH * NODES * (*) FROM role") {
+    failsToParse
+  }
+
+  test("REVOKE READ (bar) ON GRAPH * NODES * (*)") {
+    failsToParse
+  }
+
+  test("REVOKE READ (bar) ON GRAPH * NODES * FROM role") {
+    yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+  }
+
+  test("REVOKE READ (bar) ON GRAPH * FROM role") {
+    yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+  }
+
+  test("REVOKE READ (bar) ON GRAPH foo FROM role") {
+    yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+  }
+
+  test("REVOKE READ (bar) ON GRAPH foo NODES * FROM role") {
+    yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+  }
+
+  test("REVOKE READ (bar) ON GRAPH foo NODES A FROM role") {
+    yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+  }
+
+  test("REVOKE READ (bar) ON GRAPH * NODES * (*) FROM role") {
+    yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.AllGraphsScope() _, ast.AllQualifier() _, "role"))
+  }
+
+  test("REVOKE READ (bar) ON GRAPH foo NODES * (*) FROM role") {
+    yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
+  }
+
+  test("REVOKE READ (bar) ON GRAPH * NODES A (*) FROM role") {
+    yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.AllGraphsScope() _, ast.LabelQualifier("A") _, "role"))
+  }
+
+  test("REVOKE READ (bar) ON GRAPH foo NODES A (*) FROM role") {
+    yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+  }
+
+  test("REVOKE READ (bar) ON GRAPH foo NODES A (foo) FROM role") {
     failsToParse
   }
 }

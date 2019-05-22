@@ -70,7 +70,9 @@ case class DropRole(roleName: String)(implicit idGen: IdGen) extends SecurityMan
 case class GrantRolesToUsers(roleNames: Seq[String], userNames: Seq[String])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
 case class RevokeRolesFromUsers(roleNames: Seq[String], userNames: Seq[String])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
 case class GrantTraverse(database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
+case class RevokeTraverse(database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
 case class GrantRead(resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
+case class RevokeRead(resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
 case class ShowPrivileges(scope: ShowPrivilegeScope)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
 
 // Database management commands

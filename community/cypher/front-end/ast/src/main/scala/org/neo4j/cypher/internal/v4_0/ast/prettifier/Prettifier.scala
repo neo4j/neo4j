@@ -116,9 +116,17 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
       val (dbName, label) = Prettifier.extractScope(dbScope, qualifier)
       s"${x.name} ON GRAPH $dbName NODES $label (*) TO ${Prettifier.escapeName(roleName)}"
 
+    case x @ RevokeTraverse(dbScope, qualifier, roleName) =>
+      val (dbName, label) = Prettifier.extractScope(dbScope, qualifier)
+      s"${x.name} ON GRAPH $dbName NODES $label (*) FROM ${Prettifier.escapeName(roleName)}"
+
     case x @ GrantRead(resource, dbScope, qualifier, roleName) =>
       val (resourceName, dbName, label) = Prettifier.extractScope(resource, dbScope, qualifier)
       s"${x.name} ($resourceName) ON GRAPH $dbName NODES $label (*) TO ${Prettifier.escapeName(roleName)}"
+
+    case x @ RevokeRead(resource, dbScope, qualifier, roleName) =>
+      val (resourceName, dbName, label) = Prettifier.extractScope(resource, dbScope, qualifier)
+      s"${x.name} ($resourceName) ON GRAPH $dbName NODES $label (*) FROM ${Prettifier.escapeName(roleName)}"
 
     case x @ ShowPrivileges(scope) =>
       s"CATALOG SHOW ${Prettifier.extractScope(scope)} PRIVILEGES"

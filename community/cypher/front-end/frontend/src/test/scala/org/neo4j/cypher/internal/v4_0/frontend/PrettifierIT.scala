@@ -318,6 +318,45 @@ class PrettifierIT extends CypherFunSuite {
       "grant read ( `&bar` ) on graph `#%¤` nodes `()/&` (*) to role" ->
         "CATALOG GRANT READ (`&bar`) ON GRAPH `#%¤` NODES `()/&` (*) TO role",
 
+      "revoke traverse on graph * from role" ->
+        "CATALOG REVOKE TRAVERSE ON GRAPH * NODES * (*) FROM role",
+
+      "revoke traverse on graph * nodes * from role" ->
+        "CATALOG REVOKE TRAVERSE ON GRAPH * NODES * (*) FROM role",
+
+      "revoke traverse on graph * nodes * (*) from role" ->
+        "CATALOG REVOKE TRAVERSE ON GRAPH * NODES * (*) FROM role",
+
+      "revoke traverse on graph foo nodes * (*) from role" ->
+        "CATALOG REVOKE TRAVERSE ON GRAPH foo NODES * (*) FROM role",
+
+      "revoke traverse on graph foo nodes A (*) from role" ->
+        "CATALOG REVOKE TRAVERSE ON GRAPH foo NODES A (*) FROM role",
+
+      "revoke traverse on graph `#%¤` nodes `()/&` (*) from role" ->
+        "CATALOG REVOKE TRAVERSE ON GRAPH `#%¤` NODES `()/&` (*) FROM role",
+
+      "revoke read (*) on graph * from role" ->
+        "CATALOG REVOKE READ (*) ON GRAPH * NODES * (*) FROM role",
+
+      "revoke read (*) on graph * nodes * from role" ->
+        "CATALOG REVOKE READ (*) ON GRAPH * NODES * (*) FROM role",
+
+      "revoke read (*) on graph * nodes * (*) from role" ->
+        "CATALOG REVOKE READ (*) ON GRAPH * NODES * (*) FROM role",
+
+      "revoke read (*) on graph foo nodes * (*) from role" ->
+        "CATALOG REVOKE READ (*) ON GRAPH foo NODES * (*) FROM role",
+
+      "revoke read (*) on graph foo nodes A (*) from role" ->
+        "CATALOG REVOKE READ (*) ON GRAPH foo NODES A (*) FROM role",
+
+      "revoke read (bar) on graph foo nodes A (*) from role" ->
+        "CATALOG REVOKE READ (bar) ON GRAPH foo NODES A (*) FROM role",
+
+      "revoke read ( `&bar` ) on graph `#%¤` nodes `()/&` (*) from role" ->
+        "CATALOG REVOKE READ (`&bar`) ON GRAPH `#%¤` NODES `()/&` (*) FROM role",
+
       "catalog show database foO_Bar_42" ->
         "CATALOG SHOW DATABASE foO_Bar_42",
 

@@ -42,7 +42,7 @@ trait Statement extends Parser
   }
 
   def PrivilegeManagementCommand: Rule1[CatalogDDL] = rule("Security privilege management statement") {
-    optional(keyword("CATALOG")) ~~ (ShowPrivileges | GrantRole | RevokeRole | GrantTraverse | GrantRead)
+    optional(keyword("CATALOG")) ~~ (ShowPrivileges | GrantRole | RevokeRole | GrantTraverse | RevokeTraverse | GrantRead | RevokeRead)
   }
 
   def ShowUsers: Rule1[ShowUsers] = rule("CATALOG SHOW USERS") {
@@ -161,10 +161,22 @@ trait Statement extends Parser
       ((scope, qualifier, grantee) => ast.GrantTraverse(scope, qualifier, grantee))
   }
 
+  //`REVOKE TRAVERSE ON DATABASE foo GRAPH NODES A (*) FROM role1`
+  def RevokeTraverse: Rule1[RevokeTraverse] = rule("CATALOG REVOKE TRAVERSE") {
+    group(keyword("REVOKE TRAVERSE") ~~ keyword("ON GRAPH") ~~ GraphName ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNameString) ~~>>
+      ((scope, qualifier, grantee) => ast.RevokeTraverse(scope, qualifier, grantee))
+  }
+
   //`GRANT READ (?) ON DATABASE foo GRAPH NODES A (*) TO role1`
   def GrantRead: Rule1[GrantRead] = rule("GRANT READ") {
     group(keyword("GRANT READ") ~~ PrivilegeProperty ~~ keyword("ON GRAPH") ~~ GraphName ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNameString) ~~>>
       ((prop, scope, qualifier, grantee) => ast.GrantRead(prop, scope, qualifier, grantee))
+  }
+
+  //`REVOKE READ (?) ON DATABASE foo GRAPH NODES A (*) FROM role1`
+  def RevokeRead: Rule1[RevokeRead] = rule("REVOKE READ") {
+    group(keyword("REVOKE READ") ~~ PrivilegeProperty ~~ keyword("ON GRAPH") ~~ GraphName ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNameString) ~~>>
+      ((prop, scope, qualifier, grantee) => ast.RevokeRead(prop, scope, qualifier, grantee))
   }
 
   def ShowPrivileges: Rule1[ShowPrivileges] = rule("CATALOG SHOW PRIVILEGES") {

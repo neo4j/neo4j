@@ -173,9 +173,27 @@ final case class GrantTraverse(scope: GraphScope, qualifier: PrivilegeQualifier,
       SemanticState.recordCurrentScope(this)
 }
 
+final case class RevokeTraverse(scope: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+
+  override def name = "CATALOG REVOKE TRAVERSE"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
 final case class GrantRead(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(val position: InputPosition) extends MultiDatabaseDDL {
 
   override def name = "CATALOG GRANT READ"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
+final case class RevokeRead(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+
+  override def name = "CATALOG REVOKE READ"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
