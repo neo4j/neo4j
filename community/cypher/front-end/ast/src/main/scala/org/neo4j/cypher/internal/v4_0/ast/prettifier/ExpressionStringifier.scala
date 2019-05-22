@@ -196,10 +196,10 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
   }
 
   private def prettyScope(s: FilterScope, expression: Expression) = {
-    val v = this.apply(s.variable)
-    val e = this.apply(expression)
-    val p = s.innerPredicate.map(this.apply).getOrElse("")
-    s"($v IN $e WHERE $p)"
+    Seq(
+      for {i <- Seq(apply(s.variable), "IN", inner(s)(expression))} yield i,
+      for {p <- s.innerPredicate.toSeq; i <- Seq("WHERE", inner(s)(p))} yield i
+    ).flatten.mkString("(", " ", ")")
   }
 
   private def props(prepend: String, e: Option[Expression]): String = {
