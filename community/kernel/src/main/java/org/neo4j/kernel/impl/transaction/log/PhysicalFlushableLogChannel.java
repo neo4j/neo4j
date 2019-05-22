@@ -31,11 +31,6 @@ public class PhysicalFlushableLogChannel extends PhysicalFlushableChannel
         super( channel );
     }
 
-    public PhysicalFlushableLogChannel( StoreChannel channel, int bufferSize )
-    {
-        super( channel, bufferSize );
-    }
-
     public PhysicalFlushableLogChannel( StoreChannel channel, ByteBuffer byteBuffer )
     {
         super( channel, byteBuffer );

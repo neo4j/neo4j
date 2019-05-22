@@ -70,10 +70,6 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     public void init() throws IOException
     {
         logVersionRepository = context.getLogVersionRepository();
-        // Make sure at least a bare bones log file is available before recovery
-        long lastLogVersionUsed = this.logVersionRepository.getCurrentLogVersion();
-        channel = logFiles.createLogChannelForVersion( lastLogVersionUsed, context::getLastCommittedTransactionId );
-        channel.close();
     }
 
     @Override
