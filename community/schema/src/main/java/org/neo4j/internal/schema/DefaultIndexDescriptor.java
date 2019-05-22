@@ -56,7 +56,7 @@ public class DefaultIndexDescriptor implements IndexDescriptor
         this( descriptor.schema(),
                 descriptor.providerKey(),
                 descriptor.providerVersion(),
-                optionalName( descriptor ),
+                descriptor.hasUserSuppliedName() ? Optional.of( descriptor.name() ) : Optional.empty(),
                 descriptor.isUnique()
         );
     }
