@@ -57,6 +57,194 @@ Feature: SkipLimitAcceptance
       """
     Then a SyntaxError should be raised at compile time: NegativeIntegerArgument
 
+  Scenario: Negative parameter for SKIP should not generate errors
+    And having executed:
+      """
+      CREATE (s:Person {name: 'Steven'}),
+             (c:Person {name: 'Craig'})
+      """
+    And parameters are:
+      | skip | -1 |
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      SKIP $skip
+      """
+    Then the result should be:
+      | name     |
+      | 'Steven' |
+      | 'Craig'  |
+    And no side effects
+
+  Scenario: Negative SKIP should fail with a syntax exception
+    And having executed:
+      """
+      CREATE (s:Person {name: 'Steven'}),
+             (c:Person {name: 'Craig'})
+      """
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      SKIP -1
+      """
+    Then a SyntaxError should be raised at compile time: NegativeIntegerArgument
+
+  Scenario: Graph touching LIMIT should fail with a syntax exception
+    And having executed:
+      """
+      CREATE (s:Person {name: 'Steven'}),
+             (c:Person {name: 'Craig'})
+      """
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      LIMIT reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
+      """
+    Then a SyntaxError should be raised at compile time: NonConstantExpression
+
+
+  Scenario: Graph touching SKIP should fail with a syntax exception
+    And having executed:
+      """
+      CREATE (s:Person {name: 'Steven'}),
+             (c:Person {name: 'Craig'})
+      """
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      SKIP reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
+      """
+    Then a SyntaxError should be raised at compile time: NonConstantExpression
+
+
+  Scenario: Graph touching LIMIT should fail with a syntax exception 2
+    And having executed:
+      """
+      CREATE (s:Person {name: 'Steven'}),
+             (c:Person {name: 'Craig'})
+      """
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      LIMIT size([(a)-->(b) | b.age])
+      """
+    Then a SyntaxError should be raised at compile time: NonConstantExpression
+
+
+  Scenario: Graph touching SKIP should fail with a syntax exception 2
+    And having executed:
+      """
+      CREATE (s:Person {name: 'Steven'}),
+             (c:Person {name: 'Craig'})
+      """
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      SKIP size([(a)-->(b) | b.age])
+      """
+    Then a SyntaxError should be raised at compile time: NonConstantExpression
+
+
+  Scenario: Graph touching LIMIT should fail with a syntax exception 3
+    And having executed:
+      """
+      CREATE (s:Person {name: 'Steven'}),
+             (c:Person {name: 'Craig'})
+      """
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      LIMIT size((a)-->(c))
+      """
+    Then a SyntaxError should be raised at compile time: NonConstantExpression
+
+
+  Scenario: Graph touching SKIP should fail with a syntax exception 3
+    And having executed:
+      """
+      CREATE (s:Person {name: 'Steven'}),
+             (c:Person {name: 'Craig'})
+      """
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      SKIP size((a)-->(c))
+      """
+    Then a SyntaxError should be raised at compile time: NonConstantExpression
+
+
+  Scenario: Graph touching LIMIT should fail with a syntax exception 4
+    And having executed:
+      """
+      CREATE (s:Person {name: 'Steven'}),
+             (c:Person {name: 'Craig'})
+      """
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      LIMIT reduce(sum=0, x IN [p.age] | sum + x)
+      """
+    Then a SyntaxError should be raised at compile time: NonConstantExpression
+
+
+  Scenario: Graph touching SKIP should fail with a syntax exception 4
+    And having executed:
+      """
+      CREATE (s:Person {name: 'Steven'}),
+             (c:Person {name: 'Craig'})
+      """
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      SKIP reduce(sum=0, x IN [p.age] | sum + x)
+      """
+    Then a SyntaxError should be raised at compile time: NonConstantExpression
+
+  Scenario: Reduce LIMIT should be allowed
+    And having executed:
+      """
+      CREATE (s:Person {name: 'Steven'}),
+             (c:Person {name: 'Craig'})
+      """
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      LIMIT reduce(sum=0, x IN [0, 2] | sum + x)
+      """
+    Then the result should be:
+    | name     |
+    | 'Steven' |
+    | 'Craig'  |
+    And no side effects
+
+
+  Scenario: Reduce SKIP should be allowed
+    And having executed:
+      """
+      CREATE (s:Person {name: 'Steven'}),
+             (c:Person {name: 'Craig'})
+      """
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      SKIP reduce(sum=0, x IN [0, 2] | sum + x)
+      """
+    Then the result should be:
+      | name     |
+    And no side effects
+
   Scenario: Combining LIMIT and aggregation
     And having executed:
       """
