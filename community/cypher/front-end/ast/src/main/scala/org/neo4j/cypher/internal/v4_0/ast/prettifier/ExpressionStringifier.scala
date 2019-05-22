@@ -48,9 +48,10 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
         expressions.map(this.apply).mkString("[", ", ", "]")
       case FunctionInvocation(namespace, functionName, distinct, args) =>
         val ns = namespace.parts.mkString(".")
+        val np = if (namespace.parts.isEmpty) "" else "."
         val ds = if (distinct) "DISTINCT " else ""
         val as = args.map(this.apply).mkString(", ")
-        s"$ns${functionName.name}($ds$as)"
+        s"$ns$np${functionName.name}($ds$as)"
       case p@Property(m, k) =>
         s"${parens(p, m)}.${backtick(k.name)}"
       case MapExpression(items) =>
