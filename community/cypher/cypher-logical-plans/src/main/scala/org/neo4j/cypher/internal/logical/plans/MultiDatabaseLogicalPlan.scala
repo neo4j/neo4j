@@ -37,8 +37,8 @@ class SecurityManagementException(message: String) extends CypherException {
 }
 
 
-abstract class MultiDatabaseLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen) {
-  override def lhs: Option[LogicalPlan] = None
+abstract class MultiDatabaseLogicalPlan(source: Option[MultiDatabaseLogicalPlan] = None)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
+  override def lhs: Option[LogicalPlan] = source
 
   override def rhs: Option[LogicalPlan] = None
 
@@ -49,36 +49,36 @@ abstract class MultiDatabaseLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen)
   def invalid(message: String): RuntimeException
 }
 
-abstract class DatabaseManagementLogicalPlan(idGen: IdGen) extends MultiDatabaseLogicalPlan(idGen) {
+abstract class DatabaseManagementLogicalPlan(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan {
   override def invalid(message: String): DatabaseManagementException = new DatabaseManagementException(message)
 }
 
-abstract class SecurityManagementLogicalPlan(idGen: IdGen) extends MultiDatabaseLogicalPlan(idGen) {
+abstract class SecurityManagementLogicalPlan(source: Option[MultiDatabaseLogicalPlan] = None)(implicit idGen: IdGen) extends MultiDatabaseLogicalPlan(source) {
   override def invalid(message: String): SecurityManagementException = new SecurityManagementException(message)
 }
 
 // Security management commands
-case class ShowUsers()(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
+case class ShowUsers()(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
 case class CreateUser(userName: String, initialStringPassword: Option[String], initialParameterPassword: Option[Parameter],
-                      requirePasswordChange: Boolean, suspended: Boolean)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
-case class DropUser(userName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
+                      requirePasswordChange: Boolean, suspended: Boolean)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
+case class DropUser(userName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
 case class AlterUser(userName: String, initialStringPassword: Option[String], initialParameterPassword: Option[Parameter],
-                     requirePasswordChange: Option[Boolean], suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
-case class ShowRoles(withUsers: Boolean, showAll: Boolean)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
-case class CreateRole(roleName: String, from: Option[String])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
-case class DropRole(roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
-case class GrantRolesToUsers(roleNames: Seq[String], userNames: Seq[String])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
-case class RevokeRolesFromUsers(roleNames: Seq[String], userNames: Seq[String])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
-case class GrantTraverse(database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
-case class RevokeTraverse(database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
-case class GrantRead(resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
-case class RevokeRead(resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
-case class ShowPrivileges(scope: ShowPrivilegeScope)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(idGen)
+                     requirePasswordChange: Option[Boolean], suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
+case class ShowRoles(withUsers: Boolean, showAll: Boolean)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
+case class CreateRole(roleName: String, from: Option[String])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
+case class DropRole(roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
+case class GrantRoleToUser(source: Option[GrantRoleToUser], roleName: String, userName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(source)
+case class RevokeRoleFromUser(source: Option[RevokeRoleFromUser], roleName: String, userNames: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(source)
+case class GrantTraverse(database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
+case class RevokeTraverse(database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
+case class GrantRead(resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
+case class RevokeRead(resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
+case class ShowPrivileges(scope: ShowPrivilegeScope)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
 
 // Database management commands
-case class ShowDatabases()(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan(idGen)
-case class ShowDatabase(dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan(idGen)
-case class CreateDatabase(dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan(idGen)
-case class DropDatabase(dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan(idGen)
-case class StartDatabase(dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan(idGen)
-case class StopDatabase(dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan(idGen)
+case class ShowDatabases()(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
+case class ShowDatabase(dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
+case class CreateDatabase(dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
+case class DropDatabase(dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
+case class StartDatabase(dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
+case class StopDatabase(dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan

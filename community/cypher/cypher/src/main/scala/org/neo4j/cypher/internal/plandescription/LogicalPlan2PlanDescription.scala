@@ -180,15 +180,12 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val roleName = Role(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "DropRole", NoChildren, Seq(roleName), variables)
 
-      case GrantRolesToUsers(roleNames, userNames) =>
-        val roles = roleNames.map(Prettifier.escapeName).map(Role)
-        val users = userNames.map(Prettifier.escapeName).map(User)
-        PlanDescriptionImpl(id, "GrantRolesToUsers", NoChildren, roles ++ users, variables)
+      // TODO: These are currently required in both leaf and on-child code paths, surely there is a way to not require that?
+      case GrantRoleToUser(_, roleName, userName) =>
+        PlanDescriptionImpl(id, "GrantRoleToUser", NoChildren, Seq(Role(Prettifier.escapeName(roleName)), User(Prettifier.escapeName(userName))), variables)
 
-      case RevokeRolesFromUsers(roleNames, userNames) =>
-        val roles = roleNames.map(Prettifier.escapeName).map(Role)
-        val users = userNames.map(Prettifier.escapeName).map(User)
-        PlanDescriptionImpl(id, "RevokeRolesFromUsers", NoChildren, roles ++ users, variables)
+      case RevokeRoleFromUser(_, roleName, userName) =>
+        PlanDescriptionImpl(id, "RevokeRoleFromUser", NoChildren, Seq(Role(Prettifier.escapeName(roleName)), User(Prettifier.escapeName(userName))), variables)
 
       case GrantTraverse(database, qualifier, roleName) =>
         val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
@@ -410,6 +407,12 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         }
         PlanDescriptionImpl(id, s"VarLengthExpand($modeDescr)", children,
                             Seq(expandDescription) ++ predicatesDescription, variables)
+
+      case GrantRoleToUser(_, roleName, userName) =>
+        PlanDescriptionImpl(id, "GrantRoleToUser", NoChildren, Seq(Role(Prettifier.escapeName(roleName)), User(Prettifier.escapeName(userName))), variables)
+
+      case RevokeRoleFromUser(_, roleName, userName) =>
+        PlanDescriptionImpl(id, "RevokeRoleFromUser", NoChildren, Seq(Role(Prettifier.escapeName(roleName)), User(Prettifier.escapeName(userName))), variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
