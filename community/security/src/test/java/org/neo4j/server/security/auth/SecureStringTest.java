@@ -19,17 +19,38 @@
  */
 package org.neo4j.server.security.auth;
 
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.Random;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.rule.RandomRule;
+
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_16;
+import static java.nio.charset.StandardCharsets.UTF_16BE;
+import static java.nio.charset.StandardCharsets.UTF_16LE;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
+@ExtendWith( RandomExtension.class )
 class SecureStringTest
 {
+
+    @Inject
+    private RandomRule random;
 
     @ParameterizedTest
     @ValueSource( strings = {"true", "false"} )
@@ -38,16 +59,30 @@ class SecureStringTest
         testString( "a super secret text", encrypt );
     }
 
-    @ParameterizedTest
-    @ValueSource( strings = {"true", "false"} )
-    void testRandomStrings( boolean encrypt )
+    @TestFactory
+    Collection<DynamicTest> dynamicTestsFromCollection()
     {
-        Random random = new Random( 4953 );
+        Collection<Charset> standardCharsets = Arrays.asList( US_ASCII, UTF_8, UTF_16, ISO_8859_1, UTF_16BE, UTF_16LE );
+        Collection<DynamicTest> tests = new ArrayList<>();
+
+        for ( Charset charset : standardCharsets )
+        {
+            for ( boolean encrypted : Arrays.asList( true, false ) )
+            {
+                String testName = String.format( "TestRandomStrings: encrypted(%s), encoding(%s)", encrypted, charset );
+                tests.add( dynamicTest( testName, () -> testRandomStrings( encrypted, charset ) ) );
+            }
+        }
+        return tests;
+    }
+
+    void testRandomStrings( boolean encrypt, Charset charset )
+    {
         for ( int i = 0; i < 1000; i++ )
         {
             byte[] bytes = new byte[random.nextInt( 10000 ) + 1];
             random.nextBytes( bytes );
-            String clearText = new String( bytes );
+            String clearText = new String( bytes, charset );
             testString( clearText, encrypt );
         }
     }

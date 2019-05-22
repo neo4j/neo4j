@@ -19,11 +19,14 @@
  */
 package org.neo4j.server.security.auth;
 
+import java.nio.charset.Charset;
 import java.security.Key;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class SecureString
 {
@@ -34,6 +37,7 @@ public class SecureString
     private boolean encryptionAvailable;
 
     private byte[] obfuscationKey;
+    private static final Charset encoding = UTF_8;
 
     public SecureString( String stringToSecure )
     {
@@ -42,7 +46,7 @@ public class SecureString
 
     SecureString( String stringToSecure, boolean tryUseEncryption )
     {
-        this( stringToSecure != null ? stringToSecure.getBytes() : null, tryUseEncryption );
+        this( stringToSecure != null ? stringToSecure.getBytes( encoding ) : null, tryUseEncryption );
     }
 
     private SecureString( byte[] dataToSecure, boolean tryUseEncryption )
@@ -126,7 +130,7 @@ public class SecureString
     public String getString()
     {
         byte[] data = getData();
-        return data != null ? new String( getData() ) : null;
+        return data != null ? new String( getData(), encoding ) : null;
     }
 
     @Override
