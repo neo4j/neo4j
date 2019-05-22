@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.StorageProperty;
@@ -45,7 +46,7 @@ import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure
 
 /**
  * A {@link TxStateVisitor} that adds all entities to a {@link TransactionStateLuceneIndexWriter}, that matches the index according to the
- * {@link FulltextIndexDescriptor}.
+ * {@link FulltextSchemaDescriptor}.
  */
 class FulltextIndexTransactionStateVisitor extends TxStateVisitor.Adapter
 {
