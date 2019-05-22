@@ -189,6 +189,14 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     @Override
     public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
     {
+        try
+        {
+            descriptor = bless( descriptor ); // TODO remove this once the index configuration migration is implemented!
+        }
+        catch ( MisconfiguredIndexException e )
+        {
+            throw new RuntimeException( e );
+        }
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.indexReference() );
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
         Analyzer analyzer = createAnalyzer( descriptor, tokenNameLookup );
@@ -211,8 +219,15 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     @Override
     public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
+        try
+        {
+            descriptor = bless( descriptor ); // TODO remove this once the index configuration migration is implemented!
+        }
+        catch ( MisconfiguredIndexException e )
+        {
+            throw new RuntimeException( e );
+        }
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.indexReference() );
-
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
         Analyzer analyzer = createAnalyzer( descriptor, tokenNameLookup );
         String[] propertyNames = createPropertyNames( descriptor, tokenNameLookup );
