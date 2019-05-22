@@ -218,7 +218,7 @@ public abstract class IndexProvider extends LifecycleAdapter
      * @return The blessed index descriptor that will be used for creating the index.
      * @throws MisconfiguredIndexException if the index descriptor cannot be blessed by this provider for some reason.
      */
-    public IndexDescriptor bless( IndexDescriptor index ) throws MisconfiguredIndexException
+    public <T extends org.neo4j.internal.schema.IndexDescriptor> T bless( T index ) throws MisconfiguredIndexException
     {
         // Normal schema indexes accept all configurations by default. More specialised or custom providers, such as the fulltext index provider,
         // can override this method to do whatever checking suits their needs.

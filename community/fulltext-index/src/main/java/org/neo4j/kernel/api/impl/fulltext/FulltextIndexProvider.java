@@ -137,7 +137,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     }
 
     @Override
-    public IndexDescriptor bless( IndexDescriptor index ) throws MisconfiguredIndexException
+    public <T extends org.neo4j.internal.schema.IndexDescriptor> T bless( T index ) throws MisconfiguredIndexException
     {
         index = super.bless( index );
         SchemaDescriptor schema = index.schema();
@@ -151,7 +151,8 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         IndexConfig indexConfig = schema.getIndexConfig();
         indexConfig = addMissingDefaultIndexConfig( indexConfig );
         schema = schema.withIndexConfig( indexConfig );
-        index = index.withSchemaDescriptor( schema );
+        //noinspection unchecked
+        index = (T) index.withSchemaDescriptor( schema );
         return index;
     }
 
