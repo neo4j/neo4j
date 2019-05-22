@@ -174,20 +174,14 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     @Override
     public IndexDescriptor bless( IndexDescriptor index ) throws MisconfiguredIndexException
     {
-        index = super.bless( index );
-        SchemaDescriptor schema = index.schema();
-        if ( schema.getIndexType() != IndexType.FULLTEXT )
+        if ( index.schema().getIndexType() != IndexType.FULLTEXT )
         {
             // The fulltext index provider only support fulltext indexes.
             throw new MisconfiguredIndexException( InvalidArguments, "The index provider '" + getProviderDescriptor() + "' only supports fulltext index " +
                     "descriptors. Make sure that fulltext indexes are created using the relevant fulltext index procedures. " +
                     "Refused to bless the index descriptor: " + index + "." );
         }
-        IndexConfig indexConfig = schema.getIndexConfig();
-        indexConfig = addMissingDefaultIndexConfig( indexConfig );
-        schema = schema.withIndexConfig( indexConfig );
-        index = index.withSchemaDescriptor( schema );
-        return index;
+        return super.bless( index );
     }
 
     @Override
@@ -311,20 +305,14 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
             int[] propertyIds = new int[properties.length];
             tokenHolders.propertyKeyTokens().getOrCreateIds( properties, propertyIds );
 
-            indexConfig = addMissingDefaultIndexConfig( indexConfig );
+            indexConfig = indexConfig.withIfAbsent( INDEX_CONFIG_ANALYZER, Values.stringValue( defaultAnalyzerName ) );
+            indexConfig = indexConfig.withIfAbsent( INDEX_CONFIG_EVENTUALLY_CONSISTENT, Values.booleanValue( defaultEventuallyConsistentSetting ) );
             return SchemaDescriptor.fulltext( type, indexConfig, entityTokenIds, propertyIds );
         }
         catch ( KernelException e )
         {
             throw new TransactionFailureException( "Error creating token", e );
         }
-    }
-
-    private IndexConfig addMissingDefaultIndexConfig( IndexConfig indexConfig )
-    {
-        indexConfig = indexConfig.withIfAbsent( INDEX_CONFIG_ANALYZER, Values.stringValue( defaultAnalyzerName ) );
-        indexConfig = indexConfig.withIfAbsent( INDEX_CONFIG_EVENTUALLY_CONSISTENT, Values.booleanValue( defaultEventuallyConsistentSetting ) );
-        return indexConfig;
     }
 
     @Override

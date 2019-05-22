@@ -26,20 +26,12 @@ import java.util.Optional;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexReference;
-import org.neo4j.internal.schema.FulltextSchemaDescriptor;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
-import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CONFIG_ANALYZER;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT;
 
 public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 {
@@ -552,31 +544,5 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             KernelTransaction ktx = kernelTransaction( tx );
             assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "thing zebra", firstID, secondID );
         }
-    }
-
-    @Test
-    public void blessMustInjectMissingConfigurations() throws Exception
-    {
-        int label;
-        int propertyKey;
-        try ( Transaction tx = db.beginTx() )
-        {
-            createNodeIndexableByPropertyValue( LABEL, "bla" );
-            tx.success();
-        }
-        try ( KernelTransactionImplementation tx = getKernelTransaction() )
-        {
-            label = tx.tokenRead().nodeLabel( LABEL.name() );
-            propertyKey = tx.tokenRead().propertyKey( PROP );
-            tx.success();
-        }
-
-        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[]{label}, new int[]{propertyKey} );
-        FulltextIndexProvider provider = (FulltextIndexProvider) fulltextAdapter;
-
-        IndexDescriptor descriptor = provider.bless( new IndexDescriptor( schema, false, Optional.empty(), provider.getProviderDescriptor() ) );
-
-        assertThat( descriptor.schema().getIndexConfig().get( INDEX_CONFIG_ANALYZER ), is( Values.stringValue( "standard" ) ) );
-        assertThat( descriptor.schema().getIndexConfig().get( INDEX_CONFIG_EVENTUALLY_CONSISTENT ), is( Values.booleanValue( false ) ) );
     }
 }
