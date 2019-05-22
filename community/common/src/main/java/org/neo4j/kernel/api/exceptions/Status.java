@@ -234,6 +234,8 @@ public interface Status
                 "Invalid use of arithmetic, such as dividing by zero." ),
         RuntimeUnsupportedError( ClientError,
                 "This query is not supported by the chosen runtime." ),
+        NotSystemDatabaseError( ClientError,
+                "Tried to run management command against non-system database."),
 
         // database errors
         ExecutionFailed( DatabaseError,

@@ -414,8 +414,8 @@ class SecurityDDLParserTest
     yields(ast.GrantRolesToUsers(Seq("foo"), Seq("bar", "baz")))
   }
 
-  test("GRANT ROLE foo,bla,roo TO bar, baz,abc,  edf") {
-    yields(ast.GrantRolesToUsers(Seq("foo", "bla", "roo"), Seq("bar", "baz", "abc", "edf")))
+  test("GRANT ROLE foo,bla,roo TO bar, baz,abc,  def") {
+    yields(ast.GrantRolesToUsers(Seq("foo", "bla", "roo"), Seq("bar", "baz", "abc", "def")))
   }
 
   test("GRANT ROLE `fo:o` TO bar") {
@@ -442,6 +442,10 @@ class SecurityDDLParserTest
     failsToParse
   }
 
+  test("GRANT ROLE") {
+    failsToParse
+  }
+
   test("GRANT ROLES foo TO abc") {
     yields(ast.GrantRolesToUsers(Seq("foo"), Seq("abc")))
   }
@@ -454,8 +458,8 @@ class SecurityDDLParserTest
     yields(ast.GrantRolesToUsers(Seq("foo"), Seq("bar", "baz")))
   }
 
-  test("GRANT ROLES foo,bla,roo TO bar, baz,fex,erm") {
-    yields(ast.GrantRolesToUsers(Seq("foo", "bla", "roo"), Seq("bar", "baz", "fex", "erm")))
+  test("GRANT ROLES foo,bla,roo TO bar, baz,abc,  def") {
+    yields(ast.GrantRolesToUsers(Seq("foo", "bla", "roo"), Seq("bar", "baz", "abc", "def")))
   }
 
   test("GRANT ROLES `$f00`,bar TO abc,`$a&c`") {
@@ -498,6 +502,10 @@ class SecurityDDLParserTest
     failsToParse
   }
 
+  test("GRANT ROLES") {
+    failsToParse
+  }
+
   //  Revoking roles from users
 
   test("CATALOG REVOKE ROLE foo FROM abc") {
@@ -512,6 +520,14 @@ class SecurityDDLParserTest
     yields(ast.RevokeRolesFromUsers(Seq("foo"), Seq("abc")))
   }
 
+  test("REVOKE ROLES foo, bar FROM abc") {
+    yields(ast.RevokeRolesFromUsers(Seq("foo", "bar"), Seq("abc")))
+  }
+
+  test("REVOKE ROLES foo FROM abc, def") {
+    yields(ast.RevokeRolesFromUsers(Seq("foo"), Seq("abc", "def")))
+  }
+
   test("REVOKE ROLES `$f00`,bar FROM abc,`$a&c`") {
     yields(ast.RevokeRolesFromUsers(Seq("$f00", "bar"), Seq("abc", "$a&c")))
   }
@@ -520,11 +536,23 @@ class SecurityDDLParserTest
     failsToParse
   }
 
+  test("REVOKE ROLE $f00 FROM abc") {
+    failsToParse
+  }
+
   test("REVOKE ROLES foo") {
     failsToParse
   }
 
+  test("REVOKE ROLE foo") {
+    failsToParse
+  }
+
   test("REVOKE ROLES foo FROM") {
+    failsToParse
+  }
+
+  test("REVOKE ROLE foo FROM") {
     failsToParse
   }
 
@@ -536,10 +564,42 @@ class SecurityDDLParserTest
     failsToParse
   }
 
+  test("REVOKE ROLE FROM abc") {
+    failsToParse
+  }
+
+  test("REVOKE ROLES") {
+    failsToParse
+  }
+
+  test("REVOKE ROLE") {
+    failsToParse
+  }
+
   //  Showing privileges
 
   test("SHOW PRIVILEGES") {
     yields(ast.ShowPrivileges(ast.ShowAllPrivileges() _))
+  }
+
+  test("catalog show privileges") {
+    yields(ast.ShowPrivileges(ast.ShowAllPrivileges() _))
+  }
+
+  test("SHOW PRIVILEGE") {
+    failsToParse
+  }
+
+  test("SHOW PRIVILAGES") {
+    failsToParse
+  }
+
+  test("SHOW PRIVELAGES") {
+    failsToParse
+  }
+
+  test("SHOW privalages") {
+    failsToParse
   }
 
   test("SHOW ALL PRIVILEGES") {
@@ -547,6 +607,10 @@ class SecurityDDLParserTest
   }
 
   test("SHOW USER PRIVILEGES") {
+    failsToParse
+  }
+
+  test("SHOW ALL USER user PRIVILEGES") {
     failsToParse
   }
 
@@ -563,6 +627,10 @@ class SecurityDDLParserTest
   }
 
   test("SHOW ROLE PRIVILEGES") {
+    failsToParse
+  }
+
+  test("SHOW ALL ROLE role PRIVILEGES") {
     failsToParse
   }
 
@@ -600,12 +668,20 @@ class SecurityDDLParserTest
     yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
   }
 
+  test("GRANT TRAVERSE ON GRAPHS foo TO role") {
+    failsToParse
+  }
+
   test("GRANT TRAVERSE ON GRAPH foo NODES * TO role") {
     yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, "role"))
   }
 
   test("GRANT TRAVERSE ON GRAPH foo NODES A TO role") {
     yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+  }
+
+  test("GRANT TRAVERSE ON GRAPH `*` NODES A TO role") {
+    yields(ast.GrantTraverse(ast.NamedGraphScope("*") _, ast.LabelQualifier("A") _, "role"))
   }
 
   test("GRANT TRAVERSE ON GRAPH * NODES * (*) TO role") {
@@ -622,6 +698,14 @@ class SecurityDDLParserTest
 
   test("GRANT TRAVERSE ON GRAPH foo NODES A (*) TO role") {
     yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+  }
+
+  test("GRANT TRAVERSE ON GRAPH foo NODES `A B` (*) TO role") {
+    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.LabelQualifier("A B") _, "role"))
+  }
+
+  test("GRANT TRAVERSE ON GRAPH foo NODES A B (*) TO role") {
+    failsToParse
   }
 
   test("GRANT TRAVERSE ON GRAPH foo NODES A (foo) TO role") {
@@ -768,6 +852,14 @@ class SecurityDDLParserTest
     yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
   }
 
+  test("GRANT READ (*) ON GRAPH foo NODES `A B` (*) TO role") {
+    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelQualifier("A B") _, "role"))
+  }
+
+  test("GRANT READ (*) ON GRAPH foo NODES A B (*) TO role") {
+    failsToParse
+  }
+
   test("GRANT READ (*) ON GRAPH foo NODES A (foo) TO role") {
     failsToParse
   }
@@ -858,6 +950,18 @@ class SecurityDDLParserTest
 
   test("GRANT READ (bar) ON GRAPH foo NODES A (*) TO role") {
     yields(ast.GrantRead(ast.PropertyResource("bar") _, ast.NamedGraphScope("foo") _, ast.LabelQualifier("A") _, "role"))
+  }
+
+  test("GRANT READ (bar) ON GRAPH foo NODES `:A` (*) TO role") {
+    yields(ast.GrantRead(ast.PropertyResource("bar") _, ast.NamedGraphScope("foo") _, ast.LabelQualifier(":A") _, "role"))
+  }
+
+  test("GRANT READ (bar) ON GRAPH foo NODES :A (*) TO role") {
+    failsToParse
+  }
+
+  test("GRANT READ (bar) ON GRAPH foo NODES :A:M (*) TO role") {
+    failsToParse
   }
 
   test("GRANT READ (bar) ON GRAPH foo NODES A (foo) TO role") {

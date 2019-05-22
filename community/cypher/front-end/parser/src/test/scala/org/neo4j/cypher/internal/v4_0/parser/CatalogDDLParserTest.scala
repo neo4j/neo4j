@@ -97,6 +97,17 @@ class CatalogDDLParserTest
     yields(ast.CreateGraph(graphName, query))
   }
 
+  test("CATALOG CREATE GRAPH `*` { RETURN GRAPH }") {
+    val query = ast.SingleQuery(Seq(returnGraph))(pos)
+    val graphName = ast.CatalogName("*", List())
+
+    yields(ast.CreateGraph(graphName, query))
+  }
+
+  test("CATALOG CREATE GRAPH * { RETURN GRAPH }") {
+    failsToParse
+  }
+
   test("CATALOG CREATE GRAPH foo.bar { FROM GRAPH foo RETURN GRAPH UNION ALL FROM GRAPH bar RETURN GRAPH }") {
     val useGraph1 = ast.GraphLookup(ast.CatalogName("foo"))(pos)
     val useGraph2 = ast.GraphLookup(ast.CatalogName("bar"))(pos)

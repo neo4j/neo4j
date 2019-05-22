@@ -75,6 +75,10 @@ public class ClientErrorIT extends AbstractRestFunctionalTestBase
                         Status.Statement.ArithmeticError
                 },
                 new Object[]{
+                        "SHOW DATABASES",
+                        Status.Statement.NotSystemDatabaseError
+                },
+                new Object[]{
                         "CREATE INDEX ON :Person(name)",
                         Status.Transaction.ForbiddenDueToTransactionType
                 },

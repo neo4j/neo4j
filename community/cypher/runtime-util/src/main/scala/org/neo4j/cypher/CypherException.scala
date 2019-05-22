@@ -177,6 +177,8 @@ class ExhaustiveShortestPathForbiddenException(message: String, cause: Throwable
 
 class ShortestPathCommonEndNodesForbiddenException(message: String, cause: Throwable) extends CypherExecutionException(message, cause)
 
-class DatabaseManagementException(message: String) extends CypherExecutionException(message, null)
+class DatabaseManagementException(message: String) extends CypherExecutionException(message, null) {
+  override def status: Status = Status.Statement.NotSystemDatabaseError
+}
 
 class SecurityManagementException(message: String) extends CypherExecutionException(message, null)
