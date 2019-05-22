@@ -24,9 +24,5 @@ public enum IndexLimitation
     /**
      * Highlights that CONTAINS and ENDS WITH isn't supported efficiently.
      */
-    SLOW_CONTAINS,
-    /**
-     * The index is <em>eventually consistent</em>, meaning that it might not reflect newly committed changes.
-     */
-    EVENTUALLY_CONSISTENT
+    SLOW_CONTAINS;
 }

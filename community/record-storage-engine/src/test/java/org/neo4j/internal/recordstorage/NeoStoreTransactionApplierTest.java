@@ -919,13 +919,14 @@ public class NeoStoreTransactionApplierTest
 
     private static StorageIndexReference indexRule( long id, int label, int propertyKeyId, String providerKey, String providerVersion )
     {
-        return new DefaultStorageIndexReference( forLabel( label, propertyKeyId ), providerKey, providerVersion, id, Optional.empty(), false, null );
+        return new DefaultStorageIndexReference( forLabel( label, propertyKeyId ), providerKey, providerVersion, id, Optional.empty(), false, null, false );
     }
 
     private static StorageIndexReference constraintIndexRule( long id, int label, int propertyKeyId, String providerKey, String providerVersion,
             Long owningConstraint )
     {
-        return new DefaultStorageIndexReference( forLabel( label, propertyKeyId ), providerKey, providerVersion, id, Optional.empty(), true, owningConstraint );
+        return new DefaultStorageIndexReference( forLabel( label, propertyKeyId ), providerKey, providerVersion, id, Optional.empty(), true, owningConstraint,
+                false );
     }
 
     private static ConstraintRule uniquenessConstraintRule( long id, int labelId, int propertyKeyId, long ownedIndexRule )

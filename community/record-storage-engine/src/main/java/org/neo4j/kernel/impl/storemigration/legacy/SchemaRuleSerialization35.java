@@ -254,7 +254,7 @@ public class SchemaRuleSerialization35
         {
             SchemaDescriptor schema = readSchema( source );
             name = readRuleName( source );
-            return new DefaultStorageIndexReference( schema, providerKey, providerVersion, id, name, false, null );
+            return new DefaultStorageIndexReference( schema, providerKey, providerVersion, id, name, false, null, false );
         }
         case UNIQUE_INDEX:
         {
@@ -262,7 +262,7 @@ public class SchemaRuleSerialization35
             Long owningConstraint = readOwningConstraint == NO_OWNING_CONSTRAINT_YET ? null : readOwningConstraint;
             SchemaDescriptor schema = readSchema( source );
             name = readRuleName( source );
-            return new DefaultStorageIndexReference( schema, providerKey, providerVersion, id, name, true, owningConstraint );
+            return new DefaultStorageIndexReference( schema, providerKey, providerVersion, id, name, true, owningConstraint, false );
         }
         default:
             throw new MalformedSchemaRuleException( format( "Got unknown index rule type '%d'.", indexRuleType ) );

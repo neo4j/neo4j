@@ -50,8 +50,6 @@ import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.isEventuallyConsistent;
-
 public class FulltextIndexReader implements IndexReader
 {
     private final List<SearcherReference> searchers;
@@ -137,7 +135,7 @@ public class FulltextIndexReader implements IndexReader
         BooleanQuery query = queryBuilder.build();
         ValuesIterator itr = indexQuery( query );
         ReadableTransactionState state = context.getTransactionStateOrNull();
-        if ( state != null && !isEventuallyConsistent( descriptor.schema() ) )
+        if ( state != null && !descriptor.isEventuallyConsistent() )
         {
             transactionState.maybeUpdate( context );
             itr = transactionState.filter( itr, query );

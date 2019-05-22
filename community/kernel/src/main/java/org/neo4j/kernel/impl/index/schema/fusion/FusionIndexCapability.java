@@ -78,6 +78,12 @@ public class FusionIndexCapability implements IndexCapability
     }
 
     @Override
+    public boolean isEventuallyConsistent()
+    {
+        return false;
+    }
+
+    @Override
     public IndexLimitation[] limitations()
     {
         return limitations;

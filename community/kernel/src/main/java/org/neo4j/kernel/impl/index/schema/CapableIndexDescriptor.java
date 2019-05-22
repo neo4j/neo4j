@@ -53,6 +53,12 @@ public class CapableIndexDescriptor extends StoreIndexDescriptor
     }
 
     @Override
+    public CapableIndexDescriptor withEventualConsistency( boolean isEventuallyConsistent )
+    {
+        return new CapableIndexDescriptor( super.withEventualConsistency( isEventuallyConsistent ), indexCapability );
+    }
+
+    @Override
     public IndexOrder[] orderCapability( ValueCategory... valueCategories )
     {
         return indexCapability.orderCapability( valueCategories );
@@ -68,5 +74,11 @@ public class CapableIndexDescriptor extends StoreIndexDescriptor
     public IndexLimitation[] limitations()
     {
         return indexCapability.limitations();
+    }
+
+    @Override
+    public boolean isEventuallyConsistent()
+    {
+        return indexCapability.isEventuallyConsistent() || super.isEventuallyConsistent();
     }
 }

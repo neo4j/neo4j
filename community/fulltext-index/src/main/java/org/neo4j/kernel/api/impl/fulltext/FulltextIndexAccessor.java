@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.isEventuallyConsistent;
 import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.documentRepresentingProperties;
 import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.newTermForChangeOrRemove;
 
@@ -43,7 +42,7 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
     private final IndexDescriptor descriptor;
     private final String[] propertyNames;
 
-    FulltextIndexAccessor( IndexUpdateSink indexUpdateSink, DatabaseIndex<FulltextIndexReader> luceneIndex, IndexDescriptor descriptor,
+    public FulltextIndexAccessor( IndexUpdateSink indexUpdateSink, DatabaseIndex<FulltextIndexReader> luceneIndex, IndexDescriptor descriptor,
             String[] propertyNames )
     {
         super( luceneIndex, descriptor );
@@ -56,7 +55,7 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
     public IndexUpdater getIndexUpdater( IndexUpdateMode mode )
     {
         IndexUpdater indexUpdater = new FulltextIndexUpdater( mode.requiresIdempotency(), mode.requiresRefresh() );
-        if ( isEventuallyConsistent( descriptor.schema() ) )
+        if ( descriptor.isEventuallyConsistent() )
         {
             indexUpdater = new EventuallyConsistentIndexUpdater( luceneIndex, indexUpdater, indexUpdateSink );
         }
@@ -66,7 +65,7 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
     @Override
     public void close()
     {
-        if ( isEventuallyConsistent( descriptor.schema() ) )
+        if ( descriptor.isEventuallyConsistent() )
         {
             indexUpdateSink.awaitUpdateApplication();
         }

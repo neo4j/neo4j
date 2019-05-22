@@ -101,7 +101,7 @@ public class SchemaRuleDeserializer2_0to3_1
         LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( label, propertyKeyIds );
         Optional<String> name = Optional.empty();
         Long owningConstraintReference = constraintIndex ? readOwningConstraint( serialized ) : null;
-        return new DefaultStorageIndexReference( schema, providerKey, providerVersion, id, name, constraintIndex, owningConstraintReference );
+        return new DefaultStorageIndexReference( schema, providerKey, providerVersion, id, name, constraintIndex, owningConstraintReference, false );
     }
 
     private static int[] readIndexPropertyKeys( ByteBuffer serialized )

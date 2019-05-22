@@ -54,7 +54,7 @@ public class IndexDescriptor extends DefaultIndexDescriptor
 
     public IndexDescriptor( SchemaDescriptor schema, boolean isUnique, Optional<String> userSuppliedName, IndexProviderDescriptor providerDescriptor )
     {
-        super( schema, providerDescriptor.getKey(), providerDescriptor.getVersion(), userSuppliedName, isUnique );
+        super( schema, providerDescriptor.getKey(), providerDescriptor.getVersion(), userSuppliedName, isUnique, false );
         this.providerDescriptor = providerDescriptor;
     }
 
@@ -88,6 +88,12 @@ public class IndexDescriptor extends DefaultIndexDescriptor
     public IndexDescriptor withSchemaDescriptor( SchemaDescriptor schema )
     {
         return new IndexDescriptor( super.withSchemaDescriptor( schema ), providerDescriptor );
+    }
+
+    @Override
+    public IndexDescriptor withEventualConsistency( boolean isEventuallyConsistent )
+    {
+        return new IndexDescriptor( super.withEventualConsistency( isEventuallyConsistent ), providerDescriptor );
     }
 
     public IndexProviderDescriptor providerDescriptor()
