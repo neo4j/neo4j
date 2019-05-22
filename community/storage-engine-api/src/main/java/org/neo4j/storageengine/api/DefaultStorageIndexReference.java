@@ -41,10 +41,9 @@ public class DefaultStorageIndexReference extends DefaultIndexDescriptor impleme
             long indexReference,
             Optional<String> name,
             boolean isUnique,
-            Long owningConstraintReference,
-            boolean isEventuallyConsistent )
+            Long owningConstraintReference )
     {
-        super( schema, providerKey, providerVersion, name, isUnique, isEventuallyConsistent );
+        super( schema, providerKey, providerVersion, name, isUnique );
         this.indexReference = indexReference;
         this.owningConstraintReference = owningConstraintReference;
     }
@@ -56,16 +55,15 @@ public class DefaultStorageIndexReference extends DefaultIndexDescriptor impleme
         this.owningConstraintReference = owningConstraintReference;
     }
 
-    public DefaultStorageIndexReference( IndexDescriptor index, long indexReference, Long owningConstraintReference )
+    public DefaultStorageIndexReference( IndexDescriptor index, long indexReference, Long owningConstraintRef )
     {
-        this( index.schema(), index.providerKey(), index.providerVersion(), indexReference, optionalName( index ), index.isUnique(), owningConstraintReference,
-                index.isEventuallyConsistent() );
+        this( index.schema(), index.providerKey(), index.providerVersion(), indexReference, optionalName( index ), index.isUnique(), owningConstraintRef );
     }
 
     public DefaultStorageIndexReference( StorageIndexReference index, long owningConstraintReference )
     {
         this( index.schema(), index.providerKey(), index.providerVersion(), index.indexReference(),
-                optionalName( index ), index.isUnique(), owningConstraintReference, index.isEventuallyConsistent() );
+                optionalName( index ), index.isUnique(), owningConstraintReference );
     }
 
     protected DefaultStorageIndexReference( DefaultIndexDescriptor descriptor, long indexReference, Long owningConstraintReference )
@@ -106,12 +104,6 @@ public class DefaultStorageIndexReference extends DefaultIndexDescriptor impleme
     public DefaultStorageIndexReference withSchemaDescriptor( SchemaDescriptor schema )
     {
         return new DefaultStorageIndexReference( super.withSchemaDescriptor( schema ), indexReference, owningConstraintReference );
-    }
-
-    @Override
-    public DefaultStorageIndexReference withEventualConsistency( boolean isEventuallyConsistent )
-    {
-        return new DefaultStorageIndexReference( super.withEventualConsistency( isEventuallyConsistent ), indexReference, owningConstraintReference );
     }
 
     @Override

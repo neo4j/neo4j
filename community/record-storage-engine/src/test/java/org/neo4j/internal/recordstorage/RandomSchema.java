@@ -154,19 +154,17 @@ public class RandomSchema implements Supplier<SchemaRule>
         switch ( choice )
         {
         case 0: return new DefaultStorageIndexReference( nextNodeSchema(), isUnique, ruleId, owningConstraint );
-        case 1: return new DefaultStorageIndexReference( nextNodeSchema(), nextName(), nextName(), ruleId, Optional.empty(), isUnique,
-                owningConstraint, false );
-        case 2: return new DefaultStorageIndexReference( nextNodeSchema(), nextName(), nextName(), ruleId, nextNameOpt(), isUnique, owningConstraint, false );
+        case 1: return new DefaultStorageIndexReference( nextNodeSchema(), nextName(), nextName(), ruleId, Optional.empty(), isUnique, owningConstraint );
+        case 2: return new DefaultStorageIndexReference( nextNodeSchema(), nextName(), nextName(), ruleId, nextNameOpt(), isUnique, owningConstraint );
         case 3: return new DefaultStorageIndexReference( nextNodeFulltextSchema(), isUnique, ruleId, owningConstraint );
         case 4: return new DefaultStorageIndexReference( nextNodeFulltextSchema(), nextName(), nextName(), ruleId, Optional.empty(), isUnique,
-                owningConstraint, false );
-        case 5: return new DefaultStorageIndexReference( nextNodeFulltextSchema(), nextName(), nextName(), ruleId, nextNameOpt(), isUnique,
-                owningConstraint, false );
+                owningConstraint );
+        case 5: return new DefaultStorageIndexReference( nextNodeFulltextSchema(), nextName(), nextName(), ruleId, nextNameOpt(), isUnique, owningConstraint );
         case 6: return new DefaultStorageIndexReference( nextRelationshipFulltextSchema(), isUnique, ruleId, owningConstraint );
         case 7: return new DefaultStorageIndexReference( nextRelationshipFulltextSchema(), nextName(), nextName(), ruleId, Optional.empty(), isUnique,
-                owningConstraint, false );
+                owningConstraint );
         case 8: return new DefaultStorageIndexReference( nextRelationshipFulltextSchema(), nextName(), nextName(), ruleId, nextNameOpt(), isUnique,
-                owningConstraint, false );
+                owningConstraint );
         default: throw new RuntimeException( "Bad index choice: " + choice );
         }
     }

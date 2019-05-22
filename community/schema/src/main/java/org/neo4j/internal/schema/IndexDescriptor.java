@@ -52,8 +52,6 @@ public interface IndexDescriptor extends SchemaDescriptorSupplier
      */
     IndexType getIndexType();
 
-    boolean isEventuallyConsistent();
-
     String providerKey();
 
     String providerVersion();
@@ -71,12 +69,4 @@ public interface IndexDescriptor extends SchemaDescriptorSupplier
      * @return A new index descriptor with the given schema descriptor.
      */
     IndexDescriptor withSchemaDescriptor( SchemaDescriptor schema );
-
-    /**
-     * Produce a new index descriptor that is the same as this index descriptor in every way, except it has the "eventually consistent" flag set to the given
-     * value.
-     * @param isEventuallyConsistent The value of the eventually consistent flag in the new index descriptor.
-     * @return A new index descriptor with the given eventually consistent flag.
-     */
-    IndexDescriptor withEventualConsistency( boolean isEventuallyConsistent );
 }

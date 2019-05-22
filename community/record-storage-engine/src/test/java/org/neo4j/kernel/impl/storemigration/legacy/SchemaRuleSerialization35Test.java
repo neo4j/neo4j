@@ -65,7 +65,7 @@ public class SchemaRuleSerialization35Test
     private static IndexDescriptor indexDescriptor( boolean isUnique, String name, int labelId, int... propertyIds )
     {
         return new DefaultIndexDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ), PROVIDER_KEY, PROVIDER_VERSION,
-                Optional.ofNullable( name ), isUnique, false );
+                Optional.ofNullable( name ), isUnique );
     }
 
     public static IndexDescriptor forLabel( int labelId, int... propertyIds )
@@ -107,7 +107,7 @@ public class SchemaRuleSerialization35Test
     StorageIndexReference indexMultiTokenRegular =
             withId( new DefaultIndexDescriptor(
                     fulltext( EntityType.NODE, IndexConfig.empty(), new int[]{LABEL_ID, LABEL_ID_2}, new int[]{PROPERTY_ID_1, PROPERTY_ID_2} ), PROVIDER_KEY,
-                    PROVIDER_VERSION, Optional.empty(), false, false ), RULE_ID );
+                    PROVIDER_VERSION, Optional.empty(), false ), RULE_ID );
 
     StorageIndexReference indexCompositeUnique = withIds( uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID_2, RULE_ID );
 
@@ -116,7 +116,7 @@ public class SchemaRuleSerialization35Test
     StorageIndexReference indexBigMultiToken =
             withId( new DefaultIndexDescriptor(
                     fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), IntStream.range( 1, 200 ).toArray(), IntStream.range( 1, 200 ).toArray() ),
-                    PROVIDER_KEY, PROVIDER_VERSION, Optional.empty(), false, false ), RULE_ID );
+                    PROVIDER_KEY, PROVIDER_VERSION, Optional.empty(), false ), RULE_ID );
 
     ConstraintRule constraintExistsLabel = ConstraintRule.constraintRule( RULE_ID,
             ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1 ) );

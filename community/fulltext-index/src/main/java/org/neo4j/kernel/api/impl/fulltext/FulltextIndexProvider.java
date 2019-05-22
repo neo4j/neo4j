@@ -69,6 +69,7 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CON
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createAnalyzer;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createPropertyNames;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.isEventuallyConsistent;
 
 class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
 {
@@ -136,12 +137,6 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         return new FulltextIndexCapability( isEventuallyConsistent( descriptor.schema() ) );
     }
 
-    private boolean isEventuallyConsistent( SchemaDescriptor schema )
-    {
-        BooleanValue eventuallyConsistent = schema.getIndexConfig().getOrDefault( INDEX_CONFIG_EVENTUALLY_CONSISTENT, BooleanValue.FALSE );
-        return eventuallyConsistent.booleanValue();
-    }
-
     @Override
     public IndexDescriptor bless( IndexDescriptor index ) throws MisconfiguredIndexException
     {
@@ -158,7 +153,6 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         indexConfig = addMissingDefaultIndexConfig( indexConfig );
         schema = schema.withIndexConfig( indexConfig );
         index = index.withSchemaDescriptor( schema );
-        index = index.withEventualConsistency( isEventuallyConsistent( schema ) );
         return index;
     }
 
@@ -228,7 +222,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
                 .withOperationalMode( operationalMode )
                 .withIndexStorage( indexStorage )
                 .withPopulatingMode( false );
-        if ( descriptor.isEventuallyConsistent() )
+        if ( isEventuallyConsistent( descriptor.schema() ) )
         {
             fulltextIndexBuilder = fulltextIndexBuilder.withIndexUpdateSink( indexUpdateSink );
         }

@@ -41,7 +41,8 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
     private boolean populating;
     private IndexUpdateSink indexUpdateSink = NullIndexUpdateSink.INSTANCE;
 
-    private FulltextIndexBuilder( StorageIndexReference descriptor, Config config, TokenHolder propertyKeyTokenHolder, Analyzer analyzer, String[] propertyNames )
+    private FulltextIndexBuilder( StorageIndexReference descriptor, Config config, TokenHolder propertyKeyTokenHolder, Analyzer analyzer,
+            String[] propertyNames )
     {
         super( config );
         this.descriptor = descriptor;
@@ -57,7 +58,8 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
      * @param propertyKeyTokenHolder A token holder used to look up property key token names by id.
      * @return new FulltextIndexBuilder
      */
-    public static FulltextIndexBuilder create( StorageIndexReference descriptor, Config config, TokenHolder propertyKeyTokenHolder, Analyzer analyzer, String[] propertyNames )
+    public static FulltextIndexBuilder create( StorageIndexReference descriptor, Config config, TokenHolder propertyKeyTokenHolder, Analyzer analyzer,
+            String[] propertyNames )
     {
         return new FulltextIndexBuilder( descriptor, config, propertyKeyTokenHolder, analyzer, propertyNames );
     }

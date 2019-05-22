@@ -129,7 +129,7 @@ public class IndexBatchTransactionApplierTest
 
     private StorageIndexReference uniqueForSchema( SchemaDescriptor schema, String providerKey, String providerVersion, long id, long owningConstraint )
     {
-        return new DefaultStorageIndexReference( schema, providerKey, providerVersion, id, Optional.empty(), true, owningConstraint, false );
+        return new DefaultStorageIndexReference( schema, providerKey, providerVersion, id, Optional.empty(), true, owningConstraint );
     }
 
     private SchemaRecord asSchemaRecord( SchemaRule rule, boolean inUse )

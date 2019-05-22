@@ -184,12 +184,6 @@ public class StoreIndexDescriptor extends IndexDescriptor implements StorageInde
         return new StoreIndexDescriptor( super.withSchemaDescriptor( schema ), id, owningConstraintId );
     }
 
-    @Override
-    public StoreIndexDescriptor withEventualConsistency( boolean isEventuallyConsistent )
-    {
-        return new StoreIndexDescriptor( super.withEventualConsistency( isEventuallyConsistent ), id, owningConstraintId );
-    }
-
     // ** Misc
 
     /**
