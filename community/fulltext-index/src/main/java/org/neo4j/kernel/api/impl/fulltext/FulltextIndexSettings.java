@@ -20,25 +20,34 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.eclipse.collections.api.tuple.Pair;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
+import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.service.Services;
+import org.neo4j.storageengine.api.StorageIndexReference;
+import org.neo4j.token.api.TokenHolder;
+import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 class FulltextIndexSettings
@@ -47,7 +56,36 @@ class FulltextIndexSettings
     static final String INDEX_CONFIG_ANALYZER = "analyzer";
     static final String INDEX_CONFIG_EVENTUALLY_CONSISTENT = "eventually_consistent";
 
-    // kept around for the time being, for index configuration migration purpose...
+    static FulltextIndexDescriptor readOrInitialiseDescriptor( StorageIndexReference descriptor, String defaultAnalyzerName,
+            TokenHolder propertyKeyTokenHolder, PartitionedIndexStorage indexStorage, FileSystemAbstraction fileSystem )
+    {
+        Properties properties = new Properties();
+        FulltextSchemaDescriptor schema = descriptor.schema().asFulltextSchemaDescriptor();
+        IndexConfig indexConfig = schema.getIndexConfig();
+        for ( Pair<String,Value> entry : indexConfig.entries() )
+        {
+            properties.put( entry.getOne(), String.valueOf( entry.getTwo().asObject() ) );
+        }
+        loadPersistedSettings( properties, indexStorage, fileSystem );
+        String analyzerName = properties.getProperty( INDEX_CONFIG_ANALYZER, defaultAnalyzerName );
+        Analyzer analyzer = createAnalyzer( analyzerName );
+        List<String> names = new ArrayList<>();
+        for ( int propertyKeyId : schema.getPropertyIds() )
+        {
+            try
+            {
+                names.add( propertyKeyTokenHolder.getTokenById( propertyKeyId ).name() );
+            }
+            catch ( TokenNotFoundException e )
+            {
+                throw new IllegalStateException( "Property key id not found.",
+                        new PropertyKeyIdNotFoundKernelException( propertyKeyId, e ) );
+            }
+        }
+        String[] propertyNames = names.toArray( new String[0] );
+        return new FulltextIndexDescriptor( descriptor, propertyNames, analyzer, analyzerName );
+    }
+
     private static void loadPersistedSettings( Properties settings, PartitionedIndexStorage indexStorage, FileSystemAbstraction fs )
     {
         File settingsFile = new File( indexStorage.getIndexFolder(), INDEX_CONFIG_FILE );

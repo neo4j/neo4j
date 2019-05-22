@@ -61,6 +61,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.api.exceptions.Status.General.InvalidArguments;
