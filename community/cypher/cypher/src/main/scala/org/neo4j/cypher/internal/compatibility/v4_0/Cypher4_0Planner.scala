@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compatibility.{CypherPlanner, _}
 import org.neo4j.cypher.internal.compiler._
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory, simpleExpressionEvaluator}
-import org.neo4j.cypher.internal.logical.plans.{LoadCSV, LogicalPlan, MultiDatabaseLogicalPlan}
+import org.neo4j.cypher.internal.logical.plans.{DatabaseManagementException, LoadCSV, LogicalPlan, MultiDatabaseLogicalPlan}
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.{ExceptionTranslatingPlanContext, TransactionBoundPlanContext}
@@ -130,7 +130,7 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
               FineToReuse
             else throw logicalPlanState.maybeLogicalPlan match {
               case Some(plan: MultiDatabaseLogicalPlan) => plan.invalid("Unsupported management command: " + logicalPlanState.queryText)
-              case _ => new IllegalStateException("Attempting invalid management command in management runtime")
+              case _ => new DatabaseManagementException("Attempting invalid management command in management runtime")
             }
           case _ if ProcedureCallOrSchemaCommandRuntime.isApplicable(logicalPlanState) => FineToReuse
           case _ =>
