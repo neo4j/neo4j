@@ -110,12 +110,14 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
         }.mkString(", ")
         s"${this.apply(variable)}{$itemsText}"
       case CaseExpression(expression, alternatives, default) =>
-        val e = expression.map(e => s" ${this.apply(e)}").getOrElse("")
-        val d = default.map(e => s" else ${this.apply(e)} ").getOrElse("")
-        val items = (alternatives map {
-          case (e1, e2) => s"when ${this.apply(e1)} then ${this.apply(e2)}"
-        }).mkString(" ", " ", "")
-        s"case$e$items${d}end"
+        Seq(
+          Seq("CASE"),
+          for {e <- expression.toSeq; i <- Seq(apply(e))} yield i,
+          for {(e1, e2) <- alternatives; i <- Seq("WHEN", apply(e1), "THEN", apply(e2))} yield i,
+          for {e <- default.toSeq; i <- Seq("ELSE", apply(e))} yield i,
+          Seq("END")
+        ).flatten.mkString(" ")
+
       case e@Ands(expressions) =>
 
         type BinOp = Expression with BinaryOperatorExpression
