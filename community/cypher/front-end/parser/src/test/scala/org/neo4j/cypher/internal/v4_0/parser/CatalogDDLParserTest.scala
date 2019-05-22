@@ -38,6 +38,10 @@ class CatalogDDLParserTest
     yields(ast.ShowDatabase("foo.bar"))
   }
 
+  test("SHOW DATABASE") {
+    failsToParse
+  }
+
   test("SHOW DATABASES") {
     yields(ast.ShowDatabases())
   }

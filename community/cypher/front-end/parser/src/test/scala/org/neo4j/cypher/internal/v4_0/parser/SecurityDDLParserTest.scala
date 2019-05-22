@@ -28,10 +28,21 @@ class SecurityDDLParserTest
   implicit val parser: Rule1[ast.Statement] = Statement
 
   // User Management Commands
+  //  Showing user
 
   test("SHOW USERS") {
     yields(ast.ShowUsers())
   }
+
+  test("CATALOG SHOW USERS") {
+    yields(ast.ShowUsers())
+  }
+
+  test("CATALOG SHOW USER") {
+    failsToParse
+  }
+
+  //  Creating user
 
   test("CATALOG CREATE USER foo SET PASSWORD 'password'") {
     yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = false))
@@ -161,6 +172,8 @@ class SecurityDDLParserTest
     failsToParse
   }
 
+  //  Dropping user
+
   test("DROP USER foo") {
     yields(ast.DropUser("foo"))
   }
@@ -172,6 +185,8 @@ class SecurityDDLParserTest
   test("DROP USER `f:oo`") {
     failsToParse
   }
+
+  //  Altering user
 
   test("CATALOG ALTER USER foo SET PASSWORD 'password'") {
     yields(ast.AlterUser("foo", Some("password"), None, None, None))
@@ -258,30 +273,81 @@ class SecurityDDLParserTest
   }
 
   // Role Management Commands
+  //  Showing roles
 
   test("SHOW ROLES") {
     yields(ast.ShowRoles(withUsers = false, showAll = true))
   }
 
-  test("SHOW ALL ROLES") {
+  test("CATALOG SHOW ROLE") {
+    failsToParse
+  }
+
+  test("CATALOG SHOW ALL ROLES") {
     yields(ast.ShowRoles(withUsers = false, showAll = true))
+  }
+
+  test("SHOW ALL ROLE") {
+    failsToParse
   }
 
   test("CATALOG SHOW POPULATED ROLES") {
     yields(ast.ShowRoles(withUsers = false, showAll = false))
   }
 
+  test("SHOW POPULATED ROLE") {
+    failsToParse
+  }
+
   test("SHOW ROLES WITH USERS") {
     yields(ast.ShowRoles(withUsers = true, showAll = true))
+  }
+
+  test("SHOW ROLE WITH USERS") {
+    failsToParse
+  }
+
+  test("CATALOG SHOW ROLES WITH USER") {
+    failsToParse
+  }
+
+  test("SHOW ROLE WITH USER") {
+    failsToParse
   }
 
   test("CATALOG SHOW ALL ROLES WITH USERS") {
     yields(ast.ShowRoles(withUsers = true, showAll = true))
   }
 
+  test("SHOW ALL ROLE WITH USERS") {
+    failsToParse
+  }
+
+  test("SHOW ALL ROLES WITH USER") {
+    failsToParse
+  }
+
+  test("SHOW ALL ROLE WITH USER") {
+    failsToParse
+  }
+
   test("SHOW POPULATED ROLES WITH USERS") {
     yields(ast.ShowRoles(withUsers = true, showAll = false))
   }
+
+  test("CATALOG SHOW POPULATED ROLE WITH USERS") {
+    failsToParse
+  }
+
+  test("CATALOG SHOW POPULATED ROLES WITH USER") {
+    failsToParse
+  }
+
+  test("CATALOG SHOW POPULATED ROLE WITH USER") {
+    failsToParse
+  }
+
+  //  Creating role
 
   test("CREATE ROLE foo") {
     yields(ast.CreateRole("foo", None))
@@ -319,6 +385,8 @@ class SecurityDDLParserTest
     failsToParse
   }
 
+  //  Dropping role
+
   test("DROP ROLE foo") {
     yields(ast.DropRole("foo"))
   }
@@ -328,9 +396,14 @@ class SecurityDDLParserTest
   }
 
   // Privilege Management Commands
+  //  Granting roles to users
 
-  test("GRANT ROLE foo TO bar") {
-    yields(ast.GrantRolesToUsers(Seq("foo"), Seq("bar")))
+  test("GRANT ROLE foo TO abc") {
+    yields(ast.GrantRolesToUsers(Seq("foo"), Seq("abc")))
+  }
+
+  test("CATALOG GRANT ROLE foo TO abc") {
+    yields(ast.GrantRolesToUsers(Seq("foo"), Seq("abc")))
   }
 
   test("GRANT ROLE foo, baz TO bar") {
@@ -341,8 +414,8 @@ class SecurityDDLParserTest
     yields(ast.GrantRolesToUsers(Seq("foo"), Seq("bar", "baz")))
   }
 
-  test("GRANT ROLE foo,bla,roo TO bar, baz,fex,erm") {
-    yields(ast.GrantRolesToUsers(Seq("foo", "bla", "roo"), Seq("bar", "baz", "fex", "erm")))
+  test("GRANT ROLE foo,bla,roo TO bar, baz,abc,  edf") {
+    yields(ast.GrantRolesToUsers(Seq("foo", "bla", "roo"), Seq("bar", "baz", "abc", "edf")))
   }
 
   test("GRANT ROLE `fo:o` TO bar") {
@@ -369,8 +442,8 @@ class SecurityDDLParserTest
     failsToParse
   }
 
-  test("GRANT ROLES foo TO bar") {
-    yields(ast.GrantRolesToUsers(Seq("foo"), Seq("bar")))
+  test("GRANT ROLES foo TO abc") {
+    yields(ast.GrantRolesToUsers(Seq("foo"), Seq("abc")))
   }
 
   test("GRANT ROLES foo, baz TO bar") {
@@ -383,6 +456,14 @@ class SecurityDDLParserTest
 
   test("GRANT ROLES foo,bla,roo TO bar, baz,fex,erm") {
     yields(ast.GrantRolesToUsers(Seq("foo", "bla", "roo"), Seq("bar", "baz", "fex", "erm")))
+  }
+
+  test("GRANT ROLES `$f00`,bar TO abc,`$a&c`") {
+    yields(ast.GrantRolesToUsers(Seq("$f00", "bar"), Seq("abc", "$a&c")))
+  }
+
+  test("GRANT ROLES $f00 TO abc") {
+    failsToParse
   }
 
   test("GRANT ROLES `fo:o` TO bar") {
@@ -405,34 +486,6 @@ class SecurityDDLParserTest
     failsToParse
   }
 
-  test("GRANT ROLES TO bar") {
-    failsToParse
-  }
-
-  test("CATALOG GRANT ROLE foo TO abc") {
-    yields(ast.GrantRolesToUsers(Seq("foo"), Seq("abc")))
-  }
-
-  test("GRANT ROLE foo TO abc") {
-    yields(ast.GrantRolesToUsers(Seq("foo"), Seq("abc")))
-  }
-
-  test("GRANT ROLES foo TO abc") {
-    yields(ast.GrantRolesToUsers(Seq("foo"), Seq("abc")))
-  }
-
-  test("GRANT ROLES `$f00`,bar TO abc,`$a&c`") {
-    yields(ast.GrantRolesToUsers(Seq("$f00", "bar"), Seq("abc", "$a&c")))
-  }
-
-  test("GRANT ROLES $f00 TO abc") {
-    failsToParse
-  }
-
-  test("GRANT ROLES foo") {
-    failsToParse
-  }
-
   test("GRANT ROLES foo TO") {
     failsToParse
   }
@@ -440,6 +493,12 @@ class SecurityDDLParserTest
   test("GRANT ROLES foo FROM abc") {
     failsToParse
   }
+
+  test("GRANT ROLES TO bar") {
+    failsToParse
+  }
+
+  //  Revoking roles from users
 
   test("CATALOG REVOKE ROLE foo FROM abc") {
     yields(ast.RevokeRolesFromUsers(Seq("foo"), Seq("abc")))
@@ -472,6 +531,12 @@ class SecurityDDLParserTest
   test("REVOKE ROLES foo TO abc") {
     failsToParse
   }
+
+  test("REVOKE ROLES FROM abc") {
+    failsToParse
+  }
+
+  //  Showing privileges
 
   test("SHOW PRIVILEGES") {
     yields(ast.ShowPrivileges(ast.ShowAllPrivileges() _))
@@ -512,6 +577,8 @@ class SecurityDDLParserTest
   test("SHOW ROLE `ro%le` PRIVILEGES") {
     yields(ast.ShowPrivileges(ast.ShowRolePrivileges("ro%le") _))
   }
+
+  //  Granting traverse to role
 
   test("GRANT TRAVERSE GRAPH * NODES * (*) TO role") {
     failsToParse
@@ -605,6 +672,8 @@ class SecurityDDLParserTest
     failsToParse
   }
 
+  // Revoking traverse from role
+
   test("REVOKE TRAVERSE GRAPH * NODES * (*) FROM role") {
     failsToParse
   }
@@ -652,6 +721,8 @@ class SecurityDDLParserTest
   test("REVOKE TRAVERSE ON GRAPH foo NODES A (foo) FROM role") {
     failsToParse
   }
+
+  //  Granting read to role
 
   test("GRANT READ (*) GRAPH * NODES * (*) TO role") {
     failsToParse
@@ -881,7 +952,7 @@ class SecurityDDLParserTest
     failsToParse
   }
 
-  // REVOKE READ Commands
+  // Revoking read from role
 
   test("REVOKE READ (*) GRAPH * NODES * (*) FROM role") {
     failsToParse
