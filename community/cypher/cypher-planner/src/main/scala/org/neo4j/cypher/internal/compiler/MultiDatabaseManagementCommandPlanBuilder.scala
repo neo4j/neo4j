@@ -63,9 +63,19 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
       case ShowRoles(withUsers, showAll) =>
         Some(plans.ShowRoles(withUsers, showAll))
 
-      // CREATE ROLE foo [ AS COPY OF bar ]
-      case CreateRole(roleName, fromName) =>
-        Some(plans.CreateRole(roleName, fromName))
+      // CREATE ROLE foo
+      case CreateRole(roleName, None) =>
+        Some(plans.CreateRole(None, roleName))
+
+      // CREATE ROLE foo AS COPY OF bar
+      case CreateRole(roleName, Some(fromName)) =>
+        Some(plans.CopyRolePrivileges(
+          Some(plans.CopyRolePrivileges(
+            Some(plans.CreateRole(
+              Some(plans.RequireRole(None, fromName)), roleName)
+            ), roleName, fromName, "GRANTED")
+          ), roleName, fromName, "DENIED")
+        )
 
       // DROP ROLE foo
       case DropRole(roleName) =>

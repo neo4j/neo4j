@@ -65,10 +65,12 @@ case class DropUser(userName: String)(implicit idGen: IdGen) extends SecurityMan
 case class AlterUser(userName: String, initialStringPassword: Option[String], initialParameterPassword: Option[Parameter],
                      requirePasswordChange: Option[Boolean], suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
 case class ShowRoles(withUsers: Boolean, showAll: Boolean)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
-case class CreateRole(roleName: String, from: Option[String])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
+case class CreateRole(source: Option[SecurityManagementLogicalPlan], roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(source)
 case class DropRole(roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
 case class GrantRoleToUser(source: Option[GrantRoleToUser], roleName: String, userName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(source)
 case class RevokeRoleFromUser(source: Option[RevokeRoleFromUser], roleName: String, userNames: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(source)
+case class RequireRole(source: Option[SecurityManagementLogicalPlan], name: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(source)
+case class CopyRolePrivileges(source: Option[SecurityManagementLogicalPlan], to: String, from: String, grantDeny: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(source)
 
 abstract class PrivilegePlan()(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
 case class GrantTraverse(source: Option[PrivilegePlan], database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
