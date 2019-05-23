@@ -20,6 +20,7 @@
 package org.neo4j.storageengine.api.schema;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.TokenNameLookup;
 
 import static org.neo4j.internal.kernel.api.schema.SchemaUtil.idTokenNameLookup;
 
@@ -139,13 +140,18 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
     @Override
     public String toString()
     {
+        return toString( idTokenNameLookup );
+    }
+
+    public String toString( TokenNameLookup tokenNameLookup )
+    {
         String ownerString = "";
         if ( canSupportUniqueConstraint() )
         {
             ownerString = ", owner=" + owningConstraintId;
         }
 
-        return "IndexRule[id=" + id + ", descriptor=" + this.userDescription( idTokenNameLookup ) +
+        return "IndexRule[id=" + id + ", descriptor=" + this.userDescription( tokenNameLookup ) +
                 ", provider=" + this.providerDescriptor() + ownerString + "]";
     }
 

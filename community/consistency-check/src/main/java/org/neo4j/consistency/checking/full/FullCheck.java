@@ -148,7 +148,7 @@ public class FullCheck
             MultiPassStore.Factory multiPass = new MultiPassStore.Factory(
                     decorator, recordAccess, cacheAccess, report, reportMonitor );
             ConsistencyCheckTasks taskCreator = new ConsistencyCheckTasks( progress, processEverything,
-                    nativeStores, statistics, cacheAccess, directStoreAccess.labelScanStore(), indexes,
+                    nativeStores, statistics, cacheAccess, directStoreAccess.labelScanStore(), indexes, directStoreAccess.tokenHolders(),
                     multiPass, reporter, threads );
             List<ConsistencyCheckerTask> tasks =
                     taskCreator.createTasksForFullCheck( checkLabelScanStore, checkIndexes, checkGraph );
