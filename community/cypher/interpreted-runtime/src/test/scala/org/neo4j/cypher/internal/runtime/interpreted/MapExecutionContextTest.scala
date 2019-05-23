@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.logical.plans.CachedNodeProperty
+import org.neo4j.cypher.internal.logical.plans.{CACHED_NODE, CachedProperty}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.BooleanValue
@@ -344,5 +344,5 @@ class MapExecutionContextTest extends CypherFunSuite {
   }
 
   private def prop(node: String, prop: String) =
-    CachedNodeProperty(node, PropertyKeyName(prop)(InputPosition.NONE))(InputPosition.NONE)
+    CachedProperty(node, PropertyKeyName(prop)(InputPosition.NONE), CACHED_NODE)(InputPosition.NONE)
 }

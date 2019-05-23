@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.logical.plans.CachedNodeProperty
+import org.neo4j.cypher.internal.logical.plans.CachedProperty
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 
 /**
@@ -33,8 +33,8 @@ trait IndexPipeWithValues extends Pipe {
   val ident: String
   // all indices where the index can provide values
   val indexPropertyIndices: Array[Int]
-  // the cached node properties where we will get values
-  val indexCachedNodeProperties: Array[CachedNodeProperty]
+  // the cached properties where we will get values
+  val indexCachedProperties: Array[CachedProperty]
 
   class IndexIterator(queryContext: QueryContext,
                       baseContext: ExecutionContext,
@@ -46,7 +46,7 @@ trait IndexPipeWithValues extends Pipe {
         val newContext = executionContextFactory.copyWith(baseContext, ident, queryContext.nodeById(cursor.nodeReference()))
         var i = 0
         while (i < indexPropertyIndices.length) {
-          newContext.setCachedProperty(indexCachedNodeProperties(i), cursor.propertyValue(indexPropertyIndices(i)))
+          newContext.setCachedProperty(indexCachedProperties(i), cursor.propertyValue(indexPropertyIndices(i)))
           i += 1
         }
         newContext

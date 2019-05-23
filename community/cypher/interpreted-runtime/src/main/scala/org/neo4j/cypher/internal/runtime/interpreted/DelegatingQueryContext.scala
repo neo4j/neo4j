@@ -264,6 +264,10 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def getTxStateNodePropertyOrNull(nodeId: Long,
                                             propertyKey: Int): Value =
     inner.getTxStateNodePropertyOrNull(nodeId, propertyKey)
+
+  override def getTxStateRelationshipPropertyOrNull(relId: Long, propertyKey: Int): Value =
+    inner.getTxStateRelationshipPropertyOrNull(relId, propertyKey)
+
 }
 
 class DelegatingOperations[T, CURSOR](protected val inner: Operations[T, CURSOR]) extends Operations[T, CURSOR] {
@@ -288,8 +292,8 @@ class DelegatingOperations[T, CURSOR](protected val inner: Operations[T, CURSOR]
   override def hasProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean =
     singleDbHit(inner.hasProperty(obj, propertyKeyId, cursor, propertyCursor))
 
-  override def hasTxStatePropertyForCachedNodeProperty(nodeId: Long, propertyKeyId: Int): Boolean =
-    inner.hasTxStatePropertyForCachedNodeProperty(nodeId, propertyKeyId)
+  override def hasTxStatePropertyForCachedProperty(nodeId: Long, propertyKeyId: Int): Boolean =
+    inner.hasTxStatePropertyForCachedProperty(nodeId, propertyKeyId)
 
   override def propertyKeyIds(obj: Long, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int] =
     singleDbHit(inner.propertyKeyIds(obj, cursor, propertyCursor))

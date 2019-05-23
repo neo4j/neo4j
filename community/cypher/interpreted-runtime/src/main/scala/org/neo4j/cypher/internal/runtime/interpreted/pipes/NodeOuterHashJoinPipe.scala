@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.logical.plans.CachedNodeProperty
+import org.neo4j.cypher.internal.logical.plans.CachedProperty
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
@@ -32,7 +32,7 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
                                      lhs: Pipe,
                                      rhs: Pipe,
                                      nullableVariables: Set[String],
-                                     nullableCachedProperties: Set[CachedNodeProperty]) extends PipeWithSource(lhs) {
+                                     nullableCachedProperties: Set[CachedProperty]) extends PipeWithSource(lhs) {
 
   private val myVariables = nodeVariables.toIndexedSeq
   private val nullVariables: Array[(String, AnyValue)] = nullableVariables.map(_ -> Values.NO_VALUE).toArray

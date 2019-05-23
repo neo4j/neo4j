@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.logical.plans.CachedNodeProperty
+import org.neo4j.cypher.internal.logical.plans.{CACHED_NODE, CachedProperty}
 import org.neo4j.graphdb.Node
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
@@ -37,14 +37,14 @@ trait NodeHashJoinPipeTestSupport extends CypherFunSuite {
   protected val node3 = newMockedNode(3)
 
   protected def prop(node: String, prop: String) =
-    CachedNodeProperty(node, PropertyKeyName(prop)(InputPosition.NONE))(InputPosition.NONE)
+    CachedProperty(node, PropertyKeyName(prop)(InputPosition.NONE), CACHED_NODE)(InputPosition.NONE)
 
   protected def row(values: (String, AnyValue)*) = ExecutionContext.from(values: _*)
 
   protected def rowWithCached(values: (String, AnyValue)*) = ExecutionContext.from(values: _*)
 
   case class rowWith(variables: (String, AnyValue)*) {
-    def cached(cachedNodePropeties: (CachedNodeProperty, Value)*): ExecutionContext = {
+    def cached(cachedNodePropeties: (CachedProperty, Value)*): ExecutionContext = {
       val row = ExecutionContext.from(variables: _*)
       for ((cnp, value) <- cachedNodePropeties) row.setCachedProperty(cnp, value)
       row

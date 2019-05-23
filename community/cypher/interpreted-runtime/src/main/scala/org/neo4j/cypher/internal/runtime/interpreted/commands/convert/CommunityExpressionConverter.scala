@@ -93,7 +93,8 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case e: ast.FunctionInvocation => toCommandExpression(id, e.function, e, self)
       case _: ast.CountStar => commandexpressions.CountStar()
       case e: ast.Property => toCommandProperty(id, e, self)
-      case e: CachedNodeProperty => commandexpressions.CachedNodeProperty(e.nodeVariableName, getPropertyKey(e.propertyKey), e)
+      case e@CachedProperty(variableName, propertyKey, CACHED_NODE) => commandexpressions.CachedNodeProperty(variableName, getPropertyKey(propertyKey), e)
+      case e@CachedProperty(variableName, propertyKey, CACHED_RELATIONSHIP) => commandexpressions.CachedRelationshipProperty(variableName, getPropertyKey(propertyKey), e)
       case ParameterFromSlot(offset, name, _) => commandexpressions.ParameterFromSlot(offset, name)
       case e: ast.CaseExpression => caseExpression(id, e, self)
       case e: ast.ShortestPathExpression => commandexpressions
@@ -243,8 +244,10 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
           case property: ast.Property =>
             val propertyKey = getPropertyKey(property.propertyKey)
             commands.predicates.PropertyExists(self.toCommandExpression(id, property.map), propertyKey)
-          case property: ASTCachedNodeProperty =>
+          case property: ASTCachedProperty if property.cachedType == CACHED_NODE =>
             commands.predicates.CachedNodePropertyExists(self.toCommandExpression(id, property))
+          case property: ASTCachedProperty if property.cachedType == CACHED_RELATIONSHIP =>
+            commands.predicates.CachedRelationshipPropertyExists(self.toCommandExpression(id, property))
           case expression: ast.PatternExpression =>
             self.toCommandPredicate(id, expression)
           case expression: pipes.NestedPipeExpression =>

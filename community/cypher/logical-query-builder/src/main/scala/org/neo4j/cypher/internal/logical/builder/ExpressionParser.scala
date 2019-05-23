@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
-import org.neo4j.cypher.internal.logical.plans.CachedNodeProperty
+import org.neo4j.cypher.internal.logical.plans.{CACHED_NODE, CachedProperty}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.parser.Expressions
 import org.neo4j.cypher.internal.v4_0.util.{ASTNode, Rewriter, topDown}
@@ -28,7 +28,7 @@ import org.parboiled.scala.{ReportingParseRunner, Rule1}
 object ExpressionParser {
   val injectCachedNodeProperties: Rewriter = topDown(Rewriter.lift {
     case ContainerIndex(Variable("cached"), Property(Variable(node), PropertyKeyName(prop))) =>
-      CachedNodeProperty(node, PropertyKeyName(prop)(AbstractLogicalPlanBuilder.pos))(AbstractLogicalPlanBuilder.pos)
+      CachedProperty(node, PropertyKeyName(prop)(AbstractLogicalPlanBuilder.pos), CACHED_NODE)(AbstractLogicalPlanBuilder.pos)
   })
   val invalidateInputPositions: Rewriter = topDown(Rewriter.lift {
     case a:ASTNode => a.dup(a.children.toSeq :+ AbstractLogicalPlanBuilder.pos)

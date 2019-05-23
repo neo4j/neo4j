@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
-import org.neo4j.cypher.internal.logical.plans.CachedNodeProperty
+import org.neo4j.cypher.internal.logical.plans.{CACHED_NODE, CachedProperty}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, TestName}
@@ -32,18 +32,18 @@ class ExpressionParserTest extends CypherFunSuite with TestName
     ExpressionParser.parseProjections(testName) should be(Map("b" -> Variable("a")(pos)))
   }
 
-  // Finds cached node property
+  // Finds cached property
   test("cached[n.prop] AS b") {
-    ExpressionParser.parseProjections(testName) should be(Map("b" -> CachedNodeProperty("n", PropertyKeyName("prop")(pos))(pos)))
+    ExpressionParser.parseProjections(testName) should be(Map("b" -> CachedProperty("n", PropertyKeyName("prop")(pos), CACHED_NODE)(pos)))
   }
 
   test("b.foo + 5 AS abc09") {
     ExpressionParser.parseProjections(testName) should be(Map("abc09" -> Add(Property(Variable("b")(pos), PropertyKeyName("foo")(pos))(pos), SignedDecimalIntegerLiteral("5")(pos))(pos)))
   }
 
-  // Finds nested cached node property
+  // Finds nested cached property
   test("cached[b.foo] + 5 AS abc09") {
-    ExpressionParser.parseProjections(testName) should be(Map("abc09" -> Add(CachedNodeProperty("b", PropertyKeyName("foo")(pos))(pos), SignedDecimalIntegerLiteral("5")(pos))(pos)))
+    ExpressionParser.parseProjections(testName) should be(Map("abc09" -> Add(CachedProperty("b", PropertyKeyName("foo")(pos), CACHED_NODE)(pos), SignedDecimalIntegerLiteral("5")(pos))(pos)))
   }
 
   test("n:Label") {

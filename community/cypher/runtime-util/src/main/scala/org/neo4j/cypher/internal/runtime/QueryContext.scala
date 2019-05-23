@@ -229,7 +229,10 @@ trait QueryContext extends TokenContext with DbAccess {
     relationshipOps.hasProperty(relationship, property, relationshipScanCursor, propertyCursor)
 
   override def hasTxStatePropertyForCachedNodeProperty(nodeId: Long, propertyKeyId: Int): Boolean =
-    nodeOps.hasTxStatePropertyForCachedNodeProperty(nodeId, propertyKeyId)
+    nodeOps.hasTxStatePropertyForCachedProperty(nodeId, propertyKeyId)
+
+  override def hasTxStatePropertyForCachedRelationshipProperty(relId: Long, propertyKeyId: Int): Boolean =
+    relationshipOps.hasTxStatePropertyForCachedProperty(relId, propertyKeyId)
 }
 
 trait Operations[T, CURSOR] {
@@ -256,7 +259,7 @@ trait Operations[T, CURSOR] {
     *        or if the property was changed.
     *        `false` if the property or the node were deleted in TxState.
     */
-  def hasTxStatePropertyForCachedNodeProperty(nodeId: Long, propertyKeyId: Int): Boolean
+  def hasTxStatePropertyForCachedProperty(entityId: Long, propertyKeyId: Int): Boolean
 
   def propertyKeyIds(obj: Long, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int]
 

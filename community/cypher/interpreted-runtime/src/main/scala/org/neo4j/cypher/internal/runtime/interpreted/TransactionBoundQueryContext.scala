@@ -418,6 +418,17 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
    ops.nodePropertyChangeInTransactionOrNull(nodeId, propertyKey)
   }
 
+  override def getTxStateRelationshipPropertyOrNull(relId: Long,
+                                                    propertyKey: Int): Value = {
+    val ops = reads()
+    if (ops.relationshipDeletedInTransaction(relId)) {
+      throw new EntityNotFoundException(
+        s"Relationship with id $relId has been deleted in this transaction")
+    }
+
+    ops.relationshipPropertyChangeInTransactionOrNull(relId, propertyKey)
+  }
+
   class NodeOperations extends BaseOperations[NodeValue, NodeCursor] with org.neo4j.cypher.internal.runtime.NodeOperations {
 
     override def delete(id: Long) {
@@ -467,7 +478,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
     }
 
-    override def hasTxStatePropertyForCachedNodeProperty(nodeId: Long, propertyKeyId: Int): Boolean = {
+    override def hasTxStatePropertyForCachedProperty(nodeId: Long, propertyKeyId: Int): Boolean = {
       if (isDeletedInThisTx(nodeId)) {
         // Node deleted in TxState
         false
@@ -665,11 +676,23 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     override def releaseExclusiveLock(obj: Long): Unit =
       transactionalContext.kernelTransaction.locks().releaseExclusiveRelationshipLock(obj)
 
-    override def getTxStateProperty(obj: Long, propertyKeyId: Int): Option[Value] =
-      throw new UnsupportedOperationException("Not implemented: there was no user of this method as there are no relationship indexes.")
+    // TODO null instead of Option
+    override def getTxStateProperty(relId: Long, propertyKeyId: Int): Option[Value] =
+      Option(getTxStateRelationshipPropertyOrNull(relId, propertyKeyId))
 
-    override def hasTxStatePropertyForCachedNodeProperty(nodeId: Long, propertyKeyId: Int): Boolean =
-      throw new UnsupportedOperationException("Not implemented: there was no user of this method as there are no relationship indexes.")
+    override def hasTxStatePropertyForCachedProperty(relId: Long, propertyKeyId: Int): Boolean = {
+      if (isDeletedInThisTx(relId)) {
+        // Relationship deleted in TxState
+        false
+      } else {
+        val relPropertyInTx = reads().relationshipPropertyChangeInTransactionOrNull(relId, propertyKeyId)
+        relPropertyInTx match {
+          case null => true // no changes in TxState. Property is cached, so it must exist.
+          case Values.NO_VALUE => false // property removed in TxState
+          case _ => true // property changed in TxState
+        }
+      }
+    }
   }
 
   override def getOrCreatePropertyKeyId(propertyKey: String): Int =

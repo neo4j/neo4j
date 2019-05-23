@@ -308,8 +308,8 @@ case class FakePlan(availableSymbols: Set[String] = Set.empty, propertyMap: Map[
   def rhs = None
   def lhs = None
 
-  override val availableCachedNodeProperties: Map[Property, CachedNodeProperty] = propertyMap.mapValues(s => {
+  override val availableCachedProperties: Map[Property, CachedProperty] = propertyMap.mapValues(s => {
     val (nodeName, propertyKey) = s.span(_ != '.')
-    CachedNodeProperty(nodeName, PropertyKeyName(propertyKey.tail)(InputPosition.NONE))(InputPosition.NONE)
+    CachedProperty(nodeName, PropertyKeyName(propertyKey.tail)(InputPosition.NONE), CACHED_NODE)(InputPosition.NONE)
   })
 }

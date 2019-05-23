@@ -37,4 +37,7 @@ case class NodeIndexSeek(idName: String,
 
   override def copyWithoutGettingValues: NodeIndexSeek =
     NodeIndexSeek(idName, label, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue) }, valueExpr, argumentIds, indexOrder)(SameId(this.id))
+
+  override def withProperties(properties: Seq[IndexedProperty]): NodeIndexSeek =
+    NodeIndexSeek(idName, label, properties, valueExpr, argumentIds, indexOrder)(SameId(this.id))
 }

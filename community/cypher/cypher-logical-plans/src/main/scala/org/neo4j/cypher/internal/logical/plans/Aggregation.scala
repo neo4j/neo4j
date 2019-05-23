@@ -35,8 +35,7 @@ case class Aggregation(source: LogicalPlan,
                        aggregationExpression: Map[String, Expression])
                       (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with EagerLogicalPlan with AggregatingPlan {
-
-  val lhs: Option[LogicalPlan] = Some(source)
+ val lhs: Option[LogicalPlan] = Some(source)
 
   val rhs: Option[LogicalPlan] = None
 
@@ -48,5 +47,5 @@ case class Aggregation(source: LogicalPlan,
     * Aggregations delete columns which are not explicitly listed in groupingExpressions or aggregationExpression.
     * It will therefore simply remove any cached node properties.
     */
-  override final def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = Map.empty
+  override final def availableCachedProperties: Map[Property, CachedProperty] = Map.empty
 }

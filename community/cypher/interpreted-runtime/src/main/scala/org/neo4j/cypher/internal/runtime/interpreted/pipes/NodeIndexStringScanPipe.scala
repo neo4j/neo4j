@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.logical.plans.{CachedNodeProperty, IndexOrder, IndexedProperty}
+import org.neo4j.cypher.internal.logical.plans.{CachedProperty, IndexOrder, IndexedProperty}
 import org.neo4j.internal.kernel.api.{IndexReadSession, NodeValueIndexCursor}
 import org.neo4j.values.storable.{TextValue, Values}
 import org.neo4j.cypher.internal.v4_0.expressions.LabelToken
@@ -35,7 +35,7 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
                                                valueExpr: Expression) extends Pipe with IndexPipeWithValues {
 
   override val indexPropertyIndices: Array[Int] = if (property.shouldGetValue) Array(0) else Array.empty
-  override val indexCachedNodeProperties: Array[CachedNodeProperty] = Array(property.asCachedNodeProperty(ident))
+  override val indexCachedProperties: Array[CachedProperty] = Array(property.asCachedProperty(ident))
   protected val needsValues = indexPropertyIndices.nonEmpty
 
   valueExpr.registerOwningPipe(this)

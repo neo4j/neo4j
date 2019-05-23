@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.v4_0.expressions.Property
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
 /**
@@ -32,18 +31,10 @@ case class Union(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen) e
 
   override val availableSymbols: Set[String] = left.availableSymbols intersect right.availableSymbols
 
-  /**
-    * Only cache properties that come from both children and only if they use the same index
-    */
-  override def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = {
-    val indexIntersection = left.indexUsage.intersect(right.indexUsage)
-    if (indexIntersection.nonEmpty) {
-      val lhsCached = left.availableCachedNodeProperties
-      val rhsCached = right.availableCachedNodeProperties
-      lhsCached.keySet.intersect(rhsCached.keySet).map(k => k -> lhsCached(k)).toMap
-    }
-    else {
-      Map.empty
-    }
-  }
+  /*
+   * Cached node properties work such that they fetch the value from the property store if the
+   * cached value is not available. This usually happens after a cache invalidation because of writes.
+   * This behavior makes it safe to make the Union of cached properties available after a union
+   * instead of the intersection.
+   */
 }

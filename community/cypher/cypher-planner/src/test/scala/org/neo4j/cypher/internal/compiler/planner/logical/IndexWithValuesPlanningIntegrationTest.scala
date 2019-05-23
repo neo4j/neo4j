@@ -182,7 +182,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        Selection(ands(equals(modulo(cached("n.prop"), literalInt(2)), literalInt(0))),
+        Selection(ands(equals(modulo(cachedNode("n.prop"), literalInt(2)), literalInt(0))),
           IndexSeek("n:Awesome(prop <= 42)", GetValue)),
         Map(propertyProj("n", "foo")))
     )
@@ -195,7 +195,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        Selection(ands(equals(modulo(cached("n.prop"), prop("m", "foo")), literalInt(0))),
+        Selection(ands(equals(modulo(cachedNode("n.prop"), prop("m", "foo")), literalInt(0))),
           Expand(
             IndexSeek("n:Awesome(prop <= 42)", GetValue),
             "n", SemanticDirection.OUTGOING, Seq.empty, "m", "r")
@@ -222,7 +222,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
               IndexOrderNone),
             Map("m" -> varFor("n"))),
           "m", SemanticDirection.BOTH, Seq.empty, "o", "r"),
-        Map("m.prop" -> cached("n.prop")))
+        Map("m.prop" -> cachedNode("n.prop")))
     )
   }
 

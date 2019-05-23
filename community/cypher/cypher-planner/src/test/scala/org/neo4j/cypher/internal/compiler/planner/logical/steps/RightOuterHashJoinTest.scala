@@ -100,14 +100,14 @@ class RightOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupp
     val cNode = "c"
     val lhs = mock[LogicalPlan]
     when(lhs.availableSymbols).thenReturn(Set(aNode, bNode))
-    when(lhs.availableCachedNodeProperties).thenReturn(Map(cachedProp(aNode, "lhs"), cachedProp(bNode, "lhs")))
+    when(lhs.availableCachedProperties).thenReturn(Map(cachedProp(aNode, "lhs"), cachedProp(bNode, "lhs")))
     val rhs = mock[LogicalPlan]
     when(rhs.availableSymbols).thenReturn(Set(bNode, cNode))
-    when(rhs.availableCachedNodeProperties).thenReturn(Map(cachedProp(bNode, "rhs"), cachedProp(cNode, "rhs")))
+    when(rhs.availableCachedProperties).thenReturn(Map(cachedProp(bNode, "rhs"), cachedProp(cNode, "rhs")))
     val join = RightOuterHashJoin(Set(bNode), lhs, rhs)
 
     // then
-    join.availableCachedNodeProperties should be(Map(
+    join.availableCachedProperties should be(Map(
       cachedProp(aNode, "lhs"),
       cachedProp(bNode, "rhs"),
       cachedProp(cNode, "rhs")

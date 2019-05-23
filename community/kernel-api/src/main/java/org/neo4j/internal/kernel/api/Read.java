@@ -362,5 +362,14 @@ public interface Read
      */
     Value nodePropertyChangeInTransactionOrNull( long node, int propertyKeyId );
 
+    /**
+     * Returns the value of a relationship property if set in this transaction.
+     * @param relationship the relationship
+     * @param propertyKeyId the property key id of interest
+     * @return <code>null</code> if the property has not been changed for the relationship in this transaction. Otherwise returns
+     *         the new property value, or {@link Values#NO_VALUE} if the property has been removed in this transaction.
+     */
+    Value relationshipPropertyChangeInTransactionOrNull( long relationship, int propertyKeyId );
+
     void graphProperties( PropertyCursor cursor );
 }

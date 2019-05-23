@@ -57,7 +57,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     assert(plan.isLeaf)
 
     val id = plan.id
-    val variables = plan.availableSymbols ++ plan.availableCachedNodeProperties.values.map(_.asCanonicalStringVal)
+    val variables = plan.availableSymbols ++ plan.availableCachedProperties.values.map(_.asCanonicalStringVal)
 
     val result: InternalPlanDescription = plan match {
       case _: AllNodesScan =>
@@ -253,7 +253,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     assert(plan.rhs.isEmpty)
 
     val id = plan.id
-    val variables = plan.availableSymbols ++ plan.availableCachedNodeProperties.values.map(_.asCanonicalStringVal)
+    val variables = plan.availableSymbols ++ plan.availableCachedProperties.values.map(_.asCanonicalStringVal)
     val children = if (source.isInstanceOf[ArgumentPlanDescription]) NoChildren else SingleChild(source)
 
     val result: InternalPlanDescription = plan match {
@@ -469,7 +469,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     assert(plan.rhs.nonEmpty)
 
     val id = plan.id
-    val variables = plan.availableSymbols ++ plan.availableCachedNodeProperties.values.map(_.asCanonicalStringVal)
+    val variables = plan.availableSymbols ++ plan.availableCachedProperties.values.map(_.asCanonicalStringVal)
     val children = TwoChildren(lhs, rhs)
 
     val result: InternalPlanDescription = plan match {

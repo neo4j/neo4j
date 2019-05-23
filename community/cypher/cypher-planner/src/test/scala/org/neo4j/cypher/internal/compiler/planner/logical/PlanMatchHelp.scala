@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.logical.plans.{CachedNodeProperty, GetValueFromIndexBehavior, IndexedProperty}
+import org.neo4j.cypher.internal.logical.plans.{CACHED_NODE, CachedProperty, GetValueFromIndexBehavior, IndexedProperty}
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.expressions.{PropertyKeyName, PropertyKeyToken}
 import org.neo4j.cypher.internal.v4_0.util.PropertyKeyId
 
 trait PlanMatchHelp extends AstConstructionTestSupport {
 
-  protected def cachedNodeProperty(node: String, property: String): CachedNodeProperty =
-    CachedNodeProperty(node, PropertyKeyName(property)(pos))(pos)
+  protected def cachedNodeProperty(node: String, property: String): CachedProperty =
+    CachedProperty(node, PropertyKeyName(property)(pos), CACHED_NODE)(pos)
 
   protected def indexedProperty(propName: String, keyId: Int, getValueFromIndex: GetValueFromIndexBehavior): IndexedProperty =
     IndexedProperty(PropertyKeyToken(PropertyKeyName(propName) _, PropertyKeyId(keyId)), getValueFromIndex)

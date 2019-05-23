@@ -39,12 +39,15 @@ case class NodeIndexEndsWithScan(idName: String,
 
   override def properties: Seq[IndexedProperty] = Seq(property)
 
-  override def cachedNodeProperties: Traversable[CachedNodeProperty] = property.maybeCachedNodeProperty(idName)
+  override def cachedProperties: Traversable[CachedProperty] = property.maybeCachedProperty(idName)
 
   val availableSymbols: Set[String] = argumentIds + idName
 
-  override def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = property.asAvailablePropertyMap(idName)
+  override def availableCachedProperties: Map[Property, CachedProperty] = property.asAvailablePropertyMap(idName)
 
   override def copyWithoutGettingValues: NodeIndexEndsWithScan =
     NodeIndexEndsWithScan(idName, label, IndexedProperty(property.propertyKeyToken, DoNotGetValue), valueExpr, argumentIds, indexOrder)(SameId(this.id))
+
+  override def withProperties(properties: Seq[IndexedProperty]): IndexLeafPlan =
+    NodeIndexEndsWithScan(idName, label, properties.head, valueExpr, argumentIds, indexOrder)(SameId(this.id))
 }

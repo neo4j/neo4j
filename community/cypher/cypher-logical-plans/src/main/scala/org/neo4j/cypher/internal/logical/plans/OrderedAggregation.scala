@@ -45,5 +45,5 @@ case class OrderedAggregation(source: LogicalPlan,
     * Aggregations delete columns which are not explicitly listed in groupingExpressions or aggregationExpression.
     * It will therefore simply remove any cached node properties.
     */
-  override final def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = Map.empty
+  override final def availableCachedProperties: Map[Property, CachedProperty] = Map.empty
 }

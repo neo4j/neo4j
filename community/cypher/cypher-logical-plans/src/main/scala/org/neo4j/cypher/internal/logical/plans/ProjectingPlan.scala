@@ -35,8 +35,8 @@ trait ProjectingPlan extends LogicalPlan {
     * - properties Map(prop("n", "prop") -> "n.prop")
     * -> Map(prop("m", "prop") -> "n.prop")
     */
-  override final def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = {
-    source.availableCachedNodeProperties.flatMap {
+  override final def availableCachedProperties: Map[Property, CachedProperty] = {
+    source.availableCachedProperties.flatMap {
       case (Property(variable@Variable(varName), PropertyKeyName(propName)), columnName) if projectsValue(variable) =>
         projectExpressions.collect {
           case (newName, Variable(`varName`)) =>
@@ -44,7 +44,7 @@ trait ProjectingPlan extends LogicalPlan {
               InputPosition.NONE), columnName)
         }
 
-      case (property, columnName) if projectsValue(property) || projectsValue(columnName) => Map.empty[Property, CachedNodeProperty]
+      case (property, columnName) if projectsValue(property) || projectsValue(columnName) => Map.empty[Property, CachedProperty]
 
       //we should pass along cached node properties that we are not projecting
       case (key, value) => Map(key -> value)

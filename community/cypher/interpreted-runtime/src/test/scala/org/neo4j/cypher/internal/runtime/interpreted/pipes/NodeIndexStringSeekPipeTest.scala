@@ -60,7 +60,7 @@ class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos w
 
     // then
     result.map(_.getByName("n")) should be(List(node))
-    result.map(_.getCachedProperty(cachedNodeProperty("n", propertyKey))) should be(
+    result.map(_.getCachedProperty(cachedProperty("n", propertyKey))) should be(
       List(Values.stringValue("hello"))
     )
   }
@@ -80,7 +80,7 @@ class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos w
 
     // then
     result.map(_.getByName("n")) should be(List(node2))
-    result.map(_.getCachedProperty(cachedNodeProperty("n", propertyKey))) should be(
+    result.map(_.getCachedProperty(cachedProperty("n", propertyKey))) should be(
       List(Values.stringValue("bye"))
     )
   }

@@ -20,18 +20,13 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ir.{PlannerQuery, ProvidedOrder}
+import org.neo4j.cypher.internal.logical.plans.{CACHED_NODE, CachedProperty}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
-import org.neo4j.cypher.internal.logical.plans.{CachedNodeProperty, GetValue, IndexedProperty, IndexOrderNone, NodeIndexScan}
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.v4_0.expressions.LabelToken
 import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.v4_0.parser.{CypherParser, ParserFixture}
 import org.neo4j.cypher.internal.v4_0.util.Cardinality
-import org.neo4j.cypher.internal.v4_0.util.LabelId
-import org.neo4j.cypher.internal.v4_0.util.PropertyKeyId
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, SequentialIdGen}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherTestSupport
 
 import scala.language.implicitConversions
@@ -73,13 +68,10 @@ trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
     override def copy(from: Id, to: Id): Unit = {}
   }
 
-  def nodeIndexScan(node: String, label: String, property: String) =
-    NodeIndexScan(node, LabelToken(label, LabelId(1)), Seq(IndexedProperty(PropertyKeyToken(property, PropertyKeyId(1)), GetValue)), Set.empty, IndexOrderNone)
-
-  def cached(varAndProp: String): CachedNodeProperty = {
+  def cachedNode(varAndProp: String): CachedProperty = {
     val array = varAndProp.split("\\.", 2)
     val (v, prop) = (array(0), array(1))
-    CachedNodeProperty(v, PropertyKeyName(prop)(pos))(pos)
+    CachedProperty(v, PropertyKeyName(prop)(pos), CACHED_NODE)(pos)
   }
 
 }

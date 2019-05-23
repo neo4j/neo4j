@@ -227,6 +227,12 @@ public class StubRead implements Read
     }
 
     @Override
+    public Value relationshipPropertyChangeInTransactionOrNull( long relationship, int propertyKeyId )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void graphProperties( PropertyCursor cursor )
     {
         throw new UnsupportedOperationException();

@@ -314,4 +314,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
     translateException(inner.indexReference(label, properties:_*))
 
   override def singleRelationship(id: Long, cursor: RelationshipScanCursor): Unit = translateException(inner.singleRelationship(id,cursor))
+
+  override def getTxStateRelationshipPropertyOrNull(relId: Long, propertyKey: Int): Value =
+    translateException(inner.getTxStateRelationshipPropertyOrNull(relId, propertyKey))
+
+  // TODO we need to override all methods!
 }

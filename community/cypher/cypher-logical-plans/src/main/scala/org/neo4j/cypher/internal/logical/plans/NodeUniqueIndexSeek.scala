@@ -40,4 +40,7 @@ case class NodeUniqueIndexSeek(idName: String,
 
   override def copyWithoutGettingValues: NodeUniqueIndexSeek =
     NodeUniqueIndexSeek(idName, label, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue) }, valueExpr, argumentIds, indexOrder)(SameId(this.id))
+
+  override def withProperties(properties: Seq[IndexedProperty]): IndexLeafPlan =
+    NodeUniqueIndexSeek(idName, label, properties, valueExpr, argumentIds, indexOrder)(SameId(this.id))
 }

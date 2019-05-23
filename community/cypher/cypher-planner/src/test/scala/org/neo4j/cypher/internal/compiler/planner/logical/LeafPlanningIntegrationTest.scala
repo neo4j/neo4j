@@ -118,7 +118,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Person", "name")
       cost = nodeIndexScanCost
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.name STARTS WITH 'prefix' AND a.name = 'prefix1' RETURN a")._2 should equal(
-      Selection(ands(startsWith(cached("a.name"), literalString("prefix"))),
+      Selection(ands(startsWith(cachedNode("a.name"), literalString("prefix"))),
                 IndexSeek("a:Person(name = 'prefix1')", GetValue)
       ))
   }
@@ -128,7 +128,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Person", "name")
       cost = nodeIndexScanCost
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.name STARTS WITH 'prefix%' AND a.name in ['prefix1', 'prefix2'] RETURN a")._2 should equal(
-      Selection(ands(startsWith(cached("a.name"), literalString("prefix%"))),
+      Selection(ands(startsWith(cachedNode("a.name"), literalString("prefix%"))),
                 NodeIndexSeek(
                   "a",
                   LabelToken("Person", LabelId(0)),
@@ -319,7 +319,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE exists(n.prop) AND n.prop = 42 RETURN n"
 
     plan._2 should equal(
-      Selection(ands(function("exists", cached("n.prop"))),
+      Selection(ands(function("exists", cachedNode("n.prop"))),
         IndexSeek("n:Awesome(prop = 42)", GetValue)
       ))
   }

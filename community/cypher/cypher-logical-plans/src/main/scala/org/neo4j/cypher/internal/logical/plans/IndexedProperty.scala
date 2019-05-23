@@ -28,23 +28,23 @@ import org.neo4j.cypher.internal.v4_0.util.InputPosition
 case class IndexedProperty(propertyKeyToken: PropertyKeyToken, getValueFromIndex: GetValueFromIndexBehavior) {
   def shouldGetValue: Boolean = getValueFromIndex == GetValue
 
-  def asAvailablePropertyMap(entity: String): Map[Property, CachedNodeProperty] =
+  def asAvailablePropertyMap(entity: String): Map[Property, CachedProperty] =
     if (getValueFromIndex == GetValue)
       Map((
         Property(
           Variable(entity)(InputPosition.NONE),
           PropertyKeyName(propertyKeyToken.name)(InputPosition.NONE)
         )(InputPosition.NONE),
-        asCachedNodeProperty(entity)
+        asCachedProperty(entity)
       ))
     else Map.empty
 
-  def asCachedNodeProperty(node: String): CachedNodeProperty =
-    CachedNodeProperty(node, PropertyKeyName(propertyKeyToken.name)(InputPosition.NONE))(InputPosition.NONE)
+  def asCachedProperty(node: String): CachedProperty =
+    CachedProperty(node, PropertyKeyName(propertyKeyToken.name)(InputPosition.NONE), CACHED_NODE)(InputPosition.NONE)
 
-  def maybeCachedNodeProperty(entity: String): Option[CachedNodeProperty] =
+  def maybeCachedProperty(entity: String): Option[CachedProperty] =
     if (shouldGetValue)
-      Some(asCachedNodeProperty(entity))
+      Some(asCachedProperty(entity))
     else None
 }
 

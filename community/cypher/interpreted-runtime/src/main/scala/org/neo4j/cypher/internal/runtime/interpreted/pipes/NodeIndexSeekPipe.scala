@@ -37,8 +37,8 @@ case class NodeIndexSeekPipe(ident: String,
   override val propertyIds: Array[Int] = properties.map(_.propertyKeyToken.nameId.id)
 
   override val indexPropertyIndices: Array[Int] = properties.indices.filter(properties(_).shouldGetValue).toArray
-  override val indexCachedNodeProperties: Array[CachedNodeProperty] =
-    indexPropertyIndices.map(offset => properties(offset).asCachedNodeProperty(ident))
+  override val indexCachedProperties: Array[CachedProperty] =
+    indexPropertyIndices.map(offset => properties(offset).asCachedProperty(ident))
   private val needsValues: Boolean = indexPropertyIndices.nonEmpty
 
   valueExpr.expressions.foreach(_.registerOwningPipe(this))

@@ -22,13 +22,11 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 import java.util.regex.Pattern
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.{CastSupport, IsList, IsMap}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
-import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.{CastSupport, IsList, IsMap}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AbstractCachedNodeProperty, Expression, Literal}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AbstractCachedNodeProperty, AbstractCachedRelationshipProperty, Expression, Literal}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.interpreted.{CastSupport, IsList, IsMap}
 import org.neo4j.cypher.internal.v4_0.util.{CypherTypeException, NonEmptyList}
 import org.neo4j.cypher.operations.CypherBoolean
 import org.neo4j.kernel.api.StatementConstants
@@ -186,18 +184,18 @@ case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends P
 case class CachedNodePropertyExists(cachedNodeProperty: Expression) extends Predicate {
   override def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
     cachedNodeProperty match {
-      case cnp: AbstractCachedNodeProperty =>
-        val nodeId = cnp.getNodeId(m)
+      case cp: AbstractCachedNodeProperty =>
+        val nodeId = cp.getId(m)
         if (nodeId == StatementConstants.NO_SUCH_NODE) {
           None
         } else {
-          Some(state.query.nodeOps.hasTxStatePropertyForCachedNodeProperty(nodeId, cnp.getPropertyKey(state.query)))
+          Some(state.query.nodeOps.hasTxStatePropertyForCachedProperty(nodeId, cp.getPropertyKey(state.query)))
         }
       case _ => throw new CypherTypeException("Expected " + cachedNodeProperty + " to be a cached node property.")
     }
   }
 
-  override def toString: String = s"hasCachedNodeProp($cachedNodeProperty)"
+  override def toString: String = s"hasCachedProp($cachedNodeProperty)"
 
   override def containsIsNull = false
 
@@ -206,6 +204,31 @@ case class CachedNodePropertyExists(cachedNodeProperty: Expression) extends Pred
   override def arguments: Seq[Expression] = Seq(cachedNodeProperty)
 
   override def children: Seq[AstNode[_]] = Seq(cachedNodeProperty)
+}
+
+case class CachedRelationshipPropertyExists(cachedRelProperty: Expression) extends Predicate {
+  override def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
+    cachedRelProperty match {
+      case cp: AbstractCachedRelationshipProperty =>
+        val relId = cp.getId(m)
+        if (relId == StatementConstants.NO_SUCH_RELATIONSHIP) {
+          None
+        } else {
+          Some(state.query.relationshipOps.hasTxStatePropertyForCachedProperty(relId, cp.getPropertyKey(state.query)))
+        }
+      case _ => throw new CypherTypeException("Expected " + cachedRelProperty + " to be a cached relationship property.")
+    }
+  }
+
+  override def toString: String = s"hasCachedProp($cachedRelProperty)"
+
+  override def containsIsNull = false
+
+  override def rewrite(f: Expression => Expression): Expression = f(CachedNodePropertyExists(cachedRelProperty.rewrite(f)))
+
+  override def arguments: Seq[Expression] = Seq(cachedRelProperty)
+
+  override def children: Seq[AstNode[_]] = Seq(cachedRelProperty)
 }
 
 trait StringOperator {

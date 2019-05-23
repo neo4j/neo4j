@@ -20,28 +20,37 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheck, SemanticCheckResult, SemanticCheckableExpression}
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression => ASTExpression, PropertyKeyName}
+import org.neo4j.cypher.internal.v4_0.expressions.{PropertyKeyName, Expression => ASTExpression}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
-/**
-  * Common super class of CachedNodeProperty
-  * and its slotted specializations.
-  */
-trait ASTCachedNodeProperty extends ASTExpression
+sealed trait CachedType
+
+case object CACHED_NODE extends CachedType
+
+case object CACHED_RELATIONSHIP extends CachedType
 
 /**
-  * A node property value that is cached in the execution context. Such a value can be
+  * Common super class of [[CachedProperty]]
+  * and its slotted specializations.
+  */
+trait ASTCachedProperty extends ASTExpression {
+  def cachedType: CachedType
+}
+
+/**
+  * A property value that is cached in the execution context. Such a value can be
   * retrieved very fast, but care has to be taken to it doesn't out-dated by writes to
   * the graph/transaction state.
   *
-  * @param nodeVariableName the node variable
-  * @param propertyKey the property key
+  * @param variableName the variable
+  * @param propertyKey  the property key
   */
-case class CachedNodeProperty(nodeVariableName: String,
-                              propertyKey: PropertyKeyName
-                            )(val position: InputPosition) extends ASTCachedNodeProperty with SemanticCheckableExpression {
+case class CachedProperty(variableName: String,
+                          propertyKey: PropertyKeyName,
+                          override val cachedType: CachedType
+                         )(val position: InputPosition) extends ASTCachedProperty with SemanticCheckableExpression {
 
-  def cacheKey: String = s"$nodeVariableName.${propertyKey.name}"
+  def cacheKey: String = s"$variableName.${propertyKey.name}"
 
   override def asCanonicalStringVal: String = s"cached[$cacheKey]"
 

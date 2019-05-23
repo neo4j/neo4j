@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.logical.plans.CachedNodeProperty
+import org.neo4j.cypher.internal.logical.plans.CachedProperty
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 
 case class NodeRightOuterHashJoinPipe(nodeVariables: Set[String],
                                       lhs: Pipe,
                                       rhs: Pipe,
                                       nullableVariables: Set[String],
-                                      nullableCachedProperties: Set[CachedNodeProperty])
+                                      nullableCachedProperties: Set[CachedProperty])
                                      (val id: Id = Id.INVALID_ID)
   extends NodeOuterHashJoinPipe(nodeVariables, lhs, rhs, nullableVariables, nullableCachedProperties) {
 

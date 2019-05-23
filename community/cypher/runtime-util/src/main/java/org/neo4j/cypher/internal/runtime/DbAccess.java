@@ -86,7 +86,11 @@ public interface DbAccess extends EntityById
 
     Value getTxStateNodePropertyOrNull( long nodeId, int propertyKey );
 
+    Value getTxStateRelationshipPropertyOrNull( long relId, int propertyKey );
+
     AnyValue callFunction( int id, AnyValue[] args, String[] allowed );
 
     boolean hasTxStatePropertyForCachedNodeProperty( long nodeId, int propertyKeyId );
+
+    boolean hasTxStatePropertyForCachedRelationshipProperty( long relId, int propertyKeyId );
 }

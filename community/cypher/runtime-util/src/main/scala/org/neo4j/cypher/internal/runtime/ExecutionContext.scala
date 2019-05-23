@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.logical.plans.CachedNodeProperty
+import org.neo4j.cypher.internal.logical.plans.CachedProperty
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.cypher.internal.runtime.EntityById
@@ -64,19 +64,19 @@ trait ExecutionContext {
   def mergeWith(other: ExecutionContext, entityById: EntityById): Unit
   def createClone(): ExecutionContext
 
-  def setCachedProperty(key: CachedNodeProperty, value: Value): Unit
+  def setCachedProperty(key: CachedProperty, value: Value): Unit
   def setCachedPropertyAt(offset: Int, value: Value): Unit
 
   /**
-    * Returns the cached node property value
-    *   or NO_VALUE if the node does not have the property,
+    * Returns the cached property value
+    *   or NO_VALUE if the entity does not have the property,
     *   or null     if this cached value has been invalidated.
     */
-  def getCachedProperty(key: CachedNodeProperty): Value
+  def getCachedProperty(key: CachedProperty): Value
 
   /**
-    * Returns the cached node property value
-    *   or NO_VALUE if the node does not have the property,
+    * Returns the cached property value
+    *   or NO_VALUE if the entity does not have the property,
     *   or null     if this cached value has been invalidated.
     */
   def getCachedPropertyAt(offset: Int): Value
@@ -115,7 +115,7 @@ trait ExecutionContext {
 
 }
 
-class MapExecutionContext(private val m: MutableMap[String, AnyValue], private var cachedProperties: MutableMap[CachedNodeProperty, Value] = null)
+class MapExecutionContext(private val m: MutableMap[String, AnyValue], private var cachedProperties: MutableMap[CachedProperty, Value] = null)
   extends ExecutionContext {
 
   override def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit = fail()
@@ -220,7 +220,7 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
       case _ => false
     }
 
-  override def setCachedProperty(key: CachedNodeProperty, value: Value): Unit = {
+  override def setCachedProperty(key: CachedProperty, value: Value): Unit = {
     if (cachedProperties == null) {
       cachedProperties = MutableMap.empty
     }
@@ -229,18 +229,19 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
 
   override def setCachedPropertyAt(offset: Int, value: Value): Unit = fail()
 
-  override def getCachedProperty(key: CachedNodeProperty): Value = {
+  override def getCachedProperty(key: CachedProperty): Value = {
     if (cachedProperties == null) {
-      throw new NoSuchElementException("key not found: " + key)
+      null
+    } else {
+      cachedProperties.getOrElse(key, null)
     }
-    cachedProperties(key)
   }
 
   override def getCachedPropertyAt(offset: Int): Value = fail()
 
   override def invalidateCachedProperties(node: Long): Unit = {
     if (cachedProperties != null)
-      cachedProperties.keys.filter(cnp => getByName(cnp.nodeVariableName) match {
+      cachedProperties.keys.filter(cnp => getByName(cnp.variableName) match {
         case n: VirtualNodeValue => n.id() == node
         case _ => false
       }).foreach(cnp => setCachedProperty(cnp, null))

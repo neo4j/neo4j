@@ -57,9 +57,9 @@ abstract class LogicalPlan(idGen: IdGen)
   /**
     * Node properties that will be cached in the execution context.
     */
-  def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = {
-    lhs.fold(Map.empty[Property, CachedNodeProperty])(_.availableCachedNodeProperties) ++
-      rhs.fold(Map.empty[Property, CachedNodeProperty])(_.availableCachedNodeProperties)
+  def availableCachedProperties: Map[Property, CachedProperty] = {
+    lhs.fold(Map.empty[Property, CachedProperty])(_.availableCachedProperties) ++
+      rhs.fold(Map.empty[Property, CachedProperty])(_.availableCachedProperties)
   }
 
   override val id: Id = idGen.id()
@@ -208,14 +208,20 @@ abstract class NodeLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) 
 
 abstract class IndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPlan(idGen) {
   /**
-    * Indexed node properties that will be retrieved from the index and cached in the row.
+    * Indexed properties that will be retrieved from the index and cached in the row.
     */
-  def cachedNodeProperties: Traversable[CachedNodeProperty]
+  def cachedProperties: Traversable[CachedProperty]
 
   /**
     * All properties
     */
   def properties: Seq[IndexedProperty]
+
+  /**
+    * Create a copy of this plan, swapping out the properties
+    * @return
+    */
+  def withProperties(properties: Seq[IndexedProperty]): IndexLeafPlan
 
   /**
     * Get a copy of this index plan where getting values is disabled
@@ -232,10 +238,10 @@ abstract class IndexSeekLeafPlan(idGen: IdGen) extends IndexLeafPlan(idGen) {
     */
   def properties: Seq[IndexedProperty]
 
-  override val cachedNodeProperties: Seq[CachedNodeProperty] =
-    properties.filter(_.shouldGetValue).map(_.asCachedNodeProperty(idName))
+  override val cachedProperties: Seq[CachedProperty] =
+    properties.filter(_.shouldGetValue).map(_.asCachedProperty(idName))
 
-  override def availableCachedNodeProperties: Map[Property, CachedNodeProperty] =
+  override def availableCachedProperties: Map[Property, CachedProperty] =
     properties.filter(_.getValueFromIndex == GetValue).flatMap(_.asAvailablePropertyMap(idName)).toMap
 }
 
