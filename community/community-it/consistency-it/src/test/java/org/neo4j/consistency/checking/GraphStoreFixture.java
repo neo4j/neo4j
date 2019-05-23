@@ -111,6 +111,7 @@ import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCh
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.recordstorage.StoreTokens.allReadableTokens;
+import static org.neo4j.internal.recordstorage.StoreTokens.readOnlyTokenHolders;
 
 public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implements TestRule
 {
@@ -214,7 +215,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             Monitors monitors = new Monitors();
             labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors );
             IndexProviderMap indexes = createIndexes( pageCache, config, logProvider, monitors);
-            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes, counts );
+            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes, counts, readOnlyTokenHolders( neoStore ) );
             storeReader = new RecordStorageReader( neoStore );
         }
         return directStoreAccess;

@@ -239,7 +239,7 @@ public class ConsistencyCheckService
                 storeAccess = new StoreAccess( neoStores );
             }
             storeAccess.initialize();
-            DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes, counts );
+            DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes, counts, tokenHolders );
             FullCheck check = new FullCheck(
                     progressFactory, statistics, numberOfThreads, consistencyFlags, config );
             summary = check.execute( stores, new DuplicatingLog( log, reportLog ) );

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.NodeRecordCheck;
 import org.neo4j.consistency.checking.PropertyChain;
@@ -48,6 +49,7 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.NativeLabelScanStore;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
+import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.Scanner;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -71,6 +73,7 @@ public class ConsistencyCheckTasks
     private final StoreProcessor defaultProcessor;
     private final StoreAccess nativeStores;
     private final Statistics statistics;
+    private final TokenHolders tokenHolders;
     private final MultiPassStore.Factory multiPass;
     private final ConsistencyReporter reporter;
     private final LabelScanStore labelScanStore;
@@ -81,13 +84,14 @@ public class ConsistencyCheckTasks
     ConsistencyCheckTasks( ProgressMonitorFactory.MultiPartBuilder multiPartBuilder,
             StoreProcessor defaultProcessor, StoreAccess nativeStores, Statistics statistics,
             CacheAccess cacheAccess, LabelScanStore labelScanStore,
-            IndexAccessors indexes, MultiPassStore.Factory multiPass, ConsistencyReporter reporter, int numberOfThreads )
+            IndexAccessors indexes, TokenHolders tokenHolders, MultiPassStore.Factory multiPass, ConsistencyReporter reporter, int numberOfThreads )
     {
         this.multiPartBuilder = multiPartBuilder;
         this.defaultProcessor = defaultProcessor;
         this.nativeStores = nativeStores;
         this.statistics = statistics;
         this.cacheAccess = cacheAccess;
+        this.tokenHolders = tokenHolders;
         this.multiPass = multiPass;
         this.reporter = reporter;
         this.labelScanStore = labelScanStore;
@@ -210,11 +214,12 @@ public class ConsistencyCheckTasks
         if ( checkIndexes )
         {
             tasks.add( new IndexDirtyCheckTask() );
+            TokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders, true /*include token ids too*/ );
             for ( StorageIndexReference indexRule : indexes.onlineRules() )
             {
                 tasks.add( recordScanner( format( "Index_%d", indexRule.getId() ),
                         new IndexIterator( indexes.accessorFor( indexRule ) ),
-                        new IndexEntryProcessor( filteredReporter, new IndexCheck( indexRule ) ),
+                        new IndexEntryProcessor( filteredReporter, new IndexCheck( indexRule ), indexRule, tokenNameLookup ),
                         Stage.SEQUENTIAL_FORWARD, ROUND_ROBIN ) );
             }
         }

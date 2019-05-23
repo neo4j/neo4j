@@ -53,9 +53,9 @@ import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.internal.index.label.NodeLabelRange;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -84,6 +84,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.hamcrest.MockitoHamcrest.argThat;
+import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
@@ -378,7 +379,7 @@ public class ConsistencyReporterTest
             }
             if ( type == IndexEntry.class )
             {
-                return new IndexEntry( 0 );
+                return new IndexEntry( IndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).withId( 1L ), idTokenNameLookup, 0 );
             }
             if ( type == CountsEntry.class )
             {

@@ -26,6 +26,8 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.storageengine.api.StorageIndexReference;
 
+import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
+
 /**
  * Describes an index which is committed to the database.
  *
@@ -193,13 +195,18 @@ public class StoreIndexDescriptor extends IndexDescriptor implements StorageInde
     @Override
     public String toString()
     {
+        return toString( idTokenNameLookup );
+    }
+
+    public String toString( TokenNameLookup tokenNameLookup )
+    {
         String ownerString = "";
         if ( isUnique() )
         {
             ownerString = ", owner=" + owningConstraintId;
         }
 
-        return "IndexRule[id=" + id + ", descriptor=" + this.userDescription( TokenNameLookup.idTokenNameLookup ) +
+        return "IndexRule[id=" + id + ", descriptor=" + this.userDescription( tokenNameLookup ) +
                 ", provider=" + this.providerDescriptor() + ownerString + "]";
     }
 

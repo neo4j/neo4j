@@ -37,27 +37,23 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
-import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.token.TokenHolders;
 
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -119,7 +115,8 @@ public class DetectAllRelationshipInconsistenciesIT
             StoreAccess storeAccess = new StoreAccess( neoStores ).initialize();
             DirectStoreAccess directStoreAccess = new DirectStoreAccess( storeAccess,
                     db.getDependencyResolver().resolveDependency( LabelScanStore.class ),
-                    db.getDependencyResolver().resolveDependency( IndexProviderMap.class ), counts );
+                    db.getDependencyResolver().resolveDependency( IndexProviderMap.class ), counts,
+                    db.getDependencyResolver().resolveDependency( TokenHolders.class ) );
 
             int threads = random.intBetween( 2, 10 );
             FullCheck checker = new FullCheck( getTuningConfiguration(), ProgressMonitorFactory.NONE, Statistics.NONE, threads );
@@ -136,13 +133,6 @@ public class DetectAllRelationshipInconsistenciesIT
         {
             managementService.shutdown();
         }
-    }
-
-    private StoreFactory newStoreFactory( PageCache pageCache )
-    {
-        FileSystemAbstraction fileSystem = fileSystemRule.get();
-        return new StoreFactory( directory.databaseLayout(), getTuningConfiguration(),
-                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, NullLogProvider.getInstance() );
     }
 
     private Config getTuningConfiguration()

@@ -19,25 +19,31 @@
  */
 package org.neo4j.consistency.checking.index;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.consistency.checking.full.IndexCheck;
 import org.neo4j.consistency.checking.full.RecordProcessor;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
+import org.neo4j.storageengine.api.StorageIndexReference;
 
 public class IndexEntryProcessor extends RecordProcessor.Adapter<Long>
 {
     private final ConsistencyReporter reporter;
     private final IndexCheck indexCheck;
+    private final StorageIndexReference indexDescriptor;
+    private final TokenNameLookup tokenNameLookup;
 
-    public IndexEntryProcessor( ConsistencyReporter reporter, IndexCheck indexCheck )
+    public IndexEntryProcessor( ConsistencyReporter reporter, IndexCheck indexCheck, StorageIndexReference indexDescriptor, TokenNameLookup tokenNameLookup )
     {
         this.reporter = reporter;
         this.indexCheck = indexCheck;
+        this.indexDescriptor = indexDescriptor;
+        this.tokenNameLookup = tokenNameLookup;
     }
 
     @Override
     public void process( Long nodeId )
     {
-        reporter.forIndexEntry( new IndexEntry( nodeId ), indexCheck );
+        reporter.forIndexEntry( new IndexEntry( indexDescriptor, tokenNameLookup, nodeId ), indexCheck );
     }
 }
