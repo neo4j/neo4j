@@ -2278,6 +2278,82 @@ public class FulltextProceduresTest
         }
     }
 
+    @Test
+    public void mustMatchCaseInsensitiveWithStandardAnalyzer()
+    {
+        db = createDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'A'}))" ).close();
+            db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'B'}))" ).close();
+            db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'C'}))" ).close();
+            db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'b'}))" ).close();
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( format( NODE_CREATE, "myindex", array( "Label" ), array( "id" ) ) ).close();
+            tx.success();
+        }
+        awaitIndexesOnline();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            try ( Result result = db.execute( format( QUERY_NODES, "myindex", "A" ) ) )
+            {
+                assertThat( result.stream().count(), is( 0L ) ); // The letter 'A' is a stop-word in English, so it is not indexed.
+            }
+            try ( Result result = db.execute( format( QUERY_NODES, "myindex", "B" ) ) )
+            {
+                assertThat( result.stream().count(), is( 2000L ) ); // Both upper- and lower-case 'B' nodes.
+            }
+            try ( Result result = db.execute( format( QUERY_NODES, "myindex", "C" ) ) )
+            {
+                assertThat( result.stream().count(), is( 1000L ) ); // We only have upper-case 'C' nodes.
+            }
+            tx.success();
+        }
+    }
+
+    @Test
+    public void mustMatchCaseInsensitiveWithSimpleAnalyzer()
+    {
+        db = createDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'A'}))" ).close();
+            db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'B'}))" ).close();
+            db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'C'}))" ).close();
+            db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'b'}))" ).close();
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( format( NODE_CREATE, "myindex", array( "Label" ), array( "id" ) + ", {analyzer: 'simple'}" ) ).close();
+            tx.success();
+        }
+        awaitIndexesOnline();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            try ( Result result = db.execute( format( QUERY_NODES, "myindex", "A" ) ) )
+            {
+                assertThat( result.stream().count(), is( 1000L ) ); // We only have upper-case 'A' nodes.
+            }
+            try ( Result result = db.execute( format( QUERY_NODES, "myindex", "B" ) ) )
+            {
+                assertThat( result.stream().count(), is( 2000L ) ); // Both upper- and lower-case 'B' nodes.
+            }
+            try ( Result result = db.execute( format( QUERY_NODES, "myindex", "C" ) ) )
+            {
+                assertThat( result.stream().count(), is( 1000L ) ); // We only have upper-case 'C' nodes.
+            }
+            tx.success();
+        }
+    }
+
     private void assertNoIndexSeeks( Result result )
     {
         assertThat( result.stream().count(), is( 1L ) );
