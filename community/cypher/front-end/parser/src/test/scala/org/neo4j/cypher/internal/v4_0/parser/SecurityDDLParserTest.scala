@@ -756,7 +756,7 @@ class SecurityDDLParserTest
     failsToParse
   }
 
-  // Revoking traverse from role
+  //  Revoking traverse from role
 
   test("REVOKE TRAVERSE GRAPH * NODES * (*) FROM role") {
     failsToParse
@@ -795,6 +795,10 @@ class SecurityDDLParserTest
   }
 
   test("REVOKE TRAVERSE ON GRAPH * NODES A (*) FROM role") {
+    yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.LabelQualifier("A") _, "role"))
+  }
+
+  test("REVOKE TRAVERSE ON GRAPH * NODES A FROM role") {
     yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.LabelQualifier("A") _, "role"))
   }
 
@@ -1064,7 +1068,7 @@ class SecurityDDLParserTest
     failsToParse
   }
 
-  // Revoking read from role
+  //  Revoking read from role
 
   test("REVOKE READ (*) GRAPH * NODES * (*) FROM role") {
     failsToParse
@@ -1103,6 +1107,10 @@ class SecurityDDLParserTest
   }
 
   test("REVOKE READ (*) ON GRAPH * NODES A (*) FROM role") {
+    yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.LabelQualifier("A") _, "role"))
+  }
+
+  test("REVOKE READ (*) ON GRAPH * NODES A FROM role") {
     yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.LabelQualifier("A") _, "role"))
   }
 
@@ -1151,6 +1159,10 @@ class SecurityDDLParserTest
   }
 
   test("REVOKE READ (bar) ON GRAPH * NODES A (*) FROM role") {
+    yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.AllGraphsScope() _, ast.LabelQualifier("A") _, "role"))
+  }
+
+  test("REVOKE READ (bar) ON GRAPH * NODES A FROM role") {
     yields(ast.RevokeRead(ast.PropertyResource("bar") _, ast.AllGraphsScope() _, ast.LabelQualifier("A") _, "role"))
   }
 
