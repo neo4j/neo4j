@@ -17,8 +17,9 @@
 package org.neo4j.cypher.internal.v4_0.parser
 
 import org.neo4j.cypher.internal.v4_0.ast
-import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions.{Parameter => Param}
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.parboiled.scala.Rule1
 
@@ -657,15 +658,15 @@ class SecurityDDLParserTest
   }
 
   test("GRANT TRAVERSE ON GRAPH * NODES * TO role") {
-    yields(ast.GrantTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
+    yields(ast.GrantPrivilege.traverse(ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH * TO role") {
-    yields(ast.GrantTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
+    yields(ast.GrantPrivilege.traverse(ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH foo TO role") {
-    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
+    yields(ast.GrantPrivilege.traverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPHS foo TO role") {
@@ -673,39 +674,39 @@ class SecurityDDLParserTest
   }
 
   test("GRANT TRAVERSE ON GRAPH foo NODES * TO role") {
-    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
+    yields(ast.GrantPrivilege.traverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH foo NODES A TO role") {
-    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
+    yields(ast.GrantPrivilege.traverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH `*` NODES A TO role") {
-    yields(ast.GrantTraverse(ast.NamedGraphScope("*") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
+    yields(ast.GrantPrivilege.traverse(ast.NamedGraphScope("*") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH * NODES * (*) TO role") {
-    yields(ast.GrantTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
+    yields(ast.GrantPrivilege.traverse(ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH foo NODES * (*) TO role") {
-    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
+    yields(ast.GrantPrivilege.traverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH * NODES A (*) TO role") {
-    yields(ast.GrantTraverse(ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
+    yields(ast.GrantPrivilege.traverse(ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH foo NODES A (*) TO role") {
-    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
+    yields(ast.GrantPrivilege.traverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH foo NODES A, B (*) TO role1, role2") {
-    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
+    yields(ast.GrantPrivilege.traverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
   }
 
   test("GRANT TRAVERSE ON GRAPH foo NODES `A B` (*) TO role") {
-    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A B")) _, Seq("role")))
+    yields(ast.GrantPrivilege.traverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A B")) _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH foo NODES A B (*) TO role") {
@@ -733,7 +734,7 @@ class SecurityDDLParserTest
   }
 
   test("GRANT TRAVERSE ON GRAPH foo NODES A (*) TO `r:ole`") {
-    yields(ast.GrantTraverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("r:ole")))
+    yields(ast.GrantPrivilege.traverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("r:ole")))
   }
 
   test("GRANT TRAVERSE ON GRAPH foo NODES A (*) TO r:ole") {
@@ -741,7 +742,7 @@ class SecurityDDLParserTest
   }
 
   test("GRANT TRAVERSE ON GRAPH `2foo` NODES A (*) TO role") {
-    yields(ast.GrantTraverse(ast.NamedGraphScope("2foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
+    yields(ast.GrantPrivilege.traverse(ast.NamedGraphScope("2foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH 2foo NODES A (*) TO role") {
@@ -771,430 +772,239 @@ class SecurityDDLParserTest
   }
 
   test("REVOKE TRAVERSE ON GRAPH * NODES * FROM role") {
-    yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
+    yields(ast.RevokePrivilege.traverse(ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH * FROM role") {
-    yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
+    yields(ast.RevokePrivilege.traverse(ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH foo FROM role") {
-    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
+    yields(ast.RevokePrivilege.traverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH foo NODES * FROM role") {
-    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
+    yields(ast.RevokePrivilege.traverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH foo NODES A FROM role") {
-    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
+    yields(ast.RevokePrivilege.traverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH * NODES * (*) FROM role") {
-    yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
+    yields(ast.RevokePrivilege.traverse(ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH foo NODES * (*) FROM role") {
-    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
+    yields(ast.RevokePrivilege.traverse(ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH * NODES A (*) FROM role") {
-    yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
+    yields(ast.RevokePrivilege.traverse(ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH * NODES A FROM role") {
-    yields(ast.RevokeTraverse(ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
+    yields(ast.RevokePrivilege.traverse(ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH foo NODES A (*) FROM role") {
-    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
+    yields(ast.RevokePrivilege.traverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH foo NODES A, B (*) FROM role1, role2") {
-    yields(ast.RevokeTraverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
+    yields(ast.RevokePrivilege.traverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
   }
 
   test("REVOKE TRAVERSE ON GRAPH foo NODES A (foo) FROM role") {
     failsToParse
   }
 
-  //  Granting read to role
-
-  test("GRANT READ (*) GRAPH * NODES * (*) TO role") {
-    failsToParse
-  }
-
-  test("GRANT READ (*) GRAPH * NODES A TO role") {
-    failsToParse
-  }
-
-  test("GRANT READ (bar) ON GRAPH * NODES A TO role") {
-    failsToParse
-  }
-
-  test("GRANT READ (*) ON GRAPH * NODES * (*)") {
-    failsToParse
-  }
-
-  test("GRANT READ (*) ON GRAPH * NODES * TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
-  }
-
-  test("GRANT READ (*) ON GRAPH * TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
-  }
-
-  test("GRANT READ (*) ON GRAPH foo TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
-  }
-
-  test("GRANT READ (*) ON GRAPH foo NODES * TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
-  }
-
-  test("GRANT READ (*) ON GRAPH foo NODES A TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-  }
-
-  test("GRANT READ (*) ON GRAPH * NODES * (*) TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
-  }
-
-  test("GRANT READ (*) ON GRAPH foo NODES * (*) TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
-  }
-
-  test("GRANT READ (*) ON GRAPH * NODES A (*) TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-  }
-
-  test("GRANT READ (*) ON GRAPH foo NODES A (*) TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-  }
-
-  test("GRANT READ (*) ON GRAPH foo NODES A, B (*) TO role1, role2") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
-  }
-
-  test("GRANT READ (*) ON GRAPH foo NODES `A B` (*) TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A B")) _, Seq("role")))
-  }
-
-  test("GRANT READ (*) ON GRAPH foo NODES A B (*) TO role") {
-    failsToParse
-  }
-
-  test("GRANT READ (*) ON GRAPH foo NODES A (foo) TO role") {
-    failsToParse
-  }
-
-  test("GRANT READ (*) ON GRAPH NODES * TO role") {
-    failsToParse
-  }
-
-  test("GRANT READ (*) ON GRAPH NODES A TO role") {
-    failsToParse
-  }
-
-  test("GRANT READ (*) ON GRAPH NODES * (*) TO role") {
-    failsToParse
-  }
-
-  test("GRANT READ (*) ON GRAPH NODES A (*) TO role") {
-    failsToParse
-  }
-
-  test("GRANT READ (*) ON GRAPH foo NODES * TO `r:ole`") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("r:ole")))
-  }
-
-  test("GRANT READ (*) ON GRAPH foo NODES * TO r:ole") {
-    failsToParse
-  }
-
-  test("GRANT READ (*) ON GRAPH `f:oo` NODES * TO role") {
-    yields(ast.GrantRead(ast.AllResource() _, ast.NamedGraphScope("f:oo") _, ast.AllQualifier() _, Seq("role")))
-  }
-
-  test("GRANT READ (*) ON GRAPH f:oo NODES * TO role") {
-    failsToParse
-  }
-
-  test("GRANT READ (*) ON GRAPH foo NODES A (*) TO role1, role2") {
-    failsToParse
-  }
-
-  test("GRANT READ (*) ON GRAPH foo, baz NODES A (*) TO role") {
-    failsToParse
-  }
-
-  test("GRANT READ (*) ON GRAPH foo NODES A, B (*) TO role") {
-    failsToParse
-  }
-
-  test("GRANT READ (bar) GRAPH * NODES * (*) TO role") {
-    failsToParse
-  }
-
-  test("GRANT READ (bar) ON GRAPH * NODES * (*)") {
-    failsToParse
-  }
-
-  test("GRANT READ (bar) ON GRAPH * NODES * TO role") {
-    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
-  }
-
-  test("GRANT READ (bar) ON GRAPH * TO role") {
-    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
-  }
-
-  test("GRANT READ (bar) ON GRAPH foo TO role") {
-    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
-  }
-
-  test("GRANT READ (bar) ON GRAPH foo NODES * TO role") {
-    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
-  }
-
-  test("GRANT READ (bar) ON GRAPH foo NODES A TO role") {
-    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-  }
-
-  test("GRANT READ (bar) ON GRAPH * NODES * (*) TO role") {
-    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
-  }
-
-  test("GRANT READ (bar) ON GRAPH foo NODES * (*) TO role") {
-    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
-  }
-
-  test("GRANT READ (bar) ON GRAPH * NODES A (*) TO role") {
-    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-  }
-
-  test("GRANT READ (bar) ON GRAPH foo NODES A (*) TO role") {
-    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-  }
-
-  test("GRANT READ (foo, bar) ON GRAPH foo NODES A, B (*) TO role1, role2") {
-    yields(ast.GrantRead(ast.PropertiesResource(Seq("foo", "bar")) _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
-  }
-
-  test("GRANT READ (bar) ON GRAPH foo NODES `:A` (*) TO role") {
-    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq(":A")) _, Seq("role")))
-  }
-
-  test("GRANT READ (bar) ON GRAPH foo NODES :A (*) TO role") {
-    failsToParse
-  }
+  type grantOrRevokeFunc = (PrivilegeType, ActionResource, GraphScope, PrivilegeQualifier, Seq[String]) => InputPosition => ast.Statement
+
+  def grant(p: PrivilegeType, a: ActionResource, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement = GrantPrivilege(p, a, s, q, r)
+
+  def revoke(p: PrivilegeType, a: ActionResource, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement = RevokePrivilege(p, a, s, q, r)
+
+  Seq(
+    (ReadPrivilege()(pos), "GRANT", "TO", grant: grantOrRevokeFunc),
+    (ReadPrivilege()(pos), "REVOKE", "FROM", revoke: grantOrRevokeFunc),
+    (MatchPrivilege()(pos), "GRANT", "TO", grant: grantOrRevokeFunc),
+    (MatchPrivilege()(pos), "REVOKE", "FROM", revoke: grantOrRevokeFunc)
+  ).foreach {
+    case (privilege: PrivilegeType, command: String, preposition: String, func: grantOrRevokeFunc) =>
+      Seq(
+        ("*", ast.AllResource()(pos), "*", ast.AllGraphsScope()(pos)),
+        ("*", ast.AllResource()(pos), "foo", ast.NamedGraphScope("foo")(pos)),
+        ("bar", ast.PropertiesResource(Seq("bar"))(pos), "*", ast.AllGraphsScope()(pos)),
+        ("bar", ast.PropertiesResource(Seq("bar"))(pos), "foo", ast.NamedGraphScope("foo")(pos)),
+        ("foo, bar", ast.PropertiesResource(Seq("foo", "bar"))(pos), "*", ast.AllGraphsScope()(pos)),
+        ("foo, bar", ast.PropertiesResource(Seq("foo", "bar"))(pos), "foo", ast.NamedGraphScope("foo")(pos))
+      ).foreach {
+        case (properties: String, resource: ActionResource, dbName: String, graphScope: GraphScope) =>
 
-  test("GRANT READ (bar) ON GRAPH foo NODES :A:M (*) TO role") {
-    failsToParse
-  }
+          test(s"$command ${privilege.name} ($properties) ON GRAPH $dbName $preposition role") {
+            yields(func(privilege, resource, graphScope, ast.AllQualifier() _, Seq("role")))
+          }
 
-  test("GRANT READ (bar) ON GRAPH foo NODES A (foo) TO role") {
-    failsToParse
-  }
+          test(s"$command ${privilege.name} ($properties) ON GRAPH $dbName NODES * $preposition role") {
+            yields(func(privilege, resource, graphScope, ast.AllQualifier() _, Seq("role")))
+          }
 
-  test("GRANT READ (bar) ON GRAPH NODES * TO role") {
-    failsToParse
-  }
+          test(s"$command ${privilege.name} ($properties) ON GRAPH $dbName NODES * (*) $preposition role") {
+            yields(func(privilege, resource, graphScope, ast.AllQualifier() _, Seq("role")))
+          }
 
-  test("GRANT READ (bar) ON GRAPH NODES A TO role") {
-    failsToParse
-  }
+          test(s"$command ${privilege.name} ($properties) ON GRAPH $dbName NODES A $preposition role") {
+            yields(func(privilege, resource, graphScope, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
+          }
 
-  test("GRANT READ (bar) ON GRAPH NODES * (*) TO role") {
-    failsToParse
-  }
+          test(s"$command ${privilege.name} ($properties) ON GRAPH $dbName NODES A (*) $preposition role") {
+            yields(func(privilege, resource, graphScope, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
+          }
 
-  test("GRANT READ (bar) ON GRAPH NODES A (*) TO role") {
-    failsToParse
-  }
+          test(s"$command ${privilege.name} ($properties) ON GRAPH $dbName NODES `A B` (*) $preposition role") {
+            yields(func(privilege, resource, graphScope, ast.LabelsQualifier(Seq("A B")) _, Seq("role")))
+          }
 
-  test("GRANT READ (bar) ON GRAPH foo NODES * TO `r:ole`") {
-    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("r:ole")))
-  }
+          test(s"$command ${privilege.name} ($properties) ON GRAPH $dbName NODES A, B (*) $preposition role1, role2") {
+            yields(func(privilege, resource, graphScope, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
+          }
 
-  test("GRANT READ (bar) ON GRAPH foo NODES * TO r:ole") {
-    failsToParse
-  }
+          test(s"$command ${privilege.name} ($properties) ON GRAPH $dbName NODES * $preposition `r:ole`") {
+            yields(func(privilege, resource, graphScope, ast.AllQualifier() _, Seq("r:ole")))
+          }
 
-  test("GRANT READ (bar) ON GRAPH `f:oo` NODES * TO role") {
-    yields(ast.GrantRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("f:oo") _, ast.AllQualifier() _, Seq("role")))
-  }
+          test(s"$command ${privilege.name} ($properties) ON GRAPH $dbName NODES `:A` (*) $preposition role") {
+            yields(func(privilege, resource, graphScope, ast.LabelsQualifier(Seq(":A")) _, Seq("role")))
+          }
 
-  test("GRANT READ (bar) ON GRAPH f:oo NODES * TO role") {
-    failsToParse
-  }
+          test(s"$command ${privilege.name} ($properties) GRAPH $dbName NODES * (*) $preposition role") {
+            failsToParse
+          }
 
-  test("GRANT READ (`b:ar`) ON GRAPH foo NODES * TO role") {
-    yields(ast.GrantRead(ast.PropertiesResource(Seq("b:ar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
-  }
+          test(s"$command ${privilege.name} ($properties) GRAPH $dbName NODES A $preposition role") {
+            failsToParse
+          }
 
-  test("GRANT READ (b:ar) ON GRAPH foo NODES * TO role") {
-    failsToParse
-  }
+          test(s"$command ${privilege.name} ($properties) ON GRAPH $dbName NODES * (*)") {
+            failsToParse
+          }
 
-  test("GRANT READ (bar, foo) ON GRAPH foo NODES A (*) TO role") {
-    failsToParse
-  }
+          test(s"$command ${privilege.name} ($properties) ON GRAPH $dbName NODES A B (*) $preposition role") {
+            failsToParse
+          }
 
-  test("GRANT READ (bar) ON GRAPH foo NODES A (*) TO role1, role2") {
-    failsToParse
-  }
+          test(s"$command ${privilege.name} ($properties) ON GRAPH $dbName NODES A (foo) $preposition role") {
+            failsToParse
+          }
 
-  test("GRANT READ (bar) ON GRAPH foo, baz NODES A (*) TO role") {
-    failsToParse
-  }
+          test(s"$command ${privilege.name} ($properties) ON GRAPH $dbName NODES * $preposition r:ole") {
+            failsToParse
+          }
+      }
 
-  test("GRANT READ (bar) ON GRAPH foo NODES A, B (*) TO role") {
-    failsToParse
-  }
+      test(s"$command ${privilege.name} (*) ON GRAPH `f:oo` NODES * $preposition role") {
+        yields(func(privilege, ast.AllResource() _, ast.NamedGraphScope("f:oo") _, ast.AllQualifier() _, Seq("role")))
+      }
 
-  test("GRANT READ ON GRAPH * NODES * TO role") {
-    failsToParse
-  }
+      test(s"$command ${privilege.name} (bar) ON GRAPH `f:oo` NODES * $preposition role") {
+        yields(func(privilege, ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("f:oo") _, ast.AllQualifier() _, Seq("role")))
+      }
 
-  test("GRANT READ ON GRAPH * NODES A TO role") {
-    failsToParse
-  }
+      test(s"$command ${privilege.name} (`b:ar`) ON GRAPH foo NODES * $preposition role") {
+        yields(func(privilege, ast.PropertiesResource(Seq("b:ar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
+      }
 
-  test("GRANT READ ON GRAPH * NODES * (*) TO role") {
-    failsToParse
-  }
+      // Invalid graph name
 
-  test("GRANT READ ON GRAPH * NODES A (*) TO role") {
-    failsToParse
-  }
+      test(s"$command ${privilege.name} (*) ON GRAPH f:oo NODES * $preposition role") {
+        failsToParse
+      }
 
-  test("GRANT READ ON GRAPH foo NODES * TO role") {
-    failsToParse
-  }
+      test(s"$command ${privilege.name} (bar) ON GRAPH f:oo NODES * $preposition role") {
+        failsToParse
+      }
 
-  test("GRANT READ ON GRAPH foo NODES A TO role") {
-    failsToParse
-  }
+      // multiple graphs not allowed
 
-  test("GRANT READ ON GRAPH foo NODES * (*) TO role") {
-    failsToParse
-  }
+      test(s"$command ${privilege.name} (*) ON GRAPH foo, baz NODES A (*) $preposition role") {
+        failsToParse
+      }
 
-  test("GRANT READ ON GRAPH foo NODES A (*) TO role") {
-    failsToParse
-  }
+      test(s"$command ${privilege.name} (bar) ON GRAPH foo, baz NODES A (*) $preposition role") {
+        failsToParse
+      }
 
-  //  Revoking read from role
+      // invalid property definition
 
-  test("REVOKE READ (*) GRAPH * NODES * (*) FROM role") {
-    failsToParse
-  }
+      test(s"$command ${privilege.name} (b:ar) ON GRAPH foo NODES * $preposition role") {failsToParse}
 
-  test("REVOKE READ (*) ON GRAPH * NODES * (*)") {
-    failsToParse
-  }
+      // missing graph name
 
-  test("REVOKE READ (*) ON GRAPH * NODES * FROM role") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
-  }
+      test(s"$command ${privilege.name} (*) ON GRAPH NODES * $preposition role") {
+        failsToParse
+      }
 
-  test("REVOKE READ (*) ON GRAPH * FROM role") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
-  }
+      test(s"$command ${privilege.name} (*) ON GRAPH NODES * (*) $preposition role") {
+        failsToParse
+      }
 
-  test("REVOKE READ (*) ON GRAPH foo FROM role") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
-  }
+      test(s"$command ${privilege.name} (*) ON GRAPH NODES A $preposition role") {
+        failsToParse
+      }
 
-  test("REVOKE READ (*) ON GRAPH foo NODES * FROM role") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
-  }
+      test(s"$command ${privilege.name} (*) ON GRAPH NODES A (*) $preposition role") {
+        failsToParse
+      }
 
-  test("REVOKE READ (*) ON GRAPH foo NODES A FROM role") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-  }
+      test(s"$command ${privilege.name} (bar) ON GRAPH NODES * $preposition role") {
+        failsToParse
+      }
 
-  test("REVOKE READ (*) ON GRAPH * NODES * (*) FROM role") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
-  }
+      test(s"$command ${privilege.name} (bar) ON GRAPH NODES * (*) $preposition role") {
+        failsToParse
+      }
 
-  test("REVOKE READ (*) ON GRAPH foo NODES * (*) FROM role") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
-  }
+      test(s"$command ${privilege.name} (bar) ON GRAPH NODES A $preposition role") {
+        failsToParse
+      }
 
-  test("REVOKE READ (*) ON GRAPH * NODES A (*) FROM role") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-  }
+      test(s"$command ${privilege.name} (bar) ON GRAPH NODES A (*) $preposition role") {
+        failsToParse
+      }
 
-  test("REVOKE READ (*) ON GRAPH * NODES A FROM role") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-  }
+      // missing property definition
 
-  test("REVOKE READ (*) ON GRAPH foo NODES A (*) FROM role") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-  }
+      test(s"$command ${privilege.name} ON GRAPH * NODES * $preposition role") {
+        failsToParse
+      }
 
-  test("REVOKE READ (*) ON GRAPH foo NODES A, B (*) FROM role1, role2") {
-    yields(ast.RevokeRead(ast.AllResource() _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
-  }
+      test(s"$command ${privilege.name} ON GRAPH * NODES * (*) $preposition role") {
+        failsToParse
+      }
 
-  test("REVOKE READ (*) ON GRAPH foo NODES A (foo) FROM role") {
-    failsToParse
-  }
+      test(s"$command ${privilege.name} ON GRAPH * NODES A $preposition role") {
+        failsToParse
+      }
 
-  test("REVOKE READ (bar) GRAPH * NODES * (*) FROM role") {
-    failsToParse
-  }
+      test(s"$command ${privilege.name} ON GRAPH * NODES A (*) $preposition role") {
+        failsToParse
+      }
 
-  test("REVOKE READ (bar) ON GRAPH * NODES * (*)") {
-    failsToParse
-  }
+      test(s"$command ${privilege.name} ON GRAPH foo NODES * $preposition role") {
+        failsToParse
+      }
 
-  test("REVOKE READ (bar) ON GRAPH * NODES * FROM role") {
-    yields(ast.RevokeRead(ast.PropertiesResource(Seq("bar")) _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
-  }
+      test(s"$command ${privilege.name} ON GRAPH foo NODES * (*) $preposition role") {
+        failsToParse
+      }
 
-  test("REVOKE READ (bar) ON GRAPH * FROM role") {
-    yields(ast.RevokeRead(ast.PropertiesResource(Seq("bar")) _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
-  }
+      test(s"$command ${privilege.name} ON GRAPH foo NODES A $preposition role") {
+        failsToParse
+      }
 
-  test("REVOKE READ (bar) ON GRAPH foo FROM role") {
-    yields(ast.RevokeRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
-  }
-
-  test("REVOKE READ (bar) ON GRAPH foo NODES * FROM role") {
-    yields(ast.RevokeRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
-  }
-
-  test("REVOKE READ (bar) ON GRAPH foo NODES A FROM role") {
-    yields(ast.RevokeRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-  }
-
-  test("REVOKE READ (bar) ON GRAPH * NODES * (*) FROM role") {
-    yields(ast.RevokeRead(ast.PropertiesResource(Seq("bar")) _, ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
-  }
-
-  test("REVOKE READ (bar) ON GRAPH foo NODES * (*) FROM role") {
-    yields(ast.RevokeRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
-  }
-
-  test("REVOKE READ (bar) ON GRAPH * NODES A (*) FROM role") {
-    yields(ast.RevokeRead(ast.PropertiesResource(Seq("bar")) _, ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-  }
-
-  test("REVOKE READ (bar) ON GRAPH * NODES A FROM role") {
-    yields(ast.RevokeRead(ast.PropertiesResource(Seq("bar")) _, ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-  }
-
-  test("REVOKE READ (bar) ON GRAPH foo NODES A (*) FROM role") {
-    yields(ast.RevokeRead(ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-  }
-
-  test("REVOKE READ (foo, bar) ON GRAPH foo NODES A, B (*) FROM role1, role2") {
-    yields(ast.RevokeRead(ast.PropertiesResource(Seq("foo", "bar")) _, ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
-  }
-
-  test("REVOKE READ (bar) ON GRAPH foo NODES A (foo) FROM role") {
-    failsToParse
+      test(s"$command ${privilege.name} ON GRAPH foo NODES A (*) $preposition role") {
+        failsToParse
+      }
   }
 }

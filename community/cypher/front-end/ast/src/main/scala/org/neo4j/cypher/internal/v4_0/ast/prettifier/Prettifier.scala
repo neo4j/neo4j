@@ -118,19 +118,19 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case x @ RevokeRolesFromUsers(roleNames, userNames) =>
       s"${x.name} ${roleNames.map(Prettifier.escapeName).mkString(", " )} FROM ${userNames.map(Prettifier.escapeName).mkString(", ")}"
 
-    case x @ GrantTraverse(dbScope, qualifier, roleNames) =>
+    case x @ GrantPrivilege(TraversePrivilege(), _, dbScope, qualifier, roleNames) =>
       val (dbName, label) = Prettifier.extractScope(dbScope, qualifier)
       s"${x.name} ON GRAPH $dbName NODES $label (*) TO ${Prettifier.escapeNames(roleNames)}"
 
-    case x @ RevokeTraverse(dbScope, qualifier, roleNames) =>
+    case x @ RevokePrivilege(TraversePrivilege(), _, dbScope, qualifier, roleNames) =>
       val (dbName, label) = Prettifier.extractScope(dbScope, qualifier)
       s"${x.name} ON GRAPH $dbName NODES $label (*) FROM ${Prettifier.escapeNames(roleNames)}"
 
-    case x @ GrantRead(resource, dbScope, qualifier, roleNames) =>
+    case x @ GrantPrivilege(_, resource, dbScope, qualifier, roleNames) =>
       val (resourceName, dbName, label) = Prettifier.extractScope(resource, dbScope, qualifier)
       s"${x.name} ($resourceName) ON GRAPH $dbName NODES $label (*) TO ${Prettifier.escapeNames(roleNames)}"
 
-    case x @ RevokeRead(resource, dbScope, qualifier, roleNames) =>
+    case x @ RevokePrivilege(_, resource, dbScope, qualifier, roleNames) =>
       val (resourceName, dbName, label) = Prettifier.extractScope(resource, dbScope, qualifier)
       s"${x.name} ($resourceName) ON GRAPH $dbName NODES $label (*) FROM ${Prettifier.escapeNames(roleNames)}"
 

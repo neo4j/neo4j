@@ -134,6 +134,14 @@ final case class RevokeRolesFromUsers(roleNames: Seq[String], userNames: Seq[Str
       SemanticState.recordCurrentScope(this)
 }
 
+abstract class PrivilegeType(val name: String)
+
+final case class TraversePrivilege()(val position: InputPosition) extends PrivilegeType("TRAVERSE")
+
+final case class ReadPrivilege()(val position: InputPosition) extends PrivilegeType("READ")
+
+final case class MatchPrivilege()(val position: InputPosition) extends PrivilegeType("MATCH")
+
 sealed trait ActionResource {
   def simplify: Seq[ActionResource] = Seq(this)
 }
@@ -174,36 +182,38 @@ final case class ShowUserPrivileges(user: String)(val position: InputPosition) e
 
 final case class ShowAllPrivileges()(val position: InputPosition) extends ShowPrivilegeScope
 
-final case class GrantTraverse(scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])(val position: InputPosition) extends MultiDatabaseDDL {
+object GrantPrivilege {
+  def traverse(scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => GrantPrivilege =
+    GrantPrivilege(TraversePrivilege()(InputPosition.NONE), AllResource()(InputPosition.NONE), scope, qualifier, roleNames)
+  def read(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => GrantPrivilege =
+    GrantPrivilege(ReadPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
+  def asMatch(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => GrantPrivilege =
+    GrantPrivilege(MatchPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
+}
 
-  override def name = "CATALOG GRANT TRAVERSE"
+object RevokePrivilege {
+  def traverse(scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
+    RevokePrivilege(TraversePrivilege()(InputPosition.NONE), AllResource()(InputPosition.NONE), scope, qualifier, roleNames)
+  def read(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
+    RevokePrivilege(ReadPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
+  def asMatch(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
+    RevokePrivilege(MatchPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
+}
+
+final case class GrantPrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])
+                               (val position: InputPosition) extends MultiDatabaseDDL {
+
+  override def name = s"GRANT ${privilege.name}"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
 }
 
-final case class RevokeTraverse(scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])(val position: InputPosition) extends MultiDatabaseDDL {
+final case class RevokePrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])
+                               (val position: InputPosition) extends MultiDatabaseDDL {
 
-  override def name = "CATALOG REVOKE TRAVERSE"
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      SemanticState.recordCurrentScope(this)
-}
-
-final case class GrantRead(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])(val position: InputPosition) extends MultiDatabaseDDL {
-
-  override def name = "CATALOG GRANT READ"
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      SemanticState.recordCurrentScope(this)
-}
-
-final case class RevokeRead(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])(val position: InputPosition) extends MultiDatabaseDDL {
-
-  override def name = "CATALOG REVOKE READ"
+  override def name = s"REVOKE ${privilege.name}"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
