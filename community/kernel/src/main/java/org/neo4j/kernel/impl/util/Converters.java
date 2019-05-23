@@ -108,11 +108,6 @@ public class Converters
         };
     }
 
-    public static Function<String,Integer> toInt()
-    {
-        return Integer::new;
-    }
-
     public static AdvertisedSocketAddress toAdvertisedSocketAddress( HostnamePort hostnamePort, String defaultHostname, int defaultPort )
     {
         String hostname = removeIpV6Brackets( hostnamePort.getHost() != null ? hostnamePort.getHost() : defaultHostname );

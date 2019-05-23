@@ -31,9 +31,9 @@ import static java.lang.System.currentTimeMillis;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.oneOf;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -146,10 +146,10 @@ class UnsafeUtilTest
     @Test
     void pageSizeIsPowerOfTwo()
     {
-        assertThat( pageSize(), isOneOf(
+        assertThat( pageSize(), is( oneOf(
                 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144,
                 524288, 1048576, 2097152, 4194304, 8388608, 16777216, 33554432, 67108864, 134217728, 268435456,
-                536870912, 1073741824 ) );
+                536870912, 1073741824 ) ) );
     }
 
     @Test
@@ -571,7 +571,7 @@ class UnsafeUtilTest
         {
             UnsafeUtil.putLong( address, expected );
             long actual = buf.getLong();
-            assertThat( actual, isOneOf( expected, Long.reverseBytes( expected ) ) );
+            assertThat( actual, is( oneOf( expected, Long.reverseBytes( expected ) ) ) );
         }
         finally
         {

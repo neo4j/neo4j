@@ -19,7 +19,7 @@
  */
 package org.neo4j.commandline.arguments;
 
-import org.apache.commons.lang3.text.WordUtils;
+import org.apache.commons.text.WordUtils;
 
 import org.neo4j.internal.helpers.Args;
 

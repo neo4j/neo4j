@@ -59,11 +59,9 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
     int getRecordSize( StoreHeader storeHeader );
 
     /**
-     * @deprecated since only being applicable to {@link DynamicRecord} formats.
      * @return header size of records of this format. This is only applicable to {@link DynamicRecord}
      * format and may not need to be in this interface.
      */
-    @Deprecated
     int getRecordHeaderSize();
 
     /**

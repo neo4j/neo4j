@@ -135,7 +135,7 @@ class ArgsTest
         int value = args.interpretOption( "arg", key ->
         {
             throw new IllegalArgumentException( "Missing argument '" + key + "'" );
-        }, Integer::new, validator );
+        }, Integer::parseInt, validator );
 
         // THEN
         assertEquals( expectedValue, value );
@@ -155,7 +155,7 @@ class ArgsTest
         int value = args.interpretOrphan( 0, key ->
         {
             throw new IllegalArgumentException( "Missing argument '" + key + "'" );
-        }, Integer::new, validator );
+        }, Integer::parseInt, validator );
 
         // THEN
         assertEquals( expectedValue, value );
@@ -178,7 +178,7 @@ class ArgsTest
 
         // WHEN
         assertThrows( IllegalArgumentException.class, () -> args.get( key ) );
-        Collection<Integer> numbers = args.interpretOptions( key, k -> null, Integer::new );
+        Collection<Integer> numbers = args.interpretOptions( key, k -> null, Integer::parseInt );
 
         // THEN
         assertEquals( expectedValues, numbers );

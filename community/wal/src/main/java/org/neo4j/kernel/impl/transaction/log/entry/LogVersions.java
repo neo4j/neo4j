@@ -20,14 +20,8 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 /**
- * @deprecated since from 2.2.4 and onwards there's only one version in town, namely {@link LogEntryVersion}.
- * The way this log version was used was actually to set a hard command format version inside a particular log file
- * so even if it may have looked like multiple versions of log entries were supported it wasn't. Also the
- * log entry versions implied specific command versions so it was a bit of a mess. This class is here as
- * long as we decide to keep the log format header, which may be good to keep for backwards compatibility of
- * reading log headers.
+ * Since from 2.2.4 and onwards there's only one version in town, namely {@link LogEntryVersion}.
  */
-@Deprecated
 public class LogVersions
 {
     private LogVersions()

@@ -70,7 +70,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -442,7 +442,7 @@ public class NativeLabelScanStoreTest
         final int labelId = 1;
         int nodeCount = 32 * 16 + 10;
         start();
-        write( new PrefetchingIterator<NodeLabelUpdate>()
+        write( new PrefetchingIterator<>()
         {
             private int i = -1;
 

@@ -25,6 +25,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -52,12 +53,13 @@ class PhysicalLogCommandReadersTest
 
     @ParameterizedTest
     @ValueSource( classes = {PhysicalLogCommandReaderV3_0_10.class, PhysicalLogCommandReaderV4_0.class} )
-    void readRelGroupWithHugeType( Class<CommandReader> readerClass ) throws IOException, IllegalAccessException, InstantiationException
+    void readRelGroupWithHugeType( Class<CommandReader> readerClass )
+            throws IOException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException
     {
-        assertCanReadRelGroup( readerClass.newInstance() );
+        assertCanReadRelGroup( readerClass.getDeclaredConstructor().newInstance() );
     }
 
-    private void assertCanReadRelGroup( CommandReader reader ) throws IOException
+    private static void assertCanReadRelGroup( CommandReader reader ) throws IOException
     {
         StorageCommand command = reader.read( channelWithRelGroupRecord() );
         assertValidRelGroupCommand( command );

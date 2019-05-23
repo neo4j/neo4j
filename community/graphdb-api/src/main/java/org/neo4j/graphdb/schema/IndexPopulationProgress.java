@@ -35,7 +35,7 @@ public class IndexPopulationProgress
 
     public IndexPopulationProgress( long completed, long total )
     {
-        if ( total < 0 || completed < 0 || completed > total )
+        if ( completed < 0 || completed > total )
         {
             throw new IllegalArgumentException( "Invalid progress specified: " + completed + "/" + total );
         }
@@ -49,24 +49,6 @@ public class IndexPopulationProgress
     public float getCompletedPercentage()
     {
         return totalCount > 0 ? ((float) (completedCount * 100) / totalCount) : 0.0f;
-    }
-
-    /**
-     * @return number of completed items
-     * @deprecated since this number won't be reliable throughout a population and should therefore not be used.
-     */
-    public long getCompletedCount()
-    {
-        return completedCount;
-    }
-
-    /**
-     * @return total number of items to index
-     * @deprecated since this number won't be reliable throughout a population and should therefore not be used.
-     */
-    public long getTotalCount()
-    {
-        return totalCount;
     }
 
     @Override

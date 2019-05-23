@@ -51,24 +51,6 @@ class IndexPopulationProgressTest
     }
 
     @Test
-    void testAllZero()
-    {
-        IndexPopulationProgress progress = new IndexPopulationProgress( 0, 0 );
-        assertEquals( 0, progress.getCompletedCount() );
-        assertEquals( 0, progress.getTotalCount() );
-        assertEquals( 0, progress.getCompletedPercentage(), 0.01 );
-    }
-
-    @Test
-    void testCompletedZero()
-    {
-        IndexPopulationProgress progress = new IndexPopulationProgress( 0, 1 );
-        assertEquals( 1, progress.getTotalCount() );
-        assertEquals( 0, progress.getCompletedCount() );
-        assertEquals( 0, progress.getCompletedPercentage(), 0.01 );
-    }
-
-    @Test
     void testCompletedGreaterThanTotal()
     {
         assertThrows( IllegalArgumentException.class, () -> new IndexPopulationProgress( 2, 1 ) );
@@ -79,19 +61,5 @@ class IndexPopulationProgressTest
     {
         IndexPopulationProgress progress = new IndexPopulationProgress( 1, 2 );
         assertEquals( 50.0f, progress.getCompletedPercentage(), 0.01f );
-    }
-
-    @Test
-    void testGetCompleted()
-    {
-        IndexPopulationProgress progress = new IndexPopulationProgress( 1, 2 );
-        assertEquals( 1L, progress.getCompletedCount() );
-    }
-
-    @Test
-    void testGetTotal()
-    {
-        IndexPopulationProgress progress = new IndexPopulationProgress( 1, 2 );
-        assertEquals( 2L, progress.getTotalCount() );
     }
 }
