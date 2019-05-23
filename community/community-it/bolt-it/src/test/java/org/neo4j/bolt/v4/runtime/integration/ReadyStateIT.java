@@ -57,7 +57,7 @@ import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_ID;
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 
 class ReadyStateIT extends BoltStateMachineStateTestBase
 {
@@ -123,7 +123,7 @@ class ReadyStateIT extends BoltStateMachineStateTestBase
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         RunMessage runMessage = mock( RunMessage.class );
-        when( runMessage.databaseId() ).thenReturn( ABSENT_DB_ID );
+        when( runMessage.databaseName() ).thenReturn( ABSENT_DB_NAME );
         when( runMessage.statement() ).thenThrow( new RuntimeException( "Fail" ) );
         machine.process( runMessage, recorder );
 
@@ -142,7 +142,7 @@ class ReadyStateIT extends BoltStateMachineStateTestBase
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         BeginMessage beginMessage = mock( BeginMessage.class );
-        when( beginMessage.databaseId() ).thenReturn( ABSENT_DB_ID );
+        when( beginMessage.databaseName() ).thenReturn( ABSENT_DB_NAME );
         when( beginMessage.bookmark() ).thenThrow( new RuntimeException( "Fail" ) );
         machine.process( beginMessage, recorder );
 

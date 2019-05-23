@@ -99,10 +99,9 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         DependencyResolver resolver = gdb.getDependencyResolver();
         Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),
                 resolver.resolveDependency( UserManagerSupplier.class ) );
-        DatabaseManager<?> databaseManager = resolver.resolveDependency( DatabaseManager.class );
         Config config = resolver.resolveDependency( Config.class );
         boltFactory = new BoltStateMachineFactoryImpl(
-                databaseManager,
+                managementService,
                 authentication,
                 Clocks.nanoClock(),
                 config,

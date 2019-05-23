@@ -46,7 +46,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.internal.helpers.ListenSocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -67,7 +67,7 @@ import static java.util.stream.Collectors.toMap;
 public class BoltServer extends LifecycleAdapter
 {
     // platform dependencies
-    private final DatabaseManager<?> databaseManager;
+    private final DatabaseManagementService managementService;
     private final JobScheduler jobScheduler;
     private final ConnectorPortRegister connectorPortRegister;
     private final NetworkConnectionTracker connectionTracker;
@@ -81,11 +81,11 @@ public class BoltServer extends LifecycleAdapter
 
     private final LifeSupport life = new LifeSupport();
 
-    public BoltServer( DatabaseManager<?> databaseManager, JobScheduler jobScheduler,
+    public BoltServer( DatabaseManagementService managementService, JobScheduler jobScheduler,
             ConnectorPortRegister connectorPortRegister, NetworkConnectionTracker connectionTracker, Config config, SystemNanoClock clock,
             Monitors monitors, LogService logService, DependencyResolver dependencyResolver )
     {
-        this.databaseManager = databaseManager;
+        this.managementService = managementService;
         this.jobScheduler = jobScheduler;
         this.connectorPortRegister = connectorPortRegister;
         this.connectionTracker = connectionTracker;
@@ -220,6 +220,6 @@ public class BoltServer extends LifecycleAdapter
 
     private BoltStateMachineFactory createBoltFactory( Authentication authentication, SystemNanoClock clock )
     {
-        return new BoltStateMachineFactoryImpl( databaseManager, authentication, clock, config, logService );
+        return new BoltStateMachineFactoryImpl( managementService, authentication, clock, config, logService );
     }
 }

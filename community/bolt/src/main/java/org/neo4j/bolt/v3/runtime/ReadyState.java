@@ -31,7 +31,7 @@ import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.bolt.v3.messaging.request.TransactionInitiatingMessage;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_ID;
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.values.storable.Values.stringArray;
 
@@ -113,6 +113,6 @@ public class ReadyState extends FailSafeBoltStateMachineState
     protected StatementProcessor getStatementProcessor( TransactionInitiatingMessage message, StateMachineContext context )
             throws BoltProtocolBreachFatality, BoltIOException
     {
-        return context.setCurrentStatementProcessorForDatabase( ABSENT_DB_ID );
+        return context.setCurrentStatementProcessorForDatabase( ABSENT_DB_NAME );
     }
 }

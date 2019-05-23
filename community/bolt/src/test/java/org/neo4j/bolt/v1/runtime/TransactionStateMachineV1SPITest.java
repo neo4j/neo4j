@@ -30,14 +30,13 @@ import java.util.function.Supplier;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.collection.Dependencies;
-import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.logging.NullLog;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -150,8 +149,8 @@ public class TransactionStateMachineV1SPITest
         when( dependencyResolver.resolveDependency( DatabaseAvailabilityGuard.class ) ).thenReturn( availabilityGuard );
         when( dependencyResolver.provideDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
 
-        DatabaseContext context = mock( StandaloneDatabaseContext.class );
-        when( context.dependencies() ).thenReturn( dependencyResolver );
+        GraphDatabaseFacade facade = mock( GraphDatabaseFacade.class );
+        when( facade.getDependencyResolver() ).thenReturn( dependencyResolver );
 
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
         when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
@@ -159,6 +158,6 @@ public class TransactionStateMachineV1SPITest
 
         BoltChannel boltChannel = new BoltChannel( "bolt-42", "bolt", new EmbeddedChannel() );
 
-        return new TransactionStateMachineV1SPI( context, boltChannel, txAwaitDuration, clock, mock( StatementProcessorReleaseManager.class ) );
+        return new TransactionStateMachineV1SPI( facade, boltChannel, txAwaitDuration, clock, mock( StatementProcessorReleaseManager.class ) );
     }
 }

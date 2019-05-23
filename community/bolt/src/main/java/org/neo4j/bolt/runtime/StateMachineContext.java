@@ -23,7 +23,6 @@ import java.time.Clock;
 
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
-import org.neo4j.kernel.database.DatabaseId;
 
 public interface StateMachineContext
 {
@@ -43,5 +42,5 @@ public interface StateMachineContext
 
     void initStatementProcessorProvider( AuthenticationResult authResult );
 
-    StatementProcessor setCurrentStatementProcessorForDatabase( DatabaseId databaseId ) throws BoltProtocolBreachFatality, BoltIOException;
+    StatementProcessor setCurrentStatementProcessorForDatabase( String databaseName ) throws BoltProtocolBreachFatality, BoltIOException;
 }

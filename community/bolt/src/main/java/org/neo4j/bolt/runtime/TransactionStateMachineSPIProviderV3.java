@@ -24,24 +24,22 @@ import java.time.Duration;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v3.runtime.TransactionStateMachineV3SPI;
-import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.time.SystemNanoClock;
+import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 public class TransactionStateMachineSPIProviderV3 extends DefaultDatabaseTransactionStatementSPIProvider
 {
-
-    TransactionStateMachineSPIProviderV3( DatabaseManager<?> databaseManager, DatabaseId defaultDatabaseId, BoltChannel boltChannel,
+    TransactionStateMachineSPIProviderV3( DatabaseManagementService managementService, String defaultDatabaseName, BoltChannel boltChannel,
             Duration awaitDuration, SystemNanoClock clock )
     {
-        super( databaseManager, defaultDatabaseId, boltChannel, awaitDuration, clock );
+        super( managementService, defaultDatabaseName, boltChannel, awaitDuration, clock );
     }
 
     @Override
-    protected TransactionStateMachineSPI newTransactionStateMachineSPI( DatabaseContext databaseContext,
+    protected TransactionStateMachineSPI newTransactionStateMachineSPI( GraphDatabaseFacade databaseFacade,
             StatementProcessorReleaseManager resourceReleaseManger )
     {
-        return new TransactionStateMachineV3SPI( databaseContext, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
+        return new TransactionStateMachineV3SPI( databaseFacade, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
     }
 }

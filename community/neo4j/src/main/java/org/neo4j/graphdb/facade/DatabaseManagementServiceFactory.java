@@ -146,7 +146,7 @@ public class DatabaseManagementServiceFactory
         globalDependencies.satisfyDependencies( securityProvider.userManagerSupplier() );
 
         globalLife.add( globalModule.getGlobalExtensions() );
-        globalLife.add( createBoltServer( globalModule, edition, databaseManager ) );
+        globalLife.add( createBoltServer( globalModule, edition, managementService ) );
         globalDependencies.satisfyDependency( edition.globalTransactionCounter() );
         globalLife.add( new PublishPageCacheTracerMetricsAfterStart( globalModule.getTracers().getPageCursorTracerSupplier() ) );
 
@@ -284,9 +284,9 @@ public class DatabaseManagementServiceFactory
     }
 
     private static BoltServer createBoltServer( GlobalModule platform, AbstractEditionModule edition,
-            DatabaseManager<?> databaseManager )
+            DatabaseManagementService managementService )
     {
-        return new BoltServer( databaseManager, platform.getJobScheduler(), platform.getConnectorPortRegister(), edition.getConnectionTracker(),
+        return new BoltServer( managementService, platform.getJobScheduler(), platform.getConnectorPortRegister(), edition.getConnectionTracker(),
                 platform.getGlobalConfig(), platform.getGlobalClock(), platform.getGlobalMonitors(), platform.getLogService(),
                 platform.getGlobalDependencies() );
     }

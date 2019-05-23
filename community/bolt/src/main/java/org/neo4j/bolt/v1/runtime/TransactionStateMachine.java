@@ -41,7 +41,6 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.values.virtual.MapValue;
 
@@ -53,13 +52,13 @@ public class TransactionStateMachine implements StatementProcessor
     private final TransactionStateMachineSPI spi;
     final MutableTransactionState ctx;
     State state = State.AUTO_COMMIT;
-    private final DatabaseId databaseId;
+    private final String databaseName;
 
-    public TransactionStateMachine( DatabaseId databaseId, TransactionStateMachineSPI spi, AuthenticationResult authenticationResult, Clock clock )
+    public TransactionStateMachine( String databaseName, TransactionStateMachineSPI spi, AuthenticationResult authenticationResult, Clock clock )
     {
         this.spi = spi;
         ctx = new MutableTransactionState( authenticationResult, clock );
-        this.databaseId = databaseId;
+        this.databaseName = databaseName;
     }
 
     public State state()
@@ -227,9 +226,9 @@ public class TransactionStateMachine implements StatementProcessor
     }
 
     @Override
-    public DatabaseId databaseId()
+    public String databaseName()
     {
-        return databaseId;
+        return databaseName;
     }
 
     @Override
@@ -683,6 +682,6 @@ public class TransactionStateMachine implements StatementProcessor
     @Override
     public String toString()
     {
-        return "TransactionStateMachine{" + "state=" + state + ", databaseId='" + databaseId + '\'' + '}';
+        return "TransactionStateMachine{" + "state=" + state + ", databaseName='" + databaseName + '\'' + '}';
     }
 }

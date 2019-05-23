@@ -27,8 +27,7 @@ import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI;
-import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.time.SystemNanoClock;
@@ -36,13 +35,13 @@ import org.neo4j.values.virtual.MapValue;
 
 public class TransactionStateMachineV4SPI extends TransactionStateMachineV1SPI
 {
-    private final DatabaseId databaseId;
+    private final String databaseName;
 
-    public TransactionStateMachineV4SPI( DatabaseContext db, BoltChannel boltChannel, Duration txAwaitDuration, SystemNanoClock clock,
-            StatementProcessorReleaseManager resourceReleaseManger, DatabaseId databaseId )
+    public TransactionStateMachineV4SPI( GraphDatabaseFacade db, BoltChannel boltChannel, Duration txAwaitDuration, SystemNanoClock clock,
+            StatementProcessorReleaseManager resourceReleaseManger, String databaseName )
     {
         super( db, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
-        this.databaseId = databaseId;
+        this.databaseName = databaseName;
     }
 
     @Override
@@ -69,7 +68,7 @@ public class TransactionStateMachineV4SPI extends TransactionStateMachineV1SPI
         protected BoltResult newBoltResult( QueryExecution result,
                 BoltAdapterSubscriber subscriber, Clock clock )
         {
-            return new CypherAdapterStreamV4( result, subscriber, clock, databaseId );
+            return new CypherAdapterStreamV4( result, subscriber, clock, databaseName );
         }
     }
 }

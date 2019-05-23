@@ -27,7 +27,6 @@ import org.neo4j.bolt.v4.messaging.ResultConsumer;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.values.virtual.MapValue;
 
 public interface StatementProcessor
@@ -56,7 +55,7 @@ public interface StatementProcessor
 
     Status validateTransaction() throws KernelException;
 
-    DatabaseId databaseId();
+    String databaseName();
 
     StatementProcessor EMPTY = new StatementProcessor()
     {
@@ -132,7 +131,7 @@ public interface StatementProcessor
         }
 
         @Override
-        public DatabaseId databaseId()
+        public String databaseName()
         {
             throw new UnsupportedOperationException( "Unable to read the database ID" );
         }

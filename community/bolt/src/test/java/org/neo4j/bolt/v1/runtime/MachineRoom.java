@@ -34,7 +34,6 @@ import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.kernel.api.security.AuthToken;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -84,7 +83,7 @@ public class MachineRoom
     {
         BoltStateMachineSPI spi = mock( BoltStateMachineSPI.class, RETURNS_MOCKS );
         TransactionStateMachineSPIProvider transactionSPIProvider = mock( TransactionStateMachineSPIProvider.class );
-        when( transactionSPIProvider.getTransactionStateMachineSPI( any( DatabaseId.class ), any( StatementProcessorReleaseManager.class ) ) )
+        when( transactionSPIProvider.getTransactionStateMachineSPI( any( String.class ), any( StatementProcessorReleaseManager.class ) ) )
                 .thenReturn( transactionSPI );
         when( spi.transactionStateMachineSPIProvider() ).thenReturn( transactionSPIProvider );
 

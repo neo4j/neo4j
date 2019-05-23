@@ -23,8 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.Optional;
-
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.testing.BoltTestUtil;
@@ -32,13 +30,12 @@ import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v1.runtime.BoltStateMachineV1;
 import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
-import org.neo4j.collection.Dependencies;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.dbms.database.StandaloneDatabaseContext;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
@@ -95,23 +92,22 @@ class BoltStateMachineFactoryImplTest
         return newBoltFactory( newDbMock() );
     }
 
-    private static BoltStateMachineFactoryImpl newBoltFactory( DatabaseManager<?> databaseManager )
+    private static BoltStateMachineFactoryImpl newBoltFactory( DatabaseManagementService managementService )
     {
         Config config = Config.defaults( GraphDatabaseSettings.default_database, CUSTOM_DB_NAME );
-        return new BoltStateMachineFactoryImpl( databaseManager, mock( Authentication.class ), CLOCK, config, NullLogService.getInstance() );
+        return new BoltStateMachineFactoryImpl( managementService, mock( Authentication.class ), CLOCK, config, NullLogService.getInstance() );
     }
 
-    private static DatabaseManager<?> newDbMock()
+    private static DatabaseManagementService newDbMock()
     {
-        StandaloneDatabaseContext db = mock( StandaloneDatabaseContext.class );
-        Dependencies dependencies = mock( Dependencies.class );
-        when( db.dependencies() ).thenReturn( dependencies );
+        GraphDatabaseFacade db = mock( GraphDatabaseFacade.class );
+        DependencyResolver dependencyResolver = mock( DependencyResolver.class );
+        when( db.getDependencyResolver() ).thenReturn( dependencyResolver );
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
-        when( queryService.getDependencyResolver() ).thenReturn( dependencies );
-        when( dependencies.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
-        @SuppressWarnings( "unchecked" )
-        DatabaseManager<StandaloneDatabaseContext> databaseManager = (DatabaseManager<StandaloneDatabaseContext>) mock( DatabaseManager.class );
-        when( databaseManager.getDatabaseContext( new DatabaseId( CUSTOM_DB_NAME ) ) ).thenReturn( Optional.of( db ) );
-        return databaseManager;
+        when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
+        when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
+        DatabaseManagementService managementService = mock( DatabaseManagementService.class );
+        when( managementService.database( CUSTOM_DB_NAME ) ).thenReturn( db );
+        return managementService;
     }
 }

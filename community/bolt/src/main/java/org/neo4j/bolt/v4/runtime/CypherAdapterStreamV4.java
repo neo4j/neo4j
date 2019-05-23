@@ -23,7 +23,6 @@ import java.time.Clock;
 
 import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI;
 import org.neo4j.bolt.v3.runtime.CypherAdapterStreamV3;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.query.QueryExecution;
 
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.DB_NAME_KEY;
@@ -31,17 +30,17 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 public class CypherAdapterStreamV4 extends CypherAdapterStreamV3
 {
-    private final DatabaseId databaseId;
+    private final String databaseName;
 
-    public CypherAdapterStreamV4( QueryExecution delegate, TransactionStateMachineV1SPI.BoltAdapterSubscriber subscriber, Clock clock, DatabaseId databaseId )
+    public CypherAdapterStreamV4( QueryExecution delegate, TransactionStateMachineV1SPI.BoltAdapterSubscriber subscriber, Clock clock, String databaseName )
     {
         super( delegate, subscriber, clock );
-        this.databaseId = databaseId;
+        this.databaseName = databaseName;
     }
 
     @Override
     protected void addDatabaseName( RecordConsumer recordConsumer )
     {
-        recordConsumer.addMetadata( DB_NAME_KEY, stringValue( databaseId.name() ) );
+        recordConsumer.addMetadata( DB_NAME_KEY, stringValue( databaseName ) );
     }
 }

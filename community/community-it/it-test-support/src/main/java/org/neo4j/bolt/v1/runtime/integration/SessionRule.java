@@ -41,7 +41,6 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
@@ -74,12 +73,11 @@ public class SessionRule implements TestRule
                 managementService = new TestDatabaseManagementServiceBuilder().impermanent().setConfig( configMap ).build();
                 gdb = (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
                 DependencyResolver resolver = gdb.getDependencyResolver();
-                DatabaseManager<?> databaseManager = resolver.resolveDependency( DatabaseManager.class );
                 Config config = gdb.getDependencyResolver().resolveDependency( Config.class );
                 Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),
                         resolver.resolveDependency( UserManagerSupplier.class ) );
                 boltFactory = new BoltStateMachineFactoryImpl(
-                                        databaseManager,
+                                        managementService,
                                         authentication,
                                         Clocks.nanoClock(),
                                         config,
