@@ -363,6 +363,11 @@ object Prettifier {
     (resourceName, dbName, label)
   }
 
+  /*
+   * Some strings (identifiers) were escaped with back-ticks to allow non-identifier characters
+   * When printing these again, the knowledge of the back-ticks is lost, but the same test for
+   * non-identifier characters can be used to recover that knowledge.
+   */
   def escapeName(name: String): String = {
     if (name.isEmpty)
       name

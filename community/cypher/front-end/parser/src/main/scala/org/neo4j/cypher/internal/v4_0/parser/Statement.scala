@@ -188,7 +188,7 @@ trait Statement extends Parser
       group("(" ~~ "*" ~~ ")") ~~~> {ast.AllResource()}
   )
 
-  private def ScopeQualifier: Rule1[PrivilegeQualifier] = rule("a label (prop) combination")(
+  private def ScopeQualifier: Rule1[PrivilegeQualifier] = rule("which element type and associated labels (props) qualifier combination")(
     group(keyword("NODES") ~~ SymbolicNameString ~~ optional("(" ~~ "*" ~~ ")")) ~~>> {ast.LabelQualifier(_)} |
       optional(keyword("NODES") ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.AllQualifier()}
   )
