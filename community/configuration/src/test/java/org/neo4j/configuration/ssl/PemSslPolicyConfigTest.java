@@ -176,7 +176,7 @@ class PemSslPolicyConfigTest
 
         Config config = Config.defaults( params );
 
-        config.get( policyConfig.private_key );
+        assertThrows( IllegalArgumentException.class, () -> config.get( policyConfig.private_key ) );
         assertThrows( IllegalArgumentException.class, () -> config.get( policyConfig.public_certificate ) );
     }
 }

@@ -77,7 +77,7 @@ public class TransactionIdTracker
             return;
         }
 
-        long lastClosedTransactionId = Long.MAX_VALUE;
+        long lastClosedTransactionId = -1;
         try
         {
             long endTime = Math.addExact( clock.nanos(), timeout.toNanos() );

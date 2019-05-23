@@ -51,7 +51,6 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
             highestGapFreeNumber = outOfOrderQueue.pollHighestGapFree( number, metaArray );
             highestGapFreeMeta = highestGapFreeNumber == number ? meta : metaArray;
             version++;
-            notifyAll();
             return true;
         }
 
