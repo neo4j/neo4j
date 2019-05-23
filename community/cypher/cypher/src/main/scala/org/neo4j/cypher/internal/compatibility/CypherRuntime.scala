@@ -88,10 +88,6 @@ object UnknownRuntime extends CypherRuntime[RuntimeContext] {
 /**
   * Composite cypher runtime, which attempts to compile using several different runtimes before giving up.
   *
-  * In addition to attempting the provided runtimes, this runtime allways first attempt to compile using
-  * `org.neo4j.cypher.internal.compatibility.ProcedureCallOrSchemaCommandRuntime`, in case the query
-  * is a simple procedure call of schema command.
-  *
   * @param runtimes the runtimes to attempt to compile with, in order of priority
   * @param requestedRuntime the requested runtime, used to provide error messages
   */
