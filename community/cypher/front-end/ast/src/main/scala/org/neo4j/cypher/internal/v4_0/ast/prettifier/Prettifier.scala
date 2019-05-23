@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.v4_0.ast.{Skip, Statement, _}
 import org.neo4j.cypher.internal.v4_0.expressions.{NodePattern, PatternElement, PatternPart, RelationshipChain, _}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
-case class Prettifier(mkStringOf: ExpressionStringifier) {
+case class Prettifier(expr: ExpressionStringifier) {
 
   def asString(statement: Statement): String = statement match {
     case Query(maybePeriodicCommit, part) =>
@@ -206,25 +206,12 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case _ => clause.asCanonicalStringVal // TODO
   }
 
-  private def NL = System.lineSeparator()
-
-  def asString(element: PatternElement): String = element match {
-    case r: RelationshipChain => mkStringOf.pattern(r)
-    case n: NodePattern => mkStringOf.node(n)
-  }
-
-  def asString(p: PatternPart): String = p match {
-    case EveryPath(element) => asString(element)
-    case NamedPatternPart(variable, patternPart) => s"${mkStringOf(variable)} = ${asString(patternPart)}"
-    case ShortestPaths(pattern, single) =>
-      val name = if(single) "shortestPath" else "allShortestPaths"
-      s"$name(${asString(pattern)})"
-  }
+  private val NL = System.lineSeparator()
 
   def asString(m: Match): String = {
     val o = if(m.optional) "OPTIONAL " else ""
-    val p = m.pattern.patternParts.map(p => asString(p)).mkString(", ")
-    val w = m.where.map(w => NL + "  WHERE " + mkStringOf(w.expression)).getOrElse("")
+    val p = expr.patterns.apply(m.pattern)
+    val w = m.where.map(w => NL + "  WHERE " + expr(w.expression)).getOrElse("")
     val h = m.hints.map(asString).map("  " + _).mkString(NL, NL, "")
     s"${o}MATCH $p$h$w"
   }
@@ -233,37 +220,37 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     m match {
       case UsingIndexHint(v, l, ps, s) => Seq(
         "USING INDEX ", if (s == SeekOnly) "SEEK " else "",
-        mkStringOf(v), ":", l.name,
+        expr(v), ":", l.name,
         ps.map(_.name).mkString("(", ",", ")")
       ).mkString
 
       case UsingScanHint(v, l) => Seq(
-        "USING SCAN ", mkStringOf(v), ":", l.name
+        "USING SCAN ", expr(v), ":", l.name
       ).mkString
 
       case UsingJoinHint(vs) => Seq(
-        "USING JOIN ON ", vs.map(mkStringOf(_)).toIterable.mkString(", ")
+        "USING JOIN ON ", vs.map(expr).toIterable.mkString(", ")
       ).mkString
     }
   }
 
   private def asString(merge: Merge): String = {
-    s"MERGE ${merge.pattern.patternParts.map(asString).mkString(", ")}"
+    s"MERGE ${expr.patterns.apply(merge.pattern)}"
   }
 
-  private def asString(o: Skip): String = "SKIP " + mkStringOf(o.expression)
-  private def asString(o: Limit): String = "LIMIT " + mkStringOf(o.expression)
+  private def asString(o: Skip): String = "SKIP " + expr(o.expression)
+  private def asString(o: Limit): String = "LIMIT " + expr(o.expression)
 
   private def asString(o: OrderBy): String = "ORDER BY " + {
     o.sortItems.map {
-      case AscSortItem(expression) => mkStringOf(expression) + " ASCENDING"
-      case DescSortItem(expression) => mkStringOf(expression) + " DESCENDING"
+      case AscSortItem(expression) => expr(expression) + " ASCENDING"
+      case DescSortItem(expression) => expr(expression) + " DESCENDING"
     }.mkString(", ")
   }
 
   private def asString(r: ReturnItem): String = r match {
-    case AliasedReturnItem(e, v) => mkStringOf(e) + " AS " + mkStringOf(v)
-    case UnaliasedReturnItem(e, _) => mkStringOf(e)
+    case AliasedReturnItem(e, v) => expr(e) + " AS " + expr(v)
+    case UnaliasedReturnItem(e, _) => expr(e)
   }
 
   private def asString(r: ReturnItemsDef): String = {
@@ -287,33 +274,33 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     val o = w.orderBy.map(NL + "  " + asString(_)).getOrElse("")
     val l = w.limit.map(NL + "  " + asString(_)).getOrElse("")
     val s = w.skip.map(NL + "  " + asString(_)).getOrElse("")
-    val wh = w.where.map(w => NL + "  WHERE " + mkStringOf(w.expression)).getOrElse("")
+    val wh = w.where.map(w => NL + "  WHERE " + expr(w.expression)).getOrElse("")
     s"WITH$d $i$o$s$l$wh"
   }
 
   private def asString(c: Create): String = {
-    val p = c.pattern.patternParts.map(p => asString(p)).mkString(", ")
+    val p = expr.patterns.apply(c.pattern)
     s"CREATE $p"
   }
 
   private def asString(u: Unwind): String = {
-    s"UNWIND ${mkStringOf(u.expression)} AS ${mkStringOf(u.variable)}"
+    s"UNWIND ${expr(u.expression)} AS ${expr(u.variable)}"
   }
 
   private def asString(u: UnresolvedCall): String = {
     val namespace = u.procedureNamespace.parts.mkString(".")
     val prefix = if (namespace.isEmpty) "" else namespace + "."
-    val arguments = u.declaredArguments.map(list => list.map(mkStringOf(_)).mkString(", ")).getOrElse("")
-    val yields = u.declaredResult.map(result => " YIELD " + result.items.map(item => mkStringOf(item.variable)).mkString(", ")).getOrElse("")
+    val arguments = u.declaredArguments.map(list => list.map(expr).mkString(", ")).getOrElse("")
+    val yields = u.declaredResult.map(result => " YIELD " + result.items.map(item => expr(item.variable)).mkString(", ")).getOrElse("")
     s"CALL $prefix${u.procedureName.name}($arguments)$yields"
   }
 
   private def asString(s: SetClause): String = {
     val items = s.items.map {
-      case SetPropertyItem(prop, exp) => s"${mkStringOf(prop)} = ${mkStringOf(exp)}"
-      case SetLabelItem(variable, labels) => mkStringOf(variable) + labels.map(label =>s":${ExpressionStringifier.backtick(label.name)}").mkString("")
-      case SetIncludingPropertiesFromMapItem(variable, exp) => s"${mkStringOf(variable)} += ${mkStringOf(exp)}"
-      case SetExactPropertiesFromMapItem(variable, exp) => s"${mkStringOf(variable)} = ${mkStringOf(exp)}"
+      case SetPropertyItem(prop, exp) => s"${expr(prop)} = ${expr(exp)}"
+      case SetLabelItem(variable, labels) => expr(variable) + labels.map(label =>s":${ExpressionStringifier.backtick(label.name)}").mkString("")
+      case SetIncludingPropertiesFromMapItem(variable, exp) => s"${expr(variable)} += ${expr(exp)}"
+      case SetExactPropertiesFromMapItem(variable, exp) => s"${expr(variable)} = ${expr(exp)}"
       case _ => s.asCanonicalStringVal
     }
     s"SET ${items.mkString(", ")}"
@@ -321,19 +308,20 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
 
   private def asString(v: LoadCSV): String = {
     val withHeaders = if (v.withHeaders) " WITH HEADERS" else ""
-    val url = mkStringOf(v.urlString)
+    val url = expr(v.urlString)
     val varName = v.variable.name
-    val fieldTerminator = v.fieldTerminator.map(x => " FIELDTERMINATOR "+mkStringOf(x)).getOrElse("")
+    val fieldTerminator = v.fieldTerminator.map(x => " FIELDTERMINATOR " + expr(x)).getOrElse("")
     s"LOAD CSV$withHeaders FROM $url AS $varName$fieldTerminator"
   }
 
   private def asString(delete: Delete): String = {
-    s"DELETE ${delete.expressions.map(mkStringOf(_)).mkString(", ")}"
+    val detach = if (delete.forced) "DETACH " else ""
+    s"${detach}DELETE ${delete.expressions.map(expr).mkString(", ")}"
   }
 
   private def asString(foreach: Foreach): String = {
     val varName = foreach.variable.name
-    val list = mkStringOf(foreach.expression)
+    val list = expr(foreach.expression)
     val updates = foreach.updates.map(dispatch).mkString(s"$NL  ", s"$NL  ", NL)
     s"FOREACH ( $varName IN $list |$updates)"
   }
@@ -349,12 +337,12 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
         case RelationshipByParameter(v, param) => s"${v.name} = RELATIONSHIP( $$${param.name} )"
       }
 
-    val where = start.where.map(w => NL + "  WHERE " + mkStringOf(w.expression)).getOrElse("")
+    val where = start.where.map(w => NL + "  WHERE " + expr(w.expression)).getOrElse("")
     s"START ${startItems.mkString(s",$NL      ")}$where"
   }
 
   private def asString(c: CreateUnique): String = {
-    val p = c.pattern.patternParts.map(p => asString(p)).mkString(", ")
+    val p = expr.patterns.apply(c.pattern)
     s"CREATE UNIQUE $p"
   }
 

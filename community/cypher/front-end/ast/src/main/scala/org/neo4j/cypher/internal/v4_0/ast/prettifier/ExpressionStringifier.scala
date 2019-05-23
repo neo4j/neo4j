@@ -16,120 +16,153 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast.prettifier
 
-import org.neo4j.cypher.internal.v4_0.ast.prettifier.ExpressionStringifier.backtick
+import org.neo4j.cypher.internal.v4_0.ast.prettifier.ExpressionStringifier._
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 
-case class ExpressionStringifier(extender: Expression => String = e => throw new InternalException(s"failed to pretty print $e"), alwaysParens: Boolean = false) {
+case class ExpressionStringifier(
+  extender: Expression => String = failingExtender,
+  alwaysParens: Boolean = false
+) extends (Expression => String) {
+
+  val patterns = PatternStringifier(this)
+
   def apply(ast: Expression): String = {
     stringify(ast)
   }
 
-  def inner(parent: Expression)(ast: Expression) = {
+  private def inner(parent: Expression)(ast: Expression): String = {
     val str = stringify(ast)
     if (alwaysParens)
       "(" + str + ")"
     else {
-        val thisPrecedence = precedenceLevel(parent)
-        val argumentPrecedence = precedenceLevel(ast)
-        if (argumentPrecedence >= thisPrecedence)
-          "(" + str + ")"
-        else
-          str
-      }
+      val thisPrecedence = precedenceLevel(parent)
+      val argumentPrecedence = precedenceLevel(ast)
+      if (argumentPrecedence >= thisPrecedence)
+        "(" + str + ")"
+      else
+        str
+    }
   }
 
   private def stringify(ast: Expression): String = {
     ast match {
+
       case StringLiteral(txt) =>
-        var containsSingle = false
-        var containsDouble = false
-        txt foreach {
-          case '"' => containsDouble = true
-          case '\'' => containsSingle = true
-          case _ =>
-        }
-        if (containsDouble && containsSingle)
-          "\"" + txt.replaceAll("\"", "\\\\\"") + "\""
-        else if (containsDouble)
-          "'" + txt + "'"
-        else
-          "\"" + txt + "\""
+        quote(txt)
+
 
       case l: Literal =>
         l.asCanonicalStringVal
+
       case e: BinaryOperatorExpression =>
         s"${inner(ast)(e.lhs)} ${operator(e)} ${inner(ast)(e.rhs)}"
+
       case Variable(v) =>
         backtick(v)
+
       case ListLiteral(expressions) =>
         expressions.map(inner(ast)).mkString("[", ", ", "]")
+
       case FunctionInvocation(namespace, functionName, distinct, args) =>
         val ns = namespace.parts.mkString(".")
         val np = if (namespace.parts.isEmpty) "" else "."
         val ds = if (distinct) "DISTINCT " else ""
         val as = args.map(inner(ast)).mkString(", ")
         s"$ns$np${functionName.name}($ds$as)"
+
       case Property(m, k) =>
         s"${inner(ast)(m)}.${backtick(k.name)}"
+
+
       case MapExpression(items) =>
-        val is = items.map({ case (k, i) => s"${backtick(k.name)}: ${inner(ast)(i)}" }).mkString(", ")
+        val is = items.map({
+          case (k, i) => s"${backtick(k.name)}: ${inner(ast)(i)}"
+        }).mkString(", ")
         s"{$is}"
+
       case Parameter(name, _) =>
         s"$$${backtick(name)}"
+
       case _: CountStar =>
         s"count(*)"
+
       case IsNull(arg) =>
         s"${inner(ast)(arg)} IS NULL"
+
       case IsNotNull(arg) =>
         s"${inner(ast)(arg)} IS NOT NULL"
+
       case ContainerIndex(exp, idx) =>
         s"${inner(ast)(exp)}[${inner(ast)(idx)}]"
+
       case ListSlice(list, start, end) =>
         val l = start.map(inner(ast)).getOrElse("")
         val r = end.map(inner(ast)).getOrElse("")
         s"${inner(ast)(list)}[$l..$r]"
+
       case PatternExpression(RelationshipsPattern(relChain)) =>
-        pattern(relChain)
+        patterns.apply(relChain)
+
       case FilterExpression(scope, expression) =>
         s"filter${prettyScope(scope, expression)}"
+
       case AnyIterablePredicate(scope, expression) =>
         s"any${prettyScope(scope, expression)}"
+
       case Not(arg) =>
         s"not ${inner(ast)(arg)}"
+
       case ListComprehension(s, expression) =>
         val v = apply(s.variable)
         val p = s.innerPredicate.map(pr => " WHERE " + inner(ast)(pr)).getOrElse("")
         val e = s.extractExpression.map(ex => " | " + inner(ast)(ex)).getOrElse("")
         val expr = inner(ast)(expression)
         s"[$v IN $expr$p$e]"
+
       case ExtractExpression(s, expression) =>
         val v = apply(s.variable)
         val p = s.innerPredicate.map(e => " WHERE " + inner(ast)(e)).getOrElse("")
         val e = s.extractExpression.map(e => " | " + inner(ast)(e)).getOrElse("")
         val expr = inner(ast)(expression)
         s"extract($v IN $expr$p$e)"
+
       case PatternComprehension(variable, RelationshipsPattern(relChain), predicate, proj) =>
-        val v = variable.map(e => s"${inner(ast)(e)} = ").getOrElse("")
-        val p = predicate.map(e => " WHERE " + inner(ast)(e)).getOrElse("")
-        s"[$v${pattern(relChain)}$p | ${inner(ast)(proj)}]"
+        val v = variable.map(apply).map(_ + " = ").getOrElse("")
+        val p = patterns.apply(relChain)
+        val w = predicate.map(inner(ast)).map(" WHERE " + _).getOrElse("")
+        val b = inner(ast)(proj)
+        s"[$v$p$w | $b]"
+
+
       case HasLabels(arg, labels) =>
         val l = labels.map(label => backtick(label.name)).mkString(":", ":", "")
         s"${inner(ast)(arg)}$l"
+
       case AllIterablePredicate(scope, e) =>
         s"all${prettyScope(scope, e)}"
+
       case NoneIterablePredicate(scope, e) =>
         s"none${prettyScope(scope, e)}"
+
       case SingleIterablePredicate(scope, e) =>
         s"single${prettyScope(scope, e)}"
+
       case MapProjection(variable, items) =>
-        val itemsText = items.map {
-          case LiteralEntry(k, e) => s"${backtick(k.name)}: ${inner(ast)(e)}"
-          case VariableSelector(v) => apply(v)
-          case PropertySelector(v) => s".${apply(v)}"
-          case AllPropertiesSelector() => ".*"
-        }.mkString(", ")
+        val itemsText = items.map(apply).mkString(", ")
         s"${apply(variable)}{$itemsText}"
+
+      case LiteralEntry(k, e) =>
+        s"${backtick(k.name)}: ${inner(ast)(e)}"
+
+      case VariableSelector(v) =>
+        apply(v)
+
+      case PropertySelector(v) =>
+        s".${apply(v)}"
+
+      case AllPropertiesSelector() => ".*"
+
       case CaseExpression(expression, alternatives, default) =>
         Seq(
           Seq("CASE"),
@@ -149,24 +182,28 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
               case e: BinaryOperatorExpression => e
             }
             .permutations.find { chain =>
-              def hasAll = expressions.forall(chain.contains)
-              def aligns = chain.sliding(2).forall(p => p.head.rhs == p.last.lhs)
-              hasAll && aligns
-            }
+            def hasAll = expressions.forall(chain.contains)
+
+            def aligns = chain.sliding(2).forall(p => p.head.rhs == p.last.lhs)
+
+            hasAll && aligns
+          }
 
         findChain match {
           case Some(chain) =>
             val head = apply(chain.head)
             val tail = chain.tail.flatMap(o => List(o.canonicalOperatorSymbol, inner(ast)(o.rhs)))
             (head :: tail).mkString(" ")
-          case None =>
+          case None        =>
             expressions.map(x => inner(ast)(x)).mkString(" AND ")
         }
 
       case Ors(expressions) =>
         expressions.map(x => inner(ast)(x)).mkString(" OR ")
-      case ShortestPathExpression(s@ShortestPaths(r:RelationshipChain, _)) =>
-        s"${s.name}(${pattern(r)})"
+
+      case ShortestPathExpression(pattern) =>
+        patterns.apply(pattern)
+
       case ReduceExpression(ReduceScope(Variable(acc), Variable(identifier), expression), init, list) =>
         val a = backtick(acc)
         val v = backtick(identifier)
@@ -174,22 +211,24 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
         val l = inner(ast)(list)
         val e = inner(ast)(expression)
         s"reduce($a = $i, $v IN $l | $e)"
+
       case _: ExtractScope | _: FilterScope | _: ReduceScope =>
         // These are not really expressions, they are part of expressions
         ""
-      case e@ExistsSubClause(_, optionalWhereExpression) =>
-        s"EXISTS { MATCH ${
-            e.patternElement match {
-              case r:RelationshipChain => pattern(r)
-              case n:NodePattern => node(n)
-          }
-        }${optionalWhereExpression.map(w => s" WHERE ${inner(ast)(w)}").getOrElse("")} }"
+
+      case ExistsSubClause(pat, where) =>
+        val p = patterns.apply(pat)
+        val w = where.map(wh => s" WHERE ${inner(ast)(wh)}").getOrElse("")
+        s"EXISTS { MATCH $p$w }"
+
       case UnaryAdd(r) =>
         val i = inner(ast)(r)
         s"+$i"
+
       case UnarySubtract(r) =>
         val i = inner(ast)(r)
         s"-$i"
+
       case _ =>
         extender(ast)
     }
@@ -202,66 +241,21 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
     ).flatten.mkString("(", " ", ")")
   }
 
-  private def props(prepend: String, e: Option[Expression]): String = {
-    e.map(e => {
-      val separator = if(prepend.isEmpty) "" else " "
-      s"$prepend$separator${apply(e)}"
-    }).getOrElse(prepend)
-  }
-
-  def node(nodePattern: NodePattern): String = {
-    val name = nodePattern.variable.map(apply).getOrElse("")
-    val base = nodePattern.baseNode.map(apply).map(" COPY OF " + _).getOrElse("")
-    val labels = if (nodePattern.labels.isEmpty) "" else
-      nodePattern.labels.map(l => backtick(l.name)).mkString(":", ":", "")
-    val e = props(s"$name$base$labels", nodePattern.properties)
-    s"($e)"
-  }
-
-  private def edge(relationship: RelationshipPattern) = {
-    val lArrow = if (relationship.direction == SemanticDirection.INCOMING) "<" else ""
-    val rArrow = if (relationship.direction == SemanticDirection.OUTGOING) ">" else ""
-    val types = if (relationship.types.isEmpty)
-      ""
-    else
-      relationship.types.map(l => backtick(l.name)).mkString(":", "|", "")
-    val name = relationship.variable.map(apply).getOrElse("")
-    val base = relationship.baseRel.map(apply).map(" COPY OF " + _).getOrElse("")
-    val length = relationship.length match {
-      case None => ""
-      case Some(None) => "*"
-      case Some(Some(Range(lower, upper))) =>
-        s"*${lower.map(_.stringVal).getOrElse("")}..${upper.map(_.stringVal).getOrElse("")}"
-    }
-    val info = props(s"$name$base$types$length", relationship.properties)
-    if (info == "")
-      s"$lArrow--$rArrow"
-    else
-      s"$lArrow-[$info]-$rArrow"
-  }
-
-  def pattern(relationshipChain: RelationshipChain): String = {
-    val r = node(relationshipChain.rightNode)
-    val middle = edge(relationshipChain.relationship)
-    val l = relationshipChain.element match {
-      case r: RelationshipChain => pattern(r)
-      case n: NodePattern => node(n)
-    }
-
-    s"$l$middle$r"
-  }
-
   private def precedenceLevel(in: Expression): Int = in match {
     case _: Or |
          _: Ors =>
       12
+
     case _: Xor =>
       11
+
     case _: And |
          _: Ands =>
       10
+
     case _: Not =>
       9
+
     case _: Equals |
          _: NotEquals |
          _: InvalidNotEquals |
@@ -270,18 +264,23 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
          _: LessThan |
          _: LessThanOrEqual =>
       8
+
     case _: Add |
          _: Subtract =>
       7
+
     case _: Multiply |
          _: Divide |
          _: Modulo =>
       6
+
     case _: Pow =>
       5
+
     case _: UnaryAdd |
          _: UnarySubtract =>
       4
+
     case _: RegexMatch |
          _: In |
          _: StartsWith |
@@ -290,11 +289,13 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
          _: IsNull |
          _: IsNotNull =>
       3
+
     case _: Property |
          _: HasLabels |
          _: ContainerIndex |
          _: ListSlice =>
       2
+
     case _ =>
       1
 
@@ -302,12 +303,15 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
 
   def operator(e: BinaryOperatorExpression): String = e match {
     case s: StartsWith => "STARTS WITH"
-    case s: EndsWith => "ENDS WITH"
-    case o => e.canonicalOperatorSymbol
+    case s: EndsWith   => "ENDS WITH"
+    case o             => e.canonicalOperatorSymbol
   }
 }
 
 object ExpressionStringifier {
+
+  val failingExtender: Expression => String =
+    e => throw new InternalException(s"failed to pretty print $e")
 
   def backtick(txt: String): String = {
     val needsBackticks = !(Character.isJavaIdentifierStart(txt.head) && txt.tail.forall(Character.isJavaIdentifierPart))
@@ -315,5 +319,16 @@ object ExpressionStringifier {
       s"`$txt`"
     else
       txt
+  }
+
+  def quote(txt: String): String = {
+    val containsSingle = txt.contains('\'')
+    val containsDouble = txt.contains('"')
+    if (containsDouble && containsSingle)
+      "\"" + txt.replaceAll("\"", "\\\\\"") + "\""
+    else if (containsDouble)
+      "'" + txt + "'"
+    else
+      "\"" + txt + "\""
   }
 }

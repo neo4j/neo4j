@@ -74,7 +74,7 @@ class IdAnonymizerState(tokens: TokenRead, prettifier: Prettifier) extends org.n
     variables.getOrElseUpdate(name, "var" + variables.size)
 
   override def unaliasedReturnItemName(anonymizedExpression: Expression, input: String): String =
-    prettifier.mkStringOf(anonymizedExpression)
+    prettifier.expr(anonymizedExpression)
 
   override def label(name: String): String =
     tokenName("L", name, tokens.nodeLabel(name))

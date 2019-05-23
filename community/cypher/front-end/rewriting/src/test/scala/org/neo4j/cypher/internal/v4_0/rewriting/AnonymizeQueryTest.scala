@@ -28,7 +28,7 @@ class AnonymizeQueryTest extends CypherFunSuite with RewriteTest {
     override def relationshipType(name: String): String = "x"+name
     override def propertyKey(name: String): String = "X"+name
     override def variable(name: String): String = "X"+name
-    override def unaliasedReturnItemName(anonymizedExpression: Expression, input: String): String = prettifier.mkStringOf(anonymizedExpression)
+    override def unaliasedReturnItemName(anonymizedExpression: Expression, input: String): String = prettifier.expr(anonymizedExpression)
     override def parameter(name: String): String = "X"+name
     override def literal(value: String): String = s"string[$value]"
   }
