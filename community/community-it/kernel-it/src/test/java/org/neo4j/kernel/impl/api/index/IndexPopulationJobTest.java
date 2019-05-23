@@ -519,7 +519,7 @@ public class IndexPopulationJobTest
         NullLogProvider logProvider = NullLogProvider.getInstance();
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( IndexStoreView.EMPTY, logProvider, EntityType.NODE,
                 new DatabaseSchemaState( logProvider ) );
-        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false, heapBufferFactory( 1024 ) );
+        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false );
 
         // when
         populationJob.run();
@@ -567,7 +567,7 @@ public class IndexPopulationJobTest
         };
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( failingStoreView, logProvider, EntityType.NODE,
                 new DatabaseSchemaState( logProvider ) );
-        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false, heapBufferFactory( 1024 ) );
+        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false );
 
         // when
         populationJob.run();
@@ -772,7 +772,7 @@ public class IndexPopulationJobTest
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
         MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, logProvider, type, stateHolder );
-        IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, false, heapBufferFactory( 1024 ) );
+        IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, false );
         job.addPopulator( populator, descriptor.withId( indexId ).withoutCapabilities(),
                 format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );
         return job;

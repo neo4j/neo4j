@@ -108,8 +108,9 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     public static final String KEY = NATIVE_BTREE10.providerKey();
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, NATIVE_BTREE10.providerVersion() );
     public static final IndexCapability CAPABILITY = new GenericIndexCapability();
+    public static final String BLOCK_BASED_POPULATION_NAME = "blockBasedPopulation";
     // todo turn OFF by default before releasing next patch. For now ON by default to test it.
-    private static final boolean blockBasedPopulation = FeatureToggles.flag( GenericNativeIndexPopulator.class, "blockBasedPopulation", false );
+    private final boolean blockBasedPopulation = FeatureToggles.flag( GenericNativeIndexPopulator.class, BLOCK_BASED_POPULATION_NAME, false );
 
     /**
      * Cache of all setting for various specific CRS's found in the config at instantiation of this provider.

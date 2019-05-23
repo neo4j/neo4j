@@ -61,7 +61,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
 {
     static final String TASK_QUEUE_SIZE_NAME = "task_queue_size";
     static final String AWAIT_TIMEOUT_MINUTES_NAME = "await_timeout_minutes";
-    private static final String MAXIMUM_NUMBER_OF_WORKERS_NAME = "population_workers_maximum";
+    public static final String MAXIMUM_NUMBER_OF_WORKERS_NAME = "population_workers_maximum";
 
     private static final String EOL = System.lineSeparator();
     private static final String FLUSH_THREAD_NAME_PREFIX = "Index Population Flush Thread";

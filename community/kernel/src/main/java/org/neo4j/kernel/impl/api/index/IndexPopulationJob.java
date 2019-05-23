@@ -28,11 +28,15 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
+import org.neo4j.kernel.impl.index.schema.UnsafeDirectByteBufferAllocator;
+import org.neo4j.memory.GlobalMemoryTracker;
+import org.neo4j.memory.ThreadSafePeakMemoryAllocationTracker;
 import org.neo4j.storageengine.api.schema.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static java.lang.Thread.currentThread;
 import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
+import static org.neo4j.kernel.impl.index.schema.BlockBasedIndexPopulator.parseBlockSize;
 
 /**
  * A background job for initially populating one or more index over existing data in the database.
@@ -45,19 +49,20 @@ public class IndexPopulationJob implements Runnable
     private final IndexingService.Monitor monitor;
     private final boolean verifyBeforeFlipping;
     private final ByteBufferFactory bufferFactory;
+    private final ThreadSafePeakMemoryAllocationTracker memoryAllocationTracker;
     private final MultipleIndexPopulator multiPopulator;
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
 
     private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
     private volatile boolean cancelled;
 
-    public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexingService.Monitor monitor, boolean verifyBeforeFlipping,
-            ByteBufferFactory bufferFactory )
+    public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexingService.Monitor monitor, boolean verifyBeforeFlipping )
     {
         this.multiPopulator = multiPopulator;
         this.monitor = monitor;
         this.verifyBeforeFlipping = verifyBeforeFlipping;
-        this.bufferFactory = bufferFactory;
+        this.memoryAllocationTracker = new ThreadSafePeakMemoryAllocationTracker( GlobalMemoryTracker.INSTANCE );
+        this.bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryAllocationTracker ), parseBlockSize() );
     }
 
     /**
@@ -123,6 +128,7 @@ public class IndexPopulationJob implements Runnable
         {
             // will only close "additional" resources, not the actual populators, since that's managed by flip
             multiPopulator.close( true );
+            monitor.populationJobCompleted( memoryAllocationTracker.peakMemoryUsage() );
             bufferFactory.close();
             doneSignal.countDown();
             currentThread().setName( oldThreadName );
