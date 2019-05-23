@@ -62,6 +62,7 @@ import static org.neo4j.internal.helpers.ArrayUtil.concat;
 import static org.neo4j.internal.helpers.ArrayUtil.contains;
 import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.ANY_PAGE_SIZE;
+import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
@@ -236,7 +237,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
                     // Map the file (w/ the CREATE flag) and initialize the header
                     pagedFile = pageCache.map( storageFile, filePageSize, concat( StandardOpenOption.CREATE, openOptions ) );
-                    initialiseNewStoreFile( pagedFile );
+                    initialiseNewStoreFile();
                     return; // <-- successfully created and initialized
                 }
                 catch ( IOException e1 )
@@ -256,18 +257,16 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         }
     }
 
-    protected void initialiseNewStoreFile( PagedFile file ) throws IOException
+    protected void initialiseNewStoreFile() throws IOException
     {
         if ( getNumberOfReservedLowIds() > 0 )
         {
-            boolean headerWritten = false;
-            try ( PageCursor pageCursor = file.io( 0, PF_SHARED_WRITE_LOCK ) )
+            try ( PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_EAGER_FLUSH ) )
             {
                 if ( pageCursor.next() )
                 {
                     pageCursor.setOffset( 0 );
                     storeHeaderFormat.writeHeader( pageCursor );
-                    headerWritten = true;
                     if ( pageCursor.checkAndClearBoundsFlag() )
                     {
                         throw new UnderlyingStorageException(
@@ -275,13 +274,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                                         " bytes." );
                     }
                 }
-            }
-
-            if ( headerWritten )
-            {
-                // Flush and force this header. The drastically minimizes the chance of a crash right after create
-                // ending up with an empty file, resulting in problems reading the header on next open attempt.
-                file.flushAndForce();
             }
         }
         idGeneratorFactory.create( idFile, getNumberOfReservedLowIds(), false );

@@ -162,14 +162,13 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     @Override
-    protected void initialiseNewStoreFile( PagedFile file ) throws IOException
+    protected void initialiseNewStoreFile() throws IOException
     {
-        super.initialiseNewStoreFile( file );
+        super.initialiseNewStoreFile();
 
         long storeVersionAsLong = MetaDataStore.versionStringToLong( storeVersion );
         StoreId storeId = new StoreId( storeVersionAsLong );
 
-        pagedFile = file;
         setCreationTime( storeId.getCreationTime() );
         setRandomNumber( storeId.getRandomId() );
         // If metaDataStore.creationTime == metaDataStore.upgradeTime && metaDataStore.upgradeTransactionId == BASE_TX_ID

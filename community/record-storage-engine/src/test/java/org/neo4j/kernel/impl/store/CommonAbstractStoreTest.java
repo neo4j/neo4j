@@ -217,7 +217,7 @@ class CommonAbstractStoreTest
         }
 
         @Override
-        protected void initialiseNewStoreFile( PagedFile file )
+        protected void initialiseNewStoreFile()
         {
         }
 
