@@ -60,7 +60,8 @@ object QueriesSection {
       val snapshot = querySnapshots.next()
       val queryString = snapshot.queryText
       if (QUERY_FILTER.findFirstMatchIn(queryString).isEmpty) {
-        val snapshotList = queries.getOrElseUpdate(QueryKey(queryString, snapshot.fullQueryTextHash, snapshot.queryPlan), new QueryData())
+        val queryKey = QueryKey(queryString, snapshot.fullQueryTextHash, snapshot.queryPlanSupplier.get())
+        val snapshotList = queries.getOrElseUpdate(queryKey, new QueryData())
         snapshotList.invocations += SingleInvocation(snapshot.queryParameters,
                                                      snapshot.elapsedTimeMicros,
                                                      snapshot.compilationTimeMicros,
