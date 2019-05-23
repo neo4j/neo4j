@@ -46,6 +46,8 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.internal.DatabaseLogService;
+import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
@@ -59,8 +61,10 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static java.util.Optional.of;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -387,7 +391,7 @@ public class DatabaseTest
         }
 
         logProvider.assertAtLeastOnce( inLog( Database.class ).warn(
-                equalTo( "Exception occurred while starting the database. Trying to stop already started components." ),
+                containsString( "Exception occurred while starting the database. Trying to stop already started components." ),
                 equalTo( openStoresError ) ) );
     }
 
@@ -417,6 +421,26 @@ public class DatabaseTest
         {
             // Then
             assertEquals( ex, e.getCause() );
+        }
+    }
+
+    @Test
+    public void shouldHaveDatabaseLogServiceInDependencyResolver()
+    {
+        Dependencies dependencies = new Dependencies();
+        Database database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(), pageCacheRule.getPageCache( fs.get() ), dependencies );
+
+        database.start();
+
+        try
+        {
+            var logService = database.getDependencyResolver().resolveDependency( LogService.class );
+            assertEquals( database.getLogService(), logService );
+            assertThat( logService, instanceOf( DatabaseLogService.class ) );
+        }
+        finally
+        {
+            database.stop();
         }
     }
 

@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
-import org.neo4j.logging.internal.LogService;
+import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
@@ -73,7 +73,7 @@ public interface DatabaseCreationContext
 
     IdGeneratorFactory getIdGeneratorFactory();
 
-    LogService getLogService();
+    DatabaseLogService getDatabaseLogService();
 
     JobScheduler getScheduler();
 

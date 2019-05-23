@@ -32,6 +32,7 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.monitoring.Monitors;
 
 import static java.util.Objects.requireNonNull;
@@ -73,7 +74,9 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     {
         EditionDatabaseComponents editionDatabaseComponents = edition.createDatabaseComponents( databaseId );
         GlobalProcedures globalProcedures = edition.getGlobalProcedures();
-        return new ModularDatabaseCreationContext( databaseId, globalModule, globalDependencies, parentMonitors, editionDatabaseComponents, globalProcedures );
+        DatabaseLogService databaseLogService = new DatabaseLogService( databaseId::name, globalModule.getLogService() );
+        return new ModularDatabaseCreationContext( databaseId, globalModule, globalDependencies, parentMonitors, editionDatabaseComponents,
+                globalProcedures, databaseLogService );
     }
 
     @Override

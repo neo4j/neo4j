@@ -76,6 +76,7 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.kernel.recovery.RecoveryExtension;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.monitoring.DatabaseEventListeners;
@@ -201,7 +202,7 @@ public class DatabaseRule extends ExternalResource
         private final Config config;
         private final DatabaseConfig databaseConfig;
         private final IdGeneratorFactory idGeneratorFactory;
-        private final LogService logService;
+        private final DatabaseLogService logService;
         private final JobScheduler scheduler;
         private final TokenNameLookup tokenNameLookup;
         private final DependencyResolver dependencyResolver;
@@ -250,7 +251,7 @@ public class DatabaseRule extends ExternalResource
             this.config = config;
             this.databaseConfig = DatabaseConfig.from( config, databaseId );
             this.idGeneratorFactory = idGeneratorFactory;
-            this.logService = logService;
+            this.logService = new DatabaseLogService( () -> databaseName, logService );
             this.scheduler = scheduler;
             this.tokenNameLookup = tokenNameLookup;
             this.dependencyResolver = dependencyResolver;
@@ -314,7 +315,7 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public LogService getLogService()
+        public DatabaseLogService getDatabaseLogService()
         {
             return logService;
         }

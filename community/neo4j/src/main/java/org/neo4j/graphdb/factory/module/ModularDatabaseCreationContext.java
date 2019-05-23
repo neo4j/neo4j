@@ -62,7 +62,7 @@ import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.internal.LogService;
+import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
@@ -78,7 +78,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final Config globalConfig;
     private final DatabaseConfig databaseConfig;
     private final IdGeneratorFactory idGeneratorFactory;
-    private final LogService logService;
+    private final DatabaseLogService databaseLogService;
     private final JobScheduler scheduler;
     private final TokenNameLookup tokenNameLookup;
     private final DependencyResolver globalDependencies;
@@ -114,7 +114,8 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final ThreadToStatementContextBridge contextBridge;
 
     public ModularDatabaseCreationContext( DatabaseId databaseId, GlobalModule globalModule, Dependencies globalDependencies,
-            Monitors parentMonitors, EditionDatabaseComponents perEditionComponents, GlobalProcedures globalProcedures )
+            Monitors parentMonitors, EditionDatabaseComponents perEditionComponents, GlobalProcedures globalProcedures,
+            DatabaseLogService databaseLogService )
     {
         this.databaseId = databaseId;
         this.globalConfig = globalModule.getGlobalConfig();
@@ -123,7 +124,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.idGeneratorFactory = idContext.getIdGeneratorFactory();
         this.idController = idContext.getIdController();
         this.databaseLayout = globalModule.getStoreLayout().databaseLayout( databaseId.name() );
-        this.logService = globalModule.getLogService();
+        this.databaseLogService = databaseLogService;
         this.scheduler = globalModule.getJobScheduler();
         this.globalDependencies = globalDependencies;
         this.tokenHolders = perEditionComponents.getTokenHolders();
@@ -137,7 +138,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.eventListeners = globalModule.getDatabaseEventListeners();
         this.databaseHealthFactory = () -> globalModule.getGlobalHealthService()
                 .createDatabaseHealth( new DatabasePanicEventGenerator( eventListeners, databaseId.name() ),
-                        logService.getInternalLog( DatabaseHealth.class ) );
+                        databaseLogService.getInternalLog( DatabaseHealth.class ) );
         this.transactionHeaderInformationFactory = perEditionComponents.getHeaderInformationFactory();
         this.commitProcessFactory = perEditionComponents.getCommitProcessFactory();
         this.pageCache = globalModule.getPageCache();
@@ -190,9 +191,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public LogService getLogService()
+    public DatabaseLogService getDatabaseLogService()
     {
-        return logService;
+        return databaseLogService;
     }
 
     @Override
@@ -389,7 +390,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
 
     private DatabaseAvailabilityGuard databaseAvailabilityGuardFactory( DatabaseId databaseId, GlobalModule globalModule, long databaseTimeoutMillis  )
     {
-        Log guardLog = logService.getInternalLog( DatabaseAvailabilityGuard.class );
+        Log guardLog = databaseLogService.getInternalLog( DatabaseAvailabilityGuard.class );
         return new DatabaseAvailabilityGuard( databaseId, clock, guardLog, databaseTimeoutMillis, globalModule.getGlobalAvailabilityGuard() );
     }
 

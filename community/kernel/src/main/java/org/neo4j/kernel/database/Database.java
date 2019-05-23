@@ -140,7 +140,8 @@ import org.neo4j.lock.LockService;
 import org.neo4j.lock.ReentrantLockService;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.internal.LogService;
+import org.neo4j.logging.internal.DatabaseLogProvider;
+import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
@@ -178,9 +179,9 @@ public class Database extends LifecycleAdapter
     private final Config globalConfig;
 
     private final Log msgLog;
-    private final LogService logService;
-    private final LogProvider logProvider;
-    private final LogProvider userLogProvider;
+    private final DatabaseLogService databaseLogService;
+    private final DatabaseLogProvider internalLogProvider;
+    private final DatabaseLogProvider userLogProvider;
     private final TokenNameLookup tokenNameLookup;
     private final TokenHolders tokenHolders;
     private final StatementLocksFactory statementLocksFactory;
@@ -238,10 +239,10 @@ public class Database extends LifecycleAdapter
         this.tokenNameLookup = context.getTokenNameLookup();
         this.globalDependencies = context.getGlobalDependencies();
         this.scheduler = context.getScheduler();
-        this.logService = context.getLogService();
+        this.databaseLogService = context.getDatabaseLogService();
         this.storeCopyCheckPointMutex = context.getStoreCopyCheckPointMutex();
-        this.logProvider = context.getLogService().getInternalLogProvider();
-        this.userLogProvider = context.getLogService().getUserLogProvider();
+        this.internalLogProvider = context.getDatabaseLogService().getInternalLogProvider();
+        this.userLogProvider = context.getDatabaseLogService().getUserLogProvider();
         this.tokenHolders = context.getTokenHolders();
         this.locks = context.getLocks();
         this.statementLocksFactory = context.getStatementLocksFactory();
@@ -267,7 +268,7 @@ public class Database extends LifecycleAdapter
         this.extensionFactories = context.getExtensionFactories();
         this.watcherServiceFactory = context.getWatcherServiceFactory();
         this.engineProviders = context.getEngineProviders();
-        this.msgLog = logProvider.getLog( getClass() );
+        this.msgLog = internalLogProvider.getLog( getClass() );
         this.lockService = new ReentrantLockService();
         this.commitProcessFactory = context.getCommitProcessFactory();
         this.globalPageCache = context.getPageCache();
@@ -303,6 +304,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( this );
             databaseDependencies.satisfyDependency( databaseConfig );
             databaseDependencies.satisfyDependency( databaseMonitors );
+            databaseDependencies.satisfyDependency( databaseLogService );
             databaseDependencies.satisfyDependency( databasePageCache );
             databaseDependencies.satisfyDependency( tokenHolders );
             databaseDependencies.satisfyDependency( databaseFacade );
@@ -349,24 +351,25 @@ public class Database extends LifecycleAdapter
                             databaseConfig ).withDependencies( databaseDependencies ).build();
 
             databaseMonitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
-            databaseMonitors.addMonitorListener( new LoggingLogTailScannerMonitor( logService.getInternalLog( LogTailScanner.class ) ) );
+            databaseMonitors.addMonitorListener( new LoggingLogTailScannerMonitor( internalLogProvider.getLog( LogTailScanner.class ) ) );
             databaseMonitors.addMonitorListener(
-                    new ReverseTransactionCursorLoggingMonitor( logService.getInternalLog( ReversedSingleFileTransactionCursor.class ) ) );
+                    new ReverseTransactionCursorLoggingMonitor( internalLogProvider.getLog( ReversedSingleFileTransactionCursor.class ) ) );
             LogTailScanner tailScanner =
                     new LogTailScanner( logFiles, logEntryReader, databaseMonitors, databaseConfig.get( GraphDatabaseSettings.fail_on_corrupted_log_files ) );
             LogVersionUpgradeChecker.check( tailScanner, databaseConfig );
 
-            performRecovery( fs, databasePageCache, databaseConfig, databaseLayout, storageEngineFactory, logProvider, databaseMonitors, extensionFactories,
+            performRecovery( fs, databasePageCache, databaseConfig, databaseLayout, storageEngineFactory, internalLogProvider, databaseMonitors,
+                    extensionFactories,
                     Optional.of( tailScanner ) );
 
             // Build all modules and their services
-            DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( logProvider );
+            DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( internalLogProvider );
 
             Supplier<IdController.ConditionSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
             idController.initialize( transactionsSnapshotSupplier );
 
             storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, databaseConfig, databasePageCache, tokenHolders, databaseSchemaState,
-                    constraintSemantics, lockService, idGeneratorFactory, idController, databaseHealth, versionContextSupplier, logProvider );
+                    constraintSemantics, lockService, idGeneratorFactory, idController, databaseHealth, versionContextSupplier, internalLogProvider );
 
             life.add( storageEngine );
             life.add( storageEngine.schemaAndTokensLifecycle() );
@@ -379,7 +382,7 @@ public class Database extends LifecycleAdapter
 
             // Schema indexes
             DynamicIndexStoreView indexStoreView =
-                    new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, storageEngine::newReader, logProvider );
+                    new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, storageEngine::newReader, internalLogProvider );
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector );
             IndexingService indexingService = buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore );
 
@@ -391,7 +394,7 @@ public class Database extends LifecycleAdapter
 
             CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, labelScanStore, storageEngine );
             DatabaseTransactionLogModule transactionLogModule =
-                    buildTransactionLogs( logFiles, databaseConfig, logProvider, scheduler, forceOperation,
+                    buildTransactionLogs( logFiles, databaseConfig, internalLogProvider, scheduler, forceOperation,
                             logEntryReader, transactionIdStore, databaseMonitors );
             transactionLogModule.satisfyDependencies( databaseDependencies );
 
@@ -426,7 +429,7 @@ public class Database extends LifecycleAdapter
                                                                    databaseFacade,
                                                                    engineProviders,
                                                                    isSystem(),
-                                                                   QueryEngineProvider.spi( logProvider,
+                    QueryEngineProvider.spi( internalLogProvider,
                                                                                             databaseMonitors,
                                                                                             scheduler,
                                                                                             life,
@@ -483,7 +486,7 @@ public class Database extends LifecycleAdapter
 
     private void upgradeStore( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache ) throws IOException
     {
-        new DatabaseMigratorFactory( fs, databaseConfig, logService, databasePageCache, scheduler ).createDatabaseMigrator( databaseLayout,
+        new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, scheduler ).createDatabaseMigrator( databaseLayout,
                 storageEngineFactory, databaseDependencies ).migrate();
     }
 
@@ -497,7 +500,7 @@ public class Database extends LifecycleAdapter
             IndexStatisticsStore indexStatisticsStore )
     {
         return life.add( buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore, databaseConfig, scheduler,
-                indexProviderMap, tokenNameLookup, logProvider, userLogProvider, databaseMonitors.newMonitor( IndexingService.Monitor.class ) ) );
+                indexProviderMap, tokenNameLookup, internalLogProvider, userLogProvider, databaseMonitors.newMonitor( IndexingService.Monitor.class ) ) );
     }
 
     /**
@@ -538,7 +541,7 @@ public class Database extends LifecycleAdapter
             NeoStoreIndexStoreView neoStoreIndexStoreView,
             Monitors monitors )
     {
-        return life.add( buildLabelIndex( recoveryCleanupWorkCollector, storageEngine, neoStoreIndexStoreView, monitors, logProvider,
+        return life.add( buildLabelIndex( recoveryCleanupWorkCollector, storageEngine, neoStoreIndexStoreView, monitors, internalLogProvider,
                 pageCache, databaseLayout, fs, readOnly ) );
     }
 
@@ -617,7 +620,7 @@ public class Database extends LifecycleAdapter
          */
         Supplier<Kernel> kernelProvider = () -> kernelModule.kernelAPI();
 
-        ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService, logProvider );
+        ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService, internalLogProvider );
 
         DatabaseTransactionEventListeners databaseTransactionEventListeners =
                 new DatabaseTransactionEventListeners( facade, transactionEventListeners, databaseId );
@@ -682,7 +685,7 @@ public class Database extends LifecycleAdapter
 
     private void buildTransactionMonitor( KernelTransactions kernelTransactions, Clock clock, Config config )
     {
-        KernelTransactionMonitor kernelTransactionTimeoutMonitor = new KernelTransactionMonitor( kernelTransactions, clock, logService );
+        KernelTransactionMonitor kernelTransactionTimeoutMonitor = new KernelTransactionMonitor( kernelTransactions, clock, databaseLogService );
         databaseDependencies.satisfyDependency( kernelTransactionTimeoutMonitor );
         KernelTransactionMonitorScheduler transactionMonitorScheduler =
                 new KernelTransactionMonitorScheduler( kernelTransactionTimeoutMonitor, scheduler,
@@ -746,7 +749,7 @@ public class Database extends LifecycleAdapter
         }
         catch ( IOException e )
         {
-            logService.getInternalLog( Database.class ).error( format( "Failed to delete database '%s' files.", databaseId.name() ), e );
+            internalLogProvider.getLog( Database.class ).error( format( "Failed to delete database '%s' files.", databaseId.name() ), e );
             throw new UncheckedIOException( e );
         }
     }
@@ -765,6 +768,16 @@ public class Database extends LifecycleAdapter
     public Config getConfig()
     {
         return databaseConfig;
+    }
+
+    public DatabaseLogService getLogService()
+    {
+        return databaseLogService;
+    }
+
+    public DatabaseLogProvider getInternalLogProvider()
+    {
+        return internalLogProvider;
     }
 
     public StoreId getStoreId()
