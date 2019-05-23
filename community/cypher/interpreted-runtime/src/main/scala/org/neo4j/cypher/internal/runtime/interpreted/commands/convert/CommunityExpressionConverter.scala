@@ -92,7 +92,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case e: ast.Pow => commandexpressions.Pow(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, e.rhs))
       case e: ast.FunctionInvocation => toCommandExpression(id, e.function, e, self)
       case _: ast.CountStar => commandexpressions.CountStar()
-      case e: ast.Property => toCommandProperty(id, e, self)
+      case e: ast.Property => commandexpressions.Property(self.toCommandExpression(id, e.map), getPropertyKey(e.propertyKey))
       case e@CachedProperty(variableName, propertyKey, CACHED_NODE) => commandexpressions.CachedNodeProperty(variableName, getPropertyKey(propertyKey), e)
       case e@CachedProperty(variableName, propertyKey, CACHED_RELATIONSHIP) => commandexpressions.CachedRelationshipProperty(variableName, getPropertyKey(propertyKey), e)
       case ParameterFromSlot(offset, name, _) => commandexpressions.ParameterFromSlot(offset, name)
@@ -402,8 +402,12 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case Type => commandexpressions.RelationshipTypeFunction(self.toCommandExpression(id, invocation.arguments.head))
     }
 
-  private def toCommandProperty(id: Id, e: ast.LogicalProperty, self: ExpressionConverters): commandexpressions.Property =
-    commandexpressions.Property(self.toCommandExpression(id, e.map), getPropertyKey(e.propertyKey))
+  private def toCommandProperty(id: Id, e: ast.LogicalProperty, self: ExpressionConverters): commandexpressions.Expression =
+    e match {
+      case Property(map, propertyKey)=> commandexpressions.Property(self.toCommandExpression(id, map), getPropertyKey(propertyKey))
+      case e@CachedProperty(variableName, propertyKey, CACHED_NODE) => commandexpressions.CachedNodeProperty(variableName, getPropertyKey(propertyKey), e)
+      case e@CachedProperty(variableName, propertyKey, CACHED_RELATIONSHIP) => commandexpressions.CachedRelationshipProperty(variableName, getPropertyKey(propertyKey), e)
+    }
 
   private def toCommandExpression(id: Id, expression: Option[ast.Expression],
                                   self: ExpressionConverters): Option[CommandExpression] =

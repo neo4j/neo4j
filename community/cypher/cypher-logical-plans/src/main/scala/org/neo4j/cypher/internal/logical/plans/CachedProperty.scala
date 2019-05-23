@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheck, SemanticCheckResult, SemanticCheckableExpression}
-import org.neo4j.cypher.internal.v4_0.expressions.{PropertyKeyName, Expression => ASTExpression}
+import org.neo4j.cypher.internal.v4_0.expressions.{LogicalProperty, PropertyKeyName, Variable, Expression => ASTExpression}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 sealed trait CachedType
@@ -33,8 +33,10 @@ case object CACHED_RELATIONSHIP extends CachedType
   * Common super class of [[CachedProperty]]
   * and its slotted specializations.
   */
-trait ASTCachedProperty extends ASTExpression {
+trait ASTCachedProperty extends LogicalProperty {
   def cachedType: CachedType
+  def variableName: String
+  override val map: Variable = Variable(variableName)(this.position)
 }
 
 /**

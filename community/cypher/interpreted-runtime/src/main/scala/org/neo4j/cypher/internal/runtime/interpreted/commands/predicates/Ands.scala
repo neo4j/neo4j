@@ -79,7 +79,7 @@ object And {
   }
 }
 
-case class AndedPropertyComparablePredicates(ident: VariableCommand, prop: Property,
+case class AndedPropertyComparablePredicates(ident: VariableCommand, prop: Expression,
                                              override val predicates: NonEmptyList[ComparablePredicate])
   extends CompositeBooleanPredicate {
 
