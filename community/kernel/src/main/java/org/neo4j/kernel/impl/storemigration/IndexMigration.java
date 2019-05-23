@@ -25,6 +25,7 @@ import java.util.Arrays;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -33,7 +34,7 @@ import static org.neo4j.io.fs.FileUtils.path;
 
 enum IndexMigration
 {
-    LUCENE( "lucene", "1.0", GraphDatabaseSettings.SchemaIndex.NATIVE30, true )
+    LUCENE( "lucene", "1.0", asIndexProviderDescriptor( GraphDatabaseSettings.SchemaIndex.NATIVE30 ), true )
             {
                 @Override
                 File providerRootDirectory( DatabaseLayout layout )
@@ -49,7 +50,7 @@ enum IndexMigration
                 }
 
             },
-    NATIVE10( "lucene+native", "1.0", GraphDatabaseSettings.SchemaIndex.NATIVE30, true )
+    NATIVE10( "lucene+native", "1.0", asIndexProviderDescriptor( GraphDatabaseSettings.SchemaIndex.NATIVE30 ), true )
             {
                 @Override
                 File providerRootDirectory( DatabaseLayout layout )
@@ -65,7 +66,7 @@ enum IndexMigration
                 }
 
             },
-    NATIVE20( "lucene+native", "2.0", GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10, true )
+    NATIVE20( "lucene+native", "2.0", asIndexProviderDescriptor( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 ), true )
             {
                 @Override
                 File providerRootDirectory( DatabaseLayout layout )
@@ -82,7 +83,7 @@ enum IndexMigration
 
             },
     NATIVE_BTREE10( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerKey(), GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerVersion(),
-            GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10, false )
+            asIndexProviderDescriptor( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 ), false )
             {
                 @Override
                 File providerRootDirectory( DatabaseLayout layout )
@@ -98,7 +99,7 @@ enum IndexMigration
                 }
 
             },
-    FULLTEXT10( "fulltext", "1.0", null, false )
+    FULLTEXT10( "fulltext", "1.0", new IndexProviderDescriptor( "fulltext", "1.0" ), false )
             {
                 @Override
                 File providerRootDirectory( DatabaseLayout layout )
@@ -131,10 +132,10 @@ enum IndexMigration
 
     final String providerKey;
     final String providerVersion;
-    final GraphDatabaseSettings.SchemaIndex desiredAlternativeProvider;
+    final IndexProviderDescriptor desiredAlternativeProvider;
     private final boolean retired;
 
-    IndexMigration( String providerKey, String providerVersion, GraphDatabaseSettings.SchemaIndex desiredAlternativeProvider, boolean retired )
+    IndexMigration( String providerKey, String providerVersion, IndexProviderDescriptor desiredAlternativeProvider, boolean retired )
     {
         this.providerKey = providerKey;
         this.providerVersion = providerVersion;
@@ -206,5 +207,10 @@ enum IndexMigration
         return Arrays.stream( IndexMigration.values() )
                 .filter( p -> p.retired )
                 .toArray( IndexMigration[]::new );
+    }
+
+    private static IndexProviderDescriptor asIndexProviderDescriptor( GraphDatabaseSettings.SchemaIndex schemaIndex )
+    {
+        return new IndexProviderDescriptor( schemaIndex.providerKey(), schemaIndex.providerVersion() );
     }
 }

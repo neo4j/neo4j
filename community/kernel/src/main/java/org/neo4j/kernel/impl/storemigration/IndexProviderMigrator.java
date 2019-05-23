@@ -23,7 +23,6 @@ import java.io.IOException;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
@@ -102,10 +101,8 @@ public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
             {
                 if ( currentKey.equals( retired.providerKey ) && currentVersion.equals( retired.providerVersion ) )
                 {
-                    SchemaIndex replacement = retired.desiredAlternativeProvider;
-                    String replacementKey = replacement.providerKey();
-                    String replacementVersion = replacement.providerVersion();
-                    return oldIndexReference.withIndexProvider( new IndexProviderDescriptor( replacementKey, replacementVersion ) );
+                    IndexProviderDescriptor replacement = retired.desiredAlternativeProvider;
+                    return oldIndexReference.withIndexProvider( replacement);
                 }
             }
         }

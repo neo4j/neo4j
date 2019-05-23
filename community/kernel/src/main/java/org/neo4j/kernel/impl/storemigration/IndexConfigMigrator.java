@@ -91,7 +91,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
             IndexConfig indexConfig = indexMigration.extractIndexConfig( fs, pageCache, directoryLayout, indexId );
 
             IndexDescriptor descriptorWithIndexConfig = new IndexDescriptor( oldIndexReference ).withConfig( indexConfig );
-            IndexProvider indexProvider = indexProviderMap.lookup( indexMigration.desiredAlternativeProvider.providerName() );
+            IndexProvider indexProvider = indexProviderMap.lookup( indexMigration.desiredAlternativeProvider );
             descriptorWithIndexConfig = indexProvider.bless( descriptorWithIndexConfig );
             Long owningConstraintReference = getOwningConstraintReference( oldIndexReference );
             return new DefaultStorageIndexReference( descriptorWithIndexConfig, indexId, owningConstraintReference );
