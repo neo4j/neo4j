@@ -120,7 +120,6 @@ public class Settings
         private final String name;
         private final Function<String,T> parser;
         private final String defaultValue;
-        private Setting<T> inheritedSetting;
         private List<BiFunction<T, Function<String,String>,T>> valueConstraints;
 
         private SettingBuilder( @Nonnull final String name, @Nonnull final Function<String,T> parser, @Nullable final String defaultValue )
@@ -128,27 +127,6 @@ public class Settings
             this.name = name;
             this.parser = parser;
             this.defaultValue = defaultValue;
-        }
-
-        /**
-         * Setup a class to inherit from. Both the default value and the actual user supplied value will be inherited.
-         * Limited to one parent, but chains are allowed and works as expected by going up on level until a valid value
-         * is found.
-         *
-         * @param inheritedSetting the setting to inherit value and default value from.
-         * @throws AssertionError if more than one inheritance is provided.
-         */
-        @Nonnull
-        public SettingBuilder<T> inherits( @Nonnull final Setting<T> inheritedSetting )
-        {
-            // Make sure we only inherits from one other setting
-            if ( this.inheritedSetting != null )
-            {
-                throw new AssertionError( "Can only inherit from one setting" );
-            }
-
-            this.inheritedSetting = inheritedSetting;
-            return this;
         }
 
         /**
@@ -173,11 +151,6 @@ public class Settings
         {
             BiFunction<String,Function<String, String>, String> valueLookup = named();
             BiFunction<String, Function<String, String>, String> defaultLookup = determineDefaultLookup( defaultValue, valueLookup );
-            if ( inheritedSetting != null )
-            {
-                valueLookup = inheritedValue( valueLookup, inheritedSetting );
-                defaultLookup = inheritedDefault( defaultLookup, inheritedSetting );
-            }
 
             return new DefaultSetting<>( name, parser, valueLookup, defaultLookup, valueConstraints );
         }
@@ -344,34 +317,6 @@ public class Settings
     public static Setting<File> pathSetting( String name, String defaultValue, Setting<File> relativeRoot )
     {
         return new FileSetting( name, defaultValue, relativeRoot );
-    }
-
-    private static <T> BiFunction<String,Function<String, String>, String> inheritedValue(
-            final BiFunction<String,Function<String,String>, String> lookup, final Setting<T> inheritedSetting )
-    {
-        return ( name, settings ) ->
-        {
-            String value = lookup.apply( name, settings );
-            if ( value == null )
-            {
-                value = ((SettingHelper<T>) inheritedSetting).lookup( settings );
-            }
-            return value;
-        };
-    }
-
-    private static <T> BiFunction<String,Function<String, String>, String> inheritedDefault(
-            final BiFunction<String,Function<String,String>, String> lookup, final Setting<T> inheritedSetting )
-    {
-        return ( name, settings ) ->
-        {
-            String value = lookup.apply( name, settings );
-            if ( value == null )
-            {
-                value = ((SettingHelper<T>) inheritedSetting).defaultLookup( settings );
-            }
-            return value;
-        };
     }
 
     public static final Function<String, Integer> INTEGER = new Function<String, Integer>()

@@ -37,7 +37,6 @@ import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.ssl.BaseSslPolicyConfig.Format.PEM;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
@@ -155,28 +154,5 @@ class PemSslPolicyConfigTest
         assertEquals( asList( "TLSv1.1", "TLSv1.2" ), tlsVersions );
         assertEquals( asList( "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384", "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384" ), ciphers );
         assertEquals( ClientAuth.OPTIONAL, clientAuth );
-    }
-
-    @Test
-    void shouldFailWithIncompletePathOverrides()
-    {
-        // given
-        Map<String,String> params = stringMap();
-
-        String policyName = "XYZ";
-        PemSslPolicyConfig policyConfig = new PemSslPolicyConfig( policyName );
-
-        File homeDir = testDirectory.directory( "home" );
-
-        params.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.getAbsolutePath() );
-        params.put( policyConfig.base_directory.name(), "certificates" );
-        params.put( policyConfig.format.name(), PEM.name() );
-        params.put( policyConfig.private_key.name(), "my.key" );
-        params.put( policyConfig.public_certificate.name(), "path/to/my.crt" );
-
-        Config config = Config.defaults( params );
-
-        assertThrows( IllegalArgumentException.class, () -> config.get( policyConfig.private_key ) );
-        assertThrows( IllegalArgumentException.class, () -> config.get( policyConfig.public_certificate ) );
     }
 }

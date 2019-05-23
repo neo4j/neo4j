@@ -266,36 +266,6 @@ class SettingsTest
     }
 
     @Test
-    void testInheritOneLevel()
-    {
-        Setting<Integer> root = setting( "root", INTEGER, "4" );
-        Setting<Integer> setting = buildSetting( "foo", INTEGER ).inherits( root ).build();
-
-        // Ok
-        assertThat( setting.apply( map( stringMap( "foo", "1" ) ) ), equalTo( 1 ) );
-        assertThat( setting.apply( map( stringMap() ) ), equalTo( 4 ) );
-    }
-
-    @Test
-    void testInheritHierarchy()
-    {
-        // Test hierarchies
-        Setting<String> a = setting( "A", STRING, "A" ); // A defaults to A
-        Setting<String> b = buildSetting( "B", STRING, "B" ).inherits( a ).build(); // B defaults to B unless A is defined
-        Setting<String> c = buildSetting( "C", STRING, "C" ).inherits( b ).build(); // C defaults to C unless B is defined
-        Setting<String> d = buildSetting( "D", STRING ).inherits( b ).build(); // D defaults to B
-        Setting<String> e = buildSetting( "E", STRING ).inherits( d ).build(); // E defaults to D (hence B)
-
-        assertThat( c.apply( map( stringMap( "C", "X" ) ) ), equalTo( "X" ) );
-        assertThat( c.apply( map( stringMap( "B", "X" ) ) ), equalTo( "X" ) );
-        assertThat( c.apply( map( stringMap( "A", "X" ) ) ), equalTo( "X" ) );
-        assertThat( c.apply( map( stringMap( "A", "Y", "B", "X" ) ) ), equalTo( "X" ) );
-
-        assertThat( d.apply( map( stringMap() ) ), equalTo( "B" ) );
-        assertThat( e.apply( map( stringMap() ) ), equalTo( "B" ) );
-    }
-
-    @Test
     void testLogicalLogRotationThreshold()
     {
         // WHEN
@@ -318,14 +288,6 @@ class SettingsTest
 
         // When && then
         assertThat( uri.apply( always -> null ).toString(), equalTo( "/db/data" ) );
-    }
-
-    @Test
-    void onlySingleInheritanceShouldBeAllowed()
-    {
-        Setting<String> a = setting( "A", STRING, "A" );
-        Setting<String> b = setting( "B", STRING, "B" );
-        assertThrows( AssertionError.class, () -> buildSetting( "C", STRING, "C" ).inherits( a ).inherits( b ).build() );
     }
 
     private static <From, To> Function<From,To> map( final Map<From,To> map )
