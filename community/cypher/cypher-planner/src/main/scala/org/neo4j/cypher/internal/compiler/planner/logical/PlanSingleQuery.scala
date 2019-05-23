@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.{alignGetValueFromIndexBehavior, countStorePlanner, verifyBestPlan}
-import org.neo4j.cypher.internal.ir.{PlannerQuery, AggregatingQueryProjection, QueryProjection}
-import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.{countStorePlanner, verifyBestPlan}
+import org.neo4j.cypher.internal.ir.{AggregatingQueryProjection, PlannerQuery, QueryProjection}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
 import scala.collection.mutable
@@ -52,10 +52,7 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
           val (planWithUpdates, contextAfterUpdates) = planUpdates(in, partPlan, firstPlannerQuery = true, updatedContext)
           val projectedPlan = planEventHorizon(in, planWithUpdates, contextAfterUpdates)
           val projectedContext = contextAfterUpdates.withUpdatedCardinalityInformation(projectedPlan)
-
-          // Mark properties from indexes to be fetched, if the properties are used later in the query
-          val alignedPlan = alignGetValueFromIndexBehavior(in, projectedPlan, updatedContext.logicalPlanProducer, updatedContext.planningAttributes.solveds, attributes)
-          (alignedPlan, projectedContext)
+          (projectedPlan, projectedContext)
       }
 
     val (finalPlan, finalContext) = planWithTail(completePlan, in, ctx, idGen)

@@ -28,10 +28,9 @@ import scala.collection.mutable
 case class NodeLeftOuterHashJoinPipe(nodeVariables: Set[String],
                                      lhs: Pipe,
                                      rhs: Pipe,
-                                     nullableVariables: Set[String],
-                                     nullableCachedProperties: Set[CachedProperty])
+                                     nullableVariables: Set[String])
                                     (val id: Id = Id.INVALID_ID)
-  extends NodeOuterHashJoinPipe(nodeVariables, lhs, rhs, nullableVariables, nullableCachedProperties) {
+  extends NodeOuterHashJoinPipe(nodeVariables, lhs, rhs, nullableVariables) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
 

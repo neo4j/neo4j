@@ -57,7 +57,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     assert(plan.isLeaf)
 
     val id = plan.id
-    val variables = plan.availableSymbols ++ plan.availableCachedProperties.values.map(_.asCanonicalStringVal)
+    val variables = plan.availableSymbols
 
     val result: InternalPlanDescription = plan match {
       case _: AllNodesScan =>
@@ -69,12 +69,12 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case NodeByIdSeek(_, _, _) =>
         PlanDescriptionImpl(id, "NodeByIdSeek", NoChildren, Seq(), variables)
 
-      case NodeIndexSeek(_, label, properties, valueExpr, _, _) =>
-        val (indexMode, indexDesc) = getDescriptions(label, properties.map(_.propertyKeyToken), valueExpr, unique = false, readOnly)
+      case p@NodeIndexSeek(_, label, properties, valueExpr, _, _) =>
+        val (indexMode, indexDesc) = getDescriptions(label, properties.map(_.propertyKeyToken), valueExpr, unique = false, readOnly, p.cachedProperties.map(_.asCanonicalStringVal))
         PlanDescriptionImpl(id, indexMode, NoChildren, Seq(indexDesc), variables)
 
-      case NodeUniqueIndexSeek(_, label, properties, valueExpr, _, _) =>
-        val (indexMode, indexDesc) = getDescriptions(label, properties.map(_.propertyKeyToken), valueExpr, unique = true, readOnly)
+      case p@NodeUniqueIndexSeek(_, label, properties, valueExpr, _, _) =>
+        val (indexMode, indexDesc) = getDescriptions(label, properties.map(_.propertyKeyToken), valueExpr, unique = true, readOnly, p.cachedProperties.map(_.asCanonicalStringVal))
         PlanDescriptionImpl(id, indexMode, NoChildren, Seq(indexDesc), variables)
 
       case ProduceResult(_, _) =>
@@ -97,16 +97,16 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val arguments = Seq(CountNodesExpression(variable, labelNames.map(l => l.map(_.name))))
         PlanDescriptionImpl(id, "NodeCountFromCountStore", NoChildren, arguments, variables)
 
-      case NodeIndexContainsScan(_, label, property, valueExpr, _, _) =>
-        val arguments = Seq(Index(label.name, Seq(property.propertyKeyToken.name)), Expression(valueExpr))
+      case p@NodeIndexContainsScan(_, label, property, valueExpr, _, _) =>
+        val arguments = Seq(Index(label.name, Seq(property.propertyKeyToken.name), p.cachedProperties.map(_.asCanonicalStringVal)), Expression(valueExpr))
         PlanDescriptionImpl(id, "NodeIndexContainsScan", NoChildren, arguments, variables)
 
-      case NodeIndexEndsWithScan(_, label, property, valueExpr, _, _) =>
-        val arguments = Seq(Index(label.name, Seq(property.propertyKeyToken.name)), Expression(valueExpr))
+      case p@NodeIndexEndsWithScan(_, label, property, valueExpr, _, _) =>
+        val arguments = Seq(Index(label.name, Seq(property.propertyKeyToken.name), p.cachedProperties.map(_.asCanonicalStringVal)), Expression(valueExpr))
         PlanDescriptionImpl(id, "NodeIndexEndsWithScan", NoChildren, arguments, variables)
 
-      case NodeIndexScan(_, label, properties, _, _) =>
-        PlanDescriptionImpl(id, "NodeIndexScan", NoChildren, Seq(Index(label.name, properties.map(_.propertyKeyToken.name))), variables)
+      case p@NodeIndexScan(_, label, properties, _, _) =>
+        PlanDescriptionImpl(id, "NodeIndexScan", NoChildren, Seq(Index(label.name, properties.map(_.propertyKeyToken.name), p.cachedProperties.map(_.asCanonicalStringVal))), variables)
 
       case ProcedureCall(_, call) =>
         val signature = Signature(call.qualifiedName, call.callArguments, call.callResultTypes)
@@ -253,7 +253,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     assert(plan.rhs.isEmpty)
 
     val id = plan.id
-    val variables = plan.availableSymbols ++ plan.availableCachedProperties.values.map(_.asCanonicalStringVal)
+    val variables = plan.availableSymbols
     val children = if (source.isInstanceOf[ArgumentPlanDescription]) NoChildren else SingleChild(source)
 
     val result: InternalPlanDescription = plan match {
@@ -302,9 +302,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
                               CountRelationshipsExpression(idName, start.map(_.name), types.map(_.name), end.map(_.name))),
                             variables)
 
-      case NodeUniqueIndexSeek(_, label, properties, _, _, _) =>
+      case p@NodeUniqueIndexSeek(_, label, properties, _, _, _) =>
         PlanDescriptionImpl(id = plan.id, "NodeUniqueIndexSeek", NoChildren,
-                            Seq(Index(label.name, properties.map(_.propertyKeyToken.name))), variables)
+                            Seq(Index(label.name, properties.map(_.propertyKeyToken.name), p.cachedProperties.map(_.asCanonicalStringVal))), variables)
 
       case _: ErrorPlan =>
         PlanDescriptionImpl(id, "Error", children, Seq.empty, variables)
@@ -469,7 +469,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     assert(plan.rhs.nonEmpty)
 
     val id = plan.id
-    val variables = plan.availableSymbols ++ plan.availableCachedProperties.values.map(_.asCanonicalStringVal)
+    val variables = plan.availableSymbols
     val children = TwoChildren(lhs, rhs)
 
     val result: InternalPlanDescription = plan match {
@@ -579,7 +579,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
                               propertyKeys: Seq[PropertyKeyToken],
                               valueExpr: QueryExpression[ASTExpression],
                               unique: Boolean,
-                              readOnly: Boolean): (String, Argument) = {
+                              readOnly: Boolean,
+                              caches: Seq[String]): (String, Argument) = {
 
     def findName(exactOnly: Boolean =  true) =
       if (unique && !readOnly && exactOnly) "NodeUniqueIndexSeek(Locking)"
@@ -593,19 +594,19 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val name = if (unique) "NodeUniqueIndexSeekByRange" else "NodeIndexSeekByRange"
         e.expression match {
           case PrefixSeekRangeWrapper(range) =>
-            (name, PrefixIndex(label.name, propertyKey, range.prefix))
+            (name, PrefixIndex(label.name, propertyKey, range.prefix, caches))
           case InequalitySeekRangeWrapper(RangeLessThan(bounds)) =>
             (name, InequalityIndex(label.name, propertyKey,
-              bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq))
+              bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq, caches))
           case InequalitySeekRangeWrapper(RangeGreaterThan(bounds)) =>
             (name, InequalityIndex(label.name, propertyKey,
-              bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq))
+              bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq, caches))
           case InequalitySeekRangeWrapper(RangeBetween(greaterThanBounds, lessThanBounds)) =>
             val greaterThanBoundsText = greaterThanBounds.bounds.map(bound =>
               s">${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq
             val lessThanBoundsText = lessThanBounds.bounds.map(bound =>
               s"<${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq
-            (name, InequalityIndex(label.name, propertyKey, greaterThanBoundsText ++ lessThanBoundsText))
+            (name, InequalityIndex(label.name, propertyKey, greaterThanBoundsText ++ lessThanBoundsText, caches))
           case PointDistanceSeekRangeWrapper(PointDistanceRange(point, distance, inclusive)) =>
             val funcName = Point.name
             val poi = point match {
@@ -613,7 +614,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
                 s"point(${args.map(_._1.name).mkString(",")})"
               case _ => point.toString
             }
-            (name, PointDistanceIndex(label.name, propertyKey, poi, distance.toString, inclusive))
+            (name, PointDistanceIndex(label.name, propertyKey, poi, distance.toString, inclusive, caches))
           case _ => throw new InternalException("This should never happen. Missing a case?")
         }
       case e: CompositeQueryExpression[_] =>
@@ -624,8 +625,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
             throw new InternalException("A CompositeQueryExpression can't be nested in a CompositeQueryExpression")
           case _ => "equality"
         }
-        (s"${findName(e.exactOnly)}(${predicates.mkString(",")})", Index(label.name, propertyKeys.map(_.name)))
-      case _ => (findName(), Index(label.name, propertyKeys.map(_.name)))
+        (s"${findName(e.exactOnly)}(${predicates.mkString(",")})", Index(label.name, propertyKeys.map(_.name), caches))
+      case _ => (findName(), Index(label.name, propertyKeys.map(_.name), caches))
     }
 
     (name, indexDesc)

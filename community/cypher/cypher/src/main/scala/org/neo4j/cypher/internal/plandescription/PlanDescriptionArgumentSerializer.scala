@@ -46,11 +46,11 @@ object PlanDescriptionArgumentSerializer {
       }.mkString("{", ", ", "}")
       case UpdateActionName(action) => action
       case MergePattern(startPoint) => s"MergePattern($startPoint)"
-      case Index(label, properties) => s":$label(${properties.mkString(",")})"
-      case PrefixIndex(label, property, p) => s":$label($property STARTS WITH ${asPrettyString(p)})"
-      case InequalityIndex(label, property, bounds) => bounds.map(bound => s":$label($property) $bound").mkString(" AND ")
-      case PointDistanceIndex(label, property, point, distance, inclusive) =>
-        s":$label($property) WHERE distance(_,$point) <${if(inclusive) "=" else ""} $distance"
+      case Index(label, properties, caches) => s":$label(${properties.mkString(",")})${cachesSuffix(caches)}"
+      case PrefixIndex(label, property, p, caches) => s":$label($property STARTS WITH ${asPrettyString(p)})${cachesSuffix(caches)}"
+      case InequalityIndex(label, property, bounds, caches) => bounds.map(bound => s":$label($property) $bound").mkString(" AND ") + cachesSuffix(caches)
+      case PointDistanceIndex(label, property, point, distance, inclusive, caches) =>
+        s":$label($property) WHERE distance(_,$point) <${if(inclusive) "=" else ""} $distance" + cachesSuffix(caches)
       case LabelName(label) => s":$label"
       case KeyNames(keys) => keys.map(removeGeneratedNames).mkString(SEPARATOR)
       case KeyExpressions(expressions) => expressions.mkString(SEPARATOR)
@@ -105,6 +105,10 @@ object PlanDescriptionArgumentSerializer {
       // Do not add a fallthrough here - we rely on exhaustive checking to ensure
       // that we don't forget to add new types of arguments here
     }
+  }
+
+  private def cachesSuffix(caches: Seq[String]): String = {
+    if (caches.isEmpty) "" else caches.mkString(", ", ", ", "")
   }
 
   def serializeProvidedOrder(providedOrder: ProvidedOrder): String = {

@@ -38,14 +38,4 @@ case class LeftOuterHashJoin(nodes: Set[String],
   val rhs = Some(right)
 
   val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
-
-  /**
-    * Cached properties from rhs cannot be used if they refer to a join key node. This is because outer
-    * rows will nullify the rhs columns even thought a join key node might still have the property.
-    */
-  override def availableCachedProperties: Map[Property, CachedProperty] =
-    left.availableCachedProperties ++
-      right.availableCachedProperties.filter {
-        case (_, cachedNodeProperty) => !nodes.contains(cachedNodeProperty.variableName)
-      }
 }

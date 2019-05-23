@@ -450,13 +450,11 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case LeftOuterHashJoin(nodes, l, r) =>
         val nullableVariables = r.availableSymbols -- l.availableSymbols
-        val nullableCachedProperties = r.availableCachedProperties.values.toSet -- l.availableCachedProperties.values
-        NodeLeftOuterHashJoinPipe(nodes, lhs, rhs, nullableVariables, nullableCachedProperties)(id = id)
+        NodeLeftOuterHashJoinPipe(nodes, lhs, rhs, nullableVariables)(id = id)
 
       case RightOuterHashJoin(nodes, l, r) =>
         val nullableVariables = l.availableSymbols -- r.availableSymbols
-        val nullableCachedProperties = l.availableCachedProperties.values.toSet -- r.availableCachedProperties.values
-        NodeRightOuterHashJoinPipe(nodes, lhs, rhs, nullableVariables, nullableCachedProperties)(id = id)
+        NodeRightOuterHashJoinPipe(nodes, lhs, rhs, nullableVariables)(id = id)
 
       case Apply(_, _) => ApplyPipe(lhs, rhs)(id = id)
 

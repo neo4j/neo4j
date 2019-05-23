@@ -54,14 +54,6 @@ abstract class LogicalPlan(idGen: IdGen)
   def rhs: Option[LogicalPlan]
   def availableSymbols: Set[String]
 
-  /**
-    * Node properties that will be cached in the execution context.
-    */
-  def availableCachedProperties: Map[Property, CachedProperty] = {
-    lhs.fold(Map.empty[Property, CachedProperty])(_.availableCachedProperties) ++
-      rhs.fold(Map.empty[Property, CachedProperty])(_.availableCachedProperties)
-  }
-
   override val id: Id = idGen.id()
 
   override val hashCode: Int = MurmurHash3.productHash(self)
@@ -210,7 +202,7 @@ abstract class IndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPlan(idGen) {
   /**
     * Indexed properties that will be retrieved from the index and cached in the row.
     */
-  def cachedProperties: Traversable[CachedProperty]
+  def cachedProperties: Seq[CachedProperty] = properties.flatMap(_.maybeCachedProperty(idName))
 
   /**
     * All properties
@@ -232,17 +224,6 @@ abstract class IndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPlan(idGen) {
 abstract class IndexSeekLeafPlan(idGen: IdGen) extends IndexLeafPlan(idGen) {
 
   def valueExpr: QueryExpression[Expression]
-
-  /**
-    * The indexed node properties that this plan targets.
-    */
-  def properties: Seq[IndexedProperty]
-
-  override val cachedProperties: Seq[CachedProperty] =
-    properties.filter(_.shouldGetValue).map(_.asCachedProperty(idName))
-
-  override def availableCachedProperties: Map[Property, CachedProperty] =
-    properties.filter(_.getValueFromIndex == GetValue).flatMap(_.asAvailablePropertyMap(idName)).toMap
 }
 
 case object Flattener extends LogicalPlans.Mapper[Seq[LogicalPlan]] {

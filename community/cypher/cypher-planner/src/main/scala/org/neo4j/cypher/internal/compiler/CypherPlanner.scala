@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.phases._
 import org.neo4j.cypher.internal.compiler.planner.logical._
 import org.neo4j.cypher.internal.compiler.planner.logical.debug.DebugPrinter
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.PlanRewriter
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.replacePropertyLookupsWithVariables
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.insertCachedProperties
 import org.neo4j.cypher.internal.compiler.planner.{CheckForUnresolvedTokens, ResolveTokens}
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -98,7 +98,7 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
   val costBasedPlanning: Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] =
     QueryPlanner().adds(CompilationContains[LogicalPlan]) andThen
       PlanRewriter(sequencer) andThen
-      replacePropertyLookupsWithVariables andThen
+      insertCachedProperties andThen
       If((s: LogicalPlanState) => s.unionQuery.readOnly)(
         CheckForUnresolvedTokens
       )

@@ -16,12 +16,10 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast
 
-import org.neo4j.cypher.internal.v4_0.ast.semantics._
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LogicalProperty, Variable}
+import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticAnalysisTooling, SemanticCheckable, SemanticExpressionCheck, _}
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LabelName, LogicalProperty, Variable}
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.{ASTNode, InputPosition}
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticAnalysisTooling, SemanticCheckable, SemanticExpressionCheck}
-import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, Variable}
 
 sealed trait SetItem extends ASTNode with SemanticCheckable
 

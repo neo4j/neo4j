@@ -84,7 +84,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
       , attach(IndexSeek("x:Label(Prop = 'Andres')"), 23.0) ->
         PlanDescriptionImpl(id, "NodeIndexSeek", NoChildren,
-                            Seq(Index("Label", Seq("Prop")), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+                            Seq(Index("Label", Seq("Prop"), Seq.empty), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
+                                Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
+
+      , attach(IndexSeek("x:Label(Prop = 'Andres')", getValue = GetValue), 23.0) ->
+        PlanDescriptionImpl(id, "NodeIndexSeek", NoChildren,
+                            Seq(Index("Label", Seq("Prop"), Seq("cache[x.Prop]")), EstimatedRows(23), CYPHER_VERSION, RUNTIME_VERSION,
                                 Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
 
       , attach(
@@ -92,7 +97,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
                             ManyQueryExpression(ListLiteral(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty, IndexOrderNone),
         95.0) ->
         PlanDescriptionImpl(id, "NodeUniqueIndexSeek", NoChildren,
-                            Seq(Index("Lebal", Seq("Prop")), EstimatedRows(95), CYPHER_VERSION, RUNTIME_VERSION,
+                            Seq(Index("Lebal", Seq("Prop"), Seq.empty), EstimatedRows(95), CYPHER_VERSION, RUNTIME_VERSION,
                                 Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("x"))
 
       , attach(Expand(lhsLP, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandAll), 95.0) ->

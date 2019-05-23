@@ -44,13 +44,4 @@ case class AntiConditionalApply(left: LogicalPlan, right: LogicalPlan, items: Se
 
   override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols ++ items
 
-  /**
-    * Note: This is not the completely right thing to do.
-    * AntiConditionalApply is only planned for MERGE. And in that case the LHS (Optional --> NodeUniqueIndexSeek) will produce
-    * a null row when the node was not found. The RHS (MergeCreateNode) does not provide the property, but is supposed to
-    * override all the null columns from the LHS.
-    *
-    * Not making cached properties available is the sane thing to do, as long as this is only planned in such a way.
-    */
-  override final def availableCachedProperties: Map[Property, CachedProperty] = Map.empty
 }

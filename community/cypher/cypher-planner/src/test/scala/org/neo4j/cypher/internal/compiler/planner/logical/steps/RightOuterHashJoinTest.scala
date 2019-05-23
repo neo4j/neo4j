@@ -92,25 +92,4 @@ class RightOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupp
     context.planningAttributes.solveds.get(plan.id).lastQueryGraph.allHints should equal (theHint)
   }
 
-  test("should not expose cached node properties from lhs where node is join key") {
-    def cachedProp(node: String, propertyKey: String) =
-      prop(node, propertyKey) -> cachedNodeProperty(node, propertyKey)
-
-    // given
-    val cNode = "c"
-    val lhs = mock[LogicalPlan]
-    when(lhs.availableSymbols).thenReturn(Set(aNode, bNode))
-    when(lhs.availableCachedProperties).thenReturn(Map(cachedProp(aNode, "lhs"), cachedProp(bNode, "lhs")))
-    val rhs = mock[LogicalPlan]
-    when(rhs.availableSymbols).thenReturn(Set(bNode, cNode))
-    when(rhs.availableCachedProperties).thenReturn(Map(cachedProp(bNode, "rhs"), cachedProp(cNode, "rhs")))
-    val join = RightOuterHashJoin(Set(bNode), lhs, rhs)
-
-    // then
-    join.availableCachedProperties should be(Map(
-      cachedProp(aNode, "lhs"),
-      cachedProp(bNode, "rhs"),
-      cachedProp(cNode, "rhs")
-    ))
-  }
 }

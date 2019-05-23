@@ -31,8 +31,7 @@ import scala.collection.mutable.{ListBuffer, MutableList}
 abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
                                      lhs: Pipe,
                                      rhs: Pipe,
-                                     nullableVariables: Set[String],
-                                     nullableCachedProperties: Set[CachedProperty]) extends PipeWithSource(lhs) {
+                                     nullableVariables: Set[String]) extends PipeWithSource(lhs) {
 
   private val myVariables = nodeVariables.toIndexedSeq
   private val nullVariables: Array[(String, AnyValue)] = nullableVariables.map(_ -> Values.NO_VALUE).toArray
@@ -52,8 +51,6 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
   protected def addNulls(in: ExecutionContext): ExecutionContext = {
     val withNulls = executionContextFactory.copyWith(in)
     withNulls.set(nullVariables)
-    for (x <- nullableCachedProperties)
-      withNulls.setCachedProperty(x, Values.NO_VALUE)
     withNulls
   }
 

@@ -26,10 +26,9 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 case class NodeRightOuterHashJoinPipe(nodeVariables: Set[String],
                                       lhs: Pipe,
                                       rhs: Pipe,
-                                      nullableVariables: Set[String],
-                                      nullableCachedProperties: Set[CachedProperty])
+                                      nullableVariables: Set[String])
                                      (val id: Id = Id.INVALID_ID)
-  extends NodeOuterHashJoinPipe(nodeVariables, lhs, rhs, nullableVariables, nullableCachedProperties) {
+  extends NodeOuterHashJoinPipe(nodeVariables, lhs, rhs, nullableVariables) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
 

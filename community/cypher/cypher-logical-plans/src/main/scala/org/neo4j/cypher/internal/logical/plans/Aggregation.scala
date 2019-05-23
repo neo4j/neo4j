@@ -34,18 +34,12 @@ case class Aggregation(source: LogicalPlan,
                        groupingExpressions: Map[String, Expression],
                        aggregationExpression: Map[String, Expression])
                       (implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with EagerLogicalPlan with AggregatingPlan {
- val lhs: Option[LogicalPlan] = Some(source)
+  extends LogicalPlan(idGen) with EagerLogicalPlan with AggregatingPlan with ProjectingPlan {
 
-  val rhs: Option[LogicalPlan] = None
+ override val projectExpressions: Map[String, Expression] = groupingExpressions
 
-  val groupingKeys: Set[String] = groupingExpressions.keySet
+ val groupingKeys: Set[String] = groupingExpressions.keySet
 
   val availableSymbols: Set[String] = groupingKeys ++ aggregationExpression.keySet
 
-  /**
-    * Aggregations delete columns which are not explicitly listed in groupingExpressions or aggregationExpression.
-    * It will therefore simply remove any cached node properties.
-    */
-  override final def availableCachedProperties: Map[Property, CachedProperty] = Map.empty
 }

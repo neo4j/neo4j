@@ -31,19 +31,12 @@ case class OrderedAggregation(source: LogicalPlan,
                               aggregationExpression: Map[String, Expression],
                               orderToLeverage: Seq[Expression])
                              (implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with EagerLogicalPlan with AggregatingPlan {
+  extends LogicalPlan(idGen) with EagerLogicalPlan with AggregatingPlan with ProjectingPlan {
 
-  val lhs: Option[LogicalPlan] = Some(source)
-
-  val rhs: Option[LogicalPlan] = None
+  override val projectExpressions: Map[String, Expression] = groupingExpressions
 
   val groupingKeys: Set[String] = groupingExpressions.keySet
 
   val availableSymbols: Set[String] = groupingKeys ++ aggregationExpression.keySet
 
-  /**
-    * Aggregations delete columns which are not explicitly listed in groupingExpressions or aggregationExpression.
-    * It will therefore simply remove any cached node properties.
-    */
-  override final def availableCachedProperties: Map[Property, CachedProperty] = Map.empty
 }

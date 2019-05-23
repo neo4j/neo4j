@@ -16,12 +16,10 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast
 
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticExpressionCheck
-import org.neo4j.cypher.internal.v4_0.expressions.{LogicalProperty, LogicalVariable}
+import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckable, SemanticExpressionCheck}
+import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, LogicalProperty, LogicalVariable}
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.{ASTNode, InputPosition}
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckable, SemanticExpressionCheck}
-import org.neo4j.cypher.internal.v4_0.expressions.LabelName
 
 sealed trait RemoveItem extends ASTNode with SemanticCheckable
 

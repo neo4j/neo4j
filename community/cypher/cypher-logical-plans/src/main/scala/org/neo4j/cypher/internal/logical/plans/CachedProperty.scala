@@ -52,7 +52,7 @@ case class CachedProperty(variableName: String,
 
   def cacheKey: String = s"$variableName.${propertyKey.name}"
 
-  override def asCanonicalStringVal: String = s"cached[$cacheKey]"
+  override def asCanonicalStringVal: String = s"cache[$cacheKey]"
 
   override def semanticCheck(ctx: ASTExpression.SemanticContext): SemanticCheck = SemanticCheckResult.success
 }

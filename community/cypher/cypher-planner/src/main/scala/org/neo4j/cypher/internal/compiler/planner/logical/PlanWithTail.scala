@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.alignGetValueFromIndexBehavior
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Attributes, IdGen}
@@ -36,15 +35,12 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
   override def apply(lhs: LogicalPlan, in: PlannerQuery, context: LogicalPlanningContext, idGen: IdGen): (LogicalPlan, LogicalPlanningContext) = {
     in.tail match {
       case Some(plannerQuery) =>
-        val attributes = context.planningAttributes.asAttributes(idGen)
         val lhsContext = context.withUpdatedCardinalityInformation(lhs)
 
         val partPlan = planPart(plannerQuery, lhsContext, rhsPart = true)
         val (planWithUpdates, newContext) = planUpdates(plannerQuery, partPlan, firstPlannerQuery = false, lhsContext)
 
-        // Mark properties from indexes to be fetched, if the properties are used later in the query
-        val alignedPlan = alignGetValueFromIndexBehavior(plannerQuery, planWithUpdates, context.logicalPlanProducer, context.planningAttributes.solveds, attributes)
-        val applyPlan = newContext.logicalPlanProducer.planTailApply(lhs, alignedPlan, context)
+        val applyPlan = newContext.logicalPlanProducer.planTailApply(lhs, planWithUpdates, context)
 
         val applyContext = newContext.withUpdatedCardinalityInformation(applyPlan)
         val projectedPlan = planEventHorizon(plannerQuery, applyPlan, applyContext)

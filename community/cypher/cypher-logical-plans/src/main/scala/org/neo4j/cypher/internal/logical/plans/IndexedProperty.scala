@@ -19,25 +19,11 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.v4_0.expressions.Property
-import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyToken
-import org.neo4j.cypher.internal.v4_0.expressions.Variable
+import org.neo4j.cypher.internal.v4_0.expressions.{PropertyKeyName, PropertyKeyToken}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 case class IndexedProperty(propertyKeyToken: PropertyKeyToken, getValueFromIndex: GetValueFromIndexBehavior) {
   def shouldGetValue: Boolean = getValueFromIndex == GetValue
-
-  def asAvailablePropertyMap(entity: String): Map[Property, CachedProperty] =
-    if (getValueFromIndex == GetValue)
-      Map((
-        Property(
-          Variable(entity)(InputPosition.NONE),
-          PropertyKeyName(propertyKeyToken.name)(InputPosition.NONE)
-        )(InputPosition.NONE),
-        asCachedProperty(entity)
-      ))
-    else Map.empty
 
   def asCachedProperty(node: String): CachedProperty =
     CachedProperty(node, PropertyKeyName(propertyKeyToken.name)(InputPosition.NONE), CACHED_NODE)(InputPosition.NONE)

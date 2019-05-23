@@ -39,11 +39,7 @@ case class NodeIndexContainsScan(idName: String,
 
   override def properties: Seq[IndexedProperty] = Seq(property)
 
-  override def cachedProperties: Traversable[CachedProperty] = property.maybeCachedProperty(idName)
-
   val availableSymbols: Set[String] = argumentIds + idName
-
-  override def availableCachedProperties: Map[Property, CachedProperty] = property.asAvailablePropertyMap(idName)
 
   override def copyWithoutGettingValues: NodeIndexContainsScan =
     NodeIndexContainsScan(idName, label, IndexedProperty(property.propertyKeyToken, DoNotGetValue), valueExpr, argumentIds, indexOrder)(SameId(this.id))

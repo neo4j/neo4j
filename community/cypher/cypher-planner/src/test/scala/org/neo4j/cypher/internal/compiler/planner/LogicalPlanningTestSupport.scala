@@ -307,9 +307,4 @@ case class FakePlan(availableSymbols: Set[String] = Set.empty, propertyMap: Map[
   extends LogicalPlan(idGen) with LazyLogicalPlan {
   def rhs = None
   def lhs = None
-
-  override val availableCachedProperties: Map[Property, CachedProperty] = propertyMap.mapValues(s => {
-    val (nodeName, propertyKey) = s.span(_ != '.')
-    CachedProperty(nodeName, PropertyKeyName(propertyKey.tail)(InputPosition.NONE), CACHED_NODE)(InputPosition.NONE)
-  })
 }
