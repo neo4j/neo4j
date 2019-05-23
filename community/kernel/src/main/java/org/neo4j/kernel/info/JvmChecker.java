@@ -34,9 +34,9 @@ public class JvmChecker
 {
     private static final int SUPPORTED_FEATURE_VERSION = 11;
     static final String INCOMPATIBLE_JVM_WARNING = "You are using an unsupported Java runtime. Please" +
-            " use Oracle(R) Java(TM) Runtime Environment 11, OpenJDK(TM) 11.";
+            " use Oracle(R) Java(TM) 11, OpenJDK(TM) 11.";
     static final String INCOMPATIBLE_JVM_VERSION_WARNING = "You are using an unsupported version of " +
-            "the Java runtime. Please use Oracle(R) Java(TM) Runtime Environment 11 or OpenJDK(TM) 11.";
+            "the Java runtime. Please use Oracle(R) Java(TM) 11 or OpenJDK(TM) 11.";
     private static final Pattern SUPPORTED_JAVA_NAME_PATTERN = compile( "(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server) VM" );
 
     private final Log log;

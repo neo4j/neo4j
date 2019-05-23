@@ -17,10 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#############################################################
-#      File content is generated based on .m4 template      #
-#############################################################
-
 set -o errexit -o nounset -o pipefail
 [[ "${TRACE:-}" ]] && set -o xtrace
 
@@ -53,21 +49,11 @@ setup_heap() {
 
 build_classpath() {
   CLASSPATH="${NEO4J_PLUGINS}:${NEO4J_CONF}:${NEO4J_LIB}/*:${NEO4J_PLUGINS}/*"
-
-  # augment with tools.jar, will need JDK
-  if [ "${JAVA_HOME:-}" ]; then
-    JAVA_TOOLS="${JAVA_HOME}/lib/tools.jar"
-    if [[ -e $JAVA_TOOLS ]]; then
-      CLASSPATH="${CLASSPATH}:${JAVA_TOOLS}"
-    fi
-  fi
 }
 
 detect_os() {
   if uname -s | grep -q Darwin; then
     DIST_OS="macosx"
-  elif [[ -e /etc/gentoo-release ]]; then
-    DIST_OS="gentoo"
   else
     DIST_OS="other"
   fi
@@ -126,17 +112,16 @@ check_java() {
   [[ -n "${JAVA_MEMORY_OPTS:-}" ]] && version_command+=("${JAVA_MEMORY_OPTS[@]}")
 
   JAVA_VERSION=$("${version_command[@]}" 2>&1 | awk -F '"' '/version/ {print $2}')
-  if [[ $JAVA_VERSION = "1."* ]]; then
-    if [[ "${JAVA_VERSION}" < "1.8" ]]; then
+  if [[ $JAVA_VERSION = "1."* ]] || [[ $JAVA_VERSION = "9"* ]] || [[ $JAVA_VERSION = "10"* ]]; then
       echo "ERROR! Neo4j cannot be started using java version ${JAVA_VERSION}. "
       _show_java_help
       exit 1
-    fi
+  elif [[ $JAVA_VERSION != "11"* ]] ; then
+    unsupported_runtime_warning
+  else
     if ! ("${version_command[@]}" 2>&1 | egrep -q "(Java HotSpot\\(TM\\)|OpenJDK|IBM) (64-Bit Server|Server|Client|J9) VM"); then
       unsupported_runtime_warning
     fi
-  else
-      unsupported_runtime_warning
   fi
 }
 
@@ -204,16 +189,13 @@ _find_java_home() {
 
   case "${DIST_OS}" in
     "macosx")
-      JAVA_HOME="$(/usr/libexec/java_home -v 1.8)"
-      ;;
-    "gentoo")
-      JAVA_HOME="$(java-config --jre-home)"
+      JAVA_HOME="$(/usr/libexec/java_home -v 11)"
       ;;
   esac
 }
 
 _show_java_help() {
-  echo "* Please use Oracle(R) Java(TM) 8, OpenJDK(TM) or IBM J9 to run Neo4j."
+  echo "* Please use Oracle(R) Java(TM) 11, OpenJDK(TM) 11 to run Neo4j."
   echo "* Please see https://neo4j.com/docs/ for Neo4j installation instructions."
 }
 
@@ -297,11 +279,6 @@ Directories in use:
   run:          ${NEO4J_RUN}
 EOF
 }
-
-print_active_database() {
-  echo "Active database: ${dbms_active_database:-graph.db}"
-}
-
 
 setup_heap
 call_main_class "org.neo4j.commandline.admin.AdminTool" "$@"
