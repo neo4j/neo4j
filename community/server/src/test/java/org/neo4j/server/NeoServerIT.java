@@ -25,7 +25,7 @@ import org.junit.Test;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
-import org.neo4j.dbms.database.DatabaseNotFoundException;
+import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.database.DatabaseService;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;

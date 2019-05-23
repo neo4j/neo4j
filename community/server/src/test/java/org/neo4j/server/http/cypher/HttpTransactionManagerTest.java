@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.dbms.database.DatabaseNotFoundException;
+import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.scheduler.Group;

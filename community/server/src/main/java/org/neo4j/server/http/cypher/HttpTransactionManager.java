@@ -24,7 +24,7 @@ import java.time.Duration;
 import java.util.Optional;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.dbms.database.DatabaseNotFoundException;
+import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
