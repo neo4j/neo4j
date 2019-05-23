@@ -37,9 +37,11 @@ enum IndexMigration
     LUCENE( "lucene", "1.0", asIndexProviderDescriptor( GraphDatabaseSettings.SchemaIndex.NATIVE30 ), true )
             {
                 @Override
-                File providerRootDirectory( DatabaseLayout layout )
+                File[] providerRootDirectories( DatabaseLayout layout )
                 {
-                    return directoryRootByProviderKey( layout.databaseDirectory(), providerKey );
+                    File luceneDir = directoryRootByProviderKey( layout.databaseDirectory(), providerKey );
+                    File lucene10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    return new File[]{luceneDir, lucene10Dir};
                 }
 
                 @Override
@@ -53,15 +55,16 @@ enum IndexMigration
     NATIVE10( "lucene+native", "1.0", asIndexProviderDescriptor( GraphDatabaseSettings.SchemaIndex.NATIVE30 ), true )
             {
                 @Override
-                File providerRootDirectory( DatabaseLayout layout )
+                File[] providerRootDirectories( DatabaseLayout layout )
                 {
-                    return directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    File lucene_native10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    return new File[]{lucene_native10Dir};
                 }
 
                 @Override
                 IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException
                 {
-                    File providerRootDirectory = providerRootDirectory( layout );
+                    File providerRootDirectory = providerRootDirectories( layout )[0];
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, providerRootDirectory, indexId );
                 }
 
@@ -69,15 +72,16 @@ enum IndexMigration
     NATIVE20( "lucene+native", "2.0", asIndexProviderDescriptor( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 ), true )
             {
                 @Override
-                File providerRootDirectory( DatabaseLayout layout )
+                File[] providerRootDirectories( DatabaseLayout layout )
                 {
-                    return directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    File lucene_native20Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    return new File[]{lucene_native20Dir};
                 }
 
                 @Override
                 IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException
                 {
-                    File providerRootDirectory = providerRootDirectory( layout );
+                    File providerRootDirectory = providerRootDirectories( layout )[0];
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, providerRootDirectory, indexId );
                 }
 
@@ -86,15 +90,16 @@ enum IndexMigration
             asIndexProviderDescriptor( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 ), false )
             {
                 @Override
-                File providerRootDirectory( DatabaseLayout layout )
+                File[] providerRootDirectories( DatabaseLayout layout )
                 {
-                    return directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    File native_btree10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    return new File[]{native_btree10Dir};
                 }
 
                 @Override
                 IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException
                 {
-                    File rootDir = providerRootDirectory( layout );
+                    File rootDir = providerRootDirectories( layout )[0];
                     return GenericConfigExtractor.indexConfigFromGenericFile( pageCache, rootDir, indexId );
                 }
 
@@ -102,9 +107,10 @@ enum IndexMigration
     FULLTEXT10( "fulltext", "1.0", new IndexProviderDescriptor( "fulltext", "1.0" ), false )
             {
                 @Override
-                File providerRootDirectory( DatabaseLayout layout )
+                File[] providerRootDirectories( DatabaseLayout layout )
                 {
-                    return directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    File fulltext10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    return new File[]{fulltext10Dir};
                 }
 
                 @Override
@@ -122,7 +128,7 @@ enum IndexMigration
                     //                │   ├── failure-message
                     //                │   └── fulltext-index.properties <- Fulltext index settings
                     //                └── fulltext-1.0.tx               <- Transaction folder
-                    File fulltext10Dir = providerRootDirectory( layout );
+                    File fulltext10Dir = providerRootDirectories( layout )[0];
                     File directoryForIndex = path( fulltext10Dir, String.valueOf( indexId ) );
                     File fulltextIndexDirectory = directoryBySubProvider( directoryForIndex, providerKey, providerVersion );
                     return FulltextConfigExtractor.indexConfigFromFulltextDirectory( fs, fulltextIndexDirectory );
@@ -143,7 +149,7 @@ enum IndexMigration
         this.retired = retired;
     }
 
-    abstract File providerRootDirectory( DatabaseLayout layout );
+    abstract File[] providerRootDirectories( DatabaseLayout layout );
 
     abstract IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException;
 

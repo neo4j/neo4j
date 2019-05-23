@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.common.ProgressReporter;
@@ -76,9 +77,13 @@ public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
     public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToMigrateFrom, String versionToMigrateTo )
             throws IOException
     {
+        // All old indexes need to be deleted because either they have changed provider or they've had there configuration migrated, see IndexConfigMigrator.
         for ( IndexMigration indexMigration : IndexMigration.values() )
         {
-            fs.deleteRecursively( indexMigration.providerRootDirectory( directoryLayout ) );
+            for ( File retiredRootDirectory : indexMigration.providerRootDirectories( directoryLayout ) )
+            {
+                fs.deleteRecursively( retiredRootDirectory );
+            }
         }
     }
 

@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -47,6 +48,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -60,6 +62,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
@@ -221,6 +224,20 @@ class IndexConfigMigrationIT
         finally
         {
             dbms.shutdown();
+        }
+
+        // Assert old index files has been removed
+        File baseSchemaIndexFolder = IndexDirectoryStructure.baseSchemaIndexFolder( databaseDir );
+        Set<File> retiredIndexProviderDirectories = Set.of(
+                new File( baseSchemaIndexFolder, "lucene" ),
+                new File( baseSchemaIndexFolder, "lucene-1.0" ),
+                new File( baseSchemaIndexFolder, "lucene_native-1.0" ),
+                new File( baseSchemaIndexFolder, "lucene_native-2.0" )
+        );
+        for ( File indexProviderDirectory : Objects.requireNonNull( baseSchemaIndexFolder.listFiles() ) )
+        {
+            assertFalse( retiredIndexProviderDirectories.contains( indexProviderDirectory ),
+                    "Expected old index provider directories to be deleted during migration but store still had directory " + indexProviderDirectory );
         }
     }
 
