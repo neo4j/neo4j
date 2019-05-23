@@ -91,6 +91,12 @@ final class SpatialIndexConfig
 
     static Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> extractSpatialConfig( IndexConfig indexConfig )
     {
+        HashMap<String,Map<String,Value>> configByCrsNames = groupConfigByCrsNames( indexConfig );
+        return buildSettingsFromConfig( configByCrsNames );
+    }
+
+    private static HashMap<String,Map<String,Value>> groupConfigByCrsNames( IndexConfig indexConfig )
+    {
         HashMap<String,Map<String,Value>> configByCrsNames = new HashMap<>();
         for ( Pair<String,Value> entry : indexConfig.entries() )
         {
@@ -110,12 +116,15 @@ final class SpatialIndexConfig
                 } );
             }
         }
+        return configByCrsNames;
+    }
+
+    private static Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> buildSettingsFromConfig( HashMap<String,Map<String,Value>> configByCrsNames )
+    {
         Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings = new HashMap<>();
         for ( String key : configByCrsNames.keySet() )
         {
             Map<String,Value> configByCrsName = configByCrsNames.get( key );
-
-            configByCrsName.get( "" );
             int tableId = getIntValue( configByCrsName, TABLE_ID ).value();
             int code = getIntValue( configByCrsName, CODE ).value();
             int dimensions = getIntValue( configByCrsName, DIMENSIONS ).value();
