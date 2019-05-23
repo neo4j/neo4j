@@ -207,6 +207,30 @@ class PrettifierIT extends CypherFunSuite {
       "create user abc set password 'foo'" ->
         "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
 
+      "create user abc set password 'foo' change required" ->
+        "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
+
+      "create user abc set password 'foo' change not required" ->
+        "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE NOT REQUIRED SET STATUS ACTIVE",
+
+      "create user abc set password 'foo' set status active" ->
+        "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
+
+      "create user abc set password 'foo' change required set status active" ->
+        "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
+
+      "create user abc set password 'foo' change not required set status active" ->
+        "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE NOT REQUIRED SET STATUS ACTIVE",
+
+      "create user abc set password 'foo' set status suspended" ->
+        "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS SUSPENDED",
+
+      "create user abc set password 'foo' change required set status suspended" ->
+        "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS SUSPENDED",
+
+      "create user abc set password 'foo' change not required set status suspended" ->
+        "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE NOT REQUIRED SET STATUS SUSPENDED",
+
       "create user `ab%$c` set password 'foo'" ->
         "CATALOG CREATE USER `ab%$c` SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
 
@@ -222,8 +246,14 @@ class PrettifierIT extends CypherFunSuite {
       "alter user abc set password 'foo' change required set status active" ->
         "CATALOG ALTER USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
 
+      "alter user abc set password 'foo' change required set status suspended" ->
+        "CATALOG ALTER USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS SUSPENDED",
+
       "alter user abc set password change not required set status suspended" ->
         "CATALOG ALTER USER abc SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED",
+
+      "alter user abc set password change not required set status active" ->
+        "CATALOG ALTER USER abc SET PASSWORD CHANGE NOT REQUIRED SET STATUS ACTIVE",
 
       "drop user abc" ->
         "CATALOG DROP USER abc",
@@ -246,11 +276,41 @@ class PrettifierIT extends CypherFunSuite {
       "grant role abc to xyz" ->
         "CATALOG GRANT ROLE abc TO xyz",
 
+      "grant roles abc to xyz" ->
+        "CATALOG GRANT ROLE abc TO xyz",
+
+      "grant roles abc to xyz, qwe" ->
+        "CATALOG GRANT ROLE abc TO xyz, qwe",
+
+      "grant role abc to xyz, qwe" ->
+        "CATALOG GRANT ROLE abc TO xyz, qwe",
+
       "grant role `ab%$c` to `x%^yz`" ->
         "CATALOG GRANT ROLE `ab%$c` TO `x%^yz`",
 
+      "grant roles abc, def to xyz" ->
+        "CATALOG GRANT ROLES abc, def TO xyz",
+
+      "grant roles abc, def to xyz, qwr" ->
+        "CATALOG GRANT ROLES abc, def TO xyz, qwr",
+
       "revoke role abc from xyz" ->
         "CATALOG REVOKE ROLE abc FROM xyz",
+
+      "revoke roles abc from xyz" ->
+        "CATALOG REVOKE ROLE abc FROM xyz",
+
+      "revoke role abc, def from xyz" ->
+        "CATALOG REVOKE ROLES abc, def FROM xyz",
+
+      "revoke roles abc, def from xyz" ->
+        "CATALOG REVOKE ROLES abc, def FROM xyz",
+
+      "revoke role abc from xyz, qwr" ->
+        "CATALOG REVOKE ROLE abc FROM xyz, qwr",
+
+      "revoke roles abc, def from xyz, qwr" ->
+        "CATALOG REVOKE ROLES abc, def FROM xyz, qwr",
 
       "revoke role `ab%$c` from `x%^yz`" ->
         "CATALOG REVOKE ROLE `ab%$c` FROM `x%^yz`",
@@ -371,6 +431,18 @@ class PrettifierIT extends CypherFunSuite {
 
       "catalog DROP database foO_Bar_42" ->
         "CATALOG DROP DATABASE foO_Bar_42",
+
+      "catalog start database foO_Bar_42" ->
+        "CATALOG START DATABASE foO_Bar_42",
+
+      "start database foO_Bar_42" ->
+        "CATALOG START DATABASE foO_Bar_42",
+
+      "catalog stop database foO_Bar_42" ->
+        "CATALOG STOP DATABASE foO_Bar_42",
+
+      "stop database foO_Bar_42" ->
+        "CATALOG STOP DATABASE foO_Bar_42",
 
       "catalog create graph com.neo4j.Users { MATCH (n) RETURN n }" ->
         """CATALOG CREATE GRAPH com.neo4j.Users {

@@ -106,11 +106,17 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case x @ DropRole(roleName) =>
       s"${x.name} ${Prettifier.escapeName(roleName)}"
 
+    case x @ GrantRolesToUsers(roleNames, userNames) if roleNames.length > 1 =>
+      s"${x.name}S ${roleNames.map(Prettifier.escapeName).mkString(", " )} TO ${userNames.map(Prettifier.escapeName).mkString(", ")}"
+
     case x @ GrantRolesToUsers(roleNames, userNames) =>
-      s"${x.name} ${roleNames.map(Prettifier.escapeName).mkString("," )} TO ${userNames.map(Prettifier.escapeName).mkString(", ")}"
+      s"${x.name} ${roleNames.map(Prettifier.escapeName).mkString(", " )} TO ${userNames.map(Prettifier.escapeName).mkString(", ")}"
+
+    case x @ RevokeRolesFromUsers(roleNames, userNames) if roleNames.length > 1 =>
+      s"${x.name}S ${roleNames.map(Prettifier.escapeName).mkString(", " )} FROM ${userNames.map(Prettifier.escapeName).mkString(", ")}"
 
     case x @ RevokeRolesFromUsers(roleNames, userNames) =>
-      s"${x.name} ${roleNames.map(Prettifier.escapeName).mkString("," )} FROM ${userNames.map(Prettifier.escapeName).mkString(", ")}"
+      s"${x.name} ${roleNames.map(Prettifier.escapeName).mkString(", " )} FROM ${userNames.map(Prettifier.escapeName).mkString(", ")}"
 
     case x @ GrantTraverse(dbScope, qualifier, roleName) =>
       val (dbName, label) = Prettifier.extractScope(dbScope, qualifier)
