@@ -95,7 +95,7 @@ class PipeExecutionResult(val result: IteratorBasedResult,
         else result.mapIterator.map(r => fieldNames.map(r.getByName))
       reactiveIterator = new ReactiveIterator(iterator, this, subscriber)
     }
-    reactiveIterator.addDemand(numberOfRecords)
+    reactiveIterator.request(numberOfRecords)
   }
 
   override def cancel(): Unit = {

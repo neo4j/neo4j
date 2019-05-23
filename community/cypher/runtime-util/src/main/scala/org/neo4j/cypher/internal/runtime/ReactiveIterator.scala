@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.kernel.impl.query.{QuerySubscriber, QuerySubscription}
 import org.neo4j.values.AnyValue
 
-class ReactiveIterator(inner: Iterator[Array[AnyValue]], result: RuntimeResult, subscriber: QuerySubscriber, indexMapping: Array[Int] = null) extends Iterator[Array[AnyValue]] {
+class ReactiveIterator(inner: Iterator[Array[AnyValue]], result: RuntimeResult, subscriber: QuerySubscriber, indexMapping: Array[Int] = null) extends QuerySubscription {
   private var demand = 0L
   private var served = 0L
   private var cancelled = false
@@ -31,29 +31,27 @@ class ReactiveIterator(inner: Iterator[Array[AnyValue]], result: RuntimeResult, 
 
   subscriber.onResult(numberOfFields)
 
-  def addDemand(numberOfRecords: Long): Unit = {
-    val newDemand = demand + numberOfRecords
-    //check for overflow, this might happen since Bolt sends us `Long.MAX_VALUE` for `PULL_ALL`
-    if (newDemand < 0) {
-      demand = Long.MaxValue
-    } else {
-      demand = newDemand
-    }
+  override def request(numberOfRecords: Long): Unit = {
+    demand = checkForOverflow(demand + numberOfRecords)
+    serveResults()
+
   }
 
-  def cancel(): Unit = {
+  override def cancel(): Unit = {
     cancelled = true
   }
 
-  override def hasNext: Boolean = inner.hasNext && served < demand
-
-  override def next(): Array[AnyValue] = {
+   private def next(): Array[AnyValue] = {
     served += 1L
     inner.next()
   }
 
-  def await(): Boolean = {
-    while (hasNext) {
+  override def await(): Boolean = {
+    inner.hasNext && !cancelled
+  }
+
+  private def serveResults(): Unit = {
+    while (inner.hasNext && served < demand) {
       val values = next()
       subscriber.onRecord()
       var i = 0
@@ -67,9 +65,10 @@ class ReactiveIterator(inner: Iterator[Array[AnyValue]], result: RuntimeResult, 
     if (!inner.hasNext) {
       subscriber.onResultCompleted(result.queryStatistics())
     }
-
-    inner.hasNext && !cancelled
   }
+
+  private def checkForOverflow(value: Long) =
+    if (value < 0) Long.MaxValue else value
 
   private def mapIndex(index: Int) = if (indexMapping == null) index else indexMapping(index)
 }

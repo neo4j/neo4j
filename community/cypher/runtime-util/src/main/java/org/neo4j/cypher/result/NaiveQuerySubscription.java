@@ -45,18 +45,11 @@ public abstract class NaiveQuerySubscription implements RuntimeResult
     }
 
     @Override
-    public void request( long numberOfRecords )
+    public void request( long numberOfRecords ) throws Exception
     {
-        long next = requestedRecords + numberOfRecords;
-        //check for overflow
-        if ( next < 0 )
-        {
-            requestedRecords = Long.MAX_VALUE;
-        }
-        else
-        {
-            requestedRecords = next;
-        }
+        requestedRecords = checkForOverflow( requestedRecords + numberOfRecords );
+        materializeIfNecessary();
+        serveResults();
     }
 
     @Override
@@ -66,7 +59,38 @@ public abstract class NaiveQuerySubscription implements RuntimeResult
     }
 
     @Override
-    public boolean await() throws Exception
+    public boolean await()
+    {
+        boolean hasMore = servedRecords < materializedResult.size();
+        if ( !hasMore )
+        {
+            if ( error != null )
+            {
+               subscriber.onError( error );
+            }
+            else
+            {
+                subscriber.onResultCompleted( queryStatistics() );
+            }
+        }
+        return hasMore && !cancelled;
+    }
+
+    private void serveResults() throws Exception
+    {
+        for ( ; servedRecords < requestedRecords && servedRecords < materializedResult.size(); servedRecords++ )
+        {
+            subscriber.onRecord();
+            AnyValue[] current = materializedResult.get( servedRecords );
+            for ( int offset = 0; offset < current.length; offset++ )
+            {
+                subscriber.onField( offset, current[offset] );
+            }
+            subscriber.onRecordCompleted();
+        }
+    }
+
+    private void materializeIfNecessary() throws Exception
     {
         if ( materializedResult == null )
         {
@@ -88,30 +112,17 @@ public abstract class NaiveQuerySubscription implements RuntimeResult
             //only call onResult first time
             subscriber.onResult( fieldNames().length );
         }
+    }
 
-        for ( ; servedRecords < requestedRecords && servedRecords < materializedResult.size(); servedRecords++ )
+    private long checkForOverflow( long value )
+    {
+        if ( value < 0 )
         {
-            subscriber.onRecord();
-            AnyValue[] current = materializedResult.get( servedRecords );
-            for ( int offset = 0; offset < current.length; offset++ )
-            {
-                subscriber.onField( offset, current[offset] );
-            }
-            subscriber.onRecordCompleted();
+            return Long.MAX_VALUE;
         }
-        boolean hasMore = servedRecords < materializedResult.size();
-        if ( !hasMore )
+        else
         {
-            if ( error != null )
-            {
-                //NOTE: this should be ported to use subscriber.onError
-                throw error;
-            }
-            else
-            {
-                subscriber.onResultCompleted( queryStatistics() );
-            }
+            return value;
         }
-        return hasMore && !cancelled;
     }
 }

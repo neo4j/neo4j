@@ -129,7 +129,7 @@ class ProcedureCallRuntimeResult(context: QueryContext,
     if (reactiveIterator == null) {
       reactiveIterator = new ReactiveIterator(executionResults, this, subscriber, indexResultNameMappings.map(_._1).toArray)
     }
-    reactiveIterator.addDemand(numberOfRecords)
+    reactiveIterator.request(numberOfRecords)
   }
 
   override def cancel(): Unit = if (reactiveIterator != null) {
