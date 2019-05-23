@@ -35,9 +35,6 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
  */
 public class IndexSpecificSpaceFillingCurveSettings
 {
-    private static final Config defaults = Config.defaults();
-    private static final ConfiguredSpaceFillingCurveSettingsCache defaultSettings = new ConfiguredSpaceFillingCurveSettingsCache( defaults );
-
     /**
      * Map of settings that are specific to this index.
      */
@@ -81,8 +78,7 @@ public class IndexSpecificSpaceFillingCurveSettings
         {
             return specificSetting.curve();
         }
-        return defaultSettings.forCRS( crs ).curve();
-        //throw new IllegalStateException( "Index does not have any settings for coordinate reference system " + crs );
+        throw new IllegalStateException( "Index does not have any settings for coordinate reference system " + crs );
     }
 
     /**
