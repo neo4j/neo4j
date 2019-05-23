@@ -108,7 +108,7 @@ public class TransactionStateMachineV1SPITest
         long lastClosedTransactionId = 100;
         Supplier<TransactionIdStore> txIdStore = () -> fixedTxIdStore( lastClosedTransactionId );
 
-        TransactionStateMachineV1SPI txSpi = createTxSpi( txIdStore, Duration.ZERO, Clocks.nanoClock() );
+        TransactionStateMachineV1SPI txSpi = createTxSpi( txIdStore, Duration.ofSeconds( 1 ), Clocks.fakeClock() );
 
         Future<Void> result = otherThread.execute( state ->
         {
@@ -122,7 +122,8 @@ public class TransactionStateMachineV1SPITest
     private static TransactionIdStore fixedTxIdStore( long lastClosedTransactionId )
     {
         TransactionIdStore txIdStore = mock( TransactionIdStore.class );
-        when( txIdStore.getLastClosedTransactionId() ).thenReturn( lastClosedTransactionId );
+        when( txIdStore.getLastClosedTransactionId() ).thenReturn( lastClosedTransactionId )
+                .thenThrow( new RuntimeException( "More then one check is an indication of polling" ) );
         return txIdStore;
     }
 
