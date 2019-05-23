@@ -135,7 +135,7 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
       s"${x.name} ($resourceName) ON GRAPH $dbName NODES $label (*) FROM ${Prettifier.escapeNames(roleNames)}"
 
     case x @ ShowPrivileges(scope) =>
-      s"CATALOG SHOW ${Prettifier.extractScope(scope)} PRIVILEGES"
+      s"SHOW ${Prettifier.extractScope(scope)} PRIVILEGES"
 
     case x: ShowDatabases =>
       s"${x.name}"

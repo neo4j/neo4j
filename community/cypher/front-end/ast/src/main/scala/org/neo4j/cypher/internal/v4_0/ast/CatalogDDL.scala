@@ -43,7 +43,7 @@ sealed trait MultiGraphDDL extends CatalogDDL {
 
 final case class ShowUsers()(val position: InputPosition) extends MultiDatabaseDDL {
 
-  override def name: String = "CATALOG SHOW USERS"
+  override def name: String = "SHOW USERS"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -58,7 +58,7 @@ final case class CreateUser(userName: String,
   assert(initialStringPassword.isDefined || initialParameterPassword.isDefined)
   assert(!(initialStringPassword.isDefined && initialParameterPassword.isDefined))
 
-  override def name = "CATALOG CREATE USER"
+  override def name = "CREATE USER"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -67,7 +67,7 @@ final case class CreateUser(userName: String,
 
 final case class DropUser(userName: String)(val position: InputPosition) extends MultiDatabaseDDL {
 
-  override def name = "CATALOG DROP USER"
+  override def name = "DROP USER"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -82,7 +82,7 @@ final case class AlterUser(userName: String,
   assert(initialStringPassword.isDefined || initialParameterPassword.isDefined || requirePasswordChange.isDefined || suspended.isDefined)
   assert(!(initialStringPassword.isDefined && initialParameterPassword.isDefined))
 
-  override def name = "CATALOG ALTER USER"
+  override def name = "ALTER USER"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -91,7 +91,7 @@ final case class AlterUser(userName: String,
 
 final case class ShowRoles(withUsers: Boolean, showAll: Boolean)(val position: InputPosition) extends MultiDatabaseDDL {
 
-  override def name: String = if (showAll) "CATALOG SHOW ALL ROLES" else "CATALOG SHOW POPULATED ROLES"
+  override def name: String = if (showAll) "SHOW ALL ROLES" else "SHOW POPULATED ROLES"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -100,7 +100,7 @@ final case class ShowRoles(withUsers: Boolean, showAll: Boolean)(val position: I
 
 final case class CreateRole(roleName: String, from: Option[String])(val position: InputPosition) extends MultiDatabaseDDL {
 
-  override def name = "CATALOG CREATE ROLE"
+  override def name = "CREATE ROLE"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -109,7 +109,7 @@ final case class CreateRole(roleName: String, from: Option[String])(val position
 
 final case class DropRole(roleName: String)(val position: InputPosition) extends MultiDatabaseDDL {
 
-  override def name = "CATALOG DROP ROLE"
+  override def name = "DROP ROLE"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -118,7 +118,7 @@ final case class DropRole(roleName: String)(val position: InputPosition) extends
 
 final case class GrantRolesToUsers(roleNames: Seq[String], userNames: Seq[String])(val position: InputPosition) extends MultiDatabaseDDL {
 
-  override def name = "CATALOG GRANT ROLE"
+  override def name = "GRANT ROLE"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -127,7 +127,7 @@ final case class GrantRolesToUsers(roleNames: Seq[String], userNames: Seq[String
 
 final case class RevokeRolesFromUsers(roleNames: Seq[String], userNames: Seq[String])(val position: InputPosition) extends MultiDatabaseDDL {
 
-  override def name = "CATALOG REVOKE ROLE"
+  override def name = "REVOKE ROLE"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -222,7 +222,7 @@ final case class RevokePrivilege(privilege: PrivilegeType, resource: ActionResou
 
 final case class ShowPrivileges(scope: ShowPrivilegeScope)(val position: InputPosition) extends MultiDatabaseDDL {
 
-  override def name = "CATALOG SHOW PRIVILEGE"
+  override def name = "SHOW PRIVILEGE"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain

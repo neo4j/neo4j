@@ -205,7 +205,7 @@ class PrettifierIT extends CypherFunSuite {
           |RETURN $node AS n""".stripMargin,
 
       "create user abc set password 'foo'" ->
-        "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
+        "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
 
       "create user abc set password 'foo' change required" ->
         "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
@@ -232,49 +232,49 @@ class PrettifierIT extends CypherFunSuite {
         "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE NOT REQUIRED SET STATUS SUSPENDED",
 
       "create user `ab%$c` set password 'foo'" ->
-        "CATALOG CREATE USER `ab%$c` SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
+        "CREATE USER `ab%$c` SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
 
       "alter user abc set password 'foo'" ->
-        "CATALOG ALTER USER abc SET PASSWORD '******'",
+        "ALTER USER abc SET PASSWORD '******'",
 
       "alter user `ab%$c` set password 'foo'" ->
-        "CATALOG ALTER USER `ab%$c` SET PASSWORD '******'",
+        "ALTER USER `ab%$c` SET PASSWORD '******'",
 
       "alter user abc set status active" ->
-        "CATALOG ALTER USER abc SET STATUS ACTIVE",
+        "ALTER USER abc SET STATUS ACTIVE",
 
       "alter user abc set password 'foo' change required set status active" ->
-        "CATALOG ALTER USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
+        "ALTER USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
 
       "alter user abc set password 'foo' change required set status suspended" ->
         "CATALOG ALTER USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS SUSPENDED",
 
       "alter user abc set password change not required set status suspended" ->
-        "CATALOG ALTER USER abc SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED",
+        "ALTER USER abc SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED",
 
       "alter user abc set password change not required set status active" ->
         "CATALOG ALTER USER abc SET PASSWORD CHANGE NOT REQUIRED SET STATUS ACTIVE",
 
       "drop user abc" ->
-        "CATALOG DROP USER abc",
+        "DROP USER abc",
 
       "drop user `ab%$c`" ->
-        "CATALOG DROP USER `ab%$c`",
+        "DROP USER `ab%$c`",
 
       "create role abc" ->
-        "CATALOG CREATE ROLE abc",
+        "CREATE ROLE abc",
 
       "create role `ab%$c`" ->
-        "CATALOG CREATE ROLE `ab%$c`",
+        "CREATE ROLE `ab%$c`",
 
       "drop role abc" ->
-        "CATALOG DROP ROLE abc",
+        "DROP ROLE abc",
 
       "drop role `ab%$c`" ->
-        "CATALOG DROP ROLE `ab%$c`",
+        "DROP ROLE `ab%$c`",
 
       "grant role abc to xyz" ->
-        "CATALOG GRANT ROLE abc TO xyz",
+        "GRANT ROLE abc TO xyz",
 
       "grant roles abc to xyz" ->
         "CATALOG GRANT ROLE abc TO xyz",
@@ -286,7 +286,7 @@ class PrettifierIT extends CypherFunSuite {
         "CATALOG GRANT ROLE abc TO xyz, qwe",
 
       "grant role `ab%$c` to `x%^yz`" ->
-        "CATALOG GRANT ROLE `ab%$c` TO `x%^yz`",
+        "GRANT ROLE `ab%$c` TO `x%^yz`",
 
       "grant roles abc, def to xyz" ->
         "CATALOG GRANT ROLES abc, def TO xyz",
@@ -295,7 +295,7 @@ class PrettifierIT extends CypherFunSuite {
         "CATALOG GRANT ROLES abc, def TO xyz, qwr",
 
       "revoke role abc from xyz" ->
-        "CATALOG REVOKE ROLE abc FROM xyz",
+        "REVOKE ROLE abc FROM xyz",
 
       "revoke roles abc from xyz" ->
         "CATALOG REVOKE ROLE abc FROM xyz",
@@ -313,31 +313,31 @@ class PrettifierIT extends CypherFunSuite {
         "CATALOG REVOKE ROLES abc, def FROM xyz, qwr",
 
       "revoke role `ab%$c` from `x%^yz`" ->
-        "CATALOG REVOKE ROLE `ab%$c` FROM `x%^yz`",
+        "REVOKE ROLE `ab%$c` FROM `x%^yz`",
 
       "show privileges" ->
-        "CATALOG SHOW ALL PRIVILEGES",
+        "SHOW ALL PRIVILEGES",
 
       "show all privileges" ->
-        "CATALOG SHOW ALL PRIVILEGES",
+        "SHOW ALL PRIVILEGES",
 
       "show user abc privileges" ->
-        "CATALOG SHOW USER abc PRIVILEGES",
+        "SHOW USER abc PRIVILEGES",
 
       "show  user `$aB%x`  privileges" ->
-        "CATALOG SHOW USER `$aB%x` PRIVILEGES",
+        "SHOW USER `$aB%x` PRIVILEGES",
 
       "show user `$user` privileges" ->
-        "CATALOG SHOW USER `$user` PRIVILEGES",
+        "SHOW USER `$user` PRIVILEGES",
 
       "show role abc privileges" ->
-        "CATALOG SHOW ROLE abc PRIVILEGES",
+        "SHOW ROLE abc PRIVILEGES",
 
       "show  role `$aB%x`  privileges" ->
-        "CATALOG SHOW ROLE `$aB%x` PRIVILEGES",
+        "SHOW ROLE `$aB%x` PRIVILEGES",
 
       "show role `$role` privileges" ->
-        "CATALOG SHOW ROLE `$role` PRIVILEGES",
+        "SHOW ROLE `$role` PRIVILEGES",
 
       "grant traverse on graph * to role" ->
         "GRANT TRAVERSE ON GRAPH * NODES * (*) TO role",
