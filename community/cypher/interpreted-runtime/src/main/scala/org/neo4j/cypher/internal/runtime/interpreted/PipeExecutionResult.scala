@@ -93,7 +93,7 @@ class PipeExecutionResult(val result: IteratorBasedResult,
       val iterator =
         if (result.recordIterator.isDefined) result.recordIterator.get.map(_.fields())
         else result.mapIterator.map(r => fieldNames.map(r.getByName))
-      reactiveIterator = new ReactiveIterator(iterator, this)
+      reactiveIterator = new ReactiveIterator(iterator, this, subscriber)
     }
     reactiveIterator.addDemand(numberOfRecords)
   }
@@ -108,6 +108,6 @@ class PipeExecutionResult(val result: IteratorBasedResult,
     if (reactiveIterator == null) {
       throw new InternalException("Call to await before calling request")
     }
-    reactiveIterator.await(subscriber)
+    reactiveIterator.await()
   }
 }

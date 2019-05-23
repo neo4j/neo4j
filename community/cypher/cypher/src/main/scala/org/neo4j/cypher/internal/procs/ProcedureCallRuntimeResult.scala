@@ -127,7 +127,7 @@ class ProcedureCallRuntimeResult(context: QueryContext,
   override def request(numberOfRecords: Long): Unit = {
     resultRequested = true
     if (reactiveIterator == null) {
-      reactiveIterator = new ReactiveIterator(executionResults, this, indexResultNameMappings.map(_._1).toArray)
+      reactiveIterator = new ReactiveIterator(executionResults, this, subscriber, indexResultNameMappings.map(_._1).toArray)
     }
     reactiveIterator.addDemand(numberOfRecords)
   }
@@ -140,7 +140,7 @@ class ProcedureCallRuntimeResult(context: QueryContext,
     if (reactiveIterator == null) {
       throw new InternalException("Call to await before calling request")
     }
-    reactiveIterator.await(subscriber)
+    reactiveIterator.await()
   }
 }
 

@@ -84,9 +84,11 @@ public abstract class NaiveQuerySubscription implements RuntimeResult
                 //an error occurred, there might still be some data to feed to the user before failing
                 error = t;
             }
+
+            //only call onResult first time
+            subscriber.onResult( fieldNames().length );
         }
 
-        subscriber.onResult( fieldNames().length );
         for ( ; servedRecords < requestedRecords && servedRecords < materializedResult.size(); servedRecords++ )
         {
             subscriber.onRecord();

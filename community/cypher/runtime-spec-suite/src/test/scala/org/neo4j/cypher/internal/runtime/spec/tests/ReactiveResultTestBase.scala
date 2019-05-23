@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.mockito.Mockito.{times, verify}
 import org.neo4j.cypher.internal.runtime.spec.{Edition, LogicalQueryBuilder, RuntimeTestSuite}
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.cypher.result.RuntimeResult
@@ -179,6 +180,26 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
     result.request(9999)
     result.await() shouldBe false
     stream.hasMore shouldBe false
+  }
+
+  test("should only call onResult once") {
+    //Given
+    val subscriber = mock[QuerySubscriber]
+    val result = runtimeResult(subscriber,
+                               Array(1),
+                               Array(2),
+                               Array(3))
+
+    //When
+    result.request(1)
+    result.await()
+    result.request(1)
+    result.await()
+    result.request(1)
+    result.await()
+
+    //Then
+    verify(subscriber, times(1)).onResult(1)
   }
 
   private def runtimeResult(subscriber: QuerySubscriber, data: Array[Any]*): RuntimeResult = {

@@ -23,10 +23,13 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 
-class ReactiveIterator(inner: Iterator[Array[AnyValue]], result: RuntimeResult, indexMapping: Array[Int] = null) extends Iterator[Array[AnyValue]] {
+class ReactiveIterator(inner: Iterator[Array[AnyValue]], result: RuntimeResult, subscriber: QuerySubscriber, indexMapping: Array[Int] = null) extends Iterator[Array[AnyValue]] {
   private var demand = 0L
   private var served = 0L
   private var cancelled = false
+  private val numberOfFields = result.fieldNames().length
+
+  subscriber.onResult(numberOfFields)
 
   def addDemand(numberOfRecords: Long): Unit = {
     val newDemand = demand + numberOfRecords
@@ -49,9 +52,7 @@ class ReactiveIterator(inner: Iterator[Array[AnyValue]], result: RuntimeResult, 
     inner.next()
   }
 
-  def await(subscriber: QuerySubscriber): Boolean = {
-    val numberOfFields = result.fieldNames().length
-    subscriber.onResult(numberOfFields)
+  def await(): Boolean = {
     while (hasNext) {
       val values = next()
       subscriber.onRecord()
