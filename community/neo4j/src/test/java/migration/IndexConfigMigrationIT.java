@@ -188,7 +188,6 @@ class IndexConfigMigrationIT
         System.out.println( "Db created in " + zipFile.getAbsolutePath() );
     }
 
-    @Disabled( "This test is disabled for now because index config migration is not yet implemented." )
     @Test
     void shouldHaveCorrectDataAndIndexConfiguration() throws IOException, IndexNotFoundKernelException
     {
