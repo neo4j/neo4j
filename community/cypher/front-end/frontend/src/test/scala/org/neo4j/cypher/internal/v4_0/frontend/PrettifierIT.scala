@@ -208,28 +208,28 @@ class PrettifierIT extends CypherFunSuite {
         "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
 
       "create user abc set password 'foo' change required" ->
-        "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
+        "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
 
       "create user abc set password 'foo' change not required" ->
-        "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE NOT REQUIRED SET STATUS ACTIVE",
+        "CREATE USER abc SET PASSWORD '******' CHANGE NOT REQUIRED SET STATUS ACTIVE",
 
       "create user abc set password 'foo' set status active" ->
-        "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
+        "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
 
       "create user abc set password 'foo' change required set status active" ->
-        "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
+        "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
 
       "create user abc set password 'foo' change not required set status active" ->
-        "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE NOT REQUIRED SET STATUS ACTIVE",
+        "CREATE USER abc SET PASSWORD '******' CHANGE NOT REQUIRED SET STATUS ACTIVE",
 
       "create user abc set password 'foo' set status suspended" ->
-        "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS SUSPENDED",
+        "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS SUSPENDED",
 
       "create user abc set password 'foo' change required set status suspended" ->
-        "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS SUSPENDED",
+        "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS SUSPENDED",
 
       "create user abc set password 'foo' change not required set status suspended" ->
-        "CATALOG CREATE USER abc SET PASSWORD '******' CHANGE NOT REQUIRED SET STATUS SUSPENDED",
+        "CREATE USER abc SET PASSWORD '******' CHANGE NOT REQUIRED SET STATUS SUSPENDED",
 
       "create user `ab%$c` set password 'foo'" ->
         "CREATE USER `ab%$c` SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
@@ -247,13 +247,13 @@ class PrettifierIT extends CypherFunSuite {
         "ALTER USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
 
       "alter user abc set password 'foo' change required set status suspended" ->
-        "CATALOG ALTER USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS SUSPENDED",
+        "ALTER USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS SUSPENDED",
 
       "alter user abc set password change not required set status suspended" ->
         "ALTER USER abc SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED",
 
       "alter user abc set password change not required set status active" ->
-        "CATALOG ALTER USER abc SET PASSWORD CHANGE NOT REQUIRED SET STATUS ACTIVE",
+        "ALTER USER abc SET PASSWORD CHANGE NOT REQUIRED SET STATUS ACTIVE",
 
       "drop user abc" ->
         "DROP USER abc",
@@ -277,40 +277,40 @@ class PrettifierIT extends CypherFunSuite {
         "GRANT ROLE abc TO xyz",
 
       "grant roles abc to xyz" ->
-        "CATALOG GRANT ROLE abc TO xyz",
+        "GRANT ROLE abc TO xyz",
 
       "grant roles abc to xyz, qwe" ->
-        "CATALOG GRANT ROLE abc TO xyz, qwe",
+        "GRANT ROLE abc TO xyz, qwe",
 
       "grant role abc to xyz, qwe" ->
-        "CATALOG GRANT ROLE abc TO xyz, qwe",
+        "GRANT ROLE abc TO xyz, qwe",
 
       "grant role `ab%$c` to `x%^yz`" ->
         "GRANT ROLE `ab%$c` TO `x%^yz`",
 
       "grant roles abc, def to xyz" ->
-        "CATALOG GRANT ROLES abc, def TO xyz",
+        "GRANT ROLES abc, def TO xyz",
 
       "grant roles abc, def to xyz, qwr" ->
-        "CATALOG GRANT ROLES abc, def TO xyz, qwr",
+        "GRANT ROLES abc, def TO xyz, qwr",
 
       "revoke role abc from xyz" ->
         "REVOKE ROLE abc FROM xyz",
 
       "revoke roles abc from xyz" ->
-        "CATALOG REVOKE ROLE abc FROM xyz",
+        "REVOKE ROLE abc FROM xyz",
 
       "revoke role abc, def from xyz" ->
-        "CATALOG REVOKE ROLES abc, def FROM xyz",
+        "REVOKE ROLES abc, def FROM xyz",
 
       "revoke roles abc, def from xyz" ->
-        "CATALOG REVOKE ROLES abc, def FROM xyz",
+        "REVOKE ROLES abc, def FROM xyz",
 
       "revoke role abc from xyz, qwr" ->
-        "CATALOG REVOKE ROLE abc FROM xyz, qwr",
+        "REVOKE ROLE abc FROM xyz, qwr",
 
       "revoke roles abc, def from xyz, qwr" ->
-        "CATALOG REVOKE ROLES abc, def FROM xyz, qwr",
+        "REVOKE ROLES abc, def FROM xyz, qwr",
 
       "revoke role `ab%$c` from `x%^yz`" ->
         "REVOKE ROLE `ab%$c` FROM `x%^yz`",
