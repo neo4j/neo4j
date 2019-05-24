@@ -93,15 +93,17 @@ abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](edition: 
     val data = inputValues((1 to sizeHint).map(Array[Any](_)):_*)
     val runtimeResult = execute(logicalQuery, runtime, data.stream(), subscriber)
     var hasMore = true
+    var totalNumberOfRequests = 0
     while (hasMore) {
       val requested = request()
       runtimeResult.request(requested)
+      totalNumberOfRequests += requested
       hasMore = runtimeResult.await()
 
       if (!hasMore) {
         subscriber.isCompleted should equal(true)
       }
-      subscriber.resultsInLastBatch should be <= requested
+      subscriber.numberOfSeenResults should be <= totalNumberOfRequests
     }
     subscriber.allSeen.size
   }

@@ -64,7 +64,7 @@ class TestSubscriber extends QuerySubscriber {
 
   def lastSeen: Seq[AnyValue] = current.asScala.toSeq
 
-  def resultsInLastBatch: Int = numberOfSeenRecords.get()
+  def numberOfSeenResults: Int = numberOfSeenRecords.get()
 
   def allSeen: Seq[Seq[AnyValue]] = records.asScala.toSeq
 }
