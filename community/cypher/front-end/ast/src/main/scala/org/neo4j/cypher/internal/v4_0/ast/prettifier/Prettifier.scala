@@ -23,25 +23,15 @@ import org.neo4j.cypher.internal.v4_0.util.InputPosition
 case class Prettifier(expr: ExpressionStringifier) {
 
   private val NL = System.lineSeparator()
-  private val IND = "  "
+  private val INDENT = "  "
 
-  private def indentedLine(l: String) = NL + IND + l
+  private def indentedLine(l: String) = NL + INDENT + l
 
   def asString(statement: Statement): String = statement match {
     case Query(maybePeriodicCommit, part) =>
-      maybePeriodicCommit match {
-        case None => queryPart(part)
-        case Some(periodicCommit) =>
-          val sb = new StringBuilder
-          sb ++= "USING PERIODIC COMMIT"
-          for (x <- periodicCommit.size) {
-            sb += ' '
-            sb ++= x.value.toString
-          }
-          sb ++= NL
-          sb ++= queryPart(part)
-          sb.result()
-      }
+      val hint = maybePeriodicCommit.map("USING PERIODIC COMMIT" + _.size.map(expr).map(" " + _).getOrElse("") + NL).getOrElse("")
+      val query = queryPart(part)
+      s"$hint$query"
 
     case CreateIndex(LabelName(label), properties) =>
       s"CREATE INDEX ON :$label${properties.map(_.name).mkString("(", ", ", ")")}"
