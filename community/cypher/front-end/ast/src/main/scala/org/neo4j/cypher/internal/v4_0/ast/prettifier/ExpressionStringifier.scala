@@ -134,7 +134,6 @@ case class ExpressionStringifier(
         val b = inner(ast)(proj)
         s"[$v$p$w | $b]"
 
-
       case HasLabels(arg, labels) =>
         val l = labels.map(label => backtick(label.name)).mkString(":", ":", "")
         s"${inner(ast)(arg)}$l"
