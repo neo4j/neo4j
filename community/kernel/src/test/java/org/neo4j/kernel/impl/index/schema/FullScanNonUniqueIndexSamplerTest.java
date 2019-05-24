@@ -44,7 +44,7 @@ import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueVal
 import static org.neo4j.values.storable.RandomValues.typesOfGroup;
 import static org.neo4j.values.storable.ValueGroup.NUMBER;
 
-public class NumberFullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil<GenericKey,NativeIndexValue>
+public class FullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil<GenericKey,NativeIndexValue>
 {
     private static final ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );
     private static final IndexSpecificSpaceFillingCurveSettingsCache specificSettings =
