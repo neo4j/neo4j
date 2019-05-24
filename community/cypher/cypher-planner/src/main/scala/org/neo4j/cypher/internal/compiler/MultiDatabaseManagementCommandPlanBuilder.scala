@@ -122,7 +122,7 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
         val plan = privilege match {
           case ReadPrivilege() => Option.empty[plans.PrivilegePlan]
           case MatchPrivilege() => combos.foldLeft(Option.empty[plans.PrivilegePlan]) {
-            case (source, (roleName, (label, resource))) => Some(plans.GrantTraverse(source, database, label, roleName))
+            case (source, (roleName, (label, _))) => Some(plans.GrantTraverse(source, database, label, roleName))
           }
         }
         combos.foldLeft(plan) {
@@ -131,7 +131,7 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
 
       // REVOKE READ (prop) ON GRAPH foo NODES A (*) FROM role
       // REVOKE MATCH (prop) ON GRAPH foo NODES A (*) FROM role
-      case RevokePrivilege(privilege, resources, database, labels, roleNames) =>
+      case RevokePrivilege(_, resources, database, labels, roleNames) =>
         (for (roleName <- roleNames; label <- labels.simplify; resource <- resources.simplify) yield {
           roleName -> (label, resource)
         }).foldLeft(Option.empty[plans.RevokeRead]) {
