@@ -20,9 +20,9 @@
 package org.neo4j.bolt.v1.transport.integration;
 
 import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -49,6 +49,7 @@ import org.neo4j.bolt.v1.messaging.response.FailureMessage;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.HostnamePort;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.Version;
@@ -70,6 +71,8 @@ import static org.junit.Assert.fail;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgIgnored;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.ResponseMatcherOptionality.OPTIONAL;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.ResponseMatcherOptionality.REQUIRED;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -527,7 +530,6 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     }
 
     @Test
-    @Ignore( "Match (n) query that is planned and executed by commercial cypher never checks creds and this test does not get failure message atm." )
     public void shouldNotBeAbleToReadWhenPasswordChangeRequired() throws Throwable
     {
         // When
@@ -547,8 +549,16 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 PullAllMessage.INSTANCE ) );
 
         // Then
-        assertThat( connection, util.eventuallyReceives( msgFailure( Status.Security.CredentialsExpired,
-                "The credentials you provided were valid, but must be changed before you can use this instance." ) ) );
+        Matcher<ResponseMessage> expectedFailureMessage = msgFailure( Status.Security.CredentialsExpired,
+                "The credentials you provided were valid, but must be changed before you can use this instance." );
+        assertThat( connection,
+                // Compiled runtime triggers the AuthorizationViolation exception on the PULL_N message, which means the RUN message will
+                // give a Success response. This should not matter much since RUN + PULL_N are always sent together.
+                util.eventuallyReceivesWithOptionalPrecedingMessages(
+                        Pair.of( msgSuccess(), OPTIONAL ),
+                        Pair.of( expectedFailureMessage, REQUIRED )
+                )
+        );
 
         assertThat( connection, eventuallyDisconnects() );
     }

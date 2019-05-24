@@ -35,8 +35,10 @@ import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.ResponseMessage;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.function.Predicates;
+import org.neo4j.internal.helpers.collection.Pair;
 
 import static java.nio.ByteOrder.BIG_ENDIAN;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.responseMessage;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
@@ -149,6 +151,72 @@ public class TransportTestUtil
                     {
                         final ResponseMessage message = receiveOneResponseMessage( conn );
                         assertThat( message, matchesMessage );
+                    }
+                    return true;
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendValueList( "Messages[", ",", "]", messages );
+            }
+        };
+    }
+
+    public enum ResponseMatcherOptionality
+    {
+        REQUIRED,
+        OPTIONAL
+    }
+
+    @SafeVarargs
+    public final Matcher<TransportConnection> eventuallyReceivesWithOptionalPrecedingMessages( final Pair<Matcher<ResponseMessage>, ResponseMatcherOptionality>... messages )
+    {
+        return new TypeSafeMatcher<TransportConnection>()
+        {
+            @Override
+            protected boolean matchesSafely( TransportConnection conn )
+            {
+                try
+                {
+                    // Sanity check
+                    if ( messages.length > 0 )
+                    {
+                        assertThat( "The last message matcher must be REQUIRED",
+                                messages[messages.length - 1].other(),
+                                equalTo( ResponseMatcherOptionality.REQUIRED ) );
+                    }
+
+                    ResponseMessage message = null;
+                    for ( Pair<Matcher<ResponseMessage>, ResponseMatcherOptionality> matchesOptionalMessage : messages )
+                    {
+                        if ( message == null )
+                        {
+                            message = receiveOneResponseMessage( conn );
+                        }
+
+                        if ( matchesOptionalMessage.other() == ResponseMatcherOptionality.OPTIONAL )
+                        {
+                            try
+                            {
+                                assertThat( message, matchesOptionalMessage.first() );
+                                message = null;
+                            }
+                            catch ( AssertionError e )
+                            {
+                                // else we will reuse the message to feed into the next matcher
+                            }
+                        }
+                        else // if ( matchesOptionalMessage.other() == ResponseMatcherOptionality.REQUIRED )
+                        {
+                            assertThat( message, matchesOptionalMessage.first() );
+                            message = null;
+                        }
                     }
                     return true;
                 }
