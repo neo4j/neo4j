@@ -194,6 +194,42 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     result.toList should equal(List(Map("dist" -> null)))
   }
 
+  test("distance function should work for points with different aliases") {
+    val result = executeWith(pointConfig - Configs.OldAndRule,
+      """
+        |WITH point({latitude: 12, longitude: 55.1, srid: 4326}) as p1
+        |RETURN distance(point({x:55, y:12, srid: 4326}), p1) as dist
+      """.stripMargin)
+    Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(10889)
+  }
+
+  test("distance function should work for points with and without explicit srid") {
+    val result = executeWith(pointConfig - Configs.OldAndRule,
+      """
+        |WITH point({latitude: 12, longitude: 55.1, srid: 4326}) as p1
+        |RETURN distance(point({latitude: 12, longitude: 55}), p1) as dist
+      """.stripMargin)
+    Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(10889)
+  }
+
+  test("distance function should work for points with and without explicit crs") {
+    val result = executeWith(pointConfig,
+      """
+        |WITH point({x: 0, y: 0}) as p1
+        |RETURN distance(point({x: 3, y: 4, crs:'cartesian'}), p1) as dist
+      """.stripMargin)
+    Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(5)
+  }
+
+  test("distance function should work for points in same coordinate system") {
+    val result = executeWith(pointConfig - Configs.OldAndRule,
+      """
+        |WITH point({latitude: 12, longitude: 55.1, srid: 4326}) as p1
+        |RETURN distance(point({latitude: 12, longitude: 55, crs: 'WGS-84'}), p1) as dist
+      """.stripMargin)
+    Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(10889)
+  }
+
   test("points with distance query and mixed crs") {
     // Given
     graph.execute("CREATE (p:Place) SET p.location = point({y: 56.7, x: 12.78, crs: 'cartesian'})")
@@ -737,7 +773,7 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     }
   }
 
-  private def expectResultsAndIndexUsage(query: String, expectedResults: Set[_ <: Any], inclusiveRange: Boolean) = {
+  private def expectResultsAndIndexUsage(query: String, expectedResults: Set[_ <: Any], inclusiveRange: Boolean): Unit = {
     val result = executeWith(distanceConfig, query)
 
     // Then
