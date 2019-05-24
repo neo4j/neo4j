@@ -26,8 +26,6 @@ import javax.annotation.Nullable;
 
 import org.neo4j.logging.Logger;
 
-import static org.apache.commons.lang3.StringUtils.isEmpty;
-
 public class DatabaseLogger implements Logger
 {
     private final DatabaseLogContext logContext;
@@ -65,11 +63,10 @@ public class DatabaseLogger implements Logger
 
     private String withPrefix( String message )
     {
-        var prefix = logContext.asString();
-        if ( isEmpty( prefix ) )
+        if ( logContext != null )
         {
-            return message;
+            return logContext.formatMessage( message );
         }
-        return "[" + prefix + "] " + message;
+        return message;
     }
 }

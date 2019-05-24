@@ -17,10 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.logging.internal;
+package org.neo4j.kernel.database;
 
-@FunctionalInterface
-public interface DatabaseLogContext
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+class DatabaseNameLogContextTest
 {
-    String formatMessage( String message );
+    @Test
+    void shouldFormatMessage()
+    {
+        var context = new DatabaseNameLogContext( new DatabaseId( "my_database" ) );
+
+        var formattedMessage = context.formatMessage( "Hello there" );
+
+        assertEquals( "[my_database] Hello there", formattedMessage );
+    }
 }

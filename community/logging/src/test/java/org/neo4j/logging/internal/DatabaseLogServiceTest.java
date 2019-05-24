@@ -28,7 +28,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.rule.SuppressOutput;
 
-import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -52,7 +51,7 @@ class DatabaseLogServiceTest
     void setUp()
     {
         formattedLogProvider = FormattedLogProvider.withDefaultLogLevel( DEBUG ).toOutputStream( System.out );
-        logService = new DatabaseLogService( () -> TEST_PREFIX, new SimpleLogService( formattedLogProvider ) );
+        logService = new DatabaseLogService( DatabaseLogServiceTest::testLogContext, new SimpleLogService( formattedLogProvider ) );
     }
 
     @Test
@@ -169,25 +168,14 @@ class DatabaseLogServiceTest
     }
 
     @Test
-    void shouldNotLogPrefixWhenItIsNull()
+    void shouldNotLogPrefixWhenContextIsNull()
     {
-        logService = new DatabaseLogService( () -> null, new SimpleLogService( formattedLogProvider ) );
+        logService = new DatabaseLogService( null, new SimpleLogService( formattedLogProvider ) );
         var log = logService.getUserLogProvider().getLog( "MyLog" );
 
         log.info( "info message" );
 
         assertLogged( "INFO [MyLog] info message" );
-    }
-
-    @Test
-    void shouldNotLogPrefixWhenItIsEmpty()
-    {
-        logService = new DatabaseLogService( () -> EMPTY, new SimpleLogService( formattedLogProvider ) );
-        var log = logService.getUserLogProvider().getLog( Integer.class );
-
-        log.warn( "warn message" );
-
-        assertLogged( "WARN [j.l.Integer] warn message" );
     }
 
     private void assertLogged( String message )
@@ -198,5 +186,10 @@ class DatabaseLogServiceTest
     private void assertNotLogged( String message )
     {
         assertFalse( suppressOutput.getOutputVoice().containsMessage( message ) );
+    }
+
+    private static String testLogContext( String message )
+    {
+        return "[" + TEST_PREFIX + "] " + message;
     }
 }

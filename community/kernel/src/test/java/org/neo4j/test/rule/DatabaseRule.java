@@ -49,6 +49,7 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseNameLogContext;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
@@ -251,7 +252,7 @@ public class DatabaseRule extends ExternalResource
             this.config = config;
             this.databaseConfig = DatabaseConfig.from( config, databaseId );
             this.idGeneratorFactory = idGeneratorFactory;
-            this.logService = new DatabaseLogService( () -> databaseName, logService );
+            this.logService = new DatabaseLogService( new DatabaseNameLogContext( databaseId ), logService );
             this.scheduler = scheduler;
             this.tokenNameLookup = tokenNameLookup;
             this.dependencyResolver = dependencyResolver;

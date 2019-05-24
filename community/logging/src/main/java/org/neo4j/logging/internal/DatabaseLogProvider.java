@@ -36,7 +36,7 @@ public class DatabaseLogProvider extends AbstractLogProvider<DatabaseLog>
 
     public static DatabaseLogProvider nullDatabaseLogProvider()
     {
-        return new DatabaseLogProvider( () -> null, NullLogProvider.getInstance() );
+        return new DatabaseLogProvider( null, NullLogProvider.getInstance() );
     }
 
     @Override

@@ -17,10 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.logging.internal;
+package org.neo4j.kernel.database;
 
-@FunctionalInterface
-public interface DatabaseLogContext
+import org.neo4j.logging.internal.DatabaseLogContext;
+
+public class DatabaseNameLogContext implements DatabaseLogContext
 {
-    String formatMessage( String message );
+    private final DatabaseId databaseId;
+
+    public DatabaseNameLogContext( DatabaseId databaseId )
+    {
+        this.databaseId = databaseId;
+    }
+
+    @Override
+    public String formatMessage( String message )
+    {
+        return "[" + databaseId.name() + "] " + message;
+    }
 }
