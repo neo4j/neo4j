@@ -114,8 +114,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final ThreadToStatementContextBridge contextBridge;
 
     public ModularDatabaseCreationContext( DatabaseId databaseId, GlobalModule globalModule, Dependencies globalDependencies,
-            Monitors parentMonitors, EditionDatabaseComponents perEditionComponents, GlobalProcedures globalProcedures,
-            DatabaseLogService databaseLogService )
+            Monitors parentMonitors, EditionDatabaseComponents perEditionComponents, GlobalProcedures globalProcedures )
     {
         this.databaseId = databaseId;
         this.globalConfig = globalModule.getGlobalConfig();
@@ -124,7 +123,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.idGeneratorFactory = idContext.getIdGeneratorFactory();
         this.idController = idContext.getIdController();
         this.databaseLayout = globalModule.getStoreLayout().databaseLayout( databaseId.name() );
-        this.databaseLogService = databaseLogService;
+        this.databaseLogService = new DatabaseLogService( databaseId::name, globalModule.getLogService() );
         this.scheduler = globalModule.getJobScheduler();
         this.globalDependencies = globalDependencies;
         this.tokenHolders = perEditionComponents.getTokenHolders();
