@@ -36,7 +36,7 @@ case class CommunityRuntimeContext(tokenContext: TokenContext,
   override def compileExpressions: Boolean = false
 }
 
-case class CommunityRuntimeContextCreator(log: Log, config: CypherRuntimeConfiguration) extends RuntimeContextCreator[CommunityRuntimeContext] {
+case class CommunityRuntimeContextManager(log: Log, config: CypherRuntimeConfiguration) extends RuntimeContextManager[CommunityRuntimeContext] {
   override def create(tokenContext: TokenContext,
                       schemaRead: SchemaRead,
                       clock: Clock,
@@ -44,4 +44,8 @@ case class CommunityRuntimeContextCreator(log: Log, config: CypherRuntimeConfigu
                       ignore: Boolean
                      ): CommunityRuntimeContext =
     CommunityRuntimeContext(tokenContext, schemaRead, log, config)
+
+  // As we rely completely on transaction bound resources in community,
+  // there is no need for further assertions here.
+  override def assertAllReleased(): Unit = {}
 }

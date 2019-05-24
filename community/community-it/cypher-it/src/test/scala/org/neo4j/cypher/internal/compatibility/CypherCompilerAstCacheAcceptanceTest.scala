@@ -77,7 +77,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     CypherCurrentCompiler(
       planner,
       CommunityRuntimeFactory.getRuntime(CypherRuntimeOption.default, disallowFallback = true),
-      CommunityRuntimeContextCreator(log, CypherConfiguration.fromConfig(Config.defaults()).toCypherRuntimeConfiguration),
+      CommunityRuntimeContextManager(log, CypherConfiguration.fromConfig(Config.defaults()).toCypherRuntimeConfiguration),
       kernelMonitors)
 
   }

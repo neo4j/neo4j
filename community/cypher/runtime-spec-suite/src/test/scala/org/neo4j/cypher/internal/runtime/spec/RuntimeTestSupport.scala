@@ -34,7 +34,6 @@ import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySubscriber}
-import org.neo4j.kernel.impl.query.QuerySubscriber.NOT_A_SUBSCRIBER
 import org.neo4j.kernel.impl.util.DefaultValueMapper
 import org.neo4j.kernel.lifecycle.LifeSupport
 import org.neo4j.monitoring.Monitors
@@ -51,7 +50,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
   private val cypherGraphDb = new GraphDatabaseCypherService(graphDb)
   private val lifeSupport = new LifeSupport
   private val resolver: DependencyResolver = cypherGraphDb.getDependencyResolver
-  private val runtimeContextCreator = edition.runtimeContextCreator(resolver, lifeSupport)
+  private val runtimeContextManager = edition.newRuntimeContextManager(resolver, lifeSupport)
   private val monitors = resolver.resolveDependency(classOf[Monitors])
   private val contextFactory = Neo4jTransactionalContextFactory.create(cypherGraphDb)
   private val spi: EmbeddedProxySPI = resolver.resolveDependency(classOf[EmbeddedProxySPI], DependencyResolver.SelectionStrategy.SINGLE)
@@ -101,7 +100,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     val contextFactory = Neo4jTransactionalContextFactory.create(cypherGraphDb)
     val txContext = TransactionalContextWrapper(contextFactory.newContext(tx, "<<queryText>>", VirtualValues.EMPTY_MAP))
     val queryContext = new TransactionBoundQueryContext(txContext)(monitors.newMonitor(classOf[IndexSearchMonitor]))
-    runtimeContextCreator.create(queryContext,
+    runtimeContextManager.create(queryContext,
                                  tx.kernelTransaction().schemaRead(),
                                  MasterCompiler.CLOCK,
                                  Set.empty,

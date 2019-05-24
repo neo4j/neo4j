@@ -53,13 +53,13 @@ import scala.collection.JavaConverters._
   *
   * @param planner the planner
   * @param runtime the runtime
-  * @param contextCreator the runtime context creator
+  * @param contextManager the runtime context manager
   * @param kernelMonitors monitors support
   * @tparam CONTEXT type of runtime context used
   */
 case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlanner,
                                                             runtime: CypherRuntime[CONTEXT],
-                                                            contextCreator: RuntimeContextCreator[CONTEXT],
+                                                            contextManager: RuntimeContextManager[CONTEXT],
                                                             kernelMonitors: Monitors
                                                            ) extends org.neo4j.cypher.internal.Compiler {
 
@@ -108,7 +108,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     val logicalPlan: LogicalPlan = resolveParameterForManagementCommands(planState.logicalPlan)
     val queryType = getQueryType(planState)
 
-    val runtimeContext = contextCreator.create(logicalPlanResult.plannerContext.planContext,
+    val runtimeContext = contextManager.create(logicalPlanResult.plannerContext.planContext,
                                                transactionalContext.kernelTransaction().schemaRead(),
                                                logicalPlanResult.plannerContext.clock,
                                                logicalPlanResult.plannerContext.debugOptions,

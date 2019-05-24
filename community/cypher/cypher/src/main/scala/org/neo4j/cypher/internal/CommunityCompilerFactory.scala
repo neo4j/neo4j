@@ -75,7 +75,7 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
     CypherCurrentCompiler(
       planner,
       runtime,
-      CommunityRuntimeContextCreator(log, runtimeConfig),
+      CommunityRuntimeContextManager(log, runtimeConfig),
       kernelMonitors)
   }
 }

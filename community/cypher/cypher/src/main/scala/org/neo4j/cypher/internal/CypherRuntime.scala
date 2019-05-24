@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.frontend.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.{CypherMorselRuntimeSchedulerOption, CypherRuntimeOption, RuntimeUnsupportedException, exceptionHandler}
-import org.neo4j.internal.kernel.api.SchemaRead
+import org.neo4j.internal.kernel.api.{Cursor, SchemaRead}
 import org.neo4j.logging.Log
 
 import scala.concurrent.duration.Duration
@@ -91,18 +91,36 @@ abstract class RuntimeContext {
 }
 
 /**
-  * Creator of runtime contexts.
+  * Manager of runtime contexts.
   *
-  * @tparam CONTEXT type of runtime context created
+  * @tparam CONTEXT type of runtime context managed
   */
-trait RuntimeContextCreator[+CONTEXT <: RuntimeContext] {
+trait RuntimeContextManager[+CONTEXT <: RuntimeContext] {
+
+  /**
+    * Create a new runtime context.
+    */
   def create(tokenContext: TokenContext,
              schemaRead: SchemaRead,
              clock: Clock,
              debugOptions: Set[String],
              compileExpressions: Boolean
             ): CONTEXT
+
+  /**
+    * Assert that all acquired resources have been released back to their central pools.
+    *
+    * Examples of such resources would be worker threads and [[Cursor]]
+    */
+  @throws[RuntimeResourceLeakException]
+  def assertAllReleased(): Unit
 }
+
+/**
+  * Exception throws by [[RuntimeContextManager.assertAllReleased()]] if some resource is
+  * found not to be released.
+  */
+class RuntimeResourceLeakException(msg: String) extends IllegalStateException(msg)
 
 /**
   * Cypher runtime representing a user-selected runtime which is not supported.

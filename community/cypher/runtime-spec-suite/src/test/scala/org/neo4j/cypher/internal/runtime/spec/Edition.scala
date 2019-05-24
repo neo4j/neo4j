@@ -31,7 +31,7 @@ import org.neo4j.logging.NullLog
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
 class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabaseManagementServiceBuilder,
-                                         runtimeContextCreatorFun: (CypherRuntimeConfiguration, DependencyResolver, LifeSupport) => RuntimeContextCreator[CONTEXT],
+                                         newRuntimeContextManager: (CypherRuntimeConfiguration, DependencyResolver, LifeSupport) => RuntimeContextManager[CONTEXT],
                                          configs: (Setting[_], String)*) {
 
   import scala.collection.JavaConverters._
@@ -56,15 +56,15 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
 
   def copyWith(additionalConfigs: (Setting[_], String)*): Edition[CONTEXT] = {
     val newConfigs = configs ++ additionalConfigs
-    new Edition(graphBuilderFactory, runtimeContextCreatorFun, newConfigs: _*)
+    new Edition(graphBuilderFactory, newRuntimeContextManager, newConfigs: _*)
   }
 
   def getSetting(setting: Setting[_]): Option[String] = {
     configs.collectFirst { case (key, value) if key == setting => value }
   }
 
-  def runtimeContextCreator(resolver: DependencyResolver, lifeSupport: LifeSupport): RuntimeContextCreator[CONTEXT] =
-    runtimeContextCreatorFun(runtimeConfig(), resolver, lifeSupport)
+  def newRuntimeContextManager(resolver: DependencyResolver, lifeSupport: LifeSupport): RuntimeContextManager[CONTEXT] =
+    newRuntimeContextManager(runtimeConfig(), resolver, lifeSupport)
 
   private def runtimeConfig() = {
     val javaConfigMap: util.Map[String, String] = configs.map { case (setting, value) => (setting.name(), value) }.toMap.asJava
@@ -76,6 +76,6 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
 object COMMUNITY {
   val EDITION = new Edition(
     () => new TestDatabaseManagementServiceBuilder,
-    (runtimeConfig, _, _) => CommunityRuntimeContextCreator(NullLog.getInstance(), runtimeConfig),
+    (runtimeConfig, _, _) => CommunityRuntimeContextManager(NullLog.getInstance(), runtimeConfig),
     GraphDatabaseSettings.cypher_hints_error -> "true")
 }
