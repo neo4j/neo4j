@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.math.BigInteger;
 import java.util.Comparator;
 import java.util.Iterator;
 
@@ -40,6 +41,10 @@ import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 public class NumberAwareStringComparator implements Comparator<String>
 {
     public static final Comparator<String> INSTANCE = new NumberAwareStringComparator();
+
+    private NumberAwareStringComparator()
+    {
+    }
 
     @SuppressWarnings( "unchecked" )
     @Override
@@ -74,7 +79,7 @@ public class NumberAwareStringComparator implements Comparator<String>
         return 0;
     }
 
-    private Iterator<Comparable> comparables( final String string )
+    private static Iterator<Comparable> comparables( final String string )
     {
         return new PrefetchingIterator<>()
         {
@@ -96,7 +101,7 @@ public class NumberAwareStringComparator implements Comparator<String>
                     ch = string.charAt( index );
                 }
                 String substring = string.substring( startIndex, index );
-                return isNumber ? Long.valueOf( substring ) : substring;
+                return isNumber ? new BigInteger( substring ) : substring;
             }
         };
     }

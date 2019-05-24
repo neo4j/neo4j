@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class NumberAwareStringComparatorTest
+class NumberAwareStringComparatorTest
 {
     @Test
-    public void shouldHandleSingleNumber()
+    void shouldHandleSingleNumber()
     {
         // LESSER
         assertLesser( "123", "456" );
@@ -43,36 +43,43 @@ public class NumberAwareStringComparatorTest
     }
 
     @Test
-    public void shouldHandleMixedAlthoughSimilarNumbersAndStrings()
+    void shouldHandleMixedAlthoughSimilarNumbersAndStrings()
     {
         assertLesser( "same-1-thing-45", "same-12-thing-45" );
         assertGreater( "same-2-thing-46", "same-2-thing-45" );
     }
 
     @Test
-    public void shouldHandleMixedAndDifferentNumbersAndStrings()
+    void shouldHandleMixedAndDifferentNumbersAndStrings()
     {
         assertLesser( "same123thing456", "same123thing456andmore" );
         assertGreater( "same12", "same1thing456andmore" );
     }
 
-    private void assertLesser( String first, String other )
+    @Test
+    void shouldHandleBigNumbers()
+    {
+        assertGreater( "same-9999999999999999999999999999999999999", "same-9999999999999999999999999999999999998" );
+        assertLesser( "same-9", "same-8999999999999999999999999999999999998" );
+    }
+
+    private static void assertLesser( String first, String other )
     {
         assertTrue( compare( first, other ) < 0 );
     }
 
-    private void assertSame( String first, String other )
+    private static void assertSame( String first, String other )
     {
         assertEquals( 0, compare( first, other ) );
     }
 
-    private void assertGreater( String first, String other )
+    private static void assertGreater( String first, String other )
     {
         assertTrue( compare( first, other ) > 0 );
     }
 
-    private int compare( String first, String other )
+    private static int compare( String first, String other )
     {
-        return new NumberAwareStringComparator().compare( first, other );
+        return NumberAwareStringComparator.INSTANCE.compare( first, other );
     }
 }

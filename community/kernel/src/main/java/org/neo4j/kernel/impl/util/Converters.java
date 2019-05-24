@@ -72,9 +72,9 @@ public class Converters
         return s -> s;
     }
 
-    public static final Comparator<File> BY_FILE_NAME = Comparator.comparing( File::getName );
+    private static final Comparator<File> BY_FILE_NAME = Comparator.comparing( File::getName );
 
-    public static final Comparator<File> BY_FILE_NAME_WITH_CLEVER_NUMBERS =
+    private static final Comparator<File> BY_FILE_NAME_WITH_CLEVER_NUMBERS =
             ( o1, o2 ) -> NumberAwareStringComparator.INSTANCE.compare( o1.getAbsolutePath(), o2.getAbsolutePath() );
 
     public static Function<String,File[]> regexFiles( final boolean cleverNumberRegexSort )
@@ -84,7 +84,7 @@ public class Converters
             Comparator<File> sorting = cleverNumberRegexSort ? BY_FILE_NAME_WITH_CLEVER_NUMBERS : BY_FILE_NAME;
             List<File> files = Validators.matchingFiles( new File( name ) );
             files.sort( sorting );
-            return files.toArray( new File[files.size()] );
+            return files.toArray( new File[0] );
         };
     }
 
@@ -104,7 +104,7 @@ public class Converters
             {
                 files.addAll( Arrays.asList( eachFileConverter.apply( name ) ) );
             }
-            return files.toArray( new File[files.size()] );
+            return files.toArray( new File[0] );
         };
     }
 
