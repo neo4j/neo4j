@@ -105,7 +105,7 @@ for run_command in run_console run_daemon; do
   test_expect_success "should set gc log location when gc log is enabled" "
     clear_config &&
     set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf &&
-    FAKE_JAVA_VERSION='10.0.2' ${run_command} &&
+    ${run_command} &&
     test_expect_java_arg 'file=$(neo4j_home)/logs/gc.log'
   "
 
@@ -114,7 +114,7 @@ for run_command in run_console run_daemon; do
     clear_config &&
     set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf &&
     set_config 'dbms.directories.logs' 'some-other-logs' neo4j.conf &&
-    FAKE_JAVA_VERSION='9.0.4' ${run_command} &&
+    ${run_command} &&
     test_expect_java_arg 'file=$(neo4j_home)/some-other-logs/gc.log'
   "
 
@@ -122,14 +122,14 @@ for run_command in run_console run_daemon; do
     clear_config &&
     set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf &&
     set_config 'dbms.logs.gc.options' '-Xlog:gc+class*=debug' neo4j.conf &&
-    FAKE_JAVA_VERSION='11' ${run_command} &&
+    ${run_command} &&
     test_expect_java_arg '-Xlog:gc+class*=debug'
   "
 
   test_expect_success "should set default gc logging options when none are provided" "
     clear_config &&
     set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf &&
-    FAKE_JAVA_VERSION='11' ${run_command} &&
+    ${run_command} &&
     test_expect_java_arg '-Xlog:gc*,safepoint,age*=trace'
   "
 
@@ -139,7 +139,7 @@ for run_command in run_console run_daemon; do
     set_config 'dbms.logs.gc.rotation.keep_number' '8' neo4j.conf &&
     set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf
 
-    FAKE_JAVA_VERSION='10.0.4' ${run_command} &&
+    ${run_command} &&
     test_expect_java_arg 'file=$(neo4j_home)/logs/gc.log::filecount=8,filesize=10m'
   "
 
