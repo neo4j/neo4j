@@ -33,6 +33,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -47,9 +48,10 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
     private final LogService logService;
     private final StorageEngineFactory storageEngineFactory;
     private final IndexProviderMap indexProviderMap;
+    private final Log log;
 
     IndexConfigMigrator( FileSystemAbstraction fs, Config config, PageCache pageCache, LogService logService, StorageEngineFactory storageEngineFactory,
-            IndexProviderMap indexProviderMap )
+            IndexProviderMap indexProviderMap, Log log )
     {
         super( "Index config" );
         this.fs = fs;
@@ -58,6 +60,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
         this.logService = logService;
         this.storageEngineFactory = storageEngineFactory;
         this.indexProviderMap = indexProviderMap;
+        this.log = log;
     }
 
     @Override
@@ -88,7 +91,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
 
             IndexMigration indexMigration = IndexMigration.migrationFromOldProvider( oldIndexReference.providerKey(), oldIndexReference.providerVersion() );
 
-            IndexConfig indexConfig = indexMigration.extractIndexConfig( fs, pageCache, directoryLayout, indexId );
+            IndexConfig indexConfig = indexMigration.extractIndexConfig( fs, pageCache, directoryLayout, indexId, log );
 
             IndexDescriptor descriptorWithIndexConfig = new IndexDescriptor( oldIndexReference ).withConfig( indexConfig );
             IndexProvider indexProvider = indexProviderMap.lookup( indexMigration.desiredAlternativeProvider );

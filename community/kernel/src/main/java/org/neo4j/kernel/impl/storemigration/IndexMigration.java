@@ -29,6 +29,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.logging.Log;
 
 import static org.neo4j.io.fs.FileUtils.path;
 
@@ -45,7 +46,7 @@ enum IndexMigration
                 }
 
                 @Override
-                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException
+                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId, Log log ) throws IOException
                 {
                     File lucene10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, lucene10Dir, indexId );
@@ -57,12 +58,12 @@ enum IndexMigration
                 @Override
                 File[] providerRootDirectories( DatabaseLayout layout )
                 {
-                    File lucene_native10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
-                    return new File[]{lucene_native10Dir};
+                    File luceneNative10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    return new File[]{luceneNative10Dir};
                 }
 
                 @Override
-                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException
+                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId, Log log ) throws IOException
                 {
                     File providerRootDirectory = providerRootDirectories( layout )[0];
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, providerRootDirectory, indexId );
@@ -74,12 +75,12 @@ enum IndexMigration
                 @Override
                 File[] providerRootDirectories( DatabaseLayout layout )
                 {
-                    File lucene_native20Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
-                    return new File[]{lucene_native20Dir};
+                    File luceneNative20Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    return new File[]{luceneNative20Dir};
                 }
 
                 @Override
-                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException
+                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId, Log log ) throws IOException
                 {
                     File providerRootDirectory = providerRootDirectories( layout )[0];
                     return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, providerRootDirectory, indexId );
@@ -92,15 +93,16 @@ enum IndexMigration
                 @Override
                 File[] providerRootDirectories( DatabaseLayout layout )
                 {
-                    File native_btree10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
-                    return new File[]{native_btree10Dir};
+                    File nativeBtree10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
+                    return new File[]{nativeBtree10Dir};
                 }
 
                 @Override
-                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException
+                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId, Log log ) throws IOException
                 {
                     File rootDir = providerRootDirectories( layout )[0];
-                    return GenericConfigExtractor.indexConfigFromGenericFile( pageCache, rootDir, indexId );
+                    File genericFile = path( rootDir, String.valueOf( indexId ), "index-" + indexId );
+                    return GenericConfigExtractor.indexConfigFromGenericFile( fs, pageCache, genericFile, log );
                 }
 
             },
@@ -114,7 +116,7 @@ enum IndexMigration
                 }
 
                 @Override
-                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId )
+                IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId, Log log )
                 {
                     // Fulltext index directory structure.
                     // └── schema
@@ -151,7 +153,7 @@ enum IndexMigration
 
     abstract File[] providerRootDirectories( DatabaseLayout layout );
 
-    abstract IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId ) throws IOException;
+    abstract IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId, Log log ) throws IOException;
 
     /**
      * Returns the base schema index directory, i.e.

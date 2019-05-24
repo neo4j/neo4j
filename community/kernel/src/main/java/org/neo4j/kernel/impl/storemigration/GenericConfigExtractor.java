@@ -27,27 +27,50 @@ import java.util.Map;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Header;
+import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.index.schema.SpatialIndexConfig;
+import org.neo4j.logging.Log;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
-
-import static org.neo4j.io.fs.FileUtils.path;
 
 /**
  * This class is the amber in which 3.5 generic index config reading is preserved in.
  * It has the ability to extract index configuration from a 3.5 generic index file, given
  * the root directory that provider in 3.5.
  */
-class GenericConfigExtractor
+final class GenericConfigExtractor
 {
-    static IndexConfig indexConfigFromGenericFile( PageCache pageCache, File rootDir, long indexId ) throws IOException
+    private GenericConfigExtractor()
+    {}
+
+    static IndexConfig indexConfigFromGenericFile( FileSystemAbstraction fs, PageCache pageCache, File genericFile, Log log ) throws IOException
     {
-        File genericFile = path( rootDir, String.valueOf( indexId ), "index-" + indexId );
         Map<String,Value> indexConfig = new HashMap<>();
-        GBPTree.readHeader( pageCache, genericFile, new GenericConfig( indexConfig ) );
+        if ( fs.fileExists( genericFile ) )
+        {
+            try
+            {
+                GBPTree.readHeader( pageCache, genericFile, new GenericConfig( indexConfig, genericFile, log ) );
+            }
+            catch ( MetadataMismatchException e )
+            {
+                logExtractionFailure( "Index meta data is corrupt and can not be parsed.", log, genericFile );
+            }
+        }
+        else
+        {
+            logExtractionFailure( "Index file does not exists.", log, genericFile );
+        }
         return IndexConfig.with( indexConfig );
+    }
+
+    private static void logExtractionFailure( String reason, Log log, File indexFile )
+    {
+        log.warn( String.format( "Could not extract index configuration from migrating index file. %s " +
+                "Index will be recreated with currently configured settings instead, indexFile=%s", reason, indexFile ) );
     }
 
     // Copy of SpaceFillingCurveSettingsReader
@@ -56,24 +79,21 @@ class GenericConfigExtractor
         private static final byte VERSION = 0;
         private static final byte BYTE_FAILED = 0;
         private final Map<String,Value> indexConfig;
-        //todo
-        // - decide what to do if index configuration could not be read. Simply fallback to default bless?
-        private boolean readSuccessful;
+        private final File indexFile;
+        private final Log log;
 
-        GenericConfig( Map<String,Value> indexConfig )
+        GenericConfig( Map<String,Value> indexConfig, File indexFile, Log log )
         {
             this.indexConfig = indexConfig;
+            this.indexFile = indexFile;
+            this.log = log;
         }
 
         @Override
         public void read( ByteBuffer headerBytes )
         {
             byte state = headerBytes.get();
-            if ( state == BYTE_FAILED )
-            {
-                readSuccessful = false;
-            }
-            else
+            if ( state != BYTE_FAILED )
             {
                 byte version = headerBytes.get();
                 if ( version != VERSION )
@@ -86,6 +106,12 @@ class GenericConfigExtractor
                 {
                     readNext( headerBytes );
                 }
+            }
+            else
+            {
+                // We can't extract index configuration from broken index.
+                // Warn about this and let index provider add default settings to index later on in migration.
+                logExtractionFailure( "Index is in FAILED state.", log, indexFile );
             }
         }
 

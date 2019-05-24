@@ -45,10 +45,13 @@ import static org.neo4j.io.fs.FileUtils.path;
  * Specifically it makes it possible to extract index configuration from an existing directory that contains
  * the old spatial index provider directory structure with one index file for each coordinate reference system.
  */
-class SpatialConfigExtractor
+final class SpatialConfigExtractor
 {
     private static final Pattern CRS_FILE_PATTERN = Pattern.compile( "(\\d+)-(\\d+)" );
     private static final String spatialDirectoryName = "spatial-1.0";
+
+    private SpatialConfigExtractor()
+    {}
 
     static IndexConfig indexConfigFromSpatialFile( FileSystemAbstraction fs, PageCache pageCache, File parentDir, long indexId )
             throws IOException

@@ -86,7 +86,8 @@ public class DatabaseMigrator
             storeUpgrader.addParticipant( participant );
         }
 
-        IndexConfigMigrator indexConfigMigrator = new IndexConfigMigrator( fs, config, pageCache, logService, storageEngineFactory, indexProviderMap );
+        IndexConfigMigrator indexConfigMigrator = new IndexConfigMigrator( fs, config, pageCache, logService, storageEngineFactory, indexProviderMap,
+                logService.getUserLog( IndexConfigMigrator.class ) );
         storeUpgrader.addParticipant( indexConfigMigrator );
         IndexProviderMigrator indexProviderMigrator = new IndexProviderMigrator( fs, config, pageCache, logService, storageEngineFactory );
         storeUpgrader.addParticipant( indexProviderMigrator );
