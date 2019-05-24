@@ -38,7 +38,7 @@ InModuleScope Neo4j-Management {
     }
     # Mock service and process handlers
     Mock Get-Service { @{ 'State' = 'Running' } } -ParameterFilter { $Name = $global:mockServiceName }
-    Mock Get-JavaVersion { @{ 'isValid' = $true; 'isJava8' = $true } }
+    Mock Get-JavaVersion { @{ 'isValid' = $true; 'isJava11' = $true } }
     Mock Start-Process { throw "Should not call Start-Process mock" }
     Mock Invoke-ExternalCommand { throw "Should not call Invoke-ExternalCommand mock" }
     Mock Stop-Service { $true } -ParameterFilter { $Name -eq $global:mockServiceName }

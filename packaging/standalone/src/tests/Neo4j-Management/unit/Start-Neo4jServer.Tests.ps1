@@ -39,7 +39,7 @@ InModuleScope Neo4j-Management {
     }
     # Mock Neo4j environment
     Mock Get-Neo4jEnv { $global:mockNeo4jHome } -ParameterFilter { $Name -eq 'NEO4J_HOME' }
-    Mock Get-JavaVersion { @{ 'isValid' = $true; 'isJava8' = $true } }
+    Mock Get-JavaVersion { @{ 'isValid' = $true; 'isJava11' = $true } }
     Mock Start-Process { throw "Should not call Start-Process mock" }
     Mock Invoke-ExternalCommand { throw "Should not call Invoke-ExternalCommand mock" }
 
@@ -109,7 +109,7 @@ InModuleScope Neo4j-Management {
 
       $serverObject = (New-Object -TypeName PSCustomObject -Property @{
           'Home' = 'TestDrive:\some-dir-that-doesnt-exist';
-          'ServerVersion' = '3.0';
+          'ServerVersion' = '4.0';
           'ServerType' = 'Enterprise';
           'DatabaseMode' = '';
         })

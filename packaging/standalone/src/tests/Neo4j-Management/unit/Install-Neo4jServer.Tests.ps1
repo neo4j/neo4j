@@ -39,7 +39,7 @@ InModuleScope Neo4j-Management {
     }
     # Mock Neo4j environment
     Mock Get-Neo4jEnv { $global:mockNeo4jHome } -ParameterFilter { $Name -eq 'NEO4J_HOME' }
-    Mock Get-JavaVersion { @{ 'isValid' = $true; 'isJava8' = $true } }
+    Mock Get-JavaVersion { @{ 'isValid' = $true; 'isJava11' = $true } }
     Mock Invoke-ExternalCommand { throw "Should not call Invoke-ExternalCommand mock" }
 
     Context "Invalid or missing specified neo4j installation" {

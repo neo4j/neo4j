@@ -80,16 +80,16 @@ InModuleScope Neo4j-Management {
     }
 
     # Java Detection Tests
-    Context "Valid Java install (1.8 JDK) in JAVA_HOME environment variable" {
+    Context "Valid Java install (11 JDK) in JAVA_HOME environment variable" {
       # Mock the java version output file
-      Mock Invoke-ExternalCommand -Verifiable { @{ 'exitCode' = 0; 'capturedOutput' = 'java version "1.8.0"`n`rJava HotSpot(TM) 64-Bit Server VM (build 11.11-a11, mixed mode)' } }
+      Mock Invoke-ExternalCommand -Verifiable { @{ 'exitCode' = 0; 'capturedOutput' = 'java version "11.0.2"`n`rJava HotSpot(TM) 64-Bit Server VM (build 11.11-a11, mixed mode)' } }
       Mock Write-Warning {}
 
       $result = Get-JavaVersion -Path $global:mockJavaExe
 
       It "should return true" {
         $result.isValid | Should Be $true
-        $result.isJava8 | Should Be $true
+        $result.isJava11 | Should Be $true
       }
 
       It "should not emit warnings" {
@@ -101,16 +101,16 @@ InModuleScope Neo4j-Management {
       }
     }
 
-    Context "Valid Java install (10.0.2 JDK) in JAVA_HOME environment variable" {
+    Context "Valid Java install (12.0.2 JDK) in JAVA_HOME environment variable" {
       # Mock the java version output file
-      Mock Invoke-ExternalCommand -Verifiable { @{ 'exitCode' = 0; 'capturedOutput' = 'java version "10.0.2"`n`rJava HotSpot(TM) 64-Bit Server VM (build 10.0.2+13, mixed mode)' } }
+      Mock Invoke-ExternalCommand -Verifiable { @{ 'exitCode' = 0; 'capturedOutput' = 'java version "12.0.2"`n`rJava HotSpot(TM) 64-Bit Server VM (build 10.0.2+13, mixed mode)' } }
       Mock Write-Warning {}
 
       $result = Get-JavaVersion -Path $global:mockJavaExe
 
       It "should return true" {
         $result.isValid | Should Be $true
-        $result.isJava8 | Should Be $false
+        $result.isJava11 | Should Be $false
       }
 
       It "should not emit warnings" {
@@ -125,13 +125,13 @@ InModuleScope Neo4j-Management {
     Context "Unsupport Java install (1.8 Bad-JRE) in JAVA_HOME environment variable" {
       # Mock the java version output file
       Mock Invoke-ExternalCommand -Verifiable { @{ 'exitCode' = 0; 'capturedOutput' = 'java version "1.8.0"`n`rJava BadSpot(TM) 64-Bit Server VM (build 11.11-a11, mixed mode)' } }
-      Mock Write-Warning -Verifiable -ParameterFilter { $Message -eq 'WARNING! You are using an unsupported Java runtime' }
+      Mock Write-Warning -Verifiable -ParameterFilter { $Message -eq 'ERROR! Neo4j cannot be started using java version 1.8.0' }
 
       $result = Get-JavaVersion -Path $global:mockJavaExe
 
       It "should return true" {
-        $result.isValid | Should Be $true
-        $result.isJava8 | Should Be $true
+        $result.isValid | Should Be $false
+        $result.isJava11 | Should Be $false
       }
 
       It "calls verified mocks" {
@@ -148,6 +148,68 @@ InModuleScope Neo4j-Management {
 
       It "should return false" {
         $result.isValid | Should Be $false
+      }
+
+      It "should emit a warning" {
+        Assert-MockCalled Write-Warning
+      }
+
+      It "calls verified mocks" {
+        Assert-VerifiableMocks
+      }
+    }
+
+    Context "Legacy Java install (1.8 JDK) in JAVA_HOME environment variable" {
+      # Mock the java version output file
+      Mock Invoke-ExternalCommand -Verifiable { @{ 'exitCode' = 0; 'capturedOutput' = 'java version "1.8.0"`n`rJava HotSpot(TM) 64-Bit Server VM (build 11.11-a11, mixed mode)' } }
+      Mock Write-Warning {}
+
+      $result = Get-JavaVersion -Path $global:mockJavaExe
+
+      It "should return false" {
+        $result.isValid | Should Be $false
+      }
+
+      It "should emit a warning" {
+        Assert-MockCalled Write-Warning
+      }
+
+      It "calls verified mocks" {
+        Assert-VerifiableMocks
+      }
+    }
+
+    Context "Legacy Java install (9 JDK) in JAVA_HOME environment variable" {
+      # Mock the java version output file
+      Mock Invoke-ExternalCommand -Verifiable { @{ 'exitCode' = 0; 'capturedOutput' = 'java version "9.0.1"`n`rJava HotSpot(TM) 64-Bit Server VM (build 11.11-a11, mixed mode)' } }
+      Mock Write-Warning {}
+
+      $result = Get-JavaVersion -Path $global:mockJavaExe
+
+      It "should return false" {
+        $result.isValid | Should Be $false
+        $result.isJava11 | Should Be $false
+      }
+
+      It "should emit a warning" {
+        Assert-MockCalled Write-Warning
+      }
+
+      It "calls verified mocks" {
+        Assert-VerifiableMocks
+      }
+    }
+
+    Context "Legacy Java install (10 JDK) in JAVA_HOME environment variable" {
+      # Mock the java version output file
+      Mock Invoke-ExternalCommand -Verifiable { @{ 'exitCode' = 0; 'capturedOutput' = 'java version "10.0.2"`n`rJava HotSpot(TM) 64-Bit Server VM (build 11.11-a11, mixed mode)' } }
+      Mock Write-Warning {}
+
+      $result = Get-JavaVersion -Path $global:mockJavaExe
+
+      It "should return false" {
+        $result.isValid | Should Be $false
+        $result.isJava11 | Should Be $false
       }
 
       It "should emit a warning" {

@@ -22,7 +22,7 @@
 Invokes various Neo4j Utilities
 
 .DESCRIPTION
-Invokes various Neo4j Utilities.  This is a generic utility function called by the external functions e.g. Shell, Import
+Invokes various Neo4j Utilities.  This is a generic utility function called by the external functions e.g. Admin
 
 .PARAMETER Command
 A string of the command to run.
@@ -36,7 +36,7 @@ System.Int32
 non-zero = an error occured
 
 .NOTES
-Only supported on version 3.x Neo4j Community and Enterprise Edition databases
+Only supported on version 4.x Neo4j Community and Enterprise Edition databases
 
 .NOTES
 This function is private to the powershell module

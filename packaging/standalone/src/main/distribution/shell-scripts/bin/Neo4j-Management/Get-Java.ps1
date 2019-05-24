@@ -31,7 +31,7 @@ An object representing a valid Neo4j Server object
 Retrieve the Java command line to start a Neo4j Server
 
 .PARAMETER ForUtility
-Retrieve the Java command line to start a Neo4j utility such as Neo4j Shell.
+Retrieve the Java command line to start a Neo4j utility such as Neo4j Admin.
 
 .PARAMETER StartingClass
 The name of the starting class when invoking Java
@@ -82,8 +82,6 @@ function Get-Java
     if (($javaPath -eq '') -and ($EnvJavaHome -ne $null))
     {
       $javaPath = $EnvJavaHome
-      # Modify the java path if a JRE install is detected
-      if (Test-Path -Path "$javaPath\jre\bin\java.exe") { $javaPath = "$javaPath\jre" }
     }
 
     # Attempt to find Java in registry
@@ -159,8 +157,6 @@ function Get-Java
       $ClassPath = "$($Neo4jServer.Home)/lib/*;$($Neo4jServer.Home)/plugins/*"
       $ShellArgs = @("-cp `"$($ClassPath)`"" `
           ,'-server' `
-          ,'-Dlog4j.configuration=file:conf/log4j.properties' `
-          ,'-Dorg.neo4j.cluster.logdirectory=data/log' `
         )
 
       # Parse Java config settings - Heap initial size
@@ -237,13 +233,11 @@ WARNING: dbms.memory.heap.max_size will require a unit suffix in a
         "--home-dir=`"$($Neo4jServer.Home)`"")
     }
 
-    # Shell arguments for the utility classes e.g. Import, Shell
+    # Shell arguments for the utility classes e.g. Admin
     if ($PsCmdlet.ParameterSetName -eq 'UtilityInvoke')
     {
       # Generate the commandline args
       $ClassPath = "$($Neo4jServer.Home)/lib/*;$($Neo4jServer.Home)/bin/*"
-      # Augment with tools.jar if found
-      if (Test-Path -Path "$EnvJavaHome\lib\tools.jar") { $ClassPath += ";$EnvJavaHome\lib\tools.jar" }
 
       $ShellArgs = @()
       $ShellArgs += @("-XX:+UseParallelGC",

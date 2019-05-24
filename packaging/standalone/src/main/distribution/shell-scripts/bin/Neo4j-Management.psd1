@@ -40,8 +40,6 @@ NestedModules = @('Neo4j-Management\Neo4j-Management.psm1')
 FunctionsToExport = @(
 'Invoke-Neo4j',
 'Invoke-Neo4jAdmin',
-'Invoke-Neo4jShell',
-'Invoke-Neo4jImport',
 'Get-Args'
 )
 
