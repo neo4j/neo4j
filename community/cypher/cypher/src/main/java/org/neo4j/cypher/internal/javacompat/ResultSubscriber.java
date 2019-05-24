@@ -1,0 +1,281 @@
+/*
+ * Copyright (c) 2002-2019 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher.internal.javacompat;
+
+import java.io.PrintWriter;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.neo4j.cypher.CypherException;
+import org.neo4j.cypher.CypherExecutionException;
+import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.Notification;
+import org.neo4j.graphdb.QueryExecutionException;
+import org.neo4j.graphdb.QueryExecutionType;
+import org.neo4j.graphdb.QueryStatistics;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Result;
+import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.query.QueryExecution;
+import org.neo4j.kernel.impl.query.QuerySubscriber;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
+import org.neo4j.values.AnyValue;
+
+class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> implements QuerySubscriber, Result
+{
+    private QueryExecution execution;
+    private AnyValue[] currentRecord;
+    private Throwable error;
+    private QueryStatistics statistics;
+    private final DefaultValueMapper valueMapper;
+    private ResultVisitor<?> visitor;
+    private Exception visitException;
+
+    ResultSubscriber( EmbeddedProxySPI proxySPI )
+    {
+        valueMapper = new DefaultValueMapper( proxySPI );
+    }
+
+    public void setExecution( QueryExecution execution )
+    {
+        this.execution = execution;
+    }
+
+    // QuerySubscriber part
+    @Override
+    public void onResult( int numberOfFields )
+    {
+        this.currentRecord = new AnyValue[numberOfFields];
+    }
+
+    @Override
+    public void onRecord()
+    {
+    }
+
+    @Override
+    public void onField( int offset, AnyValue value )
+    {
+        currentRecord[offset] = value;
+    }
+
+    @Override
+    public void onRecordCompleted()
+    {
+        if ( visitor != null )
+        {
+            try
+            {
+                if ( !visitor.visit( new ResultRowImpl( createPublicRecord() ) ) )
+                {
+                    execution.cancel();
+                }
+            }
+            catch ( Exception exception )
+            {
+                this.visitException = exception;
+            }
+        }
+    }
+
+    @Override
+    public void onError( Throwable throwable )
+    {
+        this.error = throwable;
+    }
+
+    @Override
+    public void onResultCompleted( QueryStatistics statistics )
+    {
+        this.statistics = statistics;
+    }
+
+
+    // Result part
+    @Override
+    public QueryExecutionType getQueryExecutionType()
+    {
+        try
+        {
+            return execution.executionType();
+        }
+        catch ( Throwable throwable )
+        {
+            throw converted( throwable );
+        }
+    }
+
+    @Override
+    public List<String> columns()
+    {
+        return Arrays.asList( execution.fieldNames() );
+    }
+
+    @Override
+    public <T> ResourceIterator<T> columnAs( String name )
+    {
+        return new ResourceIterator<>()
+        {
+            @Override
+            public void close()
+            {
+                ResultSubscriber.this.close();
+            }
+
+            @Override
+            public boolean hasNext()
+            {
+                return ResultSubscriber.this.hasNext();
+            }
+
+            @SuppressWarnings( "unchecked" )
+            @Override
+            public T next()
+            {
+                Map<String,Object> next = ResultSubscriber.this.next();
+                return (T) next.get( name );
+            }
+        };
+    }
+
+    @Override
+    public void close()
+    {
+        execution.cancel();
+    }
+
+    @Override
+    public QueryStatistics getQueryStatistics()
+    {
+        if ( statistics == null )
+        {
+            throw new QueryExecutionException(
+                    "This result has not been materialised yet. Iterate over it to get query statistics.",
+                    null,
+                    Status.Statement.ExecutionFailed.code().serialize() );
+        }
+
+        return statistics;
+    }
+
+    @Override
+    public ExecutionPlanDescription getExecutionPlanDescription()
+    {
+        return execution.executionPlanDescription();
+    }
+
+    @Override
+    public String resultAsString()
+    {
+        throw new UnsupportedOperationException( "TODO" );
+    }
+
+    @Override
+    public void writeAsStringTo( PrintWriter writer )
+    {
+        throw new UnsupportedOperationException( "TODO" );
+    }
+
+    @Override
+    public Iterable<Notification> getNotifications()
+    {
+        return execution.getNotifications();
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Override
+    public <VisitationException extends Exception> void accept( ResultVisitor<VisitationException> visitor )
+            throws VisitationException
+    {
+        this.visitor = visitor;
+        execution.request( Long.MAX_VALUE );
+        execution.await();
+        if ( visitException != null )
+        {
+            throw (VisitationException) visitException;
+        }
+        assertNoErrors();
+    }
+
+    private boolean isDone()
+    {
+        return statistics != null;
+    }
+
+    @Override
+    protected Map<String,Object> fetchNextOrNull()
+    {
+        try
+        {
+            execution.request( 1 );
+            execution.await();
+            assertNoErrors();
+            if ( isDone() )
+            {
+                return null;
+            }
+
+            return createPublicRecord();
+        }
+        catch ( Throwable throwable )
+        {
+            execution.cancel();
+            throw throwable;
+        }
+    }
+
+    private HashMap<String,Object> createPublicRecord()
+    {
+        String[] fieldNames = execution.fieldNames();
+        HashMap<String,Object> result = new HashMap<>();
+        for ( int i = 0; i < fieldNames.length; i++ )
+        {
+            result.put( fieldNames[i], currentRecord[i].map( valueMapper ) );
+        }
+        return result;
+    }
+
+    private void assertNoErrors()
+    {
+        if ( error != null )
+        {
+            throw converted( error );
+        }
+    }
+
+    private QueryExecutionException converted( Throwable e )
+    {
+        CypherException cypherException;
+        if ( e instanceof CypherException )
+        {
+            cypherException = (CypherException) e;
+        }
+        else
+        {
+            cypherException = new CypherExecutionException( "Query has failed", e );
+        }
+        return new QueryExecutionException( cypherException.getMessage(), cypherException,
+                cypherException.status().code().serialize() );
+    }
+}

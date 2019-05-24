@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.tracing.CompilationTracer;
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.query.FunctionInformation;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -104,14 +105,12 @@ public class ExecutionEngine implements QueryExecutionEngine
     public Result executeQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate )
             throws QueryExecutionKernelException
     {
-        try
-        {
-            return cypherExecutionEngine.execute( query, parameters, context, false, prePopulate );
-        }
-        catch ( CypherException e )
-        {
-            throw new QueryExecutionKernelException( e );
-        }
+
+            ResultSubscriber subscriber = new ResultSubscriber( context.graph().getDependencyResolver().resolveDependency(
+                    EmbeddedProxySPI.class ) );
+            QueryExecution queryExecution = executeQuery( query, parameters, context, false, subscriber );
+            subscriber.setExecution( queryExecution );
+            return subscriber;
     }
 
     @Override
@@ -134,7 +133,13 @@ public class ExecutionEngine implements QueryExecutionEngine
     {
         try
         {
-            return cypherExecutionEngine.execute( query, parameters, context, true, prePopulate );
+            ResultSubscriber subscriber =
+                    new ResultSubscriber( context.graph().getDependencyResolver().resolveDependency(
+                            EmbeddedProxySPI.class ) );
+            QueryExecution queryExecution =
+                    cypherExecutionEngine.execute( query, parameters, context, true, prePopulate, subscriber );
+            subscriber.setExecution( queryExecution );
+            return subscriber;
         }
         catch ( CypherException e )
         {

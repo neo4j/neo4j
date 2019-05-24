@@ -31,7 +31,7 @@ public interface QuerySubscription
      * Request a number of records.
      * @param numberOfRecords The number of records demanded.
      */
-    void request( long numberOfRecords ) throws Exception;
+    void request( long numberOfRecords );
 
     /**
      * Request the query to not send any more data.
@@ -43,5 +43,5 @@ public interface QuerySubscription
      *
      * @return <tt>true</tt> if there is more data in the stream, otherwise <tt>false</tt>
      */
-    boolean await() throws Exception;
+    boolean await();
 }
