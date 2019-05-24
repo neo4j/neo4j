@@ -36,7 +36,7 @@ import org.neo4j.values.virtual.MapValue
   * Execution plan for performing system commands, i.e. creating databases or showing roles and users.
   */
 case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue,
-                                      resultMapper: QueryExecution => SystemCommandExecutionResult = q => SystemCommandExecutionResult(q.asInstanceOf[InternalExecutionResult]),
+                                      resultMapper: (QueryContext, QueryExecution) => SystemCommandExecutionResult = (c, q) => new SystemCommandExecutionResult(q.asInstanceOf[InternalExecutionResult]),
                                       onError: Throwable => Unit = e => throw e)
   extends ExecutionPlan {
 
@@ -49,7 +49,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
 
     val tc = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
     val execution: QueryExecution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, new SystemCommandQuerySubscriber(subscriber, onError))
-    SystemCommandRuntimeResult(ctx, subscriber, resultMapper(execution))
+    SystemCommandRuntimeResult(ctx, subscriber, resultMapper(ctx, execution))
   }
 
   override def runtimeName: RuntimeName = SystemCommandRuntimeName
