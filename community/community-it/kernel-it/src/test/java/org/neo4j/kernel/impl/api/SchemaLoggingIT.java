@@ -26,10 +26,9 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -37,6 +36,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -51,7 +51,6 @@ public class SchemaLoggingIT
     @Test
     public void shouldLogUserReadableLabelAndPropertyNames() throws Exception
     {
-        //noinspection deprecation
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
 
         String labelName = "User";
@@ -65,10 +64,10 @@ public class SchemaLoggingIT
         IndexProviderMap indexProviderMap = db.getDependencyResolver().resolveDependency( IndexProviderMap.class );
         IndexProvider defaultProvider = indexProviderMap.getDefaultProvider();
         IndexProviderDescriptor providerDescriptor = defaultProvider.getProviderDescriptor();
-        logProvider.assertAtLeastOnce( match.info( "Index population started: [%s]", ":User(name) [provider: {key=" +
-                providerDescriptor.getKey() + ", version=" + providerDescriptor.getVersion() + "}]" ) );
+        logProvider.assertAtLeastOnce( match.info( containsString( "Index population started: [%s]" ),
+                ":User(name) [provider: {key=" + providerDescriptor.getKey() + ", version=" + providerDescriptor.getVersion() + "}]" ) );
 
-        assertEventually( (ThrowingSupplier<Object,Exception>) () -> null, new LogMessageMatcher( match, providerDescriptor ), 1, TimeUnit.MINUTES );
+        assertEventually( () -> null, new LogMessageMatcher( match, providerDescriptor ), 1, TimeUnit.MINUTES );
     }
 
     private static void createIndex( GraphDatabaseAPI db, String labelName, String property )
@@ -101,14 +100,14 @@ public class SchemaLoggingIT
         @Override
         public boolean matches( Object item )
         {
-            return logProvider.containsMatchingLogCall( match.info( CREATION_FINISHED,
+            return logProvider.containsMatchingLogCall( match.info( containsString( CREATION_FINISHED ),
                     ":User(name) [provider: {key=" + descriptor.getKey() + ", version=" + descriptor.getVersion() + "}]", "ONLINE" ) );
         }
 
         @Override
         public void describeTo( Description description )
         {
-            description.appendText( " expected log message: '" ).appendText( CREATION_FINISHED )
+            description.appendText( " expected log message containing: '" ).appendText( CREATION_FINISHED )
                     .appendText( "', but not found. Messages was: '" ).appendText( logProvider.serialize() ).appendText( "." );
         }
     }

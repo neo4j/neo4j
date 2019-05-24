@@ -51,6 +51,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.token.TokenHolders;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
@@ -66,7 +67,7 @@ public class IndexStatisticsIT
 
     @Rule
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final AssertableLogProvider logProvider = new AssertableLogProvider();
+    private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
     private GraphDatabaseService db;
     private EphemeralFileSystemAbstraction fileSystem;
     private DatabaseManagementService managementService;
@@ -137,7 +138,7 @@ public class IndexStatisticsIT
     private void assertLogExistsForRecoveryOn( String labelAndProperty )
     {
         logProvider.assertAtLeastOnce(
-                inLog( IndexSamplingController.class ).debug( "Recovering index sampling for index %s", labelAndProperty )
+                inLog( IndexSamplingController.class ).debug( containsString( "Recovering index sampling for index %s" ), labelAndProperty )
         );
     }
 

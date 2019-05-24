@@ -51,6 +51,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -115,9 +116,7 @@ class RebuildCountsTest
         }
 
         // and also
-        LogMatcherBuilder matcherBuilder = inLog( MetaDataStore.class );
-        internalLogProvider.assertAtLeastOnce( matcherBuilder.warn( "Missing counts store, rebuilding it." ) );
-        internalLogProvider.assertAtLeastOnce( matcherBuilder.warn( "Counts store rebuild completed." ) );
+        assertRebuildLogged();
     }
 
     @Test
@@ -143,9 +142,7 @@ class RebuildCountsTest
         }
 
         // and also
-        LogMatcherBuilder matcherBuilder = inLog( MetaDataStore.class );
-        internalLogProvider.assertAtLeastOnce( matcherBuilder.warn( "Missing counts store, rebuilding it." ) );
-        internalLogProvider.assertAtLeastOnce( matcherBuilder.warn( "Counts store rebuild completed." ) );
+        assertRebuildLogged();
     }
 
     private void createAliensAndHumans()
@@ -244,5 +241,12 @@ class RebuildCountsTest
         {
             db = null;
         }
+    }
+
+    private void assertRebuildLogged()
+    {
+        LogMatcherBuilder matcherBuilder = inLog( MetaDataStore.class );
+        internalLogProvider.assertAtLeastOnce( matcherBuilder.warn( containsString( "Missing counts store, rebuilding it." ) ) );
+        internalLogProvider.assertAtLeastOnce( matcherBuilder.warn( containsString( "Counts store rebuild completed." ) ) );
     }
 }
