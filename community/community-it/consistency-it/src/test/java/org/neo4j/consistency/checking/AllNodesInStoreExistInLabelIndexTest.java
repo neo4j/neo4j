@@ -370,7 +370,7 @@ public class AllNodesInStoreExistInLabelIndexTest
             ConsistencyCheckService service = new ConsistencyCheckService();
             Config config = Config.defaults();
             return service.runFullConsistencyCheck( db.databaseLayout(), config, NONE, log, fsa, true,
-                    new ConsistencyFlags( config ) );
+                    ConsistencyFlags.DEFAULT );
         }
     }
 }

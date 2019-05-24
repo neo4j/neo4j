@@ -36,8 +36,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.batchinsert.internal.TransactionLogsInitializer;
-import org.neo4j.commandline.admin.OutsideWorld;
-import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
@@ -57,6 +55,7 @@ import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitors;
 import org.neo4j.internal.batchimport.staging.SpectrumExecutionMonitor;
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
@@ -69,8 +68,6 @@ import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
-import static org.neo4j.importer.ImportCommand.DEFAULT_REPORT_FILE_NAME;
-import static org.neo4j.importer.ImportCommand.OPT_MULTILINE_FIELDS;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.input.Collectors.badCollector;
 import static org.neo4j.internal.batchimport.input.Collectors.collect;
@@ -87,10 +84,7 @@ import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createSchedule
 
 class CsvImporter implements Importer
 {
-    /**
-     * Delimiter used between files in an input group.
-     */
-    static final String MULTI_FILE_DELIMITER = ",";
+    static final String DEFAULT_REPORT_FILE_NAME = "import.report";
 
     private final DatabaseLayout databaseLayout;
     private final Config databaseConfig;
@@ -99,7 +93,6 @@ class CsvImporter implements Importer
     private final File reportFile;
     private final IdType idType;
     private final Charset inputEncoding;
-    private final OutsideWorld outsideWorld;
     private final boolean ignoreExtraColumns;
     private final boolean skipBadRelationships;
     private final boolean skipDuplicateNodes;
@@ -109,6 +102,9 @@ class CsvImporter implements Importer
     private final boolean verbose;
     private final Map<Set<String>, List<File[]>> nodeFiles;
     private final Map<String, List<File[]>> relationshipFiles;
+    private final FileSystemAbstraction fileSystem;
+    private final PrintStream stdOut;
+    private final PrintStream stdErr;
 
     private CsvImporter( Builder b )
     {
@@ -119,7 +115,6 @@ class CsvImporter implements Importer
         this.reportFile = requireNonNull( b.reportFile );
         this.idType = requireNonNull( b.idType );
         this.inputEncoding = requireNonNull( b.inputEncoding );
-        this.outsideWorld = requireNonNull( b.outsideWorld );
         this.ignoreExtraColumns = b.ignoreExtraColumns;
         this.skipBadRelationships = b.skipBadRelationships;
         this.skipDuplicateNodes = b.skipDuplicateNodes;
@@ -129,15 +124,15 @@ class CsvImporter implements Importer
         this.verbose = b.verbose;
         this.nodeFiles = requireNonNull( b.nodeFiles );
         this.relationshipFiles = requireNonNull( b.relationshipFiles );
-
+        this.fileSystem = requireNonNull( b.fileSystem );
+        this.stdOut = requireNonNull( b.stdOut );
+        this.stdErr = requireNonNull( b.stdErr );
     }
 
     @Override
     public void doImport() throws IOException
     {
-        FileSystemAbstraction fs = outsideWorld.fileSystem();
-
-        OutputStream badOutput = new BufferedOutputStream( fs.openAsOutputStream( reportFile, false ) );
+        OutputStream badOutput = new BufferedOutputStream( fileSystem.openAsOutputStream( reportFile, false ) );
         try ( Collector badCollector = getBadCollector( skipBadEntriesLogging, badOutput ) )
         {
             // Extract the default time zone from the database configuration
@@ -150,7 +145,7 @@ class CsvImporter implements Importer
             CsvInput input = new CsvInput( nodeData, defaultFormatNodeFileHeader( defaultTimeZone, normalizeTypes ),
                 relationshipsData, defaultFormatRelationshipFileHeader( defaultTimeZone, normalizeTypes ), idType,
                 csvConfig,
-                    new CsvInput.PrintingMonitor( outsideWorld.outStream() ) );
+                    new CsvInput.PrintingMonitor( stdOut ) );
 
             doImport( input, badCollector );
         }
@@ -162,23 +157,23 @@ class CsvImporter implements Importer
         LifeSupport life = new LifeSupport();
 
         File internalLogFile = databaseConfig.get( store_internal_log_path );
-        LogService logService = life.add( StoreLogService.withInternalLog( internalLogFile ).build( outsideWorld.fileSystem() ) );
+        LogService logService = life.add( StoreLogService.withInternalLog( internalLogFile ).build( fileSystem ) );
         final JobScheduler jobScheduler = life.add( createScheduler() );
 
         life.start();
-        ExecutionMonitor executionMonitor = verbose ? new SpectrumExecutionMonitor( 2, TimeUnit.SECONDS, outsideWorld.outStream(),
-            SpectrumExecutionMonitor.DEFAULT_WIDTH ) : ExecutionMonitors.defaultVisible( outsideWorld.inStream(), jobScheduler );
+        ExecutionMonitor executionMonitor = verbose ? new SpectrumExecutionMonitor( 2, TimeUnit.SECONDS, stdOut,
+            SpectrumExecutionMonitor.DEFAULT_WIDTH ) : ExecutionMonitors.defaultVisible();
         BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( databaseLayout,
-            outsideWorld.fileSystem(),
+            fileSystem,
             null, // no external page cache
             importConfig,
             logService, executionMonitor,
             EMPTY,
             databaseConfig,
             RecordFormatSelector.selectForConfig( databaseConfig, logService.getInternalLogProvider() ),
-            new PrintingImportLogicMonitor( outsideWorld.outStream(), outsideWorld.errorStream() ),
+            new PrintingImportLogicMonitor( stdOut, stdErr ),
             jobScheduler, badCollector, TransactionLogsInitializer.INSTANCE );
-        printOverview( databaseLayout.databaseDirectory(), nodeFiles, relationshipFiles, importConfig, outsideWorld.outStream() );
+        printOverview( databaseLayout.databaseDirectory(), nodeFiles, relationshipFiles, importConfig, stdOut );
         success = false;
         try
         {
@@ -187,7 +182,7 @@ class CsvImporter implements Importer
         }
         catch ( Exception e )
         {
-            throw andPrintError( "Import error", e, verbose, outsideWorld.errorStream() );
+            throw andPrintError( "Import error", e, verbose, stdErr );
         }
         finally
         {
@@ -197,7 +192,7 @@ class CsvImporter implements Importer
             {
                 if ( numberOfBadEntries > 0 )
                 {
-                    outsideWorld.outStream().println( "There were bad entries which were skipped and logged into " + reportFile.getAbsolutePath() );
+                    stdOut.println( "There were bad entries which were skipped and logged into " + reportFile.getAbsolutePath() );
                 }
             }
 
@@ -205,7 +200,7 @@ class CsvImporter implements Importer
 
             if ( !success )
             {
-                outsideWorld.errorStream().println( "WARNING Import failed. The store files in " + databaseLayout.databaseDirectory().getAbsolutePath() +
+                stdErr.println( "WARNING Import failed. The store files in " + databaseLayout.databaseDirectory().getAbsolutePath() +
                         " are left as they are, although they are likely in an unusable state. " +
                         "Starting a database on these store files will likely fail or observe inconsistent records so " +
                         "start at your own risk or delete the store manually" );
@@ -236,7 +231,7 @@ class CsvImporter implements Importer
         else if ( Exceptions.contains( e, IllegalMultilineFieldException.class ) )
         {
             printErrorMessage( "Detected field which spanned multiple lines for an import where " +
-                    OPT_MULTILINE_FIELDS + "=false. If you know that your input data " +
+                    "--multiline-fields=false. If you know that your input data " +
                     "include fields containing new-line characters then import with this option set to " +
                     "true.", e, stackTrace, err );
         }
@@ -303,7 +298,11 @@ class CsvImporter implements Importer
 
         inputFiles.forEach( ( k, files ) ->
         {
-            printIndented( k + ":", out );
+            if ( !isEmptyKey( k ) )
+            {
+                printIndented( k + ":", out );
+            }
+
             for ( File[] arr : files )
             {
                 for ( final File file : arr )
@@ -313,6 +312,19 @@ class CsvImporter implements Importer
             }
             out.println();
         } );
+    }
+
+    private static boolean isEmptyKey( Object k )
+    {
+        if ( k instanceof String )
+        {
+            return ((String) k).isEmpty();
+        }
+        else if ( k instanceof Set )
+        {
+            return ((Set) k).isEmpty();
+        }
+        return false;
     }
 
     private static void printIndented( Object value, PrintStream out )
@@ -373,10 +385,9 @@ class CsvImporter implements Importer
         private Config databaseConfig;
         private org.neo4j.csv.reader.Configuration csvConfig = org.neo4j.csv.reader.Configuration.COMMAS;
         private Configuration importConfig = Configuration.DEFAULT;
-        private File reportFile = new File( DEFAULT_REPORT_FILE_NAME );
+        private File reportFile;
         private IdType idType = IdType.STRING;
         private Charset inputEncoding = StandardCharsets.UTF_8;
-        private OutsideWorld outsideWorld = new RealOutsideWorld();
         private boolean ignoreExtraColumns;
         private boolean skipBadRelationships;
         private boolean skipDuplicateNodes;
@@ -386,6 +397,9 @@ class CsvImporter implements Importer
         private boolean verbose;
         private Map<Set<String>, List<File[]>> nodeFiles = new HashMap<>();
         private Map<String, List<File[]>> relationshipFiles = new HashMap<>();
+        private FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        private PrintStream stdOut = System.out;
+        private PrintStream stdErr = System.err;
 
         Builder withDatabaseLayout( DatabaseLayout databaseLayout )
         {
@@ -426,12 +440,6 @@ class CsvImporter implements Importer
         Builder withInputEncoding( Charset inputEncoding )
         {
             this.inputEncoding = inputEncoding;
-            return this;
-        }
-
-        Builder withOutsideWorld( OutsideWorld outsideWorld )
-        {
-            this.outsideWorld = outsideWorld;
             return this;
         }
 
@@ -488,6 +496,24 @@ class CsvImporter implements Importer
         {
             final var list = relationshipFiles.computeIfAbsent( defaultRelType, unused -> new ArrayList<>() );
             list.add( files );
+            return this;
+        }
+
+        Builder withFileSystem( FileSystemAbstraction fileSystem )
+        {
+            this.fileSystem = fileSystem;
+            return this;
+        }
+
+        Builder withStdOut( PrintStream stdOut )
+        {
+            this.stdOut = stdOut;
+            return this;
+        }
+
+        Builder withStdErr( PrintStream stdErr )
+        {
+            this.stdErr = stdErr;
             return this;
         }
 

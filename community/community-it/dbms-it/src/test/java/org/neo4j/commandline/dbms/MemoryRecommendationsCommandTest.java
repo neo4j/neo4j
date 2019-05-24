@@ -23,21 +23,19 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import picocli.CommandLine;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
+import java.io.PrintStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Map;
 
-import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.commandline.admin.OutsideWorld;
-import org.neo4j.commandline.admin.RealOutsideWorld;
+import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -56,12 +54,15 @@ import org.neo4j.values.storable.RandomValues;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.bytesToString;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendHeapMemory;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendOsMemory;
@@ -79,7 +80,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provi
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.Settings.BYTES;
 import static org.neo4j.configuration.Settings.buildSetting;
-import static org.neo4j.internal.helpers.collection.MapUtil.load;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.exbiBytes;
@@ -92,6 +92,41 @@ class MemoryRecommendationsCommandTest
 {
     @Inject
     private TestDirectory directory;
+
+    @Test
+    void printUsageHelp()
+    {
+        final var baos = new ByteArrayOutputStream();
+        final var command = new MemoryRecommendationsCommand( new ExecutionContext( Path.of( "." ), Path.of( "." ) ) );
+        try ( var out = new PrintStream( baos ) )
+        {
+            CommandLine.usage( command, new PrintStream( out ) );
+        }
+        assertThat( baos.toString().trim(), equalTo(
+                "Print Neo4j heap and pagecache memory settings recommendations.\n" +
+                        "\n" +
+                        "USAGE\n" +
+                        "\n" +
+                        "memrec [--verbose] [--memory=<size>]\n" +
+                        "\n" +
+                        "DESCRIPTION\n" +
+                        "\n" +
+                        "Print heuristic memory setting recommendations for the Neo4j JVM heap and\n" +
+                        "pagecache. The heuristic is based on the total memory of the system the command\n" +
+                        "is running on, or on the amount of memory specified with the --memory argument.\n" +
+                        "The heuristic assumes that the system is dedicated to running Neo4j. If this is\n" +
+                        "not the case, then use the --memory argument to specify how much memory can be\n" +
+                        "expected to be dedicated to Neo4j. The output is formatted such that it can be\n" +
+                        "copy-pasted into the neo4j.conf file.\n" +
+                        "\n" +
+                        "OPTIONS\n" +
+                        "\n" +
+                        "      --verbose         Enable verbose output.\n" +
+                        "      --memory=<size>   Recommend memory settings with respect to the given amount\n" +
+                        "                          of memory, instead of the total memory of the system\n" +
+                        "                          running the command."
+        ) );
+    }
 
     @Test
     void mustRecommendOSMemory()
@@ -148,30 +183,25 @@ class MemoryRecommendationsCommandTest
     @Test
     void mustPrintRecommendationsAsConfigReadableOutput() throws Exception
     {
-        StringBuilder output = new StringBuilder();
+        PrintStream output = mock( PrintStream.class );
         Path homeDir = directory.directory().toPath();
         Path configDir = homeDir.resolve( "conf" );
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
         configDir.toFile().mkdirs();
         store( stringMap( data_directory.name(), homeDir.toString() ), configFile.toFile() );
-        OutsideWorld outsideWorld = new RealOutsideWorld()
-        {
-            @Override
-            public void stdOutLine( String text )
-            {
-                output.append( text ).append( System.lineSeparator() );
-            }
-        };
-        MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
+
+        MemoryRecommendationsCommand command =
+                new MemoryRecommendationsCommand( new ExecutionContext( homeDir, configDir, output, mock( PrintStream.class ), directory.getFileSystem() ) );
+
+        CommandLine.populateCommand( command, "--memory=8g" );
         String heap = bytesToString( recommendHeapMemory( gibiBytes( 8 ) ) );
         String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ) ) );
 
-        command.execute( new String[]{"--memory=8g"} );
+        command.execute();
 
-        Map<String,String> stringMap = load( new StringReader( output.toString() ) );
-        assertThat( stringMap.get( initialHeapSize.name() ), is( heap ) );
-        assertThat( stringMap.get( maxHeapSize.name() ), is( heap ) );
-        assertThat( stringMap.get( pagecache_memory.name() ), is( pagecache ) );
+        verify( output ).println( initialHeapSize.name() + "=" + heap );
+        verify( output ).println( maxHeapSize.name() + "=" + heap );
+        verify( output ).println( pagecache_memory.name() + "=" + pagecache );
     }
 
     @Test
@@ -208,38 +238,39 @@ class MemoryRecommendationsCommandTest
         DatabaseLayout databaseLayout = DatabaseLayout.of( rootPath, databaseName );
         DatabaseLayout systemLayout = DatabaseLayout.of( rootPath, SYSTEM_DATABASE_NAME );
         createDatabaseWithNativeIndexes( databaseLayout );
-        OutputCaptureOutsideWorld outsideWorld = new OutputCaptureOutsideWorld();
-        MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
+        PrintStream output = mock( PrintStream.class );
+        MemoryRecommendationsCommand command =
+                new MemoryRecommendationsCommand( new ExecutionContext( homeDir, configDir, output, mock( PrintStream.class ), directory.getFileSystem() ) );
         String heap = bytesToString( recommendHeapMemory( gibiBytes( 8 ) ) );
         String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ) ) );
 
         // when
-        command.execute( new String[]{"--memory", "8g"} );
+        CommandLine.populateCommand( command, "--memory=8g" );
+        command.execute();
 
         // then
-        String memrecString = outsideWorld.getOutput();
-        Map<String,String> stringMap = load( new StringReader( memrecString ) );
-        assertThat( stringMap.get( initialHeapSize.name() ), is( heap ) );
-        assertThat( stringMap.get( maxHeapSize.name() ), is( heap ) );
-        assertThat( stringMap.get( pagecache_memory.name() ), is( pagecache ) );
+        verify( output ).println( contains( initialHeapSize.name() + "=" + heap ) );
+        verify( output ).println( contains( maxHeapSize.name() + "=" + heap ) );
+        verify( output ).println( contains( pagecache_memory.name() + "=" + pagecache ) );
 
         long[] expectedSizes = calculatePageCacheFileSize( databaseLayout );
         long[] systemSizes = calculatePageCacheFileSize( systemLayout );
         long expectedPageCacheSize = expectedSizes[0] + systemSizes[0];
         long expectedLuceneSize = expectedSizes[1] + systemSizes[1];
-        assertThat( memrecString, containsString( "Total size of lucene indexes in all databases: " + bytesToString( expectedLuceneSize ) ) );
-        assertThat( memrecString, containsString( "Total size of data and native indexes in all databases: " + bytesToString( expectedPageCacheSize ) ) );
+
+        verify( output ).println( contains( "Total size of lucene indexes in all databases: " + bytesToString( expectedLuceneSize ) ) );
+        verify( output ).println( contains( "Total size of data and native indexes in all databases: " + bytesToString( expectedPageCacheSize ) ) );
     }
 
     @Test
-    void includeAllDatabasesToMemoryRecommendations() throws IOException, CommandFailed, IncorrectUsage
+    void includeAllDatabasesToMemoryRecommendations() throws IOException
     {
+        PrintStream output = mock( PrintStream.class );
         Path homeDir = directory.directory().toPath();
         Path configDir = homeDir.resolve( "conf" );
         configDir.toFile().mkdirs();
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
 
-        OutputCaptureOutsideWorld outsideWorld = new OutputCaptureOutsideWorld();
         store( stringMap( data_directory.name(), homeDir.toString() ), configFile.toFile() );
 
         long totalPageCacheSize = 0;
@@ -259,12 +290,17 @@ class MemoryRecommendationsCommandTest
         totalPageCacheSize += expectedSizes[0];
         totalLuceneIndexesSize += expectedSizes[1];
 
-        MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
-        command.execute( new String[]{"--memory", "8g"} );
+        MemoryRecommendationsCommand command =
+                new MemoryRecommendationsCommand( new ExecutionContext( homeDir, configDir, output, mock( PrintStream.class ), directory.getFileSystem() ) );
 
-        String memrecString = outsideWorld.getOutput();
-        assertThat( memrecString, containsString( "Total size of lucene indexes in all databases: " + bytesToString( totalLuceneIndexesSize ) ) );
-        assertThat( memrecString, containsString( "Total size of data and native indexes in all databases: " + bytesToString( totalPageCacheSize ) ) );
+        CommandLine.populateCommand( command, "--memory=8g" );
+
+        command.execute();
+
+        final long expectedLuceneIndexesSize = totalLuceneIndexesSize;
+        final long expectedPageCacheSize = totalPageCacheSize;
+        verify( output ).println( contains( "Total size of lucene indexes in all databases: " + bytesToString( expectedLuceneIndexesSize ) ) );
+        verify( output ).println( contains( "Total size of data and native indexes in all databases: " + bytesToString( expectedPageCacheSize ) ) );
     }
 
     private static Matcher<Long> between( long lowerBound, long upperBound )
@@ -285,7 +321,7 @@ class MemoryRecommendationsCommandTest
         File indexFolder = IndexDirectoryStructure.baseSchemaIndexFolder( databaseLayout.databaseDirectory() );
         if ( indexFolder.exists() )
         {
-            Files.walkFileTree( indexFolder.toPath(), new SimpleFileVisitor<Path>()
+            Files.walkFileTree( indexFolder.toPath(), new SimpleFileVisitor<>()
             {
                 @Override
                 public FileVisitResult visitFile( Path path, BasicFileAttributes attrs )
@@ -338,27 +374,6 @@ class MemoryRecommendationsCommandTest
             {
                 managementService.shutdown();
             }
-        }
-    }
-
-    private static class OutputCaptureOutsideWorld extends RealOutsideWorld
-    {
-        private final StringBuilder output;
-
-        OutputCaptureOutsideWorld()
-        {
-            this.output = new StringBuilder();
-        }
-
-        @Override
-        public void stdOutLine( String text )
-        {
-            output.append( text ).append( System.lineSeparator() );
-        }
-
-        String getOutput()
-        {
-            return output.toString();
         }
     }
 }

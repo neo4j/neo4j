@@ -23,10 +23,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import picocli.CommandLine;
 
-import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.commandline.admin.OutsideWorld;
+import java.io.PrintStream;
+
+import org.neo4j.cli.ExecutionContext;
 import org.neo4j.commandline.admin.security.SetInitialPasswordCommand;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -38,8 +39,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.neo4j.cypher.security.BasicSystemGraphRealmTestHelper.assertAuthenticationFailsWithTooManyAttempts;
-import static org.neo4j.cypher.security.BasicSystemGraphRealmTestHelper.assertAuthenticationSucceeds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -48,9 +47,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.cypher.security.BasicSystemGraphRealmTestHelper.assertAuthenticationFailsWithTooManyAttempts;
+import static org.neo4j.cypher.security.BasicSystemGraphRealmTestHelper.assertAuthenticationSucceeds;
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_USER_NAME;
 import static org.neo4j.server.security.auth.BasicSystemGraphRealmTest.clearedPasswordWithSameLengthAs;
@@ -319,13 +319,14 @@ public class BasicSystemGraphRealmIT
         assertAuthenticationSucceeds( realm, "alice" );
     }
 
-    public static void simulateSetInitialPasswordCommand( TestDirectory testDirectory ) throws IncorrectUsage, CommandFailed
+    public static void simulateSetInitialPasswordCommand( TestDirectory testDirectory )
     {
-        OutsideWorld mock = mock( OutsideWorld.class );
-        when( mock.fileSystem() ).thenReturn( testDirectory.getFileSystem() );
-        SetInitialPasswordCommand setPasswordCommand =
-                new SetInitialPasswordCommand( testDirectory.directory().toPath(), testDirectory.directory( "conf" ).toPath(), mock );
-        setPasswordCommand.execute( new String[]{SIMULATED_INITIAL_PASSWORD} );
+        SetInitialPasswordCommand command =
+                new SetInitialPasswordCommand( new ExecutionContext( testDirectory.directory().toPath(), testDirectory.directory( "conf" ).toPath(),
+                        mock( PrintStream.class ), mock( PrintStream.class ), testDirectory.getFileSystem() ) );
+
+        CommandLine.populateCommand( command, SIMULATED_INITIAL_PASSWORD );
+        command.execute();
     }
 
     public static final String SIMULATED_INITIAL_PASSWORD = "neo4j1";

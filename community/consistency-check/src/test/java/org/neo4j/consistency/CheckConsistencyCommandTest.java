@@ -21,6 +21,8 @@ package org.neo4j.consistency;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import picocli.CommandLine;
+import picocli.CommandLine.MutuallyExclusiveArgsException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -29,10 +31,8 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.commandline.admin.CommandLocator;
-import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.commandline.admin.Usage;
+import org.neo4j.cli.CommandFailedException;
+import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.LayoutConfig;
@@ -48,7 +48,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -65,6 +65,64 @@ class CheckConsistencyCommandTest
     private TestDirectory testDir;
 
     @Test
+    void printUsageHelp()
+    {
+        final var baos = new ByteArrayOutputStream();
+        final var command = new CheckConsistencyCommand( new ExecutionContext( Path.of( "." ), Path.of( "." ) ) );
+        try ( var out = new PrintStream( baos ) )
+        {
+            CommandLine.usage( command, new PrintStream( out ) );
+        }
+        assertThat( baos.toString().trim(), equalTo(
+                "Check the consistency of a database.\n" +
+                        "\n" +
+                        "USAGE\n" +
+                        "\n" +
+                        "check-consistency ([--database=<database>] | [--backup=<path>]) [--verbose]\n" +
+                        "                  [--additional-config=<path>] [--check-graph=<true/false>]\n" +
+                        "                  [--check-indexes=<true/false>]\n" +
+                        "                  [--check-label-scan-store=<true/false>]\n" +
+                        "                  [--check-property-owners=<true/false>] [--report-dir=<path>]\n" +
+                        "\n" +
+                        "DESCRIPTION\n" +
+                        "\n" +
+                        "This command allows for checking the consistency of a database or a backup\n" +
+                        "thereof. It cannot be used with a database which is currently in use.\n" +
+                        "\n" +
+                        "All checks except 'check-graph' can be quite expensive so it may be useful to\n" +
+                        "turn them off for very large databases. Increasing the heap size can also be a\n" +
+                        "good idea. See 'neo4j-admin help' for details.\n" +
+                        "\n" +
+                        "OPTIONS\n" +
+                        "\n" +
+                        "      --verbose             Enable verbose output.\n" +
+                        "      --database=<database> Name of the database.\n" +
+                        "                              Default: neo4j\n" +
+                        "      --backup=<path>       Path to backup to check consistency of. Cannot be used\n" +
+                        "                              together with --database.\n" +
+                        "      --additional-config=<path>\n" +
+                        "                            Configuration file to supply additional configuration in.\n" +
+                        "      --report-dir=<path>   Directory where consistency report will be written.\n" +
+                        "                              Default: .\n" +
+                        "      --check-graph=<true/false>\n" +
+                        "                            Perform consistency checks between nodes, relationships,\n" +
+                        "                              properties, types and tokens.\n" +
+                        "                              Default: true\n" +
+                        "      --check-indexes=<true/false>\n" +
+                        "                            Perform consistency checks on indexes.\n" +
+                        "                              Default: true\n" +
+                        "      --check-label-scan-store=<true/false>\n" +
+                        "                            Perform consistency checks on the label scan store.\n" +
+                        "                              Default: true\n" +
+                        "      --check-property-owners=<true/false>\n" +
+                        "                            Perform additional consistency checks on property\n" +
+                        "                              ownership. This check is very expensive in time and\n" +
+                        "                              memory.\n" +
+                        "                              Default: false"
+        ) );
+    }
+
+    @Test
     void runsConsistencyChecker() throws Exception
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
@@ -72,7 +130,7 @@ class CheckConsistencyCommandTest
         Path homeDir = testDir.directory( "home" ).toPath();
         File databasesFolder = getDatabasesFolder( homeDir );
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), consistencyCheckService );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
         Config config = Config.builder().withHome( homeDir ).build();
 
         DatabaseLayout databaseLayout = DatabaseLayout.of( databasesFolder, LayoutConfig.of( config ), "mydb" );
@@ -83,7 +141,8 @@ class CheckConsistencyCommandTest
                         any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
-        checkConsistencyCommand.execute( new String[]{"--database=mydb"} );
+        CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb" );
+        checkConsistencyCommand.execute();
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
@@ -99,7 +158,7 @@ class CheckConsistencyCommandTest
         Path homeDir = testDir.directory( "home" ).toPath();
         File databasesFolder = getDatabasesFolder( homeDir );
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), consistencyCheckService );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
         Config config = Config.builder().withHome( homeDir ).build();
 
         DatabaseLayout databaseLayout = DatabaseLayout.of( databasesFolder, LayoutConfig.of( config ), "mydb" );
@@ -110,7 +169,8 @@ class CheckConsistencyCommandTest
                         any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
-        checkConsistencyCommand.execute( new String[]{"--database=mydb", "--verbose"} );
+        CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--verbose" );
+        checkConsistencyCommand.execute();
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
@@ -126,7 +186,7 @@ class CheckConsistencyCommandTest
         Path homeDir = testDir.directory( "home" ).toPath();
         File databasesFolder = getDatabasesFolder( homeDir );
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), consistencyCheckService );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
         Config config = Config.builder().withHome( homeDir ).build();
         DatabaseLayout databaseLayout = DatabaseLayout.of( databasesFolder, LayoutConfig.of( config ), "mydb" );
 
@@ -136,27 +196,32 @@ class CheckConsistencyCommandTest
                         any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.failure( new File( "/the/report/path" ) ) );
 
-        CommandFailed commandFailed =
-                assertThrows( CommandFailed.class, () -> checkConsistencyCommand.execute( new String[]{"--database=mydb", "--verbose"} ) );
+        CommandFailedException commandFailed =
+                assertThrows( CommandFailedException.class, () ->
+                {
+                    CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--verbose" );
+                    checkConsistencyCommand.execute();
+                } );
         assertThat( commandFailed.getMessage(), containsString( new File( "/the/report/path" ).toString() ) );
     }
 
     @Test
     void shouldWriteReportFileToCurrentDirectoryByDefault()
-            throws IOException, ConsistencyCheckIncompleteException, CommandFailed, IncorrectUsage
+            throws IOException, ConsistencyCheckIncompleteException, CommandFailedException
 
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
         Path homeDir = testDir.directory( "home" ).toPath();
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), consistencyCheckService );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
 
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
                 any(), anyBoolean(), any(), any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
-        checkConsistencyCommand.execute( new String[]{"--database=mydb"} );
+        CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb" );
+        checkConsistencyCommand.execute();
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(),
@@ -165,20 +230,21 @@ class CheckConsistencyCommandTest
 
     @Test
     void shouldWriteReportFileToSpecifiedDirectory()
-            throws IOException, ConsistencyCheckIncompleteException, CommandFailed, IncorrectUsage
+            throws IOException, ConsistencyCheckIncompleteException, CommandFailedException
 
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
         Path homeDir = testDir.directory( "home" ).toPath();
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), consistencyCheckService );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
 
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
                 any(), anyBoolean(), any(), any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
-        checkConsistencyCommand.execute( new String[]{"--database=mydb", "--report-dir=some-dir-or-other"} );
+        CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--report-dir=some-dir-or-other" );
+        checkConsistencyCommand.execute();
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( any(), any(), any(), any(), any(),
@@ -188,19 +254,20 @@ class CheckConsistencyCommandTest
 
     @Test
     void shouldCanonicalizeReportDirectory()
-            throws IOException, ConsistencyCheckIncompleteException, CommandFailed, IncorrectUsage
+            throws IOException, ConsistencyCheckIncompleteException, CommandFailedException
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
         Path homeDir = testDir.directory( "home" ).toPath();
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), consistencyCheckService );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
 
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
                 any(), anyBoolean(), any(), any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
-        checkConsistencyCommand.execute( new String[]{"--database=mydb", "--report-dir=" + Paths.get( "..", "bar" )} );
+        CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--report-dir=" + Paths.get( "..", "bar" ) );
+        checkConsistencyCommand.execute();
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( any(), any(), any(), any(), any(),
@@ -215,14 +282,15 @@ class CheckConsistencyCommandTest
 
         Path homeDir = testDir.directory( "home" ).toPath();
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), consistencyCheckService );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
 
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
                 any(), anyBoolean(), any(), any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
-        checkConsistencyCommand.execute( new String[]{"--database=mydb", "--check-graph=false",
-                "--check-indexes=false", "--check-label-scan-store=false", "--check-property-owners=true"} );
+        CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--check-graph=false",
+            "--check-indexes=false", "--check-label-scan-store=false", "--check-property-owners=true" );
+        checkConsistencyCommand.execute();
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(),
@@ -236,15 +304,19 @@ class CheckConsistencyCommandTest
 
         Path homeDir = testDir.directory( "home" ).toPath();
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), consistencyCheckService );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
 
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
                 any(), anyBoolean(), any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
-        IncorrectUsage incorrectUsage =
-                assertThrows( IncorrectUsage.class, () -> checkConsistencyCommand.execute( new String[]{"--database=foo", "--backup=bar"} ) );
-        assertEquals( "Only one of '--database' and '--backup' can be specified.", incorrectUsage.getMessage() );
+        MutuallyExclusiveArgsException incorrectUsage =
+                assertThrows( MutuallyExclusiveArgsException.class, () ->
+                {
+                    CommandLine.populateCommand( checkConsistencyCommand, "--database=foo", "--backup=bar" );
+                    checkConsistencyCommand.execute();
+                } );
+        assertThat( incorrectUsage.getMessage(), containsString( "--database=<database>, --backup=<path> are mutually exclusive (specify only one)" ) );
     }
 
     @Test
@@ -254,12 +326,16 @@ class CheckConsistencyCommandTest
 
         Path homeDir = testDir.directory( "home" ).toPath();
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), consistencyCheckService );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
 
         File backupPath = new File( homeDir.toFile(), "dir/does/not/exist" );
 
-        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> checkConsistencyCommand.execute( new String[]{"--backup=" + backupPath} ) );
-        assertEquals( "Specified backup should be a directory: " + backupPath, commandFailed.getMessage() );
+        CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () ->
+        {
+            CommandLine.populateCommand( checkConsistencyCommand, "--backup=" + backupPath );
+            checkConsistencyCommand.execute();
+        } );
+        assertThat( commandFailed.getMessage(), containsString( "Report directory path doesn't exist or not a directory" ) );
     }
 
     @Test
@@ -270,7 +346,7 @@ class CheckConsistencyCommandTest
         DatabaseLayout backupLayout = testDir.databaseLayout( "backup", NOT_CONFIGURED );
         Path homeDir = testDir.directory( "home" ).toPath();
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), consistencyCheckService );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
 
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( backupLayout ), any( Config.class ),
@@ -279,74 +355,14 @@ class CheckConsistencyCommandTest
                         any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
-        checkConsistencyCommand.execute( new String[]{"--backup=" + backupLayout.databaseDirectory()} );
+        CommandLine.populateCommand( checkConsistencyCommand, "--backup=" + backupLayout.databaseDirectory() );
+        checkConsistencyCommand.execute();
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( eq( backupLayout ), any( Config.class ),
                         any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
                         any( ConsistencyFlags.class ) );
-    }
-
-    @Test
-    void shouldPrintNiceHelp() throws Throwable
-    {
-        try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
-        {
-            PrintStream ps = new PrintStream( baos );
-
-            Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
-            usage.printUsageForCommand( new CheckConsistencyCommandProvider(), ps::println );
-
-            assertEquals( String.format( "usage: neo4j-admin check-consistency [--database=<name>]%n" +
-                            "                                     [--backup=</path/to/backup>]%n" +
-                            "                                     [--verbose[=<true|false>]]%n" +
-                            "                                     [--report-dir=<directory>]%n" +
-                            "                                     [--additional-config=<config-file-path>]%n" +
-                            "                                     [--check-graph[=<true|false>]]%n" +
-                            "                                     [--check-indexes[=<true|false>]]%n" +
-                            "                                     [--check-label-scan-store[=<true|false>]]%n" +
-                            "                                     [--check-property-owners[=<true|false>]]%n" +
-                            "%n" +
-                            "environment variables:%n" +
-                            "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
-                            "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
-                            "    NEO4J_HOME    Neo4j home directory.%n" +
-                            "    HEAP_SIZE     Set JVM maximum heap size during command execution.%n" +
-                            "                  Takes a number and a unit, for example 512m.%n" +
-                            "%n" +
-                            "This command allows for checking the consistency of a database or a backup%n" +
-                            "thereof. It cannot be used with a database which is currently in use.%n" +
-                            "%n" +
-                            "All checks except 'check-graph' can be quite expensive so it may be useful to%n" +
-                            "turn them off for very large databases. Increasing the heap size can also be a%n" +
-                            "good idea. See 'neo4j-admin help' for details.%n" +
-                            "%n" +
-                            "options:%n" +
-                            "  --database=<name>                        Name of database. [default:" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME + "]%n" +
-                            "  --backup=</path/to/backup>               Path to backup to check consistency%n" +
-                            "                                           of. Cannot be used together with%n" +
-                            "                                           --database. [default:]%n" +
-                            "  --verbose=<true|false>                   Enable verbose output.%n" +
-                            "                                           [default:false]%n" +
-                            "  --report-dir=<directory>                 Directory to write report file in.%n" +
-                            "                                           [default:.]%n" +
-                            "  --additional-config=<config-file-path>   Configuration file to supply%n" +
-                            "                                           additional configuration in. This%n" +
-                            "                                           argument is DEPRECATED. [default:]%n" +
-                            "  --check-graph=<true|false>               Perform checks between nodes,%n" +
-                            "                                           relationships, properties, types and%n" +
-                            "                                           tokens. [default:true]%n" +
-                            "  --check-indexes=<true|false>             Perform checks on indexes.%n" +
-                            "                                           [default:true]%n" +
-                            "  --check-label-scan-store=<true|false>    Perform checks on the label scan%n" +
-                            "                                           store. [default:true]%n" +
-                            "  --check-property-owners=<true|false>     Perform additional checks on property%n" +
-                            "                                           ownership. This check is *very*%n" +
-                            "                                           expensive in time and memory.%n" +
-                            "                                           [default:false]%n" ),
-                    baos.toString() );
-        }
     }
 
     private static File getDatabasesFolder( Path homeDir )

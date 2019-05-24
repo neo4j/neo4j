@@ -19,57 +19,16 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import javax.annotation.Nonnull;
-
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.commandline.admin.AdminCommand;
-import org.neo4j.commandline.admin.AdminCommandSection;
-import org.neo4j.commandline.admin.CommandContext;
-import org.neo4j.commandline.arguments.Arguments;
+import org.neo4j.cli.CommandProvider;
+import org.neo4j.cli.ExecutionContext;
 
 @ServiceProvider
-public class SetDefaultAdminCommandProvider implements AdminCommand.Provider
+public class SetDefaultAdminCommandProvider implements CommandProvider<SetDefaultAdminCommand>
 {
-    @Nonnull
     @Override
-    public String getName()
+    public SetDefaultAdminCommand createCommand( ExecutionContext ctx )
     {
-        return SetDefaultAdminCommand.COMMAND_NAME;
-    }
-
-    @Override
-    @Nonnull
-    public Arguments allArguments()
-    {
-        return SetDefaultAdminCommand.arguments();
-    }
-
-    @Override
-    @Nonnull
-    public String description()
-    {
-        return "Sets the user to become admin if users but no roles are present, " +
-                "for example when upgrading to neo4j 3.1 enterprise.";
-    }
-
-    @Override
-    @Nonnull
-    public String summary()
-    {
-        return "Sets the default admin user when no roles are present.";
-    }
-
-    @Override
-    @Nonnull
-    public AdminCommandSection commandSection()
-    {
-        return AuthenticationCommandSection.instance();
-    }
-
-    @Override
-    @Nonnull
-    public AdminCommand create( CommandContext ctx )
-    {
-        return new SetDefaultAdminCommand( ctx.getHomeDir(), ctx.getConfigDir(), ctx.getOutsideWorld() );
+        return new SetDefaultAdminCommand( ctx );
     }
 }

@@ -27,7 +27,7 @@ import java.nio.file.Paths;
 import java.util.Properties;
 import javax.annotation.Nonnull;
 
-import org.neo4j.commandline.admin.CommandFailed;
+import org.neo4j.cli.CommandFailedException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.StoreLayout;
@@ -74,7 +74,7 @@ public class Util
         return normalizedCandidate.startsWith( normalizedParent );
     }
 
-    public static void checkLock( StoreLayout storeLayout ) throws CommandFailed
+    public static void checkLock( StoreLayout storeLayout ) throws CommandFailedException
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
                 StoreLocker storeLocker = new GlobalStoreLocker( fileSystem, storeLayout ) )
@@ -83,7 +83,7 @@ public class Util
         }
         catch ( StoreLockException e )
         {
-            throw new CommandFailed( "the database is in use -- stop Neo4j and try again", e );
+            throw new CommandFailedException( "the database is in use -- stop Neo4j and try again", e );
         }
         catch ( IOException e )
         {
@@ -91,9 +91,9 @@ public class Util
         }
     }
 
-    public static void wrapIOException( IOException e ) throws CommandFailed
+    public static void wrapIOException( IOException e ) throws CommandFailedException
     {
-        throw new CommandFailed(
+        throw new CommandFailedException(
                 format( "unable to load database: %s: %s", e.getClass().getSimpleName(), e.getMessage() ), e );
     }
 

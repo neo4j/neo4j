@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import picocli.CommandLine;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,9 +35,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 
-import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.commandline.admin.RealOutsideWorld;
+import org.neo4j.cli.CommandFailedException;
+import org.neo4j.cli.ExecutionContext;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -75,7 +75,7 @@ class DiagnosticsReportCommandIT
     }
 
     @Test
-    void shouldBeAbleToAttachToPidAndRunThreadDump() throws IOException, CommandFailed, IncorrectUsage
+    void shouldBeAbleToAttachToPidAndRunThreadDump() throws IOException
     {
         long pid = getPID();
         assertThat( pid, is( not( 0 ) ) );
@@ -88,15 +88,16 @@ class DiagnosticsReportCommandIT
         Files.write( Paths.get( run.getAbsolutePath(), "neo4j.pid" ), String.valueOf( pid ).getBytes() );
 
         // Run command, should detect running instance
-        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
+        try
         {
             String[] args = {"threads", "--to=" + testDirectory.absolutePath().getAbsolutePath() + "/reports"};
             Path homeDir = testDirectory.directory().toPath();
-            DiagnosticsReportCommand diagnosticsReportCommand =
-                    new DiagnosticsReportCommand( homeDir, homeDir, outsideWorld );
-            diagnosticsReportCommand.execute( args );
+            var ctx = new ExecutionContext( homeDir, homeDir, System.out, System.err, testDirectory.getFileSystem() );
+            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( ctx );
+            CommandLine.populateCommand( diagnosticsReportCommand, args );
+            diagnosticsReportCommand.execute();
         }
-        catch ( IncorrectUsage e )
+        catch ( CommandFailedException e )
         {
             if ( e.getMessage().equals( "Unknown classifier: threads" ) )
             {

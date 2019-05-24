@@ -24,33 +24,24 @@ import org.jutils.jprocesses.model.ProcessInfo;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.neo4j.commandline.admin.AdminCommand;
-import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.commandline.admin.OutsideWorld;
-import org.neo4j.commandline.admin.Usage;
-import org.neo4j.commandline.arguments.Arguments;
-import org.neo4j.commandline.arguments.MandatoryNamedArg;
-import org.neo4j.commandline.arguments.OptionalNamedArg;
-import org.neo4j.commandline.arguments.PositionalArgument;
-import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
+import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.CommandFailedException;
+import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
 import org.neo4j.dbms.diagnostics.jmx.JmxDump;
-import org.neo4j.internal.helpers.Args;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.PlaceholderDatabaseIdRepository;
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSource;
@@ -60,98 +51,80 @@ import org.neo4j.kernel.diagnostics.DiagnosticsReporterProgress;
 import org.neo4j.kernel.diagnostics.InteractiveProgress;
 import org.neo4j.kernel.diagnostics.NonInteractiveProgress;
 
+import static java.lang.String.join;
 import static org.apache.commons.text.StringEscapeUtils.escapeCsv;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
+import static picocli.CommandLine.Command;
+import static picocli.CommandLine.Help.Visibility.NEVER;
+import static picocli.CommandLine.Option;
+import static picocli.CommandLine.Parameters;
 
-public class DiagnosticsReportCommand implements AdminCommand
+@Command(
+        name = "report",
+        header = "Produces a zip/tar of the most common information needed for remote assessments.",
+        description = "Will collect information about the system and package everything in an archive. If you specify 'all', " +
+                "everything will be included. You can also fine tune the selection by passing classifiers to the tool, " +
+                "e.g 'logs tx threads'."
+)
+public class DiagnosticsReportCommand extends AbstractCommand
 {
-    private static final OptionalNamedArg destinationArgument =
-            new OptionalCanonicalPath( "to", System.getProperty( "java.io.tmpdir" ), "reports" + File.separator,
-                    "Destination directory for reports" );
-    public static final String PID_KEY = "pid";
+    static String[] DEFAULT_CLASSIFIERS = {"logs", "config", "plugins", "tree", "metrics", "threads", "sysprop", "ps"};
+    private static final DateTimeFormatter filenameDateTimeFormatter = new DateTimeFormatterBuilder().appendPattern( "yyyy-MM-dd_HHmmss" ).toFormatter();
     private static final long NO_PID = 0;
-    private static final Arguments arguments = new Arguments()
-            .withArgument( new OptionalListArgument() )
-            .withArgument( destinationArgument )
-            .withArgument( new OptionalVerboseArgument() )
-            .withArgument( new OptionalForceArgument() )
-            .withArgument( new OptionalNamedArg( PID_KEY, "1234", "", "Specify process id of running neo4j instance" ) )
-            .withPositionalArgument( new ClassifierFiltersArgument() );
 
-    private final Path homeDir;
-    private final Path configDir;
-    static final String[] DEFAULT_CLASSIFIERS = new String[]{"logs", "config", "plugins", "tree", "metrics", "threads", "sysprop", "ps"};
+    @Option( names = "--list", arity = "0", description = "List all available classifiers" )
+    private boolean list;
 
-    private JMXDumper jmxDumper;
-    private boolean verbose;
-    private final PrintStream out;
-    private final FileSystemAbstraction fs;
-    private final PrintStream err;
-    private static final DateTimeFormatter filenameDateTimeFormatter =
-            new DateTimeFormatterBuilder().appendPattern( "yyyy-MM-dd_HHmmss" ).toFormatter();
+    @Option( names = "--force", arity = "0", description = "Ignore disk full warning" )
+    private boolean force;
+
+    @Option( names = "--to", paramLabel = "<path>", description = "Destination directory for reports. Defaults to a system tmp directory." )
+    private Path reportDir;
+
+    @Option( names = "--pid", description = "Specify process id of running neo4j instance", showDefaultValue = NEVER )
     private long pid;
 
-    DiagnosticsReportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
-    {
-        this.homeDir = homeDir;
-        this.configDir = configDir;
-        this.fs = outsideWorld.fileSystem();
-        this.out = outsideWorld.outStream();
-        err = outsideWorld.errorStream();
-    }
+    @Parameters( arity = "0..*", paramLabel = "<classifier>" )
+    private Set<String> classifiers = new TreeSet<>( List.of( DEFAULT_CLASSIFIERS ) );
 
-    public static Arguments allArguments()
+    private JMXDumper jmxDumper;
+
+    DiagnosticsReportCommand( ExecutionContext ctx )
     {
-        return arguments;
+        super( ctx );
     }
 
     @Override
-    public void execute( String[] stringArgs ) throws IncorrectUsage, CommandFailed
+    public void execute()
     {
-        Args args = Args.withFlags( "list", "to", "verbose", "force", PID_KEY ).parse( stringArgs );
-        verbose = args.has( "verbose" );
-        jmxDumper = new JMXDumper( homeDir, fs, out, err, verbose );
-        pid = parsePid( args );
-        boolean force = args.has( "force" );
-
+        jmxDumper = new JMXDumper( ctx.homeDir(), ctx.fs(), ctx.out(), ctx.err(), verbose );
         DiagnosticsReporter reporter = createAndRegisterSources();
 
-        Optional<Set<String>> classifiers = parseAndValidateArguments( args, reporter );
-        if ( classifiers.isEmpty() )
+        if ( list )
         {
+            listClassifiers( reporter.getAvailableClassifiers() );
             return;
         }
+
+        validateClassifiers( reporter );
 
         DiagnosticsReporterProgress progress = buildProgress();
 
         // Start dumping
-        Path destinationDir = new File( destinationArgument.parse( args ) ).toPath();
         try
         {
-            Path reportFile = destinationDir.resolve( getDefaultFilename() );
-            out.println( "Writing report to " + reportFile.toAbsolutePath().toString() );
-            reporter.dump( classifiers.get(), reportFile, progress, force );
+            if ( reportDir == null )
+            {
+                 reportDir = Path.of( System.getProperty( "java.io.tmpdir" ) ).resolve( "reports" ).toAbsolutePath();
+            }
+            Path reportFile = reportDir.resolve( getDefaultFilename() );
+            ctx.out().println( "Writing report to " + reportFile.toAbsolutePath().toString() );
+            reporter.dump( classifiers, reportFile, progress, force );
         }
         catch ( IOException e )
         {
-            throw new CommandFailed( "Creating archive failed", e );
+            throw new CommandFailedException( "Creating archive failed", e );
         }
-    }
-
-    private static long parsePid( Args args ) throws CommandFailed
-    {
-        if ( args.has( PID_KEY ) )
-        {
-            try
-            {
-                return Long.parseLong( args.get( PID_KEY, "" ) );
-            }
-            catch ( NumberFormatException e )
-            {
-                throw new CommandFailed( "Unable to parse --" + PID_KEY, e );
-            }
-        }
-        return NO_PID;
     }
 
     private static String getDefaultFilename() throws UnknownHostException
@@ -163,99 +136,66 @@ public class DiagnosticsReportCommand implements AdminCommand
 
     private DiagnosticsReporterProgress buildProgress()
     {
-        DiagnosticsReporterProgress progress;
-        if ( System.console() != null )
-        {
-            progress = new InteractiveProgress( out, verbose );
-        }
-        else
-        {
-            progress = new NonInteractiveProgress( out, verbose );
-        }
-        return progress;
+        return System.console() == null ? new NonInteractiveProgress( ctx.out(), verbose ) : new InteractiveProgress( ctx.out(), verbose );
     }
 
-    private Optional<Set<String>> parseAndValidateArguments( Args args, DiagnosticsReporter reporter ) throws IncorrectUsage
+    private void validateClassifiers( DiagnosticsReporter reporter )
     {
         Set<String> availableClassifiers = reporter.getAvailableClassifiers();
-
-        // Passing '--list' should print list and end execution
-        if ( args.has( "list" ) )
-        {
-            listClassifiers( availableClassifiers );
-            return Optional.empty();
-        }
-
-        // Make sure 'all' is the only classifier if specified
-        Set<String> classifiers = new TreeSet<>( args.orphans() );
         if ( classifiers.contains( "all" ) )
         {
             if ( classifiers.size() != 1 )
             {
                 classifiers.remove( "all" );
-                throw new IncorrectUsage(
-                        "If you specify 'all' this has to be the only classifier. Found ['" + String.join( "','", classifiers ) + "'] as well." );
+                throw new CommandFailedException( "If you specify 'all' this has to be the only classifier. Found ['" +
+                        join( "','", classifiers ) + "'] as well." );
             }
         }
         else
         {
-            // Add default classifiers that are available
-            if ( classifiers.isEmpty() )
+            if ( classifiers.equals( Set.of( DEFAULT_CLASSIFIERS ) ) )
             {
-                addDefaultClassifiers( availableClassifiers, classifiers );
+                classifiers = new HashSet<>( classifiers );
+                classifiers.retainAll( availableClassifiers );
             }
-
             validateClassifiers( availableClassifiers, classifiers );
         }
-        return Optional.of( classifiers );
     }
 
-    private static void validateClassifiers( Set<String> availableClassifiers, Set<String> orphans ) throws IncorrectUsage
+    private static void validateClassifiers( Set<String> availableClassifiers, Set<String> orphans )
     {
         for ( String classifier : orphans )
         {
             if ( !availableClassifiers.contains( classifier ) )
             {
-                throw new IncorrectUsage( "Unknown classifier: " + classifier );
-            }
-        }
-    }
-
-    private static void addDefaultClassifiers( Set<String> availableClassifiers, Set<String> orphans )
-    {
-        for ( String classifier : DEFAULT_CLASSIFIERS )
-        {
-            if ( availableClassifiers.contains( classifier ) )
-            {
-                orphans.add( classifier );
+                throw new CommandFailedException( "Unknown classifier: " + classifier );
             }
         }
     }
 
     private void listClassifiers( Set<String> availableClassifiers )
     {
-        out.println( "All available classifiers:" );
+        ctx.out().println( "All available classifiers:" );
         for ( String classifier : availableClassifiers )
         {
-            out.printf( "  %-10s %s%n", classifier, describeClassifier( classifier ) );
+            ctx.out().printf( "  %-10s %s%n", classifier, describeClassifier( classifier ) );
         }
     }
 
-    private DiagnosticsReporter createAndRegisterSources() throws CommandFailed
+    private DiagnosticsReporter createAndRegisterSources()
     {
         DiagnosticsReporter reporter = new DiagnosticsReporter();
-        File configFile = configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
+        File configFile = ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
         Config config = getConfig( configFile );
 
         File storeDirectory = config.get( databases_root_path );
-
         DatabaseIdRepository databaseIdRepository = new PlaceholderDatabaseIdRepository( config );
 
-        reporter.registerAllOfflineProviders( config, storeDirectory, this.fs, databaseIdRepository );
+        reporter.registerAllOfflineProviders( config, storeDirectory, ctx.fs(), databaseIdRepository );
 
         // Register sources provided by this tool
         reporter.registerSource( "config",
-                DiagnosticsReportSources.newDiagnosticsFile( "neo4j.conf", fs, configFile ) );
+                DiagnosticsReportSources.newDiagnosticsFile( "neo4j.conf", ctx.fs(), configFile ) );
 
         reporter.registerSource( "ps", runningProcesses() );
 
@@ -283,19 +223,19 @@ public class DiagnosticsReportCommand implements AdminCommand
         } );
     }
 
-    private Config getConfig( File configFile ) throws CommandFailed
+    private Config getConfig( File configFile )
     {
-        if ( !fs.fileExists( configFile ) )
+        if ( !ctx.fs().fileExists( configFile ) )
         {
-            throw new CommandFailed( "Unable to find config file, tried: " + configFile.getAbsolutePath() );
+            throw new CommandFailedException( "Unable to find config file, tried: " + configFile.getAbsolutePath() );
         }
         try
         {
-            return Config.fromFile( configFile ).withHome( homeDir ).withConnectorsDisabled().build();
+            return Config.fromFile( configFile ).withHome( ctx.homeDir() ).withConnectorsDisabled().build();
         }
         catch ( Exception e )
         {
-            throw new CommandFailed( "Failed to read config file: " + configFile.getAbsolutePath(), e );
+            throw new CommandFailedException( "Failed to read config file: " + configFile.getAbsolutePath(), e );
         }
     }
 
@@ -365,98 +305,5 @@ public class DiagnosticsReportCommand implements AdminCommand
             }
             return sb.toString();
         } );
-    }
-
-    /**
-     * Helper class to format output of {@link Usage}. Parsing is done manually in this command module.
-     */
-    public static class OptionalListArgument extends MandatoryNamedArg
-    {
-        OptionalListArgument()
-        {
-            super( "list", "", "List all available classifiers" );
-        }
-
-        @Override
-        public String optionsListing()
-        {
-            return "--list";
-        }
-
-        @Override
-        public String usage()
-        {
-            return "[--list]";
-        }
-    }
-
-    /**
-     * Helper class to format output of {@link Usage}. Parsing is done manually in this command module.
-     */
-    public static class OptionalVerboseArgument extends MandatoryNamedArg
-    {
-        OptionalVerboseArgument()
-        {
-            super( "verbose", "", "More verbose error messages" );
-        }
-
-        @Override
-        public String optionsListing()
-        {
-            return "--verbose";
-        }
-
-        @Override
-        public String usage()
-        {
-            return "[--verbose]";
-        }
-    }
-
-    /**
-     * Helper class to format output of {@link Usage}. Parsing is done manually in this command module.
-     */
-    public static class OptionalForceArgument extends MandatoryNamedArg
-    {
-        OptionalForceArgument()
-        {
-            super( "force", "", "Ignore disk full warning" );
-        }
-
-        @Override
-        public String optionsListing()
-        {
-            return "--force";
-        }
-
-        @Override
-        public String usage()
-        {
-            return "[--force]";
-        }
-    }
-
-    /**
-     * Helper class to format output of {@link Usage}. Parsing is done manually in this command module.
-     */
-    public static class ClassifierFiltersArgument implements PositionalArgument
-    {
-        @Override
-        public int position()
-        {
-            return 1;
-        }
-
-        @Override
-        public String usage()
-        {
-            return "[all] [<classifier1> <classifier2> ...]";
-        }
-
-        @Override
-        public String parse( Args parsedArgs )
-        {
-            throw new UnsupportedOperationException( "no parser exists" );
-        }
     }
 }

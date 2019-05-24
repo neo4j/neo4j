@@ -24,8 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
+import picocli.CommandLine;
 
-import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileWriter;
@@ -40,10 +40,8 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.commandline.admin.CommandLocator;
-import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.commandline.admin.Usage;
+import org.neo4j.cli.CommandFailedException;
+import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -175,17 +173,8 @@ class DumpCommandIT
     void shouldCalculateTheArchiveNameIfPassedAnExistingDirectory() throws Exception
     {
         File to = testDirectory.directory( "some-dir" );
-        new DumpCommand( homeDir, configDir, dumper ).execute( new String[]{"--database=" + "foo", "--to=" + to} );
+        execute( "foo", to.toPath() );
         verify( dumper ).dump( any( Path.class ), any( Path.class ), eq( to.toPath().resolve( "foo.dump" ) ), any(), any() );
-    }
-
-    @Test
-    void shouldConvertToCanonicalPath() throws Exception
-    {
-        new DumpCommand( homeDir, configDir, dumper )
-                .execute( new String[]{"--database=" + "foo", "--to=foo.dump"} );
-        verify( dumper ).dump( any( Path.class ), any( Path.class ),
-                eq( Paths.get( new File( "foo.dump" ).getCanonicalPath() ) ), any(), any() );
     }
 
     @Test
@@ -207,7 +196,7 @@ class DumpCommandIT
         {
             storeLocker.checkLock();
 
-            CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo" ) );
+            CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
             assertEquals( "the database is in use -- stop Neo4j and try again", commandFailed.getMessage() );
         }
     }
@@ -224,7 +213,7 @@ class DumpCommandIT
         {
             fileWriter.write( "brb" );
         }
-        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo" ) );
+        CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
         assertThat( commandFailed.getMessage(), startsWith( "Active logical log detected, this might be a source of inconsistencies." ) );
     }
 
@@ -239,7 +228,7 @@ class DumpCommandIT
     void shouldReleaseTheStoreLockEvenIfThereIsAnError() throws Exception
     {
         doThrow( IOException.class ).when( dumper ).dump( any(), any(), any(), any(), any() );
-        assertThrows( CommandFailed.class, () -> execute( "foo" ) );
+        assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
         assertCanLockStore( databaseDirectory );
     }
 
@@ -270,7 +259,7 @@ class DumpCommandIT
 
             try ( Closeable ignored = withPermissions( storeLayout.storeLockFile().toPath(), emptySet() ) )
             {
-                CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo" ) );
+                CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
                 assertEquals( "you do not have permission to dump the database -- is Neo4j running as a different user?", commandFailed.getMessage() );
             }
         }
@@ -301,31 +290,22 @@ class DumpCommandIT
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
         putStoreInDirectory( buildConfig(), databaseDir );
 
-        new DumpCommand( homeDir, configDir, dumper ).execute( new String[]{"--to=" + archive} );
+        execute( DEFAULT_DATABASE_NAME );
         verify( dumper ).dump( eq( databaseDir ), eq( txLogsDir ), any(), any(), any() );
-    }
-
-    @Test
-    void shouldObjectIfTheArchiveArgumentIsMissing()
-    {
-
-        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class,
-                () -> new DumpCommand( homeDir, configDir, null ).execute( new String[]{"--database=something"} ) );
-        assertEquals( "Missing argument 'to'", exception.getMessage() );
     }
 
     @Test
     void shouldGiveAClearErrorIfTheArchiveAlreadyExists() throws Exception
     {
         doThrow( new FileAlreadyExistsException( "the-archive-path" ) ).when( dumper ).dump( any(), any(), any(), any(), any() );
-        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo" ) );
+        CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
         assertEquals( "archive already exists: the-archive-path", commandFailed.getMessage() );
     }
 
     @Test
     void shouldGiveAClearMessageIfTheDatabaseDoesntExist()
     {
-        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "bobo" ) );
+        CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "bobo" ) );
         assertEquals( "database does not exist: bobo", commandFailed.getMessage() );
     }
 
@@ -333,7 +313,7 @@ class DumpCommandIT
     void shouldGiveAClearMessageIfTheArchivesParentDoesntExist() throws Exception
     {
         doThrow( new NoSuchFileException( archive.getParent().toString() ) ).when( dumper ).dump(any(), any(), any(), any(), any() );
-        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo" ) );
+        CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
         assertEquals( "unable to dump database: NoSuchFileException: " + archive.getParent(), commandFailed.getMessage() );
     }
 
@@ -342,45 +322,26 @@ class DumpCommandIT
             throws Exception
     {
         doThrow( new IOException( "the-message" ) ).when( dumper ).dump(any(), any(), any(), any(), any() );
-        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo" ) );
+        CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
         assertEquals( "unable to dump database: IOException: the-message", commandFailed.getMessage() );
     }
 
-    @Test
-    void shouldPrintNiceHelp() throws Exception
+    private void execute( String database )
     {
-        try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
-        {
-            PrintStream ps = new PrintStream( baos );
-
-            Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
-            usage.printUsageForCommand( new DumpCommandProvider(), ps::println );
-
-            assertEquals( String.format( "usage: neo4j-admin dump [--database=<name>] --to=<destination-path>%n" +
-                            "%n" +
-                            "environment variables:%n" +
-                            "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
-                            "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
-                            "    NEO4J_HOME    Neo4j home directory.%n" +
-                            "    HEAP_SIZE     Set JVM maximum heap size during command execution.%n" +
-                            "                  Takes a number and a unit, for example 512m.%n" +
-                            "%n" +
-                            "Dump a database into a single-file archive. The archive can be used by the load%n" +
-                            "command. <destination-path> can be a file or directory (in which case a file%n" +
-                            "called <database>.dump will be created). It is not possible to dump a database%n" +
-                            "that is mounted in a running Neo4j server.%n" +
-                            "%n" +
-                            "options:%n" +
-                            "  --database=<name>         Name of database. [default:" + DEFAULT_DATABASE_NAME + "]%n" +
-                            "  --to=<destination-path>   Destination (file or folder) of database dump.%n" ),
-                    baos.toString() );
-        }
+        execute( database, archive );
     }
 
-    private void execute( final String database ) throws IncorrectUsage, CommandFailed
+    private void execute( String database, Path to )
     {
-        new DumpCommand( homeDir, configDir, dumper )
-                .execute( new String[]{"--database=" + database, "--to=" + archive} );
+        final ExecutionContext ctx = new ExecutionContext( homeDir, configDir, mock( PrintStream.class ), mock( PrintStream.class ),
+                testDirectory.getFileSystem() );
+        final var command = new DumpCommand( ctx, dumper );
+
+        CommandLine.populateCommand( command,
+                "--database=" + database,
+                "--to=" + to.toAbsolutePath() );
+
+        command.execute();
     }
 
     private static void assertCanLockStore( Path databaseDirectory ) throws IOException

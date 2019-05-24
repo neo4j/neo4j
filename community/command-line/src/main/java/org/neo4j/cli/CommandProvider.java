@@ -17,18 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.commandline.admin.security;
 
-import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.cli.CommandProvider;
-import org.neo4j.cli.ExecutionContext;
+package org.neo4j.cli;
 
-@ServiceProvider
-public class SetInitialPasswordCommandProvider implements CommandProvider<SetInitialPasswordCommand>
+import org.neo4j.annotations.service.Service;
+
+@Service
+public interface CommandProvider<T extends Command>
 {
-    @Override
-    public SetInitialPasswordCommand createCommand( ExecutionContext ctx )
-    {
-        return new SetInitialPasswordCommand( ctx );
-    }
+    T createCommand( ExecutionContext ctx );
 }

@@ -29,6 +29,7 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   Apache Commons Text
   Netty/All-in-One
+  picocli - a mighty tiny Command Line Interface
 
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs

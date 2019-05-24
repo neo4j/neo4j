@@ -17,18 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.commandline.admin.security;
 
-import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.cli.CommandProvider;
-import org.neo4j.cli.ExecutionContext;
+package org.neo4j.cli;
 
-@ServiceProvider
-public class SetInitialPasswordCommandProvider implements CommandProvider<SetInitialPasswordCommand>
+import picocli.CommandLine.ITypeConverter;
+import picocli.CommandLine.TypeConversionException;
+
+import org.neo4j.io.ByteUnit;
+
+import static java.lang.String.format;
+
+public interface Converters
 {
-    @Override
-    public SetInitialPasswordCommand createCommand( ExecutionContext ctx )
+
+    class ByteUnitConverter implements ITypeConverter<Long>
     {
-        return new SetInitialPasswordCommand( ctx );
+        @Override
+        public Long convert( String value )
+        {
+            try
+            {
+                return ByteUnit.parse( value );
+            }
+            catch ( Exception e )
+            {
+                throw new TypeConversionException( format( "cannot convert '%s' to byte units (%s)", value, e ) );
+            }
+        }
     }
 }

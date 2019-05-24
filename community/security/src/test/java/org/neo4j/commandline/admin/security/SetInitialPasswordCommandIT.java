@@ -22,12 +22,12 @@ package org.neo4j.commandline.admin.security;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import picocli.CommandLine;
 
 import java.io.File;
+import java.io.PrintStream;
 
-import org.neo4j.commandline.admin.AdminTool;
-import org.neo4j.commandline.admin.CommandLocator;
-import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -36,27 +36,23 @@ import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.FileUserRepository;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 
 public class SetInitialPasswordCommandIT
 {
     private FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
     private File confDir;
     private File homeDir;
-    private OutsideWorld out;
-    private AdminTool tool;
-
-    private static final String SET_PASSWORD = "set-initial-password";
+    private PrintStream out;
+    private PrintStream err;
 
     @Before
     public void setup()
@@ -64,9 +60,8 @@ public class SetInitialPasswordCommandIT
         File graphDir = new File( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         confDir = new File( graphDir, "conf" );
         homeDir = new File( graphDir, "home" );
-        out = mock( OutsideWorld.class );
-        resetOutsideWorldMock();
-        tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
+        out = mock( PrintStream.class );
+        err = mock( PrintStream.class );
     }
 
     @After
@@ -78,75 +73,32 @@ public class SetInitialPasswordCommandIT
     @Test
     public void shouldSetPassword() throws Throwable
     {
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "abc" );
+        executeCommand( "abc" );
         assertAuthIniFile( "abc" );
 
-        verify( out ).stdOutLine( "Changed password for user 'neo4j'." );
+        verify( out ).println( "Changed password for user 'neo4j'." );
     }
 
     @Test
     public void shouldOverwriteIfSetPasswordAgain() throws Throwable
     {
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "abc" );
+        executeCommand( "abc" );
         assertAuthIniFile( "abc" );
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "muchBetter" );
+        executeCommand( "muchBetter" );
         assertAuthIniFile( "muchBetter" );
 
-        verify( out, times( 2 ) ).stdOutLine( "Changed password for user 'neo4j'." );
+        verify( out, times( 2 ) ).println( "Changed password for user 'neo4j'." );
     }
 
     @Test
     public void shouldWorkWithSamePassword() throws Throwable
     {
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "neo4j" );
+        executeCommand( "neo4j" );
         assertAuthIniFile( "neo4j" );
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "neo4j" );
+        executeCommand( "neo4j" );
         assertAuthIniFile( "neo4j" );
 
-        verify( out, times( 2 ) ).stdOutLine( "Changed password for user 'neo4j'." );
-    }
-
-    @Test
-    public void shouldGetUsageOnWrongArguments1()
-    {
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD );
-        assertNoAuthIniFile();
-
-        verify( out ).stdErrLine( "not enough arguments" );
-        verify( out, times( 3 ) ).stdErrLine( "" );
-        verify( out ).stdErrLine( "usage: neo4j-admin set-initial-password <password>" );
-        verify( out ).stdErrLine( String.format( "environment variables:" ) );
-        verify( out ).stdErrLine( String.format( "    NEO4J_CONF    Path to directory which contains neo4j.conf." ) );
-        verify( out ).stdErrLine( String.format( "    NEO4J_DEBUG   Set to anything to enable debug output." ) );
-        verify( out ).stdErrLine( String.format( "    NEO4J_HOME    Neo4j home directory." ) );
-        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set JVM maximum heap size during command execution." ) );
-        verify( out ).stdErrLine( String.format( "                  Takes a number and a unit, for example 512m." ) );
-        verify( out ).stdErrLine( "Sets the initial password of the initial admin user ('neo4j')." );
-        verify( out ).exit( 1 );
-        verifyNoMoreInteractions( out );
-        verify( out, never() ).stdOutLine( anyString() );
-    }
-
-    @Test
-    public void shouldGetUsageOnWrongArguments2()
-    {
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "foo", "bar" );
-        assertNoAuthIniFile();
-
-        verify( out ).stdErrLine( "unrecognized arguments: 'bar'" );
-        verify( out, times( 3 ) ).stdErrLine( "" );
-        verify( out ).stdErrLine( "usage: neo4j-admin set-initial-password <password>" );
-        verify( out ).stdErrLine( String.format( "environment variables:" ) );
-        verify( out ).stdErrLine( String.format( "    NEO4J_CONF    Path to directory which contains neo4j.conf." ) );
-        verify( out ).stdErrLine( String.format( "    NEO4J_DEBUG   Set to anything to enable debug output." ) );
-        verify( out ).stdErrLine( String.format( "    NEO4J_HOME    Neo4j home directory." ) );
-        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set JVM maximum heap size during command execution." ) );
-        verify( out ).stdErrLine( String.format( "                  Takes a number and a unit, for example 512m." ) );
-
-        verify( out ).stdErrLine( "Sets the initial password of the initial admin user ('neo4j')." );
-        verify( out ).exit( 1 );
-        verifyNoMoreInteractions( out );
-        verify( out, never() ).stdOutLine( anyString() );
+        verify( out, times( 2 ) ).println( "Changed password for user 'neo4j'." );
     }
 
     @Test
@@ -158,16 +110,19 @@ public class SetInitialPasswordCommandIT
         fileSystem.write( authFile );
 
         // When
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "will-be-ignored" );
+        try
+        {
+            executeCommand( "will-be-ignored" );
+            fail("must fail");
+        }
+        catch ( Exception e )
+        {
+            assertThat( e.getMessage(), containsString(
+                    "the provided initial password was not set because existing Neo4j users were detected" ) );
+        }
 
         // Then
         assertNoAuthIniFile();
-        verify( out )
-                .stdErrLine( "command failed: the provided initial password was not set because existing Neo4j users were " +
-                        "detected at `" + authFile.getAbsolutePath() + "`. Please remove the existing `auth` file if you " +
-                        "want to reset your database to only have a default user with the provided password." );
-        verify( out ).exit( 1 );
-        verify( out, times( 0 ) ).stdOutLine( anyString() );
     }
 
     @Test
@@ -182,15 +137,19 @@ public class SetInitialPasswordCommandIT
         fileSystem.write( rolesFile );
 
         // When
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "will-be-ignored" );
+        try
+        {
+            executeCommand( "will-be-ignored" );
+            fail( "must fail" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e.getMessage(), containsString(
+                    "the provided initial password was not set because existing Neo4j users were detected" ) );
+        }
 
         // Then
         assertNoAuthIniFile();
-        verify( out )
-                .stdErrLine( "command failed: the provided initial password was not set because existing Neo4j users were " +
-                        "detected at `" + authFile.getAbsolutePath() + "`. Please remove the existing `auth` and `roles` files if you " +
-                        "want to reset your database to only have a default user with the provided password." );
-        verify( out ).exit( 1 );
     }
 
     @Test
@@ -198,23 +157,25 @@ public class SetInitialPasswordCommandIT
     {
         // Given
         // Create an `auth` file with the default neo4j user, but not the default password
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "not-the-default-password" );
+        executeCommand( "not-the-default-password" );
         File authFile = getAuthFile( "auth" );
         fileSystem.mkdirs( authFile.getParentFile() );
         fileSystem.renameFile( getAuthFile( "auth.ini" ), authFile );
 
         // When
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "will-be-ignored" );
+        try
+        {
+            executeCommand( "will-be-ignored" );
+            fail( "must fail" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e.getMessage(), containsString( "the provided initial password was not set because existing Neo4j users were detected" ) );
+        }
 
         // Then
         assertNoAuthIniFile();
-        verify( out )
-                .stdErrLine( "command failed: the provided initial password was not set because existing Neo4j users were " +
-                        "detected at `" + authFile.getAbsolutePath() + "`. Please remove the existing `auth` file if you " +
-                        "want to reset your database to only have a default user with the provided password." );
-        verify( out ).exit( 1 );
-
-        verify( out ).stdOutLine( "Changed password for user 'neo4j'." ); // This is from the initial setup
+        verify( out ).println( "Changed password for user 'neo4j'." ); // This is from the initial setup
     }
 
     @Test
@@ -222,17 +183,17 @@ public class SetInitialPasswordCommandIT
     {
         // Given
         // Create an `auth` file with the default neo4j user
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, UserManager.INITIAL_PASSWORD );
+        executeCommand( UserManager.INITIAL_PASSWORD );
         File authFile = getAuthFile( "auth" );
         fileSystem.mkdirs( authFile.getParentFile() );
         fileSystem.renameFile( getAuthFile( "auth.ini" ), authFile );
 
         // When
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "should-not-be-ignored" );
+        executeCommand( "should-not-be-ignored" );
 
         // Then
         assertAuthIniFile( "should-not-be-ignored" );
-        verify( out, times( 2 ) ).stdOutLine( "Changed password for user 'neo4j'." );
+        verify( out, times( 2 ) ).println( "Changed password for user 'neo4j'." );
     }
 
     private void assertAuthIniFile( String password ) throws Throwable
@@ -257,9 +218,11 @@ public class SetInitialPasswordCommandIT
         return new File( new File( new File( homeDir, "data" ), "dbms" ), name );
     }
 
-    private void resetOutsideWorldMock()
+    private void executeCommand( String password )
     {
-        reset(out);
-        when( out.fileSystem() ).thenReturn( fileSystem );
+        final var ctx = new ExecutionContext( homeDir.toPath(), confDir.toPath(), out, err, fileSystem );
+        final var command = new SetInitialPasswordCommand( ctx );
+        CommandLine.populateCommand( command, password );
+        command.execute();
     }
 }

@@ -19,60 +19,16 @@
  */
 package org.neo4j.commandline.dbms;
 
-import javax.annotation.Nonnull;
-
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.commandline.admin.AdminCommand;
-import org.neo4j.commandline.admin.AdminCommandSection;
-import org.neo4j.commandline.admin.CommandContext;
-import org.neo4j.commandline.arguments.Arguments;
-
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import org.neo4j.cli.CommandProvider;
+import org.neo4j.cli.ExecutionContext;
 
 @ServiceProvider
-public class StoreInfoCommandProvider implements AdminCommand.Provider
+public class StoreInfoCommandProvider implements CommandProvider<StoreInfoCommand>
 {
-
-    @Nonnull
     @Override
-    public String getName()
+    public StoreInfoCommand createCommand( ExecutionContext ctx )
     {
-        return "store-info";
-    }
-
-    @Override
-    @Nonnull
-    public Arguments allArguments()
-    {
-        return StoreInfoCommand.arguments();
-    }
-
-    @Override
-    @Nonnull
-    public String summary()
-    {
-        return "Prints information about a Neo4j database store.";
-    }
-
-    @Override
-    @Nonnull
-    public AdminCommandSection commandSection()
-    {
-        return AdminCommandSection.general();
-    }
-
-    @Override
-    @Nonnull
-    public String description()
-    {
-        return "Prints information about a Neo4j database store, such as what version of Neo4j created it. Note that " +
-                "this command expects a path to a store directory, for example --store=data/databases/" + DEFAULT_DATABASE_NAME + ".";
-    }
-
-    @Override
-    @Nonnull
-    public AdminCommand create( CommandContext ctx )
-    {
-        return new StoreInfoCommand( ctx.getOutsideWorld()::stdOutLine );
+        return new StoreInfoCommand( ctx );
     }
 }

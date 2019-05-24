@@ -19,6 +19,8 @@
  */
 package org.neo4j.csv.reader;
 
+import static org.neo4j.io.ByteUnit.mebiBytes;
+
 /**
  * Configuration options around reading CSV data, or similar.
  */
@@ -146,7 +148,7 @@ public class Configuration
         private char quotationCharacter = '"';
         private char delimiter = ',';
         private char arrayDelimiter = ';';
-        private int bufferSize = 4 * 1024 * 1024;
+        private int bufferSize = (int) mebiBytes( 4 );
         private boolean multilineFields;
         private boolean trimStrings;
         private boolean emptyQuotedStringsAsNull;

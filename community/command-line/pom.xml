@@ -42,6 +42,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+            <version>4.0.0-beta-1b</version>
+        </dependency>
+        <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>annotations</artifactId>
         </dependency>

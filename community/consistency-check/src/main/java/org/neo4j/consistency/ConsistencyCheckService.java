@@ -77,6 +77,7 @@ import org.neo4j.token.api.TokenHolder;
 import static java.lang.String.format;
 import static org.neo4j.configuration.Settings.FALSE;
 import static org.neo4j.configuration.Settings.TRUE;
+import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
@@ -103,7 +104,7 @@ public class ConsistencyCheckService
             throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( databaseLayout, tuningConfiguration, progressFactory, logProvider, verbose,
-                new ConsistencyFlags( tuningConfiguration ) );
+                DEFAULT );
     }
 
     public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config config, ProgressMonitorFactory progressFactory,

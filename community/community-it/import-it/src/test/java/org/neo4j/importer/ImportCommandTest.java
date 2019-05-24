@@ -23,6 +23,9 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import picocli.CommandLine;
+import picocli.CommandLine.MissingParameterException;
+import picocli.CommandLine.ParameterException;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -46,9 +49,7 @@ import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 
-import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.commandline.admin.RealOutsideWorld;
+import org.neo4j.cli.ExecutionContext;
 import org.neo4j.common.Validator;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -96,12 +97,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.importer.CsvImporter.MULTI_FILE_DELIMITER;
 import static org.neo4j.internal.helpers.ArrayUtil.join;
 import static org.neo4j.internal.helpers.Exceptions.contains;
 import static org.neo4j.internal.helpers.Exceptions.withMessage;
@@ -172,10 +173,10 @@ class ImportCommandTest
                 "--delimiter", "TAB",
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
                 "--nodes",
-                nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                nodeHeader( config ).getAbsolutePath() + "," +
                 nodeData( false, config, nodeIds, TRUE ).getAbsolutePath(),
                 "--relationships",
-                relationshipHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                relationshipHeader( config ).getAbsolutePath() + "," +
                 relationshipData( false, config, nodeIds, TRUE, true ).getAbsolutePath() );
 
         // THEN
@@ -212,7 +213,7 @@ class ImportCommandTest
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--delimiter", "TAB",
                 "--array-delimiter", "|",
-                "--nodes", header.getAbsolutePath() + MULTI_FILE_DELIMITER + data.getAbsolutePath() );
+                "--nodes", header.getAbsolutePath() + "," + data.getAbsolutePath() );
 
         // THEN
         GraphDatabaseService databaseService = getDatabaseApi();
@@ -609,10 +610,10 @@ class ImportCommandTest
             runImport(
                     "--delimiter", "TAB",
                     "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
-                    "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                    "--nodes", nodeHeader( config ).getAbsolutePath() + "," +
                             nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns )
                                     .getAbsolutePath(),
-                    "--relationships", relationshipHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                    "--relationships", relationshipHeader( config ).getAbsolutePath() + "," +
                             relationshipData( false, config, nodeIds, TRUE, true ).getAbsolutePath() );
 
             fail( "Should have thrown exception" );
@@ -642,10 +643,10 @@ class ImportCommandTest
                 "--ignore-extra-columns",
                 "--delimiter", "TAB",
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
-                "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                "--nodes=" + nodeHeader( config ).getAbsolutePath() + "," +
                         nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns )
                                 .getAbsolutePath(),
-                "--relationships", relationshipHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                "--relationships", relationshipHeader( config ).getAbsolutePath() + "," +
                         relationshipData( false, config, nodeIds, TRUE, true ).getAbsolutePath() );
 
         // THEN
@@ -666,14 +667,14 @@ class ImportCommandTest
         runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", // One group with one header file and one data file
-                nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                nodeHeader( config ).getAbsolutePath() + "," +
                 nodeData( false, config, nodeIds, lines( 0, NODE_COUNT / 2 ) ).getAbsolutePath(),
                 "--nodes", // One group with two data files, where the header sits in the first file
                 nodeData( true, config, nodeIds,
-                        lines( NODE_COUNT / 2, NODE_COUNT * 3 / 4 ) ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                        lines( NODE_COUNT / 2, NODE_COUNT * 3 / 4 ) ).getAbsolutePath() + "," +
                 nodeData( false, config, nodeIds, lines( NODE_COUNT * 3 / 4, NODE_COUNT ) ).getAbsolutePath(),
                 "--relationships",
-                relationshipHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                relationshipHeader( config ).getAbsolutePath() + "," +
                 relationshipData( false, config, nodeIds, TRUE, true ).getAbsolutePath() );
 
         // THEN
@@ -696,13 +697,13 @@ class ImportCommandTest
         // WHEN
         runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes:" + join( firstLabels, ":" ),
+                "--nodes=" + join( firstLabels, ":" ) + "=" +
                 nodeData( true, config, nodeIds, lines( 0, NODE_COUNT / 2 ) ).getAbsolutePath(),
-                "--nodes:" + join( secondLabels, ":" ),
+                "--nodes=" + join( secondLabels, ":" ) + "=" +
                 nodeData( true, config, nodeIds, lines( NODE_COUNT / 2, NODE_COUNT ) ).getAbsolutePath(),
-                "--relationships:" + firstType,
+                "--relationships=" + firstType + "=" +
                 relationshipData( true, config, nodeIds, lines( 0, RELATIONSHIP_COUNT / 2 ), false ).getAbsolutePath(),
-                "--relationships:" + secondType,
+                "--relationships=" + secondType + "=" +
                 relationshipData( true, config, nodeIds,
                         lines( RELATIONSHIP_COUNT / 2, RELATIONSHIP_COUNT ), false ).getAbsolutePath() );
 
@@ -818,11 +819,11 @@ class ImportCommandTest
         // WHEN
         runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", nodeHeader( config, groupOne ) + MULTI_FILE_DELIMITER +
+                "--nodes", nodeHeader( config, groupOne ) + "," +
                            nodeData( false, config, groupOneNodeIds, TRUE ),
-                "--nodes", nodeHeader( config, groupTwo ) + MULTI_FILE_DELIMITER +
+                "--nodes", nodeHeader( config, groupTwo ) + "," +
                            nodeData( false, config, groupTwoNodeIds, TRUE ),
-                "--relationships", relationshipHeader( config, groupOne, groupTwo, true ) + MULTI_FILE_DELIMITER +
+                "--relationships", relationshipHeader( config, groupOne, groupTwo, true ) + "," +
                                    relationshipData( false, config, rels.iterator(), TRUE, true ) );
 
         // THEN
@@ -853,9 +854,9 @@ class ImportCommandTest
         // WHEN
         runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", nodeHeader( config, "MyGroup" ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                "--nodes", nodeHeader( config, "MyGroup" ).getAbsolutePath() + "," +
                            nodeData( false, config, groupOneNodeIds, TRUE ).getAbsolutePath(),
-                "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                "--nodes", nodeHeader( config ).getAbsolutePath() + "," +
                            nodeData( false, config, groupTwoNodeIds, TRUE ).getAbsolutePath() );
 
         // THEN
@@ -877,8 +878,7 @@ class ImportCommandTest
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                 // there will be no :TYPE specified in the header of the relationships below
-                "--relationships:" + type,
-                relationshipData( true, config, nodeIds, TRUE, false ).getAbsolutePath() );
+                "--relationships", type + "=" + relationshipData( true, config, nodeIds, TRUE, false ).getAbsolutePath() );
 
         // THEN
         verifyData();
@@ -898,8 +898,8 @@ class ImportCommandTest
         try
         {
             runImport(
-                    "--nodes", nodeHeaderFile.getAbsolutePath() + MULTI_FILE_DELIMITER +
-                               nodeData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
+                    "--nodes", nodeHeaderFile.getAbsolutePath() + "," +
+                               nodeData1.getAbsolutePath() + "," +
                                nodeData2.getAbsolutePath() );
             fail( "Should have failed with duplicate node IDs" );
         }
@@ -926,8 +926,8 @@ class ImportCommandTest
         runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--skip-duplicate-nodes",
-                "--nodes", nodeHeaderFile.getAbsolutePath() + MULTI_FILE_DELIMITER +
-                           nodeData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
+                "--nodes", nodeHeaderFile.getAbsolutePath() + "," +
+                           nodeData1.getAbsolutePath() + "," +
                            nodeData2.getAbsolutePath() );
 
         // THEN there should not be duplicates of any node
@@ -992,7 +992,7 @@ class ImportCommandTest
                 "--skip-bad-relationships",
                 "--bad-tolerance", "2",
                 "--additional-config", dbConfig.getAbsolutePath(),
-                "--relationships", relationshipData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
+                "--relationships", relationshipData1.getAbsolutePath() + "," +
                                    relationshipData2.getAbsolutePath() );
 
         // THEN
@@ -1027,7 +1027,7 @@ class ImportCommandTest
                 "--nodes", nodeData.getAbsolutePath(),
                 "--bad-tolerance", "2",
                 "--skip-bad-entries-logging", "true",
-                "--relationships", relationshipData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
+                "--relationships", relationshipData1.getAbsolutePath() + "," +
                         relationshipData2.getAbsolutePath() );
 
         assertFalse( badFile().exists() );
@@ -1057,7 +1057,6 @@ class ImportCommandTest
             runImport(
                     "--nodes", nodeData.getAbsolutePath(),
                     "--report-file", bad.getAbsolutePath(),
-                    "--detailed-progress",
                     "--bad-tolerance", "1",
                     "--relationships", relationshipData.getAbsolutePath() );
             fail();
@@ -1092,8 +1091,8 @@ class ImportCommandTest
             runImport(
                     "--nodes", nodeData.getAbsolutePath(),
                     "--report-file", bad.getAbsolutePath(),
-                    "--skip-bad-relationships", "false",
-                    "--relationships", relationshipData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
+                    "--skip-bad-relationships=false",
+                    "--relationships", relationshipData1.getAbsolutePath() + "," +
                                        relationshipData2.getAbsolutePath() );
             fail();
         }
@@ -1118,8 +1117,7 @@ class ImportCommandTest
         // WHEN
         runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes:My First Label:My Other Label",
-                nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
+                "--nodes=My First Label:My Other Label=" + nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                 "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
 
         // THEN
@@ -1167,10 +1165,10 @@ class ImportCommandTest
                     relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
             fail( "Should have failed" );
         }
-        catch ( IncorrectUsage e )
+        catch ( MissingParameterException e )
         {
             // THEN
-            assertThat( e.getMessage(), containsString( "No node input" ) );
+            assertThat( e.getMessage(), containsString( "Missing required option '--nodes" ) );
         }
     }
 
@@ -1304,7 +1302,7 @@ class ImportCommandTest
 
         // WHEN
         runImport(
-                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(),
+                "--nodes=" + nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(),
                 "--skip-duplicate-nodes",
                 "--bad-tolerance=-1" );
 
@@ -1402,7 +1400,7 @@ class ImportCommandTest
         {
             runImport(
                     "--nodes", data.getAbsolutePath(),
-                    "--multiline-fields", "false" );
+                    "--multiline-fields=false" );
             fail( "Should have failed" );
         }
         catch ( InputException e )
@@ -1485,7 +1483,7 @@ class ImportCommandTest
                     "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
             fail( "Should have failed" );
         }
-        catch ( IncorrectUsage e )
+        catch ( ParameterException e )
         {
             // THEN
             assertThat( e.getMessage(), containsString( "bogus" ) );
@@ -1695,6 +1693,7 @@ class ImportCommandTest
         int stringBlockSize = 12;
         File dbConfig = file( "neo4j.properties" );
         store( stringMap(
+                databases_root_path.name(), testDirectory.databaseLayout().getStoreLayout().storeDirectory().getAbsolutePath(),
                 GraphDatabaseSettings.array_block_size.name(), String.valueOf( arrayBlockSize ),
                 GraphDatabaseSettings.string_block_size.name(), String.valueOf( stringBlockSize ),
                 transaction_logs_root_path.name(), getTransactionLogsRoot() ), dbConfig );
@@ -1791,7 +1790,7 @@ class ImportCommandTest
                     nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(), "--max-memory", "110%" );
             fail( "Should have failed" );
         }
-        catch ( IncorrectUsage e )
+        catch ( ParameterException e )
         {
             // THEN good
             assertThat( e.getMessage(), containsString( "percent" ) );
@@ -1844,12 +1843,14 @@ class ImportCommandTest
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.COMMAS;
 
+        final var configFile = prepareDefaultConfigFile();
         // WHEN data file contains more columns than header file
         int extraColumns = 3;
         try
         {
             runImport(
-                    "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                    "--additional-config=" + configFile.getAbsolutePath(),
+                    "--nodes", nodeHeader( config ).getAbsolutePath() + "," +
                             nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns ).getAbsolutePath() );
             fail( "Should have thrown exception" );
         }
@@ -1877,43 +1878,18 @@ class ImportCommandTest
         String relationshipsEscapedSpaced = relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath();
         File dbConfig = prepareDefaultConfigFile();
         String arguments = format(
-                "--additional-config \"%s\"%n" +
-                "--nodes \"%s\" --relationships \"%s\"",
+                "\"--additional-config=%s\"%n" +
+                "\"--nodes=%s\"%n" +
+                "\"--relationships=%s\"%n",
                 dbConfig.getAbsolutePath(),
                 nodesEscapedSpaces, relationshipsEscapedSpaced );
         writeToFile( argumentFile, arguments, false );
 
         // when
-        runImport( "-f", argumentFile.getAbsolutePath() );
+        runImport( "@" + argumentFile.getAbsolutePath() );
 
         // then
         verifyData();
-    }
-
-    @Test
-    void shouldFailIfSupplyingBothFileArgumentAndAnyOtherArgument() throws Exception
-    {
-        // given
-        List<String> nodeIds = nodeIds();
-        Configuration config = Configuration.COMMAS;
-        File argumentFile = file( "args" );
-        String arguments = format(
-                "--nodes \"%s\" --relationships \"%s\"",
-                nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
-                relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
-        writeToFile( argumentFile, arguments, false );
-
-        try
-        {
-            // when
-            runImport( "-f", argumentFile.getAbsolutePath(), "--nodes" );
-            fail( "Should have failed" );
-        }
-        catch ( IncorrectUsage e )
-        {
-            // then good
-            assertThat( e.getMessage(), containsString( "in addition to -f" ) );
-        }
     }
 
     @Test
@@ -2412,7 +2388,7 @@ class ImportCommandTest
 
     private File badFile()
     {
-        return testDirectory.databaseLayout().file( ImportCommand.DEFAULT_REPORT_FILE_NAME );
+        return testDirectory.databaseLayout().file( CsvImporter.DEFAULT_REPORT_FILE_NAME );
     }
 
     private void writeRelationshipHeader( PrintStream writer, Configuration config,
@@ -2532,8 +2508,11 @@ class ImportCommandTest
     private File prepareDefaultConfigFile() throws IOException
     {
         File dbConfig = file( "neo4j.properties" );
-        store( Map.of( transaction_logs_root_path.name(), getTransactionLogsRoot(),
-                logs_directory.name(), testDirectory.storeDir().getAbsolutePath() ), dbConfig );
+        store( Map.of(
+                transaction_logs_root_path.name(), getTransactionLogsRoot(),
+                databases_root_path.name(), testDirectory.databaseLayout().getStoreLayout().storeDirectory().getAbsolutePath(),
+                logs_directory.name(), testDirectory.storeDir().getAbsolutePath()
+        ), dbConfig );
         return dbConfig;
     }
 
@@ -2551,14 +2530,16 @@ class ImportCommandTest
         return testDirectory.databaseLayout().databaseDirectory().getAbsolutePath();
     }
 
-    void runImport( String... arguments ) throws IOException, CommandFailed, IncorrectUsage
+    private void runImport( String... arguments )
     {
-        runImport( testDirectory.databaseLayout().databaseDirectory().toPath().toAbsolutePath(), arguments );
+        runImport( testDirectory.storeDir().toPath().toAbsolutePath(), arguments );
     }
 
-    static void runImport( Path homeDir, String... arguments ) throws CommandFailed, IncorrectUsage
+    private void runImport( Path homeDir, String... arguments )
     {
-        final var cmd = new ImportCommand( homeDir, homeDir.resolve( "conf" ), new RealOutsideWorld() );
-        cmd.execute( arguments );
+        final var ctx = new ExecutionContext( homeDir, homeDir.resolve( "conf" ), System.out, System.err, testDirectory.getFileSystem() );
+        final var cmd = new ImportCommand( ctx );
+        CommandLine.populateCommand( cmd, arguments );
+        cmd.execute();
     }
 }

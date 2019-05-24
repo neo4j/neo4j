@@ -19,23 +19,24 @@
  */
 package org.neo4j.commandline.dbms;
 
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.function.ToDoubleFunction;
 
-import org.neo4j.commandline.admin.AdminCommand;
-import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.commandline.admin.OutsideWorld;
-import org.neo4j.commandline.arguments.Arguments;
-import org.neo4j.commandline.arguments.OptionalNamedArg;
+import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.CommandFailedException;
+import org.neo4j.cli.Converters;
+import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.LayoutConfig;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.StoreLayout;
@@ -49,8 +50,6 @@ import static org.neo4j.configuration.ExternalSettings.initialHeapSize;
 import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.configuration.Settings.BYTES;
-import static org.neo4j.configuration.Settings.buildSetting;
 import static org.neo4j.io.ByteUnit.ONE_GIBI_BYTE;
 import static org.neo4j.io.ByteUnit.ONE_KIBI_BYTE;
 import static org.neo4j.io.ByteUnit.ONE_MEBI_BYTE;
@@ -59,7 +58,16 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.ByteUnit.tebiBytes;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.baseSchemaIndexFolder;
 
-public class MemoryRecommendationsCommand implements AdminCommand
+@Command(
+        name = "memrec",
+        header = "Print Neo4j heap and pagecache memory settings recommendations.",
+        description = "Print heuristic memory setting recommendations for the Neo4j JVM heap and pagecache. The " +
+                "heuristic is based on the total memory of the system the command is running on, or on the amount of " +
+                "memory specified with the --memory argument. The heuristic assumes that the system is dedicated to " +
+                "running Neo4j. If this is not the case, then use the --memory argument to specify how much memory " +
+                "can be expected to be dedicated to Neo4j. The output is formatted such that it can be copy-pasted into the neo4j.conf file."
+)
+class MemoryRecommendationsCommand extends AbstractCommand
 {
     // Fields: {System Memory in GiBs; OS memory reserve in GiBs; JVM Heap memory in GiBs}.
     // And the page cache gets what's left, though always at least 100 MiB.
@@ -82,10 +90,17 @@ public class MemoryRecommendationsCommand implements AdminCommand
             new Bracket( 512.0, 24, 31 ),
             new Bracket( 1024.0, 30, 31 ),
     };
-    private static final String ARG_MEMORY = "memory";
-    private final Path homeDir;
-    private final OutsideWorld outsideWorld;
-    private final Path configDir;
+
+    @Option(
+            names = "--memory", paramLabel = "<size>", converter = Converters.ByteUnitConverter.class,
+            description = "Recommend memory settings with respect to the given amount of memory, instead of the total memory of the system running the command."
+    )
+    private Long memory;
+
+    MemoryRecommendationsCommand( ExecutionContext ctx )
+    {
+        super( ctx );
+    }
 
     static long recommendOsMemory( long totalMemoryBytes )
     {
@@ -131,20 +146,6 @@ public class MemoryRecommendationsCommand implements AdminCommand
         return new Brackets( totalMemoryGB, lower, upper );
     }
 
-    public static Arguments buildArgs()
-    {
-        String memory = bytesToString( OsBeanUtil.getTotalPhysicalMemory() );
-        return new Arguments()
-                .withArgument( new OptionalNamedArg( ARG_MEMORY, memory, memory,
-                        "Recommend memory settings with respect to the given amount of memory, " +
-                        "instead of the total memory of the system running the command." ) )
-                .withDatabase(
-                        "Name of specific database to calculate page cache memory requirement for. " +
-                        "The generic calculation is still a good generic recommendation for this machine, " +
-                        "but there will be an additional calculation for minimal required page cache memory " +
-                        "for mapping all store and index files that are managed by the page cache." );
-    }
-
     static String bytesToString( double bytes )
     {
         double gibi1 = ONE_GIBI_BYTE;
@@ -186,27 +187,28 @@ public class MemoryRecommendationsCommand implements AdminCommand
         }
     }
 
-    MemoryRecommendationsCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
-    {
-        this.homeDir = homeDir;
-        this.outsideWorld = outsideWorld;
-        this.configDir = configDir;
-    }
-
     @Override
-    public void execute( String[] args ) throws IncorrectUsage, CommandFailed
+    protected void execute()
     {
-        Arguments arguments = buildArgs().parse( args );
+        if ( memory == null )
+        {
+            memory = OsBeanUtil.getTotalPhysicalMemory();
+        }
 
-        String mem = arguments.get( ARG_MEMORY );
-        long memory = buildSetting( ARG_MEMORY, BYTES ).build().apply( arguments::get );
         String os = bytesToString( recommendOsMemory( memory ) );
         String heap = bytesToString( recommendHeapMemory( memory ) );
         String pagecache = bytesToString( recommendPageCacheMemory( memory ) );
+        File configFile = ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
+        Config config = getConfig( configFile );
+        File databasesRoot = config.get( databases_root_path );
+        StoreLayout storeLayout = StoreLayout.of( databasesRoot, LayoutConfig.of( config ) );
+        Collection<DatabaseLayout> layouts = storeLayout.databaseLayouts();
+        long pageCacheSize = pageCacheSize( layouts );
+        long luceneSize = luceneSize( layouts );
 
         print( "# Memory settings recommendation from neo4j-admin memrec:" );
         print( "#" );
-        print( "# Assuming the system is dedicated to running Neo4j and has " + mem + " of memory," );
+        print( "# Assuming the system is dedicated to running Neo4j and has " + ByteUnit.bytesToString( memory ) + " of memory," );
         print( "# we recommend a heap size of around " + heap + ", and a page cache of around " + pagecache + "," );
         print( "# and that about " + os + " is left for the operating system, and the native memory" );
         print( "# needed by Lucene and Netty." );
@@ -228,15 +230,6 @@ public class MemoryRecommendationsCommand implements AdminCommand
         print( initialHeapSize.name() + "=" + heap );
         print( maxHeapSize.name() + "=" + heap );
         print( pagecache_memory.name() + "=" + pagecache );
-
-        File configFile = configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
-        Config config = getConfig( configFile );
-        File databasesRoot = config.get( databases_root_path );
-        StoreLayout storeLayout = StoreLayout.of( databasesRoot, LayoutConfig.of( config ) );
-        Collection<DatabaseLayout> layouts = storeLayout.databaseLayouts();
-        long pageCacheSize = pageCacheSize( layouts );
-        long luceneSize = luceneSize( layouts );
-
         print( "#" );
         print( "# The numbers below have been derived based on your current databases located at: '" + databasesRoot + "'." );
         print( "# They can be used as an input into more detailed memory analysis." );
@@ -272,7 +265,7 @@ public class MemoryRecommendationsCommand implements AdminCommand
         return ( dir, name ) ->
         {
             File file = new File( dir, name );
-            if ( outsideWorld.fileSystem().isDirectory( file ) )
+            if ( ctx.fs().isDirectory( file ) )
             {
                 // Always go down directories
                 return true;
@@ -290,7 +283,7 @@ public class MemoryRecommendationsCommand implements AdminCommand
     private long sumStoreFiles( DatabaseLayout databaseLayout )
     {
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
-        FileSystemAbstraction fileSystem = outsideWorld.fileSystem();
+        FileSystemAbstraction fileSystem = ctx.fs();
         try
         {
             long total = storageEngineFactory.listStorageFiles( fileSystem, databaseLayout ).stream().mapToLong( fileSystem::getFileSize ).sum();
@@ -307,16 +300,16 @@ public class MemoryRecommendationsCommand implements AdminCommand
 
     private long sizeOfFileIfExists( File file )
     {
-        FileSystemAbstraction fileSystem = outsideWorld.fileSystem();
+        FileSystemAbstraction fileSystem = ctx.fs();
         return fileSystem.fileExists( file ) ? fileSystem.getFileSize( file ) : 0;
     }
 
     private long sumIndexFiles( File file, FilenameFilter filter )
     {
         long total = 0;
-        if ( outsideWorld.fileSystem().isDirectory( file ) )
+        if ( ctx.fs().isDirectory( file ) )
         {
-            File[] children = outsideWorld.fileSystem().listFiles( file, filter );
+            File[] children = ctx.fs().listFiles( file, filter );
             if ( children != null )
             {
                 for ( File child : children )
@@ -327,30 +320,30 @@ public class MemoryRecommendationsCommand implements AdminCommand
         }
         else
         {
-            total += outsideWorld.fileSystem().getFileSize( file );
+            total += ctx.fs().getFileSize( file );
         }
         return total;
     }
 
-    private Config getConfig( File configFile ) throws CommandFailed
+    private Config getConfig( File configFile )
     {
-        if ( !outsideWorld.fileSystem().fileExists( configFile ) )
+        if ( !ctx.fs().fileExists( configFile ) )
         {
-            throw new CommandFailed( "Unable to find config file, tried: " + configFile.getAbsolutePath() );
+            throw new CommandFailedException( "Unable to find config file, tried: " + configFile.getAbsolutePath() );
         }
         try
         {
-            return Config.fromFile( configFile ).withHome( homeDir ).withConnectorsDisabled().build();
+            return Config.fromFile( configFile ).withHome( ctx.homeDir() ).withConnectorsDisabled().build();
         }
         catch ( Exception e )
         {
-            throw new CommandFailed( "Failed to read config file: " + configFile.getAbsolutePath(), e );
+            throw new CommandFailedException( "Failed to read config file: " + configFile.getAbsolutePath(), e );
         }
     }
 
     private void print( String text )
     {
-        outsideWorld.stdOutLine( text );
+        ctx.out().println( text );
     }
 
     private static final class Bracket

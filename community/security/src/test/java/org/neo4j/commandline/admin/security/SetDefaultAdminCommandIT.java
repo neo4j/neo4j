@@ -21,12 +21,13 @@ package org.neo4j.commandline.admin.security;
 
 import org.junit.Before;
 import org.junit.Test;
+import picocli.CommandLine;
 
 import java.io.File;
+import java.io.PrintStream;
 
-import org.neo4j.commandline.admin.AdminTool;
-import org.neo4j.commandline.admin.CommandLocator;
-import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.cli.CommandFailedException;
+import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -38,26 +39,21 @@ import org.neo4j.server.security.auth.LegacyCredential;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertFalse;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 
 public class SetDefaultAdminCommandIT
 {
     private FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
     private File confDir;
     private File homeDir;
-    private OutsideWorld out;
-    private AdminTool tool;
-
-    private static final String SET_ADMIN = "set-default-admin";
+    private PrintStream out;
+    private PrintStream err;
 
     @Before
     public void setup()
@@ -65,29 +61,28 @@ public class SetDefaultAdminCommandIT
         File graphDir = new File( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         confDir = new File( graphDir, "conf" );
         homeDir = new File( graphDir, "home" );
-        out = mock( OutsideWorld.class );
-        resetOutsideWorldMock();
-        tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
+        out = mock( PrintStream.class );
+        err = mock( PrintStream.class );
     }
 
     @Test
     public void shouldSetDefaultAdmin() throws Throwable
     {
         insertUser( "jane", false );
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "jane" );
+        execute( "jane" );
         assertAdminIniFile( "jane" );
 
-        verify( out ).stdOutLine( "default admin user set to 'jane'" );
+        verify( out ).println( "default admin user set to 'jane'" );
     }
 
     @Test
     public void shouldSetDefaultAdminForInitialUser() throws Throwable
     {
         insertUser( "jane", true );
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "jane" );
+        execute( "jane" );
         assertAdminIniFile( "jane" );
 
-        verify( out ).stdOutLine( "default admin user set to 'jane'" );
+        verify( out ).println( "default admin user set to 'jane'" );
     }
 
     @Test
@@ -95,22 +90,28 @@ public class SetDefaultAdminCommandIT
     {
         insertUser( "jane", false );
         insertUser( "janette", false );
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "jane" );
+        execute( "jane" );
         assertAdminIniFile( "jane" );
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "janette" );
+        execute( "janette" );
         assertAdminIniFile( "janette" );
 
-        verify( out ).stdOutLine( "default admin user set to 'jane'" );
-        verify( out ).stdOutLine( "default admin user set to 'janette'" );
+        verify( out ).println( "default admin user set to 'jane'" );
+        verify( out ).println( "default admin user set to 'janette'" );
     }
 
     @Test
     public void shouldErrorWithNoSuchUser()
     {
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "bob" );
-        verify( out ).stdErrLine( "command failed: no such user: 'bob'" );
-        verify( out ).exit( 1 );
-        verify( out, never() ).stdOutLine( anyString() );
+        try
+        {
+            execute( "bob" );
+            fail("must fail");
+        }
+        catch ( CommandFailedException e )
+        {
+            assertThat( e.getMessage(), containsString( "no such user: 'bob'" ) );
+        }
+        verify( out, never() ).println( anyString() );
     }
 
     @Test
@@ -118,61 +119,20 @@ public class SetDefaultAdminCommandIT
     {
         insertUser( "jane", false );
         insertUser( "janette", true );
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "jane" );
+        execute( "jane" );
         assertAdminIniFile( "jane" );
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "janette" );
 
-        verify( out ).stdOutLine( "default admin user set to 'jane'" );
-        verify( out ).stdErrLine( "command failed: no such user: 'janette'" );
-        verify( out ).exit( 1 );
-    }
+        try
+        {
+            execute( "janette" );
+            fail( "must fail" );
+        }
+        catch ( CommandFailedException e )
+        {
+            assertThat( e.getMessage(), containsString( "no such user: 'janette'" ) );
+        }
 
-    @Test
-    public void shouldGetUsageOnWrongArguments1()
-    {
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN );
-        assertNoAuthIniFile();
-
-        verify( out ).stdErrLine( "not enough arguments" );
-        verify( out, times( 3 ) ).stdErrLine( "" );
-        verify( out ).stdErrLine( "usage: neo4j-admin set-default-admin <username>" );
-        verify( out, times( 3 ) ).stdErrLine( "" );
-        verify( out ).stdErrLine( String.format( "environment variables:" ) );
-        verify( out ).stdErrLine( String.format( "    NEO4J_CONF    Path to directory which contains neo4j.conf." ) );
-        verify( out ).stdErrLine( String.format( "    NEO4J_DEBUG   Set to anything to enable debug output." ) );
-        verify( out ).stdErrLine( String.format( "    NEO4J_HOME    Neo4j home directory." ) );
-        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set JVM maximum heap size during command execution." ) );
-        verify( out ).stdErrLine( String.format( "                  Takes a number and a unit, for example 512m." ) );
-        verify( out ).stdErrLine(
-                String.format( "Sets the user to become admin if users but no roles are present, for example%n" +
-                        "when upgrading to neo4j 3.1 enterprise." ) );
-        verify( out ).exit( 1 );
-        verifyNoMoreInteractions( out );
-        verify( out, never() ).stdOutLine( anyString() );
-    }
-
-    @Test
-    public void shouldGetUsageOnWrongArguments2()
-    {
-        tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "foo", "bar" );
-        assertNoAuthIniFile();
-
-        verify( out ).stdErrLine( "unrecognized arguments: 'bar'" );
-        verify( out, times( 3 ) ).stdErrLine( "" );
-        verify( out ).stdErrLine( "usage: neo4j-admin set-default-admin <username>" );
-        verify( out, times( 3 ) ).stdErrLine( "" );
-        verify( out ).stdErrLine( String.format( "environment variables:" ) );
-        verify( out ).stdErrLine( String.format( "    NEO4J_CONF    Path to directory which contains neo4j.conf." ) );
-        verify( out ).stdErrLine( String.format( "    NEO4J_DEBUG   Set to anything to enable debug output." ) );
-        verify( out ).stdErrLine( String.format( "    NEO4J_HOME    Neo4j home directory." ) );
-        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set JVM maximum heap size during command execution." ) );
-        verify( out ).stdErrLine( String.format( "                  Takes a number and a unit, for example 512m." ) );
-        verify( out ).stdErrLine(
-                String.format( "Sets the user to become admin if users but no roles are present, for example%n" +
-                        "when upgrading to neo4j 3.1 enterprise." ) );
-        verify( out ).exit( 1 );
-        verifyNoMoreInteractions( out );
-        verify( out, never() ).stdOutLine( anyString() );
+        verify( out ).println( "default admin user set to 'jane'" );
     }
 
     private void insertUser( String username, boolean initial ) throws Throwable
@@ -200,19 +160,15 @@ public class SetDefaultAdminCommandIT
         userRepository.shutdown();
     }
 
-    private void assertNoAuthIniFile()
-    {
-        assertFalse( fileSystem.fileExists( getAuthFile( SetDefaultAdminCommand.ADMIN_INI ) ) );
-    }
-
     private File getAuthFile( String name )
     {
         return new File( new File( new File( homeDir, "data" ), "dbms" ), name );
     }
 
-    private void resetOutsideWorldMock()
+    private void execute( String username )
     {
-        reset( out );
-        when( out.fileSystem() ).thenReturn( fileSystem );
+        final var command = new SetDefaultAdminCommand( new ExecutionContext( homeDir.toPath(), confDir.toPath(), out, err, fileSystem ) );
+        CommandLine.populateCommand( command, username );
+        command.execute();
     }
 }

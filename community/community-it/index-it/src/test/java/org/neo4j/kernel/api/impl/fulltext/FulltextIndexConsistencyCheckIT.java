@@ -640,9 +640,8 @@ class FulltextIndexConsistencyCheckIT
     {
         Config config = Config.defaults();
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService( new Date() );
-        ConsistencyFlags checkConsistencyConfig = new ConsistencyFlags( config );
         return consistencyCheckService.runFullConsistencyCheck( testDirectory.databaseLayout(), config, ProgressMonitorFactory.NONE,
-                NullLogProvider.getInstance(), true, checkConsistencyConfig );
+                NullLogProvider.getInstance(), true, ConsistencyFlags.DEFAULT );
     }
 
     private static StoreIndexDescriptor getIndexDescriptor( IndexDefinition definition )

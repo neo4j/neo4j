@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import picocli.CommandLine;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -36,10 +37,8 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.commandline.admin.OutsideWorld;
-import org.neo4j.commandline.admin.RealOutsideWorld;
+import org.neo4j.cli.CommandFailedException;
+import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -55,10 +54,9 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.neo4j.commandline.dbms.DiagnosticsReportCommand.DEFAULT_CLASSIFIERS;
 import static org.neo4j.commandline.dbms.DiagnosticsReportCommand.describeClassifier;
 
@@ -74,6 +72,7 @@ public class DiagnosticsReportCommandTest
     private Path configDir;
     private Path configFile;
     private String originalUserDir;
+    private ExecutionContext ctx;
 
     @ServiceProvider
     public static class MyDiagnosticsOfflineReportProvider extends DiagnosticsOfflineReportProvider
@@ -108,6 +107,8 @@ public class DiagnosticsReportCommandTest
 
         // To make sure files are resolved from the working directory
         originalUserDir = System.setProperty( "user.dir", testDirectory.absolutePath().getAbsolutePath() );
+
+        ctx = new ExecutionContext( homeDir, configDir, System.out, System.err, fs );
     }
 
     @AfterEach
@@ -118,44 +119,75 @@ public class DiagnosticsReportCommandTest
     }
 
     @Test
+    void printUsageHelp()
+    {
+        final var baos = new ByteArrayOutputStream();
+        final var command = new DiagnosticsReportCommand( new ExecutionContext( Path.of( "." ), Path.of( "." ) ) );
+        try ( var out = new PrintStream( baos ) )
+        {
+            CommandLine.usage( command, new PrintStream( out ) );
+        }
+        assertThat( baos.toString().trim(), equalTo(
+                "Produces a zip/tar of the most common information needed for remote assessments.\n" +
+                        "\n" +
+                        "USAGE\n" +
+                        "\n" +
+                        "report [--force] [--list] [--verbose] [--pid=<pid>] [--to=<path>]\n" +
+                        "       [<classifier>...]\n" +
+                        "\n" +
+                        "DESCRIPTION\n" +
+                        "\n" +
+                        "Will collect information about the system and package everything in an archive.\n" +
+                        "If you specify 'all', everything will be included. You can also fine tune the\n" +
+                        "selection by passing classifiers to the tool, e.g 'logs tx threads'.\n" +
+                        "\n" +
+                        "PARAMETERS\n" +
+                        "\n" +
+                        "      [<classifier>...]     Default: [config, logs, metrics, plugins, ps, sysprop,\n" +
+                        "                            threads, tree]\n" +
+                        "\n" +
+                        "OPTIONS\n" +
+                        "\n" +
+                        "      --verbose           Enable verbose output.\n" +
+                        "      --list              List all available classifiers\n" +
+                        "      --force             Ignore disk full warning\n" +
+                        "      --to=<path>         Destination directory for reports. Defaults to a system\n" +
+                        "                            tmp directory.\n" +
+                        "      --pid=<pid>         Specify process id of running neo4j instance"
+        ) );
+    }
+
+    @Test
     void exitIfConfigFileIsMissing() throws IOException
     {
         Files.delete( configFile );
         String[] args = {"--list"};
-        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
-        {
-            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( homeDir, configDir, outsideWorld );
-
-            CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> diagnosticsReportCommand.execute( args ) );
-            assertThat( commandFailed.getMessage(), containsString( "Unable to find config file, tried: " ) );
-        }
+        DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( ctx );
+        CommandLine.populateCommand( diagnosticsReportCommand, args );
+        CommandFailedException commandFailed = assertThrows( CommandFailedException.class, diagnosticsReportCommand::execute );
+        assertThat( commandFailed.getMessage(), containsString( "Unable to find config file, tried: " ) );
     }
 
     @Test
     void allHasToBeOnlyClassifier() throws Exception
     {
         String[] args = {"all", "logs", "tx"};
-        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
-        {
-            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( homeDir, configDir, outsideWorld );
+        DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( ctx );
+        CommandLine.populateCommand( diagnosticsReportCommand, args );
 
-            IncorrectUsage incorrectUsage = assertThrows( IncorrectUsage.class, () -> diagnosticsReportCommand.execute( args ) );
-            assertEquals( "If you specify 'all' this has to be the only classifier. Found ['logs','tx'] as well.", incorrectUsage.getMessage() );
-        }
+        CommandFailedException incorrectUsage = assertThrows( CommandFailedException.class, diagnosticsReportCommand::execute );
+        assertEquals( "If you specify 'all' this has to be the only classifier. Found ['logs','tx'] as well.", incorrectUsage.getMessage() );
     }
 
     @Test
     void printUnrecognizedClassifiers() throws Exception
     {
         String[] args = {"logs", "tx", "invalid"};
-        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
-        {
-            DiagnosticsReportCommand
-                    diagnosticsReportCommand = new DiagnosticsReportCommand( homeDir, configDir, outsideWorld );
+        DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( ctx );
+        CommandLine.populateCommand( diagnosticsReportCommand, args );
 
-            IncorrectUsage incorrectUsage = assertThrows( IncorrectUsage.class, () -> diagnosticsReportCommand.execute( args ) );
-            assertEquals( "Unknown classifier: invalid", incorrectUsage.getMessage() );
-        }
+        CommandFailedException incorrectUsage = assertThrows( CommandFailedException.class, diagnosticsReportCommand::execute );
+        assertEquals( "Unknown classifier: invalid", incorrectUsage.getMessage() );
     }
 
     @SuppressWarnings( "ResultOfMethodCallIgnored" )
@@ -179,13 +211,11 @@ public class DiagnosticsReportCommandTest
         {
             PrintStream ps = new PrintStream( baos );
             String[] args = {"--list"};
-            OutsideWorld outsideWorld = mock( OutsideWorld.class );
-            when( outsideWorld.fileSystem() ).thenReturn( fs );
-            when( outsideWorld.outStream() ).thenReturn( ps );
 
-            DiagnosticsReportCommand
-                    diagnosticsReportCommand = new DiagnosticsReportCommand( homeDir, configDir, outsideWorld );
-            diagnosticsReportCommand.execute( args );
+            ctx = new ExecutionContext( homeDir, configDir, ps, System.err, fs );
+            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( ctx );
+            CommandLine.populateCommand( diagnosticsReportCommand, args );
+            diagnosticsReportCommand.execute();
 
             assertThat( baos.toString(), is(String.format(
                     "Finding running instance of neo4j%n" +
@@ -206,33 +236,17 @@ public class DiagnosticsReportCommandTest
     {
         String toArgument = "--to=" + System.getProperty( "user.dir" ) + "/other/";
         String[] args = {toArgument, "all"};
-        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
-        {
-            DiagnosticsReportCommand
-                    diagnosticsReportCommand = new DiagnosticsReportCommand( homeDir, configDir, outsideWorld );
-            diagnosticsReportCommand.execute( args );
 
-            File other = testDirectory.directory( "other" );
-            FileSystemAbstraction fs = outsideWorld.fileSystem();
-            assertThat( fs.fileExists( other ), is( true ) );
-            assertThat( fs.listFiles( other ).length, is( 1 ) );
+        DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( ctx );
+        CommandLine.populateCommand( diagnosticsReportCommand, args );
+        diagnosticsReportCommand.execute();
 
-            // Default should be empty
-            File reports = new File( testDirectory.directory(), "reports" );
-            assertThat( fs.fileExists( reports ), is( false ) );
-        }
-    }
+        File other = testDirectory.directory( "other" );
+        assertThat( ctx.fs().fileExists( other ), is( true ) );
+        assertThat( ctx.fs().listFiles( other ).length, is( 1 ) );
 
-    @Test
-    void errorOnInvalidPid() throws Exception
-    {
-        String[] args = {"--pid=a", "all"};
-        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
-        {
-            DiagnosticsReportCommand
-                    diagnosticsReportCommand = new DiagnosticsReportCommand( homeDir, configDir, outsideWorld );
-            CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> diagnosticsReportCommand.execute( args ) );
-            assertEquals( "Unable to parse --pid", commandFailed.getMessage() );
-        }
+        // Default should be empty
+        File reports = new File( testDirectory.directory(), "reports" );
+        assertThat( ctx.fs().fileExists( reports ), is( false ) );
     }
 }

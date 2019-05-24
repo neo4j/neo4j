@@ -19,65 +19,16 @@
  */
 package org.neo4j.importer;
 
-import java.util.Collections;
-import java.util.List;
-import javax.annotation.Nonnull;
-
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.commandline.admin.AdminCommand;
-import org.neo4j.commandline.admin.AdminCommandSection;
-import org.neo4j.commandline.admin.CommandContext;
-import org.neo4j.commandline.arguments.Arguments;
+import org.neo4j.cli.CommandProvider;
+import org.neo4j.cli.ExecutionContext;
 
 @ServiceProvider
-public class ImportCommandProvider implements AdminCommand.Provider
+public class ImportCommandProvider implements CommandProvider<ImportCommand>
 {
-    @Nonnull
     @Override
-    public String getName()
+    public ImportCommand createCommand( ExecutionContext ctx )
     {
-        return "import";
-    }
-
-    @Override
-    @Nonnull
-    public Arguments allArguments()
-    {
-        return ImportCommand.arguments();
-    }
-
-    @Override
-    @Nonnull
-    public List<Arguments> possibleArguments()
-    {
-        return Collections.singletonList( ImportCommand.arguments() );
-    }
-
-    @Override
-    @Nonnull
-    public String description()
-    {
-        return "Import a collection of CSV files.";
-    }
-
-    @Override
-    @Nonnull
-    public String summary()
-    {
-        return "Import from a collection of CSV files.";
-    }
-
-    @Override
-    @Nonnull
-    public AdminCommandSection commandSection()
-    {
-        return AdminCommandSection.general();
-    }
-
-    @Override
-    @Nonnull
-    public AdminCommand create( CommandContext ctx )
-    {
-        return new ImportCommand( ctx.getHomeDir(), ctx.getConfigDir(), ctx.getOutsideWorld() );
+        return new ImportCommand( ctx );
     }
 }

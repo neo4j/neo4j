@@ -22,13 +22,16 @@ package org.neo4j.importer;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import picocli.CommandLine;
 
 import java.io.File;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.cli.ExecutionContext;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.extension.Inject;
@@ -38,8 +41,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.importer.ImportCommandTest.assertExceptionContains;
-import static org.neo4j.importer.ImportCommandTest.runImport;
-import static org.neo4j.importer.RelationshipDataLine.assertExceptionContains;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
 class ImportNumericalFailureTest
@@ -108,5 +109,13 @@ class ImportNumericalFailureTest
     private File file( DatabaseLayout databaseLayout, String localname )
     {
         return databaseLayout.file( localname );
+    }
+
+    private static void runImport( Path homeDir, String... arguments )
+    {
+        final var ctx = new ExecutionContext( homeDir, homeDir.resolve( "conf" ) );
+        final var cmd = new ImportCommand( ctx );
+        CommandLine.populateCommand( cmd, arguments );
+        cmd.execute();
     }
 }

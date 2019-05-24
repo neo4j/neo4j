@@ -67,10 +67,10 @@ public class FullCheck
     private final Statistics statistics;
     private final boolean startCountsStore;
 
-    public FullCheck( Config config, ProgressMonitorFactory progressFactory,
+    public FullCheck( ConsistencyFlags consistencyFlags, Config config, ProgressMonitorFactory progressFactory,
             Statistics statistics, int threads, boolean startCountsStore )
     {
-        this( progressFactory, statistics, threads, new ConsistencyFlags( config ), config, startCountsStore );
+        this( progressFactory, statistics, threads, consistencyFlags, config, startCountsStore );
     }
 
     public FullCheck( ProgressMonitorFactory progressFactory, Statistics statistics, int threads,

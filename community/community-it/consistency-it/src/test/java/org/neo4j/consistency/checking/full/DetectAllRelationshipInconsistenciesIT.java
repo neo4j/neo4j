@@ -119,7 +119,8 @@ public class DetectAllRelationshipInconsistenciesIT
                     db.getDependencyResolver().resolveDependency( TokenHolders.class ) );
 
             int threads = random.intBetween( 2, 10 );
-            FullCheck checker = new FullCheck( getTuningConfiguration(), ProgressMonitorFactory.NONE, Statistics.NONE, threads, true );
+            FullCheck checker = new FullCheck( ConsistencyFlags.DEFAULT,
+                    getTuningConfiguration(), ProgressMonitorFactory.NONE, Statistics.NONE, threads, true );
             AssertableLogProvider logProvider = new AssertableLogProvider( true );
             ConsistencySummaryStatistics summary = checker.execute( directStoreAccess, counts,
                     logProvider.getLog( FullCheck.class ) );

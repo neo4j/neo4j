@@ -29,11 +29,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
 
-import org.neo4j.commandline.admin.AdminCommand;
-import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.commandline.arguments.Arguments;
+import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.CommandFailedException;
+import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.archive.CompressionFormat;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -41,34 +41,40 @@ import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.impl.util.Validators;
 
 import static java.lang.String.format;
-import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.LayoutConfig.of;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
+import static picocli.CommandLine.Command;
+import static picocli.CommandLine.Option;
 
-public class DumpCommand implements AdminCommand
+@Command(
+        name = "dump",
+        header = "Dump a database into a single-file archive.",
+        description = "Dump a database into a single-file archive. The archive can be used by the load command. " +
+                "<destination-path> can be a file or directory (in which case a file called <database>.dump will " +
+                "be created). It is not possible to dump a database that is mounted in a running Neo4j server."
+)
+class DumpCommand extends AbstractCommand
 {
-    private static final Arguments arguments = new Arguments()
-            .withDatabase()
-            .withTo( "Destination (file or folder) of database dump." );
+    @Option( names = "--database", description = "Name of database.", defaultValue = GraphDatabaseSettings.DEFAULT_DATABASE_NAME )
+    private String database;
+    @Option( names = "--to", paramLabel = "<path>", required = true, description = "Destination (file or folder) of database dump." )
+    private Path to;
 
-    private final Path homeDir;
-    private final Path configDir;
     private final Dumper dumper;
 
-    public DumpCommand( Path homeDir, Path configDir, Dumper dumper )
+    DumpCommand( ExecutionContext ctx, Dumper dumper )
     {
-        this.homeDir = homeDir;
-        this.configDir = configDir;
-        this.dumper = dumper;
+        super( ctx );
+        this.dumper = requireNonNull( dumper );
     }
 
     @Override
-    public void execute( String[] args ) throws IncorrectUsage, CommandFailed
+    protected void execute()
     {
-        String database = arguments.parse( args ).get( ARG_DATABASE );
-        Path archive = calculateArchive( database, arguments.getMandatoryPath( "to" ) );
+        Path archive = calculateArchive( database, to.toAbsolutePath() );
 
         Config config = buildConfig();
         Path storeDirectory = getDatabaseDirectory( config );
@@ -80,7 +86,7 @@ public class DumpCommand implements AdminCommand
         }
         catch ( IllegalArgumentException e )
         {
-            throw new CommandFailed( "database does not exist: " + database, e );
+            throw new CommandFailedException( "database does not exist: " + database, e );
         }
 
         try ( Closeable ignored = StoreLockChecker.check( databaseLayout.getStoreLayout() ) )
@@ -90,7 +96,7 @@ public class DumpCommand implements AdminCommand
         }
         catch ( StoreLockException e )
         {
-            throw new CommandFailed( "the database is in use -- stop Neo4j and try again", e );
+            throw new CommandFailedException( "the database is in use -- stop Neo4j and try again", e );
         }
         catch ( IOException e )
         {
@@ -98,7 +104,7 @@ public class DumpCommand implements AdminCommand
         }
         catch ( CannotWriteException e )
         {
-            throw new CommandFailed( "you do not have permission to dump the database -- is Neo4j running as a different user?", e );
+            throw new CommandFailedException( "you do not have permission to dump the database -- is Neo4j running as a different user?", e );
         }
     }
 
@@ -109,8 +115,8 @@ public class DumpCommand implements AdminCommand
 
     private Config buildConfig()
     {
-        return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                .withHome( homeDir )
+        return Config.fromFile( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
+                .withHome( ctx.homeDir() )
                 .withConnectorsDisabled()
                 .withNoThrowOnFileLoadFailure()
                 .build();
@@ -122,7 +128,6 @@ public class DumpCommand implements AdminCommand
     }
 
     private void dump( String database, DatabaseLayout databaseLayout, Path archive )
-            throws CommandFailed
     {
         Path databasePath = databaseLayout.databaseDirectory().toPath();
         try
@@ -133,13 +138,13 @@ public class DumpCommand implements AdminCommand
         }
         catch ( FileAlreadyExistsException e )
         {
-            throw new CommandFailed( "archive already exists: " + e.getMessage(), e );
+            throw new CommandFailedException( "archive already exists: " + e.getMessage(), e );
         }
         catch ( NoSuchFileException e )
         {
             if ( Paths.get( e.getMessage() ).toAbsolutePath().equals( databasePath ) )
             {
-                throw new CommandFailed( "database does not exist: " + database, e );
+                throw new CommandFailedException( "database does not exist: " + database, e );
             }
             wrapIOException( e );
         }
@@ -149,17 +154,17 @@ public class DumpCommand implements AdminCommand
         }
     }
 
-    private static void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration ) throws CommandFailed
+    private static void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration )
     {
         if ( checkRecoveryState( databaseLayout, additionalConfiguration ) )
         {
-            throw new CommandFailed( joinAsLines( "Active logical log detected, this might be a source of inconsistencies.",
+            throw new CommandFailedException( joinAsLines( "Active logical log detected, this might be a source of inconsistencies.",
                     "Please recover database before running the dump.",
                     "To perform recovery please start database and perform clean shutdown." ) );
         }
     }
 
-    private static boolean checkRecoveryState( DatabaseLayout databaseLayout, Config additionalConfiguration ) throws CommandFailed
+    private static boolean checkRecoveryState( DatabaseLayout databaseLayout, Config additionalConfiguration )
     {
         try
         {
@@ -167,18 +172,13 @@ public class DumpCommand implements AdminCommand
         }
         catch ( Exception e )
         {
-            throw new CommandFailed( "Failure when checking for recovery state: '%s'." + e.getMessage(), e );
+            throw new CommandFailedException( "Failure when checking for recovery state: '%s'." + e.getMessage(), e );
         }
     }
 
-    private static void wrapIOException( IOException e ) throws CommandFailed
+    private static void wrapIOException( IOException e )
     {
-        throw new CommandFailed(
+        throw new CommandFailedException(
                 format( "unable to dump database: %s: %s", e.getClass().getSimpleName(), e.getMessage() ), e );
-    }
-
-    public static Arguments arguments()
-    {
-        return arguments;
     }
 }

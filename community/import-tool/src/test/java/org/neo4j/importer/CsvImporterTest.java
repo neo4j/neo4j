@@ -22,7 +22,6 @@ package org.neo4j.importer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -30,7 +29,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.Configuration;
@@ -61,23 +59,20 @@ class CsvImporterTest
         List<String> lines = Collections.singletonList( "foo\\tbar\\tbaz" );
         Files.write( inputFile.toPath(), lines, Charset.defaultCharset() );
 
-        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ) )
-        {
-            Config config = Config.builder()
-                    .withSettings( additionalConfig() )
-                    .withSetting( GraphDatabaseSettings.logs_directory, logDir.getAbsolutePath() ).build();
+        Config config = Config.builder()
+                .withSettings( additionalConfig() )
+                .withSetting( GraphDatabaseSettings.logs_directory, logDir.getAbsolutePath() ).build();
 
-            CsvImporter csvImporter = CsvImporter.builder()
-                .withDatabaseLayout( databaseLayout )
-                .withDatabaseConfig( config )
-                .withReportFile( reportLocation.getAbsoluteFile() )
-                .withCsvConfig( Configuration.TABS )
-                .withOutsideWorld( outsideWorld )
-                .addNodeFiles( emptySet(), new File[]{inputFile.getAbsoluteFile()} )
-                .build();
+        CsvImporter csvImporter = CsvImporter.builder()
+            .withDatabaseLayout( databaseLayout )
+            .withDatabaseConfig( config )
+            .withReportFile( reportLocation.getAbsoluteFile() )
+            .withCsvConfig( Configuration.TABS )
+            .withFileSystem( testDir.getFileSystem() )
+            .addNodeFiles( emptySet(), new File[]{inputFile.getAbsoluteFile()} )
+            .build();
 
-            csvImporter.doImport();
-        }
+        csvImporter.doImport();
 
         assertTrue( reportLocation.exists() );
     }

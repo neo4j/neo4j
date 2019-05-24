@@ -50,7 +50,6 @@ import org.neo4j.annotations.documented.Documented;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.GraphStoreFixture.Applier;
@@ -2238,8 +2237,9 @@ public class FullCheckIntegrationTest
     private ConsistencySummaryStatistics check( DirectStoreAccess stores, CountsTracker counts ) throws ConsistencyCheckIncompleteException
     {
         Config config = config();
-        FullCheck checker = new FullCheck( config, ProgressMonitorFactory.NONE, fixture.getAccessStatistics(),
-                defaultConsistencyCheckThreadsNumber(), true );
+        final var consistencyFlags = new ConsistencyFlags( true, true, true, true );
+        FullCheck checker = new FullCheck( ProgressMonitorFactory.NONE, fixture.getAccessStatistics(), defaultConsistencyCheckThreadsNumber(),
+                consistencyFlags, config, true );
         return checker.execute( stores, counts, FormattedLog.toOutputStream( System.out ),
                 ( report, method, message ) ->
                 {
@@ -2253,7 +2253,6 @@ public class FullCheckIntegrationTest
     {
         Map<String,String> params = stringMap(
                 // Enable property owners check by default in tests:
-                ConsistencyCheckSettings.consistency_check_property_owners.name(), "true",
                 GraphDatabaseSettings.record_format.name(), getRecordFormatName());
         return Config.defaults( params );
     }

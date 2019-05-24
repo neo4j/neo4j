@@ -236,7 +236,7 @@ public class IndexConsistencyIT
         {
             ConsistencyCheckService service = new ConsistencyCheckService();
             Config config = Config.defaults();
-            return service.runFullConsistencyCheck( db.databaseLayout(), config, NONE, log, fsa, true, new ConsistencyFlags( config ) );
+            return service.runFullConsistencyCheck( db.databaseLayout(), config, NONE, log, fsa, true, ConsistencyFlags.DEFAULT );
         }
     }
 }

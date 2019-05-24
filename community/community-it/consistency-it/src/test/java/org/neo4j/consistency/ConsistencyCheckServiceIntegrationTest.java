@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.Settings;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -218,30 +217,6 @@ public class ConsistencyCheckServiceIntegrationTest
             tx.success();
         }
         managementService.shutdown();
-
-        // when
-        Result result = runFullConsistencyCheck( service, configuration );
-
-        // then
-        assertTrue( result.isSuccessful() );
-    }
-
-    @Test
-    public void shouldAllowGraphCheckDisabled() throws ConsistencyCheckIncompleteException
-    {
-        GraphDatabaseService gds = getGraphDatabaseService();
-
-        try ( Transaction tx = gds.beginTx() )
-        {
-            gds.createNode();
-            tx.success();
-        }
-
-        managementService.shutdown();
-
-        ConsistencyCheckService service = new ConsistencyCheckService();
-        Config configuration = Config.defaults(
-                settings( ConsistencyCheckSettings.consistency_check_graph.name(), Settings.FALSE ) );
 
         // when
         Result result = runFullConsistencyCheck( service, configuration );

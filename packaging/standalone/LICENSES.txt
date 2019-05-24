@@ -37,6 +37,7 @@ Apache Software License, Version 2.0
   neo4j-driver
   Netty/All-in-One
   oauth-sign
+  picocli - a mighty tiny Command Line Interface
   protobufjs
   request
   rxjs

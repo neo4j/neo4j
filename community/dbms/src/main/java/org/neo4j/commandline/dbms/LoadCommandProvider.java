@@ -19,60 +19,17 @@
  */
 package org.neo4j.commandline.dbms;
 
-import javax.annotation.Nonnull;
-
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.commandline.admin.AdminCommand;
-import org.neo4j.commandline.admin.AdminCommandSection;
-import org.neo4j.commandline.admin.CommandContext;
-import org.neo4j.commandline.arguments.Arguments;
+import org.neo4j.cli.CommandProvider;
+import org.neo4j.cli.ExecutionContext;
 import org.neo4j.dbms.archive.Loader;
 
 @ServiceProvider
-public class LoadCommandProvider implements AdminCommand.Provider
+public class LoadCommandProvider implements CommandProvider<LoadCommand>
 {
-    @Nonnull
     @Override
-    public String getName()
+    public LoadCommand createCommand( ExecutionContext ctx )
     {
-        return "load";
-    }
-
-    @Override
-    @Nonnull
-    public Arguments allArguments()
-    {
-        return LoadCommand.arguments();
-    }
-
-    @Override
-    @Nonnull
-    public String description()
-    {
-        return "Load a database from an archive. <archive-path> must be an archive created with the dump " +
-                "command. <database> is the name of the database to create. Existing databases can be replaced " +
-                "by specifying --force. It is not possible to replace a database that is mounted in a running " +
-                "Neo4j server.";
-    }
-
-    @Override
-    @Nonnull
-    public String summary()
-    {
-        return "Load a database from an archive created with the dump command.";
-    }
-
-    @Override
-    @Nonnull
-    public AdminCommandSection commandSection()
-    {
-        return OfflineBackupCommandSection.instance();
-    }
-
-    @Override
-    @Nonnull
-    public AdminCommand create( CommandContext ctx )
-    {
-        return new LoadCommand( ctx.getHomeDir(), ctx.getConfigDir(), new Loader( ctx.getOutsideWorld().errorStream() ) );
+        return new LoadCommand( ctx, new Loader( ctx.err() ) );
     }
 }

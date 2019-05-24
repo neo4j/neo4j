@@ -19,65 +19,16 @@
  */
 package org.neo4j.commandline.dbms;
 
-import javax.annotation.Nonnull;
-
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.commandline.admin.AdminCommand;
-import org.neo4j.commandline.admin.AdminCommandSection;
-import org.neo4j.commandline.admin.CommandContext;
-import org.neo4j.commandline.arguments.Arguments;
-
-import static java.lang.String.format;
+import org.neo4j.cli.CommandProvider;
+import org.neo4j.cli.ExecutionContext;
 
 @ServiceProvider
-public class MemoryRecommendationsCommandProvider implements AdminCommand.Provider
+public class MemoryRecommendationsCommandProvider implements CommandProvider<MemoryRecommendationsCommand>
 {
-    @Nonnull
     @Override
-    public String getName()
+    public MemoryRecommendationsCommand createCommand( ExecutionContext ctx )
     {
-        return "memrec";
-    }
-
-    @Nonnull
-    @Override
-    public Arguments allArguments()
-    {
-        return MemoryRecommendationsCommand.buildArgs();
-    }
-
-    @Nonnull
-    @Override
-    public String summary()
-    {
-        return "Print Neo4j heap and pagecache memory settings recommendations.";
-    }
-
-    @Nonnull
-    @Override
-    public AdminCommandSection commandSection()
-    {
-        return AdminCommandSection.general();
-    }
-
-    @Nonnull
-    @Override
-    public String description()
-    {
-        return format(
-                "Print heuristic memory setting recommendations for the Neo4j JVM heap and pagecache. The " +
-                "heuristic is based on the total memory of the system the command is running on, or on the amount of " +
-                "memory specified with the --memory argument. The heuristic assumes that the system is dedicated to " +
-                "running Neo4j. If this is not the case, then use the --memory argument to specify how much memory " +
-                "can be expected to be dedicated to Neo4j.%n" +
-                "%n" +
-                "The output is formatted such that it can be copy-posted into the neo4j.conf file." );
-    }
-
-    @Nonnull
-    @Override
-    public AdminCommand create( CommandContext ctx )
-    {
-        return new MemoryRecommendationsCommand( ctx.getHomeDir(), ctx.getConfigDir(), ctx.getOutsideWorld() );
+        return new MemoryRecommendationsCommand( ctx );
     }
 }
