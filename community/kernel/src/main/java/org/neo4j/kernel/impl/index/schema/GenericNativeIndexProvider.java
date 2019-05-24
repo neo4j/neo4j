@@ -133,7 +133,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     }
 
     @Override
-    public IndexDescriptor bless( IndexDescriptor index ) throws MisconfiguredIndexException
+    public <T extends org.neo4j.internal.schema.IndexDescriptor> T bless( T index ) throws MisconfiguredIndexException
     {
         SchemaDescriptor sinfulSchema = index.schema();
         IndexConfig indexConfig = sinfulSchema.getIndexConfig();
@@ -143,7 +143,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
             indexConfig = SpatialIndexConfig.addSpatialConfig( indexConfig, crs, spaceFillingCurveSettings );
         }
         SchemaDescriptor blessedSchema = sinfulSchema.withIndexConfig( indexConfig );
-        index = index.withSchemaDescriptor( blessedSchema );
+        index = (T) index.withSchemaDescriptor( blessedSchema );
         return super.bless( index );
     }
 
