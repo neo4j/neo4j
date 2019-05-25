@@ -48,6 +48,17 @@ public class Neo4jTypes
     public static final LocalTimeType NTLocalTime = new LocalTimeType();
     public static final DurationType NTDuration = new DurationType();
 
+    //NOTE: blob
+    public static final NeoBlobType NTBlob = new NeoBlobType();
+
+    public static class NeoBlobType extends AnyType
+    {
+        public NeoBlobType()
+        {
+            super( "BLOB?" );
+        }
+    }
+
     private Neo4jTypes()
     {
     }

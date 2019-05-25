@@ -32,6 +32,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.blob.utils.ContextMap;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -689,12 +690,12 @@ public enum TemporalType
         return bytes;
     }
 
-    public static ArrayValue decodeTemporalArray( TemporalHeader header, byte[] data )
+    public static ArrayValue decodeTemporalArray( ContextMap ic, TemporalHeader header, byte[] data )
     {
         byte[] dataHeader = PropertyType.ARRAY.readDynamicRecordHeader( data );
         byte[] dataBody = new byte[data.length - dataHeader.length];
         System.arraycopy( data, dataHeader.length, dataBody, 0, dataBody.length );
-        Value dataValue = DynamicArrayStore.getRightArray( Pair.of( dataHeader, dataBody ) );
+        Value dataValue = DynamicArrayStore.getRightArray( ic, Pair.of( dataHeader, dataBody ) );
         return find( header.temporalType ).decodeArray( dataValue );
     }
 

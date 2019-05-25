@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
+import org.neo4j.kernel.impl.InstanceContext;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -172,6 +173,9 @@ public class PropertyCreator
     private void removeProperty( PrimitiveRecord primitive, PropertyRecord host, PropertyBlock block )
     {
         host.removePropertyBlock( block.getKeyIndexId() );
+        //on delete
+        block.getType().onPropertyDelete( InstanceContext.of( this.propertyRecordIdGenerator ), primitive, host, block);
+
         host.setChanged( primitive );
         for ( DynamicRecord record : block.getValueRecords() )
         {

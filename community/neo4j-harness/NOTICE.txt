@@ -35,6 +35,8 @@ Apache Software License, Version 2.0
   Apache Commons Text
   Apache HttpClient
   Apache HttpCore
+  Apache Log4j API
+  Apache Log4j Scala 2.11 wrapper for Log4j API
   Caffeine cache
   Commons Lang
   ConcurrentLinkedHashMap
@@ -56,6 +58,7 @@ Apache Software License, Version 2.0
   Lucene Common Analyzers
   Lucene Core
   Lucene QueryParsers
+  Mime Detection Utility
   Netty/All-in-One
   opencsv
   parboiled-core
@@ -110,6 +113,9 @@ Eclipse Public License - v 1.0
 GNU General Public License, version 2 with the Classpath Exception
   Extended StAX API
   Java Servlet API
+
+MIT License
+  SLF4J API Module
 
 Dependencies with multiple licenses
 -----------------------------------

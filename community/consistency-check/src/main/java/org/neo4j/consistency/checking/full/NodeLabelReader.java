@@ -33,6 +33,7 @@ import org.neo4j.consistency.checking.LabelChainWalker;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
+import org.neo4j.kernel.impl.InstanceContext;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabels;
@@ -113,7 +114,7 @@ public class NodeLabelReader
                 }
                 recordList.add( record );
             }
-            return LabelChainWalker.labelIds( recordList );
+            return LabelChainWalker.labelIds( InstanceContext.of(labels), recordList );
         }
         return InlineNodeLabels.get( nodeRecord );
     }

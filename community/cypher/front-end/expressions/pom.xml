@@ -48,7 +48,17 @@
   <dependencies>
 
     <!-- shared versions are defined in the parent pom -->
-
+    <!-- https://mvnrepository.com/artifact/commons-codec/commons-codec -->
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-blob-util</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-util-3.5</artifactId>

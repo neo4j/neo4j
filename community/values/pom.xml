@@ -51,6 +51,11 @@
     <dependencies>
         <dependency>
             <groupId>org.neo4j</groupId>
+            <artifactId>blob-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-graphdb-api</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -87,5 +92,24 @@
             <artifactId>commons-codec</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>3.2.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
+            </plugin>
+        </plugins>
+    </build>
 </project>

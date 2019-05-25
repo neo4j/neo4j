@@ -26,6 +26,7 @@ import java.util.Iterator;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.impl.InstanceContext;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -71,7 +72,7 @@ public class DynamicNodeLabels implements NodeLabels
         {
             return null;
         }
-        return stripNodeId( (long[]) getRightArray( readFullByteArrayFromHeavyRecords(
+        return stripNodeId( (long[]) getRightArray( InstanceContext.of( node ), readFullByteArrayFromHeavyRecords(
                 node.getUsedDynamicLabelRecords(), ARRAY ) ).asObject() );
     }
 
@@ -217,14 +218,15 @@ public class DynamicNodeLabels implements NodeLabels
             AbstractDynamicStore dynamicLabelStore )
     {
         long[] storedLongs = (long[])
-            DynamicArrayStore.getRightArray( dynamicLabelStore.readFullByteArray( records, PropertyType.ARRAY ) ).asObject();
+            DynamicArrayStore.getRightArray( InstanceContext.of( dynamicLabelStore ),
+                    dynamicLabelStore.readFullByteArray( records, PropertyType.ARRAY ) ).asObject();
         return LabelIdArray.stripNodeId( storedLongs );
     }
 
     public static long[] getDynamicLabelsArrayFromHeavyRecords( Iterable<DynamicRecord> records )
     {
         long[] storedLongs = (long[])
-            DynamicArrayStore.getRightArray( readFullByteArrayFromHeavyRecords( records, PropertyType.ARRAY ) ).asObject();
+            DynamicArrayStore.getRightArray( InstanceContext.none(), readFullByteArrayFromHeavyRecords( records, PropertyType.ARRAY ) ).asObject();
         return LabelIdArray.stripNodeId( storedLongs );
     }
 
@@ -232,7 +234,8 @@ public class DynamicNodeLabels implements NodeLabels
             AbstractDynamicStore dynamicLabelStore )
     {
         long[] storedLongs = (long[])
-                DynamicArrayStore.getRightArray( dynamicLabelStore.readFullByteArray( records, PropertyType.ARRAY ) ).asObject();
+                DynamicArrayStore.getRightArray( InstanceContext.of( dynamicLabelStore ),
+                        dynamicLabelStore.readFullByteArray( records, PropertyType.ARRAY ) ).asObject();
         return Pair.of(storedLongs[0], LabelIdArray.stripNodeId( storedLongs ));
     }
 }

@@ -107,9 +107,9 @@ public class Neo4jPackV2 extends Neo4jPackV1
         return VERSION;
     }
 
-    private static class PackerV2 extends Neo4jPackV1.PackerV1
+    protected static class PackerV2 extends Neo4jPackV1.PackerV1
     {
-        PackerV2( PackOutput output )
+        protected PackerV2( PackOutput output )
         {
             super( output );
         }
@@ -217,9 +217,9 @@ public class Neo4jPackV2 extends Neo4jPackV1
         }
     }
 
-    private static class UnpackerV2 extends Neo4jPackV1.UnpackerV1
+    protected static class UnpackerV2 extends Neo4jPackV1.UnpackerV1
     {
-        UnpackerV2( PackInput input )
+        protected UnpackerV2( PackInput input )
         {
             super( input );
         }

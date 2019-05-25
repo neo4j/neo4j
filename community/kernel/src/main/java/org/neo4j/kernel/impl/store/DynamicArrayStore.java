@@ -30,9 +30,13 @@ import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 
+import org.neo4j.blob.Blob;
+import org.neo4j.blob.utils.ContextMap;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.InstanceContext;
+import org.neo4j.kernel.impl.blob.StoreBlobIO;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.UnsupportedFormatCapabilityException;
@@ -194,6 +198,30 @@ public class DynamicArrayStore extends AbstractDynamicStore
         return bytes;
     }
 
+    //NOTE: blob
+    private static void allocateFromBlob( Collection<DynamicRecord> target, Blob[] array,
+                                          DynamicRecordAllocator recordAllocator )
+    {
+        byte[][] blobsAsBytes = new byte[array.length][];
+        int totalBytesRequired = STRING_HEADER_SIZE; // 1b type + 4b array length
+        for ( int i = 0; i < array.length; i++ )
+        {
+            Blob blob = array[i];
+            byte[] bytes = StoreBlobIO.saveAndEncodeBlobAsByteArray( InstanceContext.of( recordAllocator ), blob );
+            blobsAsBytes[i] = bytes;
+            totalBytesRequired += 4/*byte[].length*/ + bytes.length;
+        }
+        ByteBuffer buf = ByteBuffer.allocate( totalBytesRequired );
+        buf.put( PropertyType.BLOB.byteValue() );
+        buf.putInt( array.length );
+        for ( byte[] stringAsBytes : blobsAsBytes )
+        {
+            buf.putInt( stringAsBytes.length );
+            buf.put( stringAsBytes );
+        }
+        allocateRecordsFromBytes( target, buf.array(), recordAllocator );
+    }
+
     private static byte[] createUncompactedArray( ShortArray type, Object array, int offsetBytes )
     {
         int arrayLength = Array.getLength( array );
@@ -268,7 +296,12 @@ public class DynamicArrayStore extends AbstractDynamicStore
         }
 
         Class<?> type = array.getClass().getComponentType();
-        if ( type.equals( String.class ) )
+        //NOTE: blob
+        if ( type.equals( Blob.class ) )
+        {
+            allocateFromBlob( target, (Blob[]) array, recordAllocator );
+        }
+        else if ( type.equals( String.class ) )
         {
             allocateFromString( target, (String[]) array, recordAllocator );
         }
@@ -313,7 +346,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
         }
     }
 
-    public static Value getRightArray( Pair<byte[],byte[]> data )
+    public static Value getRightArray( ContextMap ic, Pair<byte[],byte[]> data )
     {
         byte[] header = data.first();
         byte[] bArray = data.other();
@@ -334,15 +367,24 @@ public class DynamicArrayStore extends AbstractDynamicStore
             }
             return Values.stringArray( result );
         }
+        //NOTE: blob
+        else if ( typeId == PropertyType.BLOB.intValue() )
+        {
+            ByteBuffer headerBuffer = ByteBuffer.wrap( header, 1/*skip the type*/, header.length - 1 );
+            int arrayLength = headerBuffer.getInt();
+            ByteBuffer dataBuffer = ByteBuffer.wrap( bArray );
+            Blob[] result = StoreBlobIO.readBlobArray( ic, dataBuffer, arrayLength );
+            return Values.blobArray( result );
+        }
         else if ( typeId == PropertyType.GEOMETRY.intValue() )
         {
             GeometryType.GeometryHeader geometryHeader = GeometryType.GeometryHeader.fromArrayHeaderBytes(header);
-            return GeometryType.decodeGeometryArray( geometryHeader, bArray );
+            return GeometryType.decodeGeometryArray( ic, geometryHeader, bArray );
         }
         else if ( typeId == PropertyType.TEMPORAL.intValue() )
         {
             TemporalType.TemporalHeader temporalHeader = TemporalType.TemporalHeader.fromArrayHeaderBytes(header);
-            return TemporalType.decodeTemporalArray( temporalHeader, bArray );
+            return TemporalType.decodeTemporalArray( ic, temporalHeader, bArray );
         }
         else
         {
@@ -368,6 +410,6 @@ public class DynamicArrayStore extends AbstractDynamicStore
 
     public Object getArrayFor( Iterable<DynamicRecord> records )
     {
-        return getRightArray( readFullByteArray( records, PropertyType.ARRAY ) ).asObject();
+        return getRightArray( InstanceContext.of( this ), readFullByteArray( records, PropertyType.ARRAY ) ).asObject();
     }
 }

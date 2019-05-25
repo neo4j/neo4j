@@ -27,6 +27,10 @@ Apache Software License, Version 2.0
   Apache Commons IO
   Apache Commons Lang
   Apache Commons Text
+  Apache HttpClient
+  Apache HttpCore
+  Apache Log4j API
+  Apache Log4j Scala 2.11 wrapper for Log4j API
   ascli
   aws-sign2
   bytebuffer
@@ -59,6 +63,7 @@ Apache Software License, Version 2.0
   Lucene Common Analyzers
   Lucene Core
   Lucene QueryParsers
+  Mime Detection Utility
   neo4j-driver
   Netty/All-in-One
   oauth-sign
@@ -2601,6 +2606,7 @@ MIT License
   safer-buffer
   save-as
   setimmediate
+  SLF4J API Module
   sshpk
   string-width
   string_decoder

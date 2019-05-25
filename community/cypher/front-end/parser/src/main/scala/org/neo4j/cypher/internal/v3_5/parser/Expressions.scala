@@ -148,9 +148,34 @@ trait Expressions extends Parser
     ))
   }
 
+  //NOTE: <blobUrlPath>
+  private def BlobURLPath: Rule1[String] = rule("<blob url path>")(
+    push(new java.lang.StringBuilder) ~ zeroOrMore(
+      !(RightArrowHead) ~ ANY
+        ~:% withContext(appendToStringBuilder(_)(_))
+    )
+      ~~> (_.toString())
+  )
+
+  private def BlobLiteral: Rule1[BlobLiteralExpr] = rule("<blob>")(
+    LeftArrowHead ~ ignoreCase("FILE://") ~ BlobURLPath ~ RightArrowHead
+      ~~>> (x => BlobLiteralExpr(BlobFileURL(x)))
+      | LeftArrowHead ~ ignoreCase("BASE64://") ~ BlobURLPath ~ RightArrowHead
+      ~~>> (x => BlobLiteralExpr(BlobBase64URL(x.mkString(""))))
+      | LeftArrowHead ~ ignoreCase("HTTP://") ~ BlobURLPath ~ RightArrowHead
+      ~~>> (x => BlobLiteralExpr(BlobHttpURL(s"http://${x.mkString("")}")))
+      | LeftArrowHead ~ ignoreCase("HTTPS://") ~ BlobURLPath ~ RightArrowHead
+      ~~>> (x => BlobLiteralExpr(BlobHttpURL(s"https://${x.mkString("")}")))
+      | LeftArrowHead ~ ignoreCase("FTP://") ~ BlobURLPath ~ RightArrowHead
+      ~~>> (x => BlobLiteralExpr(BlobFtpURL(s"ftp://${x.mkString("")}")))
+      | LeftArrowHead ~ ignoreCase("SFTP://") ~ BlobURLPath ~ RightArrowHead
+      ~~>> (x => BlobLiteralExpr(BlobFtpURL(s"sftp://${x.mkString("")}")))
+  )
+
   private def Expression1: Rule1[org.neo4j.cypher.internal.v3_5.expressions.Expression] = rule("an expression") (
       NumberLiteral
     | StringLiteral
+    | BlobLiteral
     | Parameter
     | keyword("TRUE") ~ push(ast.True()(_))
     | keyword("FALSE") ~ push(ast.False()(_))

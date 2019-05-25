@@ -26,7 +26,14 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons IO
   Apache Commons Lang
+  Apache Commons Logging
+  Apache HttpClient
+  Apache HttpCore
+  Apache Log4j API
+  Apache Log4j Scala 2.11 wrapper for Log4j API
+  Mime Detection Utility
   parboiled-core
   parboiled-scala
 
@@ -35,4 +42,7 @@ BSD - Scala License
 
 BSD License
   Scala Compiler
+
+MIT License
+  SLF4J API Module
 

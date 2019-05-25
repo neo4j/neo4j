@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.blob.utils.ContextMap;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -54,7 +55,7 @@ public enum GeometryType
                 }
 
                 @Override
-                public ArrayValue decodeArray( GeometryHeader header, byte[] data )
+                public ArrayValue decodeArray( ContextMap ic, GeometryHeader header, byte[] data )
                 {
                     throw new UnsupportedOperationException( "Cannot decode invalid geometry array" );
                 }
@@ -84,12 +85,12 @@ public enum GeometryType
                 }
 
                 @Override
-                public ArrayValue decodeArray( GeometryHeader header, byte[] data )
+                public ArrayValue decodeArray( ContextMap ic, GeometryHeader header, byte[] data )
                 {
                     byte[] dataHeader = PropertyType.ARRAY.readDynamicRecordHeader( data );
                     byte[] dataBody = new byte[data.length - dataHeader.length];
                     System.arraycopy( data, dataHeader.length, dataBody, 0, dataBody.length );
-                    Value dataValue = DynamicArrayStore.getRightArray( Pair.of( dataHeader, dataBody ) );
+                    Value dataValue = DynamicArrayStore.getRightArray( ic, Pair.of( dataHeader, dataBody ) );
                     if ( dataValue instanceof FloatingPointArray )
                     {
                         FloatingPointArray numbers = (FloatingPointArray) dataValue;
@@ -309,9 +310,9 @@ public enum GeometryType
         return bytes;
     }
 
-    public static ArrayValue decodeGeometryArray( GeometryHeader header, byte[] data )
+    public static ArrayValue decodeGeometryArray( ContextMap ic, GeometryHeader header, byte[] data )
     {
-        return find( header.geometryType ).decodeArray( header, data );
+        return find( header.geometryType ).decodeArray( ic, header, data );
     }
 
     private final int gtype;
@@ -327,7 +328,7 @@ public enum GeometryType
 
     public abstract int calculateNumberOfBlocksUsedForGeometry( long firstBlock );
 
-    public abstract ArrayValue decodeArray( GeometryHeader header, byte[] data );
+    public abstract ArrayValue decodeArray( ContextMap ic, GeometryHeader header, byte[] data );
 
     public int getGtype()
     {

@@ -63,6 +63,8 @@ object coerce {
         case CTLocalDateTime => value.asInstanceOf[LocalDateTimeValue]
         case CTDateTime => value.asInstanceOf[DateTimeValue]
         case CTDuration => value.asInstanceOf[DurationValue]
+        //NOTE: blob
+        case CTBlob => value.asInstanceOf[BlobValue]
         case _ => throw cantCoerce(value, typ)
       }
     }

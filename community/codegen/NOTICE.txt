@@ -26,8 +26,12 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons IO
   Apache Commons Lang
   Apache Commons Text
+
+BSD - Scala License
+  Scala Library
 
 BSD License
   asm

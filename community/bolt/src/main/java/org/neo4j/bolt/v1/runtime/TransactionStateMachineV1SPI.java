@@ -131,7 +131,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         return new BoltResultHandleV1( statement, params, transactionalContext );
     }
 
-    private InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, Duration txTimeout, Map<String, Object> txMetadata )
+    protected InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, Duration txTimeout, Map<String, Object> txMetadata )
     {
         InternalTransaction tx;
         if ( txTimeout == null )

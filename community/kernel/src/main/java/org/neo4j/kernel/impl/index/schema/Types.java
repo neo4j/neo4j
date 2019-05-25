@@ -124,6 +124,9 @@ class Types
             return ZONED_DATE_TIME_ARRAY;
         case ZONED_TIME:
             return ZONED_TIME_ARRAY;
+        case BLOB:
+            //TODO: not null
+            return null;
         default:
             throw new UnsupportedOperationException( arrayType.name() );
         }

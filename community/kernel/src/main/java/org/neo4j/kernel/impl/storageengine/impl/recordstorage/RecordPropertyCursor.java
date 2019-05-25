@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.InstanceContext;
+import org.neo4j.kernel.impl.blob.StoreBlobIO;
 import org.neo4j.kernel.impl.store.GeometryType;
 import org.neo4j.kernel.impl.store.LongerShortString;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -238,6 +240,8 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
             return geometryValue();
         case TEMPORAL:
             return temporalValue();
+        case BLOB:
+            return StoreBlobIO.readBlobValue( InstanceContext.of( read ), this.getBlocks());
         default:
             throw new IllegalStateException( "Unsupported PropertyType: " + type.name() );
         }
@@ -403,6 +407,6 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
     {
         ByteBuffer buffer = cursor.buffer = read.loadArray( reference, cursor.buffer, page );
         buffer.flip();
-        return PropertyStore.readArrayFromBuffer( buffer );
+        return PropertyStore.readArrayFromBuffer( InstanceContext.of( read ), buffer );
     }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.blob.Blob;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -73,6 +75,12 @@ public abstract class ThrowingValueWriter<E extends Exception> implements ValueW
     public void writeInteger( short value ) throws E
     {
         throw exception( "writeInteger" );
+    }
+
+    @Override
+    public void writeBlob( Blob blob ) throws E
+    {
+        throw exception( "writeBlob" );
     }
 
     @Override

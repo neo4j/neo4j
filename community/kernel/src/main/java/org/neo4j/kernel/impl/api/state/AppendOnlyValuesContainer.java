@@ -33,6 +33,9 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nonnull;
 
+import org.neo4j.blob.Blob;
+import org.neo4j.blob.BlobWithId;
+import org.neo4j.blob.utils.BlobIO;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.impl.util.collection.Memory;
@@ -844,6 +847,12 @@ public class AppendOnlyValuesContainer implements ValuesContainer
                 final int zoneId = (TimeZones.map( zone.getId() ) << 1) | 1;
                 buf.putInt( zoneId );
             }
+        }
+
+        @Override
+        public void writeBlob( Blob blob ) throws RuntimeException
+        {
+            buf.put( BlobIO.pack( ((BlobWithId) blob).entry() ) );
         }
     }
 }

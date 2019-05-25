@@ -26,7 +26,13 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons IO
   Apache Commons Lang
+  Apache Commons Logging
+  Apache HttpClient
+  Apache HttpCore
+  Apache Log4j API
+  Apache Log4j Scala 2.11 wrapper for Log4j API
   Caffeine cache
   casbah-commons
   casbah-core
@@ -34,6 +40,7 @@ Apache Software License, Version 2.0
   Gherkin Repackaged Dependencies
   Joda convert
   Joda-Time
+  Mime Detection Utility
   MongoDB Java Driver
   nscala-time
   openCypher TCK API

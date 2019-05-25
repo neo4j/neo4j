@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>community-build</artifactId>
+        <groupId>org.neo4j.build</groupId>
+        <version>3.5.6-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.neo4j.build</groupId>
+    <artifactId>neo4j-blob-parent</artifactId>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>neo4j-blob-api</module>
+        <module>neo4j-blob-util</module>
+        <module>neo4j-blob-test</module>
+    </modules>
+
+</project>

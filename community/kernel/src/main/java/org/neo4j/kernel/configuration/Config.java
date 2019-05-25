@@ -45,6 +45,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.neo4j.blob.utils.ContextMap;
 import org.neo4j.configuration.ConfigOptions;
 import org.neo4j.configuration.ConfigValue;
 import org.neo4j.configuration.ExternalSettings;
@@ -96,6 +97,12 @@ public class Config implements DiagnosticsProvider, Configuration
 
     // Messages to this log get replayed into a real logger once logging has been instantiated.
     private Log log = new BufferingLog();
+    private ContextMap _instanceContext = new ContextMap();
+
+    public ContextMap getInstanceContext()
+    {
+        return _instanceContext;
+    }
 
     /**
      * Builder class for a configuration.

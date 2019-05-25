@@ -75,6 +75,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.InstanceContext;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -738,7 +739,7 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                long nodeId = ((long[]) getRightArray( readFullByteArrayFromHeavyRecords( chain, ARRAY ) ).asObject())[0];
+                long nodeId = ((long[]) getRightArray(InstanceContext.of(tx, "nodes"), readFullByteArrayFromHeavyRecords( chain, ARRAY ) ).asObject())[0];
                 NodeRecord before = inUse( new NodeRecord( nodeId, false, -1, -1 ) );
                 NodeRecord after = inUse( new NodeRecord( nodeId, false, -1, -1 ) );
                 DynamicRecord record1 = chain.get( 0 ).clone();

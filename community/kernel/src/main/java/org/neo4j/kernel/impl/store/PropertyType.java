@@ -20,9 +20,17 @@
 package org.neo4j.kernel.impl.store;
 
 import java.util.Arrays;
+import java.util.List;
 
+import org.neo4j.blob.utils.ContextMap;
+import org.neo4j.kernel.impl.InstanceContext;
+import org.neo4j.kernel.impl.blob.StoreBlobIO;
 import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.values.storable.BlobArray;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -151,6 +159,10 @@ public enum PropertyType
             {
                 return headOf( recordBytes, DynamicArrayStore.STRING_HEADER_SIZE );
             }
+            else if ( itemType == BLOB.byteValue() )
+            {
+                return headOf(recordBytes, DynamicArrayStore.STRING_HEADER_SIZE);
+            }
             else if ( itemType <= DOUBLE.byteValue() )
             {
                 return headOf( recordBytes, DynamicArrayStore.NUMBER_HEADER_SIZE );
@@ -169,6 +181,19 @@ public enum PropertyType
         private byte[] headOf( byte[] bytes, int length )
         {
             return Arrays.copyOf( bytes, length );
+        }
+
+        @Override
+        public void onPropertyDelete( ContextMap ic, PrimitiveRecord primitive, PropertyRecord propRecord, PropertyBlock block )
+        {
+            List<DynamicRecord> values = block.getValueRecords();
+            byte itemType = values.get( 0 ).getData( )[0];
+            if ( itemType == BLOB.byteValue() )
+            {
+                BlobArray value = (BlobArray) DynamicArrayStore.getRightArray(ic,
+                        AbstractDynamicStore.readFullByteArrayFromHeavyRecords( block.getValueRecords(), PropertyType.ARRAY ) );
+                StoreBlobIO.deleteBlobArrayProperty( ic, value );
+            }
         }
     },
     SHORT_STRING( 11 )
@@ -225,6 +250,26 @@ public enum PropertyType
         public int calculateNumberOfBlocksUsed( long firstBlock )
         {
             return TemporalType.calculateNumberOfBlocksUsed( firstBlock );
+        }
+    },
+    BLOB( 15 )
+    {
+        @Override
+        public Value value( PropertyBlock block, PropertyStore store )
+        {
+            return StoreBlobIO.readBlobValue( InstanceContext.of( store ), block );
+        }
+
+        @Override
+        public int calculateNumberOfBlocksUsed( long firstBlock )
+        {
+            return 4;
+        }
+
+        @Override
+        public void onPropertyDelete( ContextMap ic, PrimitiveRecord primitive, PropertyRecord propRecord, PropertyBlock block )
+        {
+            StoreBlobIO.deleteBlobProperty( ic, primitive,  propRecord,  block );
         }
     };
 
@@ -299,6 +344,8 @@ public enum PropertyType
             return GEOMETRY;
         case 14:
             return TEMPORAL;
+        case 15:
+            return BLOB;
         default:
             return null;
         }
@@ -339,5 +386,10 @@ public enum PropertyType
     public byte[] readDynamicRecordHeader( byte[] recordBytes )
     {
         throw new UnsupportedOperationException();
+    }
+
+    public void onPropertyDelete( ContextMap ic, PrimitiveRecord primitive, PropertyRecord propRecord, PropertyBlock block )
+    {
+        //do nothing
     }
 }

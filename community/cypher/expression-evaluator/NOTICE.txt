@@ -26,8 +26,15 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons IO
   Apache Commons Lang
+  Apache Commons Logging
+  Apache HttpClient
+  Apache HttpCore
+  Apache Log4j API
+  Apache Log4j Scala 2.11 wrapper for Log4j API
   Lucene Core
+  Mime Detection Utility
   Netty/All-in-One
   parboiled-core
   parboiled-scala
@@ -49,6 +56,9 @@ Eclipse Distribution License - v 1.0
 Eclipse Public License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
+
+MIT License
+  SLF4J API Module
 
 Dependencies with multiple licenses
 -----------------------------------

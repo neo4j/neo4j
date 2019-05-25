@@ -28,6 +28,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.blob.Blob;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.StructType;
@@ -121,6 +122,12 @@ public class Neo4jPackV1 implements Neo4jPack
         public void writeNodeReference( long nodeId )
         {
             throw new UnsupportedOperationException( "Cannot write a raw node reference" );
+        }
+
+        @Override
+        public void writeBlob( Blob blob ) throws IOException
+        {
+            throw new UnsupportedOperationException( "Cannot write a blob" );
         }
 
         @Override

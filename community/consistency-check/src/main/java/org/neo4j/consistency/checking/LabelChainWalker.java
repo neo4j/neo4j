@@ -25,8 +25,10 @@ import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.blob.utils.ContextMap;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
+import org.neo4j.kernel.impl.InstanceContext;
 import org.neo4j.kernel.impl.store.LabelIdArray;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -73,7 +75,7 @@ public class LabelChainWalker<RECORD extends AbstractBaseRecord, REPORT extends 
             if ( allInUse )
             {
                 // only validate label ids if all dynamic records seen were in use
-                validator.onWellFormedChain( labelIds( recordList ), engine, records );
+                validator.onWellFormedChain( labelIds( InstanceContext.of(dynamicRecord), recordList ), engine, records );
             }
         }
         else
@@ -90,10 +92,10 @@ public class LabelChainWalker<RECORD extends AbstractBaseRecord, REPORT extends 
         }
     }
 
-    public static long[] labelIds( List<DynamicRecord> recordList )
+    public static long[] labelIds( ContextMap ic, List<DynamicRecord> recordList )
     {
         long[] idArray =
-                (long[]) getRightArray( readFullByteArrayFromHeavyRecords( recordList, PropertyType.ARRAY ) ).asObject();
+                (long[]) getRightArray( ic, readFullByteArrayFromHeavyRecords( recordList, PropertyType.ARRAY ) ).asObject();
         return LabelIdArray.stripNodeId( idArray );
     }
 

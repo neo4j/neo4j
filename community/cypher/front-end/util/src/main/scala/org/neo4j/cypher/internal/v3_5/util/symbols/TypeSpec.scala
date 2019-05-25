@@ -48,7 +48,8 @@ object TypeSpec {
     CTTime,
     CTLocalTime,
     CTLocalDateTime,
-    CTDateTime
+    CTDateTime,
+    CTBlob
   )
 
   private def apply(range: TypeRange): TypeSpec = new TypeSpec(Vector(range))

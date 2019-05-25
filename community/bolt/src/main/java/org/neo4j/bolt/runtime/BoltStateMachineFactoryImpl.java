@@ -32,6 +32,9 @@ import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.bolt.v3.BoltProtocolV3;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.bolt.v3.runtime.TransactionStateMachineV3SPI;
+import org.neo4j.bolt.v5.BoltProtocolV5;
+import org.neo4j.bolt.v5.BoltStateMachineV5;
+import org.neo4j.bolt.v5.runtime.TransactionStateMachineV5SPI;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
@@ -72,6 +75,10 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
         {
             return newStateMachineV3( boltChannel );
         }
+        else if ( protocolVersion == BoltProtocolV5.VERSION )
+        {
+            return newStateMachineV5( boltChannel );
+        }
         else
         {
             throw new IllegalArgumentException( "Failed to create a state machine for protocol version " + protocolVersion );
@@ -90,6 +97,13 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
         TransactionStateMachineSPI transactionSPI = new TransactionStateMachineV3SPI( getActiveDatabase(), boltChannel, getAwaitDuration(), clock );
         BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( usageData, logging, authentication, transactionSPI );
         return new BoltStateMachineV3( boltSPI, boltChannel, clock );
+    }
+
+    private BoltStateMachine newStateMachineV5( BoltChannel boltChannel )
+    {
+        TransactionStateMachineSPI transactionSPI = new TransactionStateMachineV5SPI( getActiveDatabase(), boltChannel, getAwaitDuration(), clock );
+        BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( usageData, logging, authentication, transactionSPI );
+        return new BoltStateMachineV5( boltSPI, boltChannel, clock );
     }
 
     private Duration getAwaitDuration()

@@ -26,7 +26,9 @@ import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.Base64;
 
+import org.neo4j.blob.Blob;
 import org.neo4j.string.UTF8;
+import org.neo4j.values.storable.BlobValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
@@ -186,6 +188,13 @@ public final class ArrayEncoder
         public void writeTime( OffsetTime offsetTime ) throws RuntimeException
         {
             builder.append( TimeValue.time( offsetTime ).prettyPrint() );
+            builder.append( '|' );
+        }
+
+        @Override
+        public void writeBlob( Blob blob ) throws RuntimeException
+        {
+            builder.append( new BlobValue( blob ).prettyPrint() );
             builder.append( '|' );
         }
 

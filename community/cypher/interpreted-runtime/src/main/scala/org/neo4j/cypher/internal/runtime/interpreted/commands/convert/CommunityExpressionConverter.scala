@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.InequalitySeekRangeExpression
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PointDistanceSeekRangeExpression
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression => CommandExpression}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression => CommandExpression, BlobLiteralCommand, InequalitySeekRangeExpression, PointDistanceSeekRangeExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedRelType
@@ -55,6 +53,8 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
   override def toCommandExpression(id: Id, expression: ast.Expression,
                                    self: ExpressionConverters): Option[CommandExpression] = {
     val result = expression match {
+      case e: ast.BlobLiteralExpr => new BlobLiteralCommand(e.value)
+
       case e: ast.Null => commandexpressions.Null()
       case e: ast.True => predicates.True()
       case e: ast.False => predicates.Not(predicates.True())

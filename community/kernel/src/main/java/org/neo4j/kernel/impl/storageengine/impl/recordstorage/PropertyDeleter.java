@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
+import org.neo4j.kernel.impl.InstanceContext;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -47,6 +48,11 @@ public class PropertyDeleter
 
             // TODO forChanging/forReading piggy-backing
             PropertyRecord propRecord = propertyChange.forChangingData();
+
+            propRecord.forEach( block -> {
+                block.getType().onPropertyDelete( InstanceContext.of(propertyRecords), primitive, propRecord, block );
+            } );
+
             deletePropertyRecordIncludingValueRecords( propRecord );
             nextProp = propRecord.getNextProp();
             propRecord.setChanged( primitive );
@@ -131,6 +137,8 @@ public class PropertyDeleter
                                              + "] is not present in property["
                                              + propertyId + "]" );
         }
+
+        block.getType().onPropertyDelete( InstanceContext.of( propertyRecords ), primitive, propRecord, block);
 
         for ( DynamicRecord valueRecord : block.getValueRecords() )
         {

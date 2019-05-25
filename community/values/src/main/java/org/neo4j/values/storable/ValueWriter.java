@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.blob.Blob;
+
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -52,7 +54,8 @@ public interface ValueWriter<E extends Exception>
         DATE,
         ZONED_TIME,
         LOCAL_TIME,
-        DURATION
+        DURATION,
+        BLOB
     }
 
     void writeNull() throws E;
@@ -74,6 +77,8 @@ public interface ValueWriter<E extends Exception>
     void writeString( String value ) throws E;
 
     void writeString( char value ) throws E;
+
+    void writeBlob( Blob blob ) throws E;
 
     default void writeUTF8( byte[] bytes, int offset, int length ) throws E
     {
@@ -199,6 +204,11 @@ public interface ValueWriter<E extends Exception>
 
         @Override
         public void writeDateTime( ZonedDateTime zonedDateTime ) throws E
+        {   // no-op
+        }
+
+        @Override
+        public void writeBlob( Blob blob ) throws E
         {   // no-op
         }
     }

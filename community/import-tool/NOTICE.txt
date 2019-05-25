@@ -26,12 +26,25 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons IO
   Apache Commons Lang
+  Apache Commons Logging
+  Apache HttpClient
+  Apache HttpCore
+  Apache Log4j API
+  Apache Log4j Scala 2.11 wrapper for Log4j API
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
   Lucene QueryParsers
+  Mime Detection Utility
   Netty/All-in-One
+
+BSD - Scala License
+  Scala Library
+
+BSD License
+  Scala Compiler
 
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
@@ -44,6 +57,9 @@ Eclipse Distribution License - v 1.0
 Eclipse Public License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
+
+MIT License
+  SLF4J API Module
 
 Dependencies with multiple licenses
 -----------------------------------

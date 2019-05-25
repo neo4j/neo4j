@@ -20,6 +20,7 @@
 package org.neo4j.values.storable;
 
 import org.hamcrest.Matchers;
+import org.neo4j.blob.Blob;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -214,6 +215,12 @@ public class BufferValueWriter implements ValueWriter<RuntimeException>
     public void writeDateTime( ZonedDateTime zonedDateTime ) throws RuntimeException
     {
         buffer.add( DateTimeValue.datetime( zonedDateTime ) );
+    }
+
+    @Override
+    public void writeBlob( Blob blob ) throws RuntimeException
+    {
+        buffer.add( new BlobValue( blob ) );
     }
 
     @SuppressWarnings( "WeakerAccess" )

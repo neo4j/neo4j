@@ -38,7 +38,13 @@ Apache Software License, Version 2.0
   @firebase/storage-types
   @firebase/util
   @firebase/webchannel-wrapper
+  Apache Commons IO
   Apache Commons Lang
+  Apache Commons Logging
+  Apache HttpClient
+  Apache HttpCore
+  Apache Log4j API
+  Apache Log4j Scala 2.11 wrapper for Log4j API
   ascli
   aws-sign2
   bytebuffer
@@ -53,6 +59,7 @@ Apache Software License, Version 2.0
   Lucene Common Analyzers
   Lucene Core
   Lucene QueryParsers
+  Mime Detection Utility
   neo4j-driver
   Netty/All-in-One
   oauth-sign
@@ -61,6 +68,9 @@ Apache Software License, Version 2.0
   rxjs
   tslib
   tunnel-agent
+
+BSD - Scala License
+  Scala Library
 
 BSD License
   antlr4
@@ -78,6 +88,7 @@ BSD License
   qs
   react-dnd
   react-dnd-html5-backend
+  Scala Compiler
   sntp
   tough-cookie
 
@@ -253,6 +264,7 @@ MIT License
   safer-buffer
   save-as
   setimmediate
+  SLF4J API Module
   sshpk
   string-width
   string_decoder

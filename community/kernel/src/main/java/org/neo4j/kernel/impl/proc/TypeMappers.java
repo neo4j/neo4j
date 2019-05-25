@@ -34,6 +34,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.neo4j.blob.Blob;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
@@ -68,6 +69,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTMap;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNumber;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTTime;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTBlob;
 
 public class TypeMappers extends DefaultValueMapper
 {
@@ -129,6 +131,9 @@ public class TypeMappers extends DefaultValueMapper
      */
     private void registerScalarsAndCollections()
     {
+        //NOTE: supports blob
+        registerType(Blob.class, TO_BLOB);
+
         registerType( String.class, TO_STRING );
         registerType( long.class, TO_INTEGER );
         registerType( Long.class, TO_INTEGER );
@@ -198,6 +203,11 @@ public class TypeMappers extends DefaultValueMapper
         javaToNeo.put( javaClass, toNeo );
     }
 
+    ////////NOTE: blob type
+    private static final DefaultValueConverter TO_BLOB = new DefaultValueConverter( NTBlob,
+            Blob.class, s ->
+            new DefaultParameterValue( s, Neo4jTypes.NTBlob ) );
+    ///////
     private static final DefaultValueConverter TO_ANY = new DefaultValueConverter( NTAny, Object.class );
     private static final DefaultValueConverter TO_STRING = new DefaultValueConverter( NTString, String.class,
             DefaultParameterValue::ntString );

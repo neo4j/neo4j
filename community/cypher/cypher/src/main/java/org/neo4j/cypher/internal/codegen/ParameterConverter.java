@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.blob.Blob;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
@@ -388,6 +389,12 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     public void writeDateTime( ZonedDateTime zonedDateTime )
     {
         writeValue( zonedDateTime );
+    }
+
+    @Override
+    public void writeBlob( Blob blob ) throws RuntimeException
+    {
+        writeValue( blob );
     }
 
     private interface Writer

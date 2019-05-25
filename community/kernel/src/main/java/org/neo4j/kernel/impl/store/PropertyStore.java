@@ -29,11 +29,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.ToIntFunction;
 
+import org.neo4j.blob.Blob;
+import org.neo4j.blob.utils.ContextMap;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.InstanceContext;
+import org.neo4j.kernel.impl.blob.StoreBlobIO;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.UnsupportedFormatCapabilityException;
@@ -624,6 +628,13 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             }
         }
 
+        //NOTE: blob
+        @Override
+        public void writeBlob( Blob blob )
+        {
+            StoreBlobIO.saveBlob( InstanceContext.of( stringAllocator ), blob, this.keyId, this.block );
+        }
+
     }
     public static void setSingleBlockValue( PropertyBlock block, int keyId, PropertyType type, long longValue )
     {
@@ -667,7 +678,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
 
     private Value getArrayFor( Iterable<DynamicRecord> records )
     {
-        return getRightArray( arrayStore.readFullByteArray( records, PropertyType.ARRAY ) );
+        return getRightArray( InstanceContext.of( this ), arrayStore.readFullByteArray( records, PropertyType.ARRAY ) );
     }
 
     @Override
@@ -709,7 +720,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         return new PropertyValueRecordSizeCalculator( this );
     }
 
-    public static ArrayValue readArrayFromBuffer( ByteBuffer buffer )
+    public static ArrayValue readArrayFromBuffer( ContextMap ic, ByteBuffer buffer )
     {
         if ( buffer.limit() <= 0 )
         {
@@ -733,19 +744,26 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
                 }
                 return Values.stringArray( result );
             }
+            //NOTE: blob
+            else if ( typeId == PropertyType.BLOB.intValue() )
+            {
+                int arrayLength = buffer.getInt();
+                Blob[] result = StoreBlobIO.readBlobArray( ic, buffer, arrayLength );
+                return Values.blobArray(result);
+            }
             else if ( typeId == PropertyType.GEOMETRY.intValue() )
             {
                 GeometryType.GeometryHeader header = GeometryType.GeometryHeader.fromArrayHeaderByteBuffer( buffer );
                 byte[] byteArray = new byte[buffer.limit() - buffer.position()];
                 buffer.get( byteArray );
-                return GeometryType.decodeGeometryArray( header, byteArray );
+                return GeometryType.decodeGeometryArray( ic, header, byteArray );
             }
             else if ( typeId == PropertyType.TEMPORAL.intValue() )
             {
                 TemporalType.TemporalHeader header = TemporalType.TemporalHeader.fromArrayHeaderByteBuffer( buffer );
                 byte[] byteArray = new byte[buffer.limit() - buffer.position()];
                 buffer.get( byteArray );
-                return TemporalType.decodeTemporalArray( header, byteArray );
+                return TemporalType.decodeTemporalArray( ic, header, byteArray );
             }
             else
             {

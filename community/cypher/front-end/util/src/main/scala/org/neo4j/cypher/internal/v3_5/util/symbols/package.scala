@@ -40,5 +40,8 @@ package object symbols {
   val CTGraphRef: GraphRefType = GraphRefType.instance
   def CTList(inner: CypherType): ListType = ListType(inner)
 
+  //NOTE: add blob
+  val CTBlob: BlobType = BlobType.instance
+
   implicit def invariantTypeSpec(that: CypherType): TypeSpec = that.invariant
 }

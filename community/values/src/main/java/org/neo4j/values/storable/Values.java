@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+import org.neo4j.blob.Blob;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Point;
 
@@ -220,6 +221,16 @@ public final class Values
         }
 
         throw new UnsupportedOperationException( "Unsupported type of Number " + number.toString() );
+    }
+
+    public static BlobValue blobValue( Blob value )
+    {
+        return new BlobValue( value );
+    }
+
+    public static BlobArray blobArray( Blob... value )
+    {
+        return new BlobArray( value );
     }
 
     public static LongValue longValue( long value )
@@ -525,6 +536,12 @@ public final class Values
 
     public static Value unsafeOf( Object value, boolean allowNull )
     {
+        ///NOTE: blob support
+        ////added by pidb
+        if ( value instanceof Blob )
+        {
+            return new BlobValue( (Blob) value );
+        }
         if ( value instanceof String )
         {
             return stringValue( (String) value );
@@ -639,6 +656,11 @@ public final class Values
 
     private static Value arrayValue( Object[] value )
     {
+        //NOTE: blob[]
+        if ( value instanceof Blob[] )
+        {
+            return blobArray( copy( value, new Blob[value.length] ) );
+        }
         if ( value instanceof String[] )
         {
             return stringArray( copy( value, new String[value.length] ) );

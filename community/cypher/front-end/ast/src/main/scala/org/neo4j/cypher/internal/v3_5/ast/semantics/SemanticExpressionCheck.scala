@@ -43,6 +43,8 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
     */
   def check(ctx: SemanticContext, expression: Expression): SemanticCheck =
     expression match {
+      case x:BlobLiteralExpr =>
+        expectType( CTBlob, x )
 
         // ARITHMETICS
 
