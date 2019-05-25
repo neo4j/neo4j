@@ -900,6 +900,11 @@ public class Database extends LifecycleAdapter
         };
     }
 
+    public boolean isStarted()
+    {
+        return started;
+    }
+
     private static void safeStorageEngineClose( StorageEngine storageEngine )
     {
         if ( storageEngine != null )

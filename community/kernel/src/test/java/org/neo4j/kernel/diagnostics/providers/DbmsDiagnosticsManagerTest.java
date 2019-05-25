@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 
@@ -56,6 +58,7 @@ class DbmsDiagnosticsManagerTest
     private StorageEngine storageEngine;
     private StorageEngineFactory storageEngineFactory;
     private Database defaultDatabase;
+    private StandaloneDatabaseContext defaultContext;
 
     @BeforeEach
     @SuppressWarnings( "unchecked" )
@@ -66,6 +69,7 @@ class DbmsDiagnosticsManagerTest
 
         storageEngine = mock( StorageEngine.class );
         storageEngineFactory = mock( StorageEngineFactory.class );
+        defaultContext = mock( StandaloneDatabaseContext.class );
         defaultDatabase = prepareDatabase();
         when( storageEngineFactory.listStorageFiles( any(), any() ) ).thenReturn( Collections.emptyList() );
 
@@ -73,10 +77,9 @@ class DbmsDiagnosticsManagerTest
         dependencies.satisfyDependency( Config.defaults() );
         dependencies.satisfyDependency( databaseManager );
 
-        StandaloneDatabaseContext context = mock( StandaloneDatabaseContext.class );
-        when( context.database() ).thenReturn( defaultDatabase );
-        when( databaseManager.getDatabaseContext( DEFAULT_DATABASE_ID ) ).thenReturn( Optional.of( context ) );
-        when( databaseManager.registeredDatabases() ).thenReturn( new TreeMap<>( singletonMap( DEFAULT_DATABASE_ID, context ) ) );
+        when( defaultContext.database() ).thenReturn( defaultDatabase );
+        when( databaseManager.getDatabaseContext( DEFAULT_DATABASE_ID ) ).thenReturn( Optional.of( defaultContext ) );
+        when( databaseManager.registeredDatabases() ).thenReturn( new TreeMap<>( singletonMap( DEFAULT_DATABASE_ID, defaultContext ) ) );
 
         diagnosticsManager = new DbmsDiagnosticsManager( dependencies, new SimpleLogService( logProvider ) );
     }
@@ -99,6 +102,40 @@ class DbmsDiagnosticsManagerTest
         diagnosticsManager.dumpDatabaseDiagnostics( defaultDatabase );
 
         assertContainsDatabaseDiagnostics();
+    }
+
+    @Test
+    void dumpDiagnosticOfStoppedDatabase()
+    {
+        when( defaultDatabase.isStarted() ).thenReturn( false );
+        logProvider.assertNoLoggingOccurred();
+
+        diagnosticsManager.dumpAll();
+
+        logProvider.assertContainsMessageContaining( "Database: " + DEFAULT_DATABASE_NAME.toLowerCase() );
+        logProvider.assertLogStringContains( "Database is stopped." );
+    }
+
+    @Test
+    void dumpDiagnosticsInConciseForm()
+    {
+        Map<DatabaseId,StandaloneDatabaseContext> databaseMap = new HashMap<>();
+        int numberOfDatabases = 1000;
+        for ( int i = 0; i < numberOfDatabases; i++ )
+        {
+            Database database = mock( Database.class );
+            DatabaseId databaseId = new DatabaseId( String.valueOf( i ) );
+            when( database.getDatabaseId() ).thenReturn( databaseId );
+            databaseMap.put( databaseId, new StandaloneDatabaseContext( database ) );
+        }
+        when( databaseManager.registeredDatabases() ).thenReturn( new TreeMap<>( databaseMap ) );
+
+        diagnosticsManager.dumpAll();
+        for ( int i = 0; i < numberOfDatabases; i++ )
+        {
+            logProvider.assertContainsMessageContaining( "Database: " + i );
+        }
+
     }
 
     @Test
@@ -145,6 +182,7 @@ class DbmsDiagnosticsManagerTest
         databaseDependencies.satisfyDependency( new DefaultFileSystemAbstraction() );
         when( database.getDependencyResolver() ).thenReturn( databaseDependencies );
         when( database.getDatabaseId() ).thenReturn( DEFAULT_DATABASE_ID );
+        when( database.isStarted() ).thenReturn( true );
         return database;
     }
 }

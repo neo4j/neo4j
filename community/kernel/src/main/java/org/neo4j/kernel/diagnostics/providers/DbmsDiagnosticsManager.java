@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.diagnostics.providers;
 
+import java.util.Collection;
+
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseContext;
@@ -33,8 +35,11 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
+import static org.neo4j.util.FeatureToggles.getInteger;
+
 public class DbmsDiagnosticsManager
 {
+    private static final int CONCISE_DATABASE_DUMP_THRESHOLD = getInteger( DbmsDiagnosticsManager.class, "conciseDumpThreshold", 10 );
     private final Dependencies dependencies;
     private final DiagnosticsManager diagnosticsManager;
     private final Log log;
@@ -53,7 +58,7 @@ public class DbmsDiagnosticsManager
 
     public void dumpDatabaseDiagnostics( Database database )
     {
-        dumpDatabaseDiagnostics( database, log );
+        dumpDatabaseDiagnostics( database, log, false );
     }
 
     public void dumpAll()
@@ -75,15 +80,26 @@ public class DbmsDiagnosticsManager
     public void dump( DatabaseId databaseId, Log log )
     {
         getDatabaseManager().getDatabaseContext( databaseId ).map( DatabaseContext::database )
-                .ifPresent( database -> dumpDatabaseDiagnostics( database, log ) );
+                .ifPresent( database -> dumpDatabaseDiagnostics( database, log, true ) );
     }
 
     private void dumpAllDatabases( Log log )
     {
-        getDatabaseManager()
-                .registeredDatabases()
-                .values()
-                .forEach( dbCtx -> dumpDatabaseDiagnostics( dbCtx.database(), log ) );
+        Collection<? extends DatabaseContext> values = getDatabaseManager().registeredDatabases().values();
+        if ( values.size() > CONCISE_DATABASE_DUMP_THRESHOLD )
+        {
+            values.forEach( context -> dumpConciseDiagnostics( context.database(), log ) );
+        }
+        else
+        {
+            values.forEach( dbCtx -> dumpDatabaseDiagnostics( dbCtx.database(), log, true ) );
+        }
+    }
+
+    private void dumpConciseDiagnostics( Database database, Log log )
+    {
+        dumpDatabaseSectionName( database, log );
+        logDatabaseStatus( database, log );
     }
 
     private void dumpSystemDiagnostics( Log log )
@@ -93,19 +109,38 @@ public class DbmsDiagnosticsManager
         diagnosticsManager.dump( new ConfigDiagnostics( dependencies.resolveDependency( Config.class ) ), log );
     }
 
-    private void dumpDatabaseDiagnostics( Database database, Log log )
+    private void dumpDatabaseDiagnostics( Database database, Log log, boolean checkStatus )
     {
+        dumpDatabaseSectionName( database, log );
+        if ( checkStatus )
+        {
+            logDatabaseStatus( database, log );
+
+            if ( !database.isStarted() )
+            {
+                return;
+            }
+        }
         Dependencies databaseResolver = database.getDependencyResolver();
         DatabaseInfo databaseInfo = databaseResolver.resolveDependency( DatabaseInfo.class );
         FileSystemAbstraction fs = databaseResolver.resolveDependency( FileSystemAbstraction.class );
         StorageEngineFactory storageEngineFactory = databaseResolver.resolveDependency( StorageEngineFactory.class );
         StorageEngine storageEngine = databaseResolver.resolveDependency( StorageEngine.class );
 
-        diagnosticsManager.section( log, "Database: " + database.getDatabaseId().name() );
         diagnosticsManager.dump( new VersionDiagnostics( databaseInfo, database.getStoreId() ), log );
         diagnosticsManager.dump( new StoreFilesDiagnostics( storageEngineFactory, fs, database.getDatabaseLayout() ), log );
         diagnosticsManager.dump( new TransactionRangeDiagnostics( database ), log );
         storageEngine.dumpDiagnostics( diagnosticsManager, log );
+    }
+
+    private static void logDatabaseStatus( Database database, Log log )
+    {
+        log.info( "Database is %s.", database.isStarted() ? "started" : "stopped" );
+    }
+
+    private void dumpDatabaseSectionName( Database database, Log log )
+    {
+        diagnosticsManager.section( log, "Database: " + database.getDatabaseId().name() );
     }
 
     private DatabaseManager<?> getDatabaseManager()
