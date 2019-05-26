@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.VirtualValues
@@ -28,8 +29,8 @@ object ListLiteral {
   val empty = Literal(Seq())
 }
 
-case class ListLiteral(arguments: Expression*) extends Expression {
-  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
+case class ListLiteral(override val arguments: Expression*) extends Expression {
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val argumentValues = arguments.map { expression =>
       expression(ctx, state)
     }
@@ -38,5 +39,7 @@ case class ListLiteral(arguments: Expression*) extends Expression {
 
   def rewrite(f: (Expression) => Expression): Expression = f(ListLiteral(arguments.map(f): _*))
 
-  def symbolTableDependencies = arguments.flatMap(_.symbolTableDependencies).toSet
+  override def children: Seq[AstNode[_]] = arguments
+
+  override def symbolTableDependencies: Set[String] = arguments.flatMap(_.symbolTableDependencies).toSet
 }

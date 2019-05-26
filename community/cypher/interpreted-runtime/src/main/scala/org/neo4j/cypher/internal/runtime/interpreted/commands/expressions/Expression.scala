@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.TypeSafe
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.cypher.internal.v3_5.util.InternalException
 import org.neo4j.cypher.internal.v3_5.util.symbols.CypherType
 
 abstract class Expression extends TypeSafe with AstNode[Expression] {
@@ -34,8 +33,7 @@ abstract class Expression extends TypeSafe with AstNode[Expression] {
   // WARNING: MUTABILITY IN IMMUTABLE CLASSES ...
   private var _owningPipe: Option[Pipe] = None
 
-  def owningPipe: Pipe = _owningPipe.getOrElse(
-    throw new InternalException("Expressions need to be registered with it's owning Pipe, so the profiling knows where to report db-hits"))
+  def owningPipe: Option[Pipe] = _owningPipe
 
   def registerOwningPipe(pipe: Pipe): Unit = visit {
     case x:Expression => x._owningPipe = Some(pipe)
@@ -56,11 +54,13 @@ abstract class Expression extends TypeSafe with AstNode[Expression] {
     }
   }
 
+  // TODO check overrides here
+
   // Expressions that do not get anything in their context from this expression.
   def arguments: Seq[Expression]
 
   // Any expressions that this expression builds on
-  def children: Seq[AstNode[_]] = arguments
+  def children: Seq[AstNode[_]]
 
   def containsAggregate = exists(_.isInstanceOf[AggregationExpression])
 
@@ -80,17 +80,19 @@ abstract class Expression extends TypeSafe with AstNode[Expression] {
 case class CachedExpression(key:String, typ:CypherType) extends Expression {
   def apply(ctx: ExecutionContext, state: QueryState) = ctx(key)
 
-  def rewrite(f: (Expression) => Expression) = f(this)
+  override def rewrite(f: Expression => Expression): Expression = f(this)
 
-  def arguments = Seq()
+  override def arguments: Seq[Expression] = Seq.empty
 
-  def symbolTableDependencies = Set(key)
+  override def children: Seq[AstNode[_]] = Seq.empty
+
+  override def symbolTableDependencies: Set[String] = Set(key)
 
   override def toString = "Cached(%s of type %s)".format(key, typ)
 }
 
 abstract class Arithmetics(left: Expression, right: Expression) extends Expression {
-  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val aVal = left(ctx, state)
     val bVal = right(ctx, state)
 
@@ -106,9 +108,9 @@ abstract class Arithmetics(left: Expression, right: Expression) extends Expressi
 
   def calc(a: AnyValue, b: AnyValue): AnyValue
 
-  def arguments = Seq(left, right)
+  override def arguments: Seq[Expression] = Seq(left, right)
 
-  def symbolTableDependencies: Set[String] = left.symbolTableDependencies ++ left.symbolTableDependencies
+  override def symbolTableDependencies: Set[String] = left.symbolTableDependencies ++ left.symbolTableDependencies
 }
 
 trait ExtendedExpression extends Expression {

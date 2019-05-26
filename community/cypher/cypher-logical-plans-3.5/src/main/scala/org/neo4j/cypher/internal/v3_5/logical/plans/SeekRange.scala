@@ -23,7 +23,12 @@ package org.neo4j.cypher.internal.v3_5.logical.plans
   Seek ranges describe intervals. In practice they are used to summarize all inequalities over the
   same node and property (n.prop) during planning, esp. for generating index seek by range plans.
  */
-sealed trait SeekRange[+V]
+sealed trait SeekRange[+V] {
+  /**
+    * The [[V]]s that are used to define this [[SeekRange]].
+    */
+  def arguments: Seq[V]
+}
 
 /*
   An inequality seek range can either only have lower bounds (RangeGreaterThan),
@@ -56,6 +61,8 @@ sealed trait InequalitySeekRange[+V] extends SeekRange[V] {
 sealed trait HalfOpenSeekRange[+V] extends InequalitySeekRange[V] {
   def bounds: Bounds[V]
 
+  override def arguments: Seq[V] = bounds.map(_.endPoint).toIndexedSeq
+
   override def mapBounds[P](f: V => P): HalfOpenSeekRange[P]
 
   // returns the limit of this half open seek range, i.e.
@@ -71,6 +78,9 @@ sealed trait HalfOpenSeekRange[+V] extends InequalitySeekRange[V] {
 }
 
 final case class RangeBetween[+V](greaterThan: RangeGreaterThan[V], lessThan: RangeLessThan[V]) extends InequalitySeekRange[V] {
+
+  override def arguments: Seq[V] = greaterThan.arguments ++ lessThan.arguments
+
   override def mapBounds[P](f: V => P): RangeBetween[P] = copy(greaterThan = greaterThan.mapBounds(f), lessThan = lessThan.mapBounds(f))
 
   override def groupBy[K](f: Bound[V] => K): Map[K, InequalitySeekRange[V]] = {
@@ -130,12 +140,16 @@ final case class RangeLessThan[+V](bounds: Bounds[V]) extends HalfOpenSeekRange[
   would describe the prefix search (which can be difficult due to unicode issues)
 */
 final case class PrefixRange[T](prefix: T) extends SeekRange[T] {
+  override def arguments: Seq[T] = Seq(prefix)
+
   def map[X](f: T => X): PrefixRange[X] = copy(f(prefix))
 
   override def toString: String = s"STARTS WITH ${if(prefix == null) "null" else prefix.toString}"
 }
 
 final case class PointDistanceRange[T](point: T, distance: T, inclusive: Boolean) extends SeekRange[T] {
+  override def arguments: Seq[T] = Seq(point, distance)
+
   def map[X](f: T => X): PointDistanceRange[X] = copy(f(point), f(distance), inclusive)
 }
 

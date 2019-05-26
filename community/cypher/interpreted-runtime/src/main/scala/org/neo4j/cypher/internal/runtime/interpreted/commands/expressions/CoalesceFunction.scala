@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.v3_5.util.symbols._
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-case class CoalesceFunction(arguments: Expression*) extends Expression {
-  def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
+case class CoalesceFunction(override val arguments: Expression*) extends Expression {
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
     arguments.
       view.
       map(expression => expression(ctx, state)).
@@ -39,9 +40,11 @@ case class CoalesceFunction(arguments: Expression*) extends Expression {
 
   val argumentsString: String = children.mkString(",")
 
-  override def toString = "coalesce(" + argumentsString + ")"
+  override def toString: String = "coalesce(" + argumentsString + ")"
 
-  def rewrite(f: (Expression) => Expression) = f(CoalesceFunction(arguments.map(e => e.rewrite(f)): _*))
+  override def rewrite(f: Expression => Expression): Expression = f(CoalesceFunction(arguments.map(e => e.rewrite(f)): _*))
 
-  def symbolTableDependencies = arguments.flatMap(_.symbolTableDependencies).toSet
+  override  def symbolTableDependencies: Set[String] = arguments.flatMap(_.symbolTableDependencies).toSet
+
+  override def children: Seq[AstNode[_]] = arguments
 }

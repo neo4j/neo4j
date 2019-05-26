@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
@@ -29,11 +30,13 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
   override def compute(value: AnyValue, ctx: ExecutionContext, state: QueryState): AnyValue =
     CypherFunctions.point(value, state.query)
 
-  override def rewrite(f: (Expression) => Expression) = f(PointFunction(data.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(PointFunction(data.rewrite(f)))
 
-  override def arguments = data.arguments
+  override def arguments: Seq[Expression] = data.arguments
 
-  override def symbolTableDependencies = data.symbolTableDependencies
+  override def children: Seq[AstNode[_]] = Seq(data)
 
-  override def toString = "Point(" + data + ")"
+  override def symbolTableDependencies: Set[String] = data.symbolTableDependencies
+
+  override def toString: String = "Point(" + data + ")"
 }

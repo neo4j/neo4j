@@ -21,23 +21,27 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
 import org.neo4j.cypher.internal.v3_5.util.NonEmptyList
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 
 case class Ors(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPredicate {
-  def shouldExitWhen = true
-  def rewrite(f: (Expression) => Expression): Expression = f(Ors(predicates.map(_.rewriteAsPredicate(f))))
+  override def shouldExitWhen = true
+  override def rewrite(f: Expression => Expression): Expression = f(Ors(predicates.map(_.rewriteAsPredicate(f))))
+  override def children: Seq[AstNode[_]] = predicates.toIndexedSeq
 }
 
 @deprecated("Use Ors (plural) instead")
 case class Or(a: Predicate, b: Predicate) extends Predicate {
-  def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = Ors(NonEmptyList(a, b)).isMatch(m, state)
+  override def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = Ors(NonEmptyList(a, b)).isMatch(m, state)
 
   override def toString: String = s"($a OR $b)"
-  def containsIsNull = a.containsIsNull || b.containsIsNull
-  def rewrite(f: (Expression) => Expression) = f(Or(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
+  override def containsIsNull: Boolean = a.containsIsNull || b.containsIsNull
+  override def rewrite(f: Expression => Expression): Expression = f(Or(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
 
-  def arguments = Seq(a, b)
+  override def arguments: Seq[Expression] = Seq(a, b)
 
-  def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
+  override def children: Seq[AstNode[_]] = Seq(a, b)
+
+  override def symbolTableDependencies: Set[String] = a.symbolTableDependencies ++ b.symbolTableDependencies
 }

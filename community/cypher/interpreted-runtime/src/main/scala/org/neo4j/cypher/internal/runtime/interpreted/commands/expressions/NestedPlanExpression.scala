@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.values.AnyValue
@@ -28,6 +29,8 @@ case class NestedPlanExpression(logicalPlan: LogicalPlan) extends Expression {
   override def rewrite(f: (Expression) => Expression): Expression = ???
 
   override def arguments: Seq[Expression] = Seq.empty
+
+  override def children: Seq[AstNode[_]] = Seq.empty
 
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = ???
 

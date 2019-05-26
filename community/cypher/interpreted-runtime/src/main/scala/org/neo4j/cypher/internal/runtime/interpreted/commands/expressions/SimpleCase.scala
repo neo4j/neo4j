@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 
 case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Expression)], default: Option[Expression])
   extends Expression {
 
-  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val value = expression(ctx, state)
 
     val matchingExpression: Option[Expression] = alternatives collectFirst {
@@ -43,9 +44,11 @@ case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Exp
 
   private def alternativeExpressions = alternatives.map(_._2)
 
-  def arguments = (expression +: (alternativeComparison ++ alternativeExpressions ++ default.map(Seq(_)).getOrElse(Seq()))).distinct
+  override def arguments: Seq[Expression] = (expression +: (alternativeComparison ++ alternativeExpressions ++ default)).distinct
 
-  def rewrite(f: (Expression) => Expression): Expression = {
+  override def children: Seq[AstNode[_]] = expression +: (alternativeComparison ++ alternativeExpressions ++ default)
+
+  override def rewrite(f: Expression => Expression): Expression = {
     val newAlternatives = alternatives map {
       case (a, b) => (a.rewrite(f), b.rewrite(f))
     }
@@ -53,7 +56,7 @@ case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Exp
     f(SimpleCase(expression.rewrite(f), newAlternatives, default.map(f)))
   }
 
-  def symbolTableDependencies: Set[String] = {
+  override def symbolTableDependencies: Set[String] = {
     val expressions = default.toIndexedSeq ++ alternativeComparison ++ alternativeExpressions :+ expression
     expressions.flatMap(_.symbolTableDependencies).toSet
   }

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedPipeBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeBuilderFactory, PipeExecutionBuilderContext}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{OwningPipeAsserter, Pipe, PipeBuilderFactory, PipeExecutionBuilderContext}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, LogicalPlans}
 
 class PipeExecutionPlanBuilder(pipeBuilderFactory: PipeBuilderFactory,
@@ -30,7 +30,9 @@ class PipeExecutionPlanBuilder(pipeBuilderFactory: PipeBuilderFactory,
   def build(plan: LogicalPlan)
            (implicit context: PipeExecutionBuilderContext, tokenContext: TokenContext): Pipe = {
 
-    buildPipe(plan)
+    val pipe = buildPipe(plan)
+    OwningPipeAsserter.assertAllExpressionsHaveAnOwningPipe(pipe)
+    pipe
   }
 
   private def buildPipe(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext, tokenContext: TokenContext): Pipe = {

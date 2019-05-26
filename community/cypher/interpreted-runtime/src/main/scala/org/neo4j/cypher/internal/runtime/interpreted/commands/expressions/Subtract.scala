@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherMath
 import org.neo4j.values.AnyValue
@@ -32,9 +33,11 @@ case class Subtract(a: Expression, b: Expression) extends Expression {
     case (x, y) => CypherMath.subtract(x, y)
   }
 
-  def rewrite(f: (Expression) => Expression) = f(Subtract(a.rewrite(f), b.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(Subtract(a.rewrite(f), b.rewrite(f)))
 
-  def arguments = Seq(a, b)
+  override def arguments: Seq[Expression] = Seq(a, b)
 
-  def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
+  override def children: Seq[AstNode[_]] = Seq(a, b)
+
+  override def symbolTableDependencies: Set[String] = a.symbolTableDependencies ++ b.symbolTableDependencies
 }

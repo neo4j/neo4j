@@ -54,13 +54,13 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
     case other => throw new CypherTypeException(s"Type mismatch: expected a map but was $other")
   }
 
-  def rewrite(f: (Expression) => Expression) = f(Property(mapExpr.rewrite(f), propertyKey.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(Property(mapExpr.rewrite(f), propertyKey.rewrite(f)))
 
   override def children = Seq(mapExpr, propertyKey)
 
-  def arguments = Seq(mapExpr)
+  override def arguments: Seq[Expression] = Seq(mapExpr)
 
-  def symbolTableDependencies = mapExpr.symbolTableDependencies
+  override def symbolTableDependencies: Set[String] = mapExpr.symbolTableDependencies
 
   override def toString = s"$mapExpr.${propertyKey.name}"
 }

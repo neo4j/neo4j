@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 
 case class ParameterExpression(parameterName: String) extends Expression {
@@ -27,9 +28,11 @@ case class ParameterExpression(parameterName: String) extends Expression {
 
   override def toString(): String = "{" + parameterName + "}"
 
-  def rewrite(f: (Expression) => Expression) = f(this)
+  override def rewrite(f: Expression => Expression): Expression = f(this)
 
-  def arguments = Seq.empty
+  override def arguments: Seq[Expression] = Seq.empty
 
-  def symbolTableDependencies = Set()
+  override def children: Seq[AstNode[_]] = Seq.empty
+
+  override def symbolTableDependencies: Set[String] = Set()
 }

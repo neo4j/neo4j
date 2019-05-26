@@ -19,13 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.CountFunction
 import org.neo4j.cypher.internal.v3_5.util.symbols._
 
 case class Count(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
-  def createAggregationFunction = new CountFunction(anInner)
+  override def createAggregationFunction = new CountFunction(anInner)
 
-  def expectedInnerType = CTAny
+  override def expectedInnerType: CypherType = CTAny
 
-  def rewrite(f: (Expression) => Expression) = f(Count(anInner.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(Count(anInner.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(anInner)
 }

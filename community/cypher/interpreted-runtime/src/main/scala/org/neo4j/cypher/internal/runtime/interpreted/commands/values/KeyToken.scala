@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
+import org.neo4j.values.AnyValue
 
 /*
 KeyTokens are things with name and id. KeyTokens makes it possible to look up the id
@@ -39,39 +41,43 @@ sealed abstract class KeyToken(typ: TokenType) extends Expression {
 
   def resolve(tokenContext: TokenContext): KeyToken
 
-  def arguments = Seq.empty
+  override def arguments: Seq[Expression] = Seq.empty
 
-  def rewrite(f: (Expression) => Expression): KeyToken = f(this).asInstanceOf[KeyToken]
+  override def rewrite(f: Expression => Expression): KeyToken = f(this).asInstanceOf[KeyToken]
 
-  def symbolTableDependencies = Set.empty
+  override def symbolTableDependencies: Set[String] = Set.empty
 
-  def apply(ctx: ExecutionContext, state: QueryState) = ???
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = throw new NotImplementedError()
 }
 
 object KeyToken {
 
   case class Unresolved(name: String, typ: TokenType) extends KeyToken(typ) {
-    def getOrCreateId(state: QueryContext): Int = typ.getOrCreateIdForName(name, state)
-    def getIdOrFail(state: TokenContext): Int = typ.getIdForNameOrFail(name, state)
-    def getOptId(state: TokenContext): Option[Int] = typ.getOptIdForName(name, state)
+    override def getOrCreateId(state: QueryContext): Int = typ.getOrCreateIdForName(name, state)
+    override def getIdOrFail(state: TokenContext): Int = typ.getIdForNameOrFail(name, state)
+    override def getOptId(state: TokenContext): Option[Int] = typ.getOptIdForName(name, state)
 
-    def resolve(tokenContext: TokenContext) = getOptId(tokenContext).map(Resolved(name, _, typ)).getOrElse(this)
+    override def resolve(tokenContext: TokenContext): KeyToken = getOptId(tokenContext).map(Resolved(name, _, typ)).getOrElse(this)
+
+    override def children: Seq[AstNode[_]] = Seq.empty
 
     override def toString:String = name
   }
 
   case class Resolved(name: String, id: Int, typ: TokenType) extends KeyToken(typ) {
-    def getOrCreateId(state: QueryContext): Int = id
-    def getIdOrFail(state: TokenContext): Int = id
-    def getOptId(state: TokenContext): Option[Int] = Some(id)
+    override def getOrCreateId(state: QueryContext): Int = id
+    override def getIdOrFail(state: TokenContext): Int = id
+    override def getOptId(state: TokenContext): Option[Int] = Some(id)
 
     override def resolve(tokenContext: TokenContext): Resolved = this
+
+    override def children: Seq[AstNode[_]] = Seq.empty
 
     override def toString:String = s"$name($id)"
   }
 
   object Ordering extends Ordering[KeyToken] {
-    def compare(x: KeyToken, y: KeyToken): Int = implicitly[Ordering[String]].compare(x.name, y.name)
+    override def compare(x: KeyToken, y: KeyToken): Int = implicitly[Ordering[String]].compare(x.name, y.name)
   }
 }
 

@@ -133,6 +133,8 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
   */
 case class CreatePipe(src: Pipe, nodes: Array[CreateNodeCommand], relationships: Array[CreateRelationshipCommand])
                      (val id: Id = Id.INVALID_ID) extends EntityCreatePipe(src) {
+  nodes.foreach(_.properties.foreach(_.registerOwningPipe(this)))
+  relationships.foreach(_.properties.foreach(_.registerOwningPipe(this)))
 
   override def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map(row => {
@@ -173,6 +175,8 @@ case class CreateRelationshipCommand(idName: String,
 case class MergeCreateNodePipe(src: Pipe, data: CreateNodeCommand)
                               (val id: Id = Id.INVALID_ID) extends EntityCreatePipe(src) {
 
+  data.properties.foreach(_.registerOwningPipe(this))
+
   override def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map(inRow => {
       val (idName, node) = createNode(inRow, state, data)
@@ -193,6 +197,7 @@ case class MergeCreateNodePipe(src: Pipe, data: CreateNodeCommand)
 case class MergeCreateRelationshipPipe(src: Pipe, data: CreateRelationshipCommand)
                                       (val id: Id = Id.INVALID_ID)
   extends EntityCreatePipe(src) {
+  data.properties.foreach(_.registerOwningPipe(this))
 
   override def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map(inRow => {

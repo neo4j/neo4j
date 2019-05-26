@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.ListSupport
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -54,11 +55,13 @@ case class ConstantCachedIn(value: Expression, list: Expression) extends Predica
 
   override def containsIsNull = false
 
-  override def arguments = Seq(list)
+  override def children: Seq[AstNode[_]] = Seq(value, list)
 
-  override def symbolTableDependencies = list.symbolTableDependencies ++ value.symbolTableDependencies
+  override def arguments: Seq[Expression] = Seq(list)
 
-  override def rewrite(f: (Expression) => Expression) = f(ConstantCachedIn(value.rewrite(f), list.rewrite(f)))
+  override def symbolTableDependencies: Set[String] = list.symbolTableDependencies ++ value.symbolTableDependencies
+
+  override def rewrite(f: Expression => Expression): Expression = f(ConstantCachedIn(value.rewrite(f), list.rewrite(f)))
 }
 
 /*
@@ -90,11 +93,13 @@ case class DynamicCachedIn(value: Expression, list: Expression) extends Predicat
 
   override def containsIsNull = false
 
-  override def arguments = Seq(list)
+  override def arguments: Seq[Expression] = Seq(list)
 
-  override def symbolTableDependencies = list.symbolTableDependencies ++ value.symbolTableDependencies
+  override def children: Seq[AstNode[_]] = Seq(value, list)
 
-  override def rewrite(f: (Expression) => Expression) = f(DynamicCachedIn(value.rewrite(f), list.rewrite(f)))
+  override def symbolTableDependencies: Set[String] = list.symbolTableDependencies ++ value.symbolTableDependencies
+
+  override def rewrite(f: Expression => Expression): Expression = f(DynamicCachedIn(value.rewrite(f), list.rewrite(f)))
 }
 
 object CachedIn {

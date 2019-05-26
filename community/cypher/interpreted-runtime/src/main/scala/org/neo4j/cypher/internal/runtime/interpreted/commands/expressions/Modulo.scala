@@ -19,11 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.operations.CypherMath
 import org.neo4j.values._
 
 case class Modulo(a: Expression, b: Expression) extends Arithmetics(a, b) {
-  def calc(a: AnyValue, b: AnyValue): AnyValue = CypherMath.modulo(a, b)
+  override def calc(a: AnyValue, b: AnyValue): AnyValue = CypherMath.modulo(a, b)
 
-  def rewrite(f: (Expression) => Expression) = f(Modulo(a.rewrite(f), b.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(Modulo(a.rewrite(f), b.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(a, b)
 }

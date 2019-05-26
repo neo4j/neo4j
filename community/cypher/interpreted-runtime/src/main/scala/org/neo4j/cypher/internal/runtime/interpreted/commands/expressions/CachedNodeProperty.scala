@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.v3_5.logical.plans
@@ -62,7 +63,7 @@ abstract class AbstractCachedNodeProperty extends Expression {
     }
   }
 
-  override def rewrite(f: Expression => Expression) = f(this)
+  override def rewrite(f: Expression => Expression): Expression = f(this)
 
   override def arguments: Seq[Expression] = Seq()
 }
@@ -70,7 +71,7 @@ abstract class AbstractCachedNodeProperty extends Expression {
 case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, key: plans.CachedNodeProperty)
   extends AbstractCachedNodeProperty
 {
-  def symbolTableDependencies = Set(nodeName, key.cacheKey)
+  override def symbolTableDependencies: Set[String] = Set(nodeName, key.cacheKey)
 
   override def toString: String = key.cacheKey
 
@@ -84,4 +85,6 @@ case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, key: plan
   override def getCachedProperty(ctx: ExecutionContext): AnyValue = ctx.getCachedProperty(key)
 
   override def getPropertyKey(tokenContext: TokenContext): Int = propertyKey.getOptId(tokenContext).getOrElse(StatementConstants.NO_SUCH_PROPERTY_KEY)
+
+  override def children: Seq[AstNode[_]] = Seq(propertyKey)
 }

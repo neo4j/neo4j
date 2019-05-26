@@ -19,13 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.SumFunction
 import org.neo4j.cypher.internal.v3_5.util.symbols._
 
 case class Sum(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
-  def createAggregationFunction = new SumFunction(anInner)
+  override def createAggregationFunction = new SumFunction(anInner)
 
-  def expectedInnerType = CTNumber
+  override def expectedInnerType: CypherType = CTNumber
 
-  def rewrite(f: (Expression) => Expression) = f(Sum(anInner.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(Sum(anInner.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(anInner)
 }

@@ -23,9 +23,11 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.ReturnItem
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{CoercedPredicate, Not, True}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.runtime.interpreted.commands.{AstNode, ReturnItem}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.v3_5.util.symbols._
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.values.AnyValue
 
 import scala.collection.Map
 
@@ -121,23 +123,25 @@ class ExpressionTest extends CypherFunSuite {
     }).toMap
 
     if (result != expected) {
-      fail("""
+      fail(s"""
 Merged:
-    %s with
-    %s
+    $a with
+    $b
 
-     Got: %s
-Expected: %s""".format(a, b, result, expected))
+     Got: $result
+Expected: $expected""")
     }
   }
 }
 
 class TestExpression extends Expression {
-  def arguments = Nil
+  override def arguments: Seq[Expression] = Seq.empty
 
-  def rewrite(f: (Expression) => Expression): Expression = null
+  override def children: Seq[AstNode[_]] = Seq.empty
 
-  def symbolTableDependencies = Set()
+  override def rewrite(f: Expression => Expression): Expression = null
 
-  def apply(v1: ExecutionContext, state: QueryState) = null
+  override def symbolTableDependencies: Set[String] = Set()
+
+  override def apply(v1: ExecutionContext, state: QueryState): AnyValue = null
 }
