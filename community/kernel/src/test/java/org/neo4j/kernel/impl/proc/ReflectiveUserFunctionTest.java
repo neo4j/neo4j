@@ -195,7 +195,7 @@ public class ReflectiveUserFunctionTest
                                  "java.lang.Double, java.lang.Long, java.lang.Number, java.lang.Object, " +
                                  "java.lang.String, java.time.LocalDate, java.time.LocalDateTime, " +
                                  "java.time.LocalTime, java.time.OffsetTime, java.time.ZonedDateTime, " +
-                                 "java.time.temporal.TemporalAmount, java.util.List, java.util.Map, long]" ));
+                                 "java.time.temporal.TemporalAmount, java.util.List, java.util.Map, long, org.neo4j.blob.Blob]" ));
 
         // When
         compile( FunctionWithInvalidOutput.class ).get( 0 );

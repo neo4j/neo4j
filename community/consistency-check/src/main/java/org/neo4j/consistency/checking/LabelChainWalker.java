@@ -75,7 +75,7 @@ public class LabelChainWalker<RECORD extends AbstractBaseRecord, REPORT extends 
             if ( allInUse )
             {
                 // only validate label ids if all dynamic records seen were in use
-                validator.onWellFormedChain( labelIds( InstanceContext.of(dynamicRecord), recordList ), engine, records );
+                validator.onWellFormedChain( labelIds( InstanceContext.none(), recordList ), engine, records );
             }
         }
         else

@@ -72,7 +72,7 @@ public class DynamicNodeLabels implements NodeLabels
         {
             return null;
         }
-        return stripNodeId( (long[]) getRightArray( InstanceContext.of( node ), readFullByteArrayFromHeavyRecords(
+        return stripNodeId( (long[]) getRightArray( InstanceContext.none(), readFullByteArrayFromHeavyRecords(
                 node.getUsedDynamicLabelRecords(), ARRAY ) ).asObject() );
     }
 

@@ -26,7 +26,7 @@ import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.store.id.RenewableBatchIdSequence
 import org.neo4j.kernel.impl.store.record.{PrimitiveRecord, PropertyRecord}
-import org.neo4j.kernel.impl.store.{CommonAbstractStore, StandardDynamicRecordAllocator}
+import org.neo4j.kernel.impl.store.{CommonAbstractStore, NeoStores, StandardDynamicRecordAllocator}
 import org.neo4j.kernel.impl.transaction.state.RecordAccess
 
 import scala.collection.mutable.{Map => MMap}
@@ -35,6 +35,7 @@ import scala.collection.mutable.{Map => MMap}
   * Created by bluejoe on 2019/4/16.
   */
 object InstanceContext {
+  @deprecated("warning: no InstanceContext")
   val none: ContextMap = new ContextMap();
 
   def of(o: AnyRef, path: String): ContextMap = of(o._get(path));
@@ -42,6 +43,12 @@ object InstanceContext {
   def of(o: AnyRef): ContextMap = o match {
     case x: StandardDynamicRecordAllocator =>
       of(x._get("idGenerator"));
+
+    case x: NeoStores =>
+      x._get("config").asInstanceOf[Config].getInstanceContext;
+
+    case x: Config =>
+      x.getInstanceContext;
 
     case x: CommonAbstractStore[_, _] =>
       x._get("configuration").asInstanceOf[Config].getInstanceContext;
