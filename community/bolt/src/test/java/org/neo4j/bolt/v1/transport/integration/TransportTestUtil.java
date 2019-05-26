@@ -175,7 +175,8 @@ public class TransportTestUtil
     }
 
     @SafeVarargs
-    public final Matcher<TransportConnection> eventuallyReceivesWithOptionalPrecedingMessages( final Pair<Matcher<ResponseMessage>, ResponseMatcherOptionality>... messages )
+    public final Matcher<TransportConnection> eventuallyReceivesWithOptionalPrecedingMessages(
+            final Pair<Matcher<ResponseMessage>,ResponseMatcherOptionality>... messages )
     {
         return new TypeSafeMatcher<TransportConnection>()
         {
