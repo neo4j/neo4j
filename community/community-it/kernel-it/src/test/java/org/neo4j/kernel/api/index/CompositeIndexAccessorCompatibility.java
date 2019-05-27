@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -64,6 +65,7 @@ import org.neo4j.values.storable.Values;
 import static java.time.LocalDate.ofEpochDay;
 import static java.util.Arrays.asList;
 import static java.util.Collections.EMPTY_LIST;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -1125,6 +1127,58 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
             List<Long> seenIds = assertClientReturnValuesInOrder( client, order );
             assertThat( seenIds.size(), equalTo( 6 ) );
         }
+    }
+
+    @Test
+    public void shouldUpdateEntries() throws Exception
+    {
+        ValueType[] valueTypes = testSuite.supportedValueTypes();
+        long entityId = random.nextLong( 1_000_000_000 );
+        for ( ValueType valueType : valueTypes )
+        {
+            // given
+            Value[] value = new Value[]{random.nextValue( valueType ), random.nextValue( valueType )};
+            updateAndCommit( singletonList( IndexEntryUpdate.add( entityId, descriptor.schema(), value ) ) );
+            assertEquals( singletonList( entityId ), query( exactQuery( value ) ) );
+
+            // when
+            Value[] newValue;
+            do
+            {
+                newValue = new Value[]{random.nextValue( valueType ), random.nextValue( valueType )};
+            }
+            while ( ValueTuple.of( value ).equals( ValueTuple.of( newValue ) ) );
+            updateAndCommit( singletonList( IndexEntryUpdate.change( entityId, descriptor.schema(), value, newValue ) ) );
+
+            // then
+            assertEquals( emptyList(), query( exactQuery( value ) ) );
+            assertEquals( singletonList( entityId ), query( exactQuery( newValue ) ) );
+        }
+    }
+
+    @Test
+    public void shouldRemoveEntries() throws Exception
+    {
+        ValueType[] valueTypes = testSuite.supportedValueTypes();
+        long entityId = random.nextLong( 1_000_000_000 );
+        for ( ValueType valueType : valueTypes )
+        {
+            // given
+            Value[] value = new Value[]{random.nextValue( valueType ), random.nextValue( valueType )};
+            updateAndCommit( singletonList( IndexEntryUpdate.add( entityId, descriptor.schema(), value ) ) );
+            assertEquals( singletonList( entityId ), query( exactQuery( value ) ) );
+
+            // when
+            updateAndCommit( singletonList( IndexEntryUpdate.remove( entityId, descriptor.schema(), value ) ) );
+
+            // then
+            assertEquals( emptyList(), query( exactQuery( value ) ) );
+        }
+    }
+
+    private static IndexQuery[] exactQuery( Value[] values )
+    {
+        return Stream.of( values ).map( v -> IndexQuery.exact( 0, v ) ).toArray( IndexQuery[]::new );
     }
 
     // This behaviour is expected by General indexes
