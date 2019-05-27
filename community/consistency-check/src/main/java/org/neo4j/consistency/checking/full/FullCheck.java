@@ -66,15 +66,16 @@ public class FullCheck
     private final boolean checkGraph;
     private final int threads;
     private final Statistics statistics;
+    private final boolean startCountsStore;
 
     public FullCheck( Config config, ProgressMonitorFactory progressFactory,
-            Statistics statistics, int threads )
+            Statistics statistics, int threads, boolean startCountsStore )
     {
-        this( progressFactory, statistics, threads, new ConsistencyFlags( config ), config );
+        this( progressFactory, statistics, threads, new ConsistencyFlags( config ), config, startCountsStore );
     }
 
     public FullCheck( ProgressMonitorFactory progressFactory, Statistics statistics, int threads,
-                      ConsistencyFlags consistencyFlags, Config config )
+                      ConsistencyFlags consistencyFlags, Config config, boolean startCountsStore )
     {
         this.statistics = statistics;
         this.threads = threads;
@@ -84,6 +85,7 @@ public class FullCheck
         this.checkIndexes = consistencyFlags.isCheckIndexes();
         this.checkLabelScanStore = consistencyFlags.isCheckLabelScanStore();
         this.checkPropertyOwners = consistencyFlags.isCheckPropertyOwners();
+        this.startCountsStore = startCountsStore;
     }
 
     public ConsistencySummaryStatistics execute( DirectStoreAccess stores, Log log )
@@ -113,7 +115,7 @@ public class FullCheck
         {
             CountsAccessor countsAccessor = stores.nativeStores().getCounts();
             boolean checkCounts = true;
-            if ( countsAccessor instanceof CountsTracker )
+            if ( startCountsStore && countsAccessor instanceof CountsTracker )
             {
                 CountsTracker tracker = (CountsTracker) countsAccessor;
                 // Perhaps other read-only use cases thinks it's fine to just rebuild an in-memory counts store,

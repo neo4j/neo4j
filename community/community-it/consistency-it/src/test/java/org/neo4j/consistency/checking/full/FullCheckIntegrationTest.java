@@ -2222,7 +2222,7 @@ public class FullCheckIntegrationTest
     {
         Config config = config();
         FullCheck checker = new FullCheck( config, ProgressMonitorFactory.NONE, fixture.getAccessStatistics(),
-                defaultConsistencyCheckThreadsNumber() );
+                defaultConsistencyCheckThreadsNumber(), true );
         return checker.execute( stores, FormattedLog.toOutputStream( System.out ),
                 ( report, method, message ) ->
                 {

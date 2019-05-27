@@ -131,7 +131,7 @@ public class DetectAllRelationshipInconsistenciesIT
 
                 int threads = random.intBetween( 2, 10 );
                 FullCheck checker = new FullCheck( getTuningConfiguration(), ProgressMonitorFactory.NONE,
-                        Statistics.NONE, threads );
+                        Statistics.NONE, threads, true );
                 AssertableLogProvider logProvider = new AssertableLogProvider( true );
                 ConsistencySummaryStatistics summary = checker.execute( directStoreAccess,
                         logProvider.getLog( FullCheck.class ) );
