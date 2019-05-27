@@ -19,67 +19,44 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.values.AnyValue;
 
-public class RecordingQuerySubscriber implements QuerySubscriber
+public abstract class QuerySubscriberAdapter implements QuerySubscriber
 {
-    private List<AnyValue[]> all = new ArrayList<>(  );
-    private AnyValue[] current;
-    private Throwable throwable;
-    private QueryStatistics statistics;
-
     @Override
-    public void onResult( int numberOfFields )
+    public void onResult( int numberOfFields ) throws Exception
     {
-        this.current = new AnyValue[numberOfFields];
+
     }
 
     @Override
-    public void onRecord()
+    public void onRecord() throws Exception
     {
-        //do nothing
+
     }
 
     @Override
-    public void onField( int offset, AnyValue value )
+    public void onField( int offset, AnyValue value ) throws Exception
     {
-        current[offset] = value;
+
     }
 
     @Override
-    public void onRecordCompleted()
+    public void onRecordCompleted() throws Exception
     {
-        all.add( current.clone() );
+
     }
 
     @Override
     public void onError( Throwable throwable )
     {
-        this.throwable = throwable;
+
     }
 
     @Override
     public void onResultCompleted( QueryStatistics statistics )
     {
-        this.statistics = statistics;
-    }
 
-    public List<AnyValue[]> getOrThrow() throws Throwable
-    {
-        if ( throwable != null )
-        {
-            throw throwable;
-        }
-
-        return all;
-    }
-
-    public QueryStatistics queryStatistics()
-    {
-        return statistics;
     }
 }
