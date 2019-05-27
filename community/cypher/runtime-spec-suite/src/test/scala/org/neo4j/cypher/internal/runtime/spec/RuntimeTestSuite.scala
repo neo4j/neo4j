@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import java.util
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -30,11 +29,11 @@ import org.neo4j.cypher.internal.runtime.{InputCursor, InputDataStream, NoInput,
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.{CypherRuntime, ExecutionPlan, LogicalQuery, RuntimeContext}
-import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
+import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb._
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
-import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.kernel.impl.query.{QuerySubscriber, RecordingQuerySubscriber}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.{AnyValue, AnyValues}
@@ -43,6 +42,7 @@ import org.scalactic.{Equality, TolerantNumerics}
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.{BeforeAndAfterEach, Tag}
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
@@ -132,8 +132,11 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   // EXECUTE
   def execute(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT],
-              input: InputValues): RuntimeResult =
-    runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (_, result) => result, QuerySubscriber.NOT_A_SUBSCRIBER)
+              input: InputValues): RecordingRuntimeResult = {
+    val subscriber = new RecordingQuerySubscriber
+    val result = runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (_, result) => result, subscriber)
+    RecordingRuntimeResult(result, subscriber)
+  }
 
   def execute(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT],
@@ -143,19 +146,28 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   def execute(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT],
-              inputStream: InputDataStream): RuntimeResult =
-    runtimeTestSupport.run(logicalQuery, runtime, inputStream, (_, result) => result, QuerySubscriber.NOT_A_SUBSCRIBER)
+              inputStream: InputDataStream): RecordingRuntimeResult = {
+    val subscriber = new RecordingQuerySubscriber
+    val result = runtimeTestSupport.run(logicalQuery, runtime, inputStream, (_, result) => result,subscriber)
+    RecordingRuntimeResult(result, subscriber)
+  }
 
   def execute(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT]
-             ): RuntimeResult =
-    runtimeTestSupport.run(logicalQuery, runtime, NoInput, (_, result) => result, QuerySubscriber.NOT_A_SUBSCRIBER)
+             ): RecordingRuntimeResult = {
+    val subscriber = new RecordingQuerySubscriber
+    val result = runtimeTestSupport.run(logicalQuery, runtime, NoInput, (_, result) => result, subscriber)
+    RecordingRuntimeResult(result, subscriber)
+  }
 
   def execute(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT],  subscriber: QuerySubscriber): RuntimeResult =
     runtimeTestSupport.run(logicalQuery, runtime, NoInput, (_, result) => result, subscriber)
 
-  def execute(executablePlan: ExecutionPlan): RuntimeResult =
-    runtimeTestSupport.run(executablePlan, NoInput, (_, result) => result, QuerySubscriber.NOT_A_SUBSCRIBER)
+  def execute(executablePlan: ExecutionPlan): RecordingRuntimeResult = {
+    val subscriber = new RecordingQuerySubscriber
+    val result = runtimeTestSupport.run(executablePlan, NoInput, (_, result) => result, subscriber)
+    RecordingRuntimeResult(result, subscriber)
+  }
 
   def buildPlan(logicalQuery: LogicalQuery,
                 runtime: CypherRuntime[CONTEXT]): ExecutionPlan =
@@ -164,9 +176,12 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   def executeAndContext(logicalQuery: LogicalQuery,
                         runtime: CypherRuntime[CONTEXT],
                         input: InputValues
-                       ): (RuntimeResult, CONTEXT) =
-    runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (context, result) => (result, context),
-                           QuerySubscriber.NOT_A_SUBSCRIBER)
+                       ): (RecordingRuntimeResult, CONTEXT) = {
+    val subscriber = new RecordingQuerySubscriber
+    val (result, context) = runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (context, result) => (result, context),
+                           subscriber)
+    (RecordingRuntimeResult(result, subscriber), context)
+  }
 
   def executeAndAssertCondition(logicalQuery: LogicalQuery,
                                 input: InputValues,
@@ -174,7 +189,8 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     val nAttempts = 100
     for (_ <- 0 until nAttempts) {
       val (result, context) = executeAndContext(logicalQuery, runtime, input)
-      result.accept((_: QueryResult.Record) => true)
+      //TODO here we should not materialize the result
+      result.awaitAll()
       if (condition.test(context))
         return
     }
@@ -361,7 +377,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   protected def beColumns(columns: String*): RuntimeResultMatcher =
     new RuntimeResultMatcher(columns)
 
-  class RuntimeResultMatcher(expectedColumns: Seq[String]) extends Matcher[RuntimeResult] {
+  class RuntimeResultMatcher(expectedColumns: Seq[String]) extends Matcher[RecordingRuntimeResult] {
 
     private var rowsMatcher: RowsMatcher = AnyRowsMatcher
     private var maybeStatisticts: Option[QueryStatistics] = None
@@ -383,12 +399,12 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       this
     }
 
-    override def apply(left: RuntimeResult): MatchResult = {
-      val columns = left.fieldNames().toIndexedSeq
+    override def apply(left: RecordingRuntimeResult): MatchResult = {
+      val columns = left.runtimeResult.fieldNames().toIndexedSeq
       if (columns != expectedColumns) {
         MatchResult(matches = false, s"Expected result columns $expectedColumns, got $columns", "")
-      } else if (maybeStatisticts.exists(_ != left.queryStatistics())) {
-        MatchResult(matches = false, s"Expected statistics ${left.queryStatistics()}, got ${maybeStatisticts.get}", "")
+      } else if (maybeStatisticts.exists(_ != left.runtimeResult.queryStatistics())) {
+        MatchResult(matches = false, s"Expected statistics ${left.runtimeResult.queryStatistics()}, got ${maybeStatisticts.get}", "")
       } else {
         val rows = consume(left)
         MatchResult(
@@ -406,14 +422,8 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     }
   }
 
-  def consume(left: RuntimeResult): ArrayBuffer[Array[AnyValue]] = {
-    val rows = new ArrayBuffer[Array[AnyValue]]
-    left.accept((row: QueryResult.Record) => {
-      val valueArray = row.fields()
-      rows += util.Arrays.copyOf(valueArray, valueArray.length)
-      true
-    })
-    rows
+  def consume(left: RecordingRuntimeResult): IndexedSeq[Array[AnyValue]] = {
+    left.awaitAll()
   }
 
   def inOrder(rows: Iterable[Array[_]]): RowsMatcher = {
@@ -461,4 +471,12 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
 }
 
+case class RecordingRuntimeResult(runtimeResult: RuntimeResult, recordingQuerySubscriber: RecordingQuerySubscriber) {
+  def awaitAll(): IndexedSeq[Array[AnyValue]] = {
+    runtimeResult.request(Long.MaxValue)
+    runtimeResult.await()
+    recordingQuerySubscriber.getOrThrow().asScala.toIndexedSeq
+  }
+
+}
 case class ContextCondition[CONTEXT <: RuntimeContext](test: CONTEXT => Boolean, errorMsg: String)

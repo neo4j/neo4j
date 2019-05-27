@@ -95,47 +95,42 @@ public interface QuerySubscriber
     /**
      * Dummy implementation that will throw whenever it is being called.
      */
-    QuerySubscriber NOT_A_SUBSCRIBER = new QuerySubscriber()
+    QuerySubscriber DO_NOTHING_SUBSCRIBER = new QuerySubscriber()
     {
         @Override
         public void onResult( int numberOfFields )
         {
-            throwError();
+
         }
 
         @Override
         public void onRecord()
         {
-            throwError();
+
         }
 
         @Override
         public void onField( int offset, AnyValue value )
         {
-            throwError();
+
         }
 
         @Override
         public void onRecordCompleted()
         {
-            throwError();
+
         }
 
         @Override
         public void onError( Throwable throwable )
         {
-            throwError();
+
         }
 
         @Override
         public void onResultCompleted( QueryStatistics statistics )
         {
-            throwError();
-        }
 
-        private void throwError()
-        {
-            throw new UnsupportedOperationException( "Invalid operation, can't use this as a subscriber" );
         }
     };
 }
