@@ -45,6 +45,13 @@ public interface CommandCreationContext extends AutoCloseable
     long reserveRelationship();
 
     /**
+     * Reserves an id for a schema record, be it for a constraint or an index, for future use to store a schema record. The reason for it being exposed here
+     * is that the record ids are used for producing unique names for indexes, which we would like to do before we get to the prepare phase
+     * @return
+     */
+    long reserveSchema();
+
+    /**
      * Releases a previously {@link #reserveNode() reserved} node id if it turns out to not actually being used,
      * for example in the event of a transaction rolling back.
      *

@@ -76,7 +76,7 @@ public class DefaultIndexDescriptor implements IndexDescriptor
     @Override
     public boolean hasUserSuppliedName()
     {
-        return name.isPresent();
+        return name.isPresent(); // todo remove this; should always be true.
     }
 
     @Override

@@ -22,12 +22,17 @@ package org.neo4j.kernel.impl.store.id;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.internal.helpers.collection.Iterables.first;
 
 public class ReuseExcessBatchIdsOnRestartIT
 {
@@ -37,7 +42,7 @@ public class ReuseExcessBatchIdsOnRestartIT
     // Knowing that ids are grabbed in batches internally we only create one node and later assert
     // that the excess ids that were only grabbed, but not used can be reused.
     @Test
-    public void shouldReuseExcessBatchIdsWhichWerentUsedBeforeClose() throws Exception
+    public void shouldReuseExcessBatchIdsWhichWereNotUsedBeforeClose() throws Exception
     {
         // given
         Node firstNode;
@@ -45,6 +50,12 @@ public class ReuseExcessBatchIdsOnRestartIT
         {
             firstNode = db.createNode();
             tx.success();
+        }
+
+        try ( Transaction ignore = db.beginTx() )
+        {
+            db.createNode();
+            // This one gets rolled back.
         }
 
         // when
@@ -59,5 +70,88 @@ public class ReuseExcessBatchIdsOnRestartIT
 
         // then
         assertEquals( firstNode.getId() + 1, secondNode.getId() );
+    }
+
+    @Test
+    public void shouldReuseExcessIndexBatchIdsWhichWereNotUsedBeforeClose() throws Exception
+    {
+        // given
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( Label.label( "LabelA" ) ).on( "a" ).withName( "A" ).create();
+            tx.success();
+        }
+
+        try ( Transaction ignore = db.beginTx() )
+        {
+            db.schema().indexFor( Label.label( "LabelX" ) ).on( "x" ).withName( "X" ).create();
+            // This one gets rolled back.
+        }
+
+        // when
+        db.restartDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( Label.label( "LabelB" ) ).on( "b" ).withName( "B" ).create();
+            tx.success();
+        }
+
+        // then
+        IndexDefinition first;
+        IndexDefinition second;
+        try ( Transaction tx = db.beginTx() )
+        {
+            first = db.schema().getIndexByName( "A" );
+            second = db.schema().getIndexByName( "B" );
+            tx.success();
+        }
+        IndexDefinitionImpl firstImpl = (IndexDefinitionImpl) first;
+        IndexDefinitionImpl secondImpl = (IndexDefinitionImpl) second;
+        CapableIndexDescriptor firstRef = (CapableIndexDescriptor) firstImpl.getIndexReference();
+        CapableIndexDescriptor secondRef = (CapableIndexDescriptor) secondImpl.getIndexReference();
+        assertEquals( firstRef.getId() + 1, secondRef.getId() );
+    }
+
+    @Test
+    public void shouldReuseExcessConstraintBatchIdsWhichWereNotUsedBeforeClose() throws Exception
+    {
+        // given
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().constraintFor( Label.label( "LabelA" ) ).assertPropertyIsUnique( "a" ).create();
+            tx.success();
+        }
+
+        try ( Transaction ignore = db.beginTx() )
+        {
+            db.schema().constraintFor( Label.label( "LabelX" ) ).assertPropertyIsUnique( "x" ).create();
+            // This one gets rolled back.
+        }
+
+        // when
+        db.restartDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().constraintFor( Label.label( "LabelB" ) ).assertPropertyIsUnique( "b" ).create();
+            tx.success();
+        }
+
+        // then
+        IndexDefinition first;
+        IndexDefinition second;
+        try ( Transaction tx = db.beginTx() )
+        {
+            first = first( db.schema().getIndexes( Label.label( "LabelA" ) ) );
+            second = first( db.schema().getIndexes( Label.label( "LabelB" ) ) );
+            tx.success();
+        }
+        IndexDefinitionImpl firstImpl = (IndexDefinitionImpl) first;
+        IndexDefinitionImpl secondImpl = (IndexDefinitionImpl) second;
+        CapableIndexDescriptor firstRef = (CapableIndexDescriptor) firstImpl.getIndexReference();
+        CapableIndexDescriptor secondRef = (CapableIndexDescriptor) secondImpl.getIndexReference();
+        // This time we "+2" because there are both index and constraint schema records being created.
+        assertEquals( firstRef.getId() + 2, secondRef.getId() );
     }
 }
