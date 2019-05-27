@@ -139,7 +139,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             }
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+                db.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
                 Node node = db.createNode( Label.label( "Fts1" ), Label.label( "Fts2" ), Label.label( "Fts3" ), Label.label( "Fts4" ) );
                 node.setProperty( "prop1", "a" );
                 node.setProperty( "prop2", "a" );
@@ -463,7 +463,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            db.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
             tx.success();
         }
 
