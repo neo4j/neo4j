@@ -26,6 +26,7 @@ import org.neo4j.collection.PrimitiveLongResourceIterator
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.logical.plans.{IndexOrder, IndexOrderAscending, IndexOrderDescending, IndexOrderNone}
 import org.neo4j.cypher.internal.planner.spi.IdempotentResult
+import org.neo4j.cypher.internal.runtime.KernelAPISupport.RANGE_SEEKABLE_VALUE_GROUPS
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
@@ -220,16 +221,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   } catch {
     case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $relationshipId", e)
   }
-
-  val RANGE_SEEKABLE_VALUE_GROUPS = Array(ValueGroup.NUMBER,
-    ValueGroup.TEXT,
-    ValueGroup.GEOMETRY,
-    ValueGroup.DATE,
-    ValueGroup.LOCAL_DATE_TIME,
-    ValueGroup.ZONED_DATE_TIME,
-    ValueGroup.LOCAL_TIME,
-    ValueGroup.ZONED_TIME,
-    ValueGroup.DURATION)
 
   override def indexSeek[RESULT <: AnyRef](index: IndexReadSession,
                                            needsValues: Boolean,

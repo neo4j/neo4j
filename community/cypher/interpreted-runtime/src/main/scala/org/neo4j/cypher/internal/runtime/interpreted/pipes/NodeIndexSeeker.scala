@@ -66,7 +66,7 @@ trait NodeIndexSeeker {
 
   private val BY_VALUE: MinMaxOrdering[Value] = MinMaxOrdering(Ordering.comparatorToOrdering(Values.COMPARATOR))
 
-  private def computeIndexQueries(state: QueryState, row: ExecutionContext): Seq[Seq[IndexQuery]] =
+  protected def computeIndexQueries(state: QueryState, row: ExecutionContext): Seq[Seq[IndexQuery]] =
     valueExpr match {
 
       // Index range seek over range of values
@@ -210,7 +210,7 @@ trait NodeIndexSeeker {
     }
   }
 
-  private def computeExactQueries(state: QueryState, row: ExecutionContext): Seq[Seq[IndexQuery.ExactPredicate]] =
+  protected def computeExactQueries(state: QueryState, row: ExecutionContext): Seq[Seq[IndexQuery.ExactPredicate]] =
     valueExpr match {
       // Index exact value seek on single value
       case SingleQueryExpression(expr) =>
