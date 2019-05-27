@@ -38,7 +38,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory30.subProviderDirectoryStructure;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
 
 public class NativeIndexFileFilterTest
 {
@@ -69,14 +68,6 @@ public class NativeIndexFileFilterTest
     {
         storeDir = directory.directory();
         filter = new NativeIndexFileFilter( storeDir );
-    }
-
-    @Test
-    public void shouldNotAcceptFileFromPureLuceneProvider() throws IOException
-    {
-        // given
-        File dir = directoriesByProviderKey( storeDir ).forProvider( LUCENE_DESCRTIPTOR ).directoryForIndex( 1 );
-        shouldNotAcceptFileInDirectory( dir );
     }
 
     @Test

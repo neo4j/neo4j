@@ -27,6 +27,7 @@ import java.io.IOException;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.TaskControl;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
@@ -34,7 +35,6 @@ import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -57,7 +57,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertSame;
 import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.defaultDirectoryStructure;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.simpleNameLookup;
 import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
 import static org.neo4j.logging.NullLogProvider.getInstance;
@@ -83,7 +83,7 @@ public class LuceneIndexSamplerReleaseTaskControlUnderFusion
     @Before
     public void setup()
     {
-        directoryFactory = defaultDirectoryStructure( dir.storeDir() );
+        directoryFactory = directoriesByProvider( dir.storeDir() );
     }
 
     /**

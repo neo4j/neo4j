@@ -57,7 +57,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.defaultDirectoryStructure;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
@@ -130,7 +130,7 @@ class LuceneSchemaIndexCorruptionTest
         DirectoryFactory directoryFactory = mock( DirectoryFactory.class );
         File indexRootFolder = testDirectory.storeDir();
         AtomicReference<FaultyIndexStorageFactory> reference = new AtomicReference<>();
-        return new LuceneIndexProvider( fs, directoryFactory, defaultDirectoryStructure( indexRootFolder ), monitor,
+        return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( indexRootFolder ), monitor,
                 Config.defaults(), OperationalMode.SINGLE )
         {
             @Override

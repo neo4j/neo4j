@@ -29,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.io.fs.FileUtils.path;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.baseSchemaIndexFolder;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 
 class IndexDirectoryStructureTest
@@ -38,14 +37,6 @@ class IndexDirectoryStructureTest
     private final File databaseStoreDir = new File( "db" ).getAbsoluteFile();
     private final File baseIndexDirectory = baseSchemaIndexFolder( databaseStoreDir );
     private final long indexId = 15;
-
-    @Test
-    void shouldSeeCorrectDirectoriesForProviderKey()
-    {
-        assertCorrectDirectories( directoriesByProviderKey( databaseStoreDir ).forProvider( provider ),
-                path( baseIndexDirectory, provider.getKey() ),
-                path( baseIndexDirectory, provider.getKey(), String.valueOf( indexId ) ) );
-    }
 
     @Test
     void shouldSeeCorrectDirectoriesForProvider()

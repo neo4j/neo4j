@@ -66,7 +66,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.defaultDirectoryStructure;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class LuceneSchemaIndexPopulatorTest
@@ -87,12 +87,12 @@ class LuceneSchemaIndexPopulatorTest
     private NodePropertyAccessor propertyAccessor;
 
     @BeforeEach
-    void before() throws Exception
+    void before()
     {
         directory = new RAMDirectory();
         DirectoryFactory directoryFactory = new DirectoryFactory.Single(
                 new DirectoryFactory.UncloseableDirectory( directory ) );
-        provider = new LuceneIndexProvider( fs, directoryFactory, defaultDirectoryStructure( testDir.directory( "folder" ) ),
+        provider = new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( testDir.directory( "folder" ) ),
                 IndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.SINGLE );
         indexStoreView = mock( IndexStoreView.class );
         propertyAccessor = mock( NodePropertyAccessor.class );

@@ -46,7 +46,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.defaultDirectoryStructure;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 
@@ -132,7 +132,7 @@ class LuceneIndexProviderTest
     private LuceneIndexProvider getLuceneIndexProvider( Config config, DirectoryFactory directoryFactory,
                                                         FileSystemAbstraction fs, File graphDbDir )
     {
-        return new LuceneIndexProvider( fs, directoryFactory, defaultDirectoryStructure( graphDbDir ),
+        return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( graphDbDir ),
                 IndexProvider.Monitor.EMPTY, config, OperationalMode.SINGLE );
     }
 }

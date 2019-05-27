@@ -61,7 +61,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provi
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.asUniqueSet;
 import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.DESCRIPTOR;
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.defaultDirectoryStructure;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
 class LuceneIndexRecoveryIT
@@ -338,7 +338,7 @@ class LuceneIndexRecoveryIT
         @Override
         public Lifecycle newInstance( ExtensionContext context, AbstractIndexProviderFactory.Dependencies dependencies )
         {
-            return new LuceneIndexProvider( fs, directoryFactory, defaultDirectoryStructure( context.directory() ), IndexProvider.Monitor.EMPTY,
+            return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( context.directory() ), IndexProvider.Monitor.EMPTY,
                     dependencies.getConfig(), context.databaseInfo().operationalMode );
         }
     }
@@ -354,7 +354,7 @@ class LuceneIndexRecoveryIT
         @Override
         public Lifecycle newInstance( ExtensionContext context, AbstractIndexProviderFactory.Dependencies dependencies )
         {
-            return new LuceneIndexProvider( fs, directoryFactory, defaultDirectoryStructure( context.directory() ),
+            return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( context.directory() ),
                     IndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
             {
                 @Override
