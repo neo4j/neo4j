@@ -28,10 +28,10 @@ import java.util.List;
 import org.neo4j.cursor.IOCursor;
 
 import static java.util.Arrays.asList;
+import static java.util.function.Predicate.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.Predicates.in;
-import static org.neo4j.function.Predicates.not;
 
 class FilteringIOCursorTest
 {
@@ -80,7 +80,7 @@ class FilteringIOCursorTest
         assertEquals( exclude( asList( strings ), "c" ), extractCursorContent( cursor ) );
     }
 
-    private <T> List<T> exclude( List<T> list, T... toExclude )
+    private static <T> List<T> exclude( List<T> list, T... toExclude )
     {
         List<T> toReturn = new ArrayList<>( list );
 
@@ -95,7 +95,7 @@ class FilteringIOCursorTest
         return toReturn;
     }
 
-    private <T> List<T> extractCursorContent( FilteringIOCursor<T> cursor ) throws IOException
+    private static <T> List<T> extractCursorContent( FilteringIOCursor<T> cursor ) throws IOException
     {
         List<T> list = new ArrayList<>();
 

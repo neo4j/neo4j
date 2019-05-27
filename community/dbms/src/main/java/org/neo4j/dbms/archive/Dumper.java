@@ -42,7 +42,6 @@ import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.dbms.archive.Utils.checkWritableDirectory;
 import static org.neo4j.dbms.archive.Utils.copy;
-import static org.neo4j.function.Predicates.not;
 import static org.neo4j.io.fs.FileVisitors.justContinue;
 import static org.neo4j.io.fs.FileVisitors.onDirectory;
 import static org.neo4j.io.fs.FileVisitors.onFile;
@@ -98,7 +97,7 @@ public class Dumper
     private void visitPath( Path transactionalLogsPath, Predicate<Path> exclude ) throws IOException
     {
         Files.walkFileTree( transactionalLogsPath,
-                onlyMatching( not( exclude ),
+                onlyMatching( exclude.negate(),
                         throwExceptions(
                                 onDirectory( dir -> dumpDirectory( transactionalLogsPath, dir ),
                                         onFile( file -> dumpFile( transactionalLogsPath, file ),
