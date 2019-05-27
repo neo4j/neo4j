@@ -34,7 +34,8 @@ object uniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
                               argumentIds: Set[String],
                               context: LogicalPlanningContext)
                              (solvedPredicates: Seq[Expression], predicatesForCardinalityEstimation: Seq[Expression]): LogicalPlan =
-      context.logicalPlanProducer.planNodeUniqueIndexSeek(idName, label, propertyKeys, valueExpr, solvedPredicates, hint, argumentIds, context)
+      context.logicalPlanProducer.planNodeUniqueIndexSeek(idName, label, propertyKeys, valueExpr, solvedPredicates, predicatesForCardinalityEstimation,
+        hint, argumentIds, context)
 
   protected def findIndexesForLabel(labelId: Int, context: LogicalPlanningContext): Iterator[IndexDescriptor] =
     context.planContext.uniqueIndexesGetForLabel(labelId)

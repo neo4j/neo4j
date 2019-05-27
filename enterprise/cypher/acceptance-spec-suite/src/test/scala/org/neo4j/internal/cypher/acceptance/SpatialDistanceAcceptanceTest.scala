@@ -609,6 +609,35 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     }
   }
 
+  test("should use unique index for cartesian distance query") {
+    // Given
+    graph.createConstraint("Place", "location")
+
+    // Create 1000 unique nodes
+    for (i <- 0 to 999) {
+      val y = 34 + i * 0.001
+      createLabeledNode(Map("location" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 105, y)), "Place")
+    }
+
+    // When
+    val query =
+      """
+        |MATCH (p:Place)
+        |WHERE distance(p.location, point({crs: 'cartesian', x: 105, y: 34 })) < 0.1
+        |RETURN count(p)
+      """.stripMargin
+
+    // Then
+    val result = executeWith(distanceConfig, query,
+      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+        plan should useOperatorWithText("Filter", "distance")
+        plan should useOperatorWithText("NodeUniqueIndexSeekByRange", ":Place(location)", "distance", "< ")
+      }, expectPlansToFail = Configs.Version3_3)
+    )
+
+    result.toList should equal(List(Map("count(p)" -> 100)))
+  }
+
   ignore("projecting distance into variable still uses index") {
     // Given
     graph.createIndex("Place", "location")
