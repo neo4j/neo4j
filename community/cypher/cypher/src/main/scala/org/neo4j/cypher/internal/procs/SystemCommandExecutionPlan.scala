@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.QueryStatistics
+import org.neo4j.graphdb.security.AuthorizationViolationException
+import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
 import org.neo4j.kernel.impl.query.{QueryExecution, QuerySubscriber}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
@@ -48,6 +50,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
                    subscriber: QuerySubscriber): RuntimeResult = {
 
     val tc = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
+    if (!name.startsWith("ShowDatabase") && !tc.securityContext().isAdmin) throw new AuthorizationViolationException(PERMISSION_DENIED)
     val execution: QueryExecution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, new SystemCommandQuerySubscriber(subscriber, onError))
     SystemCommandRuntimeResult(ctx, subscriber, resultMapper(ctx, execution))
   }
