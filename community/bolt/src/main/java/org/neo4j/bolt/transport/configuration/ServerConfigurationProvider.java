@@ -26,7 +26,7 @@ import java.util.concurrent.ThreadFactory;
 
 public interface ServerConfigurationProvider
 {
-    EventLoopGroup createEventLoopGroup( int numberOfThreads, ThreadFactory threadFactory );
+    EventLoopGroup createEventLoopGroup( ThreadFactory threadFactory );
 
     Class<? extends ServerChannel> getChannelClass();
 }

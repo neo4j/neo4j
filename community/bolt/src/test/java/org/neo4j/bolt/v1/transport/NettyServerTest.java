@@ -21,9 +21,8 @@ package org.neo4j.bolt.v1.transport;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
@@ -37,42 +36,72 @@ import org.neo4j.internal.helpers.NamedThreadFactory;
 import org.neo4j.internal.helpers.PortBindException;
 import org.neo4j.logging.NullLog;
 
-import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class NettyServerTest
+class NettyServerTest
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
+    private NettyServer server;
 
-    @Test
-    public void shouldGivePortConflictErrorWithPortNumberInIt() throws Throwable
+    @AfterEach
+    void afterEach() throws Exception
     {
-        // Given an occupied port
-        int port = 16000;
-        try ( ServerSocketChannel ignore = ServerSocketChannel.open().bind( new InetSocketAddress( "localhost", port ) ) )
+        if ( server != null )
         {
-            final ListenSocketAddress address = new ListenSocketAddress( "localhost", port );
-
-            // Expect
-            exception.expect( PortBindException.class );
-
-            // When
-            Map<BoltConnector,NettyServer.ProtocolInitializer> initializersMap =
-                    genericMap( new BoltConnector( "test" ), protocolOnAddress( address ) );
-            new NettyServer( new NamedThreadFactory( "mythreads" ), initializersMap,
-                             new ConnectorPortRegister(), NullLog.getInstance() ).start();
-
+            server.stop();
         }
     }
 
-    private NettyServer.ProtocolInitializer protocolOnAddress( final ListenSocketAddress address )
+    @Test
+    void shouldGivePortConflictErrorWithPortNumberInIt() throws Throwable
+    {
+        // Given an occupied port
+        var port = 16000;
+        try ( ServerSocketChannel ignore = ServerSocketChannel.open().bind( new InetSocketAddress( "localhost", port ) ) )
+        {
+            var address = new ListenSocketAddress( "localhost", port );
+
+            // When
+            var initializersMap = Map.of( new BoltConnector( "test" ), protocolOnAddress( address ) );
+            server = new NettyServer( newThreadFactory(), initializersMap, new ConnectorPortRegister(), NullLog.getInstance() );
+
+            // Then
+            assertThrows( PortBindException.class, server::start );
+        }
+    }
+
+    @Test
+    void shouldRegisterPortInPortRegister() throws Exception
+    {
+        var connector = "bolt";
+        var portRegister = new ConnectorPortRegister();
+
+        var address = new ListenSocketAddress( "localhost", 0 );
+        var initializersMap = Map.of( new BoltConnector( connector ), protocolOnAddress( address ) );
+        server = new NettyServer( newThreadFactory(), initializersMap, portRegister, NullLog.getInstance() );
+
+        assertNull( portRegister.getLocalAddress( connector ) );
+
+        server.start();
+        var actualAddress = portRegister.getLocalAddress( connector );
+        assertNotNull( actualAddress );
+        assertThat( actualAddress.getPort(), greaterThan( 0 ) );
+
+        server.stop();
+        assertNull( portRegister.getLocalAddress( connector ) );
+    }
+
+    private static NettyServer.ProtocolInitializer protocolOnAddress( ListenSocketAddress address )
     {
         return new NettyServer.ProtocolInitializer()
         {
             @Override
             public ChannelInitializer<Channel> channelInitializer()
             {
-                return new ChannelInitializer<Channel>()
+                return new ChannelInitializer<>()
                 {
                     @Override
                     public void initChannel( Channel ch )
@@ -87,5 +116,10 @@ public class NettyServerTest
                 return address;
             }
         };
+    }
+
+    private static NamedThreadFactory newThreadFactory()
+    {
+        return new NamedThreadFactory( "test-threads", true );
     }
 }

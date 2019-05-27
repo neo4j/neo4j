@@ -35,9 +35,9 @@ public class NioConfigurationProvider implements ServerConfigurationProvider
     }
 
     @Override
-    public EventLoopGroup createEventLoopGroup( int numberOfThreads, ThreadFactory threadFactory )
+    public EventLoopGroup createEventLoopGroup( ThreadFactory threadFactory )
     {
-        return new NioEventLoopGroup( numberOfThreads, threadFactory );
+        return new NioEventLoopGroup( 0, threadFactory );
     }
 
     @Override

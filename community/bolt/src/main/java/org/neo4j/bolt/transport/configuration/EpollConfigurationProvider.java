@@ -35,9 +35,9 @@ public class EpollConfigurationProvider implements ServerConfigurationProvider
     }
 
     @Override
-    public EventLoopGroup createEventLoopGroup( int numberOfThreads, ThreadFactory threadFactory )
+    public EventLoopGroup createEventLoopGroup( ThreadFactory threadFactory )
     {
-        return new EpollEventLoopGroup( numberOfThreads, threadFactory );
+        return new EpollEventLoopGroup( 0, threadFactory );
     }
 
     @Override
