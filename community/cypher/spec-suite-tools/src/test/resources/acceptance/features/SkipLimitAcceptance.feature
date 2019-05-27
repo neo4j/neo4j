@@ -57,40 +57,6 @@ Feature: SkipLimitAcceptance
       """
     Then a SyntaxError should be raised at compile time: NegativeIntegerArgument
 
-  Scenario: Negative parameter for SKIP should not generate errors
-    And having executed:
-      """
-      CREATE (s:Person {name: 'Steven'}),
-             (c:Person {name: 'Craig'})
-      """
-    And parameters are:
-      | skip | -1 |
-    When executing query:
-      """
-      MATCH (p:Person)
-      RETURN p.name AS name
-      SKIP $skip
-      """
-    Then the result should be:
-      | name     |
-      | 'Steven' |
-      | 'Craig'  |
-    And no side effects
-
-  Scenario: Negative SKIP should fail with a syntax exception
-    And having executed:
-      """
-      CREATE (s:Person {name: 'Steven'}),
-             (c:Person {name: 'Craig'})
-      """
-    When executing query:
-      """
-      MATCH (p:Person)
-      RETURN p.name AS name
-      SKIP -1
-      """
-    Then a SyntaxError should be raised at compile time: NegativeIntegerArgument
-
   Scenario: Graph touching LIMIT should fail with a syntax exception
     And having executed:
       """
