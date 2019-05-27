@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.DatabaseManagementException
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.procs.{QueryHandler, SystemCommandExecutionPlan, UpdatingSystemCommandExecutionPlan}
 import org.neo4j.cypher.internal.runtime._
+import org.neo4j.dbms.api.DatabaseNotFoundException
 import org.neo4j.values.storable.{TextValue, Values}
 import org.neo4j.values.virtual.VirtualValues
 
@@ -81,7 +81,7 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
           )
         ),
         QueryHandler.handleResult(record => {
-          if (record.get("db") == null) throw new DatabaseManagementException("Database '" + dbName + "' does not exist.")
+          if (record.get("db") == null) throw new DatabaseNotFoundException("Database '" + dbName + "' does not exist.")
         })
       )
 
@@ -101,7 +101,7 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
           )
         ),
         QueryHandler.handleResult(record => {
-          if (record.get("db") == null) throw new DatabaseManagementException("Database '" + dbName + "' does not exist.")
+          if (record.get("db") == null) throw new DatabaseNotFoundException("Database '" + dbName + "' does not exist.")
         })
       )
   }
