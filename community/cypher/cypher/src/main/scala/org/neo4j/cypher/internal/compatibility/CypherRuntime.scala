@@ -32,7 +32,6 @@ import org.neo4j.cypher.{CypherRuntimeOption, InvalidArgumentException, exceptio
 import org.neo4j.logging.Log
 
 import scala.concurrent.duration.Duration
-import scala.util.Try
 
 /**
   * A cypher runtime. Compiles logical plans into a executable form, which can
@@ -102,7 +101,6 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
     }
 
   override def compileToExecutable(logicalPlan: LogicalPlanState, context: CONTEXT): ExecutionPlan = {
-    var executionPlan: Try[ExecutionPlan] = Try(ProcedureCallOrSchemaCommandRuntime.compileToExecutable(logicalPlan, context))
     val logger = new RecordingNotificationLogger()
 
     var i = 0
@@ -118,7 +116,7 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
       } catch {
         case e: CantCompileQueryException =>
           lastException = e
-          if (requestedRuntime != CypherRuntimeOption.default) {
+          if (runtime != ProcedureCallOrSchemaCommandRuntime && requestedRuntime != CypherRuntimeOption.default) {
             logger.log(RuntimeUnsupportedNotification)
           }
         case e: Exception =>
@@ -129,7 +127,13 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
       i += 1
     }
     // All runtimes failed
-    throw publicCannotCompile(lastException)
+    lastException match {
+      case e:CantCompileQueryException =>
+        throw publicCannotCompile(e)
+      case e =>
+        throw e
+
+    }
   }
 }
 
