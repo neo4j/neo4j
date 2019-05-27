@@ -148,6 +148,7 @@ public class IndexPopulationJob implements Runnable
         {
             cancelled = true;
             storeScan.stop();
+            monitor.populationCancelled();
         }
 
         return latchGuardedValue( Suppliers.singleton( null ), doneSignal, "Index population job cancel" );

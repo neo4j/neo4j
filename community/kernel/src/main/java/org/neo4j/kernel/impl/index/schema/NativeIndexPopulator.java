@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -45,6 +43,7 @@ import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
@@ -190,17 +189,20 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
 
         try
         {
+            assertNotDropped();
             if ( populationCompletedSuccessfully )
             {
+                // Successful and completed population
                 assertPopulatorOpen();
                 markTreeAsOnline();
             }
-            else
+            else if ( failureBytes != null )
             {
-                assertNotDropped();
+                // Failed population
                 ensureTreeInstantiated();
                 markTreeAsFailed();
             }
+            // else cancelled population. Here we simply close the tree w/o checkpointing it and it will look like POPULATING state on next open
         }
         finally
         {
@@ -249,10 +251,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
 
     private void markTreeAsFailed()
     {
-        if ( failureBytes == null )
-        {
-            failureBytes = ArrayUtils.EMPTY_BYTE_ARRAY;
-        }
+        Preconditions.checkState( failureBytes != null, "markAsFailed hasn't been called, populator not actually failed?" );
         tree.checkpoint( IOLimiter.UNLIMITED, new FailureHeaderWriter( failureBytes ) );
     }
 
