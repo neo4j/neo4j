@@ -29,7 +29,7 @@ case class Prettifier(expr: ExpressionStringifier) {
 
   def asString(statement: Statement): String = statement match {
     case Query(maybePeriodicCommit, part) =>
-      val hint = maybePeriodicCommit.map("USING PERIODIC COMMIT" + _.size.map(expr).map(" " + _).getOrElse("") + NL).getOrElse("")
+      val hint = maybePeriodicCommit.map("USING PERIODIC COMMIT" + _.size.map(" " + expr(_)).getOrElse("") + NL).getOrElse("")
       val query = queryPart(part)
       s"$hint$query"
 
@@ -216,12 +216,12 @@ case class Prettifier(expr: ExpressionStringifier) {
     m match {
       case UsingIndexHint(v, l, ps, s) => Seq(
         "USING INDEX ", if (s == SeekOnly) "SEEK " else "",
-        expr(v), ":", l.name,
-        ps.map(_.name).mkString("(", ",", ")")
+        expr(v), ":", expr(l),
+        ps.map(expr(_)).mkString("(", ",", ")")
       ).mkString
 
       case UsingScanHint(v, l) => Seq(
-        "USING SCAN ", expr(v), ":", l.name
+        "USING SCAN ", expr(v), ":", expr(l)
       ).mkString
 
       case UsingJoinHint(vs) => Seq(
@@ -292,19 +292,19 @@ case class Prettifier(expr: ExpressionStringifier) {
   }
 
   private def asString(u: UnresolvedCall): String = {
-    val namespace = u.procedureNamespace.parts.mkString(".")
+    val namespace = expr(u.procedureNamespace)
     val prefix = if (namespace.isEmpty) "" else namespace + "."
     val arguments = u.declaredArguments.map(list => list.map(expr).mkString("(", ", ", ")")).getOrElse("")
-    def item(i: ProcedureResultItem) = i.output.map(_.name + " AS ").getOrElse("") + expr(i.variable)
+    def item(i: ProcedureResultItem) = i.output.map(expr(_) + " AS ").getOrElse("") + expr(i.variable)
     def result(r: ProcedureResult) = " YIELD " + r.items.map(item).mkString(", ") + r.where.map(asString).map(indentedLine).getOrElse("")
     val yields = u.declaredResult.map(result).map(indentedLine).getOrElse("")
-    s"CALL $prefix${u.procedureName.name}$arguments$yields"
+    s"CALL $prefix${expr(u.procedureName)}$arguments$yields"
   }
 
   private def asString(s: SetClause): String = {
     val items = s.items.map {
       case SetPropertyItem(prop, exp) => s"${expr(prop)} = ${expr(exp)}"
-      case SetLabelItem(variable, labels) => expr(variable) + labels.map(label =>s":${ExpressionStringifier.backtick(label.name)}").mkString("")
+      case SetLabelItem(variable, labels) => expr(variable) + labels.map(l => s":${expr(l)}").mkString("")
       case SetIncludingPropertiesFromMapItem(variable, exp) => s"${expr(variable)} += ${expr(exp)}"
       case SetExactPropertiesFromMapItem(variable, exp) => s"${expr(variable)} = ${expr(exp)}"
       case _ => s.asCanonicalStringVal
@@ -315,7 +315,7 @@ case class Prettifier(expr: ExpressionStringifier) {
   private def asString(v: LoadCSV): String = {
     val withHeaders = if (v.withHeaders) " WITH HEADERS" else ""
     val url = expr(v.urlString)
-    val varName = v.variable.name
+    val varName = expr(v.variable)
     val fieldTerminator = v.fieldTerminator.map(x => " FIELDTERMINATOR " + expr(x)).getOrElse("")
     s"LOAD CSV$withHeaders FROM $url AS $varName$fieldTerminator"
   }
@@ -326,7 +326,7 @@ case class Prettifier(expr: ExpressionStringifier) {
   }
 
   private def asString(foreach: Foreach): String = {
-    val varName = foreach.variable.name
+    val varName = expr(foreach.variable)
     val list = expr(foreach.expression)
     val updates = foreach.updates.map(dispatch).mkString(s"$NL  ", s"$NL  ", NL)
     s"FOREACH ( $varName IN $list |$updates)"
@@ -335,12 +335,12 @@ case class Prettifier(expr: ExpressionStringifier) {
   private def asString(start: Start): String = {
     val startItems =
       start.items.map {
-        case AllNodes(v) => s"${v.name} = NODE( * )"
-        case NodeByIds(v, ids) => s"${v.name} = NODE( ${ids.map(_.value.toString).mkString(", ")} )"
-        case NodeByParameter(v, param) => s"${v.name} = NODE( $$${param.name} )"
-        case AllRelationships(v) => s"${v.name} = RELATIONSHIP( * )"
-        case RelationshipByIds(v, ids) => s"${v.name} = RELATIONSHIP( ${ids.map(_.value.toString).mkString(", ")} )"
-        case RelationshipByParameter(v, param) => s"${v.name} = RELATIONSHIP( $$${param.name} )"
+        case AllNodes(v) => s"${expr(v)} = NODE( * )"
+        case NodeByIds(v, ids) => s"${expr(v)} = NODE( ${ids.map(expr).mkString(", ")} )"
+        case NodeByParameter(v, param) => s"${expr(v)} = NODE( ${expr(param)} )"
+        case AllRelationships(v) => s"${expr(v)} = RELATIONSHIP( * )"
+        case RelationshipByIds(v, ids) => s"${expr(v)} = RELATIONSHIP( ${ids.map(expr).mkString(", ")} )"
+        case RelationshipByParameter(v, param) => s"${expr(v)} = RELATIONSHIP( ${expr(param)} )"
       }
 
     val where = start.where.map(asString).map(indentedLine).getOrElse("")

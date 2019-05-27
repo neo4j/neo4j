@@ -22,14 +22,20 @@ import org.neo4j.cypher.internal.v4_0.util.InternalException
 
 case class ExpressionStringifier(
   extender: Expression => String = failingExtender,
-  alwaysParens: Boolean = false
+  alwaysParens: Boolean = false,
+  alwaysBacktick: Boolean = false
 ) extends (Expression => String) {
 
   val patterns = PatternStringifier(this)
 
-  def apply(ast: Expression): String = {
+  def apply(ast: Expression): String =
     stringify(ast)
-  }
+
+  def apply(s: SymbolicName): String =
+    backtick(s.name)
+
+  def apply(ns: Namespace): String =
+    ns.parts.map(backtick).mkString(".")
 
   private def inner(parent: Expression)(ast: Expression): String = {
     val str = stringify(ast)
@@ -65,19 +71,19 @@ case class ExpressionStringifier(
         expressions.map(inner(ast)).mkString("[", ", ", "]")
 
       case FunctionInvocation(namespace, functionName, distinct, args) =>
-        val ns = namespace.parts.mkString(".")
+        val ns = apply(namespace)
         val np = if (namespace.parts.isEmpty) "" else "."
         val ds = if (distinct) "DISTINCT " else ""
         val as = args.map(inner(ast)).mkString(", ")
-        s"$ns$np${functionName.name}($ds$as)"
+        s"$ns$np${apply(functionName)}($ds$as)"
 
       case Property(m, k) =>
-        s"${inner(ast)(m)}.${backtick(k.name)}"
+        s"${inner(ast)(m)}.${apply(k)}"
 
 
       case MapExpression(items) =>
         val is = items.map({
-          case (k, i) => s"${backtick(k.name)}: ${inner(ast)(i)}"
+          case (k, i) => s"${apply(k)}: ${inner(ast)(i)}"
         }).mkString(", ")
         s"{$is}"
 
@@ -135,7 +141,7 @@ case class ExpressionStringifier(
         s"[$v$p$w | $b]"
 
       case HasLabels(arg, labels) =>
-        val l = labels.map(label => backtick(label.name)).mkString(":", ":", "")
+        val l = labels.map(apply).mkString(":", ":", "")
         s"${inner(ast)(arg)}$l"
 
       case AllIterablePredicate(scope, e) =>
@@ -152,7 +158,7 @@ case class ExpressionStringifier(
         s"${apply(variable)}{$itemsText}"
 
       case LiteralEntry(k, e) =>
-        s"${backtick(k.name)}: ${inner(ast)(e)}"
+        s"${apply(k)}: ${inner(ast)(e)}"
 
       case VariableSelector(v) =>
         apply(v)
@@ -305,19 +311,20 @@ case class ExpressionStringifier(
     case s: EndsWith   => "ENDS WITH"
     case o             => e.canonicalOperatorSymbol
   }
-}
-
-object ExpressionStringifier {
-
-  val failingExtender: Expression => String =
-    e => throw new InternalException(s"failed to pretty print $e")
 
   def backtick(txt: String): String = {
-    val needsBackticks = !(Character.isJavaIdentifierStart(txt.head) && txt.tail.forall(Character.isJavaIdentifierPart))
-    if (needsBackticks)
-      s"`$txt`"
-    else
-      txt
+    def escaped = txt.replaceAll("`", "``")
+    if (alwaysBacktick)
+      s"`$escaped`"
+    else {
+      val isJavaIdentifier =
+        txt.codePoints().limit(1).allMatch(p => Character.isJavaIdentifierStart(p)) &&
+          txt.codePoints().skip(1).allMatch(p => Character.isJavaIdentifierPart(p))
+      if (!isJavaIdentifier)
+        s"`$escaped`"
+      else
+        txt
+    }
   }
 
   def quote(txt: String): String = {
@@ -330,4 +337,10 @@ object ExpressionStringifier {
     else
       "\"" + txt + "\""
   }
+}
+
+object ExpressionStringifier {
+
+  val failingExtender: Expression => String =
+    e => throw new InternalException(s"failed to pretty print $e")
 }

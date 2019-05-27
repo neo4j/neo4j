@@ -413,7 +413,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     addSetIfNonEmptyS(patternNodes, "Nodes")
     addSetIfNonEmpty(patternRelationships, "Rels", prettyPattern)
     addSetIfNonEmptyS(argumentIds, "Arguments")
-    addSetIfNonEmpty(selections.flatPredicates, "Predicates", stringifier.apply)
+    addSetIfNonEmpty(selections.flatPredicates, "Predicates", (e: Expression) => stringifier.apply(e))
     addSetIfNonEmpty(shortestPathPatterns, "Shortest paths", (_: ShortestPathPattern).toString)
     addSetIfNonEmpty(optionalMatches, "Optional Matches: ", (_: QueryGraph).toString)
     addSetIfNonEmpty(hints, "Hints", (_: Hint).toString)
