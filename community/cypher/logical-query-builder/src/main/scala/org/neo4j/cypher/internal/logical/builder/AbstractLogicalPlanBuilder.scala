@@ -270,7 +270,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                   aggregationExpression: Seq[String]): IMPL =
     appendAtCurrentIndent(UnaryOperator(lp => Aggregation(lp,
       ExpressionParser.parseProjections(groupingExpressions: _*),
-      ExpressionParser.parseProjections(aggregationExpression: _*))))
+      ExpressionParser.parseProjections(aggregationExpression: _*))(_)))
 
   def orderedAggregation(groupingExpressions: Seq[String],
                          aggregationExpression: Seq[String],
