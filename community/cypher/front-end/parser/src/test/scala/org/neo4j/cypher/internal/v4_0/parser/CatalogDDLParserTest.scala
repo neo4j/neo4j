@@ -71,7 +71,7 @@ class CatalogDDLParserTest
   }
 
   test("CATALOG CREATE DATABASE _foo_bar42") {
-    failsToParse
+    yields(ast.CreateDatabase("_foo_bar42"))
   }
 
   test("CATALOG CREATE DATABASE 42foo_bar") {
