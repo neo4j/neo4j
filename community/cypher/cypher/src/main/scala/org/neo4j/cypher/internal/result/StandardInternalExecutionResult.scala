@@ -65,18 +65,6 @@ class StandardInternalExecutionResult(context: QueryContext,
   override def await(): Boolean = runtimeResult.await()
 
   /*
-  ======= DUMP TO STRING ==========
-   */
-
-//  override def dumpToString(): String =
-//
-//  override def dumpToString(writer: PrintWriter): Unit = {
-//    val resultStringBuilder = ResultStringBuilder(fieldNames(), context.transactionalContext)
-//    accept(resultStringBuilder)
-//    resultStringBuilder.result(writer, queryStatistics())
-//  }
-
-  /*
   ======= META DATA ==========
    */
 

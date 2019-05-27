@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,6 +30,7 @@ import java.util.Map;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.CypherExecutionException;
+import org.neo4j.cypher.internal.result.string.ResultStringBuilder;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionException;
@@ -49,19 +51,22 @@ import static org.neo4j.graphdb.QueryExecutionType.QueryType.WRITE;
 
 class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> implements QuerySubscriber, Result
 {
+    private final DefaultValueMapper valueMapper;
+    private final EmbeddedProxySPI proxySPI;
     private QueryExecution execution;
     private AnyValue[] currentRecord;
     private Throwable error;
     private QueryStatistics statistics;
-    private final DefaultValueMapper valueMapper;
     private ResultVisitor<?> visitor;
     private Exception visitException;
     private List<Map<String, Object>> materializeResult;
     private Iterator<Map<String,Object>> materializedIterator;
 
+
     ResultSubscriber( EmbeddedProxySPI proxySPI )
     {
-        valueMapper = new DefaultValueMapper( proxySPI );
+        this.proxySPI = proxySPI;
+        this.valueMapper = new DefaultValueMapper( proxySPI );
     }
 
     public void init( QueryExecution execution )
@@ -147,6 +152,7 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
         }
         catch ( Throwable throwable )
         {
+            close();
             throw converted( throwable );
         }
     }
@@ -213,13 +219,32 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
     @Override
     public String resultAsString()
     {
-        throw new UnsupportedOperationException( "TODO" );
+        StringWriter out = new StringWriter();
+        PrintWriter writer = new PrintWriter(out);
+        writeAsStringTo( writer );
+        writer.flush();
+        return out.toString();
     }
 
     @Override
     public void writeAsStringTo( PrintWriter writer )
     {
-        throw new UnsupportedOperationException( "TODO" );
+        ResultStringBuilder stringBuilder =
+                ResultStringBuilder.apply( execution.fieldNames(), proxySPI.kernelTransaction().dataRead() );
+        try
+        {
+            accept( stringBuilder );
+            stringBuilder.result( writer, statistics );
+            for ( Notification notification : getNotifications() )
+            {
+                writer.println( notification.getDescription() );
+            }
+        }
+        catch ( Exception e )
+        {
+            close();
+            throw converted( e );
+        }
     }
 
     @Override
@@ -241,6 +266,7 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
         }
         catch ( Exception e )
         {
+            close();
             throw converted( e );
         }
         if ( visitException != null )
@@ -301,7 +327,7 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
         }
         catch ( Throwable throwable )
         {
-            execution.cancel();
+            close();
             throw converted( throwable );
         }
     }
@@ -318,6 +344,7 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
             }
             catch ( Exception e )
             {
+                close();
                 throw converted( e );
             }
         }
@@ -338,6 +365,7 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
     {
         if ( error != null )
         {
+            close();
             throw converted( error );
         }
     }

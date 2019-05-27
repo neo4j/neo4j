@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.{QueryTransactionalContext, RuntimeScalaValueConverter, isGraphKernelResultValue}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb._
+import org.neo4j.internal.kernel.api.Read
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -50,10 +51,10 @@ object ResultStringBuilder {
     * entities have been deleted in this transaction.
     *
     * @param columns the result columns
-    * @param txContext the transactional context
+    * @param dataRead the kernel read API
     */
-  def apply(columns: Array[String], txContext: QueryTransactionalContext): ResultStringBuilder =
-    new ResultStringBuilder(columns, InternalTransactionSupport(txContext))
+  def apply(columns: Array[String], dataRead: Read): ResultStringBuilder =
+    new ResultStringBuilder(columns, InternalTransactionSupport(dataRead))
 
   // INTERNALS
 
@@ -67,12 +68,12 @@ object ResultStringBuilder {
     override def relationship(id: Long): Boolean = false
   }
 
-  case class InternalTransactionSupport(transactionalContext: QueryTransactionalContext) extends DeletedInTx {
+  case class InternalTransactionSupport(dataRead: Read) extends DeletedInTx {
     override def node(id: Long): Boolean =
-      transactionalContext.dataRead.nodeDeletedInTransaction(id)
+      dataRead.nodeDeletedInTransaction(id)
 
     override def relationship(id: Long): Boolean =
-      transactionalContext.dataRead.relationshipDeletedInTransaction(id)
+      dataRead.relationshipDeletedInTransaction(id)
   }
 }
 
