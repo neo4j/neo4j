@@ -506,9 +506,9 @@ public class IndexingServiceTest
 
         // then
         onBothLogProviders(
-                logProvider -> logProvider.rawMessageMatcher().assertNoMessagesContaining( "IndexingService.init: Deprecated index providers in use:" ) );
-        onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNoMessagesContaining( nativeBtree10Descriptor.name() ) );
-        onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNoMessagesContaining( fulltextDescriptor.name() ) );
+                logProvider -> logProvider.rawMessageMatcher().assertNotContains( "IndexingService.init: Deprecated index providers in use:" ) );
+        onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNotContains( nativeBtree10Descriptor.name() ) );
+        onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNotContains( fulltextDescriptor.name() ) );
     }
 
     @Test
@@ -546,9 +546,9 @@ public class IndexingServiceTest
 
         // then
         AssertableLogProvider.MessageMatcher messageMatcher = internalLogProvider.rawMessageMatcher();
-        onBothLogProviders( logProvider -> messageMatcher.assertNoMessagesContaining( "IndexingService.start: Deprecated index providers in use:" ) );
-        onBothLogProviders( logProvider -> messageMatcher.assertNoMessagesContaining( nativeBtree10Descriptor.name() ) );
-        onBothLogProviders( logProvider -> messageMatcher.assertNoMessagesContaining( fulltextDescriptor.name() ) );
+        onBothLogProviders( logProvider -> messageMatcher.assertNotContains( "IndexingService.start: Deprecated index providers in use:" ) );
+        onBothLogProviders( logProvider -> messageMatcher.assertNotContains( nativeBtree10Descriptor.name() ) );
+        onBothLogProviders( logProvider -> messageMatcher.assertNotContains( fulltextDescriptor.name() ) );
     }
 
     @Test
@@ -592,7 +592,7 @@ public class IndexingServiceTest
         indexingService.start();
 
         // then
-        userLogProvider.rawMessageMatcher().assertContainsExactlyOneMessageMatching(
+        userLogProvider.rawMessageMatcher().assertContainsSingle(
                 Matchers.allOf(
                         Matchers.containsString( "Deprecated index providers in use:" ),
                         Matchers.containsString( lucene10Descriptor.name() + " (1 index)" ),
@@ -601,8 +601,8 @@ public class IndexingServiceTest
                         Matchers.containsString( "Use procedure 'db.indexes()' to see what indexes use which index provider." )
                 )
         );
-        onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNoMessagesContaining( nativeBtree10Descriptor.name() ) );
-        onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNoMessagesContaining( fulltextDescriptor.name() ) );
+        onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNotContains( nativeBtree10Descriptor.name() ) );
+        onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNotContains( fulltextDescriptor.name() ) );
         userLogProvider.print( System.out );
     }
 

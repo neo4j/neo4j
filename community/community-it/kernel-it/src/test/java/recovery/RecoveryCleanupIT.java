@@ -140,14 +140,14 @@ public class RecoveryCleanupIT
         startDatabase().shutdown();
 
         // then
-        logProvider.rawMessageMatcher().assertContainsLogCallContaining( "Label index cleanup job registered" );
-        logProvider.rawMessageMatcher().assertContainsLogCallContaining( "Label index cleanup job started" );
-        logProvider.rawMessageMatcher().assertContainsMessageMatching( Matchers.stringContainsInOrder( Iterables.asIterable(
+        logProvider.rawMessageMatcher().assertContains( "Label index cleanup job registered" );
+        logProvider.rawMessageMatcher().assertContains( "Label index cleanup job started" );
+        logProvider.rawMessageMatcher().assertContains( Matchers.stringContainsInOrder( Iterables.asIterable(
                 "Label index cleanup job finished",
                 "Number of pages visited",
                 "Number of cleaned crashed pointers",
                 "Time spent" ) ) );
-        logProvider.rawMessageMatcher().assertContainsLogCallContaining( "Label index cleanup job closed" );
+        logProvider.rawMessageMatcher().assertContains( "Label index cleanup job closed" );
     }
 
     @Test
@@ -189,7 +189,7 @@ public class RecoveryCleanupIT
             matchers.add( indexRecoveryLogMatcher( "Schema index cleanup job closed", subType ) );
         }
         AssertableLogProvider.MessageMatcher messageMatcher = logProvider.rawMessageMatcher();
-        matchers.forEach( messageMatcher::assertContainsExactlyOneMessageMatching );
+        matchers.forEach( messageMatcher::assertContainsSingle );
     }
 
     private Matcher<String> indexRecoveryLogMatcher( String logMessage, String subIndexProviderKey )

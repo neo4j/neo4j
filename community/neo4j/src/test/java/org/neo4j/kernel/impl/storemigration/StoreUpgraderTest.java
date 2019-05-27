@@ -314,10 +314,10 @@ public class StoreUpgraderTest
 
         // Then
         AssertableLogProvider.MessageMatcher messageMatcher = logProvider.rawMessageMatcher();
-        messageMatcher.assertContainsLogCallContaining( "Store files" );
-        messageMatcher.assertContainsLogCallContaining( "Indexes" );
-        messageMatcher.assertContainsLogCallContaining( "Counts store" );
-        messageMatcher.assertContainsLogCallContaining( "Successfully finished" );
+        messageMatcher.assertContains( "Store files" );
+        messageMatcher.assertContains( "Indexes" );
+        messageMatcher.assertContains( "Counts store" );
+        messageMatcher.assertContains( "Successfully finished" );
     }
 
     @Test

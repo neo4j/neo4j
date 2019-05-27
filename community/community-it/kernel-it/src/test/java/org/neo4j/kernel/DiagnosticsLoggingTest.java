@@ -48,18 +48,18 @@ public class DiagnosticsLoggingTest
         cleanupRule.add( db );
 
         // THEN we should have logged
-        logProvider.rawMessageMatcher().assertContainsMessageContaining( "Network information" );
-        logProvider.rawMessageMatcher().assertContainsMessageContaining( "Disk space on partition" );
-        logProvider.rawMessageMatcher().assertContainsMessageContaining( "Local timezone" );
+        logProvider.rawMessageMatcher().assertContains( "Network information" );
+        logProvider.rawMessageMatcher().assertContains( "Disk space on partition" );
+        logProvider.rawMessageMatcher().assertContains( "Local timezone" );
         // page cache info
-        logProvider.rawMessageMatcher().assertContainsMessageContaining( "Page cache: 4M" );
+        logProvider.rawMessageMatcher().assertContains( "Page cache: 4M" );
         // neostore records
         for ( MetaDataStore.Position position : MetaDataStore.Position.values() )
         {
-            logProvider.rawMessageMatcher().assertContainsMessageContaining( position.name() );
+            logProvider.rawMessageMatcher().assertContains( position.name() );
         }
         // transaction log info
-        logProvider.rawMessageMatcher().assertContainsMessageContaining( "Transaction log" );
-        logProvider.rawMessageMatcher().assertContainsMessageContaining( "TimeZone version: " );
+        logProvider.rawMessageMatcher().assertContains( "Transaction log" );
+        logProvider.rawMessageMatcher().assertContains( "TimeZone version: " );
     }
 }
