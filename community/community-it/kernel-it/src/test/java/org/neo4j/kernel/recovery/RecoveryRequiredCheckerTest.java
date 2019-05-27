@@ -76,7 +76,7 @@ class RecoveryRequiredCheckerTest
     @Test
     void shouldNotWantToRecoverIntactStore() throws Exception
     {
-        startStopDatabase( fileSystem, storeDir );
+        startStopAndCreateDefaultData();
 
         PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
         RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
@@ -136,7 +136,7 @@ class RecoveryRequiredCheckerTest
     @Test
     void shouldWantToRecoverStoreWithoutOneIdFile() throws Exception
     {
-        startStopDatabase( fileSystem, storeDir );
+        startStopAndCreateDefaultData();
         assertAllIdFilesExist();
 
         PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
@@ -151,7 +151,7 @@ class RecoveryRequiredCheckerTest
     @Test
     void shouldWantToRecoverStoreWithoutAllIdFiles() throws Exception
     {
-        startStopDatabase( fileSystem, storeDir );
+        startStopAndCreateDefaultData();
         assertAllIdFilesExist();
 
         PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
@@ -162,6 +162,40 @@ class RecoveryRequiredCheckerTest
         {
             fileSystem.deleteFileOrThrow( idFile );
         }
+
+        assertTrue( checker.isRecoveryRequiredAt( databaseLayout ) );
+    }
+
+    @Test
+    void recoveryRequiredWhenAnyStoreFileIsMissing() throws Exception
+    {
+        startStopAndCreateDefaultData();
+
+        assertStoreFilesExist();
+
+        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
+        RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
+        assertFalse( checker.isRecoveryRequiredAt( databaseLayout ) );
+
+        fileSystem.deleteFileOrThrow( databaseLayout.nodeStore() );
+
+        assertTrue( checker.isRecoveryRequiredAt( databaseLayout ) );
+    }
+
+    @Test
+    void recoveryRequiredWhenSeveralStoreFileAreMissing() throws Exception
+    {
+        startStopAndCreateDefaultData();
+
+        assertStoreFilesExist();
+
+        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
+        RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
+        assertFalse( checker.isRecoveryRequiredAt( databaseLayout ) );
+
+        fileSystem.deleteFileOrThrow( databaseLayout.relationshipStore() );
+        fileSystem.deleteFileOrThrow( databaseLayout.propertyStore() );
+        fileSystem.deleteFileOrThrow( databaseLayout.relationshipTypeTokenStore() );
 
         assertTrue( checker.isRecoveryRequiredAt( databaseLayout ) );
     }
@@ -199,6 +233,14 @@ class RecoveryRequiredCheckerTest
         }
     }
 
+    private void assertStoreFilesExist()
+    {
+        for ( File file : databaseLayout.storeFiles() )
+        {
+            assertTrue( fileSystem.fileExists( file ), "Store file " + file + " does not exist" );
+        }
+    }
+
     private static RecoveryRequiredChecker getRecoveryCheckerWithDefaultConfig( FileSystemAbstraction fileSystem, PageCache pageCache,
             StorageEngineFactory storageEngineFactory )
     {
@@ -233,12 +275,34 @@ class RecoveryRequiredCheckerTest
         }
     }
 
+    private static DatabaseManagementService startDatabase( FileSystemAbstraction fileSystem, File storeDir )
+    {
+        return new TestDatabaseManagementServiceBuilder( storeDir )
+                .setFileSystem( fileSystem )
+                .build();
+    }
+
     private static void startStopDatabase( FileSystemAbstraction fileSystem, File storeDir )
     {
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( storeDir )
-                        .setFileSystem( fileSystem )
-                        .build();
+        DatabaseManagementService managementService = startDatabase( fileSystem, storeDir );
         managementService.shutdown();
+    }
+
+    private void startStopAndCreateDefaultData()
+    {
+        DatabaseManagementService managementService = startDatabase( fileSystem, storeDir );
+        try
+        {
+            GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
+            try ( Transaction transaction = database.beginTx() )
+            {
+                database.createNode();
+                transaction.success();
+            }
+        }
+        finally
+        {
+            managementService.shutdown();
+        }
     }
 }

@@ -104,7 +104,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final LockService lockService;
     private WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSync;
     private WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
-    private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
     private final IdController idController;
     private final CountsTracker countsStore;
     private final int denseNodeThreshold;
@@ -141,7 +140,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
         try
         {
-            indexUpdatesConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
             schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders );
             schemaCache = new SchemaCache( constraintSemantics );
 
