@@ -340,12 +340,13 @@ public class Operations implements Write, SchemaWrite
 
         if ( ktx.hasTxStateWithChanges() )
         {
-            if ( ktx.txState().nodeIsAddedInThisTx( node ) )
+            TransactionState state = ktx.txState();
+            if ( state.nodeIsAddedInThisTx( node ) )
             {
-                ktx.txState().nodeDoDelete( node );
+                state.nodeDoDelete( node );
                 return true;
             }
-            if ( ktx.txState().nodeIsDeletedInThisTx( node ) )
+            if ( state.nodeIsDeletedInThisTx( node ) )
             {
                 // already deleted
                 return false;

@@ -104,7 +104,7 @@ import static org.neo4j.kernel.impl.newapi.TwoPhaseNodeForRelationshipLockingTes
 import static org.neo4j.test.rule.DatabaseRule.mockedTokenHolders;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
-class OperationsLockTest
+class OperationsTest
 {
     private KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
     private Operations operations;
