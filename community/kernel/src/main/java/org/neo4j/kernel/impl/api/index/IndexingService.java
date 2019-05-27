@@ -43,7 +43,6 @@ import java.util.StringJoiner;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
@@ -56,6 +55,7 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -65,7 +65,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
@@ -148,6 +147,8 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         void awaitingPopulationOfRecoveredIndex( StoreIndexDescriptor descriptor );
 
         void indexSamplingTriggered( IndexSamplingMode mode );
+
+        void populationCancelled();
     }
 
     public static class MonitorAdapter implements Monitor
@@ -179,6 +180,10 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
         @Override
         public void indexSamplingTriggered( IndexSamplingMode mode )
+        {   // Do nothing
+        }
+
+        public void populationCancelled()
         {   // Do nothing
         }
     }

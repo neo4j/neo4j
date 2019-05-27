@@ -152,6 +152,7 @@ public class IndexPopulationJob implements Runnable
             cancelled = true;
             storeScan.stop();
             jobHandle.cancel( false );
+            monitor.populationCancelled();
         }
     }
 

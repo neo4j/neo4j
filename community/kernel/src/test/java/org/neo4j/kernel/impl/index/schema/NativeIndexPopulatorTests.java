@@ -37,6 +37,7 @@ import java.util.Random;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -56,9 +57,13 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
+import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
+import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
+import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_POPULATING;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueValues;
 
 public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue>
@@ -280,7 +285,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         populator.close( true );
 
         // then
-        assertHeader( true, null, false );
+        assertHeader( ONLINE, null, false );
     }
 
     @Test
@@ -326,7 +331,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         populator.close( false );
 
         // then
-        assertHeader( false, "", false );
+        assertHeader( POPULATING, null, false );
     }
 
     @Test
@@ -341,7 +346,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         populator.close( false );
 
         // then
-        assertHeader( false, failureMessage, false );
+        assertHeader( FAILED, failureMessage, false );
     }
 
     @Test
@@ -356,7 +361,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         populator.close( false );
 
         // then
-        assertHeader( false, failureMessage, true );
+        assertHeader( FAILED, failureMessage, true );
     }
 
     @Test
@@ -460,7 +465,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         populator.close( false );
 
         // then
-        assertHeader( false, failureMessage, false );
+        assertHeader( FAILED, failureMessage, false );
     }
 
     @Test
@@ -704,19 +709,19 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         return count;
     }
 
-    private void assertHeader( boolean online, String failureMessage, boolean messageTruncated ) throws IOException
+    private void assertHeader( InternalIndexState expectedState, String failureMessage, boolean messageTruncated ) throws IOException
     {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader( NO_HEADER_READER );
         try ( GBPTree<KEY,VALUE> ignored = new GBPTree<>( pageCache, indexFiles.getStoreFile(), layout, 0, GBPTree.NO_MONITOR,
                 headerReader, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.immediate() ) )
         {
-            if ( online )
+            switch ( expectedState )
             {
+            case ONLINE:
                 assertEquals( "Index was not marked as online when expected not to be.", BYTE_ONLINE, headerReader.state );
                 assertNull( "Expected failure message to be null when marked as online.", headerReader.failureMessage );
-            }
-            else
-            {
+                break;
+            case FAILED:
                 assertEquals( "Index was marked as online when expected not to be.", BYTE_FAILED, headerReader.state );
                 if ( messageTruncated )
                 {
@@ -727,6 +732,13 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
                 {
                     assertEquals( failureMessage, headerReader.failureMessage );
                 }
+                break;
+            case POPULATING:
+                assertEquals( "Index was not left as populating when expected to be.", BYTE_POPULATING, headerReader.state );
+                assertNull( "Expected failure message to be null when marked as populating.", headerReader.failureMessage );
+                break;
+            default:
+                throw new UnsupportedOperationException( "Unexpected index state " + expectedState );
             }
         }
     }

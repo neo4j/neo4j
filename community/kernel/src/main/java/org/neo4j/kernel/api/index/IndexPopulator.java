@@ -112,10 +112,19 @@ public interface IndexPopulator extends IndexConfigProvider
      * {@link IndexProvider#getInitialState(StorageIndexReference)} also returns {@link InternalIndexState#ONLINE}.
      *
      * @param populationCompletedSuccessfully {@code true} if the index population was successful, where the index should
+<<<<<<< HEAD
      * be marked as {@link InternalIndexState#ONLINE}, otherwise {@code false} where index should be marked as
      * {@link InternalIndexState#FAILED} and the failure, previously handed to this populator using {@link #markAsFailed(String)}
      * should be stored and made available for later requests from {@link IndexProvider#getPopulationFailure(StorageIndexReference)}.
      * @throws UncheckedIOException on I/O error.
+=======
+     * be marked as {@link InternalIndexState#ONLINE}. Supplying {@code false} can have two meanings:
+     * <ul>
+     *     <li>if {@link #markAsFailed(String)} have been called the end state should be {@link InternalIndexState#FAILED}.
+     *     This method call should also make sure that the failure message gets stored for retrieval the next open too.</li>
+     *     <li>if {@link #markAsFailed(String)} have NOT been called the end state should be {@link InternalIndexState#POPULATING}</li>
+     * </ul>
+>>>>>>> 3.6
      */
     void close( boolean populationCompletedSuccessfully );
 
