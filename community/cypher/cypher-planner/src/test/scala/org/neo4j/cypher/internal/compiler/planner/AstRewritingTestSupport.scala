@@ -20,10 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ir.{PlannerQuery, ProvidedOrder}
-import org.neo4j.cypher.internal.logical.plans.{CACHED_NODE, CachedProperty}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.v4_0.parser.{CypherParser, ParserFixture}
 import org.neo4j.cypher.internal.v4_0.util.Cardinality
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, SequentialIdGen}
@@ -67,13 +65,6 @@ trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
 
     override def copy(from: Id, to: Id): Unit = {}
   }
-
-  def cachedNode(varAndProp: String): CachedProperty = {
-    val array = varAndProp.split("\\.", 2)
-    val (v, prop) = (array(0), array(1))
-    CachedProperty(v, PropertyKeyName(prop)(pos), CACHED_NODE)(pos)
-  }
-
 }
 
 trait AstRewritingTestSupport extends CypherTestSupport with AstConstructionTestSupport {

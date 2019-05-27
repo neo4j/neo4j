@@ -1,8 +1,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
-import org.neo4j.cypher.internal.logical.plans.{CACHED_NODE, CACHED_RELATIONSHIP, CachedProperty, CachedType, CanGetValue, DoNotGetValue, GetValue, IndexLeafPlan, LogicalPlan, ProjectingPlan}
-import org.neo4j.cypher.internal.v4_0.expressions.{Property, PropertyKeyName, Variable}
+import org.neo4j.cypher.internal.logical.plans.{CanGetValue, DoNotGetValue, GetValue, IndexLeafPlan, LogicalPlan, ProjectingPlan}
+import org.neo4j.cypher.internal.v4_0.expressions.{CACHED_NODE, CACHED_RELATIONSHIP, CachedProperty, CachedType, Property, PropertyKeyName, Variable}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.Transformer
 import org.neo4j.cypher.internal.v4_0.util.symbols.{CTNode, CTRelationship}
 import org.neo4j.cypher.internal.v4_0.util.{InputPosition, Rewriter, bottomUp}
@@ -36,18 +36,23 @@ case object insertCachedProperties extends Transformer[PlannerContext, LogicalPl
         copy(properties = newProperties)
       }
       def addNodeProperty(prop: Property): Acc = {
-        val previousUsages = properties.getOrElse(prop, NODE_NO_PROP_USAGE)
-        val newProperties = properties.updated(prop, previousUsages.addUsage)
+        val originalProp = originalProperty(prop)
+        val previousUsages = properties.getOrElse(originalProp, NODE_NO_PROP_USAGE)
+        val newProperties = properties.updated(originalProp, previousUsages.addUsage)
         copy(properties = newProperties)
       }
       def addRelProperty(prop: Property): Acc = {
-        val previousUsages = properties.getOrElse(prop, REL_NO_PROP_USAGE)
-        val newProperties = properties.updated(prop, previousUsages.addUsage)
+        val originalProp = originalProperty(prop)
+        val previousUsages = properties.getOrElse(originalProp, REL_NO_PROP_USAGE)
+        val newProperties = properties.updated(originalProp, previousUsages.addUsage)
         copy(properties = newProperties)
       }
       def addRenamings(additionalRenamings: Map[String, String]): Acc = {
         val newRenamings = renamings ++ additionalRenamings
-        copy(renamings = newRenamings)
+        // Rename all properties that we found so far and that are affected by this
+        val withRenamings = copy(renamings = newRenamings)
+        val renamedProperties = properties.map{ case (prop, use) => (withRenamings.originalProperty(prop), use) }
+        withRenamings.copy( properties = renamedProperties)
       }
       def variableWithOriginalName(variable: Variable): Variable = {
         var oldestName = variable.name
@@ -56,24 +61,26 @@ case object insertCachedProperties extends Transformer[PlannerContext, LogicalPl
         }
         variable.copy(oldestName)(variable.position)
       }
+      def originalProperty(prop: Property): Property = {
+        val Property(v:Variable, _) = prop
+        prop.copy(variableWithOriginalName(v))(prop.position)
+      }
     }
 
     // In the first step we collect all property usages and renaming while going over the tree
     val acc = from.logicalPlan.treeFold(Acc()) {
       // Make sure to register any renaming of variables
       case plan: ProjectingPlan => acc =>
-        val newRenamings = acc.renamings ++ plan.projectExpressions.collect {
+        val newRenamings = plan.projectExpressions.collect {
           case (key, v: Variable) if key != v.name => (key, v.name)
         }
-        (acc.copy(renamings = newRenamings), Some(identity))
+        (acc.addRenamings(newRenamings), Some(identity))
 
       // Find properties
       case prop@Property(v: Variable, _) if isNode(v) => acc =>
-        val originalProp = prop.copy(acc.variableWithOriginalName(v))(prop.position)
-        (acc.addNodeProperty(originalProp), Some(identity))
+        (acc.addNodeProperty(prop), Some(identity))
       case prop@Property(v: Variable, _) if isRel(v) => acc =>
-        val originalProp = prop.copy(acc.variableWithOriginalName(v))(prop.position)
-        (acc.addRelProperty(originalProp), Some(identity))
+        (acc.addRelProperty(prop), Some(identity))
 
       // Find index plans that can provide cached properties
       case indexPlan: IndexLeafPlan => acc =>
@@ -91,7 +98,7 @@ case object insertCachedProperties extends Transformer[PlannerContext, LogicalPl
       // Rewrite properties to be cached if they are used more than once, or can be fetched from an index
       case prop@Property(v: Variable, propertyKeyName) =>
         val originalVar = acc.variableWithOriginalName(v)
-        val originalProp = prop.copy(originalVar)(prop.position)
+        val originalProp = acc.originalProperty(prop)
         acc.properties.get(originalProp) match {
           case Some(PropertyUsages(canGetFromIndex, usages, cachedType)) if usages > 1 || canGetFromIndex =>
             // Use the original variable name for the cached property

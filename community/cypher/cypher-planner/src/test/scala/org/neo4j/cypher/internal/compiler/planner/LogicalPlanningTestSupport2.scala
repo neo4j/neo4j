@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.csv.reader.Configuration
+import org.neo4j.cypher.internal.compiler.phases.CompilationPhases._
 import org.neo4j.cypher.internal.compiler.phases._
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.planner.logical._
@@ -158,24 +159,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         semanticTable.resolvedRelTypeNames.get(relType).map(_.id)
     }
 
-    def pipeLine(): Transformer[PlannerContext, BaseState, LogicalPlanState] =
-      Parsing andThen
-      PreparatoryRewriting(Deprecations.V1) andThen
-      SemanticAnalysis(warn = true, SemanticFeature.Cypher9Comparability) andThen
-      AstRewriting(newPlain, literalExtraction = Never, innerVariableNamer = innerVariableNamer) andThen
-      RewriteProcedureCalls andThen
-      Namespacer andThen
-      transitiveClosure andThen
-      rewriteEqualityToInPredicate andThen
-      CNFNormalizer andThen
-      LateAstRewriting andThen
-      ResolveTokens andThen
-      CreatePlannerQuery andThen
-      OptionalMatchRemover andThen
-      QueryPlanner().adds(CompilationContains[LogicalPlan]) andThen
-      insertCachedProperties andThen
-      Do[PlannerContext, LogicalPlanState, LogicalPlanState]((state, context) => removeApply(state, context, state.planningAttributes.solveds, Attributes(idGen, state.planningAttributes.cardinalities)))
-
+    def pipeLine(): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
+      parsing(newPlain, innerVariableNamer, literalExtraction = Never) andThen
+      prepareForCaching andThen
+      planPipeLine(newPlain)
+    }
 
     private def removeApply(input: LogicalPlanState, context: PlannerContext, solveds: Solveds, attributes: Attributes[LogicalPlan]): LogicalPlanState = {
       val newPlan = input.logicalPlan.endoRewrite(fixedPoint(unnestApply(solveds, attributes)))
@@ -195,8 +183,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       val state = InitialState(queryString, None, IDPPlannerName)
       val output = pipeLine().transform(state, context)
-      val logicalPlan = output.logicalPlan.asInstanceOf[ProduceResult].source
-      (output.periodicCommit, logicalPlan, output.semanticTable(), output.planningAttributes.solveds, output.planningAttributes.cardinalities)
+      val logicalPlan = output.logicalPlan match {
+        case p:ProduceResult => p.source
+        case p => p
+      }
+      (output.maybePeriodicCommit.flatten, logicalPlan, output.semanticTable(), output.planningAttributes.solveds, output.planningAttributes.cardinalities)
     }
 
     def estimate(qg: QueryGraph, input: QueryGraphSolverInput = QueryGraphSolverInput.empty): Cardinality =

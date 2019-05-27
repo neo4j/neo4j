@@ -56,7 +56,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
   test("should plan single merge node with properties") {
 
     val allNodesScan = AllNodesScan("a", Set.empty)
-    val selection = Selection(Seq(in(prop("a", "prop"), listOfInt(42))), allNodesScan)
+    val selection = Selection(Seq(equals(prop("a", "prop"), literalInt(42))), allNodesScan)
     val optional = Optional(selection)
 
     val onCreate = MergeCreateNode(Argument(), "a", Seq.empty, Some(mapOfInt(("prop", 42))))

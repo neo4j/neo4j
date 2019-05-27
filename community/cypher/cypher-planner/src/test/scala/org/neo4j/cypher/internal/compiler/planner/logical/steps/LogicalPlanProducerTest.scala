@@ -84,7 +84,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val plan = fakeLogicalPlanFor(context.planningAttributes, "x.foo")
       context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(prop("x","foo")))))
       // projection
-      val projections = Map("carrot" -> cachedNodeProperty("x", "foo"))
+      val projections = Map("carrot" -> cachedNodeProp("x", "foo"))
 
       //when
       val result = lpp.planRegularProjection(plan, projections, projections, context)
@@ -226,7 +226,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(prop("y","bar")), ProvidedOrder.Asc(prop("x","foo")))))
 
       val aggregations = Map("xfoo" -> prop("x", "foo"))
-      val groupings = Map("z" -> cachedNodeProperty("y", "bar"))
+      val groupings = Map("z" -> cachedNodeProp("y", "bar"))
 
       //when
       val result = lpp.planAggregation(plan, groupings, aggregations, groupings, aggregations, context)

@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.logical.plans.CachedProperty
+import org.neo4j.cypher.internal.v4_0.expressions.CachedProperty
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.graphdb.NotFoundException
-import org.neo4j.cypher.internal.runtime.EntityById
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual._

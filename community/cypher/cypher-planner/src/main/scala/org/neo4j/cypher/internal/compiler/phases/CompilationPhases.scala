@@ -19,6 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.phases
 
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.PlanRewriter
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.insertCachedProperties
+import org.neo4j.cypher.internal.compiler.planner.logical.{OptionalMatchRemover, QueryPlanner}
+import org.neo4j.cypher.internal.compiler.planner.{CheckForUnresolvedTokens, ResolveTokens}
+import org.neo4j.cypher.internal.compiler.{MultiDatabaseManagementCommandPlanBuilder, ProcedureCallOrSchemaCommandPlanBuilder, UnsupportedSystemCommand}
+import org.neo4j.cypher.internal.ir.UnionQuery
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticFeature._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
@@ -28,6 +35,7 @@ import org.neo4j.cypher.internal.v4_0.rewriting.{Deprecations, RewriterStepSeque
 
 object CompilationPhases {
 
+  // Phase 1
   def parsing(sequencer: String => RewriterStepSequencer,
               innerVariableNamer: InnerVariableNamer,
               literalExtraction: LiteralExtraction = IfNoParameter
@@ -38,13 +46,39 @@ object CompilationPhases {
       SemanticAnalysis(warn = true, Cypher9Comparability, MultipleDatabases).adds(BaseContains[SemanticState]) andThen
       AstRewriting(sequencer, literalExtraction, innerVariableNamer = innerVariableNamer)
 
-  def lateAstRewriting: Transformer[BaseContext, BaseState, BaseState] =
-    isolateAggregation andThen
-      SemanticAnalysis(warn = false, Cypher9Comparability, MultipleDatabases) andThen
-      Namespacer andThen
-      transitiveClosure andThen
-      rewriteEqualityToInPredicate andThen
-      CNFNormalizer andThen
-      LateAstRewriting andThen
-      SemanticAnalysis(warn = false, Cypher9Comparability, MultipleDatabases)
+  // Phase 2
+  val prepareForCaching: Transformer[PlannerContext, BaseState, BaseState] =
+    RewriteProcedureCalls andThen
+      ProcedureDeprecationWarnings andThen
+      ProcedureWarnings
+
+  // Phase 3
+  def planPipeLine(sequencer: String => RewriterStepSequencer): Transformer[PlannerContext, BaseState, LogicalPlanState] =
+    ProcedureCallOrSchemaCommandPlanBuilder andThen
+      If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
+        isolateAggregation andThen
+          SemanticAnalysis(warn = false, Cypher9Comparability, MultipleDatabases) andThen
+          Namespacer andThen
+          transitiveClosure andThen
+          rewriteEqualityToInPredicate andThen
+          CNFNormalizer andThen
+          LateAstRewriting andThen
+          SemanticAnalysis(warn = false, Cypher9Comparability, MultipleDatabases) andThen
+          ResolveTokens andThen
+          CreatePlannerQuery.adds(CompilationContains[UnionQuery]) andThen
+          OptionalMatchRemover andThen
+          QueryPlanner().adds(CompilationContains[LogicalPlan]) andThen
+          PlanRewriter(sequencer) andThen
+          insertCachedProperties andThen
+          If((s: LogicalPlanState) => s.unionQuery.readOnly)(
+            CheckForUnresolvedTokens
+          )
+      )
+
+  // Alternative Phase 3
+  def systemPipeLine: Transformer[PlannerContext, BaseState, LogicalPlanState] =
+    MultiDatabaseManagementCommandPlanBuilder andThen
+      If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
+        UnsupportedSystemCommand
+      )
 }

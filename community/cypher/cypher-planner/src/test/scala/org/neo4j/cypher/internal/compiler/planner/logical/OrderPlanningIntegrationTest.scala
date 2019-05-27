@@ -44,7 +44,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.age RETURN a.name, a.age")._2
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty)
-    val ageProperty = prop("a", "age")
+    val ageProperty = cachedNodeProp("a", "age")
     val nameProperty = prop("a", "name")
 
     val projection = Projection(labelScan, Map("a.age" -> ageProperty))
@@ -118,13 +118,12 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a AS b, a.age AS age ORDER BY b.foo, b.age + 5 RETURN b.name, age")._2
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty)
-    val ageAProperty = prop("a", "age")
-    val ageBProperty = prop("b", "age")
+    val ageAProperty = cachedNodeProp("a", "age")
     val nameProperty = prop("b", "name")
     val fooProperty = prop("b", "foo")
 
     val projection = Projection(labelScan, Map("b" -> varFor("a")))
-    val projection2 = Projection(projection, Map("b.foo" -> fooProperty, "b.age + 5" -> add(ageBProperty, literalInt(5))))
+    val projection2 = Projection(projection, Map("b.foo" -> fooProperty, "b.age + 5" -> add(ageAProperty, literalInt(5))))
     val sort = Sort(projection2, Seq(Ascending("b.foo"), Ascending("b.age + 5")))
     val projection3 = Projection(sort, Map("age" -> ageAProperty))
     val result = Projection(projection3, Map("b.name" -> nameProperty))
@@ -298,7 +297,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, count(a.foo)")._2
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty)
-    val fooProperty = prop("a", "foo")
+    val fooProperty = cachedNodeProp("a", "foo")
     val fooCount = count(fooProperty)
 
     val projection = Projection(labelScan, Map("a.foo" -> fooProperty))
@@ -312,7 +311,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, a.bar, count(a.foo)")._2
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty)
-    val fooProperty = prop("a", "foo")
+    val fooProperty = cachedNodeProp("a", "foo")
     val barProperty = prop("a", "bar")
     val fooCount = count(fooProperty)
 
@@ -327,8 +326,8 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo, a.bar RETURN a.foo, a.bar, count(a.foo)")._2
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty)
-    val fooProperty = prop("a", "foo")
-    val barProperty = prop("a", "bar")
+    val fooProperty = cachedNodeProp("a", "foo")
+    val barProperty = cachedNodeProp("a", "bar")
     val fooCount = count(fooProperty)
 
     val projection = Projection(labelScan, Map("a.foo" -> fooProperty, "a.bar" -> barProperty))
@@ -342,7 +341,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo")._2
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty)
-    val fooProperty = prop("a", "foo")
+    val fooProperty = cachedNodeProp("a", "foo")
 
     val projection = Projection(labelScan, Map("a.foo" -> fooProperty))
     val sort = Sort(projection, Seq(Ascending("a.foo")))
@@ -355,7 +354,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo, a.bar")._2
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty)
-    val fooProperty = prop("a", "foo")
+    val fooProperty = cachedNodeProp("a", "foo")
     val barProperty = prop("a", "bar")
 
     val projection = Projection(labelScan, Map("a.foo" -> fooProperty))
@@ -369,8 +368,8 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo, a.bar RETURN DISTINCT a.foo, a.bar")._2
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty)
-    val fooProperty = prop("a", "foo")
-    val barProperty = prop("a", "bar")
+    val fooProperty = cachedNodeProp("a", "foo")
+    val barProperty = cachedNodeProp("a", "bar")
 
     val projection = Projection(labelScan, Map("a.foo" -> fooProperty, "a.bar" -> barProperty))
     val sort = Sort(projection, Seq(Ascending("a.foo"), Ascending("a.bar")))

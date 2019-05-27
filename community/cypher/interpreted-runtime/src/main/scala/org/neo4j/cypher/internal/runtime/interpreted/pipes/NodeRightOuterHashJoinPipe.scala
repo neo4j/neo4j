@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.logical.plans.CachedProperty
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 
 case class NodeRightOuterHashJoinPipe(nodeVariables: Set[String],

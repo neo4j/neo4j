@@ -188,6 +188,9 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
             CTLocalTime.covariant | CTLocalDateTime.covariant | CTDateTime.covariant | CTDuration.covariant| CTAny.invariant, x.map) chain
           specifyType(CTAny.covariant, x)
 
+      case x:CachedProperty =>
+        specifyType(CTAny.covariant, x)
+
       // Check the variable is defined and, if not, define it so that later errors are suppressed
       // This is used in expressions; in graphs we must make sure to sem check variables explicitly (!)
       case x:Variable =>

@@ -62,7 +62,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should build plans with WITH and selections") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WHERE r1.prop = 42 RETURN r1")._2
     val expected = Selection(
-      Seq(in(prop("r1", "prop"), listOfInt(42))),
+      Seq(equals(prop("r1", "prop"), literalInt(42))),
       Expand(
         Limit(
           AllNodesScan("a", Set()),

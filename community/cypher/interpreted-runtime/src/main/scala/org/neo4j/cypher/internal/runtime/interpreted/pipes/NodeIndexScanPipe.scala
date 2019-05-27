@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.logical.plans.{CachedProperty, IndexOrder, IndexedProperty}
-import org.neo4j.cypher.internal.v4_0.expressions.LabelToken
+import org.neo4j.cypher.internal.logical.plans.{IndexOrder, IndexedProperty}
+import org.neo4j.cypher.internal.v4_0.expressions.{CachedProperty, LabelToken}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 
 import scala.collection.Iterator

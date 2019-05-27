@@ -16,13 +16,11 @@
  */
 package org.neo4j.cypher.internal.v4_0.frontend.phases
 
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.ast.Query
-import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
-import org.neo4j.cypher.internal.v4_0.util.{InputPosition, InternalException}
-import org.neo4j.cypher.internal.v4_0.ast.Statement
+import org.neo4j.cypher.internal.v4_0.ast.{Query, Statement}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticState, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
+import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
+import org.neo4j.cypher.internal.v4_0.util.{InputPosition, InternalException}
 
 trait BaseState {
   def queryText: String

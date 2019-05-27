@@ -107,7 +107,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         ands(ors(
           greaterThan(GetDegree(varFor("a"), Some(RelTypeName("X")_),OUTGOING)_, literalInt(0)),
           propGreaterThan("a", "prop", 4),
-          in(prop("a", "prop2"), listOfInt(9))
+          equals(prop("a", "prop2"), literalInt(9))
         )), AllNodesScan("a", Set.empty)
       )
     )
@@ -118,7 +118,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       Selection(
         ands(ors(
           lessThanOrEqual(GetDegree(varFor("a"), Some(RelTypeName("X")_),OUTGOING)_, literalInt(0)),
-          in(prop("a", "prop"), listOfInt(9))
+          equals(prop("a", "prop"), literalInt(9))
         )), AllNodesScan("a", Set.empty)
       )
     )
@@ -130,7 +130,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         ands(ors(
           greaterThan(GetDegree(varFor("a"), Some(RelTypeName("Y")_), OUTGOING)_, literalInt(0)),
           lessThanOrEqual(GetDegree(varFor("a"), Some(RelTypeName("X")_), OUTGOING)_, literalInt(0)),
-          in(prop("a", "prop"), listOfInt(9))
+          equals(prop("a", "prop"), literalInt(9))
         )), AllNodesScan("a", Set.empty)
       )
     )
@@ -164,7 +164,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       VarExpand(_, _, _, _, _, _, _, _, _,
                 Some(VariablePredicate(
                   Variable("r_NODES"),
-                  In(Property(Variable("r_NODES"), PropertyKeyName("prop") ), ListLiteral(List(SignedDecimalIntegerLiteral("1337"))))
+                  Equals(Property(Variable("r_NODES"), PropertyKeyName("prop") ), SignedDecimalIntegerLiteral("1337"))
                 )),
                 _), _) => ()
 
@@ -177,7 +177,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       VarExpand(_, _, _, _, _, _, _, _, _,
                 Some(VariablePredicate(
                   Variable("r_NODES"),
-                  Not(In(Property(Variable("r_NODES"), PropertyKeyName("prop") ), ListLiteral(List(SignedDecimalIntegerLiteral("1337")))))
+                  Not(Equals(Property(Variable("r_NODES"), PropertyKeyName("prop") ), SignedDecimalIntegerLiteral("1337")))
                 )),
                 _), _) => ()
 
@@ -340,7 +340,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case Selection(
-      Ands(SetExtractor(In(Property(Variable("n"), PropertyKeyName("prop")), _))),
+      Ands(SetExtractor(Equals(Property(Variable("n"), PropertyKeyName("prop")), _))),
       RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _, _),
       ) => ()
     }
@@ -357,7 +357,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case Selection(
-      Ands(SetExtractor(In(Property(Variable("n"), PropertyKeyName("prop")), _))),
+      Ands(SetExtractor(Equals(Property(Variable("n"), PropertyKeyName("prop")), _))),
       RollUpApply(Projection(AllNodesScan("n", SetExtractor()), MapKeys("one")), _/* <- This is the subQuery */, _, _, _),
       ) => ()
     }
@@ -541,24 +541,6 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     }
   }
 
-  test("should solve pattern comprehensions for ProcedureCall") {
-    val q =
-      """
-        |CALL foo([reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)])
-      """.stripMargin
-    val (_, plan, _, _, _) = new given {
-      procedure(ProcedureSignature(QualifiedName(Seq.empty, "foo"), IndexedSeq(FieldSignature("arg", CTAny)), None, None, ProcedureReadOnlyAccess(Array.empty[String]), id = 0))
-    } getLogicalPlanFor q
-
-    plan should beLike {
-      case EmptyResult(
-      ProcedureCall(
-      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _, _),
-      _
-      )) => ()
-    }
-  }
-
   test("should solve pattern comprehensions for ShortestPath") {
     val q =
       """
@@ -569,7 +551,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     planFor(q)._2 should beLike {
       case Projection(
       FindShortestPaths(_, _, Seq(
-      NoneIterablePredicate(FilterScope(_, Some(In(_, ListLiteral(Seq(ReduceExpression(_, _, _:NestedPlanExpression)))))), _)
+      NoneIterablePredicate(FilterScope(_, Some(Equals(_, ReduceExpression(_, _, _:NestedPlanExpression)))), _)
       ), _, _),
       _
       ) => ()

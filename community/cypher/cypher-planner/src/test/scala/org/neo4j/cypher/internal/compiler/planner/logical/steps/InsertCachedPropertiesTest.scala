@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
-import org.neo4j.cypher.internal.logical.plans.{Aggregation, AllNodesScan, Argument, CACHED_NODE, CACHED_RELATIONSHIP, CachedProperty, CanGetValue, DirectedRelationshipByIdSeek, DoNotGetValue, GetValue, GetValueFromIndexBehavior, IndexOrderNone, IndexedProperty, LogicalPlan, NodeHashJoin, NodeIndexScan, Projection, Selection, SingleSeekableArg}
+import org.neo4j.cypher.internal.logical.plans.{Aggregation, AllNodesScan, Argument, CanGetValue, DirectedRelationshipByIdSeek, DoNotGetValue, GetValue, GetValueFromIndexBehavior, IndexOrderNone, IndexedProperty, LogicalPlan, NodeHashJoin, NodeIndexScan, Projection, Selection, SingleSeekableArg}
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.v4_0.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
@@ -50,12 +50,6 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   private val cachedNRelProp2 = CachedProperty("n", prop, CACHED_RELATIONSHIP)(InputPosition.NONE.bumped())
 
   private val xProp = Property(x, prop)(InputPosition.NONE)
-
-  // Same property in different positions
-  private val mProp1 = Property(m, prop)(InputPosition.NONE)
-  private val mProp2 = Property(m, prop)(InputPosition.NONE.bumped())
-  private val cachedMProp1 = CachedProperty("m", prop, CACHED_NODE)(InputPosition.NONE)
-
 
   def nodeIndexScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior) =
     NodeIndexScan(node, LabelToken(label, LabelId(1)), Seq(IndexedProperty(PropertyKeyToken(property, PropertyKeyId(1)), getValueFromIndex)), Set.empty, IndexOrderNone)
@@ -176,7 +170,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       newTable.types(cachedNProp1) should be(initialType)
     }
 
-  test("node property") {
+  test("should cache node property on multiple usages") {
     val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTNode)
     val plan = Projection(
       Selection(Seq(equals(nProp1, literalInt(2))),
@@ -210,7 +204,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     newTable should be(initialTable)
   }
 
-  test("relationship property") {
+  test("should cache relationship property on multiple usages") {
     val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTRelationship)
     val plan = Projection(
       Selection(Seq(equals(nProp1, literalInt(2))),
@@ -233,7 +227,19 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     newTable.types(cachedNRelProp2) should be(initialType)
   }
 
-  test("map property") {
+  test("should not cache relationship property if there is only one usage") {
+    val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTRelationship)
+    val plan = Projection(
+      DirectedRelationshipByIdSeek("n", SingleSeekableArg(literalInt(25)), "a", "b", Set.empty),
+      Map("x" -> nProp2)
+    )
+
+    val (newPlan, newTable) = replace(plan, initialTable)
+    newPlan should be(plan)
+    newTable should be(initialTable)
+  }
+
+  test("should not do anything with map properties") {
     val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTMap)
     val plan = Projection(
       Selection(Seq(equals(nProp1, literalInt(2))),
@@ -246,7 +252,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     newTable should be(initialTable)
   }
 
-  test("untyped variable") {
+  test("should not do anything with untyped variables") {
     val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger)
     val plan = Projection(
       Selection(Seq(equals(nProp1, literalInt(2))),
@@ -310,9 +316,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   }
 
   // More complex renamings are affected by the Namespacer
-  // A test for that can be found in CachedPropertyAcceptanceTest
+  // A test for that can be found in CachedPropertyAcceptanceTest and CachedPropertiesPlanningIntegrationTest
 
-  // TODO this should actually not work... right?
   test("aggregation") {
     val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTNode)
     val plan =

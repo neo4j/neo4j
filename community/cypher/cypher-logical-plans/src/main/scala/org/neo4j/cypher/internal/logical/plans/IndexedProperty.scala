@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.v4_0.expressions.{PropertyKeyName, PropertyKeyToken}
+import org.neo4j.cypher.internal.v4_0.expressions.{CACHED_NODE, CachedProperty, PropertyKeyName, PropertyKeyToken}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 case class IndexedProperty(propertyKeyToken: PropertyKeyToken, getValueFromIndex: GetValueFromIndexBehavior) {

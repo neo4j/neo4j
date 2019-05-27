@@ -21,16 +21,12 @@ package org.neo4j.cypher.internal.compiler
 
 import java.time.Clock
 
+import org.neo4j.cypher.internal.compiler.phases.CompilationPhases._
 import org.neo4j.cypher.internal.compiler.phases._
 import org.neo4j.cypher.internal.compiler.planner.logical._
 import org.neo4j.cypher.internal.compiler.planner.logical.debug.DebugPrinter
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.PlanRewriter
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.insertCachedProperties
-import org.neo4j.cypher.internal.compiler.planner.{CheckForUnresolvedTokens, ResolveTokens}
-import org.neo4j.cypher.internal.ir.UnionQuery
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.{IDPPlannerName, PlannerNameFor}
-import org.neo4j.cypher.internal.v4_0.frontend.phases.{CompilationPhases => _, _}
+import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
@@ -49,9 +45,9 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
     val pipeLine = if(config.planSystemCommands)
       systemPipeLine
     else if (context.debugOptions.contains("tostring"))
-      planPipeLine andThen DebugPrinter
+      planPipeLine(sequencer) andThen DebugPrinter
     else
-      planPipeLine
+      planPipeLine(sequencer)
 
     pipeLine.transform(state, context)
   }
@@ -85,40 +81,6 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
     CompilationPhases.parsing(sequencer, context.innerVariableNamer).transform(startState, context)
   }
 
-  val prepareForCaching: Transformer[PlannerContext, BaseState, BaseState] =
-    RewriteProcedureCalls andThen
-    ProcedureDeprecationWarnings andThen
-    ProcedureWarnings
-
-  val irConstruction: Transformer[PlannerContext, BaseState, LogicalPlanState] =
-    ResolveTokens andThen
-      CreatePlannerQuery.adds(CompilationContains[UnionQuery]) andThen
-      OptionalMatchRemover
-
-  val costBasedPlanning: Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] =
-    QueryPlanner().adds(CompilationContains[LogicalPlan]) andThen
-      PlanRewriter(sequencer) andThen
-      insertCachedProperties andThen
-      If((s: LogicalPlanState) => s.unionQuery.readOnly)(
-        CheckForUnresolvedTokens
-      )
-
-  val standardPipeline: Transformer[Context, BaseState, LogicalPlanState] =
-    CompilationPhases.lateAstRewriting andThen
-    irConstruction andThen
-    costBasedPlanning
-
-  val planPipeLine: Transformer[Context, BaseState, LogicalPlanState] =
-    ProcedureCallOrSchemaCommandPlanBuilder andThen
-    If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
-      standardPipeline
-    )
-
-  val systemPipeLine: Transformer[Context, BaseState, LogicalPlanState] =
-    MultiDatabaseManagementCommandPlanBuilder andThen
-      If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
-        UnsupportedSystemCommand
-      )
 }
 
 case class CypherPlannerConfiguration(queryCacheSize: Int,

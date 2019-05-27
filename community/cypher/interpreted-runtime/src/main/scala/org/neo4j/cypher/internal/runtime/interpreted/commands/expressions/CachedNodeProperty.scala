@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.v4_0.expressions.CachedProperty
 import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.values.AnyValue
@@ -93,7 +94,7 @@ abstract class AbstractCachedRelationshipProperty extends AbstractCachedProperty
                         propId: Int): Value = state.query.relationshipProperty(id, propId, state.cursors.relationshipScanCursor, state.cursors.propertyCursor)
 }
 
-case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, key: plans.CachedProperty)
+case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, key: CachedProperty)
   extends AbstractCachedNodeProperty
 {
   override def toString: String = key.cacheKey
@@ -114,7 +115,7 @@ case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, key: plan
   override def children: Seq[AstNode[_]] = Seq(propertyKey)
 }
 
-case class CachedRelationshipProperty(nodeName: String, propertyKey: KeyToken, key: plans.CachedProperty)
+case class CachedRelationshipProperty(nodeName: String, propertyKey: KeyToken, key: CachedProperty)
   extends AbstractCachedNodeProperty
 {
   override def toString: String = key.cacheKey

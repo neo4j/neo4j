@@ -26,13 +26,12 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
 import org.neo4j.cypher.internal.runtime.{NodeValueHit, QueryContext}
-import org.neo4j.cypher.internal.logical.plans.{CACHED_NODE, CachedProperty}
+import org.neo4j.cypher.internal.v4_0.expressions.{CACHED_NODE, CachedProperty, PropertyKeyName, PropertyKeyToken}
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.{IndexQuery, NodeCursor, NodeValueIndexCursor}
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual.{NodeValue, VirtualNodeValue, VirtualValues}
-import org.neo4j.cypher.internal.v4_0.expressions.{PropertyKeyName, PropertyKeyToken}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
 

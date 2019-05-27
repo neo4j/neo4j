@@ -17,10 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.logical.plans
+package org.neo4j.cypher.internal.v4_0.expressions
 
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheck, SemanticCheckResult, SemanticCheckableExpression}
-import org.neo4j.cypher.internal.v4_0.expressions.{LogicalProperty, PropertyKeyName, Variable, Expression => ASTExpression}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 sealed trait CachedType
@@ -50,11 +48,9 @@ trait ASTCachedProperty extends LogicalProperty {
 case class CachedProperty(variableName: String,
                           propertyKey: PropertyKeyName,
                           override val cachedType: CachedType
-                         )(val position: InputPosition) extends ASTCachedProperty with SemanticCheckableExpression {
+                         )(val position: InputPosition) extends ASTCachedProperty {
 
   def cacheKey: String = s"$variableName.${propertyKey.name}"
 
   override def asCanonicalStringVal: String = s"cache[$cacheKey]"
-
-  override def semanticCheck(ctx: ASTExpression.SemanticContext): SemanticCheck = SemanticCheckResult.success
 }

@@ -240,11 +240,11 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
               "a:A(prop > 'foo')", indexOrder = plannedOrder),
             IndexSeek("b:B(prop = ???)",
               indexOrder = expectedBIndexOrder,
-              paramExpr = Some(prop("a", "prop")),
+              paramExpr = Some(cachedNodeProp("a", "prop")),
               labelId = 1,
               argumentIds = Set("a"))
           ),
-          Map("a.prop" -> prop("a", "prop")))
+          Map("a.prop" -> cachedNodeProp("a", "prop")))
       )
     }
 
@@ -264,11 +264,11 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
               IndexSeek("a:A(prop STARTS WITH 'foo')", indexOrder = plannedOrder),
               IndexSeek("b:B(prop > ???)",
                 indexOrder = expectedBIndexOrder,
-                paramExpr = Some(prop("a", "prop")),
+                paramExpr = Some(cachedNodeProp("a", "prop")),
                 labelId = 1,
                 argumentIds = Set("a"))
             ),
-            Map("a.prop" -> prop("a", "prop"), "b.prop" -> prop("b", "prop"))),
+            Map("a.prop" -> cachedNodeProp("a", "prop"), "b.prop" -> prop("b", "prop"))),
           Seq(sortOrder("a.prop")), Seq(sortOrder("b.prop")))
       )
     }
@@ -302,7 +302,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
             IndexSeek(
               "a:A(prop > 'foo')", indexOrder = plannedOrder),
             "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
-          Map("a.prop" -> prop("a", "prop")), Map("count(b)" -> count(varFor("b"))), Seq(prop("a", "prop")))
+          Map("a.prop" -> cachedNodeProp("a", "prop")), Map("count(b)" -> count(varFor("b"))), Seq(cachedNodeProp("a", "prop")))
       )
     }
 
@@ -377,8 +377,8 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
             IndexSeek(
               "a:A(prop > 'foo')", indexOrder = plannedOrder),
             "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
-          Map("a.prop" -> prop("a", "prop")),
-          Seq(prop("a", "prop")))
+          Map("a.prop" -> cachedNodeProp("a", "prop")),
+          Seq(cachedNodeProp("a", "prop")))
       )
     }
 
@@ -446,14 +446,13 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
   test("Order by index backed for composite index on range") {
     val projectionBoth = Map(
-      "n.prop1" -> prop("n", "prop1"),
-      "n.prop2" -> prop("n", "prop2")
+      "n.prop1" -> cachedNodeProp("n", "prop1"),
+      "n.prop2" -> cachedNodeProp("n", "prop2")
     )
-    val projectionProp1 = Map("n.prop1" -> prop("n", "prop1"))
-    val projectionProp2 = Map("n.prop2" -> prop("n", "prop2"))
+    val projectionProp1 = Map("n.prop1" -> cachedNodeProp("n", "prop1"))
+    val projectionProp2 = Map("n.prop2" -> cachedNodeProp("n", "prop2"))
 
-    val expr = ands(andedPropertyInequalities("n", "prop2",
-      lessThanOrEqual(prop("n", "prop2"), literalInt(3))))
+    val expr = ands(lessThanOrEqual(cachedNodeProp("n", "prop2"), literalInt(3)))
 
     Seq(
       // Ascending index
@@ -488,11 +487,11 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
              |RETURN n.prop1, n.prop2
              |ORDER BY $orderByString""".stripMargin
         val plan = new given {
-          indexOn("Label", "prop1", "prop2").providesOrder(orderCapability)
+          indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
         } getLogicalPlanFor query
 
         // Then
-        val leafPlan = IndexSeek("n:Label(prop1 >= 42, prop2 <= 3)", indexOrder = indexOrder)
+        val leafPlan = IndexSeek("n:Label(prop1 >= 42, prop2 <= 3)", indexOrder = indexOrder, getValue = GetValue)
         plan._2 should equal {
           if (shouldPartialSort)
             PartialSort(Projection(Selection(expr, leafPlan), projectionBoth), alreadySorted, sortItems)
@@ -535,7 +534,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
              |RETURN n.prop1, n.prop2, n.prop3
              |ORDER BY $orderByString""".stripMargin
         val plan = new given {
-          indexOn("Label", "prop1", "prop2").providesOrder(orderCapability)
+          indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
         } getLogicalPlanFor query
 
         // Then
@@ -543,13 +542,12 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
           PartialSort(
             Projection(
               Selection(
-                ands(andedPropertyInequalities("n", "prop2",
-                  lessThanOrEqual(prop("n", "prop2"), literalInt(3)))),
-                IndexSeek("n:Label(prop1 >= 42, prop2)", indexOrder = indexOrder)
+                ands(lessThanOrEqual(cachedNodeProp("n", "prop2"), literalInt(3))),
+                IndexSeek("n:Label(prop1 >= 42, prop2)", indexOrder = indexOrder, getValue = GetValue)
               ),
               Map(
-                "n.prop1" -> prop("n", "prop1"),
-                "n.prop2" -> prop("n", "prop2"),
+                "n.prop1" -> cachedNodeProp("n", "prop1"),
+                "n.prop2" -> cachedNodeProp("n", "prop2"),
                 "n.prop3" -> prop("n", "prop3")
               )
             ),
@@ -562,18 +560,15 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
   test("Order by index backed for composite index on more properties") {
     val expr = ands(
-      andedPropertyInequalities("n", "prop2",
-        lessThanOrEqual(prop("n", "prop2"), literalInt(3))),
-      andedPropertyInequalities("n", "prop3",
-        greaterThan(prop("n", "prop3"), literalString("a"))),
-      andedPropertyInequalities("n", "prop4",
-        lessThan(prop("n", "prop4"), literalString("f")))
+      lessThanOrEqual(cachedNodeProp("n", "prop2"), literalInt(3)),
+      greaterThan(cachedNodeProp("n", "prop3"), literalString("a")),
+      lessThan(cachedNodeProp("n", "prop4"), literalString("f"))
     )
     val projectionsAll = Map(
-      "n.prop1" -> prop("n", "prop1"),
-      "n.prop2" -> prop("n", "prop2"),
-      "n.prop3" -> prop("n", "prop3"),
-      "n.prop4" -> prop("n", "prop4")
+      "n.prop1" -> cachedNodeProp("n", "prop1"),
+      "n.prop2" -> cachedNodeProp("n", "prop2"),
+      "n.prop3" -> cachedNodeProp("n", "prop3"),
+      "n.prop4" -> cachedNodeProp("n", "prop4")
     )
 
     val ascAll = Seq(Ascending("n.prop1"), Ascending("n.prop2"), Ascending("n.prop3"), Ascending("n.prop4"))
@@ -664,11 +659,11 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
              |RETURN n.prop1, n.prop2, n.prop3, n.prop4
              |ORDER BY $orderByString""".stripMargin
         val plan = new given {
-          indexOn("Label", "prop1", "prop2", "prop3", "prop4").providesOrder(orderCapability)
+          indexOn("Label", "prop1", "prop2", "prop3", "prop4").providesOrder(orderCapability).providesValues()
         } getLogicalPlanFor query
 
         // Then
-        val leafPlan = IndexSeek("n:Label(prop1 >= 42, prop2 <= 3, prop3 > 'a', prop4 < 'f')", indexOrder = indexOrder)
+        val leafPlan = IndexSeek("n:Label(prop1 >= 42, prop2 <= 3, prop3 > 'a', prop4 < 'f')", indexOrder = indexOrder, getValue = GetValue)
         plan._2 should equal {
           if (fullSort)
             Sort(Projection(Selection(expr, leafPlan), projectionsAll), sortItems)
@@ -682,46 +677,43 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
   test("Order by index backed for composite index on more properties than is ordered on") {
     val expr = ands(
-      andedPropertyInequalities("n", "prop2",
-        lessThanOrEqual(prop("n", "prop2"), literalInt(3))),
-      andedPropertyInequalities("n", "prop3",
-        greaterThan(prop("n", "prop3"), literalString("a"))),
-      andedPropertyInequalities("n", "prop4",
-        lessThan(prop("n", "prop4"), literalString("f")))
+      lessThanOrEqual(cachedNodeProp("n", "prop2"), literalInt(3)),
+      greaterThan(cachedNodeProp("n", "prop3"), literalString("a")),
+      lessThan(cachedNodeProp("n", "prop4"), literalString("f"))
     )
     val projectionsAll = Map(
-      "n.prop1" -> prop("n", "prop1"),
-      "n.prop2" -> prop("n", "prop2"),
-      "n.prop3" -> prop("n", "prop3"),
-      "n.prop4" -> prop("n", "prop4")
+      "n.prop1" -> cachedNodeProp("n", "prop1"),
+      "n.prop2" -> cachedNodeProp("n", "prop2"),
+      "n.prop3" -> cachedNodeProp("n", "prop3"),
+      "n.prop4" -> cachedNodeProp("n", "prop4")
     )
     val projections_1_2_4 = Map(
-      "n.prop1" -> prop("n", "prop1"),
-      "n.prop2" -> prop("n", "prop2"),
-      "n.prop4" -> prop("n", "prop4")
+      "n.prop1" -> cachedNodeProp("n", "prop1"),
+      "n.prop2" -> cachedNodeProp("n", "prop2"),
+      "n.prop4" -> cachedNodeProp("n", "prop4")
     )
     val projections_1_3_4 = Map(
-      "n.prop1" -> prop("n", "prop1"),
-      "n.prop3" -> prop("n", "prop3"),
-      "n.prop4" -> prop("n", "prop4")
+      "n.prop1" -> cachedNodeProp("n", "prop1"),
+      "n.prop3" -> cachedNodeProp("n", "prop3"),
+      "n.prop4" -> cachedNodeProp("n", "prop4")
     )
 
     Seq(
       ("n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", BOTH, IndexOrderAscending, false,
         projectionsAll, Map.empty[String, Expression], Seq.empty, Seq.empty),
       ("n.prop1 ASC, n.prop2 ASC, n.prop4 ASC", BOTH, IndexOrderAscending, true,
-        projections_1_2_4, Map("n.prop3" -> prop("n", "prop3")),
+        projections_1_2_4, Map("n.prop3" -> cachedNodeProp("n", "prop3")),
         Seq(Ascending("n.prop4")), Seq(Ascending("n.prop1"), Ascending("n.prop2"))),
       ("n.prop1 ASC, n.prop3 ASC, n.prop4 ASC", BOTH, IndexOrderAscending, true,
-        projections_1_3_4, Map("n.prop2" -> prop("n", "prop2")),
+        projections_1_3_4, Map("n.prop2" -> cachedNodeProp("n", "prop2")),
         Seq(Ascending("n.prop3"), Ascending("n.prop4")), Seq(Ascending("n.prop1"))),
       ("n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", BOTH, IndexOrderDescending, false,
         projectionsAll, Map.empty[String, Expression], Seq.empty, Seq.empty),
       ("n.prop1 DESC, n.prop2 DESC, n.prop4 DESC", BOTH, IndexOrderDescending, true,
-        projections_1_2_4, Map("n.prop3" -> prop("n", "prop3")),
+        projections_1_2_4, Map("n.prop3" -> cachedNodeProp("n", "prop3")),
         Seq(Descending("n.prop4")), Seq(Descending("n.prop1"), Descending("n.prop2"))),
       ("n.prop1 DESC, n.prop3 DESC, n.prop4 DESC", BOTH, IndexOrderDescending, true,
-        projections_1_3_4, Map("n.prop2" -> prop("n", "prop2")),
+        projections_1_3_4, Map("n.prop2" -> cachedNodeProp("n", "prop2")),
         Seq(Descending("n.prop3"), Descending("n.prop4")), Seq(Descending("n.prop1"))),
     ).foreach {
       case (orderByString, orderCapability, indexOrder, sort, projections, projectionsAfterSort, toSort, alreadySorted) =>
@@ -732,11 +724,11 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
              |RETURN n.prop1, n.prop2, n.prop3, n.prop4
              |ORDER BY $orderByString""".stripMargin
         val plan = new given {
-          indexOn("Label", "prop1", "prop2", "prop3", "prop4").providesOrder(orderCapability)
+          indexOn("Label", "prop1", "prop2", "prop3", "prop4").providesOrder(orderCapability).providesValues()
         } getLogicalPlanFor query
 
         // Then
-        val leafPlan = IndexSeek("n:Label(prop1 >= 42, prop2 <= 3, prop3 > 'a', prop4 < 'f')", indexOrder = indexOrder)
+        val leafPlan = IndexSeek("n:Label(prop1 >= 42, prop2 <= 3, prop3 > 'a', prop4 < 'f')", indexOrder = indexOrder, getValue = GetValue)
         plan._2 should equal {
           if (sort)
             Projection(PartialSort(Projection(Selection(expr, leafPlan), projections), alreadySorted, toSort), projectionsAfterSort)
@@ -748,18 +740,26 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
   test("Order by index backed for composite index when not returning same as order on") {
     val expr = ands(
-      andedPropertyInequalities("n", "prop2",
-        lessThanOrEqual(prop("n", "prop2"), literalInt(3))),
-      andedPropertyInequalities("n", "prop3",
-        greaterThan(prop("n", "prop3"), literalString("")))
+      lessThanOrEqual(prop("n", "prop2"), literalInt(3)),
+      greaterThan(prop("n", "prop3"), literalString(""))
+    )
+    val expr_2_3_cached = ands(
+      lessThanOrEqual(cachedNodeProp("n", "prop2"), literalInt(3)),
+      greaterThan(cachedNodeProp("n", "prop3"), literalString(""))
+    )
+    val expr_2_cached = ands(
+      lessThanOrEqual(cachedNodeProp("n", "prop2"), literalInt(3)),
+      greaterThan(prop("n", "prop3"), literalString(""))
+    )
+    val expr_3_cached = ands(
+      lessThanOrEqual(prop("n", "prop2"), literalInt(3)),
+      greaterThan(cachedNodeProp("n", "prop3"), literalString(""))
     )
     val map_empty = Map.empty[String, Expression] // needed for correct type
     val map_1 = Map("n.prop1" -> prop("n", "prop1"))
-    val map_2 = Map("n.prop2" -> prop("n", "prop2"))
-    val map_3 = Map("n.prop3" -> prop("n", "prop3"))
-    val map_1_2 = Map("n.prop1" -> prop("n", "prop1"), "n.prop2" -> prop("n", "prop2"))
-    val map_1_3 = Map("n.prop1" -> prop("n", "prop1"), "n.prop3" -> prop("n", "prop3"))
-    val map_2_3 = Map("n.prop2" -> prop("n", "prop2"), "n.prop3" -> prop("n", "prop3"))
+    val map_2_cached = Map("n.prop2" -> cachedNodeProp("n", "prop2"))
+    val map_3_cached = Map("n.prop3" -> cachedNodeProp("n", "prop3"))
+    val map_2_3_cached = Map("n.prop2" -> cachedNodeProp("n", "prop2"), "n.prop3" -> cachedNodeProp("n", "prop3"))
 
     val asc_1 = Seq(Ascending("n.prop1"))
     val desc_1 = Seq(Descending("n.prop1"))
@@ -774,60 +774,60 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
     Seq(
       // Ascending index
-      ("n.prop1", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_1, map_empty, Seq.empty, Seq.empty),
-      ("n.prop1", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", ASC, IndexOrderAscending, false, true, map_1, map_2_3, desc_3, asc_1_2),
-      ("n.prop1", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", ASC, IndexOrderAscending, false, true, map_1, map_2_3, desc_2_asc_3, asc_1),
-      ("n.prop1", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderAscending, true, false, map_1, map_2_3, desc_1_2_3, Seq.empty),
-      ("n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_2, map_empty, Seq.empty, Seq.empty),
-      ("n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderAscending, true, false, map_2, map_1_3, desc_1_2_3, Seq.empty),
-      ("n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_3, map_empty, Seq.empty, Seq.empty),
-      ("n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderAscending, true, false, map_3, map_1_2, desc_1_2_3, Seq.empty),
+      ("n.prop1", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_1, map_empty, expr, Seq.empty, Seq.empty),
+      ("n.prop1", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", ASC, IndexOrderAscending, false, true, map_1, map_2_3_cached, expr_2_3_cached, desc_3, asc_1_2),
+      ("n.prop1", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", ASC, IndexOrderAscending, false, true, map_1, map_2_3_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
+      ("n.prop1", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderAscending, true, false, map_1, map_2_3_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
+      ("n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_2_cached, map_empty, expr_2_cached, Seq.empty, Seq.empty),
+      ("n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderAscending, true, false, map_2_cached, map_1 ++ map_3_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
+      ("n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_3_cached, map_empty, expr_3_cached, Seq.empty, Seq.empty),
+      ("n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderAscending, true, false, map_3_cached, map_1 ++ map_2_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
 
-      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_1_2, map_empty, Seq.empty, Seq.empty),
-      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", ASC, IndexOrderAscending, false, true, map_1_2, map_3, desc_3, asc_1_2),
-      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", ASC, IndexOrderAscending, false, true, map_1_2, map_3, desc_2_asc_3, asc_1),
-      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderAscending, true, false, map_1_2, map_3, desc_1_2_3, Seq.empty),
-      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_1_3, map_empty, Seq.empty, Seq.empty),
-      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", ASC, IndexOrderAscending, false, true, map_1_3, map_2, desc_3, asc_1_2),
-      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", ASC, IndexOrderAscending, false, true, map_1_3, map_2, desc_2_asc_3, asc_1),
-      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderAscending, true, false, map_1_3, map_2, desc_1_2_3, Seq.empty),
+      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_1 ++ map_2_cached, map_empty, expr_2_cached, Seq.empty, Seq.empty),
+      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", ASC, IndexOrderAscending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, desc_3, asc_1_2),
+      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", ASC, IndexOrderAscending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
+      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderAscending, true, false, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
+      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_1 ++ map_3_cached, map_empty, expr_3_cached, Seq.empty, Seq.empty),
+      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", ASC, IndexOrderAscending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, desc_3, asc_1_2),
+      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", ASC, IndexOrderAscending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
+      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderAscending, true, false, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
 
 
       // Descending index
-      ("n.prop1", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, true, false, map_1, map_2_3, asc_1_2_3, Seq.empty),
-      ("n.prop1", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1, map_2_3, asc_3, desc_1_2),
-      ("n.prop1", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1, map_2_3, asc_2_3, desc_1),
-      ("n.prop1", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_1, map_empty, Seq.empty, Seq.empty),
-      ("n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, true, false, map_2, map_1_3, asc_1_2_3, Seq.empty),
-      ("n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_2, map_empty, Seq.empty, Seq.empty),
-      ("n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, true, false, map_3, map_1_2, asc_1_2_3, Seq.empty),
-      ("n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_3, map_empty, Seq.empty, Seq.empty),
+      ("n.prop1", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, true, false, map_1, map_2_3_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
+      ("n.prop1", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1, map_2_3_cached, expr_2_3_cached, asc_3, desc_1_2),
+      ("n.prop1", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1, map_2_3_cached, expr_2_3_cached, asc_2_3, desc_1),
+      ("n.prop1", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_1, map_empty, expr, Seq.empty, Seq.empty),
+      ("n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, true, false, map_2_cached, map_1 ++ map_3_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
+      ("n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_2_cached, map_empty, expr_2_cached, Seq.empty, Seq.empty),
+      ("n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, true, false, map_3_cached, map_1 ++ map_2_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
+      ("n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_3_cached, map_empty, expr_3_cached, Seq.empty, Seq.empty),
 
-      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, true, false, map_1_2, map_3, asc_1_2_3, Seq.empty),
-      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1_2, map_3, asc_2_3, desc_1),
-      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1_2, map_3, asc_3, desc_1_2),
-      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_1_2, map_empty, Seq.empty, Seq.empty),
-      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, true, false, map_1_3, map_2, asc_1_2_3, Seq.empty),
-      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1_3, map_2, asc_2_3, desc_1),
-      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1_3, map_2, asc_3, desc_1_2),
-      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_1_3, map_empty, Seq.empty, Seq.empty),
+      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, true, false, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
+      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, asc_2_3, desc_1),
+      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, asc_3, desc_1_2),
+      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_1 ++ map_2_cached, map_empty, expr_2_cached, Seq.empty, Seq.empty),
+      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, true, false, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
+      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, asc_2_3, desc_1),
+      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, asc_3, desc_1_2),
+      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_1 ++ map_3_cached, map_empty, expr_3_cached, Seq.empty, Seq.empty),
 
       // Both index
-      ("n.prop1", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", BOTH, IndexOrderAscending, false, true, map_1, map_2_3, desc_3, asc_1_2),
-      ("n.prop1", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderAscending, false, true, map_1, map_2_3, desc_2_asc_3, asc_1),
-      ("n.prop1", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1, map_2_3, asc_2_3, desc_1),
-      ("n.prop1", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1, map_2_3, asc_3, desc_1_2),
+      ("n.prop1", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", BOTH, IndexOrderAscending, false, true, map_1, map_2_3_cached, expr_2_3_cached, desc_3, asc_1_2),
+      ("n.prop1", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderAscending, false, true, map_1, map_2_3_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
+      ("n.prop1", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1, map_2_3_cached, expr_2_3_cached, asc_2_3, desc_1),
+      ("n.prop1", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1, map_2_3_cached, expr_2_3_cached, asc_3, desc_1_2),
 
-      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", BOTH, IndexOrderAscending, false, true, map_1_2, map_3, desc_3, asc_1_2),
-      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderAscending, false, true, map_1_2, map_3, desc_2_asc_3, asc_1),
-      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1_2, map_3, asc_2_3, desc_1),
-      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1_2, map_3, asc_3, desc_1_2),
-      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", BOTH, IndexOrderAscending, false, true, map_1_3, map_2, desc_3, asc_1_2),
-      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderAscending, false, true, map_1_3, map_2, desc_2_asc_3, asc_1),
-      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1_3, map_2, asc_2_3, desc_1),
-      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1_3, map_2, asc_3, desc_1_2)
+      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", BOTH, IndexOrderAscending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, desc_3, asc_1_2),
+      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderAscending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
+      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, asc_2_3, desc_1),
+      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, asc_3, desc_1_2),
+      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", BOTH, IndexOrderAscending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, desc_3, asc_1_2),
+      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderAscending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
+      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, asc_2_3, desc_1),
+      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, asc_3, desc_1_2)
     ).foreach {
-      case (returnString, orderByString, orderCapability, indexOrder, fullSort, partialSort, returnProjections, sortProjections, sortItems, alreadySorted) =>
+      case (returnString, orderByString, orderCapability, indexOrder, fullSort, partialSort, returnProjections, sortProjections, selectionExpression, sortItems, alreadySorted) =>
         // When
         val query =
           s"""
@@ -844,18 +844,13 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         val leafPlan = IndexSeek("n:Label(prop1 >= 42, prop2 <= 3, prop3 > '')", indexOrder = indexOrder)
         plan._2 should equal {
           if (fullSort)
-            Sort(Projection(Projection(Selection(expr, leafPlan), returnProjections), sortProjections), sortItems)
+            Sort(Projection(Projection(Selection(selectionExpression, leafPlan), returnProjections), sortProjections), sortItems)
           else if (partialSort)
-            PartialSort(Projection(Projection(Selection(expr, leafPlan), returnProjections), sortProjections), alreadySorted, sortItems)
+            PartialSort(Projection(Projection(Selection(selectionExpression, leafPlan), returnProjections), sortProjections), alreadySorted, sortItems)
           else
-            Projection(Selection(expr, leafPlan), returnProjections)
+            Projection(Selection(selectionExpression, leafPlan), returnProjections)
         }
     }
-  }
-
-  private def andedPropertyInequalities(varName: String, propName: String, expression: InequalityExpression) = {
-    AndedPropertyInequalities(varFor(varName), prop(varName, propName),
-      NonEmptyList(expression))
   }
 
   // Min and Max
@@ -874,7 +869,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
           LimitPlan(
             Projection(
               IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
-              Map(s"$functionName(n.prop)" -> cachedNodeProperty("n", "prop"))
+              Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
             ),
             literalInt(1),
             DoNotIncludeTies
@@ -893,7 +888,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
           LimitPlan(
             Projection(
               IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
-              Map(s"$functionName(n.prop)" -> cachedNodeProperty("n", "prop"))
+              Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
             ),
             literalInt(1),
             DoNotIncludeTies
@@ -918,7 +913,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
             LimitPlan(
               Projection(
                 IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
-                Map(s"$functionName(n.prop)" -> cachedNodeProperty("n", "prop"))
+                Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
               ),
               literalInt(1),
               DoNotIncludeTies
@@ -939,7 +934,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
             LimitPlan(
               Projection(
                 IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
-                Map(s"$functionName(n.prop)" -> cachedNodeProperty("n", "prop"))
+                Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
               ),
               literalInt(1),
               DoNotIncludeTies
@@ -965,7 +960,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
           LimitPlan(
             Projection(
               IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
-              Map("agg" -> cachedNodeProperty("n", "prop"))
+              Map("agg" -> cachedNodeProp("n", "prop"))
             ),
             literalInt(1),
             DoNotIncludeTies
@@ -985,8 +980,8 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         Aggregation(
           IndexSeek("n:Awesome(prop > 0)", indexOrder = expectedIndexOrder, getValue = GetValue),
           Map.empty,
-          Map(s"$functionName(n.prop)" -> function(functionName, cachedNodeProperty("n", "prop")),
-            "count(n.prop)" -> count(cachedNodeProperty("n", "prop")))
+          Map(s"$functionName(n.prop)" -> function(functionName, cachedNodeProp("n", "prop")),
+            "count(n.prop)" -> count(cachedNodeProp("n", "prop")))
         )
       )
     }
@@ -1005,7 +1000,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
             Set.empty,
             IndexOrderNone),
           Map.empty,
-          Map(s"$functionName(n.prop)" -> function(functionName, cachedNodeProperty("n", "prop")))
+          Map(s"$functionName(n.prop)" -> function(functionName, cachedNodeProp("n", "prop")))
         )
       )
     }
@@ -1023,7 +1018,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         Aggregation(
           IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
           Map.empty,
-          Map(s"$functionName(n.prop)" -> function(functionName, cachedNodeProperty("n", "prop")))
+          Map(s"$functionName(n.prop)" -> function(functionName, cachedNodeProp("n", "prop")))
         )
       )
     }
