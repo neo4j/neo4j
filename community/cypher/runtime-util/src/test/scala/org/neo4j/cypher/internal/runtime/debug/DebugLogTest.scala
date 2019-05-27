@@ -24,6 +24,6 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 class DebugLogTest extends CypherFunSuite {
 
   test("I think you forgot to disable DebugLog after debugging...") {
-    DebugLog.enabled shouldBe false
+    DebugLog.ENABLED shouldBe false
   }
 }

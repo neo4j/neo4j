@@ -21,11 +21,32 @@ package org.neo4j.cypher.internal.runtime.debug
 
 object DebugSupport {
 
-  final val debugWorkers = false
+  final val DEBUG_WORKERS = false
+  final val DEBUG_TRACKER = false
+  final val DEBUG_LOCKS = false
+  final val DEBUG_ERROR_HANDLING = false
 
   def logWorker(str: => String): Unit = {
-    if (debugWorkers) {
-      println("        " + str)
+    if (DEBUG_WORKERS) {
+      println(s"        $str")
+    }
+  }
+
+  def logTracker(str: => String): Unit = {
+    if (DEBUG_TRACKER) {
+      println(s"        $str")
+    }
+  }
+
+  def logLocks(str: => String): Unit = {
+    if (DEBUG_LOCKS) {
+      println(s"        $str")
+    }
+  }
+
+  def logErrorHandling(str: => String): Unit = {
+    if (DEBUG_ERROR_HANDLING) {
+      println(s"        $str")
     }
   }
 }

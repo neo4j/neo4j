@@ -31,10 +31,7 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.internal.kernel.api.security.LoginContext
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI
-import org.neo4j.kernel.impl.coreapi.InternalTransaction
-import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySubscriber}
-import org.neo4j.kernel.impl.util.DefaultValueMapper
+import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySubscriber, TransactionalContext}
 import org.neo4j.kernel.lifecycle.LifeSupport
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.VirtualValues
@@ -53,9 +50,6 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
   private val runtimeContextManager = edition.newRuntimeContextManager(resolver, lifeSupport)
   private val monitors = resolver.resolveDependency(classOf[Monitors])
   private val contextFactory = Neo4jTransactionalContextFactory.create(cypherGraphDb)
-  private val spi: EmbeddedProxySPI = resolver.resolveDependency(classOf[EmbeddedProxySPI], DependencyResolver.SelectionStrategy.SINGLE)
-
-  val valueMapper = new DefaultValueMapper(spi)
 
   def start(): Unit = {
     lifeSupport.init()
@@ -80,35 +74,39 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                   input: InputDataStream,
                   resultMapper: (CONTEXT, RuntimeResult) => RESULT,
                   subscriber: QuerySubscriber): RESULT = {
-    val tx = cypherGraphDb.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
-    val queryContext = newQueryContext(tx)
-    val runtimeContext = newRuntimeContext(tx)
+    val txContext = beginTx()
+    val queryContext = newQueryContext(txContext)
+    val runtimeContext = newRuntimeContext(txContext, queryContext)
 
     val result = executableQuery.run(queryContext, doProfile = false, VirtualValues.EMPTY_MAP, prePopulateResults = true, input, subscriber)
-    resultMapper(runtimeContext, result)
+    resultMapper(runtimeContext, new ClosingRuntimeResult(result, txContext, runtimeContextManager.assertAllReleased))
   }
 
   def compile(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT]): ExecutionPlan = {
-    val tx = cypherGraphDb.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
-    val runtimeContext = newRuntimeContext(tx)
-
-    runtime.compileToExecutable(logicalQuery, runtimeContext)
+    val txContext = beginTx()
+    val runtimeContext = newRuntimeContext(txContext, newQueryContext(txContext))
+    try {
+      runtime.compileToExecutable(logicalQuery, runtimeContext)
+    } finally {
+      txContext.close(true) // also closes tx
+    }
   }
 
-  private def newRuntimeContext(tx: InternalTransaction): CONTEXT = {
-    val contextFactory = Neo4jTransactionalContextFactory.create(cypherGraphDb)
-    val txContext = TransactionalContextWrapper(contextFactory.newContext(tx, "<<queryText>>", VirtualValues.EMPTY_MAP))
-    val queryContext = new TransactionBoundQueryContext(txContext)(monitors.newMonitor(classOf[IndexSearchMonitor]))
+  private def beginTx(): TransactionalContext = {
+    val tx = cypherGraphDb.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
+    contextFactory.newContext(tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
+  }
+
+  private def newRuntimeContext(txContext: TransactionalContext, queryContext: QueryContext): CONTEXT = {
     runtimeContextManager.create(queryContext,
-                                 tx.kernelTransaction().schemaRead(),
+                                 txContext.kernelTransaction().schemaRead(),
                                  MasterCompiler.CLOCK,
                                  Set.empty,
                                  compileExpressions = false)
   }
 
-  private def newQueryContext(tx: InternalTransaction): QueryContext = {
-    val txContext = TransactionalContextWrapper(contextFactory.newContext(tx, "<<queryText>>", VirtualValues.EMPTY_MAP))
-    new TransactionBoundQueryContext(txContext)(monitors.newMonitor(classOf[IndexSearchMonitor]))
+  private def newQueryContext(txContext: TransactionalContext): QueryContext = {
+    new TransactionBoundQueryContext(TransactionalContextWrapper(txContext))(monitors.newMonitor(classOf[IndexSearchMonitor]))
   }
 }
