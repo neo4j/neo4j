@@ -109,7 +109,7 @@ public class ExecutionEngine implements QueryExecutionEngine
             ResultSubscriber subscriber = new ResultSubscriber( context.graph().getDependencyResolver().resolveDependency(
                     EmbeddedProxySPI.class ) );
             QueryExecution queryExecution = executeQuery( query, parameters, context, false, subscriber );
-            subscriber.setExecution( queryExecution );
+            subscriber.init( queryExecution );
             return subscriber;
     }
 
@@ -138,7 +138,7 @@ public class ExecutionEngine implements QueryExecutionEngine
                             EmbeddedProxySPI.class ) );
             QueryExecution queryExecution =
                     cypherExecutionEngine.execute( query, parameters, context, true, prePopulate, subscriber );
-            subscriber.setExecution( queryExecution );
+            subscriber.init( queryExecution );
             return subscriber;
         }
         catch ( CypherException e )

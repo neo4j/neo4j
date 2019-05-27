@@ -19,13 +19,11 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
-import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
+import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.{Notification, Result}
+import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -70,57 +68,34 @@ class RewindableExecutionResultImplementation(val columns: Array[String],
 
 object RewindableExecutionResult {
 
+  import scala.collection.JavaConverters._
   val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
 
   def apply(in: Result): RewindableExecutionResult = {
-    val internal = in.asInstanceOf[ExecutionResult].internalExecutionResult
-    apply(internal)
+    try {
+      val columns = in.columns().asScala.toArray
+
+      val result = new ArrayBuffer[Map[String, AnyRef]]()
+      in.asScala.map(javaResult => scalaValues.asDeepScalaMap(javaResult))
+      new RewindableExecutionResultImplementation(columns, result, NormalMode, null,
+                                                  in.getQueryStatistics.asInstanceOf[QueryStatistics],
+                                                  Seq.empty)
+    } finally in.close()
   }
 
-  def apply(runtimeResult: RuntimeResult, queryContext: QueryContext): RewindableExecutionResult = {
-    val result = new ArrayBuffer[Map[String, AnyRef]]()
+  def apply(runtimeResult: RuntimeResult, queryContext: QueryContext, subscriber: RecordingQuerySubscriber): RewindableExecutionResult = {
     try {
       val columns = runtimeResult.fieldNames()
-
-      runtimeResult.accept((row: QueryResult.Record) => {
-        val map = new java.util.HashMap[String, AnyRef]()
-        val values = row.fields()
-        for (i <- columns.indices) {
-          map.put(columns(i), queryContext.asObject(values(i)))
-        }
-        result += scalaValues.asDeepScalaMap(map).asInstanceOf[Map[String, AnyRef]]
-        true
+      runtimeResult.request(Long.MaxValue)
+      runtimeResult.await()
+      val result: Seq[Map[String, AnyRef]] = subscriber.getOrThrow().asScala.map(row => {
+        (row.zipWithIndex map {
+          case (value, index) => columns(index) -> scalaValues.asDeepScalaValue(queryContext.asObject(value)).asInstanceOf[AnyRef]
+        }).toMap
       })
 
       new RewindableExecutionResultImplementation(columns, result, NormalMode, null, runtimeResult.queryStatistics(),
                                                   Seq.empty)
     } finally runtimeResult.close()
-  }
-
-  def apply(internal: InternalExecutionResult) : RewindableExecutionResult = {
-    try {
-      val result = new ArrayBuffer[Map[String, AnyRef]]()
-      val columns = internal.fieldNames()
-
-      internal.accept(new ResultVisitor[Exception] {
-        override def visit(row: ResultRow): Boolean = {
-          val map = new java.util.HashMap[String, AnyRef]()
-          for (c <- columns) {
-            map.put(c, row.get(c))
-          }
-          result += scalaValues.asDeepScalaMap(map).asInstanceOf[Map[String, AnyRef]]
-          true
-        }
-      })
-
-      new RewindableExecutionResultImplementation(
-        columns,
-        result.toList,
-        internal.executionMode,
-        internal.executionPlanDescription(),
-        internal.queryStatistics(),
-        internal.notifications
-        )
-    } finally internal.close()
   }
 }

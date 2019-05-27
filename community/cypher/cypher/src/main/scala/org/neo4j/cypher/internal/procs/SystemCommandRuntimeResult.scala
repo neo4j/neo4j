@@ -37,42 +37,35 @@ import org.neo4j.values.storable.Values
 case class SystemCommandRuntimeResult(ctx: QueryContext, subscriber: QuerySubscriber, execution: SystemCommandExecutionResult) extends RuntimeResult {
 
   override val fieldNames: Array[String] = execution.fieldNames()
-  private var resultRequested = false
+  private var state = ConsumptionState.NOT_STARTED
 
-  // The signature mode is taking care of eagerization
-
-  override val asIterator: ResourceIterator[util.Map[String, AnyRef]] = execution.asIterator
-
-  override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {
-    execution.accept(visitor)
-  }
 
   override def queryStatistics(): QueryStatistics = execution.inner.queryStatistics()
 
-  override def isIterable: Boolean = true
-
-  override def consumptionState: RuntimeResult.ConsumptionState =
-    if (!resultRequested) ConsumptionState.NOT_STARTED
-    else if (asIterator.hasNext) ConsumptionState.HAS_MORE
-    else ConsumptionState.EXHAUSTED
+  override def consumptionState: RuntimeResult.ConsumptionState = state
 
   override def close(): Unit = execution.inner.close()
 
   override def queryProfile(): QueryProfile = SystemCommandProfile(0)
 
-  override def request(numberOfRecords: Long): Unit = execution.inner.request(numberOfRecords)
+  override def request(numberOfRecords: Long): Unit = {
+    state = ConsumptionState.HAS_MORE
+    execution.inner.request(numberOfRecords)
+  }
 
   override def cancel(): Unit = execution.inner.cancel()
 
-  override def await(): Boolean = execution.inner.await()
+  override def await(): Boolean = {
+    val hasMore = execution.inner.await()
+    if (!hasMore) {
+      state = ConsumptionState.EXHAUSTED
+    }
+    hasMore
+  }
 }
 
 class SystemCommandExecutionResult(val inner: InternalExecutionResult) {
   def fieldNames(): Array[String] = inner.fieldNames()
-
-  def asIterator: ResourceIterator[util.Map[String, AnyRef]] = inner.javaIterator
-
-  def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = inner.accept(visitor)
 }
 
 class ColumnMappingSystemCommandExecutionResult(context: QueryContext,
@@ -86,44 +79,6 @@ class ColumnMappingSystemCommandExecutionResult(context: QueryContext,
   private val innerFields = inner.fieldNames()
   //private val ignoreIndexes = innerFields.zipWithIndex.filter(v => ignore.contains(v._1)).map(_._2)
   override val fieldNames: Array[String] = innerFields.filter(!ignore.contains(_))
-
-  override def asIterator: ResourceIterator[util.Map[String, AnyRef]] = new ResourceIterator[util.Map[String, AnyRef]] {
-
-    private lazy val innerIterator: ResourceIterator[util.Map[String, AnyRef]] = inner.javaIterator
-
-    override def close(): Unit = innerIterator.close()
-
-    override def hasNext: Boolean = innerIterator.hasNext
-
-    override def next(): util.Map[String, AnyRef] = {
-      import scala.collection.JavaConverters._
-      mapRecord(innerIterator.next()).asJava
-    }
-  }
-
-  private def mapRecord(row: util.Map[String, AnyRef]): Map[String, AnyRef] = {
-    inner.fieldNames().foldLeft(Map.empty[String, AnyRef]) { (a, k) =>
-      if (ignore.contains(k)) a
-      else a + (k -> valueExtractor(k, row))
-    }
-  }
-
-  private def resultAsMap(rowData: Array[AnyValue]): util.Map[String, AnyRef] = {
-    val mapData = new util.HashMap[String, AnyRef](rowData.length)
-    innerFields.zip(rowData).foreach { entry => mapData.put(entry._1, context.asObject(entry._2)) }
-    mapData
-  }
-
-  override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {
-    inner.accept(new QueryResultVisitor[EX] {
-      override def visit(row: QueryResult.Record): Boolean = {
-        visitor.visit(() => {
-          val mapData = resultAsMap(row.fields())
-          fieldNames.map(k => Values.of(valueExtractor(k, mapData))).asInstanceOf[Array[AnyValue]]
-        })
-      }
-    })
-  }
 }
 
 case class SystemCommandProfile(rowCount: Long) extends QueryProfile with OperatorProfile {

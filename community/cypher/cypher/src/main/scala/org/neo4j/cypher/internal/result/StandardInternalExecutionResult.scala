@@ -19,23 +19,14 @@
  */
 package org.neo4j.cypher.internal.result
 
-import java.io.PrintWriter
-import java.util
-
 import org.neo4j.cypher.internal.RuntimeName
 import org.neo4j.cypher.internal.plandescription.{InternalPlanDescription, PlanDescriptionBuilder}
-import org.neo4j.cypher.internal.result.string.ResultStringBuilder
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v4_0.util.{ProfilerStatisticsNotReadyException, TaskCloser}
-import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
+import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
-import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
-import org.neo4j.graphdb.{NotFoundException, Notification, ResourceIterator}
+import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.impl.query.QuerySubscriber
-import org.neo4j.values.AnyValue
-
-import scala.collection.mutable
 
 class StandardInternalExecutionResult(context: QueryContext,
                                       runtime: RuntimeName,
@@ -50,39 +41,6 @@ class StandardInternalExecutionResult(context: QueryContext,
   self =>
 
   override def initiate(): Unit = {
-
-    // OBS: check before materialization
-    val consumedBeforeInit = runtimeResult.consumptionState == ConsumptionState.EXHAUSTED
-    //NOTE: for now we never materialize when using reactive API
-    val notReactive = subscriber.equals(QuerySubscriber.NOT_A_SUBSCRIBER)
-
-    // By policy we materialize the result directly unless it's a read only query.
-    if (queryType != READ_ONLY && notReactive) {
-      materializeResult()
-    }
-
-    // ... and if we do not return any rows, we close all resources.
-    if (notReactive && (consumedBeforeInit || queryType == WRITE || fieldNames().isEmpty)) {
-      close(Success)
-    }
-  }
-
-  /*
-  ======= RESULT MATERIALIZATION ==========
-   */
-
-  private var materializedResult: util.ArrayList[Array[AnyValue]] = _
-  protected[result] def isMaterialized: Boolean = materializedResult != null
-  private def materializeResult(): Unit = {
-    materializedResult = new util.ArrayList()
-    if (isOpen)
-      runtimeResult.accept(new QueryResultVisitor[Exception] {
-        override def visit(row: QueryResult.Record): Boolean = {
-          materializedResult.add(row.fields().clone())
-          row.release()
-          true
-        }
-      })
   }
 
   /*
@@ -97,129 +55,6 @@ class StandardInternalExecutionResult(context: QueryContext,
     taskCloser.close(reason == Success)
   }
 
-  /*
-  ======= CONSUME AS ITERATOR ==========
-   */
-
-  override def javaIterator: ResourceIterator[util.Map[String, AnyRef]] = inner
-
-  override def javaColumnAs[T](column: String): ResourceIterator[T] =
-    new ResourceIterator[T] {
-      override def hasNext: Boolean = inner.hasNext
-      override def next(): T = extractJavaColumn(column, inner.next()).asInstanceOf[T]
-      override def close(): Unit = self.close()
-    }
-
-  private def extractJavaColumn(column: String, data: util.Map[String, AnyRef]): AnyRef = {
-    val value = data.get(column)
-    if (value == null && !data.containsKey(column)) {
-      throw new NotFoundException(
-        s"No column named '$column' was found. Found: ${fieldNames().mkString("(\"", "\", \"", "\")")}")
-    }
-    value
-  }
-
-  /**
-    * If a runtime only supports visitor-style access (it is not iterable), we cannot serve the
-    * result to the client as an iterator without materializing. This is because our current
-    * visitor pattern does not support back-pressure.
-    */
-  protected final lazy val inner: ResourceIterator[util.Map[String, AnyRef]] = {
-    if (!isMaterialized && runtimeResult.isIterable)
-      runtimeResult.asIterator()
-    else {
-      if (!isMaterialized)
-        materializeResult()
-      new MaterializedIterator()
-    }
-  }
-
-  private class MaterializedIterator() extends ResourceIterator[util.Map[String, AnyRef]] {
-
-    private val inner = materializedResult.iterator()
-    private val columns = fieldNames()
-
-    def hasNext: Boolean = inner.hasNext
-
-    def next(): util.Map[String, AnyRef] = {
-      val values = inner.next()
-      val map = new util.HashMap[String, AnyRef]()
-
-      val length = columns.length
-      var i = 0
-      while (i < length) {
-        map.put(columns(i), context.asObject(values(i)))
-        i += 1
-      }
-      map
-    }
-
-    override def remove(): Unit = throw new UnsupportedOperationException("remove")
-
-    def close(): Unit = self.close()
-  }
-
-  /*
-  ======= CONSUME WITH VISITOR ==========
-   */
-
-  protected def accept(body: ResultRow => Unit): Unit = {
-    accept(new ResultVisitor[RuntimeException] {
-      override def visit(row: ResultRow): Boolean = {
-        body(row)
-        true
-      }
-    })
-  }
-
-  override def accept[E <: Exception](visitor: ResultVisitor[E]): Unit = {
-    accept(new QueryResultVisitor[E] {
-      private val names = fieldNames()
-      override def visit(record: QueryResult.Record): Boolean = {
-        val fields = record.fields()
-        val mapData = new mutable.AnyRefMap[String, Any](names.length)
-
-        val length = names.length
-        var i = 0
-        while (i < length) {
-          mapData.put(names(i), context.asObject(fields(i)))
-          i += 1
-        }
-        visitor.visit(new MapBasedRow(mapData))
-      }
-    })
-  }
-
-  override def accept[E <: Exception](visitor: QueryResultVisitor[E]): Unit = {
-
-    if (isMaterialized) {
-      val rowCursor = new MaterializedResultCursor
-      while (rowCursor.next()) {
-        visitor.visit(rowCursor.record())
-      }
-      close(Success)
-    } else if (isOpen) {
-      runtimeResult.accept(visitor)
-      close(Success)
-    }
-  }
-
-  class MaterializedResultCursor {
-    private var i = -1
-    def next(): Boolean = {
-      i += 1
-      i < materializedResult.size()
-    }
-
-    def record(): QueryResult.Record = MaterializedRecord(materializedResult.get(i))
-
-    case class MaterializedRecord(override val fields: Array[AnyValue]) extends QueryResult.Record
-  }
-
-  /*
- ======= REACTIVE RESULTS ==========
-  */
-
   override def request(numberOfRows: Long): Unit = runtimeResult.request(numberOfRows)
 
   override def cancel(): Unit = {
@@ -233,17 +68,13 @@ class StandardInternalExecutionResult(context: QueryContext,
   ======= DUMP TO STRING ==========
    */
 
-  override def dumpToString(): String = {
-    val resultStringBuilder = ResultStringBuilder(fieldNames(), context.transactionalContext)
-    accept(resultStringBuilder)
-    resultStringBuilder.result(queryStatistics())
-  }
-
-  override def dumpToString(writer: PrintWriter): Unit = {
-    val resultStringBuilder = ResultStringBuilder(fieldNames(), context.transactionalContext)
-    accept(resultStringBuilder)
-    resultStringBuilder.result(writer, queryStatistics())
-  }
+//  override def dumpToString(): String =
+//
+//  override def dumpToString(writer: PrintWriter): Unit = {
+//    val resultStringBuilder = ResultStringBuilder(fieldNames(), context.transactionalContext)
+//    accept(resultStringBuilder)
+//    resultStringBuilder.result(writer, queryStatistics())
+//  }
 
   /*
   ======= META DATA ==========

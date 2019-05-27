@@ -19,45 +19,31 @@
  */
 package org.neo4j.cypher.internal.result
 
-import java.io.PrintWriter
 import java.lang
 
-import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.result.QueryResult
-import org.neo4j.graphdb.Result.ResultVisitor
-import org.neo4j.graphdb.{Notification, QueryExecutionType, ResourceIterator}
+import org.neo4j.graphdb.{Notification, QueryExecutionType}
 import org.neo4j.kernel.impl.query.QueryExecution
 
 import scala.collection.JavaConverters._
 
-trait InternalExecutionResult extends QueryResult with QueryExecution {
+trait InternalExecutionResult extends QueryExecution {
 
   /**
     * Perform any initial logic, such a materialization and early closing.
     */
   def initiate(): Unit
 
-  def javaColumns: java.util.List[String] = java.util.Arrays.asList(fieldNames():_*)
-  def javaColumnAs[T](column: String): ResourceIterator[T]
-  def javaIterator: ResourceIterator[java.util.Map[String, AnyRef]]
-
-  def dumpToString(writer: PrintWriter)
-  def dumpToString(): String
-
-  override def queryStatistics(): QueryStatistics
+  //TODO remove???
+  def queryStatistics(): QueryStatistics
 
   def executionMode: ExecutionMode
-
-  def executionPlanDescription(): InternalPlanDescription
 
   def queryType: InternalQueryType
 
   def notifications: Iterable[Notification]
 
   override def getNotifications: lang.Iterable[Notification] = notifications.asJava
-
-  def accept[E <: Exception](visitor: ResultVisitor[E]): Unit
 
   def executionType: QueryExecutionType = {
 
@@ -80,7 +66,7 @@ trait InternalExecutionResult extends QueryResult with QueryExecution {
 
   def close(reason: CloseReason): Unit
 
-  override def close(): Unit = close(Success)
+  def close(): Unit = close(Success)
 }
 
 sealed trait CloseReason

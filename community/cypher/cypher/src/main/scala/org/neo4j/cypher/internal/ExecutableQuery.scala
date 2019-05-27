@@ -20,31 +20,15 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
-import org.neo4j.graphdb.Result
+import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.kernel.api.query.CompilerInfo
-import org.neo4j.kernel.impl.query.{QueryExecution, QuerySubscriber, TransactionalContext}
+import org.neo4j.kernel.impl.query.{QuerySubscriber, TransactionalContext}
 import org.neo4j.values.virtual.MapValue
 
 /**
   * A fully compiled query in executable form.
   */
 trait ExecutableQuery extends CacheabilityInfo {
-
-  /**
-    * Execute this executable query.
-    *
-    * @param transactionalContext the transaction in which to execute
-    * @param preParsedQuery the preparsed query to execute
-    * @param params the parameters
-    * @param prePopulateResults if false, nodes and relationships might be returned as references in the results
-    * @return the query result
-    * @deprecated This method will be removed and the conversion to `Result` will happen further up the stack
-    */
-  @deprecated
-  def execute(transactionalContext: TransactionalContext,
-              preParsedQuery: PreParsedQuery,
-              params: MapValue,
-              prePopulateResults: Boolean): Result
 
   /**
     * Execute this executable query.
@@ -60,7 +44,7 @@ trait ExecutableQuery extends CacheabilityInfo {
               preParsedQuery: PreParsedQuery,
               params: MapValue,
               prePopulateResults: Boolean,
-              subscriber: QuerySubscriber): QueryExecution
+              subscriber: QuerySubscriber): InternalExecutionResult
 
   /**
     * The reusability state of this executable query.

@@ -30,7 +30,7 @@ import org.neo4j.values.AnyValue;
  * pieces of reactive results in the code. Implements {@link org.neo4j.kernel.impl.query.QuerySubscription} by simply reading
  * the entire result in to memory and serves it in chunks as demanded by the client.
  */
-public abstract class NaiveQuerySubscription implements RuntimeResult
+public abstract class NaiveQuerySubscription implements VisitableRuntimeResult
 {
     private long requestedRecords;
     private int servedRecords;

@@ -19,21 +19,16 @@
  */
 package org.neo4j.cypher.internal.result
 
-import java.io.PrintWriter
-import java.util
-
 import org.neo4j.cypher.exceptionHandler.RunSafely
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.{CypherException, CypherExecutionException}
-import org.neo4j.graphdb.Result.ResultVisitor
-import org.neo4j.graphdb.{Notification, ResourceIterator, Result}
-import org.neo4j.internal.helpers.collection.Iterators
+import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
+import org.neo4j.kernel.impl.query.QuerySubscriber.DO_NOTHING_SUBSCRIBER
 
 class ClosingExecutionResultTest extends CypherFunSuite {
 
@@ -43,54 +38,34 @@ class ClosingExecutionResultTest extends CypherFunSuite {
 
   test("should report end-of-query on pre-closed inner") {
     // given
-    val inner = new NiceInner(Nil)
+    val inner = new NiceInner(Array.empty)
     val monitor = AssertableMonitor()
     inner.close()
 
     // when
-    ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor)
+    ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor, DO_NOTHING_SUBSCRIBER)
 
     // then
     monitor.assertSuccess(query)
   }
 
-  test("should close after accept I") {
-    assertClosedAfterConsumption(_.accept(mock[ResultVisitor[Exception]]))
+  test("should close after request") {
+    assertClosedAfterConsumption(_.request(17))
   }
 
-  test("should close after accept II") {
-    assertClosedAfterConsumption(_.accept(mock[QueryResult.QueryResultVisitor[Exception]]))
+  test("should close after cancel") {
+    assertClosedAfterConsumption(_.cancel())
   }
 
-  test("should close after javaColumnAs") {
-    assertClosedAfterConsumption(result => Iterators.count(result.javaColumnAs[Int]("x")))
-  }
-
-  test("should close after javaIterator") {
-    assertClosedAfterConsumption(result => Iterators.count(result.javaIterator))
-  }
-
-  test("should close after javaColumnAs.close") {
-    assertClosedAfterConsumption(_.javaColumnAs[Int]("x").close())
-  }
-
-  test("should close after javaIterator.close") {
-    assertClosedAfterConsumption(_.javaIterator.close())
-  }
-
-  test("should close after dumpToString I") {
-    assertClosedAfterConsumption(_.dumpToString())
-  }
-
-  test("should close after dumpToString II") {
-    assertClosedAfterConsumption(_.dumpToString(mock[PrintWriter]))
+  test("should close after await") {
+    assertClosedAfterConsumption(_.await())
   }
 
   private def assertClosedAfterConsumption(f: ClosingExecutionResult => Unit): Unit = {
     // given
-    val inner = new NiceInner(List(1, 2))
+    val inner = new NiceInner(Array(1, 2))
     val monitor = AssertableMonitor()
-    val x = ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor)
+    val x = ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor, DO_NOTHING_SUBSCRIBER)
 
     // when
     f(x)
@@ -109,7 +84,7 @@ class ClosingExecutionResultTest extends CypherFunSuite {
 
     // when
     intercept[TestOuterException] {
-      ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor)
+      ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor, DO_NOTHING_SUBSCRIBER)
     }
 
     // then
@@ -121,8 +96,16 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     assertCloseOnExplodingMethod(_.fieldNames(), "fieldNames")
   }
 
-  test("should close on exploding javaColumns") { // delegates to fieldNames
-    assertCloseOnExplodingMethod(_.javaColumns, "fieldNames")
+  test("should close on exploding request") {
+    assertCloseOnExplodingMethod(_.request(17), "request")
+  }
+
+  test("should close on exploding cancel") {
+    assertCloseOnExplodingMethod(_.cancel(), "cancel")
+  }
+
+  test("should close on exploding await") {
+    assertCloseOnExplodingMethod(_.await(), "await")
   }
 
   test("should close on exploding queryStatistics") {
@@ -145,57 +128,13 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     assertCloseOnExplodingMethod(_.notifications, "notifications")
   }
 
-  test("should close on exploding accept I") {
-    assertCloseOnExplodingMethod(_.accept(mock[ResultVisitor[Exception]]), "accept")
-  }
-
-  test("should close on exploding accept II") {
-    assertCloseOnExplodingMethod(_.accept(mock[QueryResult.QueryResultVisitor[Exception]]), "accept")
-  }
-
-  test("should close on exploding executionType") { // delegates to queryType
-    assertCloseOnExplodingMethod(_.executionType, "queryType")
-  }
-
-  test("should close on exploding dumpToString I") {
-    assertCloseOnExplodingMethod(_.dumpToString(), "dumpToString")
-  }
-
-  test("should close on exploding dumpToString II") {
-    assertCloseOnExplodingMethod(_.dumpToString(mock[PrintWriter]), "dumpToString")
-  }
-
-  test("should close on exploding at create time javaColumnAs") {
-    assertCloseOnExplodingMethod(_.javaColumnAs[Int]("x"), "DIRECT_EXPLODE")
-  }
-
-  test("should close on exploding at create time javaIterator") {
-    assertCloseOnExplodingMethod(_.javaIterator, "DIRECT_EXPLODE")
-  }
-
-  test("should close on exploding at hasNext time javaColumnAs") {
-    assertCloseOnExplodingMethod(_.javaColumnAs[Int]("x").next(), "HAS_NEXT_EXPLODE", HAS_NEXT_EXPLODE)
-  }
-
-  test("should close on exploding at hasNext time javaIterator") {
-    assertCloseOnExplodingMethod(_.javaIterator.next(), "HAS_NEXT_EXPLODE", HAS_NEXT_EXPLODE)
-  }
-
-  test("should close on exploding at next time javaColumnAs") {
-    assertCloseOnExplodingMethod(_.javaColumnAs[Int]("x").next(), "NEXT_EXPLODE", NEXT_EXPLODE)
-  }
-
-  test("should close on exploding at next time javaIterator") {
-    assertCloseOnExplodingMethod(_.javaIterator.next(), "NEXT_EXPLODE", NEXT_EXPLODE)
-  }
-
   private def assertCloseOnExplodingMethod(f: ClosingExecutionResult => Unit,
                                            errorMsg: String,
                                            iteratorMode: IteratorMode = DIRECT_EXPLODE): Unit = {
     // given
     val inner = new ExplodingInner(iteratorMode = iteratorMode)
     val monitor = AssertableMonitor()
-    val x = ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor)
+    val x = ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor, DO_NOTHING_SUBSCRIBER)
 
     // when
     intercept[TestOuterException] { f(x) }
@@ -212,7 +151,7 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     // given
     val inner = new ExplodingInner(alsoExplodeOnClose = true)
     val monitor = AssertableMonitor()
-    val x = ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor)
+    val x = ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor, DO_NOTHING_SUBSCRIBER)
 
     // when
     intercept[TestOuterException] { x.close() }
@@ -225,10 +164,16 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     // given
     val inner = new ExplodingInner(alsoExplodeOnClose = true)
     val monitor = AssertableMonitor()
-    val x = ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor)
+    val x = ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor, DO_NOTHING_SUBSCRIBER)
 
     // when
-    intercept[TestOuterException] { x.accept(mock[ResultVisitor[Exception]]) }
+    intercept[TestOuterException] {
+      var hasMore = true
+      while (hasMore) {
+        x.request(1)
+        hasMore = x.await()
+      }
+    }
 
     // then
     val initialException = TestInnerException("accept")
@@ -249,34 +194,19 @@ class ClosingExecutionResultTest extends CypherFunSuite {
   abstract class ClosingInner extends InternalExecutionResult {
 
     var closeReason: CloseReason = _
-
     override def isClosed: Boolean = closeReason != null
 
     override def close(reason: CloseReason): Unit =
       closeReason = reason
-
-    override def request(numberOfRows: Long): Unit = {}
-
-    override def cancel(): Unit = {}
-
-    override def await(): Boolean = false
   }
 
-  class NiceInner(values: Seq[Int]) extends ClosingInner {
+  class NiceInner(values: Array[Int]) extends ClosingInner {
 
     self =>
+    private var demand = 0L
+    private var offset = 0
 
     override def initiate(): Unit = {}
-
-    override def javaColumnAs[T](column: String): ResourceIterator[T] = StubResourceInterator[T]()
-
-    override def javaIterator: ResourceIterator[util.Map[String, AnyRef]] = StubResourceInterator()
-
-    override def dumpToString(writer: PrintWriter): Unit = writer.print(dumpToString())
-
-    override def dumpToString(): String =
-      fieldNames().mkString("", ",", "\n") +
-      values.map(x => s"$x,$x").mkString("\n")
 
     override def queryStatistics(): QueryStatistics = null
 
@@ -288,24 +218,17 @@ class ClosingExecutionResultTest extends CypherFunSuite {
 
     override def notifications: Iterable[Notification] = null
 
-    override def accept[E <: Exception](visitor: Result.ResultVisitor[E]): Unit = {}
-
     override def fieldNames(): Array[String] = Array("x", "y")
 
-    override def accept[E <: Exception](visitor: QueryResult.QueryResultVisitor[E]): Unit = {}
+    override def request(numberOfRecords: Long): Unit = {
+      demand += numberOfRecords
+    }
 
-    case class StubResourceInterator[T]() extends ResourceIterator[T] {
+    override def cancel(): Unit = {}
 
-      private var i = 0
-
-      override def close(): Unit = self.close(Success)
-
-      override def hasNext: Boolean = i < values.size
-
-      override def next(): T = {
-        i += 1
-        null.asInstanceOf[T]
-      }
+    override def await(): Boolean = {
+      //TODO
+      ???
     }
   }
 
@@ -317,14 +240,6 @@ class ClosingExecutionResultTest extends CypherFunSuite {
 
     override def initiate(): Unit = if (alreadyInInitiate) throw TestInnerException("initiate")
 
-    override def javaColumnAs[T](column: String): ResourceIterator[T] = StubResourceIterator[T]()
-
-    override def javaIterator: ResourceIterator[util.Map[String, AnyRef]] = StubResourceIterator()
-
-    override def dumpToString(writer: PrintWriter): Unit = throw TestInnerException("dumpToString")
-
-    override def dumpToString(): String = throw TestInnerException("dumpToString")
-
     override def queryStatistics(): QueryStatistics = throw TestInnerException("queryStatistics")
 
     override def executionMode: ExecutionMode = throw TestInnerException("executionMode")
@@ -335,8 +250,6 @@ class ClosingExecutionResultTest extends CypherFunSuite {
 
     override def notifications: Iterable[Notification] = throw TestInnerException("notifications")
 
-    override def accept[E <: Exception](visitor: Result.ResultVisitor[E]): Unit = throw TestInnerException("accept")
-
     override def close(reason: CloseReason): Unit = {
       super.close(reason)
       if (alsoExplodeOnClose) throw TestInnerException("close")
@@ -344,22 +257,11 @@ class ClosingExecutionResultTest extends CypherFunSuite {
 
     override def fieldNames(): Array[String] = throw TestInnerException("fieldNames")
 
-    override def accept[E <: Exception](visitor: QueryResult.QueryResultVisitor[E]): Unit = throw TestInnerException("accept")
+    override def request(numberOfRows: Long): Unit = throw TestInnerException("request")
 
-    case class StubResourceIterator[T]() extends ResourceIterator[T] {
+    override def cancel(): Unit = throw TestInnerException("cancel")
 
-      if (iteratorMode == DIRECT_EXPLODE) throw TestInnerException(iteratorMode.toString)
-
-      override def close(): Unit = self.close(Success)
-
-      override def hasNext: Boolean =
-        if (iteratorMode == HAS_NEXT_EXPLODE)
-          throw TestInnerException(iteratorMode.toString)
-        else true
-
-      override def next(): T = // guaranteed NEXT_EXPLODE
-        throw TestInnerException(iteratorMode.toString)
-    }
+    override def await(): Boolean = throw TestInnerException("await")
   }
 
   sealed trait IteratorMode

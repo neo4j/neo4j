@@ -19,16 +19,9 @@
  */
 package org.neo4j.cypher.internal.result
 
-import java.io.PrintWriter
-import java.util
-import java.util.Collections
-
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, ExplainMode, InternalQueryType, QueryStatistics}
-import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
-import org.neo4j.graphdb.Result.ResultVisitor
-import org.neo4j.graphdb.{Notification, ResourceIterator}
-import org.neo4j.internal.helpers.collection.Iterators
+import org.neo4j.graphdb.Notification
 
 abstract class EmptyExecutionResult(val fieldNames: Array[String],
                                     val planDescription: InternalPlanDescription,
@@ -38,27 +31,11 @@ abstract class EmptyExecutionResult(val fieldNames: Array[String],
 
   override def initiate(): Unit = {}
 
-  override def javaIterator: ResourceIterator[util.Map[String, AnyRef]] = Iterators.emptyResourceIterator()
-  override def javaColumns: util.List[String] = Collections.emptyList()
-
   override def queryStatistics() = QueryStatistics()
-
-  override def dumpToString(writer: PrintWriter): Unit = writer.print(dumpToString)
-
-  override val dumpToString: String =
-     """+--------------------------------------------+
-       || No data returned, and nothing was changed. |
-       |+--------------------------------------------+
-       |""".stripMargin
-
-  override def javaColumnAs[T](column: String): ResourceIterator[T] = Iterators.emptyResourceIterator()
 
   override def isClosed: Boolean = true
 
   override def close(reason: CloseReason): Unit = {}
-
-  override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = {}
-  override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {}
 
   override def executionMode: ExecutionMode = ExplainMode
 

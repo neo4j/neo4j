@@ -23,6 +23,7 @@ import org.mockito.ArgumentMatchers.{any, anyInt}
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
@@ -33,18 +34,17 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.internal.kernel.api.{CursorFactory, Procedures}
-import org.neo4j.kernel.impl.query.QuerySubscriber.NOT_A_SUBSCRIBER
+import org.neo4j.internal.kernel.api.CursorFactory
+import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
-
-import scala.collection.JavaConverters._
 
 class ProcedureCallExecutionPlanTest extends CypherFunSuite {
 
   private val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
   private val idGen = new SequentialIdGen()
+  private val subscriber = new RecordingQuerySubscriber
 
   test("should be able to call procedure with single argument") {
     // Given
@@ -52,7 +52,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
                                           converters, Map.empty, idGen.id())
 
     // When
-    val res = proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false, NoInput, NOT_A_SUBSCRIBER )
+    val res = proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false, NoInput, subscriber )
 
     // Then
     toList(res) should equal(List(Map("b" -> 84)))
@@ -65,7 +65,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
                                           converters, Map.empty, idGen.id())
 
     // When
-    proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false, NoInput, NOT_A_SUBSCRIBER )
+    proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false, NoInput, subscriber )
 
     // Then without touching the result, it should have been spooled out
     iteratorExhausted should equal(true)
@@ -78,7 +78,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
                                           converters, Map.empty, idGen.id())
 
     // When
-    proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false, NoInput, NOT_A_SUBSCRIBER )
+    proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false, NoInput, subscriber )
 
     // Then without touching the result, the Kernel iterator should not be touched
     iteratorExhausted should equal(false)
@@ -110,8 +110,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     id = 1
   )
 
-  private def toList(res: RuntimeResult): List[Map[String, AnyRef]] =
-    res.asIterator().asScala.map(_.asScala.toMap).toList
+  private def toList(res: RuntimeResult): List[Map[String, AnyRef]] = RewindableExecutionResult(res, ctx, subscriber).toList
 
   private val pos = DummyPosition(-1)
   private val ctx = mock[QueryContext](org.mockito.Mockito.RETURNS_DEEP_STUBS)

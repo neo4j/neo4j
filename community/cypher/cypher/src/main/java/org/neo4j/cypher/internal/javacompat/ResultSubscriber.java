@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -42,6 +44,9 @@ import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.AnyValue;
 
+import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
+import static org.neo4j.graphdb.QueryExecutionType.QueryType.WRITE;
+
 class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> implements QuerySubscriber, Result
 {
     private QueryExecution execution;
@@ -51,15 +56,29 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
     private final DefaultValueMapper valueMapper;
     private ResultVisitor<?> visitor;
     private Exception visitException;
+    private List<Map<String, Object>> materializeResult;
+    private Iterator<Map<String,Object>> materializedIterator;
 
     ResultSubscriber( EmbeddedProxySPI proxySPI )
     {
         valueMapper = new DefaultValueMapper( proxySPI );
     }
 
-    public void setExecution( QueryExecution execution )
+    public void init( QueryExecution execution )
     {
         this.execution = execution;
+        // By policy we materialize the result directly unless it's a read only query.
+        QueryExecutionType.QueryType queryType = execution.executionType().queryType();
+        if ( queryType != READ_ONLY )
+        {
+            materializeResult();
+        }
+
+        // ... and if we do not return any rows, we close all resources.
+        if ( queryType == WRITE || execution.fieldNames().length == 0 )
+        {
+            close();
+        }
     }
 
     // QuerySubscriber part
@@ -83,6 +102,7 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
     @Override
     public void onRecordCompleted()
     {
+        //We are coming from a call to accept
         if ( visitor != null )
         {
             try
@@ -97,6 +117,12 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
                 this.visitException = exception;
             }
         }
+
+        //we are materializing the result
+        if ( materializeResult != null )
+        {
+            materializeResult.add( createPublicRecord() );
+        }
     }
 
     @Override
@@ -110,7 +136,6 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
     {
         this.statistics = statistics;
     }
-
 
     // Result part
     @Override
@@ -209,8 +234,15 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
             throws VisitationException
     {
         this.visitor = visitor;
-        execution.request( Long.MAX_VALUE );
-        execution.await();
+        try
+        {
+            execution.request( Long.MAX_VALUE );
+            execution.await();
+        }
+        catch ( Exception e )
+        {
+            throw converted( e );
+        }
         if ( visitException != null )
         {
             throw (VisitationException) visitException;
@@ -225,6 +257,35 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
 
     @Override
     protected Map<String,Object> fetchNextOrNull()
+    {
+        if ( materializeResult != null )
+        {
+            return nextFromMaterialized();
+        }
+        else
+        {
+            return nextFromSubscriber();
+        }
+    }
+
+    private Map<String,Object> nextFromMaterialized()
+    {
+        assertNoErrors();
+        if ( materializedIterator == null )
+        {
+            materializedIterator = materializeResult.iterator();
+        }
+        if ( materializedIterator.hasNext() )
+        {
+            return materializedIterator.next();
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    private Map<String,Object> nextFromSubscriber()
     {
         try
         {
@@ -241,7 +302,24 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
         catch ( Throwable throwable )
         {
             execution.cancel();
-            throw throwable;
+            throw converted( throwable );
+        }
+    }
+
+    private void materializeResult()
+    {
+        if ( materializeResult == null )
+        {
+            materializeResult = new ArrayList<>(  );
+            try
+            {
+                execution.request( Long.MAX_VALUE );
+                execution.await();
+            }
+            catch ( Exception e )
+            {
+                throw converted( e );
+            }
         }
     }
 

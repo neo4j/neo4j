@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslatingQueryContext
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
-import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.plandescription.{InternalPlanDescription, PlanDescriptionBuilder}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
@@ -37,10 +36,9 @@ import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, TaskCloser}
-import org.neo4j.graphdb.{Notification, Result}
+import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.api.query.{CompilerInfo, SchemaIndexUsage}
-import org.neo4j.kernel.impl.query.QuerySubscriber.NOT_A_SUBSCRIBER
-import org.neo4j.kernel.impl.query.{QueryExecution, QueryExecutionMonitor, QuerySubscriber, TransactionalContext}
+import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySubscriber, TransactionalContext}
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.storable.{NoValue, TextValue}
 import org.neo4j.values.virtual.MapValue
@@ -219,27 +217,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
     override def execute(transactionalContext: TransactionalContext,
                          preParsedQuery: PreParsedQuery,
-                         params: MapValue,
-                         prePopulateResults: Boolean): Result = {
-      val taskCloser = new TaskCloser
-      val queryContext = getQueryContext(transactionalContext, preParsedQuery.debugOptions)
-      taskCloser.addTask(queryContext.transactionalContext.close)
-      taskCloser.addTask(queryContext.resources.close)
-      runSafely {
-        val internalExecutionResult = innerExecute(transactionalContext, preParsedQuery, taskCloser, queryContext, params,
-                                             prePopulateResults, NOT_A_SUBSCRIBER)
-        new ExecutionResult(internalExecutionResult)
-      } (e => {
-        taskCloser.close(false)
-        throw e
-      })
-    }
-
-
-    override def execute(transactionalContext: TransactionalContext,
-                         preParsedQuery: PreParsedQuery,
                          params: MapValue, prePopulateResults: Boolean,
-                         subscriber: QuerySubscriber): QueryExecution = {
+                         subscriber: QuerySubscriber): InternalExecutionResult = {
 
 
       val taskCloser = new TaskCloser

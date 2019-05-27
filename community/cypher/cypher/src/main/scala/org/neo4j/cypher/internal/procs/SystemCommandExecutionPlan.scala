@@ -65,12 +65,25 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
 /**
   * A wrapping QuerySubscriber that overrides the error handling to allow custom error messages for SystemCommands instead of the inner errors.
   */
-class SystemCommandQuerySubscriber(inner: QuerySubscriber, doOnError: Throwable => Unit) extends QuerySubscriber {
+class SystemCommandQuerySubscriber(inner: QuerySubscriber, queryHandler: QueryHandler) extends QuerySubscriber {
+  @volatile private var empty = true
+
   override def onResult(numberOfFields: Int): Unit = inner.onResult(numberOfFields)
   override def onResultCompleted(statistics: QueryStatistics): Unit = inner.onResultCompleted(statistics)
-  override def onRecord(): Unit = inner.onRecord()
-  override def onRecordCompleted(): Unit = inner.onRecordCompleted()
-  override def onField(offset: Int, value: AnyValue): Unit = inner.onField(offset, value)
-  override def onError(throwable: Throwable): Unit = doOnError(throwable)
+  override def onRecord(): Unit = {
+    empty = false
+    inner.onRecord()
+  }
+  override def onRecordCompleted(): Unit = {
+    if (empty) {
+      queryHandler.onNoResults()
+    }
+    inner.onRecordCompleted()
+  }
+  override def onField(offset: Int, value: AnyValue): Unit = {
+    queryHandler.onResult(offset, value)
+    inner.onField(offset, value)
+  }
+  override def onError(throwable: Throwable): Unit = queryHandler.onError(throwable)
   override def equals(obj: Any): Boolean = inner.equals(obj)
 }

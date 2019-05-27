@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
 import org.neo4j.cypher.internal.v4_0.expressions.functions.FunctionInfo
 import org.neo4j.cypher.{ParameterNotFoundException, exceptionHandler}
-import org.neo4j.graphdb.Result
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -88,32 +87,6 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   // ACTUAL FUNCTIONALITY
 
-  /**@deprecated The translation to [[Result]] should happen further up the stack.*/
-  @deprecated
-  def execute(query: String,
-              params: MapValue,
-              context: TransactionalContext,
-              profile: Boolean = false,
-              prePopulate: Boolean = false): Result = {
-    val queryTracer = tracer.compileQuery(query)
-
-    try {
-      val preParsedQuery = preParser.preParseQuery(query, profile)
-      val executableQuery = getOrCompile(context, preParsedQuery, queryTracer, params)
-      if (preParsedQuery.executionMode.name != "explain") {
-        checkParameters(executableQuery.paramNames, params, executableQuery.extractedParams)
-      }
-      val combinedParams = params.updatedWith(executableQuery.extractedParams)
-      context.executingQuery().compilationCompleted(executableQuery.compilerInfo, supplier(executableQuery.planDescription()))
-      executableQuery.execute(context, preParsedQuery, combinedParams, prePopulate)
-
-    } catch {
-      case t: Throwable =>
-        context.close(false)
-        throw t
-    } finally queryTracer.close()
-  }
-
   /**
     * Executes query returns a `QueryExecution` that can be used to control demand to the provided `QuerySubscriber`
     *
@@ -142,7 +115,6 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       val combinedParams = params.updatedWith(executableQuery.extractedParams)
       context.executingQuery().compilationCompleted(executableQuery.compilerInfo, supplier(executableQuery.planDescription()))
       executableQuery.execute(context, preParsedQuery, combinedParams, prePopulate, subscriber)
-
     } catch {
       case t: Throwable =>
         context.close(false)

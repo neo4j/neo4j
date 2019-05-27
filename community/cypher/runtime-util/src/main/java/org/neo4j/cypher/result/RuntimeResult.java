@@ -20,7 +20,6 @@
 package org.neo4j.cypher.result;
 
 import org.neo4j.cypher.internal.runtime.QueryStatistics;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.query.QuerySubscription;
 
 /**
@@ -41,26 +40,9 @@ public interface RuntimeResult extends AutoCloseable, QuerySubscription
     String[] fieldNames();
 
     /**
-     * True if this result can be consumed as an iterator. See {@link RuntimeResult#asIterator}.
-     */
-    boolean isIterable();
-
-    /**
-     * Consume this result as an iterator. Will complain if {@link RuntimeResult#isIterable()} is false.
-     */
-    ResourceIterator<java.util.Map<String, Object>> asIterator();
-
-    /**
      * Returns the consumption state of this result. This state changes when the result is served
-     * either via {@link RuntimeResult#asIterator} or {@link RuntimeResult#accept(QueryResult.QueryResultVisitor)}.
      */
     ConsumptionState consumptionState();
-
-    /**
-     * Consume this result using a visitor.
-     */
-    <E extends Exception> void accept( QueryResult.QueryResultVisitor<E> visitor )
-            throws E;
 
     /**
      * Get the {@link QueryStatistics} related to this query execution.

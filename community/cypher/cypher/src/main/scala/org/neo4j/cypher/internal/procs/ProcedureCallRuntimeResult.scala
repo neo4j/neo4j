@@ -24,10 +24,8 @@ import java.util
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
-import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{OperatorProfile, QueryProfile, RuntimeResult}
-import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
@@ -71,40 +69,6 @@ class ProcedureCallRuntimeResult(context: QueryContext,
       iterator
   }
 
-  override def asIterator(): ResourceIterator[util.Map[String, AnyRef]] = {
-    resultRequested = true
-    new ResourceIterator[util.Map[String, AnyRef]]() {
-      override def next(): util.Map[String, AnyRef] =
-        resultAsMap(executionResults.next())
-
-      override def hasNext: Boolean = {
-        val moreToCome = executionResults.hasNext
-        if (!moreToCome) {
-          close()
-        }
-        moreToCome
-      }
-
-      override def close(): Unit = self.close()
-    }
-  }
-
-  override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {
-    resultRequested = true
-    executionResults.foreach { res =>
-      val fieldArray = new Array[AnyValue](indexResultNameMappings.size)
-      for (i <- indexResultNameMappings.indices) {
-        val mapping = indexResultNameMappings(i)
-        val pos = mapping._1
-        fieldArray(i) = res(pos)
-      }
-      visitor.visit(new Record {
-        override def fields(): Array[AnyValue] = fieldArray
-      })
-    }
-    close()
-  }
-
   override def queryStatistics(): QueryStatistics = context.getOptStatistics.getOrElse(QueryStatistics())
 
   private def resultAsMap(rowData: Array[AnyValue]): util.Map[String, AnyRef] = {
@@ -112,8 +76,6 @@ class ProcedureCallRuntimeResult(context: QueryContext,
     indexResultNameMappings.foreach { entry => mapData.put(entry._2, context.asObject(rowData(entry._1))) }
     mapData
   }
-
-  override def isIterable: Boolean = true
 
   override def consumptionState: RuntimeResult.ConsumptionState =
     if (!resultRequested) ConsumptionState.NOT_STARTED

@@ -19,15 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import java.util
-
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.v4_0.util.InternalException
-import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
-import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
 class PipeExecutionResult(val result: IteratorBasedResult,
@@ -39,47 +35,13 @@ class PipeExecutionResult(val result: IteratorBasedResult,
 
   self =>
 
-  private val query = state.query
   private var resultRequested = false
   private var reactiveIterator: ReactiveIterator = _
-
-  val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
-  def isIterable: Boolean = true
-
-  def asIterator: ResourceIterator[java.util.Map[String, AnyRef]] = {
-    resultRequested = true
-    new WrappingResourceIterator[util.Map[String, AnyRef]] {
-      private val inner = result.mapIterator
-      def hasNext: Boolean = inner.hasNext
-      def next(): util.Map[String, AnyRef] = {
-        val scalaRow = inner.next()
-        val javaRow = new util.HashMap[String, AnyRef](scalaRow.numberOfColumns)
-        for (field <- fieldNames){
-          javaRow.put(field, query.asObject(scalaRow.getByName(field)))
-        }
-        javaRow
-      }
-    }
-  }
 
   override def queryStatistics(): QueryStatistics = state.getStatistics
 
   override def close(): Unit = {
     state.close()
-  }
-
-  private trait WrappingResourceIterator[T] extends ResourceIterator[T] {
-    override def remove() { throw new UnsupportedOperationException("remove") }
-    def close() { self.close() }
-  }
-
-  override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {
-    resultRequested = true
-    val maybeRecordIterator = result.recordIterator
-    if (maybeRecordIterator.isDefined)
-      javaValues.feedQueryResultRecordIteratorToVisitable(maybeRecordIterator.get).accept(visitor)
-    else
-      javaValues.feedIteratorToVisitable(result.mapIterator.map(r => fieldNames.map(r.getByName))).accept(visitor)
   }
 
   override def consumptionState: RuntimeResult.ConsumptionState =

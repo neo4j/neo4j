@@ -19,17 +19,9 @@
  */
 package org.neo4j.cypher.internal.result
 
-import java.io.PrintWriter
-import java.util
-import java.util.NoSuchElementException
-
 import org.neo4j.cypher.exceptionHandler.RunSafely
-import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
-import org.neo4j.graphdb
-import org.neo4j.graphdb.Result.ResultVisitor
-import org.neo4j.graphdb.{Notification, ResourceIterator}
+import org.neo4j.graphdb.{ExecutionPlanDescription, Notification}
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySubscriber}
 
@@ -69,69 +61,12 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
       monitor.endSuccess(query)
   }
 
-  override def javaIterator: graphdb.ResourceIterator[java.util.Map[String, AnyRef]] = {
-    safely {
-      val innerIterator = inner.javaIterator
-      closeIfEmpty(innerIterator)
-
-      new graphdb.ResourceIterator[java.util.Map[String, AnyRef]] {
-        def next(): util.Map[String, AnyRef] = safely {
-          if (inner.isClosed) throw new NoSuchElementException
-          else {
-            val result = innerIterator.next
-            closeIfEmpty(innerIterator)
-            result
-          }
-        }
-
-        def hasNext: Boolean = safely {
-          if (inner.isClosed) false
-          else {
-            closeIfEmpty(innerIterator)
-            innerIterator.hasNext
-          }
-        }
-
-        def close(): Unit = self.close()
-
-        override def remove(): Unit = safely {
-          innerIterator.remove()
-        }
-      }
-    }
-  }
-
   override def fieldNames(): Array[String] = safely { inner.fieldNames() }
 
   override def queryStatistics(): QueryStatistics = safely { inner.queryStatistics() }
 
-  override def dumpToString(writer: PrintWriter): Unit = safelyAndClose { inner.dumpToString(writer) }
 
-  override def dumpToString(): String = safelyAndClose { inner.dumpToString() }
-
-  override def javaColumnAs[T](column: String): ResourceIterator[T] =
-    safely {
-      val _inner = inner.javaColumnAs[T](column)
-      new ResourceIterator[T] {
-
-        override def hasNext: Boolean =
-          safely {
-            closeIfEmpty(_inner)
-            _inner.hasNext
-          }
-
-        override def next(): T =
-          safely {
-            val result = _inner.next()
-            closeIfEmpty(_inner)
-            result
-          }
-
-        override def close(): Unit = self.close()
-      }
-    }
-
-  override def executionPlanDescription(): InternalPlanDescription =
+  override def executionPlanDescription(): ExecutionPlanDescription =
     safely {
       inner.executionPlanDescription()
     }
@@ -149,16 +84,6 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
 
   override def notifications: Iterable[Notification] = safely { inner.notifications }
 
-  override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit =
-    safelyAndClose {
-      inner.accept(visitor)
-    }
-
-  override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit =
-    safelyAndClose {
-      inner.accept(visitor)
-    }
-
   override def executionMode: ExecutionMode = safely { inner.executionMode }
 
   override def toString: String = runSafely { inner.toString }
@@ -166,18 +91,6 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
   // HELPERS
 
   private def safely[T](body: => T): T = runSafely(body)(closeAndRethrowOnError)
-
-  private def safelyAndClose[T](body: => T): T =
-    runSafely({
-      val x = body
-      close(Success)
-      x
-    })(closeAndRethrowOnError)
-
-  private def closeIfEmpty(iterator: java.util.Iterator[_]): Unit =
-    if (!iterator.hasNext) {
-      close(Success)
-    }
 
   private def closeAndRethrowOnError[T](t: Throwable): T = {
     try {
@@ -237,7 +150,7 @@ object ClosingExecutionResult {
                       inner: InternalExecutionResult,
                       runSafely: RunSafely,
                       innerMonitor: QueryExecutionMonitor,
-                      subscriber: QuerySubscriber = QuerySubscriber.NOT_A_SUBSCRIBER): ClosingExecutionResult = {
+                      subscriber: QuerySubscriber): ClosingExecutionResult = {
 
     val result = new ClosingExecutionResult(query, inner, runSafely, innerMonitor, subscriber)
     result.initiate()

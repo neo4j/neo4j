@@ -19,30 +19,19 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import java.util
-
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryStatistics}
-import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{EmptyQuerySubscription, QueryProfile, RuntimeResult}
-import org.neo4j.graphdb.ResourceIterator
-import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
 /**
   * Empty result, as produced by a schema write.
   */
-case class SchemaWriteRuntimeResult(ctx: QueryContext, subscriber: QuerySubscriber) extends EmptyQuerySubscription(subscriber) with RuntimeResult{
+case class SchemaWriteRuntimeResult(ctx: QueryContext, subscriber: QuerySubscriber) extends EmptyQuerySubscription(subscriber) with RuntimeResult {
 
   override def fieldNames(): Array[String] = Array.empty
 
-  override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {}
-
   override def queryStatistics(): QueryStatistics = ctx.getOptStatistics.getOrElse(QueryStatistics())
-
-  override def isIterable: Boolean = true
-
-  override def asIterator(): ResourceIterator[util.Map[String, AnyRef]] = Iterators.emptyResourceIterator()
 
   override def consumptionState: RuntimeResult.ConsumptionState = ConsumptionState.EXHAUSTED
 
