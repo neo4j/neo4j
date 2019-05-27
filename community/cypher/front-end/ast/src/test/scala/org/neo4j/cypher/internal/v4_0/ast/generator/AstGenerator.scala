@@ -7,12 +7,17 @@ package org.neo4j.cypher.internal.v4_0.ast.generator
 
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.symbols.AnyType
-import org.neo4j.cypher.internal.v4_0.util.{ASTNode, InputPosition, Rewriter, bottomUp}
 import org.scalacheck.Gen._
 import org.scalacheck.util.Buildable
-import org.scalacheck.{Arbitrary, Gen, Shrink}
+import org.scalacheck.{Arbitrary, Gen}
 
+/**
+  * Random query generation
+  * Implements instances of Gen[T] for all query ast nodes
+  * Generated queries are syntactically (but not semantically) valid
+  */
 case class AstGenerator(simpleStrings: Boolean = true) {
 
   // HELPERS
@@ -730,50 +735,4 @@ case class AstGenerator(simpleStrings: Boolean = true) {
     10 -> _regularQuery,
     1 -> _bulkImportQuery
   )
-
-  object Shrinker {
-
-    import scala.util.Random
-
-    implicit val IntAddMonoid: Monoid[Int] = Monoid.create(0)(_ + _)
-
-    def shrinkOnce(q: Query): Option[Query] = {
-      var splitPoints = 0
-      q.rewritten.bottomUp {
-        case l: List[_] if l.size > 1    =>
-          splitPoints += 1
-          l
-        case o: Option[_] if o.isDefined =>
-          splitPoints += 1
-          o
-      }
-      if (splitPoints == 0) {
-        None
-      } else {
-        var point = Random.nextInt(splitPoints)
-
-        def onPoint[T, R >: T](i: T)(f: => R): R = if (point == 0) {
-          point -= 1
-          f
-        } else {
-          point -= 1
-          i
-        }
-
-        Some(
-          q.rewritten.bottomUp {
-            case l: List[_] if l.size > 1    => onPoint(l)(List(l.head))
-            case o: Option[_] if o.isDefined => onPoint(o)(Option.empty)
-          })
-      }
-    }
-
-    implicit val shrinkQuery: Shrink[Query] = Shrink[Query] { q =>
-      Stream.iterate(shrinkOnce(q))(i => i.flatMap(shrinkOnce))
-        .takeWhile(_.isDefined)
-        .map(_.get)
-        .take(100)
-    }
-  }
-
 }
