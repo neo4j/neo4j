@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher
 
+import java.util
 import java.util.concurrent.TimeUnit
 
-import org.hamcrest.CoreMatchers._
-import org.junit.Assert._
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.runtime.RuntimeScalaValueConverter
+import org.neo4j.cypher.internal.runtime.{QueryContext, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -89,6 +88,14 @@ object ExecutionEngineHelper {
     VirtualValues.map(keys, values)
   }
 
+  def asMap(map: MapValue, context: QueryContext): java.util.Map[String, AnyRef] = {
+    val out = new util.HashMap[String, AnyRef]()
+    map.foreach((key: String, value: AnyValue) => {
+      out.put(key, context.asObject(value))
+    })
+    out
+  }
+
   def asValue(any: Any): AnyValue =
     any match {
       case map: Map[String, Any] => asMapValue(map)
@@ -124,18 +131,18 @@ trait ExecutionEngineHelper {
 
   def eengine: ExecutionEngine
 
-  def execute(q: String, params: (String, Any)*): RewindableExecutionResult =
-    RewindableExecutionResult(eengine.execute(q, ExecutionEngineHelper.asMapValue(params.toMap), graph.transactionalContext(query = q -> params.toMap)))
+  def execute(q: String, params: (String, Any)*): RewindableExecutionResult = {
+    RewindableExecutionResult(graph.execute(q, params.toMap.asJava.asInstanceOf[java.util.Map[String, AnyRef]]))
+  }
 
   def execute(q: String, params: Map[String, Any]): RewindableExecutionResult =
-    RewindableExecutionResult(eengine.execute(q, ExecutionEngineHelper.asMapValue(params), graph.transactionalContext(query = q -> params.toMap)))
+    RewindableExecutionResult(graph.execute(q, params.toMap.asJava.asInstanceOf[java.util.Map[String, AnyRef]]))
 
   def executeOfficial(q: String, params: (String, Any)*): Result =
-    eengine.execute(q, ExecutionEngineHelper.asMapValue(params.toMap), graph.transactionalContext(query = q -> params.toMap))
+   graph.execute(q, params.toMap.asJava.asInstanceOf[java.util.Map[String, AnyRef]])
 
   def executeScalar[T](q: String, params: (String, Any)*): T = {
-    val res = eengine.execute(q, ExecutionEngineHelper.asMapValue(params.toMap), graph.transactionalContext(query = q -> params.toMap))
-    ExecutionEngineHelper.scalar[T](asScalaResult(res).toList)
+    ExecutionEngineHelper.scalar[T](asScalaResult(executeOfficial(q, params:_*)).toList)
   }
 
   def asScalaResult(result: Result): Iterator[Map[String, Any]] = result.asScala.map(converter.asDeepScalaMap)

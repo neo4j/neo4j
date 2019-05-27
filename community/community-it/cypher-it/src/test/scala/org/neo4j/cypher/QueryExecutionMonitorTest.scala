@@ -25,6 +25,8 @@ import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
@@ -44,7 +46,8 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
   private def runQuery(query: String): (ExecutingQuery, Result) = {
     val context = db.transactionalContext(query = query -> Map.empty)
     val executingQuery = context.executingQuery()
-    val executionResult = engine.execute(executingQuery.queryText(), executingQuery.queryParameters(), context)
+    val queryContext = new TransactionBoundQueryContext(TransactionalContextWrapper(context))(mock[IndexSearchMonitor])
+    val executionResult = graph.execute(executingQuery.queryText(), ExecutionEngineHelper.asMap(executingQuery.queryParameters(), queryContext))
     (executingQuery, executionResult)
   }
 

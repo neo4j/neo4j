@@ -29,7 +29,6 @@ import java.io.StringWriter;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.cypher.internal.javacompat.ExecutionResult;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphalgo.impl.util.PathImpl;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -39,6 +38,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
@@ -118,7 +118,7 @@ public class ExportTest
     public void testFromSimpleCypherResult()
     {
         Node n = gdb.createNode();
-        final ExecutionResult result = result( "node", n );
+        final Result result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
         assertEquals( "create (_" + n.getId() + ")" + lineSeparator() + ";" + lineSeparator(), doExportGraph( graph ) );
     }
@@ -127,7 +127,7 @@ public class ExportTest
     public void testSingleNode()
     {
         Node n = gdb.createNode();
-        final ExecutionResult result = result( "node", n );
+        final Result result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
         assertEquals( "create (_" + n.getId() + ")" + lineSeparator() + ";" + lineSeparator(), doExportGraph( graph ) );
     }
@@ -138,7 +138,7 @@ public class ExportTest
         Node n = gdb.createNode();
         n.setProperty( "name", "Node1" );
         n.setProperty( "age", 42 );
-        final ExecutionResult result = result( "node", n );
+        final Result result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
         assertEquals( "create (_" + n.getId() + " {`age`:42, `name`:\"Node1\"})" +
                 lineSeparator() + ";" + lineSeparator(), doExportGraph( graph ) );
@@ -149,7 +149,7 @@ public class ExportTest
     {
         Node n = gdb.createNode();
         n.setProperty( "name", "Brutus \"Brutal\" Howell" );
-        final ExecutionResult result = result( "node", n );
+        final Result result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
         assertEquals( "create (_" + n.getId() + " {`name`:\"Brutus \\\"Brutal\\\" Howell\"})" +
                         lineSeparator() + ";" + lineSeparator(),
@@ -161,7 +161,7 @@ public class ExportTest
     {
         Node n = gdb.createNode();
         n.setProperty( "name", new String[]{"Brutus \"Brutal\" Howell", "Dr."} );
-        final ExecutionResult result = result( "node", n );
+        final Result result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
         assertEquals( "create (_" + n.getId() + " {`name`:[\"Brutus \\\"Brutal\\\" Howell\", \"Dr.\"]})" +
                         lineSeparator() + ";" + lineSeparator(),
@@ -174,7 +174,7 @@ public class ExportTest
         Node n = gdb.createNode();
         final Relationship rel = n.createRelationshipTo( n, RelationshipType.withName( "REL" ) );
         rel.setProperty( "name", "Brutus \"Brutal\" Howell" );
-        final ExecutionResult result = result( "rel", rel );
+        final Result result = result( "rel", rel );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
         assertEquals( "create (_0)" + lineSeparator() +
                 "create (_0)-[:`REL` {`name`:\"Brutus \\\"Brutal\\\" Howell\"}]->(_0)" + lineSeparator() + ";" +
@@ -187,7 +187,7 @@ public class ExportTest
         Node n = gdb.createNode();
         final Relationship rel = n.createRelationshipTo( n, RelationshipType.withName( "REL" ) );
         rel.setProperty( "name", new String[]{"Brutus \"Brutal\" Howell", "Dr."} );
-        final ExecutionResult result = result( "rel", rel );
+        final Result result = result( "rel", rel );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
         assertEquals( "create (_0)" + lineSeparator() +
                 "create (_0)-[:`REL` {`name`:[\"Brutus \\\"Brutal\\\" Howell\", \"Dr.\"]}]->(_0)" + lineSeparator() + ";" +
@@ -200,7 +200,7 @@ public class ExportTest
     {
         Node n = gdb.createNode();
         n.setProperty( "name", "Some\\thing" );
-        final ExecutionResult result = result( "node", n );
+        final Result result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
         assertEquals( "create (_" + n.getId() + " {`name`:\"Some\\\\thing\"})" + lineSeparator() + ";" +
                         lineSeparator(),
@@ -212,7 +212,7 @@ public class ExportTest
     {
         Node n = gdb.createNode();
         n.setProperty( "name", "Some\\\"thing" );
-        final ExecutionResult result = result( "node", n );
+        final Result result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
         assertEquals( "create (_" + n.getId() + " {`name`:\"Some\\\\\\\"thing\"})" + lineSeparator() + ";" +
                         lineSeparator(),
@@ -225,7 +225,7 @@ public class ExportTest
         Node n = gdb.createNode();
         n.setProperty( "name", new String[]{"a", "b"} );
         n.setProperty( "age", new int[]{1, 2} );
-        final ExecutionResult result = result( "node", n );
+        final Result result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
         assertEquals( "create (_" + n.getId() + " {`age`:[1, 2], `name`:[\"a\", \"b\"]})" + lineSeparator() + ";" +
                 lineSeparator(), doExportGraph( graph ) );
@@ -237,7 +237,7 @@ public class ExportTest
         Node n = gdb.createNode();
         n.addLabel( Label.label( "Foo" ) );
         n.addLabel( Label.label( "Bar" ) );
-        final ExecutionResult result = result( "node", n );
+        final Result result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
         assertEquals( "create (_" + n.getId() + ":`Foo`:`Bar`)" + lineSeparator() + ";" + lineSeparator(),
                 doExportGraph( graph ) );
@@ -266,7 +266,7 @@ public class ExportTest
         gdb.schema().indexFor( label ).on( "bar2" ).create();
         commitAndStartNewTransactionAfterSchemaChanges();
         Node n = gdb.createNode( label );
-        final ExecutionResult result = result( "node", n );
+        final Result result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
         assertEquals( "create index on :`Foo`(`bar2`);" + lineSeparator() +
                 "create index on :`Foo`(`bar`);" + lineSeparator() +
@@ -281,7 +281,7 @@ public class ExportTest
         gdb.schema().constraintFor( label ).assertPropertyIsUnique( "bar2" ).create();
         commitAndStartNewTransactionAfterSchemaChanges();
         Node n = gdb.createNode( label );
-        final ExecutionResult result = result( "node", n );
+        final Result result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
         assertEquals( "create constraint on (n:`Foo`) assert n.`bar2` is unique;" + lineSeparator() +
                 "create constraint on (n:`Foo`) assert n.`bar` is unique;" + lineSeparator() +
@@ -300,7 +300,7 @@ public class ExportTest
     {
         Node n = gdb.createNode();
         final Relationship rel = n.createRelationshipTo( n, RelationshipType.withName( "REL" ) );
-        final ExecutionResult result = result( "rel", rel );
+        final Result result = result( "rel", rel );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
         assertEquals( "create (_0)" + lineSeparator() +
                 "create (_0)-[:`REL`]->(_0)" + lineSeparator() + ";" + lineSeparator(), doExportGraph( graph ) );
@@ -313,7 +313,7 @@ public class ExportTest
         Node n2 = gdb.createNode();
         final Relationship rel = n1.createRelationshipTo( n2, RelationshipType.withName( "REL" ) );
         final Path path = new PathImpl.Builder( n1 ).push( rel ).build();
-        final ExecutionResult result = result( "path", path );
+        final Result result = result( "path", path );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
         assertEquals( "create (_0)" + lineSeparator() +
                 "create (_1)" + lineSeparator() +
@@ -321,9 +321,9 @@ public class ExportTest
     }
 
     @SuppressWarnings( "unchecked" )
-    private ExecutionResult result( String column, Object value )
+    private Result result( String column, Object value )
     {
-        ExecutionResult result = Mockito.mock( ExecutionResult.class );
+        Result result = Mockito.mock( Result.class );
         Mockito.when( result.columns() ).thenReturn( asList( column ) );
         final Iterator<Map<String, Object>> inner = asList( singletonMap( column, value ) ).iterator();
 
@@ -353,7 +353,6 @@ public class ExportTest
             }
         };
 
-        Mockito.when( result.iterator() ).thenReturn( iterator );
         Mockito.when( result.hasNext() ).thenAnswer( invocation -> iterator.hasNext() );
         Mockito.when( result.next() ).thenAnswer( invocation -> iterator.next() );
         return result;

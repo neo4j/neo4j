@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.graphdb.{TransactionTerminatedException, TransientTransactionFailureException}
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
+import org.neo4j.kernel.impl.query.QuerySubscriber.DO_NOTHING_SUBSCRIBER
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, TransactionalContext, TransactionalContextFactory}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
-import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 class KillQueryTest extends ExecutionEngineFunSuite {
@@ -101,8 +101,14 @@ class KillQueryTest extends ExecutionEngineFunSuite {
           try {
             val transactionalContext: TransactionalContext = contextFactory.newContext(tx, query, EMPTY_MAP)
             tcs.put(transactionalContext)
-            val result = engine.execute(query, VirtualValues.EMPTY_MAP, transactionalContext)
-            result.resultAsString()
+            val result = engine.execute(query,
+                                        EMPTY_MAP,
+                                        transactionalContext,
+                                        profile = false,
+                                        prePopulate = false,
+                                        DO_NOTHING_SUBSCRIBER)
+            result.request(Long.MaxValue)
+            result.await()
             tx.success()
           }
           catch {
