@@ -49,6 +49,10 @@ class SecurityDDLParserTest
     yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = false))
   }
 
+  test("CREATE USER foo SET PASSwORD ''") {
+    yields(ast.CreateUser("foo", Some(""), None, requirePasswordChange = true, suspended = false))
+  }
+
   test("CREATE uSER foo SET PASSWORD $password") {
     yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = false))
   }
@@ -58,10 +62,6 @@ class SecurityDDLParserTest
   }
 
   test("CREATE USER foo SET PASSwORD 'passwordString'+$passwordParam") {
-    failsToParse
-  }
-
-  test("CREATE USER foo SET PASSwORD ''") {
     failsToParse
   }
 
@@ -180,10 +180,14 @@ class SecurityDDLParserTest
   }
 
   test("DROP USER ``") {
-    failsToParse
+    yields(ast.DropUser(""))
   }
 
   test("DROP USER `f:oo`") {
+    yields(ast.DropUser("f:oo"))
+  }
+
+  test("DROP USER ") {
     failsToParse
   }
 
@@ -191,6 +195,18 @@ class SecurityDDLParserTest
 
   test("CATALOG ALTER USER foo SET PASSWORD 'password'") {
     yields(ast.AlterUser("foo", Some("password"), None, None, None))
+  }
+
+  test("ALTER USER `` SET PASSWORD 'password'") {
+    yields(ast.AlterUser("", Some("password"), None, None, None))
+  }
+
+  test("ALTER USER `f:oo` SET PASSWORD 'password'") {
+    yields(ast.AlterUser("f:oo", Some("password"), None, None, None))
+  }
+
+  test("ALTER USER foo SET PASSWORD ''") {
+    yields(ast.AlterUser("foo", Some(""), None, None, None))
   }
 
   test("ALTER USER foo SET PASSWORD $password") {
@@ -237,23 +253,11 @@ class SecurityDDLParserTest
     failsToParse
   }
 
-  test("ALTER USER `` SET PASSWORD 'password'") {
-    failsToParse
-  }
-
-  test("ALTER USER `f:oo` SET PASSWORD 'password'") {
-    failsToParse
-  }
-
   test("ALTER USER foo SET STATUS") {
     failsToParse
   }
 
   test("ALTER USER foo SET PASSWORD null") {
-    failsToParse
-  }
-
-  test("ALTER USER foo SET PASSWORD ''") {
     failsToParse
   }
 
@@ -374,15 +378,15 @@ class SecurityDDLParserTest
     yields(ast.CreateRole("foo", Some("bar")))
   }
 
+  test("CREATE ROLE foo AS COPY OF ``") {
+    yields(ast.CreateRole("foo", Some("")))
+  }
+
   test("CREATE ROLE foo AS COPY OF") {
     failsToParse
   }
 
   test("CREATE ROLE `` AS COPY OF bar") {
-    failsToParse
-  }
-
-  test("CREATE ROLE foo AS COPY OF ``") {
     failsToParse
   }
 
@@ -393,6 +397,10 @@ class SecurityDDLParserTest
   }
 
   test("DROP ROLE ``") {
+    yields(ast.DropRole(""))
+  }
+
+  test("DROP ROLE ") {
     failsToParse
   }
 
@@ -701,8 +709,16 @@ class SecurityDDLParserTest
     yields(ast.GrantPrivilege.traverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
   }
 
+  test("GRANT TRAVERSE ON GRAPH foo NODES A (*) TO role1, role2") {
+    yields(ast.GrantPrivilege.traverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role1", "role2")))
+  }
+
   test("GRANT TRAVERSE ON GRAPH foo NODES A, B (*) TO role1, role2") {
     yields(ast.GrantPrivilege.traverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
+  }
+
+  test("GRANT TRAVERSE ON GRAPH foo NODES A, B (*) TO role") {
+    yields(ast.GrantPrivilege.traverse(ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role")))
   }
 
   test("GRANT TRAVERSE ON GRAPH foo NODES `A B` (*) TO role") {
@@ -749,15 +765,7 @@ class SecurityDDLParserTest
     failsToParse
   }
 
-  test("GRANT TRAVERSE ON GRAPH foo NODES A (*) TO role1, role2") {
-    failsToParse
-  }
-
   test("GRANT TRAVERSE ON GRAPH foo, baz NODES A (*) TO role") {
-    failsToParse
-  }
-
-  test("GRANT TRAVERSE ON GRAPH foo NODES A, B (*) TO role") {
     failsToParse
   }
 

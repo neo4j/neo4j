@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.v4_0.parser
 
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.parboiled.errors.InvalidInputError
+import org.parboiled.errors.{InvalidInputError, ParserRuntimeException}
 import org.parboiled.scala._
 
 trait ParserTest[T, J] extends CypherFunSuite {
@@ -64,7 +64,7 @@ trait ParserTest[T, J] extends CypherFunSuite {
         case Some(thing) => fail(s"'$s' should not have been parsed correctly, parsed as $thing")
       }
     } catch {
-      case _: Throwable => // If encountered a parboiled error while parsing, it means the parsing failed
+      case _: ParserRuntimeException => // If encountered a ParserRuntimeException, it means the parsing failed
     }
   }
 
