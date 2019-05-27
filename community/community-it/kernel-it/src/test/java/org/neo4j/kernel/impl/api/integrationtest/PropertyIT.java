@@ -31,7 +31,7 @@ import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.core.IsCollectionContaining.hasItems;
+import static org.hamcrest.core.IsIterableContaining.hasItems;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.internal.helpers.collection.Iterators.asCollection;

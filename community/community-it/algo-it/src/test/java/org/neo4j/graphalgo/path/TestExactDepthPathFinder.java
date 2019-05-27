@@ -34,7 +34,8 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PathExpanders;
 
-import static org.hamcrest.collection.IsIn.isIn;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -76,7 +77,7 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
         PathFinder<Path> finder = newFinder();
         Path path = finder.findSinglePath( graph.getNode( "SOURCE" ), graph.getNode( "TARGET" ) );
         assertNotNull( path );
-        assertThat( getPathDef( path ), isIn( possiblePaths ) );
+        assertThat( getPathDef( path ), is( in( possiblePaths ) ) );
         assertTrue( possiblePaths.contains( getPathDef( path ) ) );
     }
 

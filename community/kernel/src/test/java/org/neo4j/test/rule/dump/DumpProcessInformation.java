@@ -34,7 +34,8 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.hamcrest.Matchers.isIn;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
 import static org.neo4j.internal.helpers.Format.time;
 
 public class DumpProcessInformation
@@ -65,7 +66,7 @@ public class DumpProcessInformation
             throws Exception
     {
         outputDirectory.mkdirs();
-        for ( Pair<Long, String> pid : getJPids( isIn( javaPidsContainingClassNames ) ) )
+        for ( Pair<Long,String> pid : getJPids( is( in( javaPidsContainingClassNames ) ) ) )
         {
             doThreadDump( pid );
             if ( includeHeapDump )

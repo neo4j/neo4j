@@ -37,7 +37,8 @@ import org.neo4j.io.pagecache.TinyLockManager;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.isOneOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.oneOf;
 
 class CommandPrimer
 {
@@ -279,7 +280,7 @@ class CommandPrimer
                     {
                         cursor.setOffset( pageOffset );
                         Record actualRecord = recordFormat.readRecord( cursor );
-                        assertThat( toString(), actualRecord, isOneOf( expectedRecord, recordFormat.zeroRecord() ) );
+                        assertThat( toString(), actualRecord, is( oneOf( expectedRecord, recordFormat.zeroRecord() ) ) );
                         performInnerAction();
                     }
                 }

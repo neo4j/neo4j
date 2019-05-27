@@ -29,7 +29,7 @@ import org.neo4j.io.pagecache.StubPageCursor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isOneOf;
+import static org.hamcrest.Matchers.oneOf;
 
 public abstract class RecordFormat
 {
@@ -87,7 +87,7 @@ public abstract class RecordFormat
             Record expectedRecord = createRecord( cursor.getCurrentFile(), recordId );
             Record actualRecord;
             actualRecord = readRecord( cursor );
-            assertThat( actualRecord, isOneOf( expectedRecord, zeroRecord() ) );
+            assertThat( actualRecord, is( oneOf( expectedRecord, zeroRecord() ) ) );
         }
     }
 
@@ -105,7 +105,7 @@ public abstract class RecordFormat
             cursor.setOffset( 0 );
             Record actualRecord = readRecord( cursor );
             buffer.clear();
-            assertThat( actualRecord, isOneOf( expectedRecord, zeroRecord() ) );
+            assertThat( actualRecord, is( oneOf( expectedRecord, zeroRecord() ) ) );
         }
     }
 }

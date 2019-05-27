@@ -51,6 +51,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TestPropertyTypes extends AbstractNeo4jTestCase
@@ -778,7 +779,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
