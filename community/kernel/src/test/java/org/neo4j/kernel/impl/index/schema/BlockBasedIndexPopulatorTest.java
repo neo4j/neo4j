@@ -42,6 +42,8 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
+import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.memory.ThreadSafePeakMemoryAllocationTracker;
 import org.neo4j.storageengine.api.schema.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
@@ -260,71 +262,83 @@ public class BlockBasedIndexPopulatorTest
         }
     }
 
-//    @Test
-//    public void shouldDeallocateAllAllocatedMemoryOnClose() throws IndexEntryConflictException
-//    {
-//        // given
-//        LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
-//        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, memoryTracker );
-//        boolean closed = false;
-//        try
-//        {
-//            // when
-//            Collection<IndexEntryUpdate<?>> updates = batchOfUpdates();
-//            populator.add( updates );
-//            int nextId = updates.size();
-//            externalUpdates( populator, nextId, nextId + 10 );
-//            nextId = nextId + 10;
-//            populator.scanCompleted( nullInstance );
-//            externalUpdates( populator, nextId, nextId + 10 );
-//
-//            // then
-//            assertTrue( "expected some memory to be in use", memoryTracker.usedDirectMemory() > 0 );
-//            populator.close( true );
-//            assertEquals( "expected all allocated memory to have been freed on close", 0, memoryTracker.usedDirectMemory() );
-//            closed = true;
-//        }
-//        finally
-//        {
-//            if ( !closed )
-//            {
-//                populator.close( true );
-//            }
-//        }
-//    }
-//
-//    @Test
-//    public void shouldDeallocateAllAllocatedMemoryOnDrop() throws IndexEntryConflictException
-//    {
-//        // given
-//        LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
-//        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, memoryTracker );
-//        boolean closed = false;
-//        try
-//        {
-//            // when
-//            Collection<IndexEntryUpdate<?>> updates = batchOfUpdates();
-//            populator.add( updates );
-//            int nextId = updates.size();
-//            externalUpdates( populator, nextId, nextId + 10 );
-//            nextId = nextId + 10;
-//            populator.scanCompleted( nullInstance );
-//            externalUpdates( populator, nextId, nextId + 10 );
-//
-//            // then
-//            assertTrue( "expected some memory to be in use", memoryTracker.usedDirectMemory() > 0 );
-//            populator.drop();
-//            closed = true;
-//            assertEquals( "expected all allocated memory to have been freed on drop", 0, memoryTracker.usedDirectMemory() );
-//        }
-//        finally
-//        {
-//            if ( !closed )
-//            {
-//                populator.close( true );
-//            }
-//        }
-//    }
+    @Test
+    public void shouldDeallocateAllAllocatedMemoryOnClose() throws IndexEntryConflictException
+    {
+        // given
+        ThreadSafePeakMemoryAllocationTracker memoryTracker = new ThreadSafePeakMemoryAllocationTracker( new LocalMemoryTracker() );
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryTracker ), 100 );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory );
+        boolean closed = false;
+        try
+        {
+            // when
+            Collection<IndexEntryUpdate<?>> updates = batchOfUpdates();
+            populator.add( updates );
+            int nextId = updates.size();
+            externalUpdates( populator, nextId, nextId + 10 );
+            nextId = nextId + 10;
+            long memoryBeforeScanCompleted = memoryTracker.usedDirectMemory();
+            populator.scanCompleted( nullInstance );
+            externalUpdates( populator, nextId, nextId + 10 );
+
+            // then
+            assertTrue( "expected some memory to have been temporarily allocated in scanCompleted",
+                    memoryTracker.peakMemoryUsage() > memoryBeforeScanCompleted );
+            populator.close( true );
+            assertEquals( "expected all allocated memory to have been freed on close", memoryBeforeScanCompleted, memoryTracker.usedDirectMemory() );
+            closed = true;
+
+            bufferFactory.close();
+            assertEquals( 0, memoryTracker.usedDirectMemory() );
+        }
+        finally
+        {
+            if ( !closed )
+            {
+                populator.close( true );
+            }
+        }
+    }
+
+    @Test
+    public void shouldDeallocateAllAllocatedMemoryOnDrop() throws IndexEntryConflictException
+    {
+        // given
+        ThreadSafePeakMemoryAllocationTracker memoryTracker = new ThreadSafePeakMemoryAllocationTracker( new LocalMemoryTracker() );
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryTracker ), 100 );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory );
+        boolean closed = false;
+        try
+        {
+            // when
+            Collection<IndexEntryUpdate<?>> updates = batchOfUpdates();
+            populator.add( updates );
+            int nextId = updates.size();
+            externalUpdates( populator, nextId, nextId + 10 );
+            nextId = nextId + 10;
+            long memoryBeforeScanCompleted = memoryTracker.usedDirectMemory();
+            populator.scanCompleted( nullInstance );
+            externalUpdates( populator, nextId, nextId + 10 );
+
+            // then
+            assertTrue( "expected some memory to have been temporarily allocated in scanCompleted",
+                    memoryTracker.peakMemoryUsage() > memoryBeforeScanCompleted );
+            populator.drop();
+            closed = true;
+            assertEquals( "expected all allocated memory to have been freed on drop", memoryBeforeScanCompleted, memoryTracker.usedDirectMemory() );
+
+            bufferFactory.close();
+            assertEquals( 0, memoryTracker.usedDirectMemory() );
+        }
+        finally
+        {
+            if ( !closed )
+            {
+                populator.close( true );
+            }
+        }
+    }
 
     private void externalUpdates( BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator, int firstId, int lastId )
             throws IndexEntryConflictException
@@ -340,13 +354,18 @@ public class BlockBasedIndexPopulatorTest
 
     private BlockBasedIndexPopulator<GenericKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor )
     {
+        return instantiatePopulator( monitor, heapBufferFactory( 100 ) );
+    }
+
+    private BlockBasedIndexPopulator<GenericKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory )
+    {
         Config config = Config.defaults();
         ConfiguredSpaceFillingCurveSettingsCache settingsCache = new ConfiguredSpaceFillingCurveSettingsCache( config );
         IndexSpecificSpaceFillingCurveSettingsCache spatialSettings = new IndexSpecificSpaceFillingCurveSettingsCache( settingsCache, new HashMap<>() );
         GenericLayout layout = new GenericLayout( 1, spatialSettings );
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator =
                 new BlockBasedIndexPopulator<GenericKey,NativeIndexValue>( storage.pageCache(), fs, indexFile, layout, EMPTY,
-                        INDEX_DESCRIPTOR, spatialSettings, directoryStructure, dropAction, false, heapBufferFactory( 100 ), 2, monitor )
+                        INDEX_DESCRIPTOR, spatialSettings, directoryStructure, dropAction, false, bufferFactory, 2, monitor )
                 {
                     @Override
                     NativeIndexReader<GenericKey,NativeIndexValue> newReader()

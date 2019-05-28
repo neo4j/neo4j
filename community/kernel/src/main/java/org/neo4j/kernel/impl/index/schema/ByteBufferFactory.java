@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import org.neo4j.util.Preconditions;
@@ -35,7 +34,7 @@ import static java.lang.Math.toIntExact;
  *     <li>{@link #globalAllocator() Global buffers} which will be closed when this factory {@link #close() closes}</li>
  *     <li>{@link #newLocalAllocator() Local buffers} where caller gets a new {@link Allocator} and gets the responsibility of its
  *     life cycle, i.e. allocations from it and must call {@link Allocator#close()} close on it after use</li>
- *     <li>{@link #acquireThreadLocalBuffer() Thread-local buffers} which are buffers that, one per thread and {@link ByteBufferFactory} instance.
+ *     <li>{@link #acquireThreadLocalBuffer() Thread-local buffers} created lazily on first call by any given thread into this buffer factory.
  *     These buffers are allocated from the global allocator on first use and then only cleared and handed out on further requests.
  *     After use it must be {@link #releaseThreadLocalBuffer() released} so that other code paths in that thread's execution can acquire it.</li>
  * </ul>
@@ -59,7 +58,7 @@ public class ByteBufferFactory implements AutoCloseable
     /**
      * @return the global {@link Allocator} for private buffer allocation.
      */
-    public Allocator globalAllocator()
+    Allocator globalAllocator()
     {
         return globalAllocator;
     }
@@ -67,7 +66,7 @@ public class ByteBufferFactory implements AutoCloseable
     /**
      * @return a new {@link Allocator} for local use. Must be closed by the caller when done.
      */
-    public Allocator newLocalAllocator()
+    Allocator newLocalAllocator()
     {
         return allocatorFactory.get();
     }
@@ -76,7 +75,7 @@ public class ByteBufferFactory implements AutoCloseable
      * @return thread-local buffer. The returned buffer is meant to be used in a limited closure and then {@link #releaseThreadLocalBuffer() released}
      * so that other pieces of code can use it again for this thread.
      */
-    public ByteBuffer acquireThreadLocalBuffer()
+    ByteBuffer acquireThreadLocalBuffer()
     {
         return threadLocalBuffers.get().acquire();
     }
@@ -84,7 +83,7 @@ public class ByteBufferFactory implements AutoCloseable
     /**
      * Releases a previously {@link #acquireThreadLocalBuffer() acquired} thread-local buffer.
      */
-    public void releaseThreadLocalBuffer()
+    void releaseThreadLocalBuffer()
     {
         ThreadLocalByteBuffer managedByteBuffer = threadLocalBuffers.get();
         Preconditions.checkState( managedByteBuffer != null, "Buffer doesn't exist" );
@@ -118,7 +117,7 @@ public class ByteBufferFactory implements AutoCloseable
         void close();
     }
 
-    public static Allocator HEAP_ALLOCATOR = new Allocator()
+    static Allocator HEAP_ALLOCATOR = new Allocator()
     {
         @Override
         public ByteBuffer allocate( int bufferSize )
@@ -135,12 +134,13 @@ public class ByteBufferFactory implements AutoCloseable
 
     private class ThreadLocalByteBuffer
     {
-        private final AtomicBoolean acquired = new AtomicBoolean();
+        private boolean acquired;
         private ByteBuffer buffer;
 
         ByteBuffer acquire()
         {
-            Preconditions.checkState( acquired.compareAndSet( false, true ), "Already acquired" );
+            Preconditions.checkState( !acquired, "Already acquired" );
+            acquired = true;
             if ( buffer == null )
             {
                 buffer = globalAllocator.allocate( threadLocalBufferSize );
@@ -154,7 +154,8 @@ public class ByteBufferFactory implements AutoCloseable
 
         void release()
         {
-            Preconditions.checkState( acquired.compareAndSet( true, false ), "Not acquired" );
+            Preconditions.checkState( acquired, "Not acquired" );
+            acquired = false;
         }
     }
 }

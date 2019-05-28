@@ -20,22 +20,77 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.neo4j.test.Race;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.HEAP_ALLOCATOR;
 
 class ByteBufferFactoryTest
 {
+    @Test
+    void shouldCloseGlobalAllocationsOnClose()
+    {
+        // given
+        ByteBufferFactory.Allocator allocator = mock( ByteBufferFactory.Allocator.class );
+        when( allocator.allocate( anyInt() ) ).thenAnswer( invocationOnMock -> ByteBuffer.allocate( invocationOnMock.getArgument( 0 ) ) );
+        ByteBufferFactory factory = new ByteBufferFactory( () -> allocator, 100 );
+
+        // when doing some allocations that are counted as global
+        factory.acquireThreadLocalBuffer();
+        factory.releaseThreadLocalBuffer();
+        factory.acquireThreadLocalBuffer();
+        factory.releaseThreadLocalBuffer();
+        factory.globalAllocator().allocate( 123 );
+        factory.globalAllocator().allocate( 456 );
+        // and closing it
+        factory.close();
+
+        // then
+        InOrder inOrder = inOrder( allocator );
+        inOrder.verify( allocator, times( 1 ) ).allocate( 100 );
+        inOrder.verify( allocator, times( 1 ) ).allocate( 123 );
+        inOrder.verify( allocator, times( 1 ) ).allocate( 456 );
+        inOrder.verify( allocator, times( 1 ) ).close();
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void shouldCreateNewInstancesOfLocalAllocators()
+    {
+        // given
+        Supplier<ByteBufferFactory.Allocator> allocator = mock( Supplier.class );
+        when( allocator.get() ).thenAnswer( invocationOnMock -> mock( ByteBufferFactory.Allocator.class ) );
+        ByteBufferFactory factory = new ByteBufferFactory( allocator, 100 );
+
+        // when
+        ByteBufferFactory.Allocator localAllocator1 = factory.newLocalAllocator();
+        ByteBufferFactory.Allocator localAllocator2 = factory.newLocalAllocator();
+        localAllocator2.close();
+        ByteBufferFactory.Allocator localAllocator3 = factory.newLocalAllocator();
+
+        // then
+        assertNotSame( localAllocator1, localAllocator2 );
+        assertNotSame( localAllocator2, localAllocator3 );
+        assertNotSame( localAllocator1, localAllocator3 );
+    }
+
     @Test
     void shouldFailAcquireThreadLocalBufferIfAlreadyAcquired()
     {

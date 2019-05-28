@@ -23,6 +23,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -60,6 +61,7 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.helpers.collection.Iterables.first;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.index.schema.BlockStorage.Monitor.NO_MONITOR;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyFromUpdate;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexes.deleteIndex;
@@ -409,6 +411,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     {
         try ( MergingBlockEntryReader<KEY,VALUE> allEntries = new MergingBlockEntryReader<>( layout ) )
         {
+            ByteBuffer singleBlockAssertionBuffer = allocator.allocate( (int) kibiBytes( 8 ) );
             for ( ThreadLocalBlockStorage part : allScanUpdates )
             {
                 try ( BlockReader<KEY,VALUE> reader = part.blockStorage.reader() )
@@ -417,7 +420,9 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                     if ( singleMergedBlock != null )
                     {
                         allEntries.addSource( singleMergedBlock );
-                        if ( reader.nextBlock( null ) != null )
+                        // Pass in some sort of ByteBuffer here. The point is that there should be no more data to read,
+                        // if there is then it's due to a bug in the code and must be fixed.
+                        if ( reader.nextBlock( singleBlockAssertionBuffer ) != null )
                         {
                             throw new IllegalStateException( "Final BlockStorage had multiple blocks" );
                         }

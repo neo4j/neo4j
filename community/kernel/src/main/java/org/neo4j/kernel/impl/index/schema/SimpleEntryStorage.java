@@ -66,7 +66,7 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
 
     private volatile long count;
 
-    SimpleEntryStorage( FileSystemAbstraction fs, File file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize ) throws IOException
+    SimpleEntryStorage( FileSystemAbstraction fs, File file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize )
     {
         this.fs = fs;
         this.file = file;
@@ -88,7 +88,10 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
         {
             return reader( new ByteArrayPageCursor( NO_ENTRIES ) );
         }
-        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( fs.open( file, OpenMode.READ ), byteBufferFactory.allocate( blockSize ) );
+
+        // Reuse the existing buffer because we're not writing while reading anyway
+        buffer.clear();
+        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( fs.open( file, OpenMode.READ ), buffer );
         PageCursor pageCursor = new ReadableChannelPageCursor( channel );
         return reader( pageCursor );
     }

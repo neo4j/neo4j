@@ -33,6 +33,7 @@ import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.memory.ThreadSafePeakMemoryAllocationTracker;
 import org.neo4j.storageengine.api.schema.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.util.concurrent.Runnables;
 
 import static java.lang.Thread.currentThread;
 import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
@@ -127,11 +128,12 @@ public class IndexPopulationJob implements Runnable
         finally
         {
             // will only close "additional" resources, not the actual populators, since that's managed by flip
-            multiPopulator.close( true );
-            monitor.populationJobCompleted( memoryAllocationTracker.peakMemoryUsage() );
-            bufferFactory.close();
-            doneSignal.countDown();
-            currentThread().setName( oldThreadName );
+            Runnables.runAll( "Failed to close resources in IndexPopulationJob",
+                    () -> multiPopulator.close( true ),
+                    () -> monitor.populationJobCompleted( memoryAllocationTracker.peakMemoryUsage() ),
+                    bufferFactory::close,
+                    doneSignal::countDown,
+                    () -> currentThread().setName( oldThreadName ) );
         }
     }
 
