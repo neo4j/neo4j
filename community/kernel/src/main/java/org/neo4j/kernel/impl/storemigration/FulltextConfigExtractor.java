@@ -30,6 +30,7 @@ import java.util.Properties;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.index.schema.FulltextConfigKey;
+import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -62,7 +63,7 @@ class FulltextConfigExtractor
 
         HashMap<String,Value> indexConfig = new HashMap<>();
         TextValue analyser = extractSetting( settings, indexConfig, INDEX_CONFIG_ANALYZER );
-        TextValue eventuallyConsistent = extractSetting( settings, indexConfig, INDEX_CONFIG_EVENTUALLY_CONSISTENT );
+        BooleanValue eventuallyConsistent = extractBooleanSetting( settings, indexConfig, INDEX_CONFIG_EVENTUALLY_CONSISTENT );
         if ( analyser != null )
         {
             indexConfig.put( FulltextConfigKey.ANALYSER.key(), analyser );
@@ -80,6 +81,16 @@ class FulltextConfigExtractor
         if ( property != null )
         {
             return Values.stringValue( property );
+        }
+        return null;
+    }
+
+    private static BooleanValue extractBooleanSetting( Properties settings, HashMap<String,Value> indexConfig, String setting )
+    {
+        String property = settings.getProperty( setting );
+        if ( property != null )
+        {
+            return Values.booleanValue( Boolean.parseBoolean( property ) );
         }
         return null;
     }
