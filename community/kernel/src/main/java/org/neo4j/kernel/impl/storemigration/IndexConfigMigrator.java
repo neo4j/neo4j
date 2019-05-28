@@ -26,6 +26,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -93,7 +94,8 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
 
             IndexConfig indexConfig = indexMigration.extractIndexConfig( fs, pageCache, directoryLayout, indexId, log );
 
-            IndexDescriptor descriptorWithIndexConfig = new IndexDescriptor( oldIndexReference ).withConfig( indexConfig );
+            SchemaDescriptor schemaDescriptorWithIndexConfig = oldIndexReference.schema().withIndexConfig( indexConfig );
+            IndexDescriptor descriptorWithIndexConfig = new IndexDescriptor( oldIndexReference ).withSchemaDescriptor( schemaDescriptorWithIndexConfig );
             IndexProvider indexProvider = indexProviderMap.lookup( indexMigration.desiredAlternativeProvider );
             descriptorWithIndexConfig = indexProvider.bless( descriptorWithIndexConfig );
             Long owningConstraintReference = getOwningConstraintReference( oldIndexReference );
