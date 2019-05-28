@@ -126,7 +126,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     @Override
     public List<File> listStorageFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException
     {
-        if ( !fileSystem.fileExists( databaseLayout.file( META_DATA.getDatabaseFile() ).findFirst().get() ) )
+        if ( !fileSystem.fileExists( databaseLayout.metadataStore() ) )
         {
             throw new IOException( "No storage present at " + databaseLayout + " on " + fileSystem );
         }
