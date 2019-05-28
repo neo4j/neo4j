@@ -123,11 +123,11 @@ public class SchemaStorage implements SchemaRuleAccess
                 .toArray( ConstraintRule[]::new );
         if ( rules.length == 0 )
         {
-            throw new SchemaRuleNotFoundException( SchemaRule.Kind.map( descriptor ), descriptor.schema() );
+            throw new SchemaRuleNotFoundException( descriptor );
         }
         if ( rules.length > 1 )
         {
-            throw new DuplicateSchemaRuleException( SchemaRule.Kind.map( descriptor ), descriptor.schema() );
+            throw new DuplicateSchemaRuleException( descriptor );
         }
         return rules[0];
     }

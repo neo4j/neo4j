@@ -96,7 +96,7 @@ class SchemaStorageTest
             storage.constraintsGetSingle( ConstraintDescriptorFactory.existsForLabel( LABEL1_ID, PROP1_ID ) ) );
 
         assertThat( e, new KernelExceptionUserMessageMatcher( tokenNameLookup,
-            "No node property existence constraint was found for :Label1(prop1)." ) );
+            "No label property existence constraint was found for :Label1(prop1)." ) );
     }
 
     @Test
@@ -114,7 +114,7 @@ class SchemaStorageTest
             schemaStorageSpy.constraintsGetSingle( ConstraintDescriptorFactory.uniqueForLabel( LABEL1_ID, PROP1_ID ) ) );
 
         assertThat( e, new KernelExceptionUserMessageMatcher( tokenNameLookup,
-            "Multiple uniqueness constraints found for :Label1(prop1)." ) );
+            "Multiple label uniqueness constraints found for :Label1(prop1)." ) );
     }
 
     @Test
@@ -126,7 +126,7 @@ class SchemaStorageTest
             storage.constraintsGetSingle( ConstraintDescriptorFactory.existsForRelType( TYPE1_ID, PROP1_ID ) ) );
         assertThat( e,
             new KernelExceptionUserMessageMatcher( tokenNameLookup,
-                "No relationship property existence constraint was found for -[:Type1(prop1)]-." ) );
+                "No relationship type property existence constraint was found for -[:Type1(prop1)]-." ) );
     }
 
     @Test
@@ -145,7 +145,7 @@ class SchemaStorageTest
 
         assertThat( e,
             new KernelExceptionUserMessageMatcher( tokenNameLookup,
-                "Multiple relationship property existence constraints found for -[:Type1(prop1)]-." ) );
+                "Multiple relationship type property existence constraints found for -[:Type1(prop1)]-." ) );
     }
 
     private static TokenNameLookup getDefaultTokenNameLookup()

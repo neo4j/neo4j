@@ -657,7 +657,7 @@ public class AllStoreHolder extends Read
         }
         else
         {
-            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, index.schema() );
+            throw new SchemaRuleNotFoundException( index );
         }
     }
 

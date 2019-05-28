@@ -263,7 +263,7 @@ class SchemaRecordCheckTest
         ConsistencyReport.SchemaConsistencyReport report = check( obligationChecker, record );
 
         // then
-        verify( report ).missingObligation( SchemaRule.Kind.CONSTRAINT_INDEX_RULE );
+        verify( report ).missingObligation( "CONSTRAINT_INDEX_RULE" );
     }
 
     @Test
@@ -350,7 +350,7 @@ class SchemaRecordCheckTest
         ConsistencyReport.SchemaConsistencyReport report = check( obligationChecker, record );
 
         // then
-        verify( report ).missingObligation( SchemaRule.Kind.UNIQUENESS_CONSTRAINT );
+        verify( report ).missingObligation( "UNIQUENESS_CONSTRAINT" );
     }
 
     @Test

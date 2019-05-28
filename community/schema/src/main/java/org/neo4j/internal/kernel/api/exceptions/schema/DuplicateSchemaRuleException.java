@@ -19,16 +19,15 @@
  */
 package org.neo4j.internal.kernel.api.exceptions.schema;
 
-import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class DuplicateSchemaRuleException extends SchemaRuleException
 {
-    private static final String NOT_FOUND_MESSAGE_TEMPLATE = "Multiple %ss found for %s.";
+    private static final String MULTIPLE_FOUND_MESSAGE_TEMPLATE = "Multiple %ss found for %s.";
 
-    public DuplicateSchemaRuleException( SchemaRule.Kind kind, SchemaDescriptor descriptor )
+    public DuplicateSchemaRuleException( SchemaDescriptorSupplier schemaThing )
     {
-        super( Status.Schema.SchemaRuleDuplicateFound, NOT_FOUND_MESSAGE_TEMPLATE, kind, descriptor );
+        super( Status.Schema.SchemaRuleDuplicateFound, MULTIPLE_FOUND_MESSAGE_TEMPLATE, schemaThing );
     }
 }

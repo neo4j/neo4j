@@ -385,10 +385,6 @@ public class ConsistencyReporterTest
             {
                 return new CountsEntry( nodeKey( 7 ), 42 );
             }
-            if ( type == SchemaRule.Kind.class )
-            {
-                return SchemaRule.Kind.INDEX_RULE;
-            }
             if ( type == StoreIndexDescriptor.class )
             {
                 return IndexDescriptorFactory.forSchema( forLabel( 2, 3 ), IndexProviderDescriptor.UNDECIDED ).withId( 1 );

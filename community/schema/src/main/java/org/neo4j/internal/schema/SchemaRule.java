@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.schema;
 
-import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-
 /**
  * Represents a stored schema rule.
  */
@@ -81,79 +79,4 @@ public interface SchemaRule extends SchemaDescriptorSupplier
      * @return The (possibly user supplied) name of this schema rule.
      */
     String name();
-
-    enum Kind
-    {
-        INDEX_RULE( "Index" ),
-        CONSTRAINT_INDEX_RULE( "Constraint index" ),
-        UNIQUENESS_CONSTRAINT( "Uniqueness constraint" ),
-        NODE_PROPERTY_EXISTENCE_CONSTRAINT( "Node property existence constraint" ),
-        RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT( "Relationship property existence constraint" );
-
-        private static final Kind[] ALL = values();
-
-        private final String userString;
-
-        Kind( String userString )
-        {
-            this.userString = userString;
-        }
-
-        public byte id()
-        {
-            return (byte) (ordinal() + 1);
-        }
-
-        public String userString()
-        {
-            return userString;
-        }
-
-        public static Kind map( IndexDescriptor index )
-        {
-            if ( index.isUnique() )
-            {
-                return CONSTRAINT_INDEX_RULE;
-            }
-            else
-            {
-                return INDEX_RULE;
-            }
-        }
-
-        public static Kind map( ConstraintDescriptor descriptor )
-        {
-            switch ( descriptor.type() )
-            {
-            case UNIQUE:
-                return UNIQUENESS_CONSTRAINT;
-            case EXISTS:
-                return descriptor.schema().computeWith( existenceKindMapper );
-            default:
-                throw new IllegalStateException(
-                        "Cannot map descriptor type to legacy schema rule: " + descriptor.type() );
-            }
-        }
-
-        private static SchemaComputer<Kind> existenceKindMapper = new SchemaComputer<>()
-        {
-            @Override
-            public Kind computeSpecific( LabelSchemaDescriptor schema )
-            {
-                return NODE_PROPERTY_EXISTENCE_CONSTRAINT;
-            }
-
-            @Override
-            public Kind computeSpecific( RelationTypeSchemaDescriptor schema )
-            {
-                return RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT;
-            }
-
-            @Override
-            public Kind computeSpecific( SchemaDescriptor schema )
-            {
-                throw new IllegalStateException( "General schema rules cannot support constraints" );
-            }
-        };
-    }
 }

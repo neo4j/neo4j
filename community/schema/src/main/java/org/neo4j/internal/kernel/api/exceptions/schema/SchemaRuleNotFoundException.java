@@ -19,16 +19,15 @@
  */
 package org.neo4j.internal.kernel.api.exceptions.schema;
 
-import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class SchemaRuleNotFoundException extends SchemaRuleException
 {
     private static final String NOT_FOUND_MESSAGE_TEMPLATE = "No %s was found for %s.";
 
-    public SchemaRuleNotFoundException( SchemaRule.Kind kind, SchemaDescriptor descriptor )
+    public SchemaRuleNotFoundException( SchemaDescriptorSupplier schemaThing )
     {
-        super( Status.Schema.SchemaRuleAccessFailed, NOT_FOUND_MESSAGE_TEMPLATE, kind, descriptor );
+        super( Status.Schema.SchemaRuleAccessFailed, NOT_FOUND_MESSAGE_TEMPLATE, schemaThing );
     }
 }

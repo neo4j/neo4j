@@ -144,7 +144,7 @@ public interface ConsistencyReport
         void constraintIndexRuleNotReferencingBack( SchemaRecord ruleRecord );
 
         @Documented( "This record is required to reference some other record of the given kind but no such obligation was found" )
-        void missingObligation( SchemaRule.Kind kind );
+        void missingObligation( String kind );
 
         @Documented( "This record requires some other record to reference back to it but there already was such " +
                 "a conflicting obligation created by the record given as a parameter" )

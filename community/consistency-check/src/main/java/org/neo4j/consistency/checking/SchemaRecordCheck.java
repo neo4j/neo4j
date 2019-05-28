@@ -195,7 +195,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
                 {
                     if ( rule.hasOwningConstraintReference() ) // we only expect a pointer if we have an owner
                     {
-                        engine.report().missingObligation( SchemaRule.Kind.UNIQUENESS_CONSTRAINT );
+                        engine.report().missingObligation( "UNIQUENESS_CONSTRAINT" );
                     }
                 }
                 else
@@ -222,7 +222,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
                 SchemaRecord obligation = constraintObligations.get( constraint.getId() );
                 if ( obligation == null )
                 {
-                    engine.report().missingObligation( SchemaRule.Kind.CONSTRAINT_INDEX_RULE );
+                    engine.report().missingObligation( "CONSTRAINT_INDEX_RULE" );
                 }
                 else
                 {

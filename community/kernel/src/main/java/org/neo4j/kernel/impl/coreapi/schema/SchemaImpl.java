@@ -79,6 +79,7 @@ import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.impl.api.index.IndexPopulationFailure;
+import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.graphdb.Label.label;
@@ -439,7 +440,7 @@ public class SchemaImpl implements Schema
         reference = schemaRead.index( schema );
         if ( reference == IndexReference.NO_INDEX )
         {
-            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, schema );
+            throw new SchemaRuleNotFoundException( IndexDescriptorFactory.forSchema( schema ) );
         }
 
         return reference;
