@@ -156,7 +156,7 @@ case class SetNodePropertyOperation(nodeName: String,
   override protected def entityCursor(cursors: ExpressionCursors): NodeCursor = cursors.nodeCursor
 
   override protected def invalidateCachedProperties(executionContext: ExecutionContext, id: Long): Unit =
-    executionContext.invalidateCachedProperties(id)
+    executionContext.invalidateCachedNodeProperties(id)
 }
 
 case class SetRelationshipPropertyOperation(relName: String,
@@ -173,7 +173,8 @@ case class SetRelationshipPropertyOperation(relName: String,
 
   override protected def entityCursor(cursors: ExpressionCursors): RelationshipScanCursor = cursors.relationshipScanCursor
 
-  override protected def invalidateCachedProperties(executionContext: ExecutionContext, id: Long): Unit = {} // we do not cache relationships
+  override protected def invalidateCachedProperties(executionContext: ExecutionContext, id: Long): Unit =
+    executionContext.invalidateCachedRelationshipProperties(id)
 }
 
 case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropertyKey, expression: Expression)

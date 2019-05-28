@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NestedPlanExpression, PruningVarExpand, VarExpand}
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
-import org.neo4j.cypher.internal.v4_0.expressions.{LogicalVariable, ScopeExpression}
+import org.neo4j.cypher.internal.v4_0.expressions.{CachedProperty, LogicalVariable, Property, ScopeExpression}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Attribute
 import org.neo4j.cypher.internal.v4_0.util.{Foldable, Rewritable, Rewriter, topDown}
 
@@ -65,7 +65,7 @@ object expressionVariableAllocation {
 
     // Note: we use the treeFold to keep track of the expression variables in scope
     // We don't need the result, the side-effect mutated `globalMapping` and
-    // `availableExpressionVars`contains all the data we need.
+    // `availableExpressionVars` contain all the data we need.
     input.treeFold(List.empty[ExpressionVariable]) {
       case x: ScopeExpression =>
         outerVars =>
@@ -91,6 +91,10 @@ object expressionVariableAllocation {
 
     val rewriter =
       topDown( Rewriter.lift {
+        // Cached properties would have to be cached together with the Expression Variables.
+        // Not caching the property until we have support for that.
+        case cp@CachedProperty(_, v, p, _) if globalMapping.contains(v.name) =>
+          Property(globalMapping(v.name), p)(cp.position)
         case x: LogicalVariable if globalMapping.contains(x.name) =>
           globalMapping(x.name)
       })

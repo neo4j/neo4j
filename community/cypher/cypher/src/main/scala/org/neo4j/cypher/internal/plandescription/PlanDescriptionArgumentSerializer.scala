@@ -107,8 +107,8 @@ object PlanDescriptionArgumentSerializer {
     }
   }
 
-  private def cachesSuffix(caches: Seq[String]): String = {
-    if (caches.isEmpty) "" else caches.mkString(", ", ", ", "")
+  private def cachesSuffix(caches: Seq[expressions.Expression]): String = {
+    if (caches.isEmpty) "" else caches.map(asPrettyString).mkString(", ", ", ", "")
   }
 
   def serializeProvidedOrder(providedOrder: ProvidedOrder): String = {

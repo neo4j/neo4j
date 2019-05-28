@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.v4_0.expressions
 
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
+import scala.util.hashing.MurmurHash3
+
 sealed trait CachedType
 
 case object CACHED_NODE extends CachedType
@@ -33,8 +35,14 @@ case object CACHED_RELATIONSHIP extends CachedType
   */
 trait ASTCachedProperty extends LogicalProperty {
   def cachedType: CachedType
+
   def variableName: String
-  override val map: Variable = Variable(variableName)(this.position)
+
+  def propertyKey: PropertyKeyName
+
+  override val map: Expression = Variable(variableName)(this.position)
+
+  def cacheKey: String = s"$variableName.${propertyKey.name}"
 }
 
 /**
@@ -43,14 +51,21 @@ trait ASTCachedProperty extends LogicalProperty {
   * the graph/transaction state.
   *
   * @param variableName the variable
+  * @param usedVariable the variable how it appeared in the original Property. It can have a different name than `variableName`.
   * @param propertyKey  the property key
   */
 case class CachedProperty(variableName: String,
+                          usedVariable: LogicalVariable,
                           propertyKey: PropertyKeyName,
                           override val cachedType: CachedType
                          )(val position: InputPosition) extends ASTCachedProperty {
 
-  def cacheKey: String = s"$variableName.${propertyKey.name}"
-
   override def asCanonicalStringVal: String = s"cache[$cacheKey]"
+
+  override def hashCode(): Int = MurmurHash3.seqHash(Seq(variableName, propertyKey, cachedType))
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other:CachedProperty => Seq(variableName, propertyKey, cachedType) == Seq(other.variableName, other.propertyKey, other.cachedType)
+    case _ => false
+  }
 }

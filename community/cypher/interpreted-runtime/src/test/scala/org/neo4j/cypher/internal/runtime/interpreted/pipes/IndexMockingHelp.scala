@@ -26,7 +26,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
 import org.neo4j.cypher.internal.runtime.{NodeValueHit, QueryContext}
-import org.neo4j.cypher.internal.v4_0.expressions.{CACHED_NODE, CachedProperty, PropertyKeyName, PropertyKeyToken}
+import org.neo4j.cypher.internal.v4_0.expressions.{CACHED_NODE, CachedProperty, PropertyKeyName, PropertyKeyToken, Variable}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.{IndexQuery, NodeCursor, NodeValueIndexCursor}
 import org.neo4j.values.storable.Values.stringValue
@@ -75,7 +75,7 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
     new NodeValueHit(nodeValue.id, values.map(Values.of).toArray)
 
   protected def cachedProperty(node: String, property: PropertyKeyToken): CachedProperty =
-    CachedProperty("n", PropertyKeyName(property.name)(pos), CACHED_NODE)(pos)
+    CachedProperty("n", Variable(node)(pos), PropertyKeyName(property.name)(pos), CACHED_NODE)(pos)
 
   private def mockedQueryContext[T] = {
     val query = mock[QueryContext]

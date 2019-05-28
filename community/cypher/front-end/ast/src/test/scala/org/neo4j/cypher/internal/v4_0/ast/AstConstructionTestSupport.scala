@@ -43,10 +43,10 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     Property(varFor(variable), PropertyKeyName(propKey)(pos))(pos)
 
   def cachedNodeProp(variable: String, propKey: String): CachedProperty =
-    CachedProperty(variable, PropertyKeyName(propKey)(pos), CACHED_NODE)(pos)
+    CachedProperty(variable, varFor(variable), PropertyKeyName(propKey)(pos), CACHED_NODE)(pos)
 
   def cachedRelProp(variable: String, propKey: String): CachedProperty =
-    CachedProperty(variable, PropertyKeyName(propKey)(pos), CACHED_RELATIONSHIP)(pos)
+    CachedProperty(variable, varFor(variable), PropertyKeyName(propKey)(pos), CACHED_RELATIONSHIP)(pos)
 
   def prop(map: Expression, key: String): Property =
     Property(map, PropertyKeyName(key)(pos))(pos)

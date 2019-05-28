@@ -44,10 +44,10 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   private val nProp2 = Property(n, prop)(InputPosition.NONE.bumped())
   // Same property in different positions
   private val nFoo1 = Property(n, foo)(InputPosition.NONE)
-  private val cachedNProp1 = CachedProperty("n", prop, CACHED_NODE)(InputPosition.NONE)
-  private val cachedNProp2 = CachedProperty("n", prop, CACHED_NODE)(InputPosition.NONE.bumped())
-  private val cachedNRelProp1 = CachedProperty("n", prop, CACHED_RELATIONSHIP)(InputPosition.NONE)
-  private val cachedNRelProp2 = CachedProperty("n", prop, CACHED_RELATIONSHIP)(InputPosition.NONE.bumped())
+  private val cachedNProp1 = CachedProperty("n", n, prop, CACHED_NODE)(InputPosition.NONE)
+  private val cachedNProp2 = CachedProperty("n", n, prop, CACHED_NODE)(InputPosition.NONE.bumped())
+  private val cachedNRelProp1 = CachedProperty("n", n, prop, CACHED_RELATIONSHIP)(InputPosition.NONE)
+  private val cachedNRelProp2 = CachedProperty("n", n, prop, CACHED_RELATIONSHIP)(InputPosition.NONE.bumped())
 
   private val xProp = Property(x, prop)(InputPosition.NONE)
 
@@ -283,7 +283,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
           Selection(Seq(equals(cachedNProp1, literalInt(2))),
             Argument(Set("n"))),
           Map("x" -> n)),
-        Map("xProp" -> cachedNProp1)
+        Map("xProp" -> cachedNProp1.copy(usedVariable = n.copy("x")(n.position))(cachedNProp1.position))
       )
     )
     val initialType = initialTable.types(nProp1)
@@ -366,7 +366,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
             Argument(Set("n"))),
           Map("x" -> n),
           Map("count(1)" -> count(literalInt(1)))),
-        Map("xProp" -> cachedNProp1)
+        Map("xProp" -> cachedNProp1.copy(usedVariable = n.copy("x")(n.position))(cachedNProp1.position))
       )
     )
     val initialType = initialTable.types(nProp1)

@@ -256,7 +256,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "prop")
-      .projection("cached[x.prop] AS prop")
+      .projection("cache[x.prop] AS prop")
       .nodeIndexOperator("x:Honey(prop = 10)", GetValue)
       .build(readOnly = false)
 
@@ -387,7 +387,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "prop")
-      .projection("cached[x.prop] AS prop")
+      .projection("cache[x.prop] AS prop")
       .nodeIndexOperator(s"x:Honey(prop > ${sizeHint / 2})", GetValue)
       .build()
 
@@ -409,7 +409,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "prop", "prop2")
-      .projection("cached[x.prop] AS prop", "cached[x.prop2] AS prop2")
+      .projection("cache[x.prop] AS prop", "cache[x.prop2] AS prop2")
       .nodeIndexOperator("x:Honey(prop = 10, prop2 = '10')", GetValue)
       .build()
 

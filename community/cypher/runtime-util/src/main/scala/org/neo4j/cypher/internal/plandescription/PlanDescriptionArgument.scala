@@ -54,13 +54,13 @@ object Arguments {
 
   case class MergePattern(startPoint: String) extends Argument
 
-  case class Index(label: String, propertyKeys: Seq[String], caches: Seq[String]) extends Argument
+  case class Index(label: String, propertyKeys: Seq[String], caches: Seq[ast.Expression]) extends Argument
 
-  case class PrefixIndex(label: String, propertyKey: String, prefix: ast.Expression, caches: Seq[String]) extends Argument
+  case class PrefixIndex(label: String, propertyKey: String, prefix: ast.Expression, caches: Seq[ast.Expression]) extends Argument
 
-  case class InequalityIndex(label: String, propertyKey: String, bounds: Seq[String], caches: Seq[String]) extends Argument
+  case class InequalityIndex(label: String, propertyKey: String, bounds: Seq[String], caches: Seq[ast.Expression]) extends Argument
 
-  case class PointDistanceIndex(label: String, propertyKey: String, point: String, distance: String, inclusive: Boolean, caches: Seq[String]) extends Argument
+  case class PointDistanceIndex(label: String, propertyKey: String, point: String, distance: String, inclusive: Boolean, caches: Seq[ast.Expression]) extends Argument
 
   case class LabelName(label: String) extends Argument
 

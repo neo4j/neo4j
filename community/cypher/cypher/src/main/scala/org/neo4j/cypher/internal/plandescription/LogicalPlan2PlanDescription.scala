@@ -70,11 +70,11 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "NodeByIdSeek", NoChildren, Seq(), variables)
 
       case p@NodeIndexSeek(_, label, properties, valueExpr, _, _) =>
-        val (indexMode, indexDesc) = getDescriptions(label, properties.map(_.propertyKeyToken), valueExpr, unique = false, readOnly, p.cachedProperties.map(_.asCanonicalStringVal))
+        val (indexMode, indexDesc) = getDescriptions(label, properties.map(_.propertyKeyToken), valueExpr, unique = false, readOnly, p.cachedProperties)
         PlanDescriptionImpl(id, indexMode, NoChildren, Seq(indexDesc), variables)
 
       case p@NodeUniqueIndexSeek(_, label, properties, valueExpr, _, _) =>
-        val (indexMode, indexDesc) = getDescriptions(label, properties.map(_.propertyKeyToken), valueExpr, unique = true, readOnly, p.cachedProperties.map(_.asCanonicalStringVal))
+        val (indexMode, indexDesc) = getDescriptions(label, properties.map(_.propertyKeyToken), valueExpr, unique = true, readOnly, p.cachedProperties)
         PlanDescriptionImpl(id, indexMode, NoChildren, Seq(indexDesc), variables)
 
       case ProduceResult(_, _) =>
@@ -98,15 +98,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "NodeCountFromCountStore", NoChildren, arguments, variables)
 
       case p@NodeIndexContainsScan(_, label, property, valueExpr, _, _) =>
-        val arguments = Seq(Index(label.name, Seq(property.propertyKeyToken.name), p.cachedProperties.map(_.asCanonicalStringVal)), Expression(valueExpr))
+        val arguments = Seq(Index(label.name, Seq(property.propertyKeyToken.name), p.cachedProperties), Expression(valueExpr))
         PlanDescriptionImpl(id, "NodeIndexContainsScan", NoChildren, arguments, variables)
 
       case p@NodeIndexEndsWithScan(_, label, property, valueExpr, _, _) =>
-        val arguments = Seq(Index(label.name, Seq(property.propertyKeyToken.name), p.cachedProperties.map(_.asCanonicalStringVal)), Expression(valueExpr))
+        val arguments = Seq(Index(label.name, Seq(property.propertyKeyToken.name), p.cachedProperties), Expression(valueExpr))
         PlanDescriptionImpl(id, "NodeIndexEndsWithScan", NoChildren, arguments, variables)
 
       case p@NodeIndexScan(_, label, properties, _, _) =>
-        PlanDescriptionImpl(id, "NodeIndexScan", NoChildren, Seq(Index(label.name, properties.map(_.propertyKeyToken.name), p.cachedProperties.map(_.asCanonicalStringVal))), variables)
+        PlanDescriptionImpl(id, "NodeIndexScan", NoChildren, Seq(Index(label.name, properties.map(_.propertyKeyToken.name), p.cachedProperties)), variables)
 
       case ProcedureCall(_, call) =>
         val signature = Signature(call.qualifiedName, call.callArguments, call.callResultTypes)
@@ -304,7 +304,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case p@NodeUniqueIndexSeek(_, label, properties, _, _, _) =>
         PlanDescriptionImpl(id = plan.id, "NodeUniqueIndexSeek", NoChildren,
-                            Seq(Index(label.name, properties.map(_.propertyKeyToken.name), p.cachedProperties.map(_.asCanonicalStringVal))), variables)
+                            Seq(Index(label.name, properties.map(_.propertyKeyToken.name), p.cachedProperties)), variables)
 
       case _: ErrorPlan =>
         PlanDescriptionImpl(id, "Error", children, Seq.empty, variables)
@@ -580,7 +580,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
                               valueExpr: QueryExpression[ASTExpression],
                               unique: Boolean,
                               readOnly: Boolean,
-                              caches: Seq[String]): (String, Argument) = {
+                              caches: Seq[ASTExpression]): (String, Argument) = {
 
     def findName(exactOnly: Boolean =  true) =
       if (unique && !readOnly && exactOnly) "NodeUniqueIndexSeek(Locking)"

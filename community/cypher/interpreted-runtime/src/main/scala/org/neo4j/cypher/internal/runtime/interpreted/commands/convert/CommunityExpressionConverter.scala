@@ -93,8 +93,8 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case e: ast.FunctionInvocation => toCommandExpression(id, e.function, e, self)
       case _: ast.CountStar => commandexpressions.CountStar()
       case e: ast.Property => commandexpressions.Property(self.toCommandExpression(id, e.map), getPropertyKey(e.propertyKey))
-      case e@CachedProperty(variableName, propertyKey, CACHED_NODE) => commandexpressions.CachedNodeProperty(variableName, getPropertyKey(propertyKey), e)
-      case e@CachedProperty(variableName, propertyKey, CACHED_RELATIONSHIP) => commandexpressions.CachedRelationshipProperty(variableName, getPropertyKey(propertyKey), e)
+      case e@CachedProperty(variableName, _, propertyKey, CACHED_NODE) => commandexpressions.CachedNodeProperty(variableName, getPropertyKey(propertyKey), e)
+      case e@CachedProperty(variableName, _, propertyKey, CACHED_RELATIONSHIP) => commandexpressions.CachedRelationshipProperty(variableName, getPropertyKey(propertyKey), e)
       case ParameterFromSlot(offset, name, _) => commandexpressions.ParameterFromSlot(offset, name)
       case e: ast.CaseExpression => caseExpression(id, e, self)
       case e: ast.ShortestPathExpression => commandexpressions
@@ -405,8 +405,8 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
   private def toCommandProperty(id: Id, e: ast.LogicalProperty, self: ExpressionConverters): commandexpressions.Expression =
     e match {
       case Property(map, propertyKey)=> commandexpressions.Property(self.toCommandExpression(id, map), getPropertyKey(propertyKey))
-      case e@CachedProperty(variableName, propertyKey, CACHED_NODE) => commandexpressions.CachedNodeProperty(variableName, getPropertyKey(propertyKey), e)
-      case e@CachedProperty(variableName, propertyKey, CACHED_RELATIONSHIP) => commandexpressions.CachedRelationshipProperty(variableName, getPropertyKey(propertyKey), e)
+      case e:ASTCachedProperty if e.cachedType == CACHED_NODE => commandexpressions.CachedNodeProperty(e.variableName, getPropertyKey(e.propertyKey), e)
+      case e:ASTCachedProperty if e.cachedType == CACHED_RELATIONSHIP => commandexpressions.CachedRelationshipProperty(e.variableName, getPropertyKey(e.propertyKey), e)
     }
 
   private def toCommandExpression(id: Id, expression: Option[ast.Expression],

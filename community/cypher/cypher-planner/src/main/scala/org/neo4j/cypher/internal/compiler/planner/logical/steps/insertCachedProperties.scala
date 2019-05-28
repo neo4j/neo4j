@@ -102,7 +102,7 @@ case object insertCachedProperties extends Transformer[PlannerContext, LogicalPl
         acc.properties.get(originalProp) match {
           case Some(PropertyUsages(canGetFromIndex, usages, cachedType)) if usages > 1 || canGetFromIndex =>
             // Use the original variable name for the cached property
-            val newProperty = CachedProperty(originalVar.name, propertyKeyName, cachedType)(prop.position)
+            val newProperty = CachedProperty(originalVar.name, v, propertyKeyName, cachedType)(prop.position)
             // Register the new variables in the semantic table
             currentTypes.get(prop) match {
               case None => // I don't like this. We have to make sure we retain the type from semantic analysis

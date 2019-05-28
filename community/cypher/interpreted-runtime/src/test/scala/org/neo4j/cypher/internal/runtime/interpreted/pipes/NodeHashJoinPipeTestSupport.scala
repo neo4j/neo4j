@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.v4_0.expressions.{CACHED_NODE, CachedProperty, PropertyKeyName}
+import org.neo4j.cypher.internal.v4_0.expressions.{CACHED_NODE, CachedProperty, PropertyKeyName, Variable}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
@@ -36,7 +36,7 @@ trait NodeHashJoinPipeTestSupport extends CypherFunSuite {
   protected val node3 = newMockedNode(3)
 
   protected def prop(node: String, prop: String) =
-    CachedProperty(node, PropertyKeyName(prop)(InputPosition.NONE), CACHED_NODE)(InputPosition.NONE)
+    CachedProperty(node, Variable(node)(InputPosition.NONE), PropertyKeyName(prop)(InputPosition.NONE), CACHED_NODE)(InputPosition.NONE)
 
   protected def row(values: (String, AnyValue)*) = ExecutionContext.from(values: _*)
 

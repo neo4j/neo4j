@@ -83,7 +83,7 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "text")
-      .projection("cached[x.text] AS text")
+      .projection("cache[x.text] AS text")
       .nodeIndexOperator("x:Label(text CONTAINS '1')", GetValue)
       .build()
 
@@ -104,7 +104,7 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "text")
-      .projection("cached[x.text] AS text")
+      .projection("cache[x.text] AS text")
       .nodeIndexOperator("x:Label(text CONTAINS '1')", GetValue)
       .build()
 

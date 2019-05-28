@@ -100,7 +100,7 @@ case object PlanUpdates extends UpdatesPlanner {
 
       //SET x.prop = 42
       case pattern:SetPropertyPattern =>
-        context.logicalPlanProducer.planSetProperty(source,pattern, interestingOrder, context)
+        context.logicalPlanProducer.planSetProperty(source, pattern, interestingOrder, context)
 
       //SET n += {p1: ..., p2: ...}
       case pattern:SetNodePropertiesFromMapPattern =>

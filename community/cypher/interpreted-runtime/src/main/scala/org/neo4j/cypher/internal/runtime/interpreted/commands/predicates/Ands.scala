@@ -92,7 +92,7 @@ case class AndedPropertyComparablePredicates(ident: VariableCommand, prop: Expre
 
   override def rewrite(f: Expression => Expression): Expression =
     f(AndedPropertyComparablePredicates(rewriteVariableIfNotTypeChanged(f),
-      prop.rewrite(f).asInstanceOf[Property],
+      prop.rewrite(f),
       predicates.map(_.rewriteAsPredicate(f).asInstanceOf[ComparablePredicate])))
 
   override def shouldExitWhen: Boolean = false

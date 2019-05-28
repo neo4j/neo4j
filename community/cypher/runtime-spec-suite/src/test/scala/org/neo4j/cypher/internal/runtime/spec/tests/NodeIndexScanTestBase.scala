@@ -82,7 +82,7 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "calories")
-      .projection("cached[x.calories] AS calories")
+      .projection("cache[x.calories] AS calories")
       .nodeIndexOperator("x:Honey(calories)", GetValue)
       .build()
 
@@ -104,7 +104,7 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "calories")
-      .projection("cached[x.calories] AS calories")
+      .projection("cache[x.calories] AS calories")
       .nodeIndexOperator("x:Honey(calories)", GetValue)
       .build()
 

@@ -32,8 +32,8 @@ class ExpressionParserTest extends CypherFunSuite with TestName
   }
 
   // Finds cached property
-  test("cached[n.prop] AS b") {
-    ExpressionParser.parseProjections(testName) should be(Map("b" -> CachedProperty("n", PropertyKeyName("prop")(pos), CACHED_NODE)(pos)))
+  test("cache[n.prop] AS b") {
+    ExpressionParser.parseProjections(testName) should be(Map("b" -> CachedProperty("n", Variable("n")(pos), PropertyKeyName("prop")(pos), CACHED_NODE)(pos)))
   }
 
   test("b.foo + 5 AS abc09") {
@@ -41,8 +41,8 @@ class ExpressionParserTest extends CypherFunSuite with TestName
   }
 
   // Finds nested cached property
-  test("cached[b.foo] + 5 AS abc09") {
-    ExpressionParser.parseProjections(testName) should be(Map("abc09" -> Add(CachedProperty("b", PropertyKeyName("foo")(pos), CACHED_NODE)(pos), SignedDecimalIntegerLiteral("5")(pos))(pos)))
+  test("cache[b.foo] + 5 AS abc09") {
+    ExpressionParser.parseProjections(testName) should be(Map("abc09" -> Add(CachedProperty("b", Variable("b")(pos), PropertyKeyName("foo")(pos), CACHED_NODE)(pos), SignedDecimalIntegerLiteral("5")(pos))(pos)))
   }
 
   test("n:Label") {
