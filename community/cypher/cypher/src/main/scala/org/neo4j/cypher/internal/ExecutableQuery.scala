@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
-import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.kernel.api.query.CompilerInfo
-import org.neo4j.kernel.impl.query.{QuerySubscriber, TransactionalContext}
+import org.neo4j.kernel.impl.query.{QueryExecution, QuerySubscriber, TransactionalContext}
 import org.neo4j.values.virtual.MapValue
 
 /**
@@ -44,7 +43,7 @@ trait ExecutableQuery extends CacheabilityInfo {
               preParsedQuery: PreParsedQuery,
               params: MapValue,
               prePopulateResults: Boolean,
-              subscriber: QuerySubscriber): InternalExecutionResult
+              subscriber: QuerySubscriber): QueryExecution
 
   /**
     * The reusability state of this executable query.

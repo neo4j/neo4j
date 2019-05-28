@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.result
 
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.InternalQueryType
-import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
 class FailedExecutionResult(fieldNames: Array[String],
@@ -30,7 +29,7 @@ class FailedExecutionResult(fieldNames: Array[String],
   extends EmptyExecutionResult(fieldNames, InternalPlanDescription.error("Query has failed, no plan available"), queryType, Set.empty) {
 
   override def request(numberOfRecords: Long): Unit = {
-    subscriber.onError(new InternalException("The query has already failed, it is not possible to request more data"))
+    //do nothing
   }
 
   override def cancel(): Unit = {

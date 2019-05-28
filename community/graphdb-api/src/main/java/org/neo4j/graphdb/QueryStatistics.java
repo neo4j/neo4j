@@ -116,4 +116,79 @@ public interface QueryStatistics
      * @return if the graph has been updated.
      */
     boolean containsUpdates();
+
+    QueryStatistics EMPTY = new QueryStatistics()
+    {
+        @Override
+        public int getNodesCreated()
+        {
+            return 0;
+        }
+
+        @Override
+        public int getNodesDeleted()
+        {
+            return 0;
+        }
+
+        @Override
+        public int getRelationshipsCreated()
+        {
+            return 0;
+        }
+
+        @Override
+        public int getRelationshipsDeleted()
+        {
+            return 0;
+        }
+
+        @Override
+        public int getPropertiesSet()
+        {
+            return 0;
+        }
+
+        @Override
+        public int getLabelsAdded()
+        {
+            return 0;
+        }
+
+        @Override
+        public int getLabelsRemoved()
+        {
+            return 0;
+        }
+
+        @Override
+        public int getIndexesAdded()
+        {
+            return 0;
+        }
+
+        @Override
+        public int getIndexesRemoved()
+        {
+            return 0;
+        }
+
+        @Override
+        public int getConstraintsAdded()
+        {
+            return 0;
+        }
+
+        @Override
+        public int getConstraintsRemoved()
+        {
+            return 0;
+        }
+
+        @Override
+        public boolean containsUpdates()
+        {
+            return false;
+        }
+    };
 }

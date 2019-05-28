@@ -94,3 +94,7 @@ case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
   }
 
 }
+
+object QueryStatistics {
+  val empty: QueryStatistics = QueryStatistics()
+}

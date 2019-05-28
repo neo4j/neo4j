@@ -39,9 +39,9 @@ import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.query.QueryExecution;
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.AnyValue;
@@ -76,6 +76,7 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
         if ( queryType != READ_ONLY )
         {
             materializeResult();
+            assertNoErrors();
         }
 
         // ... and if we do not return any rows, we close all resources.
@@ -198,15 +199,7 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
     @Override
     public QueryStatistics getQueryStatistics()
     {
-        if ( statistics == null )
-        {
-            throw new QueryExecutionException(
-                    "This result has not been materialised yet. Iterate over it to get query statistics.",
-                    null,
-                    Status.Statement.ExecutionFailed.code().serialize() );
-        }
-
-        return statistics;
+        return statistics == null ? QueryStatistics.EMPTY : statistics;
     }
 
     @Override
@@ -252,32 +245,18 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
         return execution.getNotifications();
     }
 
-    @SuppressWarnings( "unchecked" )
     @Override
     public <VisitationException extends Exception> void accept( ResultVisitor<VisitationException> visitor )
             throws VisitationException
     {
-        this.visitor = visitor;
-        try
+        if ( materializeResult != null )
         {
-            execution.request( Long.MAX_VALUE );
-            execution.await();
+            acceptFromMaterialized( visitor );
         }
-        catch ( Exception e )
+        else
         {
-            close();
-            throw converted( e );
+            acceptFromSubscriber( visitor );
         }
-        if ( visitException != null )
-        {
-            throw (VisitationException) visitException;
-        }
-        assertNoErrors();
-    }
-
-    private boolean isDone()
-    {
-        return statistics != null;
     }
 
     @Override
@@ -312,26 +291,17 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
 
     private Map<String,Object> nextFromSubscriber()
     {
-        try
+        fetchResults( 1 );
+        assertNoErrors();
+        if ( hasNewValues() )
         {
-            execution.request( 1 );
-            execution.await();
-            assertNoErrors();
-            if ( hasNewValues() )
-            {
-                HashMap<String,Object> record = createPublicRecord();
-                markAsRead();
-                return record;
-            }
-            else
-            {
-                return null;
-            }
+            HashMap<String,Object> record = createPublicRecord();
+            markAsRead();
+            return record;
         }
-        catch ( Throwable throwable )
+        else
         {
-            close();
-            throw converted( throwable );
+            return null;
         }
     }
 
@@ -353,16 +323,21 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
         if ( materializeResult == null )
         {
             materializeResult = new ArrayList<>(  );
-            try
-            {
-                execution.request( Long.MAX_VALUE );
-                execution.await();
-            }
-            catch ( Exception e )
-            {
-                close();
-                throw converted( e );
-            }
+            fetchResults( Long.MAX_VALUE );
+        }
+    }
+
+    private void fetchResults( long numberOfResults )
+    {
+        try
+        {
+            execution.request( numberOfResults );
+            execution.await();
+        }
+        catch ( Exception e )
+        {
+            close();
+            throw converted( e );
         }
     }
 
@@ -393,12 +368,38 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
         {
             cypherException = (CypherException) e;
         }
+        else if ( e instanceof RuntimeException )
+        {
+            throw (RuntimeException) e;
+        }
         else
         {
-            cypherException = new CypherExecutionException( "Query has failed", e );
+            cypherException = new CypherExecutionException( e.getMessage(), e );
         }
-        return new QueryExecutionException( cypherException.getMessage(), cypherException,
-                cypherException.status().code().serialize() );
+        return new QueryExecutionKernelException( cypherException ).asUserException();
+    }
+
+    private <VisitationException extends Exception> void acceptFromMaterialized(
+            ResultVisitor<VisitationException> visitor ) throws VisitationException
+    {
+        assertNoErrors();
+        for ( Map<String,Object> materialized : materializeResult )
+        {
+            visitor.visit( new ResultRowImpl( materialized ) );
+        }
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private <VisitationException extends Exception> void acceptFromSubscriber(
+            ResultVisitor<VisitationException> visitor ) throws VisitationException
+    {
+        this.visitor = visitor;
+        fetchResults( Long.MAX_VALUE );
+        if ( visitException != null )
+        {
+            throw (VisitationException) visitException;
+        }
+        assertNoErrors();
     }
 
     //TODO please make this go away

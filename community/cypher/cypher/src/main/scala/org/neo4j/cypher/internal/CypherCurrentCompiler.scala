@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, TaskCloser}
 import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.api.query.{CompilerInfo, SchemaIndexUsage}
-import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySubscriber, TransactionalContext}
+import org.neo4j.kernel.impl.query.{QueryExecution, QueryExecutionMonitor, QuerySubscriber, TransactionalContext}
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.storable.{NoValue, TextValue}
 import org.neo4j.values.virtual.MapValue
@@ -218,7 +218,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     override def execute(transactionalContext: TransactionalContext,
                          preParsedQuery: PreParsedQuery,
                          params: MapValue, prePopulateResults: Boolean,
-                         subscriber: QuerySubscriber): InternalExecutionResult = {
+                         subscriber: QuerySubscriber): QueryExecution = {
 
 
       val taskCloser = new TaskCloser

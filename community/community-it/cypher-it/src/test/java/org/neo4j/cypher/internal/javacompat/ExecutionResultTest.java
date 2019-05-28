@@ -43,7 +43,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 @ImpermanentDbmsExtension
@@ -106,7 +105,15 @@ class ExecutionResultTest
     @Test
     void shouldThrowAppropriateExceptionAlsoWhenVisiting()
     {
-        assertThrows( ArithmeticException.class, () -> db.execute( "RETURN rand()/0" ).accept( row -> true ) );
+        try
+        {
+            db.execute( "RETURN rand()/0" ).accept( row -> true );
+        }
+        catch ( QueryExecutionException ex )
+        {
+            assertThat( ex.getCause(), instanceOf( QueryExecutionKernelException.class ) );
+            assertThat( ex.getCause().getCause(), instanceOf( ArithmeticException.class ) );
+        }
     }
 
     private void createNode()
