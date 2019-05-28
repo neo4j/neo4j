@@ -109,10 +109,11 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     @Override
     public StorageEngine instantiate( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, TokenHolders tokenHolders,
             SchemaState schemaState, ConstraintRuleAccessor constraintSemantics, LockService lockService, IdGeneratorFactory idGeneratorFactory,
-            IdController idController, DatabaseHealth databaseHealth, VersionContextSupplier versionContextSupplier, LogProvider logProvider )
+            IdController idController, DatabaseHealth databaseHealth, VersionContextSupplier versionContextSupplier, LogProvider logProvider,
+            boolean createStoreIfNotExists )
     {
-        return new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider,
-                tokenHolders, schemaState, constraintSemantics, lockService, databaseHealth, idGeneratorFactory, idController, versionContextSupplier );
+        return new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics, lockService,
+                databaseHealth, idGeneratorFactory, idController, versionContextSupplier, createStoreIfNotExists );
     }
 
     @Override

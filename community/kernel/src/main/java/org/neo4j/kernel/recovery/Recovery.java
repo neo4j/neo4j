@@ -290,7 +290,7 @@ public final class Recovery
 
         StorageEngine storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, config, databasePageCache, tokenHolders, schemaState,
                 getConstraintSemantics(), NO_LOCK_SERVICE, new DefaultIdGeneratorFactory( fs ), new DefaultIdController(), databaseHealth,
-                EmptyVersionContextSupplier.EMPTY, logService.getInternalLogProvider() );
+                EmptyVersionContextSupplier.EMPTY, logService.getInternalLogProvider(), true );
 
         // Label index
         NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, storageEngine::newReader );

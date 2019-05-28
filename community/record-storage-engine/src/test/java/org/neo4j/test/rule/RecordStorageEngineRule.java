@@ -224,7 +224,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer )
         {
             super( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics,
-                    lockService, databaseHealth, idGeneratorFactory, idController, EmptyVersionContextSupplier.EMPTY );
+                    lockService, databaseHealth, idGeneratorFactory, idController, EmptyVersionContextSupplier.EMPTY, true );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

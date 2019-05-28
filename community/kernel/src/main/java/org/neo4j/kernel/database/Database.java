@@ -161,6 +161,8 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_corrupted_log_files;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
@@ -347,16 +349,18 @@ public class Database extends LifecycleAdapter
             // Check the tail of transaction logs and validate version
             final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
 
-            LogFiles logFiles =
-                    LogFilesBuilder.builder( databaseLayout, fs ).withLogEntryReader( logEntryReader ).withLogFileMonitor( physicalLogMonitor )
-                            .withConfig( databaseConfig ).withDependencies( databaseDependencies ).withLogProvider( internalLogProvider ).build();
+            LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs ).withLogEntryReader( logEntryReader )
+                                               .withLogFileMonitor( physicalLogMonitor ).withConfig( databaseConfig )
+                                               .withDependencies( databaseDependencies )
+                                               .withLogProvider( internalLogProvider )
+                                               .build();
 
             databaseMonitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
             databaseMonitors.addMonitorListener( new LoggingLogTailScannerMonitor( internalLogProvider.getLog( LogTailScanner.class ) ) );
             databaseMonitors.addMonitorListener(
                     new ReverseTransactionCursorLoggingMonitor( internalLogProvider.getLog( ReversedSingleFileTransactionCursor.class ) ) );
             LogTailScanner tailScanner =
-                    new LogTailScanner( logFiles, logEntryReader, databaseMonitors, databaseConfig.get( GraphDatabaseSettings.fail_on_corrupted_log_files ) );
+                    new LogTailScanner( logFiles, logEntryReader, databaseMonitors, databaseConfig.get( fail_on_corrupted_log_files ) );
             LogVersionUpgradeChecker.check( tailScanner, databaseConfig );
 
             performRecovery( fs, databasePageCache, databaseConfig, databaseLayout, storageEngineFactory, internalLogProvider, databaseMonitors,
@@ -369,8 +373,10 @@ public class Database extends LifecycleAdapter
             Supplier<IdController.ConditionSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
             idController.initialize( transactionsSnapshotSupplier );
 
+            boolean storageExists = storageEngineFactory.storageExists( fs, databaseLayout, databasePageCache );
             storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, databaseConfig, databasePageCache, tokenHolders, databaseSchemaState,
-                    constraintSemantics, lockService, idGeneratorFactory, idController, databaseHealth, versionContextSupplier, internalLogProvider );
+                    constraintSemantics, lockService, idGeneratorFactory, idController, databaseHealth, versionContextSupplier, internalLogProvider,
+                    !storageExists );
 
             life.add( storageEngine );
             life.add( storageEngine.schemaAndTokensLifecycle() );
@@ -426,25 +432,17 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( indexProviderMap );
             databaseDependencies.satisfyDependency( forceOperation );
 
-            this.executionEngine = QueryEngineProvider.initialize( databaseDependencies,
-                                                                   databaseFacade,
-                                                                   engineProviders,
-                                                                   isSystem(),
-                    QueryEngineProvider.spi( internalLogProvider,
-                                                                                            databaseMonitors,
-                                                                                            scheduler,
-                                                                                            life,
-                                                                                            getKernel(),
-                                                                                            globalConfig ) );
+            QueryEngineProvider.SPI providerSpi = QueryEngineProvider.spi( internalLogProvider, databaseMonitors, scheduler, life, getKernel(), globalConfig );
+            this.executionEngine = QueryEngineProvider.initialize( databaseDependencies, databaseFacade, engineProviders, isSystem(), providerSpi );
 
             this.checkpointerLifecycle = new CheckpointerLifecycle( transactionLogModule.checkPointer(), databaseHealth );
-
-            databaseDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
 
             life.add( databaseHealth );
             life.add( databaseAvailabilityGuard );
             life.add( databaseAvailability );
             life.setLast( checkpointerLifecycle );
+
+            databaseDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
             life.start();
             eventListeners.databaseStart( databaseId.name() );
         }

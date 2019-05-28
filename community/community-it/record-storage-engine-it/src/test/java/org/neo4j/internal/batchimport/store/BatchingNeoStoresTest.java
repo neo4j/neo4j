@@ -359,7 +359,7 @@ class BatchingNeoStoresTest
                             tokenHolders, new DatabaseSchemaState( NullLogProvider.getInstance() ),
                             new StandardConstraintSemantics(), LockService.NO_LOCK_SERVICE,
                             new DatabaseHealth( new DatabasePanicEventGenerator( new DatabaseEventListeners( nullLog ), DEFAULT_DATABASE_NAME ), nullLog ),
-                            new DefaultIdGeneratorFactory( fileSystem ), new DefaultIdController(), EmptyVersionContextSupplier.EMPTY ) );
+                            new DefaultIdGeneratorFactory( fileSystem ), new DefaultIdController(), EmptyVersionContextSupplier.EMPTY, true ) );
             // Create the relationship type token
             TxState txState = new TxState();
             NeoStores neoStores = storageEngine.testAccessNeoStores();

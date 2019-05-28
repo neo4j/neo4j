@@ -113,20 +113,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private IndexUpdateListener indexUpdateListener;
     private NodeLabelUpdateListener nodeLabelUpdateListener;
 
-    public RecordStorageEngine(
-            DatabaseLayout databaseLayout,
-            Config config,
-            PageCache pageCache,
-            FileSystemAbstraction fs,
-            LogProvider logProvider,
-            TokenHolders tokenHolders,
-            SchemaState schemaState,
-            ConstraintRuleAccessor constraintSemantics,
-            LockService lockService,
-            Health databaseHealth,
-            IdGeneratorFactory idGeneratorFactory,
-            IdController idController,
-            VersionContextSupplier versionContextSupplier )
+    public RecordStorageEngine( DatabaseLayout databaseLayout, Config config, PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider,
+            TokenHolders tokenHolders, SchemaState schemaState, ConstraintRuleAccessor constraintSemantics, LockService lockService, Health databaseHealth,
+            IdGeneratorFactory idGeneratorFactory, IdController idController, VersionContextSupplier versionContextSupplier, boolean createStoreIfNotExists )
     {
         this.tokenHolders = tokenHolders;
         this.schemaState = schemaState;
@@ -136,7 +125,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.idController = idController;
 
         StoreFactory factory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, logProvider );
-        neoStores = factory.openAllNeoStores( true );
+        neoStores = factory.openAllNeoStores( createStoreIfNotExists );
 
         try
         {
