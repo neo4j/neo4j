@@ -27,18 +27,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.impl.query.QuerySubscriber;
+import org.neo4j.kernel.impl.query.QuerySubscriberAdapter;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
+
+import static org.neo4j.kernel.impl.query.QuerySubscriber.DO_NOTHING_SUBSCRIBER;
 
 public interface QueryExecutor
 {
-    void executeQuery( String query, Map<String,Object> params, QueryResult.QueryResultVisitor resultVisitor );
+    void executeQuery( String query, Map<String,Object> params, QuerySubscriber subscriber );
 
     Transaction beginTx();
 
@@ -51,23 +54,27 @@ public interface QueryExecutor
     {
         MutableLong count = new MutableLong( -1 );
 
-        final QueryResult.QueryResultVisitor<RuntimeException> resultVisitor = row ->
+        QuerySubscriber subscriber = new QuerySubscriberAdapter()
         {
-            count.setValue( ((NumberValue) row.fields()[0]).longValue() );
-            return false;
+            @Override
+            public void onField( int offset, AnyValue value ) throws Exception
+            {
+                if ( offset == 0 )
+                {
+                    count.setValue( ((NumberValue) value).longValue() );
+                }
+            }
         };
 
-        executeQuery( query, params, resultVisitor );
+        executeQuery( query, params, subscriber );
         return count.getValue();
     }
 
     default void executeQueryWithConstraint( String query, Map<String,Object> params, String failureMessage ) throws InvalidArgumentsException
     {
-        final QueryResult.QueryResultVisitor<RuntimeException> resultVisitor = row -> true;
-
         try
         {
-            executeQuery( query, params, resultVisitor );
+            executeQuery( query, params, DO_NOTHING_SUBSCRIBER );
         }
         catch ( Exception e )
         {
@@ -84,13 +91,15 @@ public interface QueryExecutor
     {
         MutableBoolean paramCheck = new MutableBoolean( false );
 
-        final QueryResult.QueryResultVisitor<RuntimeException> resultVisitor = row ->
+        QuerySubscriber subscriber = new QuerySubscriberAdapter()
         {
-            paramCheck.setTrue(); // If we get a result row, we know that the user and/or role specified in the params exist
-            return true;
+            @Override
+            public void onRecord() throws Exception
+            {
+                paramCheck.setTrue(); // If we get a result row, we know that the user and/or role specified in the params exist
+            }
         };
-
-        executeQuery( query, params, resultVisitor );
+        executeQuery( query, params, subscriber );
         return paramCheck.getValue();
     }
 
@@ -109,13 +118,19 @@ public interface QueryExecutor
     {
         Set<String> resultSet = new TreeSet<>();
 
-        final QueryResult.QueryResultVisitor<RuntimeException> resultVisitor = row ->
+        QuerySubscriber subscriber = new QuerySubscriberAdapter()
         {
-            resultSet.add( ((TextValue) row.fields()[0]).stringValue() );
-            return true;
+            @Override
+            public void onField( int offset, AnyValue value ) throws Exception
+            {
+                if ( offset == 0 )
+                {
+                    resultSet.add( ((TextValue) value).stringValue() );
+                }
+            }
         };
 
-        executeQuery( query, Collections.emptyMap(), resultVisitor );
+        executeQuery( query, Collections.emptyMap(), subscriber );
         return resultSet;
     }
 
@@ -124,18 +139,25 @@ public interface QueryExecutor
         MutableBoolean success = new MutableBoolean( false );
         Set<String> resultSet = new TreeSet<>();
 
-        final QueryResult.QueryResultVisitor<RuntimeException> resultVisitor = row ->
+        QuerySubscriber subscriber = new QuerySubscriberAdapter()
         {
-            success.setTrue(); // If we get a row we know that the parameter existed in the system db
-            Value value = (Value) row.fields()[0];
-            if ( value != Values.NO_VALUE )
+            @Override
+            public void onRecord()
             {
-                resultSet.add( ((TextValue) value).stringValue() );
+                success.setTrue();// If we get a row we know that the parameter existed in the system db
             }
-            return true;
+
+            @Override
+            public void onField( int offset, AnyValue value )
+            {
+                if ( offset == 0 && value != Values.NO_VALUE )
+                {
+                    resultSet.add( ((TextValue) value).stringValue() );
+                }
+            }
         };
 
-        executeQuery( query, params, resultVisitor );
+        executeQuery( query, params, subscriber );
 
         if ( success.isFalse() )
         {

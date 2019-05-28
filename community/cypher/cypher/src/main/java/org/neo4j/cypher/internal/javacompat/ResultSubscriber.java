@@ -49,7 +49,7 @@ import org.neo4j.values.AnyValue;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.WRITE;
 
-class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> implements QuerySubscriber, Result
+class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> implements QuerySubscriber, Result, QueryExecutionProvider
 {
     private final DefaultValueMapper valueMapper;
     private final EmbeddedProxySPI proxySPI;
@@ -59,9 +59,8 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
     private QueryStatistics statistics;
     private ResultVisitor<?> visitor;
     private Exception visitException;
-    private List<Map<String, Object>> materializeResult;
+    private List<Map<String,Object>> materializeResult;
     private Iterator<Map<String,Object>> materializedIterator;
-
 
     ResultSubscriber( EmbeddedProxySPI proxySPI )
     {
@@ -220,7 +219,7 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
     public String resultAsString()
     {
         StringWriter out = new StringWriter();
-        PrintWriter writer = new PrintWriter(out);
+        PrintWriter writer = new PrintWriter( out );
         writeAsStringTo( writer );
         writer.flush();
         return out.toString();
@@ -383,5 +382,12 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
         }
         return new QueryExecutionException( cypherException.getMessage(), cypherException,
                 cypherException.status().code().serialize() );
+    }
+
+    //TODO please make this go away
+    @Override
+    public QueryExecution queryExecution()
+    {
+        return execution;
     }
 }

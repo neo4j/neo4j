@@ -24,6 +24,8 @@ import java.util.function.Supplier;
 
 import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.Credential;
@@ -36,6 +38,7 @@ import org.neo4j.string.UTF8;
 
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_USER_NAME;
+import static org.neo4j.kernel.impl.query.QuerySubscriber.DO_NOTHING_SUBSCRIBER;
 
 public class UserSecurityGraphInitializer implements SecurityGraphInitializer
 {
@@ -155,7 +158,7 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
     private void setupConstraints() throws InvalidArgumentsException
     {
         // Ensure that multiple users cannot have the same name and are indexed
-        queryExecutor.executeQuery( "CREATE CONSTRAINT ON (u:User) ASSERT u.name IS UNIQUE", Collections.emptyMap(), row -> true );
+        queryExecutor.executeQuery( "CREATE CONSTRAINT ON (u:User) ASSERT u.name IS UNIQUE", Collections.emptyMap(),DO_NOTHING_SUBSCRIBER );
     }
 
     private boolean onlyDefaultUserWithDefaultPassword() throws Exception

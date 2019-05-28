@@ -19,13 +19,15 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.graphdb.Result;
+import org.neo4j.kernel.impl.query.QueryExecution;
 
 /**
- * Interface for {@link Result} of query executions that are aware how to represent their result as {@link QueryResult}
+ * Interface for {@link Result} of query executions that are aware how to represent their result as {@link QueryExecution}
+ *
+ * TODO this should go away
  */
-public interface QueryResultProvider
+public interface QueryExecutionProvider
 {
-    QueryResult queryResult();
+    QueryExecution queryExecution();
 }

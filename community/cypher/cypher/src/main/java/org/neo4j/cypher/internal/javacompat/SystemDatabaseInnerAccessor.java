@@ -22,14 +22,15 @@ package org.neo4j.cypher.internal.javacompat;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
+import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -56,14 +57,14 @@ public class SystemDatabaseInnerAccessor implements Supplier<GraphDatabaseQueryS
         return systemDb.beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED );
     }
 
-    public Result execute( String query, Map<String,Object> params )
+    public QueryExecution execute( String query, Map<String,Object> params, QuerySubscriber subscriber )
     {
         try
         {
             MapValue parameters = ValueUtils.asParameterMapValue( params );
             InternalTransaction transaction = systemDb.beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
             TransactionalContext context = contextFactory.newContext( transaction, query, parameters );
-            return this.engine.execute( query, parameters, context );
+            return this.engine.execute( query, parameters, context, subscriber );
         }
         catch ( QueryExecutionKernelException e )
         {
@@ -86,6 +87,7 @@ public class SystemDatabaseInnerAccessor implements Supplier<GraphDatabaseQueryS
      */
     public interface SystemDatabaseInnerEngine
     {
-        Result execute( String query, MapValue parameters, TransactionalContext context ) throws QueryExecutionKernelException;
+        QueryExecution execute( String query, MapValue parameters, TransactionalContext context,
+                QuerySubscriber subscriber ) throws QueryExecutionKernelException;
     }
 }

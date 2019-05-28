@@ -21,18 +21,17 @@ package org.neo4j.server.security.systemgraph;
 
 import java.util.Map;
 
-import org.neo4j.cypher.internal.javacompat.QueryResultProvider;
 import org.neo4j.cypher.internal.javacompat.SystemDatabaseInnerAccessor;
-import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.query.QueryExecution;
+import org.neo4j.kernel.impl.query.QuerySubscriber;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
@@ -54,7 +53,7 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
     }
 
     @Override
-    public void executeQuery( String query, Map<String,Object> params, QueryResult.QueryResultVisitor resultVisitor )
+    public void executeQuery( String query, Map<String,Object> params, QuerySubscriber subscriber )
     {
         final ThreadToStatementContextBridge statementContext = threadToStatementContextBridge;
 
@@ -67,7 +66,7 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
 
             try
             {
-                systemDbExecute( query, params, resultVisitor );
+                systemDbExecute( query, params, subscriber );
             }
             finally
             {
@@ -77,28 +76,34 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
         }
         else
         {
-            systemDbExecute( query, params, resultVisitor );
+            systemDbExecute( query, params, subscriber );
         }
     }
 
-    private void systemDbExecute( String query, Map<String,Object> parameters, QueryResult.QueryResultVisitor resultVisitor )
+    private void systemDbExecute( String query, Map<String,Object> parameters, QuerySubscriber subscriber )
     {
         // NOTE: This transaction is executed with AUTH_DISABLED.
         // We need to make sure this method is only accessible from a SecurityContext with admin rights.
         try ( Transaction transaction = getSystemDb().beginTx() )
         {
-            systemDbExecuteWithinTransaction( query, parameters, resultVisitor );
+            systemDbExecuteWithinTransaction( query, parameters, subscriber );
             transaction.success();
         }
     }
 
     private void systemDbExecuteWithinTransaction( String query, Map<String,Object> parameters,
-            QueryResult.QueryResultVisitor resultVisitor )
+           QuerySubscriber subscriber )
     {
-        Result result = getSystemDb().execute( query, parameters );
-        QueryResult queryResult = ((QueryResultProvider) result).queryResult();
-        //noinspection unchecked
-        queryResult.accept( resultVisitor );
+        QueryExecution result = getSystemDb().execute( query, parameters, subscriber );
+        try
+        {
+            result.request( Long.MAX_VALUE );
+            result.await();
+        }
+        catch ( Exception e )
+        {
+            throw new IllegalStateException( "Failed to access data", e );
+        }
     }
 
     @Override

@@ -22,13 +22,13 @@ package org.neo4j.server.security.systemgraph;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.impl.query.QuerySubscriber;
+import org.neo4j.kernel.impl.query.QuerySubscriberAdapter;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.SecureHasher;
-import org.neo4j.server.security.auth.exception.FormatException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.TextValue;
@@ -81,36 +81,51 @@ public class BasicSystemGraphOperations
         String query = "MATCH (u:User {name: $name}) RETURN u.credentials, u.passwordChangeRequired, u.suspended";
         Map<String,Object> params = map( "name", username );
 
-        final QueryResult.QueryResultVisitor<FormatException> resultVisitor = row ->
+        final QuerySubscriber subscriber = new QuerySubscriberAdapter()
         {
-            AnyValue[] fields = row.fields();
-            Credential credential = SystemGraphCredential.deserialize( ((TextValue) fields[0]).stringValue(), secureHasher );
-            boolean requirePasswordChange = ((BooleanValue) fields[1]).booleanValue();
-            boolean suspended = ((BooleanValue) fields[2]).booleanValue();
+            private AnyValue[] fields;
 
-            if ( suspended )
+            @Override
+            public void onResult( int numberOfFields )
             {
-                user[0] = new User.Builder()
-                        .withName( username )
-                        .withCredentials( credential )
-                        .withRequiredPasswordChange( requirePasswordChange )
-                        .withFlag( BasicSystemGraphRealm.IS_SUSPENDED )
-                        .build();
-            }
-            else
-            {
-                user[0] = new User.Builder()
-                        .withName( username )
-                        .withCredentials( credential )
-                        .withRequiredPasswordChange( requirePasswordChange )
-                        .withoutFlag( BasicSystemGraphRealm.IS_SUSPENDED )
-                        .build();
+                this.fields = new AnyValue[numberOfFields];
             }
 
-            return false;
+            @Override
+            public void onField( int offset, AnyValue value )
+            {
+                fields[offset] = value;
+            }
+
+            @Override
+            public void onRecordCompleted() throws Exception
+            {
+                Credential credential = SystemGraphCredential.deserialize( ((TextValue) fields[0]).stringValue(), secureHasher );
+                boolean requirePasswordChange = ((BooleanValue) fields[1]).booleanValue();
+                boolean suspended = ((BooleanValue) fields[2]).booleanValue();
+
+                if ( suspended )
+                {
+                    user[0] = new User.Builder()
+                            .withName( username )
+                            .withCredentials( credential )
+                            .withRequiredPasswordChange( requirePasswordChange )
+                            .withFlag( BasicSystemGraphRealm.IS_SUSPENDED )
+                            .build();
+                }
+                else
+                {
+                    user[0] = new User.Builder()
+                            .withName( username )
+                            .withCredentials( credential )
+                            .withRequiredPasswordChange( requirePasswordChange )
+                            .withoutFlag( BasicSystemGraphRealm.IS_SUSPENDED )
+                            .build();
+                }
+            }
         };
 
-        queryExecutor.executeQuery( query, params, resultVisitor );
+        queryExecutor.executeQuery( query, params, subscriber );
 
         if ( user[0] == null && !silent )
         {

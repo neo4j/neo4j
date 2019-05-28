@@ -19,11 +19,8 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import java.util
-
 import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslatingQueryContext
 import org.neo4j.cypher.internal.plandescription.Argument
-import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
@@ -70,7 +67,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String, normalExecutionEngin
 class QueryHandler {
   def onError(t: Throwable): Unit = throw t
 
-  def onResult(field: (Int, AnyValue)): Unit = Unit
+  def onResult(offset: Int, value: AnyValue): Unit = Unit
 
   def onNoResults(): Unit = Unit
 }
@@ -78,7 +75,7 @@ class QueryHandler {
 class QueryHandlerBuilder(parent: QueryHandler) extends QueryHandler {
   override def onError(t: Throwable): Unit = parent.onError(t)
 
-  override def onResult(record: util.Map[String, AnyRef]): Unit = parent.onResult(record)
+  override def onResult(offset: Int, value: AnyValue): Unit = parent.onResult(offset, value)
 
   override def onNoResults(): Unit = parent.onNoResults()
 
@@ -91,7 +88,7 @@ class QueryHandlerBuilder(parent: QueryHandler) extends QueryHandler {
   }
 
   def handleResult(handler: (Int, AnyValue) => Unit): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onResult(field: (Int, AnyValue)): Unit = handler(field)
+    override def onResult(offset: Int, value: AnyValue): Unit = handler(offset, value)
   }
 }
 

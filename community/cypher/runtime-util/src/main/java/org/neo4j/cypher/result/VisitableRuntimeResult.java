@@ -20,6 +20,8 @@
 package org.neo4j.cypher.result;
 
 //TODO this will go away
-public interface VisitableRuntimeResult extends RuntimeResult, QueryResult
+public interface VisitableRuntimeResult extends RuntimeResult
 {
+    <E extends Exception> void accept( QueryResult.QueryResultVisitor<E> visitor )
+            throws E;
 }

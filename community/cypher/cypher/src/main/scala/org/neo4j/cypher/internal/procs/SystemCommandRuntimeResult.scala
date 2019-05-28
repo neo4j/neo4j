@@ -23,13 +23,9 @@ import java.util
 
 import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryStatistics}
-import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
-import org.neo4j.cypher.result.{OperatorProfile, QueryProfile, QueryResult, RuntimeResult}
-import org.neo4j.graphdb.ResourceIterator
+import org.neo4j.cypher.result.{OperatorProfile, QueryProfile, RuntimeResult}
 import org.neo4j.kernel.impl.query.QuerySubscriber
-import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
 
 /**
   * Results, as produced by a system command.
