@@ -23,23 +23,25 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.internal.kernel.api.SchemaRead
+import org.neo4j.logging.Log
 
 /**
   * The regular community runtime context.
   */
 case class CommunityRuntimeContext(tokenContext: TokenContext,
                                    schemaRead: SchemaRead,
+                                   log: Log,
                                    config: CypherRuntimeConfiguration) extends RuntimeContext {
 
   override def compileExpressions: Boolean = false
 }
 
-case class CommunityRuntimeContextCreator(config: CypherRuntimeConfiguration) extends RuntimeContextCreator[CommunityRuntimeContext] {
+case class CommunityRuntimeContextCreator(log: Log, config: CypherRuntimeConfiguration) extends RuntimeContextCreator[CommunityRuntimeContext] {
   override def create(tokenContext: TokenContext,
                       schemaRead: SchemaRead,
                       clock: Clock,
                       debugOptions: Set[String],
                       ignore: Boolean
                      ): CommunityRuntimeContext =
-    CommunityRuntimeContext(tokenContext, schemaRead, config)
+    CommunityRuntimeContext(tokenContext, schemaRead, log, config)
 }

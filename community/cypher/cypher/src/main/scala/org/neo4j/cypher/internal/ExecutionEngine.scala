@@ -82,7 +82,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private val queryCache: QueryCache[String,Pair[String, ParameterTypeMap], ExecutableQuery] =
     new QueryCache[String, Pair[String, ParameterTypeMap], ExecutableQuery](config.queryCacheSize, planStalenessCaller, cacheTracer)
 
-  private val masterCompiler: MasterCompiler = new MasterCompiler(queryService, kernelMonitors, config, logProvider, compilerLibrary)
+  private val masterCompiler: MasterCompiler = new MasterCompiler(config, compilerLibrary)
 
   private val schemaHelper = new SchemaHelper(queryCache)
 
