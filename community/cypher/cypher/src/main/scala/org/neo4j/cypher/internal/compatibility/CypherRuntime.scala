@@ -21,22 +21,17 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RuntimeName
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{DelegatingExecutionPlan, ExecutionPlan}
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_5.{CypherPlannerConfiguration, RuntimeUnsupportedNotification}
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
-import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.planDescription.Argument
-import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.cypher.{CypherRuntimeOption, InvalidArgumentException, exceptionHandler}
-import org.neo4j.values.virtual.MapValue
-import org.neo4j.cypher.internal.v3_5.frontend.phases.{InternalNotificationLogger, RecordingNotificationLogger}
+import org.neo4j.cypher.internal.v3_5.frontend.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.v3_5.util.InternalNotification
+import org.neo4j.cypher.{CypherRuntimeOption, InvalidArgumentException, exceptionHandler}
+import org.neo4j.logging.Log
 
 import scala.concurrent.duration.Duration
-import scala.util.Try
 
 /**
   * A cypher runtime. Compiles logical plans into a executable form, which can
@@ -64,6 +59,7 @@ abstract class RuntimeContext {
   def readOnly: Boolean
   def config: CypherPlannerConfiguration
   def compileExpressions: Boolean
+  def log: Log
 }
 
 /**
@@ -91,10 +87,6 @@ object UnknownRuntime extends CypherRuntime[RuntimeContext] {
 /**
   * Composite cypher runtime, which attempts to compile using several different runtimes before giving up.
   *
-  * In addition to attempting the provided runtimes, this runtime allways first attempt to compile using
-  * `org.neo4j.cypher.internal.compatibility.ProcedureCallOrSchemaCommandRuntime`, in case the query
-  * is a simple procedure call of schema command.
-  *
   * @param runtimes the runtimes to attempt to compile with, in order of priority
   * @param requestedRuntime the requested runtime, used to provide error messages
   */
@@ -109,27 +101,39 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
     }
 
   override def compileToExecutable(logicalPlan: LogicalPlanState, context: CONTEXT): ExecutionPlan = {
-    var executionPlan: Try[ExecutionPlan] = Try(ProcedureCallOrSchemaCommandRuntime.compileToExecutable(logicalPlan, context))
     val logger = new RecordingNotificationLogger()
-    for (runtime <- runtimes if executionPlan.isFailure) {
-      executionPlan =
-        Try(
-          exceptionHandler.runSafely(
-            runtime.compileToExecutable(logicalPlan, context)
-          )
-        )
 
-      if (executionPlan.isFailure && requestedRuntime != CypherRuntimeOption.default)
-        logger.log(RuntimeUnsupportedNotification)
+    var i = 0
+    var lastException: Exception = null
+    while (i < runtimes.length) {
+      val runtime = runtimes(i)
+
+      try {
+        val plan = exceptionHandler.runSafely(runtime.compileToExecutable(logicalPlan, context))
+        val notifications = logger.notifications
+        val notifiedPlan = if (notifications.isEmpty) plan else ExecutionPlanWithNotifications(plan, notifications)
+       return notifiedPlan
+      } catch {
+        case e: CantCompileQueryException =>
+          lastException = e
+          if (runtime != ProcedureCallOrSchemaCommandRuntime && requestedRuntime != CypherRuntimeOption.default) {
+            logger.log(RuntimeUnsupportedNotification)
+          }
+        case e: Exception =>
+          lastException = e
+          // That is unexpected. Let's log, but continue trying other runtimes
+          context.log.debug(s"Runtime ${runtime.getClass.getSimpleName} failed to compile query ${logicalPlan.queryText}", e)
+      }
+      i += 1
     }
-    val notifications = logger.notifications
+    // All runtimes failed
+    lastException match {
+      case e:CantCompileQueryException =>
+        throw publicCannotCompile(e)
+      case e =>
+        throw e
 
-    val plan = executionPlan.recover({
-      case e: CantCompileQueryException => throw publicCannotCompile(e)
-    }).get
-
-    if (notifications.isEmpty) plan
-    else ExecutionPlanWithNotifications(plan, notifications)
+    }
   }
 }
 
