@@ -25,7 +25,7 @@ import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.planner.spi.IdempotentResult
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryTransactionalContext}
+import org.neo4j.cypher.internal.runtime.interpreted.DelegatingQueryTransactionalContext
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
@@ -100,6 +100,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     translateException(inner.dropIndexRule(labelId, propertyKeyIds))
 
+  override def indexReference(label: Int, properties: Int*): IndexReference =
+    translateException(inner.indexReference(label, properties:_*))
+
   override def indexSeek[RESULT <: AnyRef](index: IndexReadSession,
                                            needsValues: Boolean,
                                            indexOrder: IndexOrder,
@@ -131,7 +134,11 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def nodeGetIncomingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int =
     translateException(inner.nodeGetIncomingDegree(node, relationship, nodeCursor))
 
-  override def nodeGetTotalDegree(node: Long, nodeCursor: NodeCursor): Int = translateException(inner.nodeGetTotalDegree(node, nodeCursor))
+  override def nodeGetTotalDegree(node: Long, nodeCursor: NodeCursor): Int =
+    translateException(inner.nodeGetTotalDegree(node, nodeCursor))
+
+  override def singleRelationship(id: Long, cursor: RelationshipScanCursor): Unit =
+    translateException(inner.singleRelationship(id,cursor))
 
   override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int =
     translateException(inner.nodeGetTotalDegree(node, relationship, nodeCursor))
@@ -236,10 +243,12 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def asObject(value: AnyValue): AnyRef =
     translateException(inner.asObject(value))
 
-
   override def getTxStateNodePropertyOrNull(nodeId: Long,
                                             propertyKey: Int): Value =
     translateException(inner.getTxStateNodePropertyOrNull(nodeId, propertyKey))
+
+  override def getTxStateRelationshipPropertyOrNull(relId: Long, propertyKey: Int): Value =
+    translateException(inner.getTxStateRelationshipPropertyOrNull(relId, propertyKey))
 
   override def variableLengthPathExpand(realNode: Long, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]): Iterator[Path] =
     translateException(inner.variableLengthPathExpand(realNode, minHops, maxHops, direction, relTypes))
@@ -271,7 +280,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def assertSchemaWritesAllowed(): Unit = translateException(inner.assertSchemaWritesAllowed())
 
   class ExceptionTranslatingOperations[T, CURSOR](inner: Operations[T, CURSOR])
-    extends DelegatingOperations[T, CURSOR](inner) {
+    extends Operations[T, CURSOR] {
     override def delete(id: Long): Unit =
       translateException(inner.delete(id))
 
@@ -304,19 +313,22 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
     override def getByIdIfExists(id: Long): Option[T] =
       translateException(inner.getByIdIfExists(id))
+
+    override def getTxStateProperty(obj: Long, propertyKeyId: Int): Value =
+      translateException(inner.getTxStateProperty(obj, propertyKeyId))
+
+    override def hasTxStatePropertyForCachedProperty(entityId: Long, propertyKeyId: Int): Boolean =
+      translateException(inner.hasTxStatePropertyForCachedProperty(entityId, propertyKeyId))
+
+    override def acquireExclusiveLock(obj: Long): Unit =
+      translateException(inner.acquireExclusiveLock(obj))
+
+    override def releaseExclusiveLock(obj: Long): Unit =
+      translateException(inner.releaseExclusiveLock(obj))
   }
 
   class ExceptionTranslatingTransactionalContext(inner: QueryTransactionalContext) extends DelegatingQueryTransactionalContext(inner) {
     override def close(success: Boolean) { translateException(super.close(success)) }
   }
 
-  override def indexReference(label: Int, properties: Int*): IndexReference =
-    translateException(inner.indexReference(label, properties:_*))
-
-  override def singleRelationship(id: Long, cursor: RelationshipScanCursor): Unit = translateException(inner.singleRelationship(id,cursor))
-
-  override def getTxStateRelationshipPropertyOrNull(relId: Long, propertyKey: Int): Value =
-    translateException(inner.getTxStateRelationshipPropertyOrNull(relId, propertyKey))
-
-  // TODO we need to override all methods!
 }
