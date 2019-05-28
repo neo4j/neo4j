@@ -40,7 +40,7 @@ abstract class AbstractCachedProperty extends Expression {
   def getCachedProperty(ctx: ExecutionContext): Value
   def setCachedProperty(ctx: ExecutionContext, value: Value): Unit
 
-  def getTxStateProperty(state: QueryState, id: Long, propId: Int): Option[Value]
+  def getTxStateProperty(state: QueryState, id: Long, propId: Int): Value
   def property(state: QueryState, id: Long, propId: Int): Value
 
   // encapsulated cached-node-property logic
@@ -55,8 +55,7 @@ abstract class AbstractCachedProperty extends Expression {
         case propId =>
           val maybeTxStateValue = getTxStateProperty(state, id, propId)
           maybeTxStateValue match {
-            case Some(txStateValue) => txStateValue
-            case None =>
+            case null =>
               val cached = getCachedProperty(ctx)
               if (cached == null) {
                 // if the cached node property has been invalidated
@@ -67,6 +66,7 @@ abstract class AbstractCachedProperty extends Expression {
               } else {
                 cached
               }
+            case txStateValue => txStateValue
           }
       }
     }
@@ -78,7 +78,7 @@ abstract class AbstractCachedProperty extends Expression {
 }
 
 abstract class AbstractCachedNodeProperty extends AbstractCachedProperty {
-  override def getTxStateProperty(state: QueryState, id: Long, propId: Int): Option[Value] = state.query.nodeOps.getTxStateProperty(id, propId)
+  override def getTxStateProperty(state: QueryState, id: Long, propId: Int): Value = state.query.nodeOps.getTxStateProperty(id, propId)
 
   override def property(state: QueryState,
                         id: Long,
@@ -86,7 +86,7 @@ abstract class AbstractCachedNodeProperty extends AbstractCachedProperty {
 }
 
 abstract class AbstractCachedRelationshipProperty extends AbstractCachedProperty {
-  override def getTxStateProperty(state: QueryState, id: Long, propId: Int): Option[Value] = state.query.relationshipOps.getTxStateProperty(id, propId)
+  override def getTxStateProperty(state: QueryState, id: Long, propId: Int): Value = state.query.relationshipOps.getTxStateProperty(id, propId)
 
   override def property(state: QueryState,
                         id: Long,

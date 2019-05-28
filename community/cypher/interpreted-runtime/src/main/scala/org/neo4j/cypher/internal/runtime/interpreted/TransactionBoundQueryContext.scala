@@ -463,8 +463,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
     }
 
-    override def getTxStateProperty(nodeId: Long, propertyKeyId: Int): Option[Value] =
-      Option(getTxStateNodePropertyOrNull(nodeId, propertyKeyId))
+    override def getTxStateProperty(nodeId: Long, propertyKeyId: Int): Value =
+      getTxStateNodePropertyOrNull(nodeId, propertyKeyId)
 
     override def hasProperty(id: Long, propertyKey: Int, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): Boolean = {
       reads().singleNode(id, nodeCursor)
@@ -676,9 +676,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     override def releaseExclusiveLock(obj: Long): Unit =
       transactionalContext.kernelTransaction.locks().releaseExclusiveRelationshipLock(obj)
 
-    // TODO null instead of Option
-    override def getTxStateProperty(relId: Long, propertyKeyId: Int): Option[Value] =
-      Option(getTxStateRelationshipPropertyOrNull(relId, propertyKeyId))
+    override def getTxStateProperty(relId: Long, propertyKeyId: Int): Value =
+      getTxStateRelationshipPropertyOrNull(relId, propertyKeyId)
 
     override def hasTxStatePropertyForCachedProperty(relId: Long, propertyKeyId: Int): Boolean = {
       if (isDeletedInThisTx(relId)) {

@@ -247,12 +247,12 @@ trait Operations[T, CURSOR] {
   def hasProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean
 
   /**
-    * @return `None` if there are no changes.
-    *         `Some(NO_VALUE)` if the property was deleted.
-    *         `Some(v)` if the property was set to v
+    * @return `null` if there are no changes.
+    *         `NO_VALUE` if the property was deleted.
+    *         `v` if the property was set to v
     * @throws EntityNotFoundException if the node was deleted
     */
-  def getTxStateProperty(obj: Long, propertyKeyId: Int): Option[Value]
+  def getTxStateProperty(obj: Long, propertyKeyId: Int): Value
 
   /**
     * @return `true` if TxState has no changes, which indicates the cached node property must exist,
