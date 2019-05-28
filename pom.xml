@@ -235,6 +235,7 @@
                     <artifactId>revapi-maven-plugin</artifactId>
                     <version>0.11.0</version>
                     <configuration>
+                        <skip>true</skip>
                         <versionFormat>^\d+\.\d+\.\d+$</versionFormat>
                         <analysisConfiguration>
                             <revapi.java>
