@@ -19,26 +19,24 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Header;
+import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.index.schema.SpatialIndexConfig;
+import org.neo4j.logging.Log;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.io.fs.FileUtils.path;
+import static org.neo4j.kernel.impl.storemigration.IndexConfigExtractorUtil.logExtractionFailure;
 
 /**
  * This class is the amber in which 3.5 spatial index provider is preserved in.
@@ -47,118 +45,70 @@ import static org.neo4j.io.fs.FileUtils.path;
  */
 final class SpatialConfigExtractor
 {
-    private static final Pattern CRS_FILE_PATTERN = Pattern.compile( "(\\d+)-(\\d+)" );
-    private static final String spatialDirectoryName = "spatial-1.0";
+    private static final byte BYTE_FAILED = 0;
+    private static final int SPATIAL_INDEX_TYPE_SPACE_FILLING_CURVE = 1;
 
     private SpatialConfigExtractor()
-    {}
-
-    static IndexConfig indexConfigFromSpatialFile( FileSystemAbstraction fs, PageCache pageCache, File parentDir, long indexId )
-            throws IOException
     {
-        File spatialDirectory = path( parentDir, String.valueOf( indexId ), spatialDirectoryName );
+    }
+
+    static IndexConfig indexConfigFromSpatialFile( PageCache pageCache, List<SpatialFile> spatialFiles, Log log ) throws IOException
+    {
         Map<String,Value> map = new HashMap<>();
-        List<SpatialFile> spatialFiles = existingSpatialFiles( fs, spatialDirectory );
         for ( SpatialFile spatialFile : spatialFiles )
         {
-            SpacialConfigReader spacialConfigReader = new SpacialConfigReader();
-            GBPTree.readHeader( pageCache, spatialFile.indexFile, spacialConfigReader.headerReader() );
-
-            CoordinateReferenceSystem crs = spatialFile.crs;
-            int dimensions = spacialConfigReader.dimensions;
-            int maxLevels = spacialConfigReader.maxLevels;
-            double[] min = spacialConfigReader.min;
-            double[] max = spacialConfigReader.max;
-            SpatialIndexConfig.addSpatialConfig( map, crs, dimensions, maxLevels, min, max );
+            try
+            {
+                GBPTree.readHeader( pageCache, spatialFile.getIndexFile(), headerReader( map, spatialFile, log ) );
+            }
+            catch ( MetadataMismatchException e )
+            {
+                logExtractionFailure( "Index meta data is corrupt and can not be parsed.", log, spatialFile.getIndexFile() );
+                map = Collections.emptyMap();
+                break;
+            }
         }
         return IndexConfig.with( map );
     }
 
-    private static List<SpatialFile> existingSpatialFiles( FileSystemAbstraction fs, File spatialDirectory )
+    private static Header.Reader headerReader( Map<String,Value> map, SpatialFile spatialFile, Log log )
     {
-        List<SpatialFile> spatialFiles = new ArrayList<>();
-        File[] files = fs.listFiles( spatialDirectory );
-        if ( files != null )
+        return headerBytes ->
         {
-            for ( File file : files )
+            byte state = headerBytes.get();
+            if ( state != BYTE_FAILED )
             {
-                String name = file.getName();
-                Matcher matcher = CRS_FILE_PATTERN.matcher( name );
-                if ( matcher.matches() )
+                int typeId = headerBytes.getInt();
+                if ( typeId == SPATIAL_INDEX_TYPE_SPACE_FILLING_CURVE )
                 {
-                    int tableId = Integer.parseInt( matcher.group( 1 ) );
-                    int code = Integer.parseInt( matcher.group( 2 ) );
-                    CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( tableId, code );
-                    spatialFiles.add( new SpatialFile( crs, file ) );
-                }
-            }
-        }
-        return spatialFiles;
-    }
-
-    private static class SpacialConfigReader
-    {
-        private static final byte BYTE_FAILED = 0;
-        private static final int SPATIAL_INDEX_TYPE_SPACE_FILLING_CURVE = 1;
-        private int dimensions;
-        private int maxLevels;
-        private double[] min;
-        private double[] max;
-
-        //todo
-        // - decide what to do if index configuration could not be read. Simply fallback to default bless?
-        private boolean readSuccessful;
-
-        Header.Reader headerReader()
-        {
-            return headerBytes ->
-            {
-                byte state = headerBytes.get();
-                if ( state == BYTE_FAILED )
-                {
-                    readSuccessful = false;
+                    try
+                    {
+                        int maxLevels = headerBytes.getInt();
+                        int dimensions = headerBytes.getInt();
+                        double[] min = new double[dimensions];
+                        double[] max = new double[dimensions];
+                        for ( int i = 0; i < dimensions; i++ )
+                        {
+                            min[i] = headerBytes.getDouble();
+                            max[i] = headerBytes.getDouble();
+                        }
+                        CoordinateReferenceSystem crs = spatialFile.getCrs();
+                        SpatialIndexConfig.addSpatialConfig( map, crs, dimensions, maxLevels, min, max );
+                    }
+                    catch ( BufferUnderflowException e )
+                    {
+                        logExtractionFailure( "Got an exception, " + e.toString() + ".", log, spatialFile.getIndexFile() );
+                    }
                 }
                 else
                 {
-                    int typeId = headerBytes.getInt();
-                    if ( typeId == SPATIAL_INDEX_TYPE_SPACE_FILLING_CURVE )
-                    {
-                        try
-                        {
-                            maxLevels = headerBytes.getInt();
-                            dimensions = headerBytes.getInt();
-                            min = new double[dimensions];
-                            max = new double[dimensions];
-                            for ( int i = 0; i < dimensions; i++ )
-                            {
-                                min[i] = headerBytes.getDouble();
-                                max[i] = headerBytes.getDouble();
-                            }
-                            readSuccessful = true;
-                        }
-                        catch ( BufferUnderflowException e )
-                        {
-                            readSuccessful = false;
-                        }
-                    }
-                    else
-                    {
-                        readSuccessful = false;
-                    }
+                    logExtractionFailure( "Spatial index file is of an unknown type, typeId=" + state + ".", log, spatialFile.getIndexFile() );
                 }
-            };
-        }
-    }
-
-    private static class SpatialFile
-    {
-        private final File indexFile;
-        private final CoordinateReferenceSystem crs;
-
-        SpatialFile( CoordinateReferenceSystem crs, File indexFile )
-        {
-            this.crs = crs;
-            this.indexFile = indexFile;
-        }
+            }
+            else
+            {
+                logExtractionFailure( "Index is in FAILED state.", log, spatialFile.getIndexFile() );
+            }
+        };
     }
 }

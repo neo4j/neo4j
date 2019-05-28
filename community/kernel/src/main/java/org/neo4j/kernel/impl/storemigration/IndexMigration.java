@@ -21,7 +21,11 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.schema.IndexConfig;
@@ -30,6 +34,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.Log;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static org.neo4j.io.fs.FileUtils.path;
 
@@ -49,7 +54,9 @@ enum IndexMigration
                 IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId, Log log ) throws IOException
                 {
                     File lucene10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
-                    return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, lucene10Dir, indexId );
+                    File spatialDirectory = getSpatialSubDirectory( indexId, lucene10Dir );
+                    List<SpatialFile> spatialFiles = getSpatialFiles( fs, spatialDirectory );
+                    return SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, log );
                 }
 
             },
@@ -66,7 +73,9 @@ enum IndexMigration
                 IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId, Log log ) throws IOException
                 {
                     File providerRootDirectory = providerRootDirectories( layout )[0];
-                    return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, providerRootDirectory, indexId );
+                    File spatialDirectory = getSpatialSubDirectory( indexId, providerRootDirectory );
+                    List<SpatialFile> spatialFiles = getSpatialFiles( fs, spatialDirectory );
+                    return SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, log );
                 }
 
             },
@@ -83,7 +92,9 @@ enum IndexMigration
                 IndexConfig extractIndexConfig( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, long indexId, Log log ) throws IOException
                 {
                     File providerRootDirectory = providerRootDirectories( layout )[0];
-                    return SpatialConfigExtractor.indexConfigFromSpatialFile( fs, pageCache, providerRootDirectory, indexId );
+                    File spatialDirectory = getSpatialSubDirectory( indexId, providerRootDirectory );
+                    List<SpatialFile> spatialFiles = getSpatialFiles( fs, spatialDirectory );
+                    return SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, log );
                 }
 
             },
@@ -137,6 +148,9 @@ enum IndexMigration
                 }
 
             };
+
+    private static final Pattern CRS_FILE_PATTERN = Pattern.compile( "(\\d+)-(\\d+)" );
+    private static final String spatialDirectoryName = "spatial-1.0";
 
     final String providerKey;
     final String providerVersion;
@@ -215,6 +229,33 @@ enum IndexMigration
         return Arrays.stream( IndexMigration.values() )
                 .filter( p -> p.retired )
                 .toArray( IndexMigration[]::new );
+    }
+
+    private static File getSpatialSubDirectory( long indexId, File baseProviderDir )
+    {
+        return path( baseProviderDir, String.valueOf( indexId ), spatialDirectoryName );
+    }
+
+    public static List<SpatialFile> getSpatialFiles( FileSystemAbstraction fs, File spatialDirectory )
+    {
+        List<SpatialFile> spatialFiles = new ArrayList<>();
+        File[] files = fs.listFiles( spatialDirectory );
+        if ( files != null )
+        {
+            for ( File file : files )
+            {
+                String name = file.getName();
+                Matcher matcher = CRS_FILE_PATTERN.matcher( name );
+                if ( matcher.matches() )
+                {
+                    int tableId = Integer.parseInt( matcher.group( 1 ) );
+                    int code = Integer.parseInt( matcher.group( 2 ) );
+                    CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( tableId, code );
+                    spatialFiles.add( new SpatialFile( crs, file ) );
+                }
+            }
+        }
+        return spatialFiles;
     }
 
     private static IndexProviderDescriptor asIndexProviderDescriptor( GraphDatabaseSettings.SchemaIndex schemaIndex )

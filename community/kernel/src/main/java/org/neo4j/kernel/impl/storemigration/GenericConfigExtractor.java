@@ -36,6 +36,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 
+import static org.neo4j.kernel.impl.storemigration.IndexConfigExtractorUtil.logExtractionFailure;
+
 /**
  * This class is the amber in which 3.5 generic index config reading is preserved in.
  * It has the ability to extract index configuration from a 3.5 generic index file, given
@@ -65,12 +67,6 @@ final class GenericConfigExtractor
             logExtractionFailure( "Index file does not exists.", log, genericFile );
         }
         return IndexConfig.with( indexConfig );
-    }
-
-    private static void logExtractionFailure( String reason, Log log, File indexFile )
-    {
-        log.warn( String.format( "Could not extract index configuration from migrating index file. %s " +
-                "Index will be recreated with currently configured settings instead, indexFile=%s", reason, indexFile ) );
     }
 
     // Copy of SpaceFillingCurveSettingsReader
