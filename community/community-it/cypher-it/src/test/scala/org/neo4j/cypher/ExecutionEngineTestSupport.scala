@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.runtime.{QueryContext, RuntimeScalaValueConverter}
+import org.neo4j.cypher.internal.runtime.{QueryContext, RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -126,20 +126,21 @@ trait ExecutionEngineHelper {
   self: GraphIcing =>
 
   private val converter = new RuntimeScalaValueConverter(_ => false)
+  private val javaConverter = new RuntimeJavaValueConverter(_ => false)
 
   def graph: GraphDatabaseCypherService
 
   def eengine: ExecutionEngine
 
   def execute(q: String, params: (String, Any)*): RewindableExecutionResult = {
-    RewindableExecutionResult(graph.execute(q, params.toMap.asJava.asInstanceOf[java.util.Map[String, AnyRef]]))
+    RewindableExecutionResult(graph.execute(q, javaConverter.asDeepJavaMap(params.toMap).asInstanceOf[util.Map[String, AnyRef]]))
   }
 
   def execute(q: String, params: Map[String, Any]): RewindableExecutionResult =
-    RewindableExecutionResult(graph.execute(q, params.toMap.asJava.asInstanceOf[java.util.Map[String, AnyRef]]))
+    RewindableExecutionResult(graph.execute(q, javaConverter.asDeepJavaMap(params.toMap).asInstanceOf[util.Map[String, AnyRef]]))
 
   def executeOfficial(q: String, params: (String, Any)*): Result =
-   graph.execute(q, params.toMap.asJava.asInstanceOf[java.util.Map[String, AnyRef]])
+   graph.execute(q, javaConverter.asDeepJavaMap(params.toMap).asInstanceOf[util.Map[String, AnyRef]])
 
   def executeScalar[T](q: String, params: (String, Any)*): T = {
     ExecutionEngineHelper.scalar[T](asScalaResult(executeOfficial(q, params:_*)).toList)

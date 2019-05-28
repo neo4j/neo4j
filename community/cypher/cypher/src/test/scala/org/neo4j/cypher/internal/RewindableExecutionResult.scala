@@ -25,8 +25,6 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.{Notification, Result}
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 
-import scala.collection.mutable.ArrayBuffer
-
 trait RewindableExecutionResult {
   def columns: Array[String]
   protected def result: Seq[Map[String, AnyRef]]
@@ -74,10 +72,11 @@ object RewindableExecutionResult {
   def apply(in: Result): RewindableExecutionResult = {
     try {
       val columns = in.columns().asScala.toArray
-
-      val result = new ArrayBuffer[Map[String, AnyRef]]()
-      in.asScala.map(javaResult => scalaValues.asDeepScalaMap(javaResult))
-      new RewindableExecutionResultImplementation(columns, result, NormalMode, null,
+      val result = in.asScala.map(javaResult => scalaValues.asDeepScalaMap(javaResult).asInstanceOf[Map[String, AnyRef]]).toList
+      new RewindableExecutionResultImplementation(columns,
+                                                  result,
+                                                  NormalMode,
+                                                  in.getExecutionPlanDescription.asInstanceOf[InternalPlanDescription],
                                                   in.getQueryStatistics.asInstanceOf[QueryStatistics],
                                                   Seq.empty)
     } finally in.close()

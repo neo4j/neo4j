@@ -317,17 +317,34 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
             execution.request( 1 );
             execution.await();
             assertNoErrors();
-            if ( isDone() )
+            if ( hasNewValues() )
+            {
+                HashMap<String,Object> record = createPublicRecord();
+                markAsRead();
+                return record;
+            }
+            else
             {
                 return null;
             }
-
-            return createPublicRecord();
         }
         catch ( Throwable throwable )
         {
             close();
             throw converted( throwable );
+        }
+    }
+
+    private boolean hasNewValues()
+    {
+        return currentRecord.length > 0 && currentRecord[0] != null;
+    }
+
+    private void markAsRead()
+    {
+        if ( currentRecord.length > 0 )
+        {
+            currentRecord[0] = null;
         }
     }
 

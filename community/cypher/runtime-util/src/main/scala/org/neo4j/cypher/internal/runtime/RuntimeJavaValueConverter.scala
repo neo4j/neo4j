@@ -22,8 +22,6 @@ package org.neo4j.cypher.internal.runtime
 import java.util.{List => JavaList, Map => JavaMap}
 
 import org.neo4j.cypher.internal.v4_0.util.Eagerly.immutableMapValues
-import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
-import org.neo4j.values.AnyValue
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
@@ -44,33 +42,6 @@ class RuntimeJavaValueConverter(skip: Any => Boolean) {
     case iterable: Iterable[_] => iterable.map(asDeepJavaValue).toIndexedSeq.asJava: JavaList[_]
     case traversable: TraversableOnce[_] => traversable.map(asDeepJavaValue).toVector.asJava: JavaList[_]
     case anything => anything
-  }
-
-  case class feedIteratorToVisitable[EX <: Exception](fields: Iterator[Array[AnyValue]]) {
-    def accept(visitor: QueryResultVisitor[EX]) = {
-      val row = new ResultRecord()
-      var continue = true
-      while (continue && fields.hasNext) {
-        row._fields = fields.next()
-        continue = visitor.visit(row)
-      }
-    }
-  }
-
-  case class feedQueryResultRecordIteratorToVisitable[EX <: Exception](recordIterator: Iterator[Record]) {
-    def accept(visitor: QueryResultVisitor[EX]) = {
-      var continue = true
-      while (continue && recordIterator.hasNext) {
-        val row = recordIterator.next()
-        continue = visitor.visit(row)
-        row.release()
-      }
-    }
-  }
-
-  private class ResultRecord extends Record {
-    var _fields: Array[AnyValue] = Array.empty
-    override def fields(): Array[AnyValue] = _fields
   }
 }
 
