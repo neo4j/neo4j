@@ -87,11 +87,6 @@
             <groupId>org.scalacheck</groupId>
             <artifactId>scalacheck_${scala.binary.version}</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.lihaoyi</groupId>
-            <artifactId>pprint_${scala.binary.version}</artifactId>
-        </dependency>
-
 
     </dependencies>
 
