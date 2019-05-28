@@ -22,7 +22,6 @@ package org.neo4j.util.concurrent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -118,19 +117,5 @@ public class Futures
                 return result;
             }
         };
-    }
-
-    /**
-     * Returns a exceptionally completed @{link CompletableFuture} instance
-     *
-     * @param ex the @{link Throwable} that would be set on the future
-     * @param <T> the result type returned by this Future's get method
-     * @return An exceptionally completed @{link CompletableFuture} with the given exception
-     */
-    public static <T> CompletableFuture<T> failedFuture( Throwable ex )
-    {
-        CompletableFuture<T> future = new CompletableFuture<>();
-        future.completeExceptionally( ex );
-        return future;
     }
 }

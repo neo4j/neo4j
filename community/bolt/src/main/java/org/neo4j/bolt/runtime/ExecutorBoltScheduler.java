@@ -35,7 +35,8 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
-import static org.neo4j.util.concurrent.Futures.failedFuture;
+import static java.util.concurrent.CompletableFuture.failedFuture;
+import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifetimeListener, BoltConnectionQueueMonitor
 {
@@ -151,7 +152,7 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
     {
         try
         {
-            return CompletableFuture.supplyAsync( () -> executeBatch( connection ), threadPool );
+            return supplyAsync( () -> executeBatch( connection ), threadPool );
         }
         catch ( RejectedExecutionException ex )
         {
