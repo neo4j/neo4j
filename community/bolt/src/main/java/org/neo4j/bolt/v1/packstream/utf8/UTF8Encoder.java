@@ -48,19 +48,30 @@ public interface UTF8Encoder
      */
     ByteBuffer encode( String input );
 
-    static UTF8Encoder fastestAvailableEncoder()
+    class EncoderLoader
     {
-        try
+        public static EncoderLoader ENCODER_LOADER = new EncoderLoader();
+
+        private volatile boolean useFallbackEncoder;
+        public UTF8Encoder fastestAvailableEncoder()
         {
-            return (UTF8Encoder)Class
-                    .forName("org.neo4j.bolt.v1.packstream.utf8.SunMiscUTF8Encoder")
-                    .getConstructor()
-                    .newInstance();
-        }
-        catch ( Throwable e )
-        {
-            return new VanillaUTF8Encoder();
+            if ( useFallbackEncoder )
+            {
+                return new VanillaUTF8Encoder();
+            }
+
+            try
+            {
+                return (UTF8Encoder)Class
+                        .forName( "org.neo4j.bolt.v1.packstream.utf8.GCFreeUTF8Encoder" )
+                        .getConstructor()
+                        .newInstance();
+            }
+            catch ( Throwable e )
+            {
+                useFallbackEncoder = true;
+                return new VanillaUTF8Encoder();
+            }
         }
     }
-
 }
