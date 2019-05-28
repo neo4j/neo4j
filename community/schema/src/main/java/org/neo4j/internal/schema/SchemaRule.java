@@ -109,15 +109,6 @@ public interface SchemaRule extends SchemaDescriptorSupplier
             return userString;
         }
 
-        public static Kind forId( byte id ) throws MalformedSchemaRuleException
-        {
-            if ( id >= 1 && id <= ALL.length )
-            {
-                return values()[id - 1];
-            }
-            throw new MalformedSchemaRuleException( null, "Unknown kind id %d", id );
-        }
-
         public static Kind map( IndexDescriptor index )
         {
             if ( index.isUnique() )
@@ -144,7 +135,7 @@ public interface SchemaRule extends SchemaDescriptorSupplier
             }
         }
 
-        private static SchemaComputer<Kind> existenceKindMapper = new SchemaComputer<Kind>()
+        private static SchemaComputer<Kind> existenceKindMapper = new SchemaComputer<>()
         {
             @Override
             public Kind computeSpecific( LabelSchemaDescriptor schema )

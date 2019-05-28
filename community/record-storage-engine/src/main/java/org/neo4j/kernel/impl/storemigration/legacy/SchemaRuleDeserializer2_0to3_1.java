@@ -26,7 +26,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleExcept
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.internal.schema.SchemaRule.Kind;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.DefaultStorageIndexReference;
@@ -48,13 +47,12 @@ public class SchemaRuleDeserializer2_0to3_1
 
     static boolean isLegacySchemaRule( byte schemaRuleType )
     {
-        return schemaRuleType >= 1 && schemaRuleType <= Kind.values().length;
+        return schemaRuleType >= 1 && schemaRuleType <= SchemaRuleKind.values().length;
     }
 
-    static SchemaRule deserialize( long id, int labelId, byte kindByte, ByteBuffer buffer ) throws
-            MalformedSchemaRuleException
+    static SchemaRule deserialize( long id, int labelId, byte kindByte, ByteBuffer buffer ) throws MalformedSchemaRuleException
     {
-        Kind kind = Kind.forId( kindByte );
+        SchemaRuleKind kind = SchemaRuleKind.forId( kindByte );
         try
         {
             SchemaRule rule = newRule( kind, id, labelId, buffer );
@@ -72,7 +70,7 @@ public class SchemaRuleDeserializer2_0to3_1
         }
     }
 
-    private static SchemaRule newRule( Kind kind, long id, int labelId, ByteBuffer buffer )
+    private static SchemaRule newRule( SchemaRuleKind kind, long id, int labelId, ByteBuffer buffer )
     {
         switch ( kind )
         {
