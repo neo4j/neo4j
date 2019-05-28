@@ -296,7 +296,7 @@ case class Prettifier(expr: ExpressionStringifier) {
     val prefix = if (namespace.isEmpty) "" else namespace + "."
     val arguments = u.declaredArguments.map(list => list.map(expr).mkString("(", ", ", ")")).getOrElse("")
     def item(i: ProcedureResultItem) = i.output.map(expr(_) + " AS ").getOrElse("") + expr(i.variable)
-    def result(r: ProcedureResult) = " YIELD " + r.items.map(item).mkString(", ") + r.where.map(asString).map(indentedLine).getOrElse("")
+    def result(r: ProcedureResult) = "YIELD " + r.items.map(item).mkString(", ") + r.where.map(asString).map(indentedLine).getOrElse("")
     val yields = u.declaredResult.map(result).map(indentedLine).getOrElse("")
     s"CALL $prefix${expr(u.procedureName)}$arguments$yields"
   }

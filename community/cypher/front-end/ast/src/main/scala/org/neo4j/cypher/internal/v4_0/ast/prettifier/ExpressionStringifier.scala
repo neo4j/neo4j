@@ -68,7 +68,7 @@ case class ExpressionStringifier(
         backtick(v)
 
       case ListLiteral(expressions) =>
-        expressions.map(inner(ast)).mkString("[", ", ", "]")
+        expressions.map(apply).mkString("[", ", ", "]")
 
       case FunctionInvocation(namespace, functionName, distinct, args) =>
         val ns = apply(namespace)
@@ -83,7 +83,7 @@ case class ExpressionStringifier(
 
       case MapExpression(items) =>
         val is = items.map({
-          case (k, i) => s"${apply(k)}: ${inner(ast)(i)}"
+          case (k, i) => s"${apply(k)}: ${apply(i)}"
         }).mkString(", ")
         s"{$is}"
 

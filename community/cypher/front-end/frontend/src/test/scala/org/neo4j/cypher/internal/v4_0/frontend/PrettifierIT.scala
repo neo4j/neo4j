@@ -85,10 +85,12 @@ class PrettifierIT extends CypherFunSuite {
         """CALL nsp.proc(a, b)""".stripMargin,
 
       "CALL nsp.proc() yield x" ->
-        """CALL nsp.proc() YIELD x""".stripMargin,
+        """CALL nsp.proc()
+          |  YIELD x""".stripMargin,
 
       "CALL nsp.proc() yield x, y" ->
-        """CALL nsp.proc() YIELD x, y""".stripMargin,
+        """CALL nsp.proc()
+          |  YIELD x, y""".stripMargin,
 
       "match (n) SET n.prop = 1" ->
         """MATCH (n)
