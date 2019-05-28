@@ -200,6 +200,38 @@ class RecoveryRequiredCheckerTest
         assertTrue( checker.isRecoveryRequiredAt( databaseLayout ) );
     }
 
+    @Test
+    void recoveryNotRequiredWhenCountStoreAIsMissing() throws Exception
+    {
+        startStopAndCreateDefaultData();
+
+        assertStoreFilesExist();
+
+        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
+        RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
+        assertFalse( checker.isRecoveryRequiredAt( databaseLayout ) );
+
+        fileSystem.deleteFileOrThrow( databaseLayout.countStoreA() );
+
+        assertFalse( checker.isRecoveryRequiredAt( databaseLayout ) );
+    }
+
+    @Test
+    void recoveryNotRequiredWhenCountStoreBIsMissing() throws Exception
+    {
+        startStopAndCreateDefaultData();
+
+        assertStoreFilesExist();
+
+        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
+        RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
+        assertFalse( checker.isRecoveryRequiredAt( databaseLayout ) );
+
+        fileSystem.deleteFileOrThrow( databaseLayout.countStoreB() );
+
+        assertFalse( checker.isRecoveryRequiredAt( databaseLayout ) );
+    }
+
     private void recoverBrokenStoreWithConfig( Config config ) throws IOException
     {
         try ( EphemeralFileSystemAbstraction ephemeralFs = createSomeDataAndCrash( storeDir, config ) )

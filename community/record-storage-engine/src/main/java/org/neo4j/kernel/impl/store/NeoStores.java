@@ -70,19 +70,6 @@ public class NeoStores implements AutoCloseable
                                                                  " %s as one of the stores types that should be open" +
                                                                  " to be able to use it.";
 
-    public static boolean isStorePresent( PageCache pageCache, DatabaseLayout databaseLayout )
-    {
-        File metaDataStore = databaseLayout.metadataStore();
-        try ( PagedFile ignore = pageCache.map( metaDataStore, MetaDataStore.getPageSize( pageCache ) ) )
-        {
-            return true;
-        }
-        catch ( IOException e )
-        {
-            return false;
-        }
-    }
-
     private static final StoreType[] STORE_TYPES = StoreType.values();
 
     private final Predicate<StoreType> INSTANTIATED_STORES = new Predicate<>()
@@ -599,5 +586,22 @@ public class NeoStores implements AutoCloseable
     public RecordFormats getRecordFormats()
     {
         return recordFormats;
+    }
+
+    public static boolean isStorePresent( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout )
+    {
+        File metaDataStore = databaseLayout.metadataStore();
+        if ( !fs.fileExists( metaDataStore ) )
+        {
+            return false;
+        }
+        try ( PagedFile ignore = pageCache.map( metaDataStore, MetaDataStore.getPageSize( pageCache ) ) )
+        {
+            return true;
+        }
+        catch ( IOException e )
+        {
+            return false;
+        }
     }
 }

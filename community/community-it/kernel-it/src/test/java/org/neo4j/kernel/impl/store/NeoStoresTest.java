@@ -790,7 +790,7 @@ public class NeoStoresTest
         try ( NeoStores ignore = factory.openAllNeoStores( true ) )
         {
             // then
-            assertTrue( NeoStores.isStorePresent( pageCache, databaseLayout ) );
+            assertTrue( NeoStores.isStorePresent( fs, pageCache, databaseLayout ) );
         }
     }
 
@@ -810,7 +810,7 @@ public class NeoStoresTest
         try ( NeoStores ignore = factory.openNeoStores( true, allButLastStoreTypes ) )
         {
             // then
-            assertFalse( NeoStores.isStorePresent( pageCache, databaseLayout ) );
+            assertFalse( NeoStores.isStorePresent( fs, pageCache, databaseLayout ) );
         }
     }
 

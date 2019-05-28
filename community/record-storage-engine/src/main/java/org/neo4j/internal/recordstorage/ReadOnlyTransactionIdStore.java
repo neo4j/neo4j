@@ -22,6 +22,7 @@ package org.neo4j.internal.recordstorage;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
@@ -38,13 +39,13 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     private final long logVersion;
     private final long byteOffset;
 
-    public ReadOnlyTransactionIdStore( PageCache pageCache, DatabaseLayout databaseLayout ) throws IOException
+    public ReadOnlyTransactionIdStore( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout ) throws IOException
     {
         long id = 0;
         long checksum = 0;
         long logVersion = 0;
         long byteOffset = 0;
-        if ( NeoStores.isStorePresent( pageCache, databaseLayout ) )
+        if ( NeoStores.isStorePresent( fs, pageCache, databaseLayout ) )
         {
             File neoStore = databaseLayout.metadataStore();
             id = getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );

@@ -85,14 +85,21 @@ public interface StorageEngineFactory
      */
     List<File> listStorageFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException;
 
-    boolean storageExists( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache );
+    /**
+     * Check if a store described by provided database layout exists in provided file system
+     * @param fileSystem store file system
+     * @param databaseLayout store database layout
+     * @param pageCache page cache to open store with
+     * @return true of store exist, false otherwise
+     */
+    boolean storageExists( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCache pageCache );
 
     /**
      * Instantiates a read-only {@link TransactionIdStore} to be used outside of a {@link StorageEngine}.
      * @return the read-only {@link TransactionIdStore}.
      * @throws IOException on I/O error or if the store doesn't exist.
      */
-    TransactionIdStore readOnlyTransactionIdStore( DatabaseLayout databaseLayout, PageCache pageCache ) throws IOException;
+    TransactionIdStore readOnlyTransactionIdStore( FileSystemAbstraction filySystem, DatabaseLayout databaseLayout, PageCache pageCache ) throws IOException;
 
     /**
      * Instantiates a read-only {@link LogVersionRepository} to be used outside of a {@link StorageEngine}.

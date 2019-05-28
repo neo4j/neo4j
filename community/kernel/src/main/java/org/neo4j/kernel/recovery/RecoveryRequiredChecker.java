@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.recovery;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -92,6 +94,15 @@ class RecoveryRequiredChecker
 
     private boolean allStoreFilesExist( DatabaseLayout databaseLayout )
     {
-        return databaseLayout.storeFiles().stream().allMatch( fs::fileExists );
+        Set<File> storeFiles = databaseLayout.storeFiles();
+        // count store files will be checked separately since presence of both files is not required
+        storeFiles.remove( databaseLayout.countStoreA() );
+        storeFiles.remove( databaseLayout.countStoreB() );
+        return storeFiles.stream().allMatch( fs::fileExists ) && oneOfCountStoreFilesExist( databaseLayout );
+    }
+
+    private boolean oneOfCountStoreFilesExist( DatabaseLayout databaseLayout )
+    {
+        return fs.fileExists( databaseLayout.countStoreA() ) || fs.fileExists( databaseLayout.countStoreB() );
     }
 }
