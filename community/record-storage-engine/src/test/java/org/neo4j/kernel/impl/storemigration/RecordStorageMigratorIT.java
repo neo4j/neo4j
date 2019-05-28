@@ -42,6 +42,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RandomSchema;
 import org.neo4j.internal.recordstorage.SchemaStorage;
 import org.neo4j.internal.recordstorage.StoreTokens;

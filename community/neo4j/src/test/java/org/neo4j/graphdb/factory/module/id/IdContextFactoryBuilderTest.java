@@ -19,11 +19,11 @@
  */
 package org.neo4j.graphdb.factory.module.id;
 
-import org.junit.jupiter.api.Test;
-
 import java.io.File;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
+
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.BufferedIdController;
@@ -71,8 +71,9 @@ class IdContextFactoryBuilderTest
     void createContextWithCustomIdGeneratorFactoryWhenProvided()
     {
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
-        IdContextFactory contextFactory = IdContextFactoryBuilder.of( fs, pageCache, jobScheduler, Config.defaults() ).withIdGenerationFactoryProvider(
-                any -> idGeneratorFactory ).build();
+        IdContextFactory contextFactory =
+                IdContextFactoryBuilder.of( fs, pageCache, jobScheduler, Config.defaults() )
+                        .withIdGenerationFactoryProvider( any -> idGeneratorFactory ).build();
         DatabaseIdContext idContext = contextFactory.createIdContext( databaseIdRepository.get( "database" ) );
 
         IdGeneratorFactory bufferedGeneratorFactory = idContext.getIdGeneratorFactory();

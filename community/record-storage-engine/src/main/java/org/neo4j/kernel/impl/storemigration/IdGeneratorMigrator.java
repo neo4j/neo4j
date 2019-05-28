@@ -35,6 +35,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;

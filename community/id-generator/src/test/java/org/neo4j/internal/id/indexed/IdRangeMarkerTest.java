@@ -19,15 +19,15 @@
  */
 package org.neo4j.internal.id.indexed;
 
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
@@ -76,7 +76,7 @@ class IdRangeMarkerTest
     {
         tree.close();
     }
-    
+
     @Test
     void shouldCreateEntryOnFirstAddition() throws IOException
     {

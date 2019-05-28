@@ -40,6 +40,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.configuration.Settings;
+import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
