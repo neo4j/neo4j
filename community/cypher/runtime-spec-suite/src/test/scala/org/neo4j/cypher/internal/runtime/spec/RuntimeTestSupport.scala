@@ -41,7 +41,8 @@ import org.neo4j.values.virtual.VirtualValues
   * and then execute a query.
   */
 class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseService,
-                                                    val edition: Edition[CONTEXT]
+                                                    val edition: Edition[CONTEXT],
+                                                    val workloadMode: Boolean
                                                    ) extends CypherFunSuite {
 
   private val cypherGraphDb = new GraphDatabaseCypherService(graphDb)
@@ -79,7 +80,9 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     val runtimeContext = newRuntimeContext(txContext, queryContext)
 
     val result = executableQuery.run(queryContext, doProfile = false, VirtualValues.EMPTY_MAP, prePopulateResults = true, input, subscriber)
-    resultMapper(runtimeContext, new ClosingRuntimeResult(result, txContext, runtimeContextManager.assertAllReleased))
+    val assertAllReleased =
+      if (!workloadMode) runtimeContextManager.assertAllReleased _ else () => ()
+    resultMapper(runtimeContext, new ClosingRuntimeResult(result, txContext, assertAllReleased))
   }
 
   def compile(logicalQuery: LogicalQuery,

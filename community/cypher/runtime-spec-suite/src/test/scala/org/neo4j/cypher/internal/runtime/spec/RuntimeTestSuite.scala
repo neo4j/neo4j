@@ -59,7 +59,8 @@ object RuntimeTestSuite {
   *  - evaluated by it's results
   */
 abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                           val runtime: CypherRuntime[CONTEXT])
+                                                           val runtime: CypherRuntime[CONTEXT],
+                                                           workloadMode: Boolean = false)
   extends CypherFunSuite
   with AstConstructionTestSupport
   with BeforeAndAfterEach
@@ -74,7 +75,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     DebugLog.beginTime()
     managementService = edition.newGraphManagementService()
     graphDb = managementService.database(DEFAULT_DATABASE_NAME)
-    runtimeTestSupport = new RuntimeTestSupport[CONTEXT](graphDb, edition)
+    runtimeTestSupport = new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode)
     runtimeTestSupport.start()
     super.beforeEach()
   }
