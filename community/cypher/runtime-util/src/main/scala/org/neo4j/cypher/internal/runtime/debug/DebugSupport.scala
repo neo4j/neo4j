@@ -25,6 +25,7 @@ object DebugSupport {
   final val DEBUG_TRACKER = false
   final val DEBUG_LOCKS = false
   final val DEBUG_ERROR_HANDLING = false
+  final val DEBUG_CURSORS = false
 
   def logWorker(str: => String): Unit = {
     if (DEBUG_WORKERS) {
@@ -46,6 +47,12 @@ object DebugSupport {
 
   def logErrorHandling(str: => String): Unit = {
     if (DEBUG_ERROR_HANDLING) {
+      println(s"        $str")
+    }
+  }
+
+  def logCursors(str: => String): Unit = {
+    if (DEBUG_CURSORS) {
       println(s"        $str")
     }
   }
