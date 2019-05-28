@@ -33,7 +33,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.storageengine.api.DefaultStorageIndexReference;
@@ -95,19 +94,11 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
             IndexConfig indexConfig = indexMigration.extractIndexConfig( fs, pageCache, directoryLayout, indexId, log );
 
             SchemaDescriptor schemaDescriptorWithIndexConfig = oldIndexReference.schema().withIndexConfig( indexConfig );
-            IndexDescriptor descriptorWithIndexConfig = new IndexDescriptor( oldIndexReference ).withSchemaDescriptor( schemaDescriptorWithIndexConfig );
+            DefaultStorageIndexReference newIndexReference = oldIndexReference.withSchemaDescriptor( schemaDescriptorWithIndexConfig );
             IndexProvider indexProvider = indexProviderMap.lookup( indexMigration.desiredAlternativeProvider );
-            descriptorWithIndexConfig = indexProvider.bless( descriptorWithIndexConfig );
-            Long owningConstraintReference = getOwningConstraintReference( oldIndexReference );
-            return new DefaultStorageIndexReference( descriptorWithIndexConfig, indexId, owningConstraintReference );
+            return indexProvider.bless( newIndexReference );
         }
         return rule;
-    }
-
-    private Long getOwningConstraintReference( DefaultStorageIndexReference oldIndexReference )
-    {
-        return oldIndexReference.isUnique() && oldIndexReference.hasOwningConstraintReference() ?
-               oldIndexReference.owningConstraintReference() : null;
     }
 
     @Override
