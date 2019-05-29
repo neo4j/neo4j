@@ -21,11 +21,13 @@ package org.neo4j.commandline.dbms;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
 
@@ -56,6 +58,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.helpers.ArrayUtil.array;
 import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
@@ -328,6 +331,53 @@ class ImportCommandTest
                             "      Whether or not to normalize property types to Cypher types, e.g. 'int'%n" +
                             "      becomes 'long' and 'float' becomes 'double' [default:true]%n" ),
                     baos.toString() );
+        }
+    }
+
+    @Test
+    void shouldKeepSpecifiedNeo4jHomeWhenAdditionalConfigIsPresent() throws CommandFailed, IncorrectUsage, IOException
+    {
+        // given
+        File homeDir = testDir.directory( "other", "place" );
+        File additionalConfigFile = testDir.createFile( "empty.conf" );
+        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ) )
+        {
+            ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
+            Importer importer = mock( Importer.class );
+            ArgumentCaptor<Config> configArgumentCaptor = ArgumentCaptor.forClass( Config.class );
+            when( mockImporterFactory.getImporterForMode( eq( "csv" ), any( Args.class ), configArgumentCaptor.capture(), any( OutsideWorld.class ),
+                    any( DatabaseLayout.class ) ) ).thenReturn( importer );
+            ImportCommand command = new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), outsideWorld, mockImporterFactory );
+
+            // when
+            command.execute( array( "--additional-config", additionalConfigFile.getAbsolutePath() ) );
+
+            // then
+            Config resultingConfig = configArgumentCaptor.getValue();
+            assertEquals( homeDir, resultingConfig.get( GraphDatabaseSettings.neo4j_home ) );
+        }
+    }
+
+    @Test
+    void shouldKeepSpecifiedNeo4jHomeWhenNoAdditionalConfigIsPresent() throws CommandFailed, IncorrectUsage, IOException
+    {
+        // given
+        File homeDir = testDir.directory( "other", "place" );
+        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ) )
+        {
+            ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
+            Importer importer = mock( Importer.class );
+            ArgumentCaptor<Config> configArgumentCaptor = ArgumentCaptor.forClass( Config.class );
+            when( mockImporterFactory.getImporterForMode( eq( "csv" ), any( Args.class ), configArgumentCaptor.capture(), any( OutsideWorld.class ),
+                    any( DatabaseLayout.class ) ) ).thenReturn( importer );
+            ImportCommand command = new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), outsideWorld, mockImporterFactory );
+
+            // when
+            command.execute( array() );
+
+            // then
+            Config resultingConfig = configArgumentCaptor.getValue();
+            assertEquals( homeDir, resultingConfig.get( GraphDatabaseSettings.neo4j_home ) );
         }
     }
 

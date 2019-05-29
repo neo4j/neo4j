@@ -34,6 +34,7 @@ import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.commandline.arguments.OptionalNamedArgWithMetadata;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.internal.helpers.Args;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -270,6 +271,12 @@ public class ImportCommand implements AdminCommand
                 .withConnectorsDisabled()
                 .withNoThrowOnFileLoadFailure()
                 .build();
+
+        // This is a temporary hack. Without this line there the loaded additionalConfig instance will always have the
+        // neo4j_home setting set to the value of system property "user.dir", which overrides whatever homeDir that was given to
+        // this command. At the time of writing this there's a configuration refactoring which will, among other things, fix this issue.
+        additionalConfig.augment( GraphDatabaseSettings.neo4j_home, homeDir.toString() );
+
         config.augment( additionalConfig );
         return config;
     }
