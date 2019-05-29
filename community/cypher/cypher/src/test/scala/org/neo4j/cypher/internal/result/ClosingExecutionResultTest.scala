@@ -27,8 +27,8 @@ import org.neo4j.cypher.{CypherException, CypherExecutionException}
 import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.query.ExecutingQuery
-import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.impl.query.QuerySubscriber.DO_NOTHING_SUBSCRIBER
+import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySubscriberAdapter}
 
 class ClosingExecutionResultTest extends CypherFunSuite {
 
@@ -46,32 +46,6 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor, DO_NOTHING_SUBSCRIBER)
 
     // then
-    monitor.assertSuccess(query)
-  }
-
-  test("should close after request") {
-    assertClosedAfterConsumption(_.request(17))
-  }
-
-  test("should close after cancel") {
-    assertClosedAfterConsumption(_.cancel())
-  }
-
-  test("should close after await") {
-    assertClosedAfterConsumption(_.await())
-  }
-
-  private def assertClosedAfterConsumption(f: ClosingExecutionResult => Unit): Unit = {
-    // given
-    val inner = new NiceInner(Array(1, 2))
-    val monitor = AssertableMonitor()
-    val x = ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor, DO_NOTHING_SUBSCRIBER)
-
-    // when
-    f(x)
-
-    // then
-    inner.closeReason should equal(Success)
     monitor.assertSuccess(query)
   }
 
@@ -96,22 +70,6 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     assertCloseOnExplodingMethod(_.fieldNames(), "fieldNames")
   }
 
-  test("should close on exploding request") {
-    assertCloseOnExplodingMethod(_.request(17), "request")
-  }
-
-  test("should close on exploding cancel") {
-    assertCloseOnExplodingMethod(_.cancel(), "cancel")
-  }
-
-  test("should close on exploding await") {
-    assertCloseOnExplodingMethod(_.await(), "await")
-  }
-
-  test("should close on exploding queryStatistics") {
-    assertCloseOnExplodingMethod(_.queryStatistics(), "queryStatistics")
-  }
-
   test("should close on exploding executionMode") {
     assertCloseOnExplodingMethod(_.executionMode, "executionMode")
   }
@@ -134,7 +92,7 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     // given
     val inner = new ExplodingInner(iteratorMode = iteratorMode)
     val monitor = AssertableMonitor()
-    val x = ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor, DO_NOTHING_SUBSCRIBER)
+    val x = ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor, throwingSubscriber)
 
     // when
     intercept[TestOuterException] { f(x) }
@@ -160,36 +118,10 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     monitor.assertError(query, TestOuterException("close"))
   }
 
-  test("should suppress explosion on close if already exploded") {
-    // given
-    val inner = new ExplodingInner(alsoExplodeOnClose = true)
-    val monitor = AssertableMonitor()
-    val x = ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor, DO_NOTHING_SUBSCRIBER)
-
-    // when
-    intercept[TestOuterException] {
-      var hasMore = true
-      while (hasMore) {
-        x.request(1)
-        hasMore = x.await()
-      }
-    }
-
-    // then
-    val initialException = TestInnerException("accept")
-    val expected = TestOuterException(initialException.msg)
-    monitor.assertError(query, expected)
-    inner.closeReason match {
-      case Error(t) =>
-        t should equal(expected)
-        t.getSuppressed should contain(TestOuterException("close"))
-
-      case wrongReason =>
-        wrongReason should equal(initialException)
-    }
-  }
-
   // HELPERS
+  private def throwingSubscriber = new QuerySubscriberAdapter {
+    override def onError(throwable: Throwable): Unit = throw throwable
+  }
 
   abstract class ClosingInner extends InternalExecutionResult {
 
@@ -203,12 +135,8 @@ class ClosingExecutionResultTest extends CypherFunSuite {
   class NiceInner(values: Array[Int]) extends ClosingInner {
 
     self =>
-    private var demand = 0L
-    private var offset = 0
 
     override def initiate(): Unit = {}
-
-    override def queryStatistics(): QueryStatistics = null
 
     override def executionMode: ExecutionMode = null
 
@@ -221,15 +149,11 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     override def fieldNames(): Array[String] = Array("x", "y")
 
     override def request(numberOfRecords: Long): Unit = {
-      demand += numberOfRecords
     }
 
     override def cancel(): Unit = {}
 
-    override def await(): Boolean = {
-      //TODO
-      ???
-    }
+    override def await(): Boolean = true
   }
 
   class ExplodingInner(alreadyInInitiate: Boolean = false,
@@ -239,8 +163,6 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     self =>
 
     override def initiate(): Unit = if (alreadyInInitiate) throw TestInnerException("initiate")
-
-    override def queryStatistics(): QueryStatistics = throw TestInnerException("queryStatistics")
 
     override def executionMode: ExecutionMode = throw TestInnerException("executionMode")
 
