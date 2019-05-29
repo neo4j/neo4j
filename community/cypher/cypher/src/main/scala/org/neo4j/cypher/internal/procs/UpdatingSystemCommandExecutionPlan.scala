@@ -52,13 +52,19 @@ case class UpdatingSystemCommandExecutionPlan(name: String, normalExecutionEngin
 
     val tc: TransactionalContext = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
     if (!tc.securityContext().isAdmin) throw new AuthorizationViolationException(PERMISSION_DENIED)
-    val execution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, new SystemCommandQuerySubscriber(subscriber, queryHandler.onError)).asInstanceOf[InternalExecutionResult]
+    try {
+      val execution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, new SystemCommandQuerySubscriber(subscriber, queryHandler.onError)).asInstanceOf[InternalExecutionResult]
 
-    val results = execution.javaIterator
-    if (results.hasNext)
-      results.stream().forEach(queryHandler.onResult(_))
-    else
-      queryHandler.onNoResults()
+      val results = execution.javaIterator
+      if (results.hasNext)
+        results.stream().forEach(queryHandler.onResult(_))
+      else
+        queryHandler.onNoResults()
+    }
+    catch {
+      case t: Throwable =>
+        queryHandler.onError(t)
+    }
 
     sourceResult.getOrElse(SchemaWriteRuntimeResult(ctx, subscriber))
   }
