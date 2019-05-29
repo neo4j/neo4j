@@ -24,7 +24,7 @@ case class ExpressionStringifier(
   extender: Expression => String = failingExtender,
   alwaysParens: Boolean = false,
   alwaysBacktick: Boolean = false
-) extends (Expression => String) {
+) {
 
   val patterns = PatternStringifier(this)
 

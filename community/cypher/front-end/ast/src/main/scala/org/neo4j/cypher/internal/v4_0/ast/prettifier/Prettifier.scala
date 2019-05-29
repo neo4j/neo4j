@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.ast.prettifier
 
 import org.neo4j.cypher.internal.v4_0.ast.{Skip, Statement, _}
-import org.neo4j.cypher.internal.v4_0.expressions.{NodePattern, PatternElement, PatternPart, RelationshipChain, _}
+import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 case class Prettifier(expr: ExpressionStringifier) {
@@ -225,7 +225,7 @@ case class Prettifier(expr: ExpressionStringifier) {
       ).mkString
 
       case UsingJoinHint(vs) => Seq(
-        "USING JOIN ON ", vs.map(expr).toIterable.mkString(", ")
+        "USING JOIN ON ", vs.map(expr(_)).toIterable.mkString(", ")
       ).mkString
     }
   }
@@ -294,7 +294,7 @@ case class Prettifier(expr: ExpressionStringifier) {
   private def asString(u: UnresolvedCall): String = {
     val namespace = expr(u.procedureNamespace)
     val prefix = if (namespace.isEmpty) "" else namespace + "."
-    val arguments = u.declaredArguments.map(list => list.map(expr).mkString("(", ", ", ")")).getOrElse("")
+    val arguments = u.declaredArguments.map(list => list.map(expr(_)).mkString("(", ", ", ")")).getOrElse("")
     def item(i: ProcedureResultItem) = i.output.map(expr(_) + " AS ").getOrElse("") + expr(i.variable)
     def result(r: ProcedureResult) = "YIELD " + r.items.map(item).mkString(", ") + r.where.map(asString).map(indentedLine).getOrElse("")
     val yields = u.declaredResult.map(result).map(indentedLine).getOrElse("")
@@ -322,7 +322,7 @@ case class Prettifier(expr: ExpressionStringifier) {
 
   private def asString(delete: Delete): String = {
     val detach = if (delete.forced) "DETACH " else ""
-    s"${detach}DELETE ${delete.expressions.map(expr).mkString(", ")}"
+    s"${detach}DELETE ${delete.expressions.map(expr(_)).mkString(", ")}"
   }
 
   private def asString(foreach: Foreach): String = {
@@ -336,10 +336,10 @@ case class Prettifier(expr: ExpressionStringifier) {
     val startItems =
       start.items.map {
         case AllNodes(v) => s"${expr(v)} = NODE( * )"
-        case NodeByIds(v, ids) => s"${expr(v)} = NODE( ${ids.map(expr).mkString(", ")} )"
+        case NodeByIds(v, ids) => s"${expr(v)} = NODE( ${ids.map(expr(_)).mkString(", ")} )"
         case NodeByParameter(v, param) => s"${expr(v)} = NODE( ${expr(param)} )"
         case AllRelationships(v) => s"${expr(v)} = RELATIONSHIP( * )"
-        case RelationshipByIds(v, ids) => s"${expr(v)} = RELATIONSHIP( ${ids.map(expr).mkString(", ")} )"
+        case RelationshipByIds(v, ids) => s"${expr(v)} = RELATIONSHIP( ${ids.map(expr(_)).mkString(", ")} )"
         case RelationshipByParameter(v, param) => s"${expr(v)} = RELATIONSHIP( ${expr(param)} )"
       }
 
