@@ -255,9 +255,9 @@ trait Operations[T, CURSOR] {
   def getTxStateProperty(obj: Long, propertyKeyId: Int): Value
 
   /**
-    * @return `true` if TxState has no changes, which indicates the cached node property must exist,
+    * @return `true` if TxState has no changes, which indicates the cached property must exist,
     *        or if the property was changed.
-    *        `false` if the property or the node were deleted in TxState.
+    *        `false` if the property or the entity were deleted in TxState.
     */
   def hasTxStatePropertyForCachedProperty(entityId: Long, propertyKeyId: Int): Boolean
 

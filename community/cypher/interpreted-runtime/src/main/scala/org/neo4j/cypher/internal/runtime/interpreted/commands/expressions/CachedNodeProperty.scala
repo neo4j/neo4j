@@ -43,11 +43,11 @@ abstract class AbstractCachedProperty extends Expression {
   def getTxStateProperty(state: QueryState, id: Long, propId: Int): Value
   def property(state: QueryState, id: Long, propId: Int): Value
 
-  // encapsulated cached-node-property logic
+  // encapsulated cached-property logic
 
   def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val id = getId(ctx)
-    if (id == StatementConstants.NO_SUCH_NODE)
+    if (id == StatementConstants.NO_SUCH_ENTITY)
       Values.NO_VALUE
     else {
       getPropertyKey(state.query) match {

@@ -195,7 +195,7 @@ case class CachedNodePropertyExists(cachedNodeProperty: Expression) extends Pred
     }
   }
 
-  override def toString: String = s"hasCachedProp($cachedNodeProperty)"
+  override def toString: String = s"hasCachedNodeProp($cachedNodeProperty)"
 
   override def containsIsNull = false
 
@@ -220,7 +220,7 @@ case class CachedRelationshipPropertyExists(cachedRelProperty: Expression) exten
     }
   }
 
-  override def toString: String = s"hasCachedProp($cachedRelProperty)"
+  override def toString: String = s"hasCachedRelationshipProp($cachedRelProperty)"
 
   override def containsIsNull = false
 

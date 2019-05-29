@@ -27,7 +27,7 @@ import org.parboiled.scala.{ReportingParseRunner, Rule1}
 object ExpressionParser {
   val injectCachedNodeProperties: Rewriter = topDown(Rewriter.lift {
     case ContainerIndex(Variable("cache"), Property(v@Variable(node), pkn:PropertyKeyName)) =>
-      CachedProperty(node, v, pkn, CACHED_NODE)(AbstractLogicalPlanBuilder.pos)
+      CachedProperty(node, v, pkn, NODE_TYPE)(AbstractLogicalPlanBuilder.pos)
   })
   val invalidateInputPositions: Rewriter = topDown(Rewriter.lift {
     case a:ASTNode => a.dup(a.children.toSeq :+ AbstractLogicalPlanBuilder.pos)

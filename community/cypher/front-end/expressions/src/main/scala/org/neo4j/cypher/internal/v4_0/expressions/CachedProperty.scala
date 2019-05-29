@@ -20,18 +20,18 @@ import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 import scala.util.hashing.MurmurHash3
 
-sealed trait CachedType
+sealed trait EntityType
 
-case object CACHED_NODE extends CachedType
+case object NODE_TYPE extends EntityType
 
-case object CACHED_RELATIONSHIP extends CachedType
+case object RELATIONSHIP_TYPE extends EntityType
 
 /**
   * Common super class of [[CachedProperty]]
   * and its slotted specializations.
   */
 trait ASTCachedProperty extends LogicalProperty {
-  def cachedType: CachedType
+  def entityType: EntityType
 
   def variableName: String
 
@@ -54,15 +54,15 @@ trait ASTCachedProperty extends LogicalProperty {
 case class CachedProperty(variableName: String,
                           usedVariable: LogicalVariable,
                           propertyKey: PropertyKeyName,
-                          override val cachedType: CachedType
+                          override val entityType: EntityType
                          )(val position: InputPosition) extends ASTCachedProperty {
 
   override def asCanonicalStringVal: String = s"cache[$cacheKey]"
 
-  override def hashCode(): Int = MurmurHash3.seqHash(Seq(variableName, propertyKey, cachedType))
+  override def hashCode(): Int = MurmurHash3.seqHash(Seq(variableName, propertyKey, entityType))
 
   override def equals(obj: Any): Boolean = obj match {
-    case other:CachedProperty => Seq(variableName, propertyKey, cachedType) == Seq(other.variableName, other.propertyKey, other.cachedType)
+    case other:CachedProperty => Seq(variableName, propertyKey, entityType) == Seq(other.variableName, other.propertyKey, other.entityType)
     case _ => false
   }
 }

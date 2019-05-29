@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
 import org.neo4j.cypher.internal.logical.plans.{CanGetValue, DoNotGetValue, GetValue, IndexLeafPlan, LogicalPlan, ProjectingPlan}
-import org.neo4j.cypher.internal.v4_0.expressions.{CACHED_NODE, CACHED_RELATIONSHIP, CachedProperty, CachedType, Property, PropertyKeyName, Variable}
+import org.neo4j.cypher.internal.v4_0.expressions.{CachedProperty, EntityType, NODE_TYPE, Property, PropertyKeyName, RELATIONSHIP_TYPE, Variable}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.Transformer
 import org.neo4j.cypher.internal.v4_0.util.symbols.{CTNode, CTRelationship}
 import org.neo4j.cypher.internal.v4_0.util.{InputPosition, Rewriter, bottomUp}
@@ -39,49 +39,55 @@ case object insertCachedProperties extends Transformer[PlannerContext, LogicalPl
     def isNode(variable: Variable) = from.semanticTable().types.get(variable).exists(t => t.actual == CTNode.invariant)
     def isRel(variable: Variable) = from.semanticTable().types.get(variable).exists(t => t.actual == CTRelationship.invariant)
 
-    case class PropertyUsages(canGetFromIndex: Boolean, usages: Int, cachedType: CachedType) {
+    case class PropertyUsages(canGetFromIndex: Boolean, usages: Int, entityType: EntityType) {
       def registerIndexUsage: PropertyUsages = copy(canGetFromIndex = true)
       def addUsage: PropertyUsages = copy(usages = usages + 1)
     }
 
-    val NODE_NO_PROP_USAGE = PropertyUsages(canGetFromIndex = false, 0, CACHED_NODE)
-    val REL_NO_PROP_USAGE = PropertyUsages(canGetFromIndex = false, 0, CACHED_RELATIONSHIP)
+    val NODE_NO_PROP_USAGE = PropertyUsages(canGetFromIndex = false, 0, NODE_TYPE)
+    val REL_NO_PROP_USAGE = PropertyUsages(canGetFromIndex = false, 0, RELATIONSHIP_TYPE)
 
     case class Acc(properties: Map[Property, PropertyUsages] = Map.empty,
-                   renamings: Map[String, String] = Map.empty) {
+                   previousNames: Map[String, String] = Map.empty) {
+
       def addIndexNodeProperty(prop: Property): Acc = {
         val previousUsages = properties.getOrElse(prop, NODE_NO_PROP_USAGE)
         val newProperties = properties.updated(prop, previousUsages.registerIndexUsage)
         copy(properties = newProperties)
       }
+
       def addNodeProperty(prop: Property): Acc = {
         val originalProp = originalProperty(prop)
         val previousUsages = properties.getOrElse(originalProp, NODE_NO_PROP_USAGE)
         val newProperties = properties.updated(originalProp, previousUsages.addUsage)
         copy(properties = newProperties)
       }
+
       def addRelProperty(prop: Property): Acc = {
         val originalProp = originalProperty(prop)
         val previousUsages = properties.getOrElse(originalProp, REL_NO_PROP_USAGE)
         val newProperties = properties.updated(originalProp, previousUsages.addUsage)
         copy(properties = newProperties)
       }
-      def addRenamings(additionalRenamings: Map[String, String]): Acc = {
-        val newRenamings = renamings ++ additionalRenamings
+
+      def addPreviousNames(mappings: Map[String, String]): Acc = {
+        val newRenamings = previousNames ++ mappings
         // Rename all properties that we found so far and that are affected by this
-        val withRenamings = copy(renamings = newRenamings)
-        val renamedProperties = properties.map{ case (prop, use) => (withRenamings.originalProperty(prop), use) }
-        withRenamings.copy( properties = renamedProperties)
+        val withPreviousNames = copy(previousNames = newRenamings)
+        val renamedProperties = properties.map { case (prop, use) => (withPreviousNames.originalProperty(prop), use) }
+        withPreviousNames.copy(properties = renamedProperties)
       }
+
       def variableWithOriginalName(variable: Variable): Variable = {
-        var oldestName = variable.name
-        while (renamings.contains(oldestName)) {
-          oldestName = renamings(oldestName)
+        var name = variable.name
+        while (previousNames.contains(name)) {
+          name = previousNames(name)
         }
-        variable.copy(oldestName)(variable.position)
+        variable.copy(name)(variable.position)
       }
+
       def originalProperty(prop: Property): Property = {
-        val Property(v:Variable, _) = prop
+        val Property(v: Variable, _) = prop
         prop.copy(variableWithOriginalName(v))(prop.position)
       }
     }
@@ -93,7 +99,7 @@ case object insertCachedProperties extends Transformer[PlannerContext, LogicalPl
         val newRenamings = plan.projectExpressions.collect {
           case (key, v: Variable) if key != v.name => (key, v.name)
         }
-        (acc.addRenamings(newRenamings), Some(identity))
+        (acc.addPreviousNames(newRenamings), Some(identity))
 
       // Find properties
       case prop@Property(v: Variable, _) if isNode(v) => acc =>
@@ -119,9 +125,9 @@ case object insertCachedProperties extends Transformer[PlannerContext, LogicalPl
         val originalVar = acc.variableWithOriginalName(v)
         val originalProp = acc.originalProperty(prop)
         acc.properties.get(originalProp) match {
-          case Some(PropertyUsages(canGetFromIndex, usages, cachedType)) if usages > 1 || canGetFromIndex =>
+          case Some(PropertyUsages(canGetFromIndex, usages, entityType)) if usages > 1 || canGetFromIndex =>
             // Use the original variable name for the cached property
-            val newProperty = CachedProperty(originalVar.name, v, propertyKeyName, cachedType)(prop.position)
+            val newProperty = CachedProperty(originalVar.name, v, propertyKeyName, entityType)(prop.position)
             // Register the new variables in the semantic table
             currentTypes.get(prop) match {
               case None => // I don't like this. We have to make sure we retain the type from semantic analysis

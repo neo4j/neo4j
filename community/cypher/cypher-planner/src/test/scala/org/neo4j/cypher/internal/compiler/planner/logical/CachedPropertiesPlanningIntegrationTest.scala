@@ -85,7 +85,7 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
     )
   }
 
-  test("should cache relationship property if there is only one usage") {
+  test("should not rewrite relationship property if there is only one usage") {
     val plan = planFor("MATCH (a)-[r]-(b) RETURN r.prop1")
 
     plan._2 should equal(

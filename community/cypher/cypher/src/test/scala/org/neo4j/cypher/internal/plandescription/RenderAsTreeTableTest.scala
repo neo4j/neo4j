@@ -309,8 +309,8 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
 
   test("composite index rendered correctly") {
     val args1 = Seq(Rows(42), DbHits(33), EstimatedRows(1))
-    val args2 = Seq(Rows(2), DbHits(633), Index("Label", Seq("propA", "propB"), Seq(CachedProperty("b", Variable("b")(pos), PropertyKeyName("propA")(pos), CACHED_NODE)(pos),
-      CachedProperty("b", Variable("b")(pos), PropertyKeyName("propB")(pos), CACHED_NODE)(pos))), EstimatedRows(1))
+    val args2 = Seq(Rows(2), DbHits(633), Index("Label", Seq("propA", "propB"), Seq(CachedProperty("b", Variable("b")(pos), PropertyKeyName("propA")(pos), NODE_TYPE)(pos),
+      CachedProperty("b", Variable("b")(pos), PropertyKeyName("propB")(pos), NODE_TYPE)(pos))), EstimatedRows(1))
 
     val plan1 = PlanDescriptionImpl(id, "NAME", NoChildren, args1, Set("a"))
     val plan2 = PlanDescriptionImpl(id, "NAME", SingleChild(plan1), args2, Set("b"))

@@ -69,13 +69,12 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
   test("should un-cache cached properties") {
     val injectCachedNodeProperties: Rewriter = topDown(Rewriter.lift {
       case ci@ContainerIndex(Variable("cache"), Property(v@Variable(node), pkn:PropertyKeyName)) =>
-        CachedProperty(node, v, pkn, CACHED_NODE)(ci.position)
+        CachedProperty(node, v, pkn, NODE_TYPE)(ci.position)
     })
 
     // given
     val expr = exprParser.parse("[ x IN [1,2,3] WHERE cache[x.foo] > 0 | cache[x.foo] + 1]").endoRewrite(injectCachedNodeProperties)
     val plan = projectPlan(expr)
-    println(expr)
 
     // when
     val Result(newPlan, nSlots, _) = expressionVariableAllocation.allocate(plan)

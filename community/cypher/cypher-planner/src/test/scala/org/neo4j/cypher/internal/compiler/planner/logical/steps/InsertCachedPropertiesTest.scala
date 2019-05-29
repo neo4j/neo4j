@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
-import org.neo4j.cypher.internal.logical.plans.{Aggregation, AllNodesScan, Argument, CanGetValue, DirectedRelationshipByIdSeek, DoNotGetValue, GetValue, GetValueFromIndexBehavior, IndexOrderNone, IndexedProperty, LogicalPlan, NodeHashJoin, NodeIndexScan, Projection, Selection, SingleSeekableArg}
+import org.neo4j.cypher.internal.logical.plans.{Aggregation, AllNodesScan, Argument, CanGetValue, DirectedRelationshipByIdSeek, DoNotGetValue, GetValue, GetValueFromIndexBehavior, IndexOrderNone, IndexSeek, IndexedProperty, LogicalPlan, NodeHashJoin, NodeIndexScan, Projection, Selection, SingleSeekableArg}
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.v4_0.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
@@ -44,39 +44,44 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   private val nProp2 = Property(n, prop)(InputPosition.NONE.bumped())
   // Same property in different positions
   private val nFoo1 = Property(n, foo)(InputPosition.NONE)
-  private val cachedNProp1 = CachedProperty("n", n, prop, CACHED_NODE)(InputPosition.NONE)
-  private val cachedNProp2 = CachedProperty("n", n, prop, CACHED_NODE)(InputPosition.NONE.bumped())
-  private val cachedNRelProp1 = CachedProperty("n", n, prop, CACHED_RELATIONSHIP)(InputPosition.NONE)
-  private val cachedNRelProp2 = CachedProperty("n", n, prop, CACHED_RELATIONSHIP)(InputPosition.NONE.bumped())
+  private val cachedNProp1 = CachedProperty("n", n, prop, NODE_TYPE)(InputPosition.NONE)
+  private val cachedNProp2 = CachedProperty("n", n, prop, NODE_TYPE)(InputPosition.NONE.bumped())
+  private val cachedNRelProp1 = CachedProperty("n", n, prop, RELATIONSHIP_TYPE)(InputPosition.NONE)
+  private val cachedNRelProp2 = CachedProperty("n", n, prop, RELATIONSHIP_TYPE)(InputPosition.NONE.bumped())
 
   private val xProp = Property(x, prop)(InputPosition.NONE)
 
-  def nodeIndexScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior) =
-    NodeIndexScan(node, LabelToken(label, LabelId(1)), Seq(IndexedProperty(PropertyKeyToken(property, PropertyKeyId(1)), getValueFromIndex)), Set.empty, IndexOrderNone)
+  def indexScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior) = IndexSeek(s"$node:$label($property)", getValueFromIndex)
+  def indexSeek(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior) = IndexSeek(s"$node:$label($property = 42)", getValueFromIndex)
+  def uniqueIndexSeek(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior) = IndexSeek(s"$node:$label($property = 42)", getValueFromIndex, unique = true)
+  def indexContainsScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior) = IndexSeek("n:Awesome(prop CONTAINS 'foo')", getValueFromIndex)
+  def indexEndsWithScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior) = IndexSeek("n:Awesome(prop ENDS WITH 'foo')", getValueFromIndex)
 
-    test("should rewrite prop(n, prop) to CachedProperty(n.prop) with usage in selection after index scan") {
+  for((indexOperator, name) <- Seq((indexScan _, "indexScan"), (indexSeek _, "indexSeek"), (uniqueIndexSeek _, "uniqueIndexSeek"), (indexContainsScan _, "indexContainsScan"), (indexEndsWithScan _, "indexEndsWithScan"))) {
+    test(s"should rewrite prop(n, prop) to CachedProperty(n.prop) with usage in selection after index operator: $name") {
       val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
       val plan = Selection(
         Seq(equals(nProp1, literalInt(1))),
-        nodeIndexScan("n", "L", "prop", CanGetValue)
+        indexOperator("n", "L", "prop", CanGetValue)
       )
       val (newPlan, newTable) = replace(plan, initialTable)
 
       newPlan should equal(
         Selection(
           Seq(equals(cachedNProp1, literalInt(1))),
-          nodeIndexScan("n", "L", "prop", GetValue)
+          indexOperator("n", "L", "prop", GetValue)
         )
       )
       val initialType = initialTable.types(nProp1)
       newTable.types(cachedNProp1) should be(initialType)
     }
+  }
 
     test("should not rewrite prop(n, prop) if index cannot get value") {
       val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
       val plan = Selection(
         Seq(equals(nProp1, literalInt(1))),
-        nodeIndexScan("n", "L", "prop", DoNotGetValue)
+        indexScan("n", "L", "prop", DoNotGetValue)
       )
       val (newPlan, newTable) = replace(plan, initialTable)
       newPlan should be(plan)
@@ -88,13 +93,13 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       val initialTable = semanticTable(nProp1 -> CTInteger, nFoo1 -> CTInteger, n -> CTNode)
       val plan = Selection(
         Seq(equals(nFoo1, literalInt(1))),
-        nodeIndexScan("n", "L", "prop", CanGetValue)
+        indexScan("n", "L", "prop", CanGetValue)
       )
       val (newPlan, newTable) = replace(plan, initialTable)
       newPlan should equal(
         Selection(
           Seq(equals(nFoo1, literalInt(1))),
-          nodeIndexScan("n", "L", "prop", DoNotGetValue)
+          indexScan("n", "L", "prop", DoNotGetValue)
         )
       )
       newTable should be(initialTable)
@@ -103,14 +108,14 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     test("should rewrite prop(n, prop) to CachedProperty(n.prop) with usage in projection after index scan") {
       val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
       val plan = Projection(
-        nodeIndexScan("n", "L", "prop", CanGetValue),
+        indexScan("n", "L", "prop", CanGetValue),
           Map("x" -> nProp1)
       )
       val (newPlan, newTable) = replace(plan, initialTable)
 
       newPlan should equal(
         Projection(
-          nodeIndexScan("n", "L", "prop", GetValue),
+          indexScan("n", "L", "prop", GetValue),
           Map("x" -> cachedNProp1)
         )
       )
@@ -122,14 +127,14 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
       val plan = Selection(
         Seq(equals(listOf(prop("n", "prop")), listOfInt(1))),
-        nodeIndexScan("n", "L", "prop", CanGetValue)
+        indexScan("n", "L", "prop", CanGetValue)
       )
       val (newPlan, newTable) = replace(plan, initialTable)
 
       newPlan should equal(
         Selection(
           Seq(equals(listOf(cachedNProp1), listOfInt(1))),
-          nodeIndexScan("n", "L", "prop", GetValue)
+          indexScan("n", "L", "prop", GetValue)
         )
       )
       val initialType = initialTable.types(nProp1)
@@ -140,14 +145,14 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
       val plan = Selection(
         Seq(equals(mapOf("foo" -> prop("n", "prop")), mapOfInt(("foo", 1)))),
-        nodeIndexScan("n", "L", "prop", CanGetValue)
+        indexScan("n", "L", "prop", CanGetValue)
       )
       val (newPlan, newTable) = replace(plan, initialTable)
 
       newPlan should equal(
         Selection(
           Seq(equals(mapOf("foo" -> cachedNProp1), mapOfInt(("foo", 1)))),
-          nodeIndexScan("n", "L", "prop", GetValue)
+          indexScan("n", "L", "prop", GetValue)
         )
       )
       val initialType = initialTable.types(nProp1)
@@ -161,8 +166,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       val plan = Selection(
         Seq(propEquality("n", "prop", 1), propWithoutSemanticType),
         NodeHashJoin(Set("n"),
-          nodeIndexScan("n", "L", "prop", CanGetValue),
-          nodeIndexScan("m", "L", "prop", CanGetValue)
+          indexScan("n", "L", "prop", CanGetValue),
+          indexScan("m", "L", "prop", CanGetValue)
         )
       )
       val (_, newTable) = replace(plan, initialTable)

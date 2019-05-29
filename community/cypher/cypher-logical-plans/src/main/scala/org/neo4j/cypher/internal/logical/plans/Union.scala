@@ -30,11 +30,4 @@ case class Union(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen) e
   val rhs = Some(right)
 
   override val availableSymbols: Set[String] = left.availableSymbols intersect right.availableSymbols
-
-  /*
-   * Cached node properties work such that they fetch the value from the property store if the
-   * cached value is not available. This usually happens after a cache invalidation because of writes.
-   * This behavior makes it safe to make the Union of cached properties available after a union
-   * instead of the intersection.
-   */
 }

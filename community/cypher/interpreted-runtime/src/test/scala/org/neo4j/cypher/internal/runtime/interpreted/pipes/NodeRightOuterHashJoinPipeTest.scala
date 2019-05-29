@@ -74,7 +74,6 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
       Map("b" -> fromNodeProxy(node2)),
       Map("b" -> fromNodeProxy(node3))
     ))
-    //                                                       node2               node3
     result.map(_.getCachedProperty(bPropLeft)) should be(Seq(intValue(-2), null))
     result.map(_.getCachedProperty(bPropRight)) should be(Seq(intValue(12), intValue(13)))
   }
