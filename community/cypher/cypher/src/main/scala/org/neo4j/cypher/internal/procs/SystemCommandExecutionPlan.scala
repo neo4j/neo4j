@@ -84,6 +84,9 @@ class SystemCommandQuerySubscriber(inner: QuerySubscriber, queryHandler: QueryHa
     queryHandler.onResult(offset, value)
     inner.onField(offset, value)
   }
-  override def onError(throwable: Throwable): Unit = queryHandler.onError(throwable)
+  override def onError(throwable: Throwable): Unit = {
+    inner.onError(throwable)
+    queryHandler.onError(throwable)
+  }
   override def equals(obj: Any): Boolean = inner.equals(obj)
 }

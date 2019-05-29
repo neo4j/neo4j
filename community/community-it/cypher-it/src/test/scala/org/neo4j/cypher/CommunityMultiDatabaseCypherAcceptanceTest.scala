@@ -184,7 +184,8 @@ class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite
       fail("Expected error " + errorMsg)
     } catch {
       // THEN
-      case e: Exception => e.getMessage should be(errorMsg)
+      case e: Exception =>
+        e.getMessage should be(errorMsg)
     }
   }
 }
