@@ -115,80 +115,24 @@ class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite
     assertFailure("DROP DATABASE foo", "Unsupported management command: DROP DATABASE foo")
   }
 
-  test("should be able to start a started database") {
-    // GIVEN
+  test("should fail on starting database from community") {
     setup( defaultConfig )
-
-    // WHEN
-    execute("START DATABASE neo4j")
-
-    // THEN
-    val result = execute("SHOW DATABASE neo4j")
-    result.toList should be(List(Map("name" -> "neo4j", "status" -> onlineStatus, "default" -> true)))
+    assertFailure("START DATABASE neo4j", "Unsupported management command: START DATABASE neo4j")
   }
 
-  test("should not be able to start non-existing database") {
+  test("should fail on starting non-existing database with correct error message") {
     setup( defaultConfig )
-
-    assertFailure("START DATABASE foo", "Database 'foo' does not exist.")
-
-    val result = execute("SHOW DATABASE foo")
-    result.toList should be(List.empty)
+    assertFailure("START DATABASE foo", "Unsupported management command: START DATABASE foo")
   }
 
-  test("should stop database") {
-    // GIVEN
+  test("should fail on stopping database from community") {
     setup( defaultConfig )
-
-    // WHEN
-    execute("STOP DATABASE neo4j")
-    val result2 = execute("SHOW DATABASE neo4j")
-    result2.toList should be(List(Map("name" -> "neo4j", "status" -> offlineStatus, "default" -> true)))
+    assertFailure("STOP DATABASE neo4j", "Unsupported management command: STOP DATABASE neo4j")
   }
 
-  test("should not be able to stop non-existing database") {
+  test("should fail on stopping non-existing database with correct error message") {
     setup( defaultConfig )
-
-    assertFailure("STOP DATABASE foo", "Database 'foo' does not exist.")
-
-    val result = execute("SHOW DATABASE foo")
-    result.toList should be(List.empty)
-  }
-
-  test("should be able to stop a stopped database") {
-
-    // GIVEN
-    setup( defaultConfig )
-
-    execute("STOP DATABASE neo4j")
-    val result = execute("SHOW DATABASE neo4j")
-    result.toList should be(List(Map("name" -> "neo4j", "status" -> offlineStatus, "default" -> true)))
-
-    // WHEN
-    execute("STOP DATABASE neo4j")
-
-    // THEN
-    val result2 = execute("SHOW DATABASE neo4j")
-    result2.toList should be(List(Map("name" -> "neo4j", "status" -> offlineStatus, "default" -> true)))
-  }
-
-  test("should re-start database") {
-
-    // GIVEN
-    setup( defaultConfig )
-
-    val result = execute("SHOW DATABASE neo4j")
-    result.toList should be(List(Map("name" -> "neo4j", "status" -> onlineStatus, "default" -> true))) // make sure it was started
-    execute("STOP DATABASE neo4j")
-    val result2 = execute("SHOW DATABASE neo4j")
-    result2.toList should be(List(Map("name" -> "neo4j", "status" -> offlineStatus, "default" -> true))) // and stopped
-
-    // WHEN
-    execute("START DATABASE neo4j")
-
-    // THEN
-    val result3 = execute("SHOW DATABASE neo4j")
-    result3.toList should be(List(Map("name" -> "neo4j", "status" -> onlineStatus, "default" -> true)))
+    assertFailure("STOP DATABASE foo", "Unsupported management command: STOP DATABASE foo")
   }
 
   private def setup(config: Config): Unit = {

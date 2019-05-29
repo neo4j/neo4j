@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.procs.{QueryHandler, SystemCommandExecutionPlan, UpdatingSystemCommandExecutionPlan}
+import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.dbms.api.DatabaseNotFoundException
 import org.neo4j.values.storable.{TextValue, Values}
 import org.neo4j.values.virtual.VirtualValues
 
@@ -64,46 +63,6 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
     case ShowDatabase(dbName) => (_, _, _) =>
       SystemCommandExecutionPlan("ShowDatabase", normalExecutionEngine,
         "MATCH (d:Database {name: $name}) RETURN d.name as name, d.status as status, d.default as default", VirtualValues.map(Array("name"), Array(Values.stringValue(dbName))))
-
-    // START DATABASE foo
-    case StartDatabase(dbName) => (_, _, _) =>
-      UpdatingSystemCommandExecutionPlan("StartDatabase", normalExecutionEngine,
-        """OPTIONAL MATCH (d:Database {name: $name})
-          |OPTIONAL MATCH (d2:Database {name: $name, status: $oldStatus})
-          |SET d2.status = $status
-          |SET d2.started_at = datetime()
-          |RETURN d2.name as name, d2.status as status, d.name as db""".stripMargin,
-        VirtualValues.map(
-          Array("name", "oldStatus", "status"),
-          Array(Values.stringValue(dbName.toLowerCase),
-            DatabaseStatus.Offline,
-            DatabaseStatus.Online
-          )
-        ),
-        QueryHandler.handleResult(record => {
-          if (record.get("db") == null) throw new DatabaseNotFoundException("Database '" + dbName + "' does not exist.")
-        })
-      )
-
-    // STOP DATABASE foo
-    case StopDatabase(dbName) => (_, _, _) =>
-      UpdatingSystemCommandExecutionPlan("StopDatabase", normalExecutionEngine,
-        """OPTIONAL MATCH (d:Database {name: $name})
-          |OPTIONAL MATCH (d2:Database {name: $name, status: $oldStatus})
-          |SET d2.status = $status
-          |SET d2.stopped_at = datetime()
-          |RETURN d2.name as name, d2.status as status, d.name as db""".stripMargin,
-        VirtualValues.map(
-          Array("name", "oldStatus", "status"),
-          Array(Values.stringValue(dbName.toLowerCase),
-            DatabaseStatus.Online,
-            DatabaseStatus.Offline
-          )
-        ),
-        QueryHandler.handleResult(record => {
-          if (record.get("db") == null) throw new DatabaseNotFoundException("Database '" + dbName + "' does not exist.")
-        })
-      )
   }
 
   override def isApplicableManagementCommand(logicalPlanState: LogicalPlanState): Boolean = logicalToExecutable.isDefinedAt(logicalPlanState.maybeLogicalPlan.get)
