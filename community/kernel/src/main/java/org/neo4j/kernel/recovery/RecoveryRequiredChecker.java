@@ -98,6 +98,8 @@ class RecoveryRequiredChecker
         // count store files will be checked separately since presence of both files is not required
         storeFiles.remove( databaseLayout.countStoreA() );
         storeFiles.remove( databaseLayout.countStoreB() );
+        // index statistics is not mandatory store to have
+        storeFiles.remove( databaseLayout.indexStatisticsStore() );
         return storeFiles.stream().allMatch( fs::fileExists ) && oneOfCountStoreFilesExist( databaseLayout );
     }
 

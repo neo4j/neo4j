@@ -39,7 +39,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -74,6 +73,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion;
 
@@ -219,7 +219,7 @@ public class StoreUpgraderInterruptionTestIT
     private StoreUpgrader newUpgrader( StoreVersionCheck versionCheck, MigrationProgressMonitor progressMonitor, SchemaIndexMigrator indexMigrator,
             RecordStorageMigrator migrator ) throws IOException
     {
-        Config allowUpgrade = Config.defaults( GraphDatabaseSettings.allow_upgrade, "true" );
+        Config allowUpgrade = Config.defaults( allow_upgrade, "true" );
 
         VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDatabaseLayout.databaseDirectory(), fs ).build();
@@ -233,9 +233,8 @@ public class StoreUpgraderInterruptionTestIT
 
     private static void startStopDatabase( File storeDir )
     {
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( storeDir ).setConfig( GraphDatabaseSettings.allow_upgrade, "true" ).build();
-        GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir ).setConfig( allow_upgrade, "true" ).build();
+        managementService.database( DEFAULT_DATABASE_NAME );
         managementService.shutdown();
     }
 }

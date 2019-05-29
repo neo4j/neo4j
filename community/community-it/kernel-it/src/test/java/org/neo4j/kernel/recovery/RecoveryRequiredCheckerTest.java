@@ -232,6 +232,22 @@ class RecoveryRequiredCheckerTest
         assertFalse( checker.isRecoveryRequiredAt( databaseLayout ) );
     }
 
+    @Test
+    void recoveryNotRequiredWhenIndexStatisticStoreIsMissing() throws Exception
+    {
+        startStopAndCreateDefaultData();
+
+        assertStoreFilesExist();
+
+        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
+        RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
+        assertFalse( checker.isRecoveryRequiredAt( databaseLayout ) );
+
+        fileSystem.deleteFileOrThrow( databaseLayout.indexStatisticsStore() );
+
+        assertFalse( checker.isRecoveryRequiredAt( databaseLayout ) );
+    }
+
     private void recoverBrokenStoreWithConfig( Config config ) throws IOException
     {
         try ( EphemeralFileSystemAbstraction ephemeralFs = createSomeDataAndCrash( storeDir, config ) )
