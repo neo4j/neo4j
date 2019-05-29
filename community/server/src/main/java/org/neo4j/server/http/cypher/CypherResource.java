@@ -20,7 +20,6 @@
 package org.neo4j.server.http.cypher;
 
 import java.net.URI;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
@@ -37,6 +36,7 @@ import javax.ws.rs.core.UriInfo;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.Log;
 import org.neo4j.server.http.cypher.format.api.InputEventStream;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
@@ -44,6 +44,7 @@ import org.neo4j.server.rest.Neo4jError;
 import org.neo4j.server.rest.dbms.AuthorizedRequestWrapper;
 import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 
+import static java.util.Collections.emptyMap;
 import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
 
 @Path( "/{databaseName}/transaction" )
@@ -77,18 +78,21 @@ public class CypherResource
     {
         InputEventStream inputStream = ensureNotNull( inputEventStream );
 
-        Optional<TransactionFacade> transactionFacade = httpTransactionManager.getTransactionFacade( databaseName );
+        Optional<GraphDatabaseFacade> graphDatabaseFacade = httpTransactionManager.getGraphDatabaseFacade( databaseName );
+        return graphDatabaseFacade.map( facade -> {
+            if ( isDatabaseNotAvailable( facade ) )
+            {
+                return createNonAvailableDatabaseResponse( inputStream.getParameters() );
+            }
+            final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( facade );
+            TransactionHandle transactionHandle = createNewTransactionHandle( transactionFacade, headers, request, false );
 
-        return transactionFacade
-                .map( t -> {
-                    TransactionHandle transactionHandle = createNewTransactionHandle( t, headers, request, false );
+            Invocation invocation = new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), inputStream, false );
+            OutputEventStreamImpl outputStream =
+                    new OutputEventStreamImpl( inputStream.getParameters(), transactionFacade.getTransactionContainer(), uriScheme, invocation::execute );
+            return Response.created( transactionHandle.uri() ).entity( outputStream ).build();
 
-                    Invocation invocation = new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), inputStream, false );
-                    OutputEventStreamImpl outputStream =
-                            new OutputEventStreamImpl( inputStream.getParameters(), t.getTransactionContainer(), uriScheme, invocation::execute );
-                    return Response.created( transactionHandle.uri() ).entity( outputStream ).build();
-                } )
-                .orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
+        } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
     }
 
     @POST
@@ -112,41 +116,56 @@ public class CypherResource
     {
         InputEventStream inputStream = ensureNotNull( inputEventStream );
 
-        Optional<TransactionFacade> transactionFacade = httpTransactionManager.getTransactionFacade( databaseName );
-        return transactionFacade
-                .map( t -> {
-                    TransactionHandle transactionHandle = createNewTransactionHandle( t, headers, request, true );
+        Optional<GraphDatabaseFacade> graphDatabaseFacade = httpTransactionManager.getGraphDatabaseFacade( databaseName );
+        return graphDatabaseFacade.map( facade ->
+        {
+            if ( isDatabaseNotAvailable( facade ) )
+            {
+                return createNonAvailableDatabaseResponse( inputStream.getParameters() );
+            }
+            final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( facade );
+            TransactionHandle transactionHandle = createNewTransactionHandle( transactionFacade, headers, request, true );
 
-                    Invocation invocation = new Invocation( log, transactionHandle, null, inputStream, true );
-                    OutputEventStreamImpl outputStream =
-                            new OutputEventStreamImpl( inputStream.getParameters(), t.getTransactionContainer(), uriScheme, invocation::execute );
-                    return Response.ok( outputStream ).build();
-                }  )
-                .orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
+            Invocation invocation = new Invocation( log, transactionHandle, null, inputStream, true );
+            OutputEventStreamImpl outputStream =
+                    new OutputEventStreamImpl( inputStream.getParameters(), transactionFacade.getTransactionContainer(), uriScheme, invocation::execute );
+            return Response.ok( outputStream ).build();
+        } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
     }
 
     @DELETE
     @Path( "/{id}" )
     public Response rollbackTransaction( @PathParam( "id" ) final long id )
     {
-        Optional<TransactionFacade> transactionFacade = httpTransactionManager.getTransactionFacade( databaseName );
-        return transactionFacade.map( t -> {
+        Optional<GraphDatabaseFacade> graphDatabaseFacade = httpTransactionManager.getGraphDatabaseFacade( databaseName );
+        return graphDatabaseFacade.map( facade ->
+        {
+            if ( isDatabaseNotAvailable( facade ) )
+            {
+                return createNonAvailableDatabaseResponse( emptyMap() );
+            }
+            final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( facade );
             TransactionHandle transactionHandle;
             try
             {
-                transactionHandle = t.terminate( id );
+                transactionHandle = transactionFacade.terminate( id );
             }
             catch ( TransactionLifecycleException e )
             {
-                return invalidTransaction( t, e, Collections.emptyMap() );
+                return invalidTransaction( transactionFacade, e, emptyMap() );
             }
 
             RollbackInvocation invocation = new RollbackInvocation( log, transactionHandle );
             OutputEventStreamImpl outputEventStream =
-                    new OutputEventStreamImpl( Collections.emptyMap(), null, uriScheme, invocation::execute );
+                    new OutputEventStreamImpl( emptyMap(), null, uriScheme, invocation::execute );
             return Response.ok().entity( outputEventStream ).build();
 
-        } ).orElse( createNonExistentDatabaseResponse( Collections.emptyMap() ) );
+        } ).orElse( createNonExistentDatabaseResponse( emptyMap() ) );
+    }
+
+    private boolean isDatabaseNotAvailable( GraphDatabaseFacade facade )
+    {
+        return !facade.isAvailable( 0 );
     }
 
     private TransactionHandle createNewTransactionHandle( TransactionFacade transactionFacade, HttpHeaders headers, HttpServletRequest request,
@@ -162,21 +181,27 @@ public class CypherResource
     {
         InputEventStream inputStream = ensureNotNull( inputEventStream );
 
-        Optional<TransactionFacade> transactionFacade = httpTransactionManager.getTransactionFacade( databaseName );
-        return transactionFacade.map( t -> {
+        Optional<GraphDatabaseFacade> graphDatabaseFacade = httpTransactionManager.getGraphDatabaseFacade( databaseName );
+        return graphDatabaseFacade.map( facade ->
+        {
+            if ( isDatabaseNotAvailable( facade ) )
+            {
+                return createNonAvailableDatabaseResponse( inputStream.getParameters() );
+            }
+            final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( facade );
             TransactionHandle transactionHandle;
             try
             {
-                transactionHandle = t.findTransactionHandle( transactionId );
+                transactionHandle = transactionFacade.findTransactionHandle( transactionId );
             }
             catch ( TransactionLifecycleException e )
             {
-                return invalidTransaction( t, e, inputStream.getParameters() );
+                return invalidTransaction( transactionFacade, e, inputStream.getParameters() );
             }
             Invocation invocation =
                     new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), inputStream, finishWithCommit );
             OutputEventStreamImpl outputEventStream =
-                    new OutputEventStreamImpl( inputStream.getParameters(), t.getTransactionContainer(), uriScheme, invocation::execute );
+                    new OutputEventStreamImpl( inputStream.getParameters(), transactionFacade.getTransactionContainer(), uriScheme, invocation::execute );
             return Response.ok( outputEventStream ).build();
         } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
     }
@@ -202,6 +227,14 @@ public class CypherResource
     {
         ErrorInvocation errorInvocation = new ErrorInvocation( new Neo4jError( Status.Database.DatabaseNotFound,
                 String.format( "The database requested does not exists. Requested database name: '%s'.", databaseName ) ) );
+        return Response.status( Response.Status.NOT_FOUND ).entity(
+                new OutputEventStreamImpl( parameters, null, uriScheme, errorInvocation::execute ) ).build();
+    }
+
+    private Response createNonAvailableDatabaseResponse( Map<String,Object> parameters )
+    {
+        ErrorInvocation errorInvocation = new ErrorInvocation( new Neo4jError( Status.General.DatabaseUnavailable,
+                String.format( "Requested database is not available. Requested database name: '%s'.", databaseName ) ) );
         return Response.status( Response.Status.NOT_FOUND ).entity(
                 new OutputEventStreamImpl( parameters, null, uriScheme, errorInvocation::execute ) ).build();
     }

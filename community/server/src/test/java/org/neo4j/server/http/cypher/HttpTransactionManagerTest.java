@@ -77,9 +77,9 @@ public class HttpTransactionManagerTest
     {
         DatabaseService database = mock( DatabaseService.class );
         HttpTransactionManager manager = newTransactionManager( database );
-        Optional<TransactionFacade> transactionFacade = manager.getTransactionFacade( "data" );
+        final Optional<GraphDatabaseFacade> graphDatabaseFacade = manager.getGraphDatabaseFacade( "data" );
 
-        assertTrue( transactionFacade.isPresent() );
+        assertTrue( graphDatabaseFacade.isPresent() );
 
         verify( database ).getDatabase();
     }
@@ -89,7 +89,7 @@ public class HttpTransactionManagerTest
     {
         DatabaseService database = mock( DatabaseService.class );
         HttpTransactionManager manager = newTransactionManager( database );
-        Optional<TransactionFacade> transactionFacade = manager.getTransactionFacade( "neo4j" );
+        Optional<GraphDatabaseFacade> transactionFacade = manager.getGraphDatabaseFacade( "neo4j" );
 
         assertTrue( transactionFacade.isPresent() );
 
@@ -101,7 +101,7 @@ public class HttpTransactionManagerTest
     {
         DatabaseService database = mock( DatabaseService.class );
         HttpTransactionManager manager = newTransactionManager( database );
-        Optional<TransactionFacade> transactionFacade = manager.getTransactionFacade( "foo" );
+        Optional<GraphDatabaseFacade> transactionFacade = manager.getGraphDatabaseFacade( "foo" );
 
         assertFalse( transactionFacade.isPresent() );
 

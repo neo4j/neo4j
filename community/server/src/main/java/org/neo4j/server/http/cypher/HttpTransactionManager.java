@@ -67,7 +67,7 @@ public class HttpTransactionManager
      * @param databaseName database name.
      * @return a transaction facade or {@code null} if a database with the supplied database name does not exist.
      */
-    public Optional<TransactionFacade> getTransactionFacade( String databaseName )
+    public Optional<GraphDatabaseFacade> getGraphDatabaseFacade( String databaseName )
     {
         Optional<GraphDatabaseFacade> graph;
         try
@@ -78,7 +78,7 @@ public class HttpTransactionManager
         {
             graph = Optional.empty();
         }
-        return graph.map( this::createTransactionFacade );
+        return graph;
     }
 
     public TransactionHandleRegistry getTransactionHandleRegistry()
@@ -86,7 +86,7 @@ public class HttpTransactionManager
         return transactionRegistry;
     }
 
-    private TransactionFacade createTransactionFacade( GraphDatabaseFacade graph )
+    public TransactionFacade createTransactionFacade( GraphDatabaseFacade graph )
     {
         DependencyResolver dependencyResolver = graph.getDependencyResolver();
 
