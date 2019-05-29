@@ -65,37 +65,37 @@ case class UpdatingSystemCommandExecutionPlan(name: String, normalExecutionEngin
 }
 
 class QueryHandler {
-  def onError(t: Throwable): Unit = throw t
+  def onError(t: Throwable): Throwable = t
 
-  def onResult(offset: Int, value: AnyValue): Unit = Unit
+  def onResult(offset: Int, value: AnyValue): Option[Throwable] = None
 
-  def onNoResults(): Unit = Unit
+  def onNoResults(): Option[Throwable] = None
 }
 
 class QueryHandlerBuilder(parent: QueryHandler) extends QueryHandler {
-  override def onError(t: Throwable): Unit = parent.onError(t)
+  override def onError(t: Throwable): Throwable = parent.onError(t)
 
-  override def onResult(offset: Int, value: AnyValue): Unit = parent.onResult(offset, value)
+  override def onResult(offset: Int, value: AnyValue): Option[Throwable] = parent.onResult(offset, value)
 
-  override def onNoResults(): Unit = parent.onNoResults()
+  override def onNoResults(): Option[Throwable] = parent.onNoResults()
 
-  def handleError(f: Throwable => Unit): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onError(t: Throwable): Unit = f(t)
+  def handleError(f: Throwable => Throwable): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
+    override def onError(t: Throwable): Throwable = f(t)
   }
 
-  def handleNoResult(f: () => Nothing): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onNoResults(): Unit = f()
+  def handleNoResult(f: () => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
+    override def onNoResults(): Option[Throwable] = f()
   }
 
-  def handleResult(handler: (Int, AnyValue) => Unit): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onResult(offset: Int, value: AnyValue): Unit = handler(offset, value)
+  def handleResult(handler: (Int, AnyValue) => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
+    override def onResult(offset: Int, value: AnyValue): Option[Throwable] = handler(offset, value)
   }
 }
 
 object QueryHandler {
-  def handleError(f: Throwable => Unit): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleError(f)
+  def handleError(f: Throwable => Throwable): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleError(f)
 
-  def handleNoResult(f: () => Nothing): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleNoResult(f)
+  def handleNoResult(f: () => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleNoResult(f)
 
-  def handleResult(handler: (Int, AnyValue) => Unit): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleResult(handler)
+  def handleResult(handler: (Int, AnyValue) => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleResult(handler)
 }

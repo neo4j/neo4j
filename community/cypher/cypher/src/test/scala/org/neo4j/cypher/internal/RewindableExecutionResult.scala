@@ -25,6 +25,8 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.{Notification, Result}
 import org.neo4j.kernel.impl.query.{QueryExecution, RecordingQuerySubscriber}
 
+import scala.collection.mutable.ArrayBuffer
+
 trait RewindableExecutionResult {
   def columns: Array[String]
   protected def result: Seq[Map[String, AnyRef]]
@@ -87,11 +89,19 @@ object RewindableExecutionResult {
       val columns = runtimeResult.fieldNames()
       runtimeResult.request(Long.MaxValue)
       runtimeResult.await()
-      val result: Seq[Map[String, AnyRef]] = subscriber.getOrThrow().asScala.map(row => {
-        (row.zipWithIndex map {
-          case (value, index) => columns(index) -> scalaValues.asDeepScalaValue(queryContext.asObject(value)).asInstanceOf[AnyRef]
-        }).toMap
+//      val result: Seq[Map[String, AnyRef]] = subscriber.getOrThrow().asScala.map(row => {
+//        (row.zipWithIndex map {
+//          case (value, index) => columns(index) -> scalaValues.asDeepScalaValue(queryContext.asObject(value)).asInstanceOf[AnyRef]
+//        }).toMap
+//      })
+      val result = new ArrayBuffer[Map[String, AnyRef]]()
+      subscriber.getOrThrow().asScala.foreach( record => {
+        val row = columns.zipWithIndex.map {
+          case (value, index) => value -> scalaValues.asDeepScalaValue(queryContext.asObject(record(index))).asInstanceOf[AnyRef]
+        }
+        result.append(row.toMap)
       })
+
 
       new RewindableExecutionResultImplementation(columns, result, NormalMode, null, runtimeResult.queryStatistics(),
                                                   Seq.empty)
@@ -103,9 +113,10 @@ object RewindableExecutionResult {
       val columns = runtimeResult.fieldNames()
       runtimeResult.request(Long.MaxValue)
       runtimeResult.await()
+
       val result: Seq[Map[String, AnyRef]] = subscriber.getOrThrow().asScala.map(row => {
-        (row.zipWithIndex map {
-          case (value, index) => columns(index) -> scalaValues.asDeepScalaValue(queryContext.asObject(value)).asInstanceOf[AnyRef]
+        (columns.zipWithIndex map {
+          case (value, index) => value -> scalaValues.asDeepScalaValue(queryContext.asObject(row(index))).asInstanceOf[AnyRef]
         }).toMap
       })
 

@@ -39,7 +39,7 @@ import org.neo4j.values.virtual.MapValue
   */
 case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue,
                                       resultMapper: (QueryContext, QueryExecution) => SystemCommandExecutionResult = (c, q) => new SystemCommandExecutionResult(q.asInstanceOf[InternalExecutionResult]),
-                                      onError: Throwable => Unit = e => throw e)
+                                      onError: Throwable => Throwable = identity)
   extends ExecutionPlan {
 
   override def run(ctx: QueryContext,
@@ -51,7 +51,8 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
 
     val tc = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
     if (!name.startsWith("ShowDatabase") && !tc.securityContext().isAdmin) throw new AuthorizationViolationException(PERMISSION_DENIED)
-    val execution: QueryExecution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, new SystemCommandQuerySubscriber(subscriber, QueryHandler.handleError(onError)))
+    val execution: QueryExecution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults,
+                                                                  new SystemCommandQuerySubscriber(subscriber, QueryHandler.handleError(onError)))
     SystemCommandRuntimeResult(ctx, subscriber, resultMapper(ctx, execution))
   }
 
@@ -69,24 +70,26 @@ class SystemCommandQuerySubscriber(inner: QuerySubscriber, queryHandler: QueryHa
   @volatile private var empty = true
 
   override def onResult(numberOfFields: Int): Unit = inner.onResult(numberOfFields)
-  override def onResultCompleted(statistics: QueryStatistics): Unit = inner.onResultCompleted(statistics)
+  override def onResultCompleted(statistics: QueryStatistics): Unit = {
+    if (empty) {
+      queryHandler.onNoResults().foreach(inner.onError)
+    }
+    inner.onResultCompleted(statistics)
+  }
+
   override def onRecord(): Unit = {
     empty = false
     inner.onRecord()
   }
-  override def onRecordCompleted(): Unit = {
-    if (empty) {
-      queryHandler.onNoResults()
-    }
-    inner.onRecordCompleted()
-  }
+  override def onRecordCompleted(): Unit = inner.onRecordCompleted()
+
   override def onField(offset: Int, value: AnyValue): Unit = {
-    queryHandler.onResult(offset, value)
+    queryHandler.onResult(offset, value).foreach(inner.onError)
     inner.onField(offset, value)
   }
   override def onError(throwable: Throwable): Unit = {
-    inner.onError(throwable)
-    queryHandler.onError(throwable)
+      inner.onError(queryHandler.onError(throwable))
   }
+
   override def equals(obj: Any): Boolean = inner.equals(obj)
 }
