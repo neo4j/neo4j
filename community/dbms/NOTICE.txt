@@ -32,8 +32,6 @@ Apache Software License, Version 2.0
   Apache Commons Text
   Apache HttpClient
   Apache HttpCore
-  Apache Log4j API
-  Apache Log4j Scala 2.11 wrapper for Log4j API
   jPowerShell
   jProcesses
   Lucene codecs
@@ -48,7 +46,6 @@ BSD - Scala License
   Scala Library
 
 BSD License
-  Scala Compiler
   Zstandard
 
 BSD License 2-clause

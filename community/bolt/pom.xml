@@ -45,8 +45,8 @@
     <dependencies>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-blob-util</artifactId>
-            <version>3.5.6-SNAPSHOT</version>
+            <artifactId>blob-util</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>commons-codec</groupId>
