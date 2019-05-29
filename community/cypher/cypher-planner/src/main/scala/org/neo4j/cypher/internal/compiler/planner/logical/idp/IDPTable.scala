@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 // Table used by IDPSolver to record optimal plans found so far
 //
@@ -31,9 +32,16 @@ class IDPTable[Result, Attribute](private val map: mutable.Map[(Goal, Attribute)
     map.put((goal, attribute), result)
   }
 
-  def apply(goal: Goal): Seq[(Attribute, Result)] = map.collect {
-    case ((key, attribute), result) if key == goal => (attribute, result)
-  }.toSeq
+  def apply(goal: Goal): Seq[(Attribute, Result)] = {
+    val buffer = new ArrayBuffer[(Attribute, Result)]()
+    map.foreach {
+      goal_attr_result =>
+        if (goal_attr_result._1._1 == goal) {
+          buffer += ((goal_attr_result._1._2, goal_attr_result._2))
+        }
+    }
+    buffer
+  }
 
   def contains(goal: Goal, attribute: Attribute): Boolean = map.contains((goal, attribute))
 

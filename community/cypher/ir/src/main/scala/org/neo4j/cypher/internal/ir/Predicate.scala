@@ -23,8 +23,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.Expression
 
 case class Predicate(dependencies: Set[String], expr: Expression) {
 
-  def hasDependenciesMet(symbols: Set[String]): Boolean =
-    (dependencies -- symbols).isEmpty
+  def hasDependenciesMet(symbols: Set[String]): Boolean = dependencies.forall(symbols.contains)
 
   def hasDependenciesMetForRequiredSymbol(symbols: Set[String], required: String): Boolean =
     dependencies.contains(required) && hasDependenciesMet(symbols)

@@ -22,16 +22,21 @@ package org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
 import org.neo4j.cypher.internal.v4_0.expressions._
 
+import scala.collection.mutable.ArrayBuffer
+
 case class Selections(predicates: Set[Predicate] = Set.empty) {
   def isEmpty = predicates.isEmpty
 
-  def predicatesGiven(ids: Set[String]): Seq[Expression] = predicates.collect {
-    case p@Predicate(_, predicate) if p.hasDependenciesMet(ids) => predicate
-  }.toIndexedSeq
-
-  def predicatesGivenForRequiredSymbol(allowed: Set[String], required: String): Seq[Expression] = predicates.collect {
-    case p@Predicate(_, predicate) if p.hasDependenciesMetForRequiredSymbol(allowed, required) => predicate
-  }.toIndexedSeq
+  def predicatesGiven(ids: Set[String]): Seq[Expression] = {
+    val buffer = new ArrayBuffer[Expression]()
+    predicates.foreach {
+      p =>
+        if (p.hasDependenciesMet(ids)) {
+          buffer += p.expr
+        }
+    }
+    buffer
+  }
 
   def scalarPredicatesGiven(ids: Set[String]): Seq[Expression] = predicatesGiven(ids).filterNot(containsPatternPredicates)
 
