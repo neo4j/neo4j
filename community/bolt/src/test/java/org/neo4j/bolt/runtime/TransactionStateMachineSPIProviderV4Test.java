@@ -32,14 +32,15 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.time.SystemNanoClock;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -68,7 +69,7 @@ class TransactionStateMachineSPIProviderV4Test
     }
 
     @Test
-    void shouldErrorIfDatabaseNotFound() throws Throwable
+    void shouldErrorIfDatabaseNotFound()
     {
         DatabaseManagementService managementService = mock( DatabaseManagementService.class );
         var databaseName = "database";
@@ -78,7 +79,7 @@ class TransactionStateMachineSPIProviderV4Test
         BoltIOException error = assertThrows( BoltIOException.class, () ->
                 spiProvider.getTransactionStateMachineSPI( databaseName, mock( StatementProcessorReleaseManager.class ) ) );
         assertThat( error.status(), equalTo( Status.Database.DatabaseNotFound ) );
-        assertThat( error.getMessage(), containsString( "The database requested does not exist. Requested database name: 'database'." ) );
+        assertThat( error.getMessage(), containsString( "Database does not exists. Database name: 'database'." ) );
     }
 
     private DatabaseManagementService managementService( String databaseName )
@@ -88,6 +89,7 @@ class TransactionStateMachineSPIProviderV4Test
         final DependencyResolver dependencyResolver = mock( DependencyResolver.class );
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
 
+        when( databaseFacade.isAvailable( anyLong() ) ).thenReturn( true );
         when( managementService.database( databaseName ) ).thenReturn( databaseFacade );
         when( databaseFacade.getDependencyResolver() ).thenReturn( dependencyResolver );
         when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );

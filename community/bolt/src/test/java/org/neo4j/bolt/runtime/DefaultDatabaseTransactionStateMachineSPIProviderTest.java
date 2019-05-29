@@ -33,6 +33,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
@@ -63,8 +64,9 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
     private DatabaseManagementService managementServiceWithDatabase( String databaseName )
     {
         DatabaseManagementService managementService = mock( DatabaseManagementService.class );
-        GraphDatabaseFacade databaseContext = mock( GraphDatabaseFacade.class );
-        when( managementService.database( databaseName ) ).thenReturn( databaseContext );
+        GraphDatabaseFacade databaseFacade = mock( GraphDatabaseFacade.class );
+        when( databaseFacade.isAvailable( anyLong() ) ).thenReturn( true );
+        when( managementService.database( databaseName ) ).thenReturn( databaseFacade );
         return managementService;
     }
 
