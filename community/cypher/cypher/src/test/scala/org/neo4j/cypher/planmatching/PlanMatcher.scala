@@ -20,9 +20,8 @@
 package org.neo4j.cypher.planmatching
 
 import org.neo4j.cypher.internal.ir.ProvidedOrder
-import org.neo4j.cypher.internal.plandescription.Arguments
 import org.neo4j.cypher.internal.plandescription.Arguments.{DbHits, EstimatedRows, Order, Rows}
-import org.neo4j.cypher.internal.plandescription._
+import org.neo4j.cypher.internal.plandescription.{Arguments, _}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
@@ -340,44 +339,43 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
     PlanDescriptionImpl(Id(0), nameDesc, children, otherArgs ++ rowArg ++ estRowArg ++ dbHitsArg ++ orderArg, variablesDesc)
   }
 
-  override def withName(name: String): PlanMatcher = copy(name = Some(PlanExactNameMatcher(name)))
+  override def withName(name: String): PlanMatcher = this.name.fold(copy(name = Some(PlanExactNameMatcher(name))))(_ => throw new IllegalArgumentException("cannot have more than one assertion on name"))
 
-  override def withName(name: Regex): PlanMatcher = copy(name = Some(PlanRegexNameMatcher(name)))
+  override def withName(name: Regex): PlanMatcher = this.name.fold(copy(name = Some(PlanRegexNameMatcher(name))))(_ => throw new IllegalArgumentException("cannot have more than once assertion on name"))
 
-  override def withRows(rows: Long): PlanMatcher = copy(rows = Some(new ExactArgumentMatcher(rows) with ActualRowsMatcher))
+  override def withRows(rows: Long): PlanMatcher = this.rows.fold(copy(rows = Some(new ExactArgumentMatcher(rows) with ActualRowsMatcher)))(_ => throw new IllegalArgumentException("cannot have more than once assertion on rows"))
 
-  override def withRowsBetween(min: Long, max: Long): PlanMatcher = copy(rows = Some(new RangeArgumentMatcher(min, max) with ActualRowsMatcher))
+  override def withRowsBetween(min: Long, max: Long): PlanMatcher = this.rows.fold(copy(rows = Some(new RangeArgumentMatcher(min, max) with ActualRowsMatcher)))(_ => throw new IllegalArgumentException("cannot have more than once assertion on rows"))
 
-  override def withEstimatedRows(estimatedRows: Long): PlanMatcher = copy(estimatedRows = Some(new ExactArgumentMatcher(estimatedRows) with EstimatedRowsMatcher))
+  override def withEstimatedRows(estimatedRows: Long): PlanMatcher = this.estimatedRows.fold(copy(estimatedRows = Some(new ExactArgumentMatcher(estimatedRows) with EstimatedRowsMatcher)))(_ => throw new IllegalArgumentException("cannot have more than once assertion on estimatedRows"))
 
-  override def withEstimatedRowsBetween(min: Long, max: Long): PlanMatcher = copy(estimatedRows = Some(new RangeArgumentMatcher(min, max) with EstimatedRowsMatcher))
+  override def withEstimatedRowsBetween(min: Long, max: Long): PlanMatcher = this.estimatedRows.fold(copy(estimatedRows = Some(new RangeArgumentMatcher(min, max) with EstimatedRowsMatcher)))(_ => throw new IllegalArgumentException("cannot have more than once assertion on estimatedRows"))
 
-  override def withTime(): PlanMatcher = copy(time = Some(new RangeArgumentMatcher(1, Long.MaxValue) with TimeMatcher))
+  override def withTime(): PlanMatcher = this.time.fold(copy(time = Some(new RangeArgumentMatcher(1, Long.MaxValue) with TimeMatcher)))(_ => throw new IllegalArgumentException("cannot have more than once assertion on time"))
 
-  override def withDBHits(hits: Long): PlanMatcher = copy(dbHits = Some(new ExactArgumentMatcher(hits) with DBHitsMatcher))
+  override def withDBHits(hits: Long): PlanMatcher = this.dbHits.fold(copy(dbHits = Some(new ExactArgumentMatcher(hits) with DBHitsMatcher)))(_ => throw new IllegalArgumentException("cannot have more than once assertion on dbHits"))
 
-  override def withDBHits(): PlanMatcher = copy(dbHits = Some(new RangeArgumentMatcher(1, Long.MaxValue) with DBHitsMatcher))
+  override def withDBHits(): PlanMatcher = this.dbHits.fold(copy(dbHits = Some(new RangeArgumentMatcher(1, Long.MaxValue) with DBHitsMatcher)))(_ => throw new IllegalArgumentException("cannot have more than once assertion on dbHits"))
 
-  override def withDBHitsBetween(min: Long, max: Long): PlanMatcher = copy(dbHits = Some(new RangeArgumentMatcher(min, max) with DBHitsMatcher))
+  override def withDBHitsBetween(min: Long, max: Long): PlanMatcher = this.dbHits.fold(copy(dbHits = Some(new RangeArgumentMatcher(min, max) with DBHitsMatcher)))(_ => throw new IllegalArgumentException("cannot have more than once assertion on dbHits"))
 
-  override def withExactVariables(variables: String*): PlanMatcher = copy(variables = Some(ExactVariablesMatcher(variables.toSet)))
+  override def withExactVariables(variables: String*): PlanMatcher = this.variables.fold(copy(variables = Some(ExactVariablesMatcher(variables.toSet))))(_ => throw new IllegalArgumentException("cannot have more than once assertion on variables"))
 
-  override def containingVariables(variables: String*): PlanMatcher = copy(variables = Some(ContainsVariablesMatcher(variables.toSet)))
+  override def containingVariables(variables: String*): PlanMatcher = this.variables.fold(copy(variables = Some(ContainsVariablesMatcher(variables.toSet))))(_ => throw new IllegalArgumentException("cannot have more than once assertion on variables"))
 
-  override def containingVariablesRegex(variables: Regex*): PlanMatcher = copy(variables = Some(ContainsRegexVariablesMatcher(variables.toSet)))
+  override def containingVariablesRegex(variables: Regex*): PlanMatcher = this.variables.fold(copy(variables = Some(ContainsRegexVariablesMatcher(variables.toSet))))(_ => throw new IllegalArgumentException("cannot have more than once assertion on variables"))
 
-  override def containingArgument(argument: String*): PlanMatcher = copy(other = Some(ContainsExactStringArgumentsMatcher(argument.toSet)))
+  override def containingArgument(argument: String*): PlanMatcher = this.other.fold(copy(other = Some(ContainsExactStringArgumentsMatcher(argument.toSet))))(_ => throw new IllegalArgumentException("cannot have more than once assertion on other"))
 
-  override def containingArgumentRegex(argument: Regex*): PlanMatcher = copy(other = Some(ContainsRegexStringArgumentsMatcher(argument.toSet)))
+  override def containingArgumentRegex(argument: Regex*): PlanMatcher = this.other.fold(copy(other = Some(ContainsRegexStringArgumentsMatcher(argument.toSet))))(_ => throw new IllegalArgumentException("cannot have more than once assertion on other"))
 
-  override def withOrder(providedOrder: ProvidedOrder): PlanMatcher = copy(order = Some(OrderArgumentMatcher(providedOrder)))
+  override def withOrder(providedOrder: ProvidedOrder): PlanMatcher = this.order.fold(copy(order = Some(OrderArgumentMatcher(providedOrder))))(_ => throw new IllegalArgumentException("cannot have more than once assertion on order"))
 
-  override def withLHS(lhs: PlanMatcher): PlanMatcher = copy(lhs = Some(lhs))
+  override def withLHS(lhs: PlanMatcher): PlanMatcher = this.lhs.fold(copy(lhs = Some(lhs)))(_ => throw new IllegalArgumentException("cannot have more than once assertion on lhs"))
 
-  override def withRHS(rhs: PlanMatcher): PlanMatcher = copy(rhs = Some(rhs))
+  override def withRHS(rhs: PlanMatcher): PlanMatcher = this.rhs.fold(copy(rhs = Some(rhs)))(_ => throw new IllegalArgumentException("cannot have more than once assertion on rhs"))
 
-  override def withChildren(a: PlanMatcher,
-                            b: PlanMatcher): PlanMatcher = copy(children = Some((a, b)))
+  override def withChildren(a: PlanMatcher, b: PlanMatcher): PlanMatcher = this.rhs.fold(copy(children = Some((a, b))))(_ => throw new IllegalArgumentException("cannot have more than once assertion on children"))
 }
 
 /**
