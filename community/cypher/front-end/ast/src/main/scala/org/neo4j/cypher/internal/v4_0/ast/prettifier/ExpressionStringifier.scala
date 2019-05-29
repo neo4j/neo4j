@@ -37,18 +37,15 @@ case class ExpressionStringifier(
   def apply(ns: Namespace): String =
     ns.parts.map(backtick).mkString(".")
 
-  private def inner(parent: Expression)(ast: Expression): String = {
-    val str = stringify(ast)
-    if (alwaysParens)
-      "(" + str + ")"
-    else {
-      val thisPrecedence = precedenceLevel(parent)
-      val argumentPrecedence = precedenceLevel(ast)
-      if (argumentPrecedence >= thisPrecedence)
-        "(" + str + ")"
-      else
-        str
+  private def inner(outer: Expression)(inner: Expression): String = {
+    val str = stringify(inner)
+    def parens = (binding(outer), binding(inner)) match {
+      case (_, Syntactic) => false
+      case (Syntactic, _) => false
+      case (Precedence(o), Precedence(i)) => i >= o
     }
+    if (alwaysParens || parens) "(" + str + ")"
+    else str
   }
 
   private def stringify(ast: Expression): String = {
@@ -246,20 +243,24 @@ case class ExpressionStringifier(
     ).flatten.mkString("(", " ", ")")
   }
 
-  private def precedenceLevel(in: Expression): Int = in match {
+  sealed trait Binding
+  case object Syntactic extends Binding
+  case class Precedence(level: Int) extends Binding
+
+  private def binding(in: Expression): Binding = in match {
     case _: Or |
          _: Ors =>
-      12
+      Precedence(12)
 
     case _: Xor =>
-      11
+      Precedence(11)
 
     case _: And |
          _: Ands =>
-      10
+      Precedence(10)
 
     case _: Not =>
-      9
+      Precedence(9)
 
     case _: Equals |
          _: NotEquals |
@@ -268,23 +269,23 @@ case class ExpressionStringifier(
          _: GreaterThanOrEqual |
          _: LessThan |
          _: LessThanOrEqual =>
-      8
+      Precedence(8)
 
     case _: Add |
          _: Subtract =>
-      7
+      Precedence(7)
 
     case _: Multiply |
          _: Divide |
          _: Modulo =>
-      6
+      Precedence(6)
 
     case _: Pow =>
-      5
+      Precedence(5)
 
     case _: UnaryAdd |
          _: UnarySubtract =>
-      4
+      Precedence(4)
 
     case _: RegexMatch |
          _: In |
@@ -293,16 +294,16 @@ case class ExpressionStringifier(
          _: Contains |
          _: IsNull |
          _: IsNotNull =>
-      3
+      Precedence(3)
 
     case _: Property |
          _: HasLabels |
          _: ContainerIndex |
          _: ListSlice =>
-      2
+      Precedence(2)
 
     case _ =>
-      1
+      Syntactic
 
   }
 

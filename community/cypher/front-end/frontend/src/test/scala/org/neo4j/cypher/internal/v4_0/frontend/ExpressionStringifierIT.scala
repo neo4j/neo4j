@@ -64,9 +64,9 @@ class ExpressionStringifierIT extends CypherFunSuite with Parser with Expression
       "not(true)" -> "not true",
       "extract(x in [1,2,3] | x * 2)" -> "extract(x IN [1, 2, 3] | x * 2)",
       "case when 1 = n.prop then 1 when 2 = n.prop then 2 else 4 end" ->
-        "case when 1 = n.prop then 1 when 2 = n.prop then 2 else 4 end",
+        "CASE WHEN 1 = n.prop THEN 1 WHEN 2 = n.prop THEN 2 ELSE 4 END",
       "case n.prop when 1 then '1' when 2 then '2' else '4' end" ->
-        "case n.prop when 1 then \"1\" when 2 then \"2\" else \"4\" end",
+        "CASE n.prop WHEN 1 THEN \"1\" WHEN 2 THEN \"2\" ELSE \"4\" END",
       "not(((1) = (2)) and ((3) = (4)))" -> "not (1 = 2 AND 3 = 4)",
       "reduce(totalAge = 0, n IN nodes(p)| totalAge + n.age)" ->
         "reduce(totalAge = 0, n IN nodes(p) | totalAge + n.age)",
@@ -76,7 +76,8 @@ class ExpressionStringifierIT extends CypherFunSuite with Parser with Expression
       "()-[:Type {prop:1}]-()" -> "()-[:Type {prop: 1}]-()",
       "EXISTS { MATCH (n)}" -> "EXISTS { MATCH (n) }",
       "EXISTS { MATCH (n) WHERE n.prop = 'f'}" -> "EXISTS { MATCH (n) WHERE n.prop = \"f\" }",
-      "EXISTS { MATCH (n : Label)-[:HAS_REL]->(m) WHERE n.prop = 'f'}" -> "EXISTS { MATCH (n:Label)-[:HAS_REL]->(m) WHERE n.prop = \"f\" }"
+      "EXISTS { MATCH (n : Label)-[:HAS_REL]->(m) WHERE n.prop = 'f'}" -> "EXISTS { MATCH (n:Label)-[:HAS_REL]->(m) WHERE n.prop = \"f\" }",
+      "reduce(totalAge = 0, n IN nodes(p)| totalAge + n.age) + 4 * 5" -> "reduce(totalAge = 0, n IN nodes(p) | totalAge + n.age) + 4 * 5"
     )
 
   tests foreach {
