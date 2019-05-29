@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.{Notification, Result}
-import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
+import org.neo4j.kernel.impl.query.{QueryExecution, RecordingQuerySubscriber}
 
 trait RewindableExecutionResult {
   def columns: Array[String]
@@ -96,5 +96,25 @@ object RewindableExecutionResult {
       new RewindableExecutionResultImplementation(columns, result, NormalMode, null, runtimeResult.queryStatistics(),
                                                   Seq.empty)
     } finally runtimeResult.close()
+  }
+
+  def apply(runtimeResult: QueryExecution, queryContext: QueryContext, subscriber: RecordingQuerySubscriber): RewindableExecutionResult = {
+    try {
+      val columns = runtimeResult.fieldNames()
+      runtimeResult.request(Long.MaxValue)
+      runtimeResult.await()
+      val result: Seq[Map[String, AnyRef]] = subscriber.getOrThrow().asScala.map(row => {
+        (row.zipWithIndex map {
+          case (value, index) => columns(index) -> scalaValues.asDeepScalaValue(queryContext.asObject(value)).asInstanceOf[AnyRef]
+        }).toMap
+      })
+
+      new RewindableExecutionResultImplementation(columns,
+                                                  result,
+                                                  NormalMode,
+                                                  runtimeResult.executionPlanDescription().asInstanceOf[InternalPlanDescription],
+                                                  subscriber.queryStatistics().asInstanceOf[QueryStatistics],
+                                                  Seq.empty)
+    } finally runtimeResult.cancel()
   }
 }

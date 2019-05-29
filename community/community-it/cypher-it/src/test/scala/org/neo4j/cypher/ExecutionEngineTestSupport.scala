@@ -25,11 +25,14 @@ import java.util.concurrent.TimeUnit
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.runtime.{QueryContext, RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
+import org.neo4j.internal.kernel.api.IndexReference
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.query.QueryExecutionEngine
+import org.neo4j.kernel.impl.query.{QueryExecutionEngine, RecordingQuerySubscriber}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.{LogProvider, NullLogProvider}
 import org.neo4j.values.AnyValue
@@ -124,6 +127,7 @@ protected class ScalarFailureException(msg: String) extends RuntimeException(msg
 
 trait ExecutionEngineHelper {
   self: GraphIcing =>
+  implicit val searchMonitor: IndexSearchMonitor = DummyIndexSearchMonitor
 
   private val converter = new RuntimeScalaValueConverter(_ => false)
   private val javaConverter = new RuntimeJavaValueConverter(_ => false)
@@ -133,11 +137,25 @@ trait ExecutionEngineHelper {
   def eengine: ExecutionEngine
 
   def execute(q: String, params: (String, Any)*): RewindableExecutionResult = {
-    RewindableExecutionResult(graph.execute(q, javaConverter.asDeepJavaMap(params.toMap).asInstanceOf[util.Map[String, AnyRef]]))
+    execute(q, params.toMap)
   }
 
-  def execute(q: String, params: Map[String, Any]): RewindableExecutionResult =
-    RewindableExecutionResult(graph.execute(q, javaConverter.asDeepJavaMap(params.toMap).asInstanceOf[util.Map[String, AnyRef]]))
+  def execute(q: String, params: Map[String, Any]): RewindableExecutionResult = {
+    val subscriber = new RecordingQuerySubscriber
+    val context = graph.transactionalContext(query = q -> params.toMap)
+    val wrapper = TransactionalContextWrapper(context)
+    val queryContext = new TransactionBoundQueryContext(wrapper)
+
+    RewindableExecutionResult(eengine.execute(q,
+                                              ExecutionEngineHelper.asMapValue(params.toMap),
+                                              context,
+                                              profile = false,
+                                              prePopulate = false,
+                                              subscriber),
+                              queryContext,
+                              subscriber)
+
+  }
 
   def executeOfficial(q: String, params: (String, Any)*): Result =
    graph.execute(q, javaConverter.asDeepJavaMap(params.toMap).asInstanceOf[util.Map[String, AnyRef]])
@@ -147,4 +165,12 @@ trait ExecutionEngineHelper {
   }
 
   def asScalaResult(result: Result): Iterator[Map[String, Any]] = result.asScala.map(converter.asDeepScalaMap)
+}
+
+case object DummyIndexSearchMonitor extends IndexSearchMonitor {
+
+  override def indexSeek(index: IndexReference, values: Seq[Any]): Unit = {}
+
+  override def lockingUniqueIndexSeek(index: IndexReference,
+                                      values: Seq[Any]): Unit = {}
 }
