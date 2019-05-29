@@ -54,7 +54,7 @@ object NameValidator {
   }
 
   def assertValidDatabaseName(name: String): Unit = {
-    // Assumes that `name` is in lowercase
+    // Assumes that `name` is normalized
     if (name == null || name.isEmpty)
       throw new InvalidArgumentException("The provided database name is empty.")
     if (name.length < 3 || name.length > 63)

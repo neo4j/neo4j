@@ -215,31 +215,31 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case ShowPrivileges(scope) =>
         PlanDescriptionImpl(id, "ShowPrivileges", NoChildren, Seq(Scope(Prettifier.extractScope(scope))), variables)
 
-      case ShowDatabase(name) =>
-        val dbName = Database(Prettifier.escapeName(name))
+      case ShowDatabase(dbId) =>
+        val dbName = Database(Prettifier.escapeName(dbId.name()))
         PlanDescriptionImpl(id, "ShowDatabase", NoChildren, Seq(dbName), variables)
 
       case ShowDatabases() =>
         PlanDescriptionImpl(id, "ShowDatabases", NoChildren, Seq.empty, variables)
 
-      case CreateDatabase(name) =>
-        val dbName = Database(Prettifier.escapeName(name))
+      case CreateDatabase(dbId) =>
+        val dbName = Database(Prettifier.escapeName(dbId.name()))
         PlanDescriptionImpl(id, "CreateDatabase", NoChildren, Seq(dbName), variables)
 
-      case DropDatabase(_, name) =>
-        val dbName = Database(Prettifier.escapeName(name))
+      case DropDatabase(_, dbId) =>
+        val dbName = Database(Prettifier.escapeName(dbId.name()))
         PlanDescriptionImpl(id, "DropDatabase", NoChildren, Seq(dbName), variables)
 
-      case StartDatabase(name) =>
-        val dbName = Database(Prettifier.escapeName(name))
+      case StartDatabase(dbId) =>
+        val dbName = Database(Prettifier.escapeName(dbId.name()))
         PlanDescriptionImpl(id, "StartDatabase", NoChildren, Seq(dbName), variables)
 
-      case StopDatabase(_, name) =>
-        val dbName = Database(Prettifier.escapeName(name))
+      case StopDatabase(_, dbId) =>
+        val dbName = Database(Prettifier.escapeName(dbId.name()))
         PlanDescriptionImpl(id, "StopDatabase", NoChildren, Seq(dbName), variables)
 
-      case EnsureValidNonDefaultDatabase(name, _) =>
-        val dbName = Database(Prettifier.escapeName(name))
+      case EnsureValidNonDefaultDatabase(dbId, _) =>
+        val dbName = Database(Prettifier.escapeName(dbId.name()))
         PlanDescriptionImpl(id, "EnsureValidNonDefaultDatabase", NoChildren, Seq(dbName), variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")

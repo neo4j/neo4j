@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
+import org.neo4j.kernel.database.DatabaseId
 
 /**
   * This planner takes on queries that run at the DBMS level for multi-database management
@@ -151,29 +152,31 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
 
       // SHOW DATABASE foo
       case ShowDatabase(dbName) =>
-        Some(plans.ShowDatabase(dbName.toLowerCase))
+        Some(plans.ShowDatabase(new DatabaseId(dbName)))
 
       // CREATE DATABASE foo
       case CreateDatabase(dbName) =>
-        val normalizedDbName = dbName.toLowerCase
-        NameValidator.assertValidDatabaseName(normalizedDbName)
-        Some(plans.CreateDatabase(normalizedDbName))
+        val dbId = new DatabaseId(dbName)
+        NameValidator.assertValidDatabaseName(dbId.name())
+        Some(plans.CreateDatabase(dbId))
 
       // DROP DATABASE foo
       case DropDatabase(dbName) =>
+        val dbId = new DatabaseId(dbName)
         Some(plans.DropDatabase(
-          Some(plans.EnsureValidNonDefaultDatabase(dbName, "drop")),
-          dbName.toLowerCase))
+          Some(plans.EnsureValidNonDefaultDatabase(dbId, "drop")),
+          dbId))
 
       // START DATABASE foo
       case StartDatabase(dbName) =>
-        Some(plans.StartDatabase(dbName.toLowerCase))
+        Some(plans.StartDatabase(new DatabaseId(dbName)))
 
       // STOP DATABASE foo
       case StopDatabase(dbName) =>
+        val dbId = new DatabaseId(dbName)
         Some(plans.StopDatabase(
-          Some(plans.EnsureValidNonDefaultDatabase(dbName, "stop")),
-          dbName.toLowerCase))
+          Some(plans.EnsureValidNonDefaultDatabase(dbId, "stop")),
+          dbId))
 
       case _ => None
     }

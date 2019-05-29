@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.Parameter
 import org.neo4j.cypher.internal.v4_0.util.CypherException
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 import org.neo4j.cypher.internal.v4_0.util.spi.MapToPublicExceptions
+import org.neo4j.kernel.database.DatabaseId
 
 class DatabaseManagementException(message: String) extends CypherException {
   override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T =
@@ -82,9 +83,9 @@ case class ShowPrivileges(scope: ShowPrivilegeScope)(implicit idGen: IdGen) exte
 
 // Database management commands
 case class ShowDatabases()(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
-case class ShowDatabase(dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
-case class CreateDatabase(dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
-case class DropDatabase(source: Option[EnsureValidNonDefaultDatabase], dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
-case class StartDatabase(dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
-case class StopDatabase(source: Option[EnsureValidNonDefaultDatabase], dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
-case class EnsureValidNonDefaultDatabase(dbName: String, action: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
+case class ShowDatabase(dbId: DatabaseId)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
+case class CreateDatabase(dbId: DatabaseId)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
+case class DropDatabase(source: Option[EnsureValidNonDefaultDatabase], dbId: DatabaseId)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
+case class StartDatabase(dbId: DatabaseId)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
+case class StopDatabase(source: Option[EnsureValidNonDefaultDatabase], dbId: DatabaseId)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
+case class EnsureValidNonDefaultDatabase(dbId: DatabaseId, action: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
