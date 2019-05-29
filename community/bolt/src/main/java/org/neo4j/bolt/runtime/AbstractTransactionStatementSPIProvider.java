@@ -28,21 +28,21 @@ import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.time.SystemNanoClock;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.time.SystemNanoClock;
 
 import static java.lang.String.format;
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 
-public abstract class DefaultDatabaseTransactionStatementSPIProvider implements TransactionStateMachineSPIProvider
+public abstract class AbstractTransactionStatementSPIProvider implements TransactionStateMachineSPIProvider
 {
     final Duration txAwaitDuration;
     final SystemNanoClock clock;
     final BoltChannel boltChannel;
-    private final String defaultDatabaseName;
+    final String defaultDatabaseName;
     private final DatabaseManagementService managementService;
 
-    public DefaultDatabaseTransactionStatementSPIProvider( DatabaseManagementService managementService, String defaultDatabaseName, BoltChannel boltChannel,
+    AbstractTransactionStatementSPIProvider( DatabaseManagementService managementService, String defaultDatabaseName, BoltChannel boltChannel,
             Duration awaitDuration, SystemNanoClock clock )
     {
         this.managementService = managementService;
@@ -52,32 +52,44 @@ public abstract class DefaultDatabaseTransactionStatementSPIProvider implements 
         this.boltChannel = boltChannel;
     }
 
+    protected abstract TransactionStateMachineSPI newTransactionStateMachineSPI( GraphDatabaseFacade activeDatabase,
+            StatementProcessorReleaseManager resourceReleaseManger ) throws BoltIOException;
+
     @Override
     public TransactionStateMachineSPI getTransactionStateMachineSPI( String databaseName, StatementProcessorReleaseManager resourceReleaseManger )
             throws BoltProtocolBreachFatality, BoltIOException
     {
+        String selectedDatabaseName = selectDatabaseName( databaseName );
+        try
+        {
+            GraphDatabaseFacade databaseFacade = (GraphDatabaseFacade) managementService.database( selectedDatabaseName );
+            ensureAvailable( databaseFacade );
+            return newTransactionStateMachineSPI( databaseFacade, resourceReleaseManger );
+        }
+        catch ( DatabaseNotFoundException e )
+        {
+            throw new BoltIOException( Status.Database.DatabaseNotFound,
+                    format( "Database does not exists. Database name: '%s'", selectedDatabaseName ) );
+        }
+    }
+
+    protected String selectDatabaseName( String databaseName ) throws BoltProtocolBreachFatality
+    {
+        // old versions of protocol does not support passing database name and any name that
         if ( !Objects.equals( databaseName, ABSENT_DB_NAME ) )
         {
             // This bolt version shall NOT provide us a db name.
             throw new BoltProtocolBreachFatality( format( "Database selection by name not supported by Bolt protocol version lower than BoltV4. " +
                     "Please contact your Bolt client author to report this bug in the client code. Requested database name: '%s'.", databaseName ) );
         }
-        return newTransactionStateMachineSPI( getDefaultDatabase(), resourceReleaseManger );
+        return defaultDatabaseName;
     }
 
-    protected abstract TransactionStateMachineSPI newTransactionStateMachineSPI( GraphDatabaseFacade activeDatabase,
-            StatementProcessorReleaseManager resourceReleaseManger );
-
-    private GraphDatabaseFacade getDefaultDatabase() throws BoltIOException
+    private void ensureAvailable( GraphDatabaseFacade database ) throws BoltIOException
     {
-        try
+        if ( !database.isAvailable( 0 ) )
         {
-            return (GraphDatabaseFacade) managementService.database( defaultDatabaseName );
-        }
-        catch ( DatabaseNotFoundException e )
-        {
-            throw new BoltIOException( Status.Database.DatabaseNotFound,
-                    format( "Default database does not exists. Default database name: '%s'", defaultDatabaseName ) );
+            throw new BoltIOException( Status.General.DatabaseUnavailable, format( "Database `%s` is unavailable.", database.databaseName() ) );
         }
     }
 }

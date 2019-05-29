@@ -38,10 +38,10 @@ public class TransactionStateMachineV4SPI extends TransactionStateMachineV1SPI
     private final String databaseName;
 
     public TransactionStateMachineV4SPI( GraphDatabaseFacade db, BoltChannel boltChannel, Duration txAwaitDuration, SystemNanoClock clock,
-            StatementProcessorReleaseManager resourceReleaseManger, String databaseName )
+            StatementProcessorReleaseManager resourceReleaseManger )
     {
         super( db, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
-        this.databaseName = databaseName;
+        this.databaseName = db.databaseName();
     }
 
     @Override

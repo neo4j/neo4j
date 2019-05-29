@@ -72,14 +72,14 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     private final BoltChannel boltChannel;
     private final StatementProcessorReleaseManager resourceReleaseManager;
 
-    public TransactionStateMachineV1SPI( GraphDatabaseFacade databaseContext, BoltChannel boltChannel, Duration txAwaitDuration, SystemNanoClock clock,
+    public TransactionStateMachineV1SPI( GraphDatabaseFacade facade, BoltChannel boltChannel, Duration txAwaitDuration, SystemNanoClock clock,
             StatementProcessorReleaseManager resourceReleaseManger )
     {
-        this.databaseFacade = databaseContext;
-        this.txBridge = resolveDependency( databaseContext, ThreadToStatementContextBridge.class );
-        this.queryExecutionEngine = resolveDependency( databaseContext, QueryExecutionEngine.class );
-        this.transactionIdTracker = newTransactionIdTracker( databaseContext, clock );
-        this.contextFactory = newTransactionalContextFactory( databaseContext );
+        this.databaseFacade = facade;
+        this.txBridge = resolveDependency( facade, ThreadToStatementContextBridge.class );
+        this.queryExecutionEngine = resolveDependency( facade, QueryExecutionEngine.class );
+        this.transactionIdTracker = newTransactionIdTracker( facade, clock );
+        this.contextFactory = newTransactionalContextFactory( facade );
         this.boltChannel = boltChannel;
         this.txAwaitDuration = txAwaitDuration;
         this.clock = clock;

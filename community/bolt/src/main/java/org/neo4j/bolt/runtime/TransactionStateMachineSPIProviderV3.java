@@ -22,13 +22,14 @@ package org.neo4j.bolt.runtime;
 import java.time.Duration;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v3.runtime.TransactionStateMachineV3SPI;
-import org.neo4j.time.SystemNanoClock;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.time.SystemNanoClock;
 
-public class TransactionStateMachineSPIProviderV3 extends DefaultDatabaseTransactionStatementSPIProvider
+public class TransactionStateMachineSPIProviderV3 extends AbstractTransactionStatementSPIProvider
 {
     TransactionStateMachineSPIProviderV3( DatabaseManagementService managementService, String defaultDatabaseName, BoltChannel boltChannel,
             Duration awaitDuration, SystemNanoClock clock )
@@ -38,7 +39,7 @@ public class TransactionStateMachineSPIProviderV3 extends DefaultDatabaseTransac
 
     @Override
     protected TransactionStateMachineSPI newTransactionStateMachineSPI( GraphDatabaseFacade databaseFacade,
-            StatementProcessorReleaseManager resourceReleaseManger )
+            StatementProcessorReleaseManager resourceReleaseManger ) throws BoltIOException
     {
         return new TransactionStateMachineV3SPI( databaseFacade, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
     }

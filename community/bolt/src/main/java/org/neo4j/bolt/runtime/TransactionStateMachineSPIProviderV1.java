@@ -25,11 +25,10 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.time.SystemNanoClock;
 
-public class TransactionStateMachineSPIProviderV1 extends DefaultDatabaseTransactionStatementSPIProvider
+public class TransactionStateMachineSPIProviderV1 extends AbstractTransactionStatementSPIProvider
 {
     TransactionStateMachineSPIProviderV1( DatabaseManagementService managementService, String activeDatabaseName, BoltChannel boltChannel,
             Duration awaitDuration, SystemNanoClock clock )

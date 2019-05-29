@@ -25,9 +25,9 @@ import java.time.Duration;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
-import org.neo4j.time.SystemNanoClock;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -70,7 +70,7 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
 
     private TransactionStateMachineSPIProvider newSpiProvider( DatabaseManagementService managementService )
     {
-        return new DefaultDatabaseTransactionStatementSPIProvider( managementService, "neo4j", mock( BoltChannel.class ),
+        return new AbstractTransactionStatementSPIProvider( managementService, "neo4j", mock( BoltChannel.class ),
                 Duration.ZERO, mock( SystemNanoClock.class ) )
         {
             @Override
