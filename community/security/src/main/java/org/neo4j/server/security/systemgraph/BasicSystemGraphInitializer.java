@@ -20,12 +20,9 @@
 package org.neo4j.server.security.systemgraph;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.Credential;
@@ -36,21 +33,16 @@ import org.neo4j.server.security.auth.SecureHasher;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.string.UTF8;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_USER_NAME;
 
-public class BasicSystemGraphInitializer
+public class BasicSystemGraphInitializer extends DatabaseSystemGraphInitializer
 {
-    protected final QueryExecutor queryExecutor;
     private final BasicSystemGraphOperations systemGraphOperations;
-    protected final Log log;
 
     private final Supplier<UserRepository> migrationUserRepositorySupplier;
     private final Supplier<UserRepository> initialUserRepositorySupplier;
     private final SecureHasher secureHasher;
-    private final String defaultDbName;
 
     public BasicSystemGraphInitializer(
             QueryExecutor queryExecutor,
@@ -61,29 +53,37 @@ public class BasicSystemGraphInitializer
             Log log,
             Config config )
     {
-        this.queryExecutor = queryExecutor;
+        this( queryExecutor, systemGraphOperations, migrationUserRepositorySupplier, initialUserRepositorySupplier, secureHasher, log, config, true );
+    }
+
+    public BasicSystemGraphInitializer(
+            QueryExecutor queryExecutor,
+            BasicSystemGraphOperations systemGraphOperations,
+            Supplier<UserRepository> migrationUserRepositorySupplier,
+            Supplier<UserRepository> initialUserRepositorySupplier,
+            SecureHasher secureHasher,
+            Log log,
+            Config config,
+          boolean isCommunity )
+    {
+        super( queryExecutor, log, config, isCommunity );
         this.systemGraphOperations = systemGraphOperations;
         this.migrationUserRepositorySupplier = migrationUserRepositorySupplier;
         this.initialUserRepositorySupplier = initialUserRepositorySupplier;
         this.secureHasher = secureHasher;
-        this.log = log;
-        this.defaultDbName = config.get( GraphDatabaseSettings.default_database );
     }
 
     public void initializeSystemGraph() throws Exception
     {
+        super.initializeSystemGraphDatabases();
         // If the system graph has not been initialized (typically the first time you start neo4j with the system graph auth provider)
         // we set it up by
         // 1) Try to migrate users from the auth file
         // 2) If no users were migrated, create one default user
-        if ( isSystemGraphEmpty() )
+        if ( nbrOfUsers() == 0 )
         {
-            setupDefaultDatabasesAndConstraints();
+            setupConstraints();
             migrateFromAuthFile();
-        }
-        else
-        {
-            updateDefaultDatabase( true );
         }
 
         if ( nbrOfUsers() == 0 )
@@ -96,19 +96,9 @@ public class BasicSystemGraphInitializer
         }
     }
 
-    protected boolean isSystemGraphEmpty()
-    {
-        // Execute a query to see if the system database exists
-        String query = "MATCH (db:Database {name: $name}) RETURN db.name";
-        Map<String,Object> params = map( "name", SYSTEM_DATABASE_NAME );
-
-        return !queryExecutor.executeQueryWithParamCheck( query, params );
-    }
-
     protected long nbrOfUsers()
     {
-        String query = "MATCH (u:User) RETURN count(u)";
-        return queryExecutor.executeQueryLong( query );
+        return systemGraphOperations.getAllUsernames().size();
     }
 
     protected UserRepository startUserRepository( Supplier<UserRepository> supplier ) throws Exception
@@ -158,51 +148,10 @@ public class BasicSystemGraphInitializer
         }
     }
 
-    protected void setupDefaultDatabasesAndConstraints() throws InvalidArgumentsException
+    private void setupConstraints() throws InvalidArgumentsException
     {
-        // Ensure that multiple users, roles or databases cannot have the same name and are indexed
-        final QueryResult.QueryResultVisitor<RuntimeException> resultVisitor = row -> true;
-        queryExecutor.executeQuery( "CREATE CONSTRAINT ON (u:User) ASSERT u.name IS UNIQUE", Collections.emptyMap(), resultVisitor );
-        queryExecutor.executeQuery( "CREATE CONSTRAINT ON (r:Role) ASSERT r.name IS UNIQUE", Collections.emptyMap(), resultVisitor );
-        queryExecutor.executeQuery( "CREATE CONSTRAINT ON (d:Database) ASSERT d.name IS UNIQUE", Collections.emptyMap(), resultVisitor );
-
-        newDb( defaultDbName, true );
-        newDb( SYSTEM_DATABASE_NAME, false );
-    }
-
-    protected void updateDefaultDatabase( boolean stopOld ) throws InvalidArgumentsException
-    {
-        BasicSystemGraphOperations.assertValidDbName( defaultDbName );
-
-        String statusUpdate = "";
-
-        if ( stopOld )
-        {
-            statusUpdate = ", oldDb.status = 'offline' ";
-        }
-
-        String query =
-                "OPTIONAL MATCH (oldDb {default: true}) " +
-                "WHERE oldDb:Database OR oldDb:DeletedDatabase " +
-                "SET oldDb.default = false " + statusUpdate +
-                "WITH oldDb " +
-                "MATCH (newDb:Database {name: $dbName}) " +
-                "SET newDb.default = true, newDb.status = 'online' " +
-                "RETURN 0";
-
-        Map<String,Object> params = map( "dbName", defaultDbName );
-
-        queryExecutor.executeQueryWithParamCheck( query, params, "The specified database '" + defaultDbName + "' does not exists." );
-    }
-
-    private void newDb( String dbName, boolean defaultDb ) throws InvalidArgumentsException
-    {
-        BasicSystemGraphOperations.assertValidDbName( dbName );
-
-        String query = "CREATE (db:Database {name: $dbName, status: 'online', default: $defaultDb })";
-        Map<String,Object> params = map( "dbName", dbName, "defaultDb", defaultDb );
-
-        queryExecutor.executeQueryWithConstraint( query, params, "The specified database '" + dbName + "' already exists." );
+        // Ensure that multiple users cannot have the same name and are indexed
+        queryExecutor.executeQuery( "CREATE CONSTRAINT ON (u:User) ASSERT u.name IS UNIQUE", Collections.emptyMap(), row -> true );
     }
 
     private boolean onlyDefaultUserWithDefaultPassword() throws Exception
@@ -241,14 +190,19 @@ public class BasicSystemGraphInitializer
     private void migrateFromAuthFile() throws Exception
     {
         UserRepository userRepository = startUserRepository( migrationUserRepositorySupplier );
+        doImportUsers( userRepository );
+        stopUserRepository( userRepository );
+    }
+
+    protected void doImportUsers( UserRepository userRepository ) throws Exception
+    {
         ListSnapshot<User> users = userRepository.getPersistedSnapshot();
 
-        boolean usersToMigrate = !users.values().isEmpty();
-
-        if ( usersToMigrate )
+        if ( !users.values().isEmpty() )
         {
             try ( Transaction transaction = queryExecutor.beginTx() )
             {
+
                 // This is not an efficient implementation, since it executes many queries
                 // If performance ever becomes an issue we could do this with a single query instead
                 for ( User user : users.values() )
@@ -258,10 +212,9 @@ public class BasicSystemGraphInitializer
                 transaction.success();
             }
 
+            // Log what happened to the security log
             String userString = users.values().size() == 1 ? "user" : "users";
-            log.info( "Completed migration of %s %s into system graph.", Integer.toString( users.values().size() ), userString );
+            log.info( "Completed import of %s %s into system graph.", Integer.toString( users.values().size() ), userString );
         }
-
-        stopUserRepository( userRepository );
     }
 }
