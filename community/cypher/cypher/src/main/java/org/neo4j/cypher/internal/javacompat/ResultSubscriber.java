@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
+import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.AnyValue;
 
@@ -52,7 +53,7 @@ import static org.neo4j.graphdb.QueryExecutionType.QueryType.WRITE;
 class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> implements QuerySubscriber, Result, QueryExecutionProvider
 {
     private final DefaultValueMapper valueMapper;
-    private final EmbeddedProxySPI proxySPI;
+    private final TransactionalContext context;
     private QueryExecution execution;
     private AnyValue[] currentRecord;
     private Throwable error;
@@ -62,10 +63,11 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
     private List<Map<String,Object>> materializeResult;
     private Iterator<Map<String,Object>> materializedIterator;
 
-    ResultSubscriber( EmbeddedProxySPI proxySPI )
+    ResultSubscriber( TransactionalContext context )
     {
-        this.proxySPI = proxySPI;
-        this.valueMapper = new DefaultValueMapper( proxySPI );
+        this.context = context;
+        this.valueMapper = new DefaultValueMapper(
+                context.graph().getDependencyResolver().resolveDependency( EmbeddedProxySPI.class ) );
     }
 
     public void init( QueryExecution execution )
@@ -222,7 +224,7 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
     public void writeAsStringTo( PrintWriter writer )
     {
         ResultStringBuilder stringBuilder =
-                ResultStringBuilder.apply( execution.fieldNames(), proxySPI.kernelTransaction().dataRead() );
+                ResultStringBuilder.apply( execution.fieldNames(), context );
         try
         {
             accept( stringBuilder );

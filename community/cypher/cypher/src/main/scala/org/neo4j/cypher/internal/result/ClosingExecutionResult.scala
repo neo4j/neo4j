@@ -140,7 +140,9 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
       closeAndCallOnError(e)
       false
     })
-    if (!hasMore) close()
+    if (!hasMore) {
+      close()
+    }
     hasMore
   }
 }
