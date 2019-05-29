@@ -19,7 +19,11 @@
  */
 package org.neo4j.test;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import static org.apache.commons.lang3.reflect.FieldUtils.readField;
 
@@ -44,5 +48,18 @@ public final class ReflectionUtil
             }
         }
         throw new IllegalArgumentException( "Method '" + methodName + "' does not exist in class " + owner );
+    }
+
+    public static List<Field> getAllFields( Class<?> baseClazz )
+    {
+        ArrayList<Field> fields = new ArrayList<>();
+        Class<?> clazz = baseClazz;
+        do
+        {
+            Collections.addAll( fields, clazz.getDeclaredFields() );
+            clazz = clazz.getSuperclass();
+        }
+        while ( clazz != null );
+        return fields;
     }
 }

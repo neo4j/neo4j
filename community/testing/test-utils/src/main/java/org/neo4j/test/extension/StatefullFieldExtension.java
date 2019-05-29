@@ -27,11 +27,10 @@ import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static java.lang.String.format;
+import static org.neo4j.test.ReflectionUtil.getAllFields;
 
 public abstract class StatefullFieldExtension<T> implements TestInstancePostProcessor, AfterAllCallback
 {
@@ -112,18 +111,5 @@ public abstract class StatefullFieldExtension<T> implements TestInstancePostProc
             getLocalStore( extensionContext ).put( getFieldKey(), value );
         }
         return value;
-    }
-
-    private static List<Field> getAllFields( Class<?> baseClazz )
-    {
-        ArrayList<Field> fields = new ArrayList<>();
-        Class<?> clazz = baseClazz;
-        do
-        {
-            Collections.addAll( fields, clazz.getDeclaredFields() );
-            clazz = clazz.getSuperclass();
-        }
-        while ( clazz != null );
-        return fields;
     }
 }

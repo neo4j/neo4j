@@ -17,16 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.extension;
+package org.neo4j.test.extension.actors;
 
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-@Target( {FIELD, } )
-@Retention( RUNTIME )
-public @interface Inject
+@Target( {ElementType.TYPE} )
+@Retention( RetentionPolicy.RUNTIME )
+@ExtendWith( {ActorsExtension.class} )
+public @interface Actors
 {
 }

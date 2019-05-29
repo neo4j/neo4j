@@ -17,16 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.extension;
+package org.neo4j.test.extension.actors;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import java.lang.reflect.Executable;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-@Target( {FIELD, } )
-@Retention( RUNTIME )
-public @interface Inject
+public interface Actor
 {
+    <T> Future<T> submit( Callable<T> callable );
+
+    <T> Future<T> submit( Runnable runnable, T result );
+
+    Future<Void> submit( Runnable runnable );
+
+    void untilWaiting() throws InterruptedException;
+
+    void untilWaitingIn( Executable constructorOrMethod ) throws InterruptedException;
 }

@@ -19,27 +19,28 @@
  */
 package org.neo4j.internal.batchimport.store;
 
-import org.junit.Rule;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.Future;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.Barrier;
-import org.neo4j.test.rule.OtherThreadRule;
+import org.neo4j.test.extension.actors.Actor;
+import org.neo4j.test.extension.actors.Actors;
 
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
-public class PageCacheFlusherTest
+@Actors
+class PageCacheFlusherTest
 {
-    @Rule
-    public final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
+    Actor t2;
 
-    @Test( timeout = 10_000 )
-    public void shouldWaitForCompletionInHalt() throws Exception
+    @Test
+    void shouldWaitForCompletionInHalt() throws Exception
     {
         // GIVEN
         PageCache pageCache = mock( PageCache.class );
@@ -54,12 +55,8 @@ public class PageCacheFlusherTest
 
         // WHEN
         barrier.await();
-        Future<Object> halt = t2.execute( state ->
-        {
-            flusher.halt();
-            return null;
-        } );
-        t2.get().waitUntilWaiting( details -> details.isAt( PageCacheFlusher.class, "halt" ) );
+        Future<Void> halt = t2.submit( flusher::halt );
+        t2.untilWaitingIn( PageCacheFlusher.class.getDeclaredMethod( "halt" ) );
         barrier.release();
 
         // THEN halt call exits normally after (confirmed) ongoing flushAndForce call completed.
@@ -67,7 +64,7 @@ public class PageCacheFlusherTest
     }
 
     @Test
-    public void shouldExitOnErrorInHalt() throws Exception
+    void shouldExitOnErrorInHalt() throws Exception
     {
         // GIVEN
         PageCache pageCache = mock( PageCache.class );
