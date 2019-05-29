@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.blob
 import java.io.InputStream
 import java.nio.ByteBuffer
 
-import org.apache.logging.log4j.scala.Logging
 import org.neo4j.blob._
 import org.neo4j.blob.utils._
 import org.neo4j.kernel.impl.store.record.{PrimitiveRecord, PropertyBlock, PropertyRecord}

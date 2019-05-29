@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl
 
 import java.io.File
 
-import org.apache.logging.log4j.scala.Logging
+import org.neo4j.blob.utils.Logging
 import org.neo4j.kernel.configuration.Config
 
 trait Configuration {

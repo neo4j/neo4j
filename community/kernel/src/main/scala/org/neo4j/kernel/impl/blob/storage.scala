@@ -24,8 +24,8 @@ import java.util.UUID
 
 import org.apache.commons.io.filefilter.TrueFileFilter
 import org.apache.commons.io.{FileUtils, IOUtils}
-import org.apache.logging.log4j.scala.Logging
 import org.neo4j.blob._
+import org.neo4j.blob.utils.Logging
 import org.neo4j.blob.utils.StreamUtils._
 import org.neo4j.kernel.impl.ConfigUtils._
 import org.neo4j.kernel.impl.Configuration
