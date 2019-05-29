@@ -68,8 +68,6 @@ class StandardInternalExecutionResult(context: QueryContext,
   ======= META DATA ==========
    */
 
-  override def queryStatistics(): QueryStatistics = runtimeResult.queryStatistics()
-
   override def fieldNames(): Array[String] = runtimeResult.fieldNames()
 
   override lazy val executionPlanDescription: InternalPlanDescription = {

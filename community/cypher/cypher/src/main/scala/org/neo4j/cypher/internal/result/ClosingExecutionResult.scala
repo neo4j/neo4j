@@ -63,9 +63,6 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
 
   override def fieldNames(): Array[String] = safely { inner.fieldNames() }
 
-  override def queryStatistics(): QueryStatistics = safely { inner.queryStatistics() }
-
-
   override def executionPlanDescription(): ExecutionPlanDescription =
     safely {
       inner.executionPlanDescription()

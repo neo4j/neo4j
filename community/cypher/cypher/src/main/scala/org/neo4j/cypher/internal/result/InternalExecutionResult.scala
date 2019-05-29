@@ -34,9 +34,6 @@ trait InternalExecutionResult extends QueryExecution {
     */
   def initiate(): Unit
 
-  //TODO remove???
-  def queryStatistics(): QueryStatistics
-
   def executionMode: ExecutionMode
 
   def queryType: InternalQueryType

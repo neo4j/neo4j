@@ -33,7 +33,7 @@ class ExplainExecutionResult(fieldNames: Array[String],
 
   override def request(numberOfRecords: Long): Unit = {
     subscriber.onResult(0)
-    subscriber.onResultCompleted(queryStatistics())
+    subscriber.onResultCompleted(QueryStatistics())
   }
 
   override def cancel(): Unit = {

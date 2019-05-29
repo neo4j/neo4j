@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.result
 
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
-import org.neo4j.cypher.internal.runtime.{ExecutionMode, ExplainMode, InternalQueryType, QueryStatistics}
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, ExplainMode, InternalQueryType}
 import org.neo4j.graphdb.Notification
 
 abstract class EmptyExecutionResult(val fieldNames: Array[String],
@@ -30,8 +30,6 @@ abstract class EmptyExecutionResult(val fieldNames: Array[String],
   extends InternalExecutionResult {
 
   override def initiate(): Unit = {}
-
-  override def queryStatistics() = QueryStatistics()
 
   override def isClosed: Boolean = true
 

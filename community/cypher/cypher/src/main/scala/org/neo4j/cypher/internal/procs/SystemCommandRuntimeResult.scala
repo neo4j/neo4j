@@ -35,8 +35,7 @@ case class SystemCommandRuntimeResult(ctx: QueryContext, subscriber: QuerySubscr
   override val fieldNames: Array[String] = execution.fieldNames()
   private var state = ConsumptionState.NOT_STARTED
 
-
-  override def queryStatistics(): QueryStatistics = execution.inner.queryStatistics()
+  override def queryStatistics(): QueryStatistics = ctx.getOptStatistics.getOrElse(QueryStatistics())
 
   override def consumptionState: RuntimeResult.ConsumptionState = state
 
