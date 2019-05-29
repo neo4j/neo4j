@@ -49,6 +49,7 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
 
       // CREATE USER foo
       case CreateUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended) =>
+        NameValidator.assertValidUsername(userName)
         Some(plans.CreateUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended))
 
       // DROP USER foo
@@ -65,10 +66,12 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
 
       // CREATE ROLE foo
       case CreateRole(roleName, None) =>
+        NameValidator.assertValidRoleName(roleName)
         Some(plans.CreateRole(None, roleName))
 
       // CREATE ROLE foo AS COPY OF bar
       case CreateRole(roleName, Some(fromName)) =>
+        NameValidator.assertValidRoleName(roleName)
         Some(plans.CopyRolePrivileges(
           Some(plans.CopyRolePrivileges(
             Some(plans.CreateRole(
@@ -148,27 +151,29 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
 
       // SHOW DATABASE foo
       case ShowDatabase(dbName) =>
-        Some(plans.ShowDatabase(dbName))
+        Some(plans.ShowDatabase(dbName.toLowerCase))
 
       // CREATE DATABASE foo
       case CreateDatabase(dbName) =>
-        Some(plans.CreateDatabase(dbName))
+        val normalizedDbName = dbName.toLowerCase
+        NameValidator.assertValidDatabaseName(normalizedDbName)
+        Some(plans.CreateDatabase(normalizedDbName))
 
       // DROP DATABASE foo
       case DropDatabase(dbName) =>
         Some(plans.DropDatabase(
           Some(plans.EnsureValidNonDefaultDatabase(dbName, "drop")),
-          dbName))
+          dbName.toLowerCase))
 
       // START DATABASE foo
       case StartDatabase(dbName) =>
-        Some(plans.StartDatabase(dbName))
+        Some(plans.StartDatabase(dbName.toLowerCase))
 
       // STOP DATABASE foo
       case StopDatabase(dbName) =>
         Some(plans.StopDatabase(
           Some(plans.EnsureValidNonDefaultDatabase(dbName, "stop")),
-          dbName))
+          dbName.toLowerCase))
 
       case _ => None
     }

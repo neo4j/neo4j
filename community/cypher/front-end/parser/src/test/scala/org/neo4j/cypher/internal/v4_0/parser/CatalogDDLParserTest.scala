@@ -74,11 +74,11 @@ class CatalogDDLParserTest
     yields(ast.CreateDatabase("_foo_bar42"))
   }
 
-  test("CATALOG CREATE DATABASE 42foo_bar") {
-    failsToParse
+  test("CATALOG CREATE DATABASE ``") {
+    yields(ast.CreateDatabase(""))
   }
 
-  test("CATALOG CREATE DATABASE ``") {
+  test("CATALOG CREATE DATABASE 42foo_bar") {
     failsToParse
   }
 

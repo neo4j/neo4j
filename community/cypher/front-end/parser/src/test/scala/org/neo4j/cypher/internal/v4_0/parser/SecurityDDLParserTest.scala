@@ -109,15 +109,19 @@ class SecurityDDLParserTest
     yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = true))
   }
 
+  test("CREATE USER `` SET PASSwORD 'password'") {
+    yields(ast.CreateUser("", Some("password"), None, requirePasswordChange = true, suspended = false))
+  }
+
+  test("CREATE USER `f:oo` SET PASSWORD 'password'") {
+    yields(ast.CreateUser("f:oo", Some("password"), None, requirePasswordChange = true, suspended = false))
+  }
+
   test("CREATE USER foo") {
     failsToParse
   }
 
   test("CREATE USER \"foo\" SET PASSwORD 'password'") {
-    failsToParse
-  }
-
-  test("CREATE USER `` SET PASSwORD 'password'") {
     failsToParse
   }
 
@@ -130,10 +134,6 @@ class SecurityDDLParserTest
   }
 
   test("CREATE USER f:oo SET PASSWORD 'password'") {
-    failsToParse
-  }
-
-  test("CREATE USER `f:oo` SET PASSWORD 'password'") {
     failsToParse
   }
 
@@ -366,12 +366,20 @@ class SecurityDDLParserTest
     yields(ast.CreateRole("foo", None))
   }
 
+  test("CREATE ROLE ``") {
+    yields(ast.CreateRole("", None))
+  }
+
   test("CREATE ROLE foo AS COPY OF bar") {
     yields(ast.CreateRole("foo", Some("bar")))
   }
 
   test("CREATE ROLE foo AS COPY OF ``") {
     yields(ast.CreateRole("foo", Some("")))
+  }
+
+  test("CREATE ROLE `` AS COPY OF bar") {
+    yields(ast.CreateRole("", Some("bar")))
   }
 
   test("CATALOG CREATE ROLE \"foo\"") {
@@ -382,15 +390,7 @@ class SecurityDDLParserTest
     failsToParse
   }
 
-  test("CREATE ROLE ``") {
-    failsToParse
-  }
-
   test("CREATE ROLE foo AS COPY OF") {
-    failsToParse
-  }
-
-  test("CREATE ROLE `` AS COPY OF bar") {
     failsToParse
   }
 
