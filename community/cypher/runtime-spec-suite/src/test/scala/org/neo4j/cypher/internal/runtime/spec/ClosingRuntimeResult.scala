@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec
 
 import java.util
 
-import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.internal.runtime.{QueryStatistics, ResourceManager}
 import org.neo4j.cypher.result.{QueryProfile, QueryResult, RuntimeResult}
 import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.query.TransactionalContext
   */
 class ClosingRuntimeResult(inner: RuntimeResult,
                            txContext: TransactionalContext,
+                           resourceManager: ResourceManager,
                            assertAllReleased: () => Unit) extends RuntimeResult{
   override def fieldNames(): Array[String] = inner.fieldNames()
 
@@ -47,8 +48,7 @@ class ClosingRuntimeResult(inner: RuntimeResult,
       inner.accept(visitor)
       success = true
     } finally {
-      assertAllReleased()
-      txContext.close(success)
+      closeResources(success)
     }
   }
 
@@ -58,7 +58,7 @@ class ClosingRuntimeResult(inner: RuntimeResult,
 
   override def close(): Unit = {
     inner.close()
-    txContext.close(true)
+    closeResources(true)
   }
 
   override def request(numberOfRecords: Long): Unit = inner.request(numberOfRecords)
@@ -69,15 +69,19 @@ class ClosingRuntimeResult(inner: RuntimeResult,
     try {
       val moreData = inner.await()
       if (!moreData) {
-        assertAllReleased()
-        txContext.close(true)
+        closeResources(true)
       }
       moreData
     } catch {
       case t: Throwable =>
-        assertAllReleased()
-        txContext.close(false)
+        closeResources(false)
         throw t
     }
+  }
+
+  private def closeResources(success: Boolean): Unit = {
+    resourceManager.close(success)
+    assertAllReleased()
+    txContext.close(success)
   }
 }

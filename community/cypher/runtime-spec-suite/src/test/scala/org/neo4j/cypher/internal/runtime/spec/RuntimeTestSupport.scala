@@ -82,7 +82,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     val result = executableQuery.run(queryContext, doProfile = false, VirtualValues.EMPTY_MAP, prePopulateResults = true, input, subscriber)
     val assertAllReleased =
       if (!workloadMode) runtimeContextManager.assertAllReleased _ else () => ()
-    resultMapper(runtimeContext, new ClosingRuntimeResult(result, txContext, assertAllReleased))
+    resultMapper(runtimeContext, new ClosingRuntimeResult(result, txContext, queryContext.resources, assertAllReleased))
   }
 
   def compile(logicalQuery: LogicalQuery,
