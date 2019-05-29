@@ -64,7 +64,9 @@ public final class QueryExecutionType
          * A schema changing query, that updates the schema but neither changes any data nor yields any rows in the
          * result.
          */
-        SCHEMA_WRITE,;
+        SCHEMA_WRITE,
+         /** A database management query */
+        DBMS,;
         private final QueryExecutionType query;
         private final QueryExecutionType profiled;
         private final QueryExecutionType explained;

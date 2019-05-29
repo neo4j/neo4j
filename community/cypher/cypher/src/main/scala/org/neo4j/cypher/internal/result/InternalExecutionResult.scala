@@ -52,7 +52,7 @@ trait InternalExecutionResult extends QueryExecution {
       case READ_WRITE => QueryExecutionType.QueryType.READ_WRITE
       case WRITE => QueryExecutionType.QueryType.WRITE
       case SCHEMA_WRITE => QueryExecutionType.QueryType.SCHEMA_WRITE
-      case DBMS => QueryExecutionType.QueryType.READ_ONLY
+      case DBMS => QueryExecutionType.QueryType.DBMS
     }
 
     executionMode match {

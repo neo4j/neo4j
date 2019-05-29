@@ -196,6 +196,7 @@ public class CypherAdapterStream implements BoltResult
             return WRITE;
 
         case SCHEMA_WRITE:
+        case DBMS://TODO: Dear reviewer, what about this
             return SCHEMA_WRITE;
 
         default:
