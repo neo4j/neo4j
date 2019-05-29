@@ -226,7 +226,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val dbName = Database(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "CreateDatabase", NoChildren, Seq(dbName), variables)
 
-      case DropDatabase(name) =>
+      case DropDatabase(_, name) =>
         val dbName = Database(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "DropDatabase", NoChildren, Seq(dbName), variables)
 
@@ -234,9 +234,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val dbName = Database(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "StartDatabase", NoChildren, Seq(dbName), variables)
 
-      case StopDatabase(name) =>
+      case StopDatabase(_, name) =>
         val dbName = Database(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "StopDatabase", NoChildren, Seq(dbName), variables)
+
+      case EnsureValidNonDefaultDatabase(name, _) =>
+        val dbName = Database(Prettifier.escapeName(name))
+        PlanDescriptionImpl(id, "EnsureValidNonDefaultDatabase", NoChildren, Seq(dbName), variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }

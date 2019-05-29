@@ -84,6 +84,7 @@ case class ShowPrivileges(scope: ShowPrivilegeScope)(implicit idGen: IdGen) exte
 case class ShowDatabases()(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
 case class ShowDatabase(dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
 case class CreateDatabase(dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
-case class DropDatabase(dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
+case class DropDatabase(source: Option[DatabaseManagementLogicalPlan], dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
 case class StartDatabase(dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
-case class StopDatabase(dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
+case class StopDatabase(source: Option[DatabaseManagementLogicalPlan], dbName: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
+case class EnsureValidNonDefaultDatabase(dbName: String, action: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan

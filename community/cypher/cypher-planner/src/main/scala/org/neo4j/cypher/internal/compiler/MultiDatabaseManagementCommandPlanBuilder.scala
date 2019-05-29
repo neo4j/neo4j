@@ -156,7 +156,9 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
 
       // DROP DATABASE foo
       case DropDatabase(dbName) =>
-        Some(plans.DropDatabase(dbName))
+        Some(plans.DropDatabase(
+          Some(plans.EnsureValidNonDefaultDatabase(dbName, "drop")),
+          dbName))
 
       // START DATABASE foo
       case StartDatabase(dbName) =>
@@ -164,7 +166,9 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
 
       // STOP DATABASE foo
       case StopDatabase(dbName) =>
-        Some(plans.StopDatabase(dbName))
+        Some(plans.StopDatabase(
+          Some(plans.EnsureValidNonDefaultDatabase(dbName, "stop")),
+          dbName))
 
       case _ => None
     }
