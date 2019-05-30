@@ -19,8 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -29,13 +28,18 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.test.Race;
-import org.neo4j.test.rule.OtherThreadRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.actors.Actor;
+import org.neo4j.test.extension.actors.Actors;
 
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static java.time.Duration.ofSeconds;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class GBPTreeLockTest
+@Actors
+class GBPTreeLockTest
 {
     // Lock can be in following states and this test verify transitions back and forth between states
     // and also verify expected behaviour after each transition.
@@ -48,11 +52,11 @@ public class GBPTreeLockTest
     private final GBPTreeLock lock = new GBPTreeLock();
     private GBPTreeLock copy;
 
-    @Rule
-    public final OtherThreadRule<Void> executor = new OtherThreadRule<>();
+    @Inject
+    Actor executor;
 
     @Test
-    public void test_UU_UL_UU() throws Exception
+    void test_UU_UL_UU() throws Exception
     {
         // given
         assertUU();
@@ -66,7 +70,7 @@ public class GBPTreeLockTest
     }
 
     @Test
-    public void test_UL_LL_UL() throws Exception
+    void test_UL_LL_UL() throws Exception
     {
         // given
         lock.cleanerLock();
@@ -81,7 +85,7 @@ public class GBPTreeLockTest
     }
 
     @Test
-    public void test_LL_LU_LL() throws Exception
+    void test_LL_LU_LL() throws Exception
     {
         // given
         lock.writerLock();
@@ -97,7 +101,7 @@ public class GBPTreeLockTest
     }
 
     @Test
-    public void test_LU_UU_LU() throws Exception
+    void test_LU_UU_LU() throws Exception
     {
         // given
         lock.writerLock();
@@ -112,7 +116,7 @@ public class GBPTreeLockTest
     }
 
     @Test
-    public void test_UU_LL_UU() throws Exception
+    void test_UU_LL_UU() throws Exception
     {
         // given
         assertUU();
@@ -125,40 +129,40 @@ public class GBPTreeLockTest
         assertUU();
     }
 
-    @Test( timeout = 10_000 )
-    public void test_race_ULvsUL() throws Throwable
+    @Test
+    void test_race_ULvsUL()
     {
-        assertOnlyOneSucceeds( lock::cleanerLock, lock::cleanerLock );
+        assertTimeoutPreemptively( ofSeconds( 10 ), () -> assertOnlyOneSucceeds( lock::cleanerLock, lock::cleanerLock ) );
     }
 
     @Test
-    public void test_race_ULvsLU() throws Throwable
+    void test_race_ULvsLU() throws Throwable
     {
         assertBothSucceeds( lock::cleanerLock, lock::writerLock );
     }
 
-    @Test( timeout = 10_000 )
-    public void test_race_ULvsLL() throws Throwable
+    @Test
+    void test_race_ULvsLL()
     {
-        assertOnlyOneSucceeds( lock::cleanerLock, lock::writerAndCleanerLock );
+        assertTimeoutPreemptively( ofSeconds( 10 ), () -> assertOnlyOneSucceeds( lock::cleanerLock, lock::writerAndCleanerLock ) );
     }
 
-    @Test( timeout = 10_000 )
-    public void test_race_LUvsLU() throws Throwable
+    @Test
+    void test_race_LUvsLU()
     {
-        assertOnlyOneSucceeds( lock::writerLock, lock::writerLock );
+        assertTimeoutPreemptively( ofSeconds( 10 ), () -> assertOnlyOneSucceeds( lock::writerLock, lock::writerLock ) );
     }
 
-    @Test( timeout = 10_000 )
-    public void test_race_LUvsLL() throws Throwable
+    @Test
+    void test_race_LUvsLL()
     {
-        assertOnlyOneSucceeds( lock::writerLock, lock::writerAndCleanerLock );
+        assertTimeoutPreemptively( ofSeconds( 10 ), () -> assertOnlyOneSucceeds( lock::writerLock, lock::writerAndCleanerLock ) );
     }
 
-    @Test( timeout = 10_000 )
-    public void test_race_LLvsLL() throws Throwable
+    @Test
+    void test_race_LLvsLL() throws Throwable
     {
-        assertOnlyOneSucceeds( lock::writerAndCleanerLock, lock::writerAndCleanerLock );
+        assertTimeoutPreemptively( ofSeconds( 10 ), () -> assertOnlyOneSucceeds( lock::writerAndCleanerLock, lock::writerAndCleanerLock ) );
     }
 
     private void assertOnlyOneSucceeds( Runnable lockAction1, Runnable lockAction2 ) throws Throwable
@@ -181,8 +185,9 @@ public class GBPTreeLockTest
         // then
         Pair<Boolean,Boolean> c1State = c1.state();
         Pair<Boolean,Boolean> c2State = c2.state();
-        assertNotEquals( withState( "Expected exactly one to acquire lock.", c1State, c2State ), c1State.first(), c2State.first() );
-        assertTrue( withState( "Expected both to be started.", c1State, c2State ), c1State.other() && c2State.other() );
+        assertNotEquals( c1State.first(), c2State.first(), withState( "Expected exactly one to acquire lock.", c1State, c2State ) );
+        assertTrue( c1State.other() && c2State.other(), withState( "Expected both to be started.", c1State, c2State ) );
+        lock.forceUnlock();
     }
 
     private void assertBothSucceeds( Runnable lockAction1, Runnable lockAction2 ) throws Throwable
@@ -201,8 +206,8 @@ public class GBPTreeLockTest
         // then
         Pair<Boolean,Boolean> c1State = c1.state();
         Pair<Boolean,Boolean> c2State = c2.state();
-        assertTrue( withState( "Expected both to acquire lock.", c1State, c2State ), c1State.first() && c2State.first() );
-        assertTrue( withState( "Expected both to be started.", c1State, c2State ), c1State.other() && c2State.other() );
+        assertTrue( c1State.first() && c2State.first(), withState( "Expected both to acquire lock.", c1State, c2State ) );
+        assertTrue( c1State.other() && c2State.other(), withState( "Expected both to be started.", c1State, c2State ) );
     }
 
     private String withState( String message, Pair<Boolean,Boolean> c1State, Pair<Boolean,Boolean> c2State )
@@ -261,12 +266,12 @@ public class GBPTreeLockTest
 
     private void assertBlock( Runnable runLock, Runnable runUnlock ) throws Exception
     {
-        Future<Object> future = executor.execute( state ->
+        Future<Object> future = executor.submit( () ->
         {
             runLock.run();
             return null;
         } );
-        executor.get().waitUntilWaiting( details -> details.isAt( GBPTreeLock.class, "doLock" ) );
+        executor.untilWaitingIn( GBPTreeLock.class.getDeclaredMethod( "doLock", long.class ) );
         runUnlock.run();
         future.get();
     }
