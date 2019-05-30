@@ -54,16 +54,16 @@ the relevant Commercial Agreement.
 
   <build>
     <plugins>
+    <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <version>3.2.0</version>
+    </plugin>
       <!-- This module contains public API, run revapi -->
       <plugin>
         <groupId>org.revapi</groupId>
         <artifactId>revapi-maven-plugin</artifactId>
       </plugin>
-        <plugin>
-            <groupId>net.alchim31.maven</groupId>
-            <artifactId>scala-maven-plugin</artifactId>
-            <version>3.2.0</version>
-        </plugin>
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
@@ -126,8 +126,13 @@ the relevant Commercial Agreement.
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
+            <artifactId>blob-util</artifactId>
+            <version>3.5.6-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-collections</artifactId>
-            <version>${project.version}</version>
+            <version>3.5.6-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>

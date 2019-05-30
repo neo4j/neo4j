@@ -35,8 +35,6 @@ Apache Software License, Version 2.0
   Apache Commons Text
   Apache HttpClient
   Apache HttpCore
-  Apache Log4j API
-  Apache Log4j Scala 2.11 wrapper for Log4j API
   Caffeine cache
   Commons Lang
   ConcurrentLinkedHashMap

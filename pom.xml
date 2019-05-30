@@ -852,7 +852,7 @@
       <activation>
         <activeByDefault>false</activeByDefault>
         <file>
-          <exists>src</exists>
+          <exists>NOTICE.txt</exists>
         </file>
         <property>
           <name>generateNotices</name>

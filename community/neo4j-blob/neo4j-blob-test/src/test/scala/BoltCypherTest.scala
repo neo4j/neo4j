@@ -30,6 +30,7 @@ import org.scalatest.{BeforeAndAfter, FunSuite}
 import scala.collection.JavaConversions
 import scala.collection.JavaConversions._
 import scala.reflect.ClassTag
+import org.neo4j.blob.utils.Logging
 
 class BoltCypherTest extends FunSuite with BeforeAndAfter with TestBase {
 
@@ -173,11 +174,11 @@ class BoltCypherTest extends FunSuite with BeforeAndAfter with TestBase {
     assert(0 == blob0.length);
 
     //blob
-    val blob01 = conn.querySingleObject("return <base64://dGhpcyBpcyBhIGV4YW1wbGU=>", (result: Record) => {
+    val blob01 = conn.querySingleObject("return <base64://dGhpcyBpcyBhbiBleGFtcGxl>", (result: Record) => {
       result.get(0).asBlob
     });
 
-    assert("this is a example".getBytes() === blob01.toBytes());
+    assert("this is an example".getBytes() === blob01.toBytes());
 
     //test localfile
     conn.querySingleObject("return <file://./testdata/test.png>", (result: Record) => {
@@ -210,7 +211,7 @@ class BoltCypherTest extends FunSuite with BeforeAndAfter with TestBase {
 }
 
 class CypherConnection(url: String, user: String = "", pass: String = "")
-  extends org.apache.logging.log4j.scala.Logging {
+  extends Logging {
 
   lazy val _driver = GraphDatabase.driver(url, AuthTokens.basic(user, pass));
 
