@@ -121,7 +121,7 @@ object RewindableExecutionResult {
                                                   runtimeResult.asInstanceOf[InternalExecutionResult].executionMode,
                                                   runtimeResult.executionPlanDescription().asInstanceOf[InternalPlanDescription],
                                                   subscriber.queryStatistics().asInstanceOf[QueryStatistics],
-                                                  Seq.empty)
+                                                  runtimeResult.getNotifications.asScala)
     } finally runtimeResult.cancel()
   }
 }
