@@ -19,15 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -36,40 +34,56 @@ import org.neo4j.function.IOFunction;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.storageengine.api.TransactionIdStore;
-import org.neo4j.test.rule.Resources;
-import org.neo4j.test.rule.concurrent.ThreadingRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.LifeExtension;
+import org.neo4j.test.extension.actors.Actor;
+import org.neo4j.test.extension.actors.Actors;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.time.Clocks;
 
+import static java.lang.Thread.State.BLOCKED;
+import static java.lang.Thread.State.TERMINATED;
+import static java.lang.Thread.State.TIMED_WAITING;
+import static java.lang.Thread.State.WAITING;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.kvstore.DataProvider.EMPTY_DATA_PROVIDER;
-import static org.neo4j.test.rule.Resources.InitialLifecycle.STARTED;
 
-public class AbstractKeyValueStoreTest
+@Actors
+@PageCacheExtension
+@ExtendWith( {LifeExtension.class} )
+class AbstractKeyValueStoreTest
 {
-    private final ExpectedException expectedException = ExpectedException.none();
-    private final Resources resourceManager = new Resources();
-    private final ThreadingRule threading = new ThreadingRule();
-    private final Timeout timeout = Timeout.builder()
-                                           .withTimeout( 20, TimeUnit.SECONDS )
-                                           .withLookingForStuckThread( true )
-                                           .build();
-
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( expectedException )
-            .around( resourceManager ).around( threading ).around( timeout );
+    @Inject
+    Actor thread;
+    @Inject
+    FileSystemAbstraction fs;
+    @Inject
+    PageCache pageCache;
+    @Inject
+    LifeSupport life;
+    @Inject
+    TestDirectory testDir;
 
     private static final HeaderField<Long> TX_ID = new HeaderField<>()
     {
@@ -93,11 +107,10 @@ public class AbstractKeyValueStoreTest
     };
 
     @Test
-    @Resources.Life( STARTED )
-    @SuppressWarnings( "unchecked" )
-    public void retryLookupOnConcurrentStoreStateChange() throws IOException
+    void retryLookupOnConcurrentStoreStateChange() throws IOException
     {
-        Store store = resourceManager.managed( new Store() );
+        life.start();
+        Store store = life.add( new Store() );
 
         ProgressiveState<String> workingState = stateWithLookup( () -> true );
         ProgressiveState<String> staleState = stateWithLookup( () -> {
@@ -106,7 +119,7 @@ public class AbstractKeyValueStoreTest
 
         setState( store, staleState );
 
-        assertEquals( "New state contains stored value", "value", store.lookup( "test", stringReader( "value" ) ) );
+        assertEquals( "value", store.lookup( "test", stringReader( "value" ) ), "New state contains stored value" );
 
         // Should have 2 invocations: first throws exception, second re-read value.
         verify( staleState ).lookup( any(), any() );
@@ -114,56 +127,54 @@ public class AbstractKeyValueStoreTest
     }
 
     @Test
-    @Resources.Life( STARTED )
-    public void accessClosedStateShouldThrow() throws Exception
+    void accessClosedStateShouldThrow() throws Exception
     {
-        Store store = resourceManager.managed( new Store() );
+        life.start();
+        Store store = life.add( new Store() );
         store.put( "test", "value" );
         store.prepareRotation( 0 ).rotate();
         ProgressiveState<String> lookupState = store.state;
         store.prepareRotation( 0 ).rotate();
 
-        expectedException.expect( FileIsNotMappedException.class );
-        expectedException.expectMessage( "File has been unmapped" );
-
-        lookupState.lookup( "test", new ValueSink()
+        FileIsNotMappedException e = assertThrows( FileIsNotMappedException.class, () -> lookupState.lookup( "test", new ValueSink()
         {
             @Override
             protected void value( ReadableBuffer value )
             {
                 // empty
             }
-        } );
+        } ) );
+        assertThat( e.getMessage(), containsString( "File has been unmapped" ) );
     }
 
     @Test
-    public void shouldStartAndStopStore()
+    void shouldStartAndStopStore()
     {
         // given
-        resourceManager.managed( new Store() );
+        life.add( new Store() );
 
         // when
-        resourceManager.lifeStarts();
-        resourceManager.lifeShutsDown();
+        life.start();
+        life.shutdown();
     }
 
     @Test
-    @Resources.Life( STARTED )
-    public void shouldRotateStore() throws Exception
+    void shouldRotateStore() throws Exception
     {
         // given
-        Store store = resourceManager.managed( new Store() );
+        life.start();
+        Store store = life.add( new Store() );
 
         // when
         store.prepareRotation( 0 ).rotate();
     }
 
     @Test
-    @Resources.Life( STARTED )
-    public void shouldStoreEntries() throws Exception
+    void shouldStoreEntries() throws Exception
     {
         // given
-        Store store = resourceManager.managed( new Store() );
+        life.start();
+        Store store = life.add( new Store() );
 
         // when
         store.put( "message", "hello world" );
@@ -182,7 +193,7 @@ public class AbstractKeyValueStoreTest
     }
 
     @Test
-    public void shouldPickFileWithGreatestTransactionId() throws Exception
+    void shouldPickFileWithGreatestTransactionId() throws Exception
     {
         try ( Lifespan life = new Lifespan() )
         {
@@ -191,7 +202,7 @@ public class AbstractKeyValueStoreTest
             // when
             for ( long txId = 2; txId <= 10; txId++ )
             {
-                store.updater( txId ).get().close();
+                get( store, txId ).close();
                 store.prepareRotation( txId ).rotate();
             }
         }
@@ -205,7 +216,7 @@ public class AbstractKeyValueStoreTest
     }
 
     @Test
-    public void shouldNotPickCorruptStoreFile() throws Exception
+    void shouldNotPickCorruptStoreFile() throws Exception
     {
         // given
         Store store = createTestStore();
@@ -235,7 +246,7 @@ public class AbstractKeyValueStoreTest
             file.other().close();
         }
         // Corrupt the last files
-        try ( StoreChannel channel = resourceManager.fileSystem().write( files[9] ) )
+        try ( StoreChannel channel = fs.write( files[9] ) )
         {   // ruin the header
             channel.position( 16 );
             ByteBuffer value = ByteBuffer.allocate( 16 );
@@ -243,7 +254,7 @@ public class AbstractKeyValueStoreTest
             value.flip();
             channel.writeAll( value );
         }
-        try ( StoreChannel channel = resourceManager.fileSystem().write( files[8] ) )
+        try ( StoreChannel channel = fs.write( files[8] ) )
         {   // ruin the header
             channel.position( 32 );
             ByteBuffer value = ByteBuffer.allocate( 16 );
@@ -251,7 +262,7 @@ public class AbstractKeyValueStoreTest
             value.flip();
             channel.writeAll( value );
         }
-        try ( StoreChannel channel = resourceManager.fileSystem().write( files[7] ) )
+        try ( StoreChannel channel = fs.write( files[7] ) )
         {   // ruin the header
             channel.position( 32 + 32 + 32 + 16 );
             ByteBuffer value = ByteBuffer.allocate( 16 );
@@ -271,7 +282,7 @@ public class AbstractKeyValueStoreTest
     }
 
     @Test
-    public void shouldPickTheUncorruptedStoreWhenTruncatingAfterTheHeader() throws IOException
+    void shouldPickTheUncorruptedStoreWhenTruncatingAfterTheHeader() throws IOException
     {
         /*
          * The problem was that if we were successful in writing the header but failing immediately after, we would
@@ -311,7 +322,7 @@ public class AbstractKeyValueStoreTest
         File corrupted = nextNext.first();
         nextNext.other().close();
 
-        try ( StoreChannel channel = resourceManager.fileSystem().write( corrupted ) )
+        try ( StoreChannel channel = fs.write( corrupted ) )
         {
             channel.truncate( 16 * 4 );
         }
@@ -327,11 +338,11 @@ public class AbstractKeyValueStoreTest
     }
 
     @Test
-    @Resources.Life( STARTED )
-    public void shouldRotateWithCorrectVersion() throws Exception
+    void shouldRotateWithCorrectVersion() throws Exception
     {
         // given
-        final Store store = resourceManager.managed( createTestStore() );
+        life.start();
+        final Store store = life.add( createTestStore() );
         updateStore( store, 1 );
 
         PreparedRotation rotation = store.prepareRotation( 2 );
@@ -344,11 +355,11 @@ public class AbstractKeyValueStoreTest
     }
 
     @Test
-    @Resources.Life( STARTED )
-    public void postStateUpdatesCountedOnlyForTransactionsGreaterThanRotationVersion()
+    void postStateUpdatesCountedOnlyForTransactionsGreaterThanRotationVersion()
             throws IOException, InterruptedException, ExecutionException
     {
-        final Store store = resourceManager.managed( createTestStore() );
+        life.start();
+        Store store = life.add( createTestStore() );
 
         PreparedRotation rotation = store.prepareRotation( 2 );
         updateStore( store, 4 );
@@ -358,8 +369,8 @@ public class AbstractKeyValueStoreTest
 
         assertEquals( 2, rotation.rotate() );
 
-        Future<Long> rotationFuture = threading.executeAndAwait( store.rotation, 5L,
-                thread -> Thread.State.TIMED_WAITING == thread.getState(), 100, SECONDS );
+        Future<Long> rotationFuture = thread.submit( () -> store.rotation.apply( 5L ) );
+        thread.untilThreadState( TIMED_WAITING );
 
         Thread.sleep( TimeUnit.SECONDS.toMillis( 1 ) );
 
@@ -370,27 +381,17 @@ public class AbstractKeyValueStoreTest
     }
 
     @Test
-    @Resources.Life( STARTED )
-    public void shouldBlockRotationUntilRequestedTransactionsAreApplied() throws Exception
+    void shouldBlockRotationUntilRequestedTransactionsAreApplied() throws Exception
     {
         // given
-        final Store store = resourceManager.managed( createTestStore() );
+        life.start();
+        Store store = life.add( createTestStore() );
 
         // when
         updateStore( store, 1 );
-        Future<Long> rotation = threading.executeAndAwait( store.rotation, 3L, thread ->
-        {
-            switch ( thread.getState() )
-            {
-            case BLOCKED:
-            case WAITING:
-            case TIMED_WAITING:
-            case TERMINATED:
-                return true;
-            default:
-                return false;
-            }
-        }, 100, SECONDS );
+        Future<Long> rotation = thread.submit( () -> store.rotation.apply( 3L ) );
+        thread.untilThreadState( BLOCKED, WAITING, TIMED_WAITING, TERMINATED );
+
         // rotation should wait...
         assertFalse( rotation.isDone() );
         SECONDS.sleep( 1 );
@@ -417,30 +418,27 @@ public class AbstractKeyValueStoreTest
     }
 
     @Test
-    @Resources.Life( STARTED )
-    public void shouldFailRotationAfterTimeout() throws IOException
+    void shouldFailRotationAfterTimeout()
     {
         // GIVEN
-        final Store store = resourceManager.managed( createTestStore( 0 ) );
+        life.start();
+        Store store = life.add( createTestStore( 0 ) );
 
         // THEN
-        expectedException.expect( RotationTimeoutException.class );
-
-        // WHEN
-        store.prepareRotation( 10L ).rotate();
+        assertThrows( RotationTimeoutException.class, () -> store.prepareRotation( 10L ).rotate() );
     }
 
     @Test
-    @Resources.Life( STARTED )
-    public void shouldLeaveStoreInGoodStateAfterRotationFailure() throws Exception
+    void shouldLeaveStoreInGoodStateAfterRotationFailure() throws Exception
     {
         // GIVEN
-        final Store store = resourceManager.managed( createTestStore( 0 ) );
+        life.start();
+        Store store = life.add( createTestStore( 0 ) );
         long initialVersion = store.version( store.headers() );
         // a key/value which is rotated into a persistent version
         String permanentKey = "permakey";
         String permanentValue = "here";
-        try ( EntryUpdater<String> updater = store.updater( initialVersion + 1 ).get() )
+        try ( EntryUpdater<String> updater = get( store, initialVersion + 1 ) )
         {
             updater.apply( permanentKey, value( permanentValue ) );
         }
@@ -449,7 +447,7 @@ public class AbstractKeyValueStoreTest
         // another key/value which is applied to the new version
         String key = "mykey";
         String value = "first";
-        try ( EntryUpdater<String> updater = store.updater( initialVersion + 2 ).get() )
+        try ( EntryUpdater<String> updater = get( store, initialVersion + 2 ) )
         {
             updater.apply( key, value( "first" ) );
         }
@@ -467,7 +465,7 @@ public class AbstractKeyValueStoreTest
             assertEquals( value, store.get( key ) );
 
             // and also continue to make updates
-            try ( EntryUpdater<String> updater = store.updater( initialVersion + 2 ).get() )
+            try ( EntryUpdater<String> updater = get( store, initialVersion + 2 ) )
             {
                 updater.apply( key, value( "second" ) );
             }
@@ -475,6 +473,13 @@ public class AbstractKeyValueStoreTest
             // and eventually rotation again successfully
             store.prepareRotation( initialVersion + 3 ).rotate();
         }
+    }
+
+    private EntryUpdater<String> get( Store store, long version )
+    {
+        Optional<EntryUpdater<String>> updater = store.updater( version );
+        assertTrue( updater.isPresent() );
+        return updater.get();
     }
 
     private Store createTestStore()
@@ -518,7 +523,7 @@ public class AbstractKeyValueStoreTest
     {
         ThrowingConsumer<Long,IOException> update = u ->
         {
-            try ( EntryUpdater<String> updater = store.updater( u ).get() )
+            try ( EntryUpdater<String> updater = get( store, u ) )
             {
                 updater.apply( "key " + u, value( "value " + u ) );
             }
@@ -567,6 +572,7 @@ public class AbstractKeyValueStoreTest
         };
     }
 
+    @SuppressWarnings( "unchecked" )
     private ProgressiveState<String> stateWithLookup( ThrowingSupplier<Boolean, IOException> valueSupplier )
             throws IOException
     {
@@ -599,7 +605,7 @@ public class AbstractKeyValueStoreTest
 
         private Store( long rotationTimeout, HeaderField<?>... headerFields )
         {
-            super( resourceManager.fileSystem(), resourceManager.pageCache(), resourceManager.testDirectory().databaseLayout(), null, null,
+            super( fs, pageCache, testDir.databaseLayout(), null, null,
                     new RotationTimerFactory( Clocks.nanoClock(), rotationTimeout ),
                     EmptyVersionContextSupplier.EMPTY, 16, 16, headerFields );
             this.headerFields = headerFields;
@@ -636,7 +642,7 @@ public class AbstractKeyValueStoreTest
         @Override
         protected void writeKey( String key, WritableBuffer buffer )
         {
-            awriteKey( key, buffer );
+            AbstractKeyValueStoreTest.writeKey( key, buffer );
         }
 
         @Override
@@ -666,7 +672,7 @@ public class AbstractKeyValueStoreTest
         {
             Long transactionId = headers.get( TX_ID );
             return Math.max( TransactionIdStore.BASE_TX_ID,
-                    transactionId != null ? transactionId.longValue() : TransactionIdStore.BASE_TX_ID );
+                    transactionId != null ? transactionId : TransactionIdStore.BASE_TX_ID );
         }
 
         @Override
@@ -699,10 +705,10 @@ public class AbstractKeyValueStoreTest
 
     private static ValueUpdate value( final String value )
     {
-        return target -> awriteKey( value, target );
+        return target -> writeKey( value, target );
     }
 
-    private static void awriteKey( String key, WritableBuffer buffer )
+    private static void writeKey( String key, WritableBuffer buffer )
     {
         for ( int i = 0; i < key.length(); i++ )
         {
