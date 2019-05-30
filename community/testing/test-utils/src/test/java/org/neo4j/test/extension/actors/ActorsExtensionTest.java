@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
+import org.neo4j.test.extension.Inject;
+
 import static java.time.Duration.ofMinutes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -39,6 +41,7 @@ class ActorsExtensionTest
     @Actors
     class InjectOneField
     {
+        @Inject
         Actor actor;
 
         @Test
@@ -110,7 +113,9 @@ class ActorsExtensionTest
     @Actors
     class InjectTwoFields
     {
+        @Inject
         Actor emil;
+        @Inject
         Actor jim;
 
         @Test
@@ -122,7 +127,7 @@ class ActorsExtensionTest
         }
 
         @Test
-        void actorsMustBeIndependant()
+        void actorsMustBeIndependent()
         {
             assertTimeoutPreemptively( ofMinutes( 1 ), () ->
             {
@@ -143,7 +148,7 @@ class ActorsExtensionTest
                 l1.countDown();
                 l2.countDown();
                 f1.get();
-                f1.get();
+                f2.get();
             } );
         }
     }

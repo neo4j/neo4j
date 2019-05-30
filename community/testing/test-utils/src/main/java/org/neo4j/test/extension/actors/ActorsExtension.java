@@ -30,6 +30,8 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Optional;
 
+import org.neo4j.test.extension.Inject;
+
 import static java.lang.String.format;
 import static org.neo4j.test.ReflectionUtil.getAllFields;
 
@@ -62,7 +64,7 @@ public class ActorsExtension implements TestInstancePostProcessor, AfterEachCall
         List<Field> declaredFields = getAllFields( clazz );
         for ( Field declaredField : declaredFields )
         {
-            if ( declaredField.getType() == Actor.class )
+            if ( declaredField.getType() == Actor.class && declaredField.isAnnotationPresent( Inject.class ) )
             {
                 if ( Modifier.isStatic( declaredField.getModifiers() ) )
                 {

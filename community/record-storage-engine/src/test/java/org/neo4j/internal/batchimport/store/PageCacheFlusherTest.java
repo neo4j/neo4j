@@ -26,6 +26,7 @@ import java.util.concurrent.Future;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.Barrier;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.actors.Actor;
 import org.neo4j.test.extension.actors.Actors;
 
@@ -37,6 +38,7 @@ import static org.mockito.Mockito.mock;
 @Actors
 class PageCacheFlusherTest
 {
+    @Inject
     Actor t2;
 
     @Test
