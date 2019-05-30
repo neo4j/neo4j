@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.index;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -35,9 +34,6 @@ import java.util.function.Function;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.test.Race;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.rule.concurrent.ThreadingExtension;
-import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
@@ -52,12 +48,8 @@ import static java.time.ZoneOffset.UTC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith( ThreadingExtension.class )
 class ArrayEncoderTest
 {
-    @Inject
-    private ThreadingRule threads;
-
     private static final Character[] base64chars = new Character[]{
             'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',
             'V', 'W', 'X', 'Y', 'Z',
