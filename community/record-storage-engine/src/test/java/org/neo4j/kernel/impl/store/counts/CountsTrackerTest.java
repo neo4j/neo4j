@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
-import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -31,7 +31,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsVisitor;
-import org.neo4j.function.IOFunction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
@@ -41,12 +42,19 @@ import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.RotationTimeoutException;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.Barrier;
-import org.neo4j.test.rule.OtherThreadRule;
-import org.neo4j.test.rule.Resources;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.LifeExtension;
+import org.neo4j.test.extension.actors.Actor;
+import org.neo4j.test.extension.actors.Actors;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 import org.neo4j.time.SystemNanoClock;
@@ -56,42 +64,50 @@ import static java.lang.Thread.State.TERMINATED;
 import static java.lang.Thread.State.TIMED_WAITING;
 import static java.lang.Thread.State.WAITING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.test.OtherThreadExecutor.command;
-import static org.neo4j.test.rule.Resources.InitialLifecycle.STARTED;
 
-public class CountsTrackerTest
+@Actors
+@PageCacheExtension
+@ExtendWith( {LifeExtension.class} )
+class CountsTrackerTest
 {
-    @Rule
-    public final Resources resourceManager = new Resources();
-    @Rule
-    public final OtherThreadRule<Void> threading = new OtherThreadRule<>();
+    private LogProvider logProvider = NullLogProvider.getInstance();
+
+    @Inject
+    LifeSupport life;
+    @Inject
+    Actor threading;
+    @Inject
+    PageCache pageCache;
+    @Inject
+    FileSystemAbstraction fs;
+    @Inject
+    TestDirectory testDir;
 
     @Test
-    public void shouldBeAbleToStartAndStopTheStore()
+    void shouldBeAbleToStartAndStopTheStore()
     {
         // given
-        resourceManager.managed( newTracker() );
+        life.add( newTracker() );
 
         // when
-        resourceManager.lifeStarts();
-        resourceManager.lifeShutsDown();
+        life.start();
+        life.shutdown();
     }
 
     @Test
-    @Resources.Life( STARTED )
-    public void shouldBeAbleToWriteDataToCountsTracker() throws Exception
+    void shouldBeAbleToWriteDataToCountsTracker() throws Exception
     {
         // given
-        CountsTracker tracker = resourceManager.managed( newTracker() );
-        long indexId = 0;
+        life.start();
+        CountsTracker tracker = life.add( newTracker() );
         CountsOracle oracle = new CountsOracle();
         {
             CountsOracle.Node a = oracle.node( 1 );
@@ -119,7 +135,7 @@ public class CountsTrackerTest
     }
 
     @Test
-    public void shouldStoreCounts() throws Exception
+    void shouldStoreCounts() throws Exception
     {
         // given
         CountsOracle oracle = someData();
@@ -140,7 +156,7 @@ public class CountsTrackerTest
     }
 
     @Test
-    public void shouldUpdateCountsOnExistingStore() throws Exception
+    void shouldUpdateCountsOnExistingStore() throws Exception
     {
         // given
         CountsOracle oracle = someData();
@@ -180,7 +196,7 @@ public class CountsTrackerTest
     }
 
     @Test
-    public void detectInMemoryDirtyVersionRead()
+    void detectInMemoryDirtyVersionRead()
     {
         int labelId = 1;
         long lastClosedTransactionId = 11L;
@@ -192,7 +208,7 @@ public class CountsTrackerTest
         try ( Lifespan life = new Lifespan() )
         {
             CountsTracker tracker = life.add( newTracker( versionContextSupplier ) );
-            try ( CountsAccessor.Updater updater = tracker.apply( writeTransactionId ).get() )
+            try ( CountsAccessor.Updater updater = get( writeTransactionId, tracker ) )
             {
                 updater.incrementNodeCount( labelId, 1 );
             }
@@ -204,7 +220,7 @@ public class CountsTrackerTest
     }
 
     @Test
-    public void allowNonDirtyInMemoryDirtyVersionRead()
+    void allowNonDirtyInMemoryDirtyVersionRead()
     {
         int labelId = 1;
         long lastClosedTransactionId = 15L;
@@ -216,7 +232,7 @@ public class CountsTrackerTest
         try ( Lifespan life = new Lifespan() )
         {
             CountsTracker tracker = life.add( newTracker( versionContextSupplier ) );
-            try ( CountsAccessor.Updater updater = tracker.apply( writeTransactionId ).get() )
+            try ( CountsAccessor.Updater updater = get( writeTransactionId, tracker ) )
             {
                 updater.incrementNodeCount( labelId, 1 );
             }
@@ -228,7 +244,7 @@ public class CountsTrackerTest
     }
 
     @Test
-    public void shouldBeAbleToReadUpToDateValueWhileAnotherThreadIsPerformingRotation() throws Exception
+    void shouldBeAbleToReadUpToDateValueWhileAnotherThreadIsPerformingRotation() throws Exception
     {
         // given
         CountsOracle oracle = someData();
@@ -255,8 +271,7 @@ public class CountsTrackerTest
         {
             final Barrier.Control barrier = new Barrier.Control();
             CountsTracker tracker = life.add( new CountsTracker(
-                    resourceManager.logProvider(), resourceManager.fileSystem(), resourceManager.pageCache(),
-                    Config.defaults(), resourceManager.testDirectory().databaseLayout(), EmptyVersionContextSupplier.EMPTY )
+                    logProvider, fs, pageCache, Config.defaults(), testDir.databaseLayout(), EmptyVersionContextSupplier.EMPTY )
             {
                 @Override
                 protected boolean include( CountsKey countsKey, ReadableBuffer value )
@@ -265,11 +280,12 @@ public class CountsTrackerTest
                     return super.include( countsKey, value );
                 }
             } );
-            Future<Void> task = threading.execute( command( () ->
+            Future<Void> task = threading.submit( () ->
             {
                 delta.update( tracker, secondTransaction );
                 tracker.rotate( secondTransaction );
-            } ) );
+                return null;
+            } );
 
             // then
             barrier.await();
@@ -281,7 +297,7 @@ public class CountsTrackerTest
     }
 
     @Test
-    public void shouldOrderStoreByTxIdInHeaderThenMinorVersion()
+    void shouldOrderStoreByTxIdInHeaderThenMinorVersion()
     {
         // given
         FileVersion version = new FileVersion( 16, 5 );
@@ -295,53 +311,53 @@ public class CountsTrackerTest
     }
 
     @Test
-    @Resources.Life( STARTED )
-    public void shouldNotRotateIfNoDataChanges() throws Exception
+    void shouldNotRotateIfNoDataChanges() throws Exception
     {
         // given
-        CountsTracker tracker = resourceManager.managed( newTracker() );
+        life.start();
+        CountsTracker tracker = life.add( newTracker() );
         File before = tracker.currentFile();
 
         // when
         tracker.rotate( tracker.txId() );
 
         // then
-        assertSame( "not rotated", before, tracker.currentFile() );
+        assertSame( before, tracker.currentFile(), "not rotated" );
     }
 
     @Test
-    @Resources.Life( STARTED )
-    public void shouldSupportTransactionsAppliedOutOfOrderOnRotation() throws Exception
+    void shouldSupportTransactionsAppliedOutOfOrderOnRotation() throws Exception
     {
         // given
-        final CountsTracker tracker = resourceManager.managed( newTracker() );
-        try ( CountsAccessor.Updater tx = tracker.apply( 2 ).get() )
+        life.start();
+        final CountsTracker tracker = life.add( newTracker() );
+        try ( CountsAccessor.Updater tx = get( 2, tracker ) )
         {
             tx.incrementNodeCount( 1, 1 );
         }
-        try ( CountsAccessor.Updater tx = tracker.apply( 4 ).get() )
+        try ( CountsAccessor.Updater tx = get( 4, tracker ) )
         {
             tx.incrementNodeCount( 1, 1 );
         }
 
         // when
-        Future<Long> rotated = threading.execute( state -> tracker.rotate( 2 ) );
-        threading.get().waitUntilThreadState( BLOCKED, WAITING, TIMED_WAITING, TERMINATED );
-        try ( CountsAccessor.Updater tx = tracker.apply( 5 ).get() )
+        Future<Long> rotated = threading.submit( () -> tracker.rotate( 2 ) );
+        threading.untilThreadState( BLOCKED, WAITING, TIMED_WAITING, TERMINATED );
+        try ( CountsAccessor.Updater tx = get( 5, tracker ) )
         {
             tx.incrementNodeCount( 1, 1 );
         }
-        try ( CountsAccessor.Updater tx = tracker.apply( 3 ).get() )
+        try ( CountsAccessor.Updater tx = get( 3, tracker ) )
         {
             tx.incrementNodeCount( 1, 1 );
         }
 
         // then
-        assertEquals( "rotated transaction", 4, rotated.get().longValue() );
-        assertEquals( "stored transaction", 4, tracker.txId() );
+        assertEquals( 4, rotated.get().longValue(), "rotated transaction" );
+        assertEquals( 4, tracker.txId(), "stored transaction" );
 
         // the value in memory
-        assertEquals( "count", 4, tracker.nodeCount( 1, Registers.newDoubleLongRegister() ).readSecond() );
+        assertEquals( 4, tracker.nodeCount( 1, Registers.newDoubleLongRegister() ).readSecond(), "count" );
 
         // the value in the store
         CountsVisitor visitor = mock( CountsVisitor.class );
@@ -349,27 +365,27 @@ public class CountsTrackerTest
         verify( visitor ).visitNodeCount( 1, 3 );
         verifyNoMoreInteractions( visitor );
 
-        assertEquals( "final rotation", 5, tracker.rotate( 5 ) );
+        assertEquals( 5, tracker.rotate( 5 ), "final rotation" );
     }
 
     @Test
-    @Resources.Life( STARTED )
-    public void shouldNotEndUpInBrokenStateAfterRotationFailure() throws Exception
+    void shouldNotEndUpInBrokenStateAfterRotationFailure() throws Exception
     {
         // GIVEN
+        life.start();
         FakeClock clock = Clocks.fakeClock();
         CallTrackingClock callTrackingClock = new CallTrackingClock( clock );
-        CountsTracker tracker = resourceManager.managed( newTracker( callTrackingClock, EmptyVersionContextSupplier.EMPTY ) );
+        CountsTracker tracker = life.add( newTracker( callTrackingClock, EmptyVersionContextSupplier.EMPTY ) );
         int labelId = 1;
-        try ( CountsAccessor.Updater tx = tracker.apply( 2 ).get() )
+        try ( CountsAccessor.Updater tx = get( 2, tracker ) )
         {
             tx.incrementNodeCount( labelId, 1 ); // now at 1
         }
 
         // WHEN
-        Future<Object> rotation = threading.execute( command( () -> tracker.rotate( 4 ) ) );
-        threading.get().waitUntilWaiting( details -> details.isAt( "Rotation", "rotate" ) );
-        try ( CountsAccessor.Updater tx = tracker.apply( 3 ).get() )
+        Future<Object> rotation = threading.submit( () -> tracker.rotate( 4 ) );
+        threading.untilWaitingIn( "rotate" );
+        try ( CountsAccessor.Updater tx = get( 3, tracker ) )
         {
             tx.incrementNodeCount( labelId, 1 ); // now at 2
         }
@@ -395,7 +411,7 @@ public class CountsTrackerTest
         assertEquals( 2, register.readSecond() );
 
         // and WHEN later attempting rotation again
-        try ( CountsAccessor.Updater tx = tracker.apply( 4 ).get() )
+        try ( CountsAccessor.Updater tx = get( 4, tracker ) )
         {
             tx.incrementNodeCount( labelId, 1 ); // now at 3
         }
@@ -418,10 +434,16 @@ public class CountsTrackerTest
 
     private CountsTracker newTracker( SystemNanoClock clock, VersionContextSupplier versionContextSupplier )
     {
-        return new CountsTracker( resourceManager.logProvider(), resourceManager.fileSystem(),
-                resourceManager.pageCache(), Config.defaults(), resourceManager.testDirectory().databaseLayout(), clock,
-                versionContextSupplier )
+        return new CountsTracker( logProvider, fs,
+                pageCache, Config.defaults(), testDir.databaseLayout(), clock, versionContextSupplier )
                 .setInitializer( DataInitializer.empty() );
+    }
+
+    private CountsAccessor.Updater get( long writeTransactionId, CountsTracker tracker )
+    {
+        Optional<CountsAccessor.Updater> updater = tracker.apply( writeTransactionId );
+        assertTrue( updater.isPresent() );
+        return updater.get();
     }
 
     private static CountsOracle someData()
@@ -436,21 +458,5 @@ public class CountsTrackerTest
         oracle.relationship( n1, 1, n2 );
         oracle.relationship( n0, 1, n3 );
         return oracle;
-    }
-
-    private static class Rotation implements IOFunction<CountsTracker, Long>
-    {
-        private final long txId;
-
-        Rotation( long txId )
-        {
-            this.txId = txId;
-        }
-
-        @Override
-        public Long apply( CountsTracker tracker ) throws IOException
-        {
-            return tracker.rotate( txId );
-        }
     }
 }

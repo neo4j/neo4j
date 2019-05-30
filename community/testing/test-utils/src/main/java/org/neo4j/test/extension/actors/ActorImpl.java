@@ -20,11 +20,14 @@
 package org.neo4j.test.extension.actors;
 
 import java.lang.reflect.Executable;
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 
 class ActorImpl implements Actor
 {
@@ -145,14 +148,44 @@ class ActorImpl implements Actor
     @Override
     public void untilWaitingIn( Executable constructorOrMethod ) throws InterruptedException
     {
+        untilWaitingIn( methodPredicate( constructorOrMethod ) );
+    }
+
+    @Override
+    public void untilWaitingIn( String methodName ) throws InterruptedException
+    {
+        untilWaitingIn( methodPredicate( methodName ) );
+    }
+
+    private void untilWaitingIn( Predicate<StackTraceElement> predicate ) throws InterruptedException
+    {
         do
         {
             untilWaiting();
-            if ( isIn( constructorOrMethod ) )
+            if ( isIn( predicate ) )
             {
                 return;
             }
             Thread.sleep( 1 );
+        }
+        while ( true );
+    }
+
+    @Override
+    public void untilThreadState( Thread.State... states )
+    {
+        EnumSet<Thread.State> set = EnumSet.copyOf( Arrays.asList( states ) );
+        do
+        {
+            if ( !queue.hasWaitingConsumer() )
+            {
+                Thread.State state = thread.getState();
+                if ( set.contains( state ) )
+                {
+                    return;
+                }
+            }
+            Thread.onSpinWait();
         }
         while ( true );
     }
@@ -163,14 +196,25 @@ class ActorImpl implements Actor
         thread.interrupt();
     }
 
-    private boolean isIn( Executable constructorOrMethod )
+    private Predicate<StackTraceElement> methodPredicate( Executable constructorOrMethod )
     {
         String targetMethodName = constructorOrMethod.getName();
         String targetClassName = constructorOrMethod.getDeclaringClass().getName();
+        return element ->
+            element.getMethodName().equals( targetMethodName ) && element.getClassName().equals( targetClassName );
+    }
+
+    private Predicate<StackTraceElement> methodPredicate( String methodName )
+    {
+        return element -> element.getMethodName().equals( methodName );
+    }
+
+    private boolean isIn( Predicate<StackTraceElement> predicate )
+    {
         StackTraceElement[] stackTrace = thread.getStackTrace();
         for ( StackTraceElement element : stackTrace )
         {
-            if ( element.getMethodName().equals( targetMethodName ) && element.getClassName().equals( targetClassName ) )
+            if ( predicate.test( element ) )
             {
                 return true;
             }

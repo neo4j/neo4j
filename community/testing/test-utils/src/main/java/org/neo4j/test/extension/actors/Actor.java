@@ -35,5 +35,9 @@ public interface Actor
 
     void untilWaitingIn( Executable constructorOrMethod ) throws InterruptedException;
 
+    void untilWaitingIn( String methodName ) throws InterruptedException;
+
+    void untilThreadState( Thread.State... states );
+
     void interrupt();
 }
