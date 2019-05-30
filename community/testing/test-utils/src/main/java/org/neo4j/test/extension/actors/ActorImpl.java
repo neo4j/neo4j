@@ -25,7 +25,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.LockSupport;
 
 class ActorImpl implements Actor
 {
@@ -69,8 +68,9 @@ class ActorImpl implements Actor
                 }
             }
         }
-        catch ( InterruptedException e )
+        catch ( Throwable e )
         {
+            e.printStackTrace();
             throw new RuntimeException( e );
         }
     }
@@ -78,11 +78,13 @@ class ActorImpl implements Actor
     public void stop()
     {
         stopped = true;
-        enqueue( STOP_SIGNAL );
+        queue.offer( STOP_SIGNAL );
     }
 
+    @SuppressWarnings( "ResultOfMethodCallIgnored" )
     public void join() throws InterruptedException
     {
+        Thread.interrupted(); // Clear interrupted flag.
         thread.join();
     }
 
@@ -114,6 +116,7 @@ class ActorImpl implements Actor
         do
         {
             Thread.State state = thread.getState();
+            boolean executing = this.executing;
             if ( executing && (state == Thread.State.WAITING || state == Thread.State.TIMED_WAITING) )
             {
                 return;
@@ -125,6 +128,10 @@ class ActorImpl implements Actor
             if ( state == Thread.State.NEW )
             {
                 throw new IllegalStateException( "Actor thread " + thread.getName() + " has not yet started." );
+            }
+            if ( queue.hasWaitingConsumer() )
+            {
+                throw new IllegalStateException( "There are no tasks running or queued up that we can wait for." );
             }
             if ( Thread.interrupted() )
             {
@@ -148,6 +155,12 @@ class ActorImpl implements Actor
             Thread.sleep( 1 );
         }
         while ( true );
+    }
+
+    @Override
+    public void interrupt()
+    {
+        thread.interrupt();
     }
 
     private boolean isIn( Executable constructorOrMethod )

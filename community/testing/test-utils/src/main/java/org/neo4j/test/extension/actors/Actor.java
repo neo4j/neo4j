@@ -34,4 +34,6 @@ public interface Actor
     void untilWaiting() throws InterruptedException;
 
     void untilWaitingIn( Executable constructorOrMethod ) throws InterruptedException;
+
+    void interrupt();
 }

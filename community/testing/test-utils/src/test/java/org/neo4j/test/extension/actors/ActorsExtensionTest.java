@@ -23,11 +23,14 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.neo4j.test.extension.Inject;
 
 import static java.time.Duration.ofMinutes;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -100,12 +103,56 @@ class ActorsExtensionTest
         }
 
         @Test
-        void untilMethodsMustThrowIfActorIsStopped() throws InterruptedException
+        void untilMethodsMustThrowIfActorIsStopped() throws Exception
         {
+            actor.submit( () -> {} ).get(); // Ensure that the actor has started.
             ActorImpl actorImpl = (ActorImpl) this.actor;
             actorImpl.stop();
             actorImpl.join();
             assertThrows( AssertionError.class, () -> this.actor.untilWaiting() );
+        }
+
+        @Test
+        void untilMethodsMustThrowIfActorIsIdle() throws Exception
+        {
+            actor.submit( () -> {} ).get(); // Ensure that the actor has started.
+            // Because nothing is running, and no tasks are queued up, so there is nothing to wait for.
+            assertThrows( IllegalStateException.class, () -> actor.untilWaiting() );
+        }
+
+        @Test
+        void mustBeAbleToInterruptActors() throws Exception
+        {
+            CountDownLatch l1 = new CountDownLatch( 1 );
+            Future<?> f1 = actor.submit( () ->
+            {
+                l1.await();
+                return null;
+            } );
+            actor.untilWaitingIn( CountDownLatch.class.getMethod( "await" ) );
+            actor.interrupt();
+            ExecutionException ee = assertThrows( ExecutionException.class, f1::get );
+            assertThat( ee.getCause(), instanceOf( InterruptedException.class ) );
+        }
+
+        @Test
+        void mustBeAbleToInterruptUntilMethods()
+        {
+            Object lock = new Object();
+            synchronized ( lock )
+            {
+                actor.submit( () ->
+                {
+                    synchronized ( lock )
+                    {
+                        return null;
+                    }
+                } );
+
+                Thread.currentThread().interrupt();
+                // The actor will not be waiting. It will be in BLOCKED state, because that's how 'synchronized' works.
+                assertThrows( InterruptedException.class, actor::untilWaiting );
+            }
         }
     }
 

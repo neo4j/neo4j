@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store.kvstore;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-class UpdateLock extends ReentrantReadWriteLock
+public class UpdateLock extends ReentrantReadWriteLock
 {
     UpdateLock()
     {

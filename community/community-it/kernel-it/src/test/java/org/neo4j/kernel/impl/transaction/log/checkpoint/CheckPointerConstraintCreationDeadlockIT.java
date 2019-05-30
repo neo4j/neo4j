@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,21 +35,24 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.kvstore.LockWrapper;
+import org.neo4j.kernel.impl.store.kvstore.UpdateLock;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.Logger;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
-import org.neo4j.test.rule.OtherThreadRule;
-import org.neo4j.test.rule.VerboseTimeout;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.actors.Actor;
+import org.neo4j.test.extension.actors.Actors;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
@@ -80,20 +82,19 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
  * </li>
  * </ol>
  */
-public class CheckPointerConstraintCreationDeadlockIT
+@Actors
+class CheckPointerConstraintCreationDeadlockIT
 {
     private static final Label LABEL = TestLabels.LABEL_ONE;
     private static final String KEY = "key";
 
-    @Rule
-    public final VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( 30, SECONDS ).build();
-    @Rule
-    public final OtherThreadRule<Void> t2 = new OtherThreadRule<>( "T2" );
-    @Rule
-    public final OtherThreadRule<Void> t3 = new OtherThreadRule<>( "T3" );
+    @Inject
+    Actor t2;
+    @Inject
+    Actor t3;
 
     @Test
-    public void shouldNotDeadlock() throws Exception
+    void shouldNotDeadlock() throws Exception
     {
         List<TransactionRepresentation> transactions = createConstraintCreatingTransactions();
         Monitors monitors = new Monitors();
@@ -121,12 +122,12 @@ public class CheckPointerConstraintCreationDeadlockIT
             // acquire the counts store read lock for initializing some samples there. We're starting the
             // check pointer, which will eventually put itself in queue for acquiring the write lock
 
-            Future<Object> checkPointer = t3.execute( state ->
+            Future<Object> checkPointer = t3.submit( () ->
                     db.getDependencyResolver().resolveDependency( CheckPointer.class )
                             .forceCheckPoint( new SimpleTriggerInfo( "MANUAL" ) ) );
             try
             {
-                t3.get().waitUntilWaiting( details -> details.isAt( LockWrapper.class, "writeLock" ) );
+                t3.untilWaitingIn( LockWrapper.class.getDeclaredMethod( "writeLock", UpdateLock.class, Logger.class ) );
             }
             catch ( IllegalStateException e )
             {
@@ -185,7 +186,7 @@ public class CheckPointerConstraintCreationDeadlockIT
     {
         TransactionCommitProcess commitProcess =
                 db.getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
-        return t2.execute( state ->
+        return t2.submit( () ->
         {
             transactions.forEach( tx ->
             {
