@@ -31,8 +31,6 @@ Apache Software License, Version 2.0
   Apache Commons Logging
   Apache HttpClient
   Apache HttpCore
-  Apache Log4j API
-  Apache Log4j Scala 2.11 wrapper for Log4j API
   Lucene Core
   Mime Detection Utility
   Netty/All-in-One
