@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.test.extension.Inject;
 
@@ -197,6 +198,63 @@ class ActorsExtensionTest
                 f1.get();
                 f2.get();
             } );
+        }
+    }
+
+    @Nested
+    @Actors
+    class NestingTestOuter
+    {
+        @Inject
+        Actor outerActor;
+
+        @Nested
+        @Actors
+        class Middle
+        {
+            @Inject
+            Actor middleActor;
+
+            @Nested
+            @Actors
+            class Inner
+            {
+                @Inject
+                Actor innerActor;
+
+                @Test
+                void nestingTest() throws Exception
+                {
+                    AtomicInteger counter = new AtomicInteger();
+                    Future<Integer> f1 = innerActor.submit( counter::incrementAndGet );
+                    Future<Integer> f2 = middleActor.submit( counter::incrementAndGet );
+                    Future<Integer> f3 = outerActor.submit( counter::incrementAndGet );
+                    f1.get();
+                    f2.get();
+                    f3.get();
+                    assertEquals( counter.get(), 3 );
+                }
+            }
+
+            @Test
+            void nestingTest() throws Exception
+            {
+                AtomicInteger counter = new AtomicInteger();
+                Future<Integer> f1 = middleActor.submit( counter::incrementAndGet );
+                Future<Integer> f2 = outerActor.submit( counter::incrementAndGet );
+                f1.get();
+                f2.get();
+                assertEquals( counter.get(), 2 );
+            }
+        }
+
+        @Test
+        void nestingTest() throws Exception
+        {
+            AtomicInteger counter = new AtomicInteger();
+            Future<Integer> f1 = outerActor.submit( counter::incrementAndGet );
+            f1.get();
+            assertEquals( counter.get(), 1 );
         }
     }
 }

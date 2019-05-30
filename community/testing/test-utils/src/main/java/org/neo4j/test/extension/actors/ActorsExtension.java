@@ -43,15 +43,16 @@ public class ActorsExtension implements TestInstancePostProcessor, AfterEachCall
     @Override
     public void afterEach( ExtensionContext context ) throws Exception
     {
-        Optional<ExtensionContext> parent = context.getParent();
-        if ( parent.isPresent() )
+        Optional<ExtensionContext> current = Optional.of( context );
+        while ( current.isPresent() )
         {
-            context = parent.get();
-            ActorsManager manager = (ActorsManager) getStore( context ).remove( ACTOR_MANAGER );
+            ExtensionContext ctx = current.get();
+            ActorsManager manager = (ActorsManager) getStore( ctx ).remove( ACTOR_MANAGER );
             if ( manager != null )
             {
                 manager.stopAllActors();
             }
+            current = ctx.getParent();
         }
     }
 
