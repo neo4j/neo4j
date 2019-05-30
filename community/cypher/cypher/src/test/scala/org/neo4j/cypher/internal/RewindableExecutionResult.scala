@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
+import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.{Notification, Result}
@@ -89,11 +90,6 @@ object RewindableExecutionResult {
       val columns = runtimeResult.fieldNames()
       runtimeResult.request(Long.MaxValue)
       runtimeResult.await()
-//      val result: Seq[Map[String, AnyRef]] = subscriber.getOrThrow().asScala.map(row => {
-//        (row.zipWithIndex map {
-//          case (value, index) => columns(index) -> scalaValues.asDeepScalaValue(queryContext.asObject(value)).asInstanceOf[AnyRef]
-//        }).toMap
-//      })
       val result = new ArrayBuffer[Map[String, AnyRef]]()
       subscriber.getOrThrow().asScala.foreach( record => {
         val row = columns.zipWithIndex.map {
@@ -122,7 +118,7 @@ object RewindableExecutionResult {
 
       new RewindableExecutionResultImplementation(columns,
                                                   result,
-                                                  NormalMode,
+                                                  runtimeResult.asInstanceOf[InternalExecutionResult].executionMode,
                                                   runtimeResult.executionPlanDescription().asInstanceOf[InternalPlanDescription],
                                                   subscriber.queryStatistics().asInstanceOf[QueryStatistics],
                                                   Seq.empty)

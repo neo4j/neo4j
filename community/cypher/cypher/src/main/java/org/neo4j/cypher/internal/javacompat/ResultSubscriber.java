@@ -207,7 +207,14 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
     @Override
     public ExecutionPlanDescription getExecutionPlanDescription()
     {
-        return execution.executionPlanDescription();
+        try
+        {
+            return execution.executionPlanDescription();
+        }
+        catch ( Exception e )
+        {
+            throw converted( e );
+        }
     }
 
     @Override
