@@ -113,10 +113,14 @@ Following schema is ok:
 Next code illustrates how to use blob in Cypher query:
 ```
 //create a node
-CREATE (n:PERSON { name:"bluejoe", photo:<https://avatars0.githubusercontent.com/u/2328905?s=460&v=4> });
+CREATE (n:PERSON { name: "bluejoe", photo: <https://avatars0.githubusercontent.com/u/2328905?s=460&v=4> });
 
-//query the length of a blob
-MATCH (n:PERSON) where n.name='bluejoe' return Blob.len(n.photo);
+```
+
+Retrieving a BLOB property:
+```
+val result = tx.run("MATCH (n:PERSON) where n.name='bluejoe' return n");
+val blob = result.get(0).asBlob
 ```
 
 ### blob functions
