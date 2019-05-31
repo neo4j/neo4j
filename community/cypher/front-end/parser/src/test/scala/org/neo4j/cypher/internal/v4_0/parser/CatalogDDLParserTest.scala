@@ -66,19 +66,27 @@ class CatalogDDLParserTest
     yields(ast.CreateDatabase("foo.bar"))
   }
 
-  test("CATALOG CREATE DATABASE foo_bar42") {
-    yields(ast.CreateDatabase("foo_bar42"))
+  test("CATALOG CREATE DATABASE foo-bar42") {
+    failsToParse
   }
 
-  test("CATALOG CREATE DATABASE _foo_bar42") {
-    yields(ast.CreateDatabase("_foo_bar42"))
+  test("CATALOG CREATE DATABASE `foo-bar42`") {
+    yields(ast.CreateDatabase("foo-bar42"))
+  }
+
+  test("CATALOG CREATE DATABASE _foo-bar42") {
+    failsToParse
+  }
+
+  test("CATALOG CREATE DATABASE `_foo-bar42`") {
+    yields(ast.CreateDatabase("_foo-bar42"))
   }
 
   test("CATALOG CREATE DATABASE ``") {
     yields(ast.CreateDatabase(""))
   }
 
-  test("CATALOG CREATE DATABASE 42foo_bar") {
+  test("CATALOG CREATE DATABASE 42foo-bar") {
     failsToParse
   }
 

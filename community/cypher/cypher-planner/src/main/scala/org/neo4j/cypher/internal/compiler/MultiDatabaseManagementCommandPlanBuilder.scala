@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
 import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NameValidator}
 import org.neo4j.cypher.internal.planner.spi.ProcedurePlannerName
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
@@ -157,7 +157,7 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
       // CREATE DATABASE foo
       case CreateDatabase(dbName) =>
         val dbId = new DatabaseId(dbName)
-        NameValidator.assertValidDatabaseName(dbId.name())
+        NameValidator.assertValidDatabaseName(dbId)
         Some(plans.CreateDatabase(dbId))
 
       // DROP DATABASE foo
