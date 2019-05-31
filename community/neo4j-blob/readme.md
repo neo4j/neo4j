@@ -2,8 +2,9 @@
 
 Neo4j-blob module enhances Neo4j with a set of blob operation functions which makes it possible and convenient to store and use the BLOB in neo4j.
 
----
-Blobs represent binary streams stored in an EXTERNAL storage (local files system, distributed file system, etc) and can be consumed in streamming manner (only offer new bytes on calling `next()`). Unlike BLOBs, byte arrays are always stored INSIDE a Neo4j store, and often be fetched as a whole object (thus large byte arrays are not suitable to be stored in Neo4j).
+### BLOB
+
+BLOBs represent binary streams stored in an EXTERNAL storage (local files system, distributed file system, etc) and can be consumed in streamming manner (only offer new bytes on calling `next()`). Unlike BLOBs, byte arrays are always stored INSIDE a Neo4j store, and often be fetched as a whole object (thus large byte arrays are not suitable to be stored in Neo4j).
 
 A BLOB contains two properties: `length` and `mimeType`:
 
