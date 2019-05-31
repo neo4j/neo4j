@@ -54,7 +54,8 @@ public class StandardV4_0 extends BaseRecordFormats
                 RecordStorageCapability.GBPTREE_ID_FILES,
                 IndexCapabilities.LuceneCapability.LUCENE_8,
                 IndexCapabilities.IndexProviderCapability.INDEX_PROVIDERS_40,
-                IndexCapabilities.ConfigCapability.SCHEMA_STORE_CONFIG );
+                IndexCapabilities.ConfigCapability.SCHEMA_STORE_CONFIG,
+                RecordStorageCapability.GBPTREE_COUNTS_STORE );
     }
 
     @Override

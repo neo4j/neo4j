@@ -42,6 +42,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.exceptions.UnspecifiedKernelException;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
@@ -60,6 +61,7 @@ import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.internal.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
+import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -84,7 +86,9 @@ import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
+import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -229,6 +233,45 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, databaseFiles, true, ExistingTargetStrategy.SKIP );
             migrateSchemaStore( directoryLayout, migrationLayout, oldFormat, newFormat );
         }
+
+        if ( requiresCountsStoreMigration( oldFormat, newFormat ) )
+        {
+            migrateCountsStore( directoryLayout, migrationLayout, oldFormat );
+        }
+    }
+
+    /**
+     * Rebuilds the counts store by reading from the store that is being migrated from.
+     * Instead of a rebuild this could have been done by reading the old counts store, but since we don't want any of that complex
+     * code lingering in the code base a rebuild is cleaner, but will require a longer migration time. Worth it?
+     */
+    private void migrateCountsStore( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat )
+            throws IOException, KernelException
+    {
+        // Just read from the old store (nodes, relationships, highLabelId, highRelationshipTypeId). This way we don't have to try and figure
+        // out which stores, if any, have been migrated to the new format. The counts themselves are equivalent in both the old and the migrated stores.
+        StoreFactory oldStoreFactory = createStoreFactory( directoryLayout, oldFormat, new ScanOnOpenReadOnlyIdGeneratorFactory() );
+        try ( NeoStores oldStores = oldStoreFactory.openAllNeoStores();
+              GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, migrationLayout.countStore(), immediate(),
+                      new CountsComputer( oldStores, pageCache, directoryLayout ), false ) )
+        {
+            countsStore.start();
+            countsStore.checkpoint( IOLimiter.UNLIMITED );
+        }
+        catch ( IOException e )
+        {
+            throw e;
+        }
+        catch ( Exception e )
+        {
+            throw new UnspecifiedKernelException( Status.General.UnknownError, e, "Unable to start and build counts store during migration" );
+        }
+    }
+
+    private boolean requiresCountsStoreMigration( RecordFormats oldFormat, RecordFormats newFormat )
+    {
+        return !oldFormat.hasCapability( RecordStorageCapability.GBPTREE_COUNTS_STORE ) &&
+                newFormat.hasCapability( RecordStorageCapability.GBPTREE_COUNTS_STORE );
     }
 
     private static boolean isDifferentCapabilities( RecordFormats oldFormat, RecordFormats newFormat )
@@ -585,6 +628,14 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         fileOperation( MOVE, fileSystem, migrationLayout, directoryLayout,
                 Iterables.iterable( DatabaseFile.values() ), true, // allow to skip non existent source files
                 ExistingTargetStrategy.OVERWRITE );
+        RecordFormats oldFormat = selectForVersion( versionToUpgradeFrom );
+        RecordFormats newFormat = selectForVersion( versionToUpgradeTo );
+        if ( requiresCountsStoreMigration( oldFormat, newFormat ) )
+        {
+            // Delete the old counts store
+            fileSystem.deleteFile( new File( directoryLayout.databaseDirectory(), "neostore.counts.db.a" ) );
+            fileSystem.deleteFile( new File( directoryLayout.databaseDirectory(), "neostore.counts.db.b" ) );
+        }
     }
 
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( DatabaseLayout migrationStructure, DatabaseLayout sourceDirectoryStructure,
