@@ -1,15 +1,11 @@
-## Neo4j-blob: Powerful extension for Neo4j 
+## Neo4j-blob: BLOB(binary large object) extension for Neo4j 
 
-Neo4j is the world’s leading Graph Database. It enables the programmer work with a flexible network structure of nodes and relationships rather than static tables.
-
-In Neo4j, the value of string, number, data and so on is well supported.  However, how to store unstructured data, for example, a picture or a recording? Maybe the only way is to store a link for it.
-
-Neo4j-blob module enhances Neo4j with a set of blob operation functions which makes it possible and convenient to store and use the blob in neo4j.
+Neo4j-blob module enhances Neo4j with a set of blob operation functions which makes it possible and convenient to store and use the BLOB in neo4j.
 
 ---
-Blobs represent binary streams stored in an EXTERNAL storage (local files system, distributed file system, etc) and can be consumed in streamming manner (offer new bytes on call `next()`). However, byte arrays are always stored INSIDE a Neo4j store, and often be fetched as a whole object (thus large byte arrays are not suitable to be stored in Neo4j).
+Blobs represent binary streams stored in an EXTERNAL storage (local files system, distributed file system, etc) and can be consumed in streamming manner (only offer new bytes on calling `next()`). Unlike BLOBs, byte arrays are always stored INSIDE a Neo4j store, and often be fetched as a whole object (thus large byte arrays are not suitable to be stored in Neo4j).
 
-A blob contains two properties: `length` and `mimeType`:
+A BLOB contains two properties: `length` and `mimeType`:
 
 ```
 trait Blob extends Comparable[Blob] {
@@ -28,7 +24,7 @@ trait Blob extends Comparable[Blob] {
 * def fromHttpURL(url: String): Blob
 * def fromURL(url: String): Blob
 
-To consume content of a blob, use `offerStream`:
+To consume content of a BLOB, use `offerStream`:
 ```
   blob.offerStream { is =>
     is.read();
