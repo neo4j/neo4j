@@ -98,6 +98,8 @@ To read a blob from Neo4j database:
   val blob = v1.getProperty("photo").asInstanceOf[Blob];
 ```
 
+For more example code, see https://github.com/bluejoe2008/neo4j-blob/blob/blob-support/community/neo4j-blob/neo4j-blob-test/src/test/scala/GraphDbBlobTest.scala
+
 ### blob in Cypher
 
 `BlobLiteral` is defined in Cypher grammar in form of:
@@ -122,6 +124,8 @@ Retrieving a BLOB property:
 val result = tx.run("MATCH (n:PERSON) where n.name='bluejoe' return n");
 val blob = result.get(0).asBlob
 ```
+
+For more example code, see https://github.com/bluejoe2008/neo4j-blob/blob/blob-support/community/neo4j-blob/neo4j-blob-test/src/test/scala/BoltCypherTest.scala
 
 ### blob functions
 
