@@ -22,7 +22,6 @@ package org.neo4j.commandline.dbms;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.ByteArrayOutputStream;
@@ -204,8 +203,7 @@ public class DiagnosticsReportCommandTest
     @Test
     void overrideDestination() throws Exception
     {
-        // because of https://bugs.openjdk.java.net/browse/JDK-8202127 and current surefire behaviour we need to have custom value for JRE >= 11
-        String toArgument = JRE.JAVA_11.isCurrentVersion() ? "--to=" + System.getProperty( "user.dir" ) + "/other/" : "--to=other/";
+        String toArgument = "--to=" + System.getProperty( "user.dir" ) + "/other/";
         String[] args = {toArgument, "all"};
         try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
         {
