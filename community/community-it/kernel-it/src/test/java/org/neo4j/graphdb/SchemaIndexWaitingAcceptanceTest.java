@@ -26,7 +26,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
+import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.index.ControlledPopulationIndexProvider;
@@ -54,6 +56,9 @@ public class SchemaIndexWaitingAcceptanceTest
             super.configure( databaseFactory );
             List<ExtensionFactory<?>> extensions = Collections.singletonList( singleInstanceIndexProviderFactory( "test", provider ) );
             ((TestDatabaseManagementServiceBuilder) databaseFactory).setExtensions( extensions );
+            Dependencies dependencies = new Dependencies();
+            dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
+            databaseFactory.setExternalDependencies( dependencies );
         }
     }.withSetting( default_schema_provider, provider.getProviderDescriptor().name() );
 

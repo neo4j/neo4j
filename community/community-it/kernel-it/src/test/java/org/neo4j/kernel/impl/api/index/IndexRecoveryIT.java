@@ -31,7 +31,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -299,9 +301,12 @@ class IndexRecoveryIT
             managementService.shutdown();
         }
 
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
         managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
                 .setFileSystem( fs )
                 .setExtensions( singletonList( mockedIndexProviderFactory ) )
+                .setExternalDependencies( dependencies )
                 .setMonitors( monitors )
                 .impermanent()
                 .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() )

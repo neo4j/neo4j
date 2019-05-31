@@ -26,9 +26,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.dbms.database.UnableToStartDatabaseException;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -102,6 +104,8 @@ class DatabaseFailureIT
 
     private void startDatabaseServer()
     {
-        managementService = new DatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
+        managementService = new DatabaseManagementServiceBuilder( testDirectory.storeDir() ).setExternalDependencies( dependencies ).build();
     }
 }

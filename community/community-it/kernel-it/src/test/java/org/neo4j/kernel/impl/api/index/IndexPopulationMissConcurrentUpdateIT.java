@@ -32,9 +32,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Supplier;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
+import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdController;
@@ -94,7 +96,9 @@ public class IndexPopulationMissConcurrentUpdateIT
         @Override
         protected DatabaseManagementServiceBuilder newFactory()
         {
-            return new TestDatabaseManagementServiceBuilder().impermanent().addExtension( index );
+            Dependencies dependencies = new Dependencies();
+            dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
+            return new TestDatabaseManagementServiceBuilder().impermanent().setExternalDependencies( dependencies ).addExtension( index );
         }
     }.withSetting( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, Settings.FALSE )
      .withSetting( GraphDatabaseSettings.default_schema_provider, ControlledSchemaIndexProvider.INDEX_PROVIDER.name() );

@@ -140,6 +140,7 @@ public class DatabaseManagementServiceFactory
         GlobalProcedures globalProcedures = setupProcedures( globalModule, edition, databaseManager );
         globalDependencies.satisfyDependency( new NonTransactionalDbmsOperations( globalProcedures ) );
 
+        edition.createSystemGraphInitializer( globalModule, databaseManager );
         edition.createSecurityModule( globalModule );
         SecurityProvider securityProvider = edition.getSecurityProvider();
         globalDependencies.satisfyDependencies( securityProvider.authManager() );

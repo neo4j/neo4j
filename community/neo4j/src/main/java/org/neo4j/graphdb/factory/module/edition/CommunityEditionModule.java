@@ -31,6 +31,8 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DefaultDatabaseManager;
+import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
+import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -212,6 +214,14 @@ public class CommunityEditionModule extends StandaloneEditionModule
     }
 
     @Override
+    public SystemGraphInitializer createSystemGraphInitializer( GlobalModule globalModule, DatabaseManager<?> databaseManager )
+    {
+        SystemGraphInitializer initializer = tryResolveOrCreate( SystemGraphInitializer.class, globalModule.getExternalDependencyResolver(),
+                () -> new DefaultSystemGraphInitializer( databaseManager, globalModule.getGlobalConfig() ) );
+        return globalModule.getGlobalDependencies().satisfyDependency( globalModule.getGlobalLife().add( initializer ) );
+    }
+
+    @Override
     public void createSecurityModule( GlobalModule globalModule )
     {
         LifeSupport globalLife = globalModule.getGlobalLife();
@@ -230,7 +240,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
         }
     }
 
-    private static <T> T tryResolveOrCreate( Class<T> clazz, DependencyResolver dependencies, Supplier<T> newInstanceMethod )
+    public static <T> T tryResolveOrCreate( Class<T> clazz, DependencyResolver dependencies, Supplier<T> newInstanceMethod )
     {
         try
         {

@@ -27,6 +27,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -36,16 +37,17 @@ import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.security.systemgraph.BasicSystemGraphInitializer;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphOperations;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.server.security.systemgraph.ContextSwitchingSystemGraphQueryExecutor;
+import org.neo4j.server.security.systemgraph.UserSecurityGraphInitializer;
 import org.neo4j.time.Clocks;
 
 @ServiceProvider
 public class CommunitySecurityModule extends SecurityModule
 {
     private BasicSystemGraphRealm authManager;
+    private SystemGraphInitializer systemGraphInitializer;
     private DatabaseManager<?> databaseManager;
     private ThreadToStatementContextBridge threadToStatementContextBridge;
 
@@ -60,7 +62,8 @@ public class CommunitySecurityModule extends SecurityModule
     {
         org.neo4j.collection.Dependencies platformDependencies = (org.neo4j.collection.Dependencies) dependencies.dependencySatisfier();
         this.databaseManager = platformDependencies.resolveDependency( DatabaseManager.class );
-        threadToStatementContextBridge = platformDependencies.resolveDependency( ThreadToStatementContextBridge.class );
+        this.threadToStatementContextBridge = platformDependencies.resolveDependency( ThreadToStatementContextBridge.class );
+        this.systemGraphInitializer = platformDependencies.resolveDependency( SystemGraphInitializer.class );
 
         Config config = dependencies.config();
         GlobalProcedures globalProcedures = dependencies.procedures();
@@ -138,13 +141,13 @@ public class CommunitySecurityModule extends SecurityModule
         Supplier<UserRepository> migrationUserRepositorySupplier = () -> CommunitySecurityModule.getUserRepository( config, logProvider, fileSystem );
         Supplier<UserRepository> initialUserRepositorySupplier = () -> CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem );
 
-        BasicSystemGraphInitializer systemGraphInitializer = new BasicSystemGraphInitializer( queryExecutor, systemGraphOperations,
-                migrationUserRepositorySupplier, initialUserRepositorySupplier, secureHasher, logProvider.getLog( getClass() ), config, true );
+        UserSecurityGraphInitializer securityGraphInitializer =
+                new UserSecurityGraphInitializer( systemGraphInitializer, queryExecutor, logProvider.getLog( getClass() ), systemGraphOperations,
+                        migrationUserRepositorySupplier, initialUserRepositorySupplier, secureHasher );
 
         return new BasicSystemGraphRealm(
                 systemGraphOperations,
-                systemGraphInitializer,
-                true, // always init on start in community
+                securityGraphInitializer, // always init on start in community
                 secureHasher,
                 new BasicPasswordPolicy(),
                 createAuthenticationStrategy( config ),

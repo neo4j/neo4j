@@ -36,8 +36,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -138,8 +140,11 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     @Before
     public void setUp()
     {
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
         managementService = new TestDatabaseManagementServiceBuilder( graphDbDir )
                 .setExtensions( Collections.singletonList( new PredefinedIndexProviderFactory( indexProvider ) ) )
+                .setExternalDependencies( dependencies )
                 .impermanent()
                 .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() )
                 .build();

@@ -19,18 +19,19 @@
  */
 package org.neo4j.cypher
 
+import java.io.File
 import java.util.Optional
 
-import org.neo4j.configuration.GraphDatabaseSettings.default_database
+import org.neo4j.configuration.GraphDatabaseSettings.{SYSTEM_DATABASE_NAME, default_database}
 import org.neo4j.configuration.{Config, GraphDatabaseSettings}
 import org.neo4j.cypher.internal.DatabaseStatus
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.dbms.database.{DatabaseContext, DatabaseManager}
+import org.neo4j.dbms.database.{DatabaseContext, DatabaseManager, DefaultSystemGraphInitializer}
 import org.neo4j.kernel.database.DatabaseId
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.logging.Log
 import org.neo4j.server.security.auth.{InMemoryUserRepository, SecureHasher}
-import org.neo4j.server.security.systemgraph.{BasicSystemGraphInitializer, BasicSystemGraphOperations, ContextSwitchingSystemGraphQueryExecutor}
+import org.neo4j.server.security.systemgraph.{BasicSystemGraphOperations, ContextSwitchingSystemGraphQueryExecutor, UserSecurityGraphInitializer}
 
 class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite with GraphDatabaseTestSupport {
   private val onlineStatus = DatabaseStatus.Online.stringValue()
@@ -135,21 +136,29 @@ class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite
     assertFailure("STOP DATABASE foo", "Unsupported management command: STOP DATABASE foo")
   }
 
-  private def setup(config: Config): Unit = {
-    val queryExecutor: ContextSwitchingSystemGraphQueryExecutor = new ContextSwitchingSystemGraphQueryExecutor(databaseManager(), threadToStatementContextBridge())
+  // Disable normal database creation because we need different settings on each test
+  override protected def initTest() {}
+
+  protected def setup(config: Config) {
+    managementService = graphDatabaseFactory(new File("test")).impermanent().setConfigRaw(config.getRaw).setInternalLogProvider(logProvider).build()
+    graphOps = managementService.database(SYSTEM_DATABASE_NAME)
+    graph = new GraphDatabaseCypherService(graphOps)
+
+    val manager = databaseManager()
+    val queryExecutor: ContextSwitchingSystemGraphQueryExecutor = new ContextSwitchingSystemGraphQueryExecutor(manager, threadToStatementContextBridge())
     val secureHasher: SecureHasher = new SecureHasher
     val systemGraphOperations: BasicSystemGraphOperations = new BasicSystemGraphOperations(queryExecutor, secureHasher)
 
-    val systemGraphInitializer = new BasicSystemGraphInitializer(
+    val securityGraphInitializer = new UserSecurityGraphInitializer(
+      new DefaultSystemGraphInitializer(manager, config),
       queryExecutor,
+      mock[Log],
       systemGraphOperations,
       () => new InMemoryUserRepository,
       () => new InMemoryUserRepository,
-      secureHasher,
-      mock[Log],
-      config)
+      secureHasher)
 
-    systemGraphInitializer.initializeSystemGraph()
+    securityGraphInitializer.initializeSecurityGraph()
     selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
   }
 

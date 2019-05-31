@@ -29,7 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
-import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -43,11 +43,11 @@ import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.SecureHasher;
 import org.neo4j.server.security.auth.UserRepository;
-import org.neo4j.server.security.systemgraph.BasicSystemGraphInitializer;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphOperations;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.server.security.systemgraph.ContextSwitchingSystemGraphQueryExecutor;
 import org.neo4j.server.security.systemgraph.QueryExecutor;
+import org.neo4j.server.security.systemgraph.UserSecurityGraphInitializer;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.mockito.Mockito.mock;
@@ -63,7 +63,7 @@ public class TestBasicSystemGraphRealm
     {
         ContextSwitchingSystemGraphQueryExecutor executor = new ContextSwitchingSystemGraphQueryExecutor( dbManager, threadToStatementContextBridge );
         return testRealm( importOptions.migrationSupplier(), importOptions.initialUserSupplier(), newRateLimitedAuthStrategy(),
-                dbManager.getManagementService(), executor, config );
+                dbManager, executor, config );
     }
 
     static BasicSystemGraphRealm testRealm( TestDatabaseManager dbManager, TestDirectory testDirectory, Config config ) throws Throwable
@@ -76,7 +76,7 @@ public class TestBasicSystemGraphRealm
         Supplier<UserRepository> initialUserRepositorySupplier = () -> CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem );
 
         ContextSwitchingSystemGraphQueryExecutor executor = new ContextSwitchingSystemGraphQueryExecutor( dbManager, threadToStatementContextBridge );
-        return testRealm( migrationUserRepositorySupplier, initialUserRepositorySupplier, newRateLimitedAuthStrategy(), dbManager.getManagementService(),
+        return testRealm( migrationUserRepositorySupplier, initialUserRepositorySupplier, newRateLimitedAuthStrategy(), dbManager,
                 executor, config );
     }
 
@@ -84,29 +84,29 @@ public class TestBasicSystemGraphRealm
             Supplier<UserRepository> migrationSupplier,
             Supplier<UserRepository> initialUserSupplier,
             AuthenticationStrategy authStrategy,
-            DatabaseManagementService managementService,
+            TestDatabaseManager manager,
             QueryExecutor executor,
             Config config ) throws Throwable
     {
-        GraphDatabaseCypherService graph = new GraphDatabaseCypherService( managementService.database( config.get( GraphDatabaseSettings.default_database ) ) );
+        GraphDatabaseCypherService graph =
+                new GraphDatabaseCypherService( manager.getManagementService().database( config.get( GraphDatabaseSettings.default_database ) ) );
         Collection<TransactionEventListener<?>> systemListeners = unregisterListeners( graph );
 
         BasicSystemGraphOperations systemGraphOperations = new BasicSystemGraphOperations( executor, secureHasher );
-        BasicSystemGraphInitializer systemGraphInitializer =
-                new BasicSystemGraphInitializer(
+        UserSecurityGraphInitializer securityGraphInitializer =
+                new UserSecurityGraphInitializer(
+                        new DefaultSystemGraphInitializer( manager, config ),
                         executor,
+                        Mockito.mock(Log.class),
                         systemGraphOperations,
                         migrationSupplier,
                         initialUserSupplier,
-                        secureHasher,
-                        Mockito.mock(Log.class),
-                        config
+                        secureHasher
                 );
 
         BasicSystemGraphRealm realm = new BasicSystemGraphRealm(
                 systemGraphOperations,
-                systemGraphInitializer,
-                true,
+                securityGraphInitializer,
                 new SecureHasher(),
                 new BasicPasswordPolicy(),
                 authStrategy,

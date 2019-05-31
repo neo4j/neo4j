@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.systemgraph.BasicInMemorySystemGraphOperations;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
+import org.neo4j.server.security.systemgraph.SecurityGraphInitializer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -68,7 +69,7 @@ public class BasicSystemGraphRealmTest
         BasicInMemorySystemGraphOperations operations = new BasicInMemorySystemGraphOperations(  );
         authStrategy = mock( AuthenticationStrategy.class );
 
-        manager = new BasicSystemGraphRealm( operations, null, false, secureHasher, new BasicPasswordPolicy(), authStrategy, true );
+        manager = new BasicSystemGraphRealm( operations, SecurityGraphInitializer.NO_OP, secureHasher, new BasicPasswordPolicy(), authStrategy, true );
         manager.init();
         manager.start();
     }

@@ -62,8 +62,7 @@ import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
  */
 public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManager, UserManager, UserManagerSupplier, CredentialsMatcher
 {
-    private boolean initOnStart;
-    private final BasicSystemGraphInitializer systemGraphInitializer;
+    private final SecurityGraphInitializer systemGraphInitializer;
     private final PasswordPolicy passwordPolicy;
     private final AuthenticationStrategy authenticationStrategy;
     private final boolean authenticationEnabled;
@@ -78,8 +77,7 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
 
     public BasicSystemGraphRealm(
             BasicSystemGraphOperations basicSystemGraphOperations,
-            BasicSystemGraphInitializer systemGraphInitializer,
-            Boolean initOnStart,
+            SecurityGraphInitializer systemGraphInitializer,
             SecureHasher secureHasher,
             PasswordPolicy passwordPolicy,
             AuthenticationStrategy authenticationStrategy,
@@ -89,7 +87,6 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
 
         this.basicSystemGraphOperations = basicSystemGraphOperations;
         this.systemGraphInitializer = systemGraphInitializer;
-        this.initOnStart = initOnStart;
         this.secureHasher = secureHasher;
         this.passwordPolicy = passwordPolicy;
         this.authenticationStrategy = authenticationStrategy;
@@ -102,10 +99,7 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
     @Override
     public void start() throws Exception
     {
-        if ( initOnStart )
-        {
-            systemGraphInitializer.initializeSystemGraph();
-        }
+        systemGraphInitializer.initializeSecurityGraph();
     }
 
     @Override

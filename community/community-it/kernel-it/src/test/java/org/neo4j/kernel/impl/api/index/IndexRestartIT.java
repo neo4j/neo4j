@@ -27,7 +27,9 @@ import org.junit.Test;
 
 import java.util.Collections;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
@@ -177,7 +179,9 @@ public class IndexRestartIT
             managementService.shutdown();
         }
 
-        managementService = factory.impermanent()
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
+        managementService = factory.impermanent().setExternalDependencies( dependencies )
                     .setConfig( default_schema_provider, provider.getProviderDescriptor().name() ).build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }

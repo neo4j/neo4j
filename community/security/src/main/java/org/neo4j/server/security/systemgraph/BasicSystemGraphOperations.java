@@ -150,12 +150,4 @@ public class BasicSystemGraphOperations
 
         queryExecutor.executeQueryWithParamCheck( query, params, errorMsg );
     }
-
-    static void assertValidDbName( String name ) throws InvalidArgumentsException
-    {
-        if ( name == null || name.isEmpty() )
-        {
-            throw new InvalidArgumentsException( "The provided database name is empty." );
-        }
-    }
 }

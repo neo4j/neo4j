@@ -32,7 +32,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -182,9 +184,12 @@ public class IndexCRUDIT
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
         when( mockedIndexProvider.bless( any( IndexDescriptor.class ) ) ).thenCallRealMethod();
 
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
         managementService = new TestDatabaseManagementServiceBuilder()
                 .setFileSystem( fs.get() )
                 .setExtensions( Collections.singletonList( mockedIndexProviderFactory ) )
+                .setExternalDependencies( dependencies )
                 .impermanent()
                 .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() )
                 .build();

@@ -27,9 +27,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
@@ -122,6 +124,8 @@ class CommitContentionTest
 
     private GraphDatabaseService createDb()
     {
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
         managementService = new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, globalModule -> new CommunityEditionModule( globalModule )
         {
             @Override
@@ -129,7 +133,7 @@ class CommitContentionTest
             {
                 return new SkipTransactionDatabaseStats();
             }
-        } ).build( testDirectory.storeDir(), Config.defaults(), GraphDatabaseDependencies.newDependencies() );
+        } ).build( testDirectory.storeDir(), Config.defaults(), GraphDatabaseDependencies.newDependencies().dependencies( dependencies ) );
         return managementService
                 .database( Config.defaults().get( GraphDatabaseSettings.default_database ));
     }

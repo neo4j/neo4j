@@ -22,7 +22,7 @@ package org.neo4j.server.security.systemgraph;
 import java.util.Collections;
 import java.util.function.Supplier;
 
-import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.Credential;
@@ -36,48 +36,39 @@ import org.neo4j.string.UTF8;
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_USER_NAME;
 
-public class BasicSystemGraphInitializer extends DatabaseSystemGraphInitializer
+public class UserSecurityGraphInitializer implements SecurityGraphInitializer
 {
+    protected final SystemGraphInitializer systemGraphInitializer;
+    protected QueryExecutor queryExecutor;
+    protected Log log;
     private final BasicSystemGraphOperations systemGraphOperations;
 
     private final Supplier<UserRepository> migrationUserRepositorySupplier;
     private final Supplier<UserRepository> initialUserRepositorySupplier;
     private final SecureHasher secureHasher;
 
-    public BasicSystemGraphInitializer(
+    public UserSecurityGraphInitializer(
+            SystemGraphInitializer systemGraphInitializer,
             QueryExecutor queryExecutor,
+            Log log,
             BasicSystemGraphOperations systemGraphOperations,
             Supplier<UserRepository> migrationUserRepositorySupplier,
             Supplier<UserRepository> initialUserRepositorySupplier,
-            SecureHasher secureHasher,
-            Log log,
-            Config config )
+            SecureHasher secureHasher )
     {
-        this( queryExecutor, systemGraphOperations, migrationUserRepositorySupplier, initialUserRepositorySupplier, secureHasher, log, config, true );
-    }
-
-    public BasicSystemGraphInitializer(
-            QueryExecutor queryExecutor,
-            BasicSystemGraphOperations systemGraphOperations,
-            Supplier<UserRepository> migrationUserRepositorySupplier,
-            Supplier<UserRepository> initialUserRepositorySupplier,
-            SecureHasher secureHasher,
-            Log log,
-            Config config,
-          boolean isCommunity )
-    {
-        super( queryExecutor, log, config, isCommunity );
+        this.systemGraphInitializer = systemGraphInitializer;
+        this.queryExecutor = queryExecutor;
+        this.log = log;
         this.systemGraphOperations = systemGraphOperations;
         this.migrationUserRepositorySupplier = migrationUserRepositorySupplier;
         this.initialUserRepositorySupplier = initialUserRepositorySupplier;
         this.secureHasher = secureHasher;
     }
 
-    public void initializeSystemGraph() throws Exception
+    public void initializeSecurityGraph() throws Exception
     {
-        super.initializeSystemGraphDatabases();
-        // If the system graph has not been initialized (typically the first time you start neo4j with the system graph auth provider)
-        // we set it up by
+        systemGraphInitializer.initializeSystemGraph();
+        // If the system graph has not been initialized (typically the first time you start neo4j) we set it up by:
         // 1) Try to migrate users from the auth file
         // 2) If no users were migrated, create one default user
         if ( nbrOfUsers() == 0 )

@@ -25,6 +25,7 @@ import java.util.Map;
 import org.neo4j.configuration.Config;
 import org.neo4j.server.security.systemgraph.BasicInMemorySystemGraphOperations;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
+import org.neo4j.server.security.systemgraph.SecurityGraphInitializer;
 import org.neo4j.server.security.systemgraph.SystemGraphCredential;
 import org.neo4j.time.Clocks;
 
@@ -40,8 +41,7 @@ public class SecurityTestUtils
     {
         return new BasicSystemGraphRealm(
                 new BasicInMemorySystemGraphOperations(),
-                null,
-                false,
+                SecurityGraphInitializer.NO_OP,
                 new SecureHasher(),
                 new BasicPasswordPolicy(),
                 new RateLimitedAuthenticationStrategy( Clocks.systemClock(), config ),
