@@ -49,22 +49,6 @@ trait PrettifierTestUtils extends Matchers {
     } println(line)
   }
 
-
-  def roundTripCheck(original: String): Assertion = {
-    val parsed1 = parser.parse(original)
-    val pretty = pr.asString(parsed1)
-    val parsed2 = parser.parse(pretty)
-    try {
-      parsed1 shouldEqual parsed2
-    } catch {
-      case e: Exception =>
-        println(original)
-        println(pretty)
-        printComparison(parsed1, Some(parsed2))
-        throw e
-    }
-  }
-
   def roundTripCheck(original: Statement): Assertion = {
     val pretty = pr.asString(original)
     val parsed = try {
