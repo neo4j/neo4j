@@ -1,7 +1,12 @@
-## Neo4j blob
+## Neo4j-blob: Powerful extension for Neo4j 
 
-Neo4j-blob module enhances Neo4j with blobs operation functions.
+Neo4j is the world’s leading Graph Database. It enables the programmer work with a flexible network structure of nodes and relationships rather than static tables.
 
+In Neo4j, the value of string, number, data and so on is well supported.  However, how to store unstructured data, for example, a picture or a recording? Maybe the only way is to store a link for it.
+
+Neo4j-blob module enhances Neo4j with a set of blob operation functions which makes it possible and convenient to store and use the blob in neo4j.
+
+---
 Blobs represent binary streams stored in an EXTERNAL storage (local files system, distributed file system, etc) and can be consumed in streamming manner (offer new bytes on call `next()`). However, byte arrays are always stored INSIDE a Neo4j store, and often be fetched as a whole object (thus large byte arrays are not suitable to be stored in Neo4j).
 
 A blob contains two properties: `length` and `mimeType`:
@@ -83,7 +88,7 @@ This will compile all Java & Scala source code and build all modules completely.
   ...
 ```
 
-The code shown above creates a graph node with a `photo` property, which is of a blob type, and its content comes from a local file.
+The code shown above creates a graph node with a `photo` property, which is of a blob type, and its content comes from the local file `./testdata/test.png`.
 
 To read a blob from Neo4j database:
 ```
@@ -109,6 +114,13 @@ Following schema is ok:
 * base64: path should be a BASE64 encoding string, for example: \<base64://dGhpcyBpcyBhbiBleGFtcGxl\> represents a string with content `this is an example`
 
 Next code illustrates how to use blob in Cypher query:
+```
+//create a node
+CREATE (n:PERSON{name:"Bob",photo:Blob.fromURL($url)});
+
+//query the length of a blob
+MATCH (n:PERSON) where n.name='Bob', return Blob.len(n.photo);
+```
 
 ### blob functions
 
@@ -132,4 +144,4 @@ Serveral functions are defined as Cypher UDFs:
 * Blob.mime2(blob: Blob): String, get minor mime type, e.g. png
 * Blob.is(blob: Blob, mimeType: String): Boolean, determine if the blob is kind of specified mime type
 
-These functions are registered automatically on start, so be free to use them as 
+These functions are registered automatically on start, so be free to use them.
