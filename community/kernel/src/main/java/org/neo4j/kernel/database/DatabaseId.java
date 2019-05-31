@@ -24,6 +24,13 @@ import java.util.Objects;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
+/**
+ * Represents a unique identifier for a database, including a persistent and immutable component. Intended to support renaming of database.
+ *
+ * Cannot be used to represent a database that has not been created yet or has not been resolved from persistent storage yet.
+ *
+ * TODO: a persistent and immutable component. For further details see https://trello.com/c/3ajorJyU
+ */
 public class DatabaseId implements Comparable<DatabaseId>
 {
     private final String name;
