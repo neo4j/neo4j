@@ -192,7 +192,8 @@ class NameValidatorTest extends FunSuite with Matchers {
 
     try {
       // Too long
-      NameValidator.assertValidDatabaseName("ihaveallooootoflettersclearlymorethenishould_ihaveallooootoflettersclearlymorethenishould")
+      NameValidator.assertValidDatabaseName(
+        "ihaveallooootoflettersclearlymorethenishould-ihaveallooootoflettersclearlymorethenishould-ihaveallooootoflettersclearlymorethenishould")
 
       fail("Expected exception \"The provided database name must have a length between 3 and 63 characters.\" but succeeded.")
     } catch {
