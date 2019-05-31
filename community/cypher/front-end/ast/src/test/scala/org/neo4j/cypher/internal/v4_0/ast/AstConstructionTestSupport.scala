@@ -120,6 +120,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def count(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Count.name)(pos))
 
+  def countStar(): CountStar =
+    CountStar()(pos)
+
   def avg(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Avg.name)(pos))
 
