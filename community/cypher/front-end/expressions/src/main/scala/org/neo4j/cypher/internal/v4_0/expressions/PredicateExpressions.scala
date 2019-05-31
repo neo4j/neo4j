@@ -129,12 +129,16 @@ case class StartsWith(lhs: Expression, rhs: Expression)(val position: InputPosit
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
+
+  override def canonicalOperatorSymbol = "STARTS WITH"
 }
 
 case class EndsWith(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
+
+  override def canonicalOperatorSymbol = "ENDS WITH"
 }
 
 case class Contains(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {

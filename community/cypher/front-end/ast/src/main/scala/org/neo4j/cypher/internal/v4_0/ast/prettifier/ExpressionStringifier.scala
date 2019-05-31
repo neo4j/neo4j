@@ -59,7 +59,7 @@ case class ExpressionStringifier(
         l.asCanonicalStringVal
 
       case e: BinaryOperatorExpression =>
-        s"${inner(ast)(e.lhs)} ${operator(e)} ${inner(ast)(e.rhs)}"
+        s"${inner(ast)(e.lhs)} ${e.canonicalOperatorSymbol} ${inner(ast)(e.rhs)}"
 
       case Variable(v) =>
         backtick(v)
@@ -305,12 +305,6 @@ case class ExpressionStringifier(
     case _ =>
       Syntactic
 
-  }
-
-  def operator(e: BinaryOperatorExpression): String = e match {
-    case s: StartsWith => "STARTS WITH"
-    case s: EndsWith   => "ENDS WITH"
-    case o             => e.canonicalOperatorSymbol
   }
 
   def backtick(txt: String): String = {
