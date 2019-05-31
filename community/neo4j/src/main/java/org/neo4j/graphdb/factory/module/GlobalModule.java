@@ -90,6 +90,7 @@ import org.neo4j.time.SystemNanoClock;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
@@ -242,14 +243,19 @@ public class GlobalModule
 
     private void checkLegacyDefaultDatabase()
     {
-        if ( !globalConfig.isConfigured( GraphDatabaseSettings.default_database ) )
+        if ( !globalConfig.isConfigured( default_database ) )
         {
-            String legacyDatabaseName = "graph.db";
+            DatabaseLayout defaultDatabaseLayout = storeLayout.databaseLayout( globalConfig.get( default_database ) );
+            if ( storageEngineFactory.storageExists( fileSystem, defaultDatabaseLayout, pageCache ) )
+            {
+                return;
+            }
+            final String legacyDatabaseName = "graph.db";
             DatabaseLayout legacyDatabaseLayout = storeLayout.databaseLayout( legacyDatabaseName );
             if ( storageEngineFactory.storageExists( fileSystem, legacyDatabaseLayout, pageCache ) )
             {
                 Log internalLog = logService.getInternalLog( getClass() );
-                globalConfig.augment( GraphDatabaseSettings.default_database, legacyDatabaseName );
+                globalConfig.augment( default_database, legacyDatabaseName );
                 internalLog.warn(
                         "Legacy `%s` database was found and default database was set to point to into it. Please consider setting default database explicitly.",
                         legacyDatabaseName );
