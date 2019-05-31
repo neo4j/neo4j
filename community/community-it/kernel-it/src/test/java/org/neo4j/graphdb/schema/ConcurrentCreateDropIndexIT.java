@@ -19,9 +19,8 @@
  */
 package org.neo4j.graphdb.schema;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -36,33 +35,30 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransientFailureException;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Race;
-import org.neo4j.test.rule.CleanupRule;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Iterables.singleOrNull;
 
-public class ConcurrentCreateDropIndexIT
+@ImpermanentDbmsExtension
+class ConcurrentCreateDropIndexIT
 {
-    private static final String KEY = "key";
-
-    @Rule
-    public final DbmsRule db = new ImpermanentDbmsRule();
-    @Rule
-    public final CleanupRule cleanupRule = new CleanupRule();
-
     private final int threads = Runtime.getRuntime().availableProcessors();
+    private static final String KEY = "key";
+    @Inject
+    private GraphDatabaseAPI db;
 
-    @Before
-    public void createTokens()
+    @BeforeEach
+    void createTokens()
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -75,7 +71,7 @@ public class ConcurrentCreateDropIndexIT
     }
 
     @Test
-    public void concurrentCreatingOfIndexesShouldNotInterfere() throws Throwable
+    void concurrentCreatingOfIndexesShouldNotInterfere() throws Throwable
     {
         // WHEN concurrently creating indexes for different labels
         Race race = new Race();
@@ -100,7 +96,7 @@ public class ConcurrentCreateDropIndexIT
     }
 
     @Test
-    public void concurrentDroppingOfIndexesShouldNotInterfere() throws Throwable
+    void concurrentDroppingOfIndexesShouldNotInterfere() throws Throwable
     {
         // GIVEN created indexes
         List<IndexDefinition> indexes = new ArrayList<>();
@@ -130,7 +126,7 @@ public class ConcurrentCreateDropIndexIT
     }
 
     @Test
-    public void concurrentMixedCreatingAndDroppingOfIndexesShouldNotInterfere() throws Throwable
+    void concurrentMixedCreatingAndDroppingOfIndexesShouldNotInterfere() throws Throwable
     {
         // GIVEN created indexes
         List<IndexDefinition> indexesToDrop = new ArrayList<>();
@@ -174,7 +170,7 @@ public class ConcurrentCreateDropIndexIT
     }
 
     @Test
-    public void concurrentCreatingUniquenessConstraint() throws Throwable
+    void concurrentCreatingUniquenessConstraint() throws Throwable
     {
         // given
         Race race = new Race().withMaxDuration( 10, SECONDS );
@@ -206,7 +202,7 @@ public class ConcurrentCreateDropIndexIT
     }
 
     @Test
-    public void concurrentCreatingUniquenessConstraintOnNonUniqueData() throws Throwable
+    void concurrentCreatingUniquenessConstraintOnNonUniqueData() throws Throwable
     {
         // given
         Label label = label( 0 );
@@ -246,26 +242,33 @@ public class ConcurrentCreateDropIndexIT
     }
 
     @Test
-    public void concurrentCreatingAndAwaitingIndexesOnline() throws Exception
+    void concurrentCreatingAndAwaitingIndexesOnline() throws Exception
     {
-        ExecutorService executor = cleanupRule.add( Executors.newSingleThreadExecutor() );
-        Future<?> indexCreate = executor.submit( () ->
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try
         {
-            try ( Transaction tx = db.beginTx() )
+            Future<?> indexCreate = executor.submit( () ->
             {
-                db.schema().indexFor( label( 0 ) ).on( KEY ).create();
-                tx.success();
-            }
-        } );
-        while ( !indexCreate.isDone() )
-        {
-            try ( Transaction tx = db.beginTx() )
+                try ( Transaction tx = db.beginTx() )
+                {
+                    db.schema().indexFor( label( 0 ) ).on( KEY ).create();
+                    tx.success();
+                }
+            } );
+            while ( !indexCreate.isDone() )
             {
-                db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-                tx.success();
+                try ( Transaction tx = db.beginTx() )
+                {
+                    db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+                    tx.success();
+                }
             }
+            indexCreate.get();
         }
-        indexCreate.get();
+        finally
+        {
+            executor.shutdown();
+        }
     }
 
     private Runnable indexCreate( int labelIndex )

@@ -19,8 +19,7 @@
  */
 package org.neo4j.graphdb.schema;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
@@ -28,24 +27,26 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageIndexReference;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.internal.helpers.collection.Iterators.loop;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 
-public class DropBrokenUniquenessConstraintIT
+@DbmsExtension
+class DropBrokenUniquenessConstraintIT
 {
     private final Label label = Label.label( "Label" );
     private final String key = "key";
 
-    @Rule
-    public final DbmsRule db = new EmbeddedDbmsRule();
+    @Inject
+    private GraphDatabaseAPI db;
 
     @Test
-    public void shouldDropUniquenessConstraintWithBackingIndexNotInUse()
+    void shouldDropUniquenessConstraintWithBackingIndexNotInUse()
     {
         // given
         try ( Transaction tx = db.beginTx() )
@@ -75,7 +76,7 @@ public class DropBrokenUniquenessConstraintIT
     }
 
     @Test
-    public void shouldDropUniquenessConstraintWithBackingIndexHavingNoOwner() throws KernelException
+    void shouldDropUniquenessConstraintWithBackingIndexHavingNoOwner() throws KernelException
     {
         // given
         try ( Transaction tx = db.beginTx() )
@@ -105,7 +106,7 @@ public class DropBrokenUniquenessConstraintIT
     }
 
     @Test
-    public void shouldDropUniquenessConstraintWhereConstraintRecordIsMissing()
+    void shouldDropUniquenessConstraintWhereConstraintRecordIsMissing()
     {
         // given
         try ( Transaction tx = db.beginTx() )
@@ -138,7 +139,7 @@ public class DropBrokenUniquenessConstraintIT
     }
 
     @Test
-    public void shouldDropUniquenessConstraintWhereConstraintRecordIsMissingAndIndexHasNoOwner() throws KernelException
+    void shouldDropUniquenessConstraintWhereConstraintRecordIsMissingAndIndexHasNoOwner() throws KernelException
     {
         // given
         try ( Transaction tx = db.beginTx() )

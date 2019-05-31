@@ -19,10 +19,10 @@
  */
 package synchronization;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicReference;
@@ -30,7 +30,6 @@ import java.util.function.Consumer;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -42,35 +41,34 @@ import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-public class ConcurrentChangesOnEntitiesTest
+@ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
+class ConcurrentChangesOnEntitiesTest
 {
-    private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( suppressOutput ).around( testDirectory );
+    @Inject
+    private TestDirectory testDirectory;
 
     private final CyclicBarrier barrier = new CyclicBarrier( 2 );
     private final AtomicReference<Exception> ex = new AtomicReference<>();
     private GraphDatabaseService db;
     private DatabaseManagementService managementService;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @Test
-    public void addConcurrentlySameLabelToANode() throws Throwable
+    void addConcurrentlySameLabelToANode() throws Throwable
     {
 
         final long nodeId = initWithNode( db );
@@ -87,7 +85,7 @@ public class ConcurrentChangesOnEntitiesTest
     }
 
     @Test
-    public void setConcurrentlySamePropertyWithDifferentValuesOnANode() throws Throwable
+    void setConcurrentlySamePropertyWithDifferentValuesOnANode() throws Throwable
     {
         final long nodeId = initWithNode( db );
 
@@ -103,7 +101,7 @@ public class ConcurrentChangesOnEntitiesTest
     }
 
     @Test
-    public void setConcurrentlySamePropertyWithDifferentValuesOnARelationship() throws Throwable
+    void setConcurrentlySamePropertyWithDifferentValuesOnARelationship() throws Throwable
     {
         final long relId = initWithRel( db );
 
@@ -195,16 +193,11 @@ public class ConcurrentChangesOnEntitiesTest
     private void assertDatabaseConsistent()
     {
         LogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
-        try
+        assertDoesNotThrow( () ->
         {
-            ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
-                    testDirectory.databaseLayout(), Config.defaults(), ProgressMonitorFactory.textual( System.err ),
-                    logProvider, false );
-            assertTrue( result.isSuccessful() );
-        }
-        catch ( ConsistencyCheckIncompleteException e )
-        {
-            fail( e.getMessage() );
-        }
+            ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck( testDirectory.databaseLayout(), Config.defaults(),
+                    ProgressMonitorFactory.textual( System.err ), logProvider, false );
+            Assertions.assertTrue( result.isSuccessful() );
+        } );
     }
 }

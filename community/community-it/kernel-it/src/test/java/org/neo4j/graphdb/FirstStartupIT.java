@@ -19,26 +19,29 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 
-public class FirstStartupIT
+@ExtendWith( TestDirectoryExtension.class )
+class FirstStartupIT
 {
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDir;
 
     @Test
-    public void shouldBeEmptyWhenFirstStarted()
+    void shouldBeEmptyWhenFirstStarted()
     {
         // When
         File storeDir = testDir.absolutePath();
@@ -54,7 +57,9 @@ public class FirstStartupIT
             assertEquals( 0, count( db.getAllLabels() ) );
             assertEquals( 0, count( db.getAllPropertyKeys() ) );
         }
-
-        managementService.shutdown();
+        finally
+        {
+            managementService.shutdown();
+        }
     }
 }

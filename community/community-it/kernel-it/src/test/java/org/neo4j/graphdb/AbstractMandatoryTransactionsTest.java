@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DbmsExtension
 public abstract class AbstractMandatoryTransactionsTest<T>
@@ -60,16 +60,7 @@ public abstract class AbstractMandatoryTransactionsTest<T>
     {
         for ( Consumer<T> method : methods )
         {
-            try
-            {
-                method.accept( entity );
-
-                fail( "Transactions are mandatory, also for reads: " + method );
-            }
-            catch ( NotInTransactionException e )
-            {
-                // awesome
-            }
+            assertThrows( NotInTransactionException.class, () -> method.accept( entity ) );
         }
     }
 
@@ -77,19 +68,7 @@ public abstract class AbstractMandatoryTransactionsTest<T>
     {
         for ( final Consumer<T> method : methods )
         {
-            obtainEntityInTerminatedTransaction( entity ->
-            {
-                try
-                {
-                    method.accept( entity );
-
-                    fail( "Transaction was terminated, yet not exception thrown in: " + method );
-                }
-                catch ( TransactionTerminatedException e )
-                {
-                    // awesome
-                }
-            } );
+            obtainEntityInTerminatedTransaction( entity -> assertThrows( TransactionTerminatedException.class, () -> method.accept( entity ) ) );
         }
     }
 }

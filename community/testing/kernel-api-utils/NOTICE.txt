@@ -31,8 +31,6 @@ Apache Software License, Version 2.0
   Byte Buddy (without dependencies)
   Byte Buddy Java agent
   Objenesis
-  org.apiguardian:apiguardian-api
-  org.opentest4j:opentest4j
 
 BSD License
   Hamcrest
@@ -44,15 +42,6 @@ Eclipse Distribution License - v 1.0
 Eclipse Public License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
-
-Eclipse Public License v2.0
-  JUnit Jupiter (Aggregator)
-  JUnit Jupiter API
-  JUnit Jupiter Params
-  JUnit Platform Commons
-  JUnit Platform Engine API
-  JUnit Platform Launcher
-  JUnit Vintage Engine
 
 MIT License
   mockito-core

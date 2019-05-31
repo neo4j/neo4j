@@ -33,7 +33,7 @@ import static org.neo4j.internal.kernel.api.helpers.Nodes.countAll;
 import static org.neo4j.internal.kernel.api.helpers.Nodes.countIncoming;
 import static org.neo4j.internal.kernel.api.helpers.Nodes.countOutgoing;
 
-public class NodesTest
+class NodesTest
 {
 
     @Test

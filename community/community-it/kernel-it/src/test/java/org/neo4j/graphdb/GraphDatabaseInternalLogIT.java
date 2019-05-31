@@ -19,8 +19,8 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,22 +33,25 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-public class GraphDatabaseInternalLogIT
+@ExtendWith( TestDirectoryExtension.class )
+class GraphDatabaseInternalLogIT
 {
     private static final String INTERNAL_LOG_FILE = "debug.log";
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDir;
 
     @Test
-    public void shouldWriteToInternalDiagnosticsLog() throws Exception
+    void shouldWriteToInternalDiagnosticsLog() throws Exception
     {
         // Given
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.storeDir() )
@@ -66,7 +69,7 @@ public class GraphDatabaseInternalLogIT
     }
 
     @Test
-    public void shouldNotWriteDebugToInternalDiagnosticsLogByDefault() throws Exception
+    void shouldNotWriteDebugToInternalDiagnosticsLogByDefault() throws Exception
     {
         // Given
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.storeDir() )
@@ -89,7 +92,7 @@ public class GraphDatabaseInternalLogIT
     }
 
     @Test
-    public void shouldWriteDebugToInternalDiagnosticsLogForEnabledContexts() throws Exception
+    void shouldWriteDebugToInternalDiagnosticsLogForEnabledContexts() throws Exception
     {
         // Given
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.storeDir() )

@@ -19,8 +19,8 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,36 +35,39 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
 
-public class NativeLabelScanStoreStartupIT
+@DbmsExtension
+@ExtendWith( RandomExtension.class )
+class NativeLabelScanStoreStartupIT
 {
     private static final Label LABEL = Label.label( "testLabel" );
-
-    @Rule
-    public final DbmsRule dbRule = new EmbeddedDbmsRule();
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private GraphDatabaseAPI databaseAPI;
+    @Inject
+    private RandomRule random;
 
     private int labelId;
 
     @Test
-    public void scanStoreStartWithoutExistentIndex() throws Throwable
+    void scanStoreStartWithoutExistentIndex() throws Throwable
     {
         LabelScanStore labelScanStore = getLabelScanStore();
         RecoveryCleanupWorkCollector workCollector = getGroupingRecoveryCleanupWorkCollector();
         labelScanStore.shutdown();
         workCollector.shutdown();
 
-        deleteLabelScanStoreFiles( dbRule.databaseLayout() );
+        deleteLabelScanStoreFiles( databaseAPI.databaseLayout() );
 
         workCollector.init();
         labelScanStore.init();
@@ -75,19 +78,19 @@ public class NativeLabelScanStoreStartupIT
     }
 
     @Test
-    public void scanStoreRecreateCorruptedIndexOnStartup() throws Throwable
+    void scanStoreRecreateCorruptedIndexOnStartup() throws Throwable
     {
         LabelScanStore labelScanStore = getLabelScanStore();
         RecoveryCleanupWorkCollector workCollector = getGroupingRecoveryCleanupWorkCollector();
 
         createTestNode();
         long[] labels = readNodesForLabel( labelScanStore );
-        assertEquals( "Label scan store see 1 label for node", 1, labels.length );
+        assertEquals( 1, labels.length, "Label scan store see 1 label for node" );
         labelScanStore.force( IOLimiter.UNLIMITED );
         labelScanStore.shutdown();
         workCollector.shutdown();
 
-        corruptLabelScanStoreFiles( dbRule.databaseLayout() );
+        corruptLabelScanStoreFiles( databaseAPI.databaseLayout() );
 
         workCollector.init();
         labelScanStore.init();
@@ -95,7 +98,7 @@ public class NativeLabelScanStoreStartupIT
         labelScanStore.start();
 
         long[] rebuildLabels = readNodesForLabel( labelScanStore );
-        assertArrayEquals( "Store should rebuild corrupted index", labels, rebuildLabels );
+        assertArrayEquals( labels, rebuildLabels, "Store should rebuild corrupted index" );
     }
 
     private LabelScanStore getLabelScanStore()
@@ -105,12 +108,12 @@ public class NativeLabelScanStoreStartupIT
 
     private RecoveryCleanupWorkCollector getGroupingRecoveryCleanupWorkCollector()
     {
-        return dbRule.getDependencyResolver().resolveDependency( RecoveryCleanupWorkCollector.class );
+        return databaseAPI.getDependencyResolver().resolveDependency( RecoveryCleanupWorkCollector.class );
     }
 
     private <T> T getDependency( Class<T> clazz )
     {
-        return dbRule.getDependencyResolver().resolveDependency( clazz );
+        return databaseAPI.getDependencyResolver().resolveDependency( clazz );
     }
 
     private long[] readNodesForLabel( LabelScanStore labelScanStore )
@@ -121,10 +124,10 @@ public class NativeLabelScanStoreStartupIT
     private Node createTestNode()
     {
         Node node;
-        try ( Transaction transaction = dbRule.beginTx() )
+        try ( Transaction transaction = databaseAPI.beginTx() )
         {
-            node = dbRule.createNode( LABEL);
-             KernelTransaction ktx = dbRule.getDependencyResolver()
+            node = databaseAPI.createNode( LABEL);
+             KernelTransaction ktx = databaseAPI.getDependencyResolver()
                     .resolveDependency( ThreadToStatementContextBridge.class )
                     .getKernelTransactionBoundToThisThread( true );
                 labelId = ktx.tokenRead().nodeLabel( LABEL.name() );
