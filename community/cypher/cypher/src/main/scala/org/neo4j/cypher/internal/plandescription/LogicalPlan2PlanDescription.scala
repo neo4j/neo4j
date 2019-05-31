@@ -222,6 +222,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case ShowDatabases() =>
         PlanDescriptionImpl(id, "ShowDatabases", NoChildren, Seq.empty, variables)
 
+      case ShowDefaultDatabase() =>
+        PlanDescriptionImpl(id, "ShowDefaultDatabase", NoChildren, Seq.empty, variables)
+
       case CreateDatabase(normalizedName) =>
         val dbName = Database(Prettifier.escapeName(normalizedName.name))
         PlanDescriptionImpl(id, "CreateDatabase", NoChildren, Seq(dbName), variables)

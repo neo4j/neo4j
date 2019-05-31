@@ -238,6 +238,15 @@ final case class ShowDatabases()(val position: InputPosition) extends MultiDatab
       SemanticState.recordCurrentScope(this)
 }
 
+final case class ShowDefaultDatabase()(val position: InputPosition) extends MultiDatabaseDDL {
+
+  override def name = "CATALOG SHOW DEFAULT DATABASE"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
 final case class ShowDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseDDL {
 
   override def name = "CATALOG SHOW DATABASE"

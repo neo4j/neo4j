@@ -150,6 +150,10 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
       case _: ShowDatabases =>
         Some(plans.ShowDatabases())
 
+      // SHOW DEFAULT DATABASE
+      case _: ShowDefaultDatabase =>
+        Some(plans.ShowDefaultDatabase())
+
       // SHOW DATABASE foo
       case ShowDatabase(dbName) =>
         Some(plans.ShowDatabase(NormalizedDatabaseName(dbName)))

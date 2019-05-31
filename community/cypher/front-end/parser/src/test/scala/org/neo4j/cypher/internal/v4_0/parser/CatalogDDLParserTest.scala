@@ -46,6 +46,10 @@ class CatalogDDLParserTest
     yields(ast.ShowDatabases())
   }
 
+  test("SHOW DEFAULT DATABASE") {
+    yields(ast.ShowDefaultDatabase())
+  }
+
   test("CREATE DATABASE foo.bar") {
     failsToParse
   }

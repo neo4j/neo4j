@@ -82,6 +82,7 @@ case class ShowPrivileges(scope: ShowPrivilegeScope)(implicit idGen: IdGen) exte
 
 // Database management commands
 case class ShowDatabases()(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
+case class ShowDefaultDatabase()(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
 case class ShowDatabase(normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
 case class CreateDatabase(normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
 case class DropDatabase(source: Option[EnsureValidNonDefaultDatabase], normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan

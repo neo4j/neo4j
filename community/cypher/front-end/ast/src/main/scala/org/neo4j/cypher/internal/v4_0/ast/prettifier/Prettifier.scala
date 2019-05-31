@@ -140,6 +140,9 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case x: ShowDatabases =>
       s"${x.name}"
 
+    case x: ShowDefaultDatabase =>
+      s"${x.name}"
+
     case x @ ShowDatabase(dbName) =>
       s"${x.name} ${Prettifier.escapeName(dbName)}"
 
