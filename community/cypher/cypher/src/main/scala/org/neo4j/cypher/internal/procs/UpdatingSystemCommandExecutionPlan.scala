@@ -34,6 +34,8 @@ import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DEN
 import org.neo4j.kernel.impl.query.{QuerySubscriber, TransactionalContext}
 import org.neo4j.values.virtual.MapValue
 
+import scala.collection.JavaConverters._
+
 /**
   * Execution plan for performing system commands, i.e. starting, stopping or dropping databases.
   */
@@ -52,19 +54,23 @@ case class UpdatingSystemCommandExecutionPlan(name: String, normalExecutionEngin
 
     val tc: TransactionalContext = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
     if (!tc.securityContext().isAdmin) throw new AuthorizationViolationException(PERMISSION_DENIED)
+    var error: Option[Throwable] = None
     try {
-      val execution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, new SystemCommandQuerySubscriber(subscriber, queryHandler.onError)).asInstanceOf[InternalExecutionResult]
+      val execution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, subscriber).asInstanceOf[InternalExecutionResult]
 
       val results = execution.javaIterator
-      if (results.hasNext)
-        results.stream().forEach(queryHandler.onResult(_))
+      if (results.hasNext) {
+        error = results.stream().iterator().asScala.map(queryHandler.onResult(_)).collectFirst{ case Some(e) => e }
+      }
       else
-        queryHandler.onNoResults()
+        error = queryHandler.onNoResults()
     }
     catch {
       case t: Throwable =>
-        queryHandler.onError(t)
+        throw queryHandler.onError(t)
     }
+
+    error.map(throw _)
 
     sourceResult.getOrElse(SchemaWriteRuntimeResult(ctx, subscriber))
   }
@@ -77,37 +83,37 @@ case class UpdatingSystemCommandExecutionPlan(name: String, normalExecutionEngin
 }
 
 class QueryHandler {
-  def onError(t: Throwable): Unit = throw t
+  def onError(t: Throwable): Throwable = throw t
 
-  def onResult(record: util.Map[String, AnyRef]): Unit = Unit
+  def onResult(record: util.Map[String, AnyRef]): Option[Throwable] = None
 
-  def onNoResults(): Unit = Unit
+  def onNoResults(): Option[Throwable] = None
 }
 
 class QueryHandlerBuilder(parent: QueryHandler) extends QueryHandler {
-  override def onError(t: Throwable): Unit = parent.onError(t)
+  override def onError(t: Throwable): Throwable = parent.onError(t)
 
-  override def onResult(record: util.Map[String, AnyRef]): Unit = parent.onResult(record)
+  override def onResult(record: util.Map[String, AnyRef]): Option[Throwable] = parent.onResult(record)
 
-  override def onNoResults(): Unit = parent.onNoResults()
+  override def onNoResults(): Option[Throwable] = parent.onNoResults()
 
-  def handleError(f: Throwable => Unit): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onError(t: Throwable): Unit = f(t)
+  def handleError(f: Throwable => Throwable): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
+    override def onError(t: Throwable): Throwable = f(t)
   }
 
-  def handleNoResult(f: () => Nothing): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onNoResults(): Unit = f()
+  def handleNoResult(f: () => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
+    override def onNoResults(): Option[Throwable] = f()
   }
 
-  def handleResult(handler: util.Map[String, AnyRef] => Unit): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onResult(record: util.Map[String, AnyRef]): Unit = handler(record)
+  def handleResult(handler: util.Map[String, AnyRef] => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
+    override def onResult(record: util.Map[String, AnyRef]): Option[Throwable] = handler(record)
   }
 }
 
 object QueryHandler {
-  def handleError(f: Throwable => Unit): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleError(f)
+  def handleError(f: Throwable => Throwable): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleError(f)
 
-  def handleNoResult(f: () => Nothing): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleNoResult(f)
+  def handleNoResult(f: () => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleNoResult(f)
 
-  def handleResult(handler: util.Map[String, AnyRef] => Unit): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleResult(handler)
+  def handleResult(handler: util.Map[String, AnyRef] => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleResult(handler)
 }
