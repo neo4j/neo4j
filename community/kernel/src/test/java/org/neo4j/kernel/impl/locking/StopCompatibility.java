@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,21 +37,21 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.extension.actors.Actor;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.lock.ResourceTypes.NODE;
 
-@Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
-public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibility
+public abstract class StopCompatibility extends LockCompatibilityTestSupport
 {
     private static final long FIRST_NODE_ID = 42;
     private static final long SECOND_NODE_ID = 4242;
@@ -65,20 +64,20 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
         super( suite );
     }
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         client = locks.newClient();
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         client.close();
     }
 
     @Test
-    public void mustReleaseWriteLockWaitersOnStop()
+    void mustReleaseWriteLockWaitersOnStop()
     {
         // Given
         clientA.acquireShared( TRACER, NODE, 1L );
@@ -100,7 +99,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     }
 
     @Test
-    public void mustNotReleaseLocksAfterPrepareOnStop()
+    void mustNotReleaseLocksAfterPrepareOnStop()
     {
         // Given
         clientA.acquireShared( TRACER, NODE, 1L );
@@ -117,7 +116,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     }
 
     @Test
-    public void mustReleaseUnpreparedLocksOnStop()
+    void mustReleaseUnpreparedLocksOnStop()
     {
         // Given
         clientA.acquireShared( TRACER, NODE, 1L );
@@ -133,7 +132,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     }
 
     @Test
-    public void mustReleaseReadLockWaitersOnStop()
+    void mustReleaseReadLockWaitersOnStop()
     {
         // Given
         clientA.acquireExclusive( TRACER, NODE, 1L );
@@ -152,7 +151,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     }
 
     @Test
-    public void prepareMustAllowAcquiringNewLocksAfterStop()
+    void prepareMustAllowAcquiringNewLocksAfterStop()
     {
         // Given
         clientA.prepare();
@@ -168,50 +167,50 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
         assertEquals( 2, lockCountVisitor.getLockCount() );
     }
 
-    @Test( expected = LockClientStoppedException.class )
-    public void prepareMustThrowWhenClientStopped()
+    @Test
+    void prepareMustThrowWhenClientStopped()
     {
-        stoppedClient().prepare();
-    }
-
-    @Test( expected = LockClientStoppedException.class )
-    public void acquireSharedThrowsWhenClientStopped()
-    {
-        stoppedClient().acquireShared( TRACER, NODE, 1 );
-    }
-
-    @Test( expected = LockClientStoppedException.class )
-    public void acquireExclusiveThrowsWhenClientStopped()
-    {
-        stoppedClient().acquireExclusive( TRACER, NODE, 1 );
-    }
-
-    @Test( expected = LockClientStoppedException.class )
-    public void trySharedLockThrowsWhenClientStopped()
-    {
-        stoppedClient().trySharedLock( NODE, 1 );
-    }
-
-    @Test( expected = LockClientStoppedException.class )
-    public void tryExclusiveLockThrowsWhenClientStopped()
-    {
-        stoppedClient().tryExclusiveLock( NODE, 1 );
-    }
-
-    @Test( expected = LockClientStoppedException.class )
-    public void releaseSharedThrowsWhenClientStopped()
-    {
-        stoppedClient().releaseShared( NODE, 1 );
-    }
-
-    @Test( expected = LockClientStoppedException.class )
-    public void releaseExclusiveThrowsWhenClientStopped()
-    {
-        stoppedClient().releaseExclusive( NODE, 1 );
+        assertThrows( LockClientStoppedException.class, () -> stoppedClient().prepare() );
     }
 
     @Test
-    public void sharedLockCanBeStopped() throws Exception
+    void acquireSharedThrowsWhenClientStopped()
+    {
+        assertThrows( LockClientStoppedException.class, () -> stoppedClient().acquireShared( TRACER, NODE, 1 ) );
+    }
+
+    @Test
+    void acquireExclusiveThrowsWhenClientStopped()
+    {
+        assertThrows( LockClientStoppedException.class, () -> stoppedClient().acquireExclusive( TRACER, NODE, 1 ) );
+    }
+
+    @Test
+    void trySharedLockThrowsWhenClientStopped()
+    {
+        assertThrows( LockClientStoppedException.class, () -> stoppedClient().trySharedLock( NODE, 1 ) );
+    }
+
+    @Test
+    void tryExclusiveLockThrowsWhenClientStopped()
+    {
+        assertThrows( LockClientStoppedException.class, () -> stoppedClient().tryExclusiveLock( NODE, 1 ) );
+    }
+
+    @Test
+    void releaseSharedThrowsWhenClientStopped()
+    {
+        assertThrows( LockClientStoppedException.class, () -> stoppedClient().releaseShared( NODE, 1 ) );
+    }
+
+    @Test
+    void releaseExclusiveThrowsWhenClientStopped()
+    {
+        assertThrows( LockClientStoppedException.class, () -> stoppedClient().releaseExclusive( NODE, 1 ) );
+    }
+
+    @Test
+    void sharedLockCanBeStopped() throws Exception
     {
         acquireExclusiveLockInThisThread();
 
@@ -223,7 +222,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     }
 
     @Test
-    public void exclusiveLockCanBeStopped() throws Exception
+    void exclusiveLockCanBeStopped() throws Exception
     {
         acquireExclusiveLockInThisThread();
 
@@ -235,7 +234,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     }
 
     @Test
-    public void acquireSharedLockAfterSharedLockStoppedOtherThread() throws Exception
+    void acquireSharedLockAfterSharedLockStoppedOtherThread() throws Exception
     {
         AcquiredLock thisThreadsExclusiveLock = acquireExclusiveLockInThisThread();
 
@@ -252,7 +251,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     }
 
     @Test
-    public void acquireExclusiveLockAfterExclusiveLockStoppedOtherThread() throws Exception
+    void acquireExclusiveLockAfterExclusiveLockStoppedOtherThread() throws Exception
     {
         AcquiredLock thisThreadsExclusiveLock = acquireExclusiveLockInThisThread();
 
@@ -269,7 +268,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     }
 
     @Test
-    public void acquireSharedLockAfterExclusiveLockStoppedOtherThread() throws Exception
+    void acquireSharedLockAfterExclusiveLockStoppedOtherThread() throws Exception
     {
         AcquiredLock thisThreadsExclusiveLock = acquireExclusiveLockInThisThread();
 
@@ -286,7 +285,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     }
 
     @Test
-    public void acquireExclusiveLockAfterSharedLockStoppedOtherThread() throws Exception
+    void acquireExclusiveLockAfterSharedLockStoppedOtherThread() throws Exception
     {
         AcquiredLock thisThreadsExclusiveLock = acquireExclusiveLockInThisThread();
 
@@ -303,43 +302,43 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     }
 
     @Test
-    public void acquireSharedLockAfterSharedLockStoppedSameThread() throws Exception
+    void acquireSharedLockAfterSharedLockStoppedSameThread() throws Exception
     {
         acquireLockAfterOtherLockStoppedSameThread( true, true );
     }
 
     @Test
-    public void acquireExclusiveLockAfterExclusiveLockStoppedSameThread() throws Exception
+    void acquireExclusiveLockAfterExclusiveLockStoppedSameThread() throws Exception
     {
         acquireLockAfterOtherLockStoppedSameThread( false, false );
     }
 
     @Test
-    public void acquireSharedLockAfterExclusiveLockStoppedSameThread() throws Exception
+    void acquireSharedLockAfterExclusiveLockStoppedSameThread() throws Exception
     {
         acquireLockAfterOtherLockStoppedSameThread( true, false );
     }
 
     @Test
-    public void acquireExclusiveLockAfterSharedLockStoppedSameThread() throws Exception
+    void acquireExclusiveLockAfterSharedLockStoppedSameThread() throws Exception
     {
         acquireLockAfterOtherLockStoppedSameThread( false, true );
     }
 
     @Test
-    public void closeClientAfterSharedLockStopped() throws Exception
+    void closeClientAfterSharedLockStopped() throws Exception
     {
         closeClientAfterLockStopped( true );
     }
 
     @Test
-    public void closeClientAfterExclusiveLockStopped() throws Exception
+    void closeClientAfterExclusiveLockStopped() throws Exception
     {
         closeClientAfterLockStopped( false );
     }
 
     @Test
-    public void acquireExclusiveLockWhileHoldingSharedLockCanBeStopped() throws Exception
+    void acquireExclusiveLockWhileHoldingSharedLockCanBeStopped() throws Exception
     {
         AcquiredLock thisThreadsSharedLock = acquireSharedLockInThisThread();
 
@@ -441,7 +440,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     {
         final LockAcquisition lockAcquisition = new LockAcquisition();
 
-        Future<Void> future = threadA.execute( state ->
+        Future<Void> future = threadA.submit( () ->
         {
             Locks.Client client = newLockClient( lockAcquisition );
             if ( shared )
@@ -454,7 +453,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
             }
             return null;
         } );
-        lockAcquisition.setFuture( future, threadA.get() );
+        lockAcquisition.setFuture( future, threadA );
 
         return lockAcquisition;
     }
@@ -464,7 +463,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     {
         final LockAcquisition lockAcquisition = new LockAcquisition();
 
-        Future<Void> future = threadA.execute( state ->
+        Future<Void> future = threadA.submit( () ->
         {
             try ( Locks.Client client = newLockClient( lockAcquisition ) )
             {
@@ -503,7 +502,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
             }
             return null;
         } );
-        lockAcquisition.setFuture( future, threadA.get() );
+        lockAcquisition.setFuture( future, threadA );
 
         return lockAcquisition;
     }
@@ -513,7 +512,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     {
         final LockAcquisition lockAcquisition = new LockAcquisition();
 
-        Future<Void> future = threadA.execute( state ->
+        Future<Void> future = threadA.submit( () ->
         {
             try ( Locks.Client client = newLockClient( lockAcquisition ) )
             {
@@ -526,7 +525,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
             }
             return null;
         } );
-        lockAcquisition.setFuture( future, threadA.get() );
+        lockAcquisition.setFuture( future, threadA );
 
         return lockAcquisition;
     }
@@ -536,7 +535,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     {
         final LockAcquisition lockAcquisition = new LockAcquisition();
 
-        Future<Void> future = threadA.execute( state ->
+        Future<Void> future = threadA.submit( () ->
         {
             try ( Locks.Client client = newLockClient( lockAcquisition ) )
             {
@@ -562,7 +561,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
             }
             return null;
         } );
-        lockAcquisition.setFuture( future, threadA.get() );
+        lockAcquisition.setFuture( future, threadA );
 
         return lockAcquisition;
     }
@@ -584,7 +583,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
 
         Collections.sort( expectedLockedIds );
         Collections.sort( seenLockedIds );
-        assertEquals( "unexpected locked resource ids", expectedLockedIds, seenLockedIds );
+        assertEquals( expectedLockedIds, seenLockedIds, "unexpected locked resource ids" );
     }
 
     private void assertNoLocksHeld()
@@ -595,11 +594,12 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
 
     private void assertThreadIsWaitingForLock( LockAcquisition lockAcquisition ) throws Exception
     {
-        for ( int i = 0; i < 30 && !suite.isAwaitingLockAcquisition( lockAcquisition.executor.waitUntilWaiting() ); i++ )
+        // todo do we still need this loop now?
+        for ( int i = 0; i < 30 && !suite.isAwaitingLockAcquisition( lockAcquisition.executor ); i++ )
         {
             LockSupport.parkNanos( MILLISECONDS.toNanos( 100 ) );
         }
-        assertFalse( "locking thread completed", lockAcquisition.completed() );
+        assertFalse( lockAcquisition.completed(), "locking thread completed" );
     }
 
     private void assertLockAcquisitionSucceeded( LockAcquisition lockAcquisition ) throws Exception
@@ -616,8 +616,8 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
             {
             }
         }
-        assertTrue( "lock was not acquired in time", completed );
-        assertTrue( "locking thread seem to be still in progress", lockAcquisition.completed() );
+        assertTrue( completed, "lock was not acquired in time" );
+        assertTrue( lockAcquisition.completed(), "locking thread seem to be still in progress" );
     }
 
     private void assertLockAcquisitionFailed( LockAcquisition lockAcquisition ) throws Exception
@@ -638,9 +638,9 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
             {
             }
         }
-        assertNotNull( "execution should fail", executionException );
+        assertNotNull( executionException, "execution should fail" );
         assertThat( executionException.getCause(), instanceOf( LockClientStoppedException.class ) );
-        assertTrue( "locking thread seem to be still in progress", lockAcquisition.completed() );
+        assertTrue( lockAcquisition.completed(), "locking thread seem to be still in progress" );
     }
 
     private static void await( CountDownLatch latch ) throws InterruptedException
@@ -655,7 +655,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     {
         volatile Future<?> future;
         volatile Locks.Client client;
-        volatile OtherThreadExecutor<Void> executor;
+        volatile Actor executor;
 
         Future<?> getFuture()
         {
@@ -663,7 +663,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
             return future;
         }
 
-        void setFuture( Future<?> future, OtherThreadExecutor<Void> executor )
+        void setFuture( Future<?> future, Actor executor )
         {
             this.future = future;
             this.executor = executor;

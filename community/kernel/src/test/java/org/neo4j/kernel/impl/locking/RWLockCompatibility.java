@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.junit.Ignore;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.Random;
@@ -32,8 +32,8 @@ import org.neo4j.lock.LockTracer;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.lock.ResourceTypes.NODE;
 
 /**
@@ -41,8 +41,7 @@ import static org.neo4j.lock.ResourceTypes.NODE;
  * It has been ported to test {@link org.neo4j.kernel.impl.locking.Locks}
  * to ensure implementors of that API don't fall in any of the traps this test suite sets for them.
  */
-@Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
-public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibility
+public abstract class RWLockCompatibility extends LockCompatibilityTestSupport
 {
     public RWLockCompatibility( LockingCompatibilityTestSuite suite )
     {
@@ -50,7 +49,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
     }
 
     @Test
-    public void testSingleThread()
+    void testSingleThread()
     {
         try
         {
@@ -130,7 +129,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
     }
 
     @Test
-    public void testMultipleThreads() throws Exception
+    void testMultipleThreads() throws Exception
     {
         LockWorker t1 = new LockWorker( "T1", locks );
         LockWorker t2 = new LockWorker( "T2", locks );
@@ -145,7 +144,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
             Future<Void> t4Wait = t4.getWriteLock( r1, false );
             t3.releaseReadLock( r1 );
             t2.releaseReadLock( r1 );
-            assertTrue( !t4Wait.isDone() );
+            assertFalse( t4Wait.isDone() );
             t1.releaseReadLock( r1 );
             // now we can wait for write lock since it can be acquired
             // get write lock
@@ -158,7 +157,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
             t4.releaseReadLock( r1 );
             t4.getWriteLock( r1, true );
             t4.releaseWriteLock( r1 );
-            assertTrue( !t1Wait.isDone() );
+            assertFalse( t1Wait.isDone() );
             t4.releaseWriteLock( r1 );
             // get read lock
             t1.awaitFuture( t1Wait );
@@ -311,7 +310,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
     }
 
     @Test
-    public void testStressMultipleThreads() throws Exception
+    void testStressMultipleThreads() throws Exception
     {
         long r1 = 1L;
         StressThread[] stressThreads = new StressThread[100];
@@ -360,9 +359,8 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         {
             Thread.sleep( 100 );
         }
-        catch ( InterruptedException e )
+        catch ( InterruptedException ignore )
         {
-            Thread.interrupted();
         }
     }
 

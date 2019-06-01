@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,31 +28,20 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.lock.LockTracer;
 
-import static org.neo4j.kernel.impl.locking.Locks.Client;
 import static org.neo4j.lock.ResourceTypes.NODE;
 
-@Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
-public class DeadlockCompatibility extends LockingCompatibilityTestSuite.Compatibility
+public abstract class DeadlockCompatibility extends LockCompatibilityTestSupport
 {
     public DeadlockCompatibility( LockingCompatibilityTestSuite suite )
     {
         super( suite );
     }
 
-    @After
-    public void shutdown()
-    {
-        threadA.interrupt();
-        threadB.interrupt();
-        threadC.interrupt();
-    }
-
     @Test
-    public void shouldDetectTwoClientExclusiveDeadlock()
+    void shouldDetectTwoClientExclusiveDeadlock()
     {
         assertDetectsDeadlock(
                 acquireExclusive( clientA, LockTracer.NONE, NODE, 1L ),
@@ -65,7 +52,7 @@ public class DeadlockCompatibility extends LockingCompatibilityTestSuite.Compati
     }
 
     @Test
-    public void shouldDetectThreeClientExclusiveDeadlock()
+    void shouldDetectThreeClientExclusiveDeadlock()
     {
         assertDetectsDeadlock(
                 acquireExclusive( clientA, LockTracer.NONE, NODE, 1L ),
@@ -78,10 +65,9 @@ public class DeadlockCompatibility extends LockingCompatibilityTestSuite.Compati
     }
 
     @Test
-    public void shouldDetectMixedExclusiveAndSharedDeadlock()
+    void shouldDetectMixedExclusiveAndSharedDeadlock()
     {
         assertDetectsDeadlock(
-
                 acquireShared( clientA, LockTracer.NONE, NODE, 1L ),
                 acquireExclusive( clientB, LockTracer.NONE, NODE, 2L ),
 
@@ -91,40 +77,54 @@ public class DeadlockCompatibility extends LockingCompatibilityTestSuite.Compati
 
     private void assertDetectsDeadlock( LockCommand... commands )
     {
-        List<Pair<Client, Future<Object>>> calls = new ArrayList<>();
+        List<Future<Void>> calls = new ArrayList<>();
         for ( LockCommand command : commands )
         {
-            calls.add( Pair.of( command.client(), command.call() ) );
+            Future<Void> call = command.call();
+            calls.add( call );
+            if ( tryDetectDeadlock( call ) )
+            {
+                return;
+            }
         }
 
         long timeout = System.currentTimeMillis() + (1000 * 10);
         while ( System.currentTimeMillis() < timeout )
         {
-            for ( Pair<Client,Future<Object>> call : calls )
+            for ( Future<Void> call : calls )
             {
-                try
+                if ( tryDetectDeadlock( call ) )
                 {
-                    call.other().get( 1, TimeUnit.MILLISECONDS );
-                }
-                catch ( ExecutionException e )
-                {
-                    if ( e.getCause() instanceof DeadlockDetectedException )
-                    {
-                        return;
-                    }
-                    else
-                    {
-                        throw new RuntimeException( e );
-                    }
-                }
-                catch ( InterruptedException | TimeoutException e )
-                {
-                    // Fine, we're just looking for deadlocks, clients may still be waiting for things
+                    return;
                 }
             }
         }
 
         throw new AssertionError( "Failed to detect deadlock. Expected lock manager to detect deadlock, " +
                 "but none of the clients reported any deadlocks." );
+    }
+
+    private boolean tryDetectDeadlock( Future<Void> call )
+    {
+        try
+        {
+            call.get( 1, TimeUnit.MILLISECONDS );
+        }
+        catch ( ExecutionException e )
+        {
+            if ( e.getCause() instanceof DeadlockDetectedException )
+            {
+                return true;
+            }
+            else
+            {
+                throw new RuntimeException( e );
+            }
+        }
+        catch ( InterruptedException | TimeoutException e )
+        {
+            // Fine, we're just looking for deadlocks, clients may still be waiting for things
+        }
+        return false;
     }
 }

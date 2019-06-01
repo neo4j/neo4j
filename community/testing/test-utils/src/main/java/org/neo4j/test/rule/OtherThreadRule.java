@@ -86,9 +86,9 @@ public class OtherThreadRule<STATE> implements TestRule
         return isThreadState( Thread.State.WAITING, Thread.State.TIMED_WAITING );
     }
 
-    public static Matcher<OtherThreadRule> isThreadState( final Thread.State... eitherOfStates )
+    private static Matcher<OtherThreadRule> isThreadState( final Thread.State... eitherOfStates )
     {
-        return new TypeSafeMatcher<OtherThreadRule>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( OtherThreadRule rule )
