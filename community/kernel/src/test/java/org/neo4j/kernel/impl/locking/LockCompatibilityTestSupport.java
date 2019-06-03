@@ -36,7 +36,7 @@ import org.neo4j.lock.ResourceType;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.extension.actors.Actor;
-import org.neo4j.test.extension.actors.Actors;
+import org.neo4j.test.extension.actors.ActorsExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.time.Clocks;
 
@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@Actors
+@ActorsExtension
 @ExtendWith( {TestDirectoryExtension.class} )
 public abstract class LockCompatibilityTestSupport
 {

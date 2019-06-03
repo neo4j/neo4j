@@ -30,7 +30,7 @@ import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.actors.Actor;
-import org.neo4j.test.extension.actors.Actors;
+import org.neo4j.test.extension.actors.ActorsExtension;
 
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@Actors
+@ActorsExtension
 class GBPTreeLockTest
 {
     // Lock can be in following states and this test verify transitions back and forth between states

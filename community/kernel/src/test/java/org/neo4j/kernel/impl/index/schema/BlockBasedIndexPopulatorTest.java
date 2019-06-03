@@ -49,7 +49,7 @@ import org.neo4j.test.Barrier;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.actors.Actor;
-import org.neo4j.test.extension.actors.Actors;
+import org.neo4j.test.extension.actors.ActorsExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -63,7 +63,7 @@ import static org.neo4j.kernel.impl.index.schema.BlockStorage.Monitor.NO_MONITOR
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.values.storable.Values.stringValue;
 
-@Actors
+@ActorsExtension
 @EphemeralPageCacheExtension
 class BlockBasedIndexPopulatorTest
 {

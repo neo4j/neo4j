@@ -29,6 +29,6 @@ import java.lang.annotation.Target;
 @Target( {ElementType.TYPE} )
 @Retention( RetentionPolicy.RUNTIME )
 @ExtendWith( {ActorsSupportExtension.class} )
-public @interface Actors
+public @interface ActorsExtension
 {
 }

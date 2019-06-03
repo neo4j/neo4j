@@ -52,7 +52,7 @@ import org.neo4j.test.Barrier;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.actors.Actor;
-import org.neo4j.test.extension.actors.Actors;
+import org.neo4j.test.extension.actors.ActorsExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.time.Clocks;
@@ -74,7 +74,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-@Actors
+@ActorsExtension
 @PageCacheExtension
 @ExtendWith( {LifeExtension.class} )
 class CountsTrackerTest

@@ -28,7 +28,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.actors.Actor;
-import org.neo4j.test.extension.actors.Actors;
+import org.neo4j.test.extension.actors.ActorsExtension;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
-@Actors
+@ActorsExtension
 class PageCacheFlusherTest
 {
     @Inject

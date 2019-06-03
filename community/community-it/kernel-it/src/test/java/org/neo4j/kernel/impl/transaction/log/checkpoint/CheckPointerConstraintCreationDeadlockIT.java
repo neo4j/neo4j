@@ -47,7 +47,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.actors.Actor;
-import org.neo4j.test.extension.actors.Actors;
+import org.neo4j.test.extension.actors.ActorsExtension;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -82,7 +82,7 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
  * </li>
  * </ol>
  */
-@Actors
+@ActorsExtension
 class CheckPointerConstraintCreationDeadlockIT
 {
     private static final Label LABEL = TestLabels.LABEL_ONE;

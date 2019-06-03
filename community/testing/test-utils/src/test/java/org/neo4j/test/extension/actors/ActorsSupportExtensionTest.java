@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 class ActorsSupportExtensionTest
 {
     @Nested
-    @Actors
+    @ActorsExtension
     class InjectOneField
     {
         @Inject
@@ -168,7 +168,7 @@ class ActorsSupportExtensionTest
     }
 
     @Nested
-    @Actors
+    @ActorsExtension
     class InjectTwoFields
     {
         @Inject
@@ -212,21 +212,21 @@ class ActorsSupportExtensionTest
     }
 
     @Nested
-    @Actors
+    @ActorsExtension
     class NestingTestOuter
     {
         @Inject
         Actor outerActor;
 
         @Nested
-        @Actors
+        @ActorsExtension
         class Middle
         {
             @Inject
             Actor middleActor;
 
             @Nested
-            @Actors
+            @ActorsExtension
             class Inner
             {
                 @Inject
