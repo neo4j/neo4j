@@ -161,7 +161,7 @@ trait ExecutionEngineHelper {
    graph.execute(q, javaConverter.asDeepJavaMap(params.toMap).asInstanceOf[util.Map[String, AnyRef]])
 
   def executeScalar[T](q: String, params: (String, Any)*): T = {
-    ExecutionEngineHelper.scalar[T](asScalaResult(executeOfficial(q, params:_*)).toList)
+    ExecutionEngineHelper.scalar[T](execute(q, params: _*).toList)
   }
 
   def asScalaResult(result: Result): Iterator[Map[String, Any]] = result.asScala.map(converter.asDeepScalaMap)
