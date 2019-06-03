@@ -33,13 +33,12 @@ import org.neo4j.logging.Log
 import org.neo4j.server.security.auth.{InMemoryUserRepository, SecureHasher}
 import org.neo4j.server.security.systemgraph.{BasicSystemGraphOperations, ContextSwitchingSystemGraphQueryExecutor, UserSecurityGraphInitializer}
 
-class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite with GraphDatabaseTestSupport {
+class CommunityMultiDatabaseDDLAcceptanceTest extends ExecutionEngineFunSuite with GraphDatabaseTestSupport {
   private val onlineStatus = DatabaseStatus.Online.stringValue()
-  private val offlineStatus = DatabaseStatus.Offline.stringValue()
   private val defaultConfig = Config.defaults()
   private val databaseIdRepository = new TestDatabaseIdRepository()
 
-  test("should list default database") {
+  test("should show database neo4j") {
     // GIVEN
     setup( defaultConfig )
 
@@ -50,7 +49,7 @@ class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite
     result.toList should be(List(Map("name" -> "neo4j", "status" -> onlineStatus, "default" -> true)))
   }
 
-  test("should list custom default database") {
+  test("should show custom default database") {
     // GIVEN
     val config = Config.defaults()
     config.augment(default_database, "foo")
@@ -69,7 +68,17 @@ class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite
     result2.toList should be(empty)
   }
 
-  test("should list default and system databases") {
+  test("should fail when showing a database when not on system database") {
+    setup(defaultConfig)
+    selectDatabase(DEFAULT_DATABASE_NAME)
+    the [DatabaseManagementException] thrownBy {
+      // WHEN
+      execute("SHOW DATABASE neo4j")
+      // THEN
+    } should have message "Trying to run `CATALOG SHOW DATABASE` against non-system database."
+  }
+
+  test("should show default and system databases") {
     // GIVEN
     setup( defaultConfig )
 
@@ -82,7 +91,7 @@ class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite
       Map("name" -> "system", "status" -> onlineStatus, "default" -> false)))
   }
 
-  test("should list custom default and system databases") {
+  test("should show custom default and system databases") {
     // GIVEN
     val config = Config.defaults()
     config.augment(default_database, "foo")
@@ -137,7 +146,7 @@ class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite
     } should have message "Trying to run `CATALOG SHOW DEFAULT DATABASE` against non-system database."
   }
 
-  test("should fail on create database from community") {
+  test("should fail on creating database from community") {
     setup( defaultConfig )
     assertFailure("CREATE DATABASE foo", "Unsupported management command: CREATE DATABASE foo")
   }
