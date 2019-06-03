@@ -238,7 +238,6 @@ case class Prettifier(expr: ExpressionStringifier) {
   private def asString(m: Merge): String = {
     val p = expr.patterns.apply(m.pattern)
     val a = m.actions.map(asString).map(indentedLine).mkString
-    val w = m.where.map(asString).map(indentedLine).getOrElse("")
     s"MERGE $p$a"
   }
 
