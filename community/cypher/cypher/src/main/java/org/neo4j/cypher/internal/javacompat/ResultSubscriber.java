@@ -76,6 +76,7 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
     public void init( QueryExecution execution )
     {
         this.execution = execution;
+        assertNoErrors();
         // By policy we materialize the result directly unless it's a read only query.
         QueryExecutionType.QueryType queryType = execution.executionType().queryType();
         if ( queryType != READ_ONLY )
