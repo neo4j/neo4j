@@ -68,11 +68,16 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
   */
 class SystemCommandQuerySubscriber(inner: QuerySubscriber, queryHandler: QueryHandler) extends QuerySubscriber {
   @volatile private var empty = true
+  @volatile private var failed = false
 
   override def onResult(numberOfFields: Int): Unit = inner.onResult(numberOfFields)
+
   override def onResultCompleted(statistics: QueryStatistics): Unit = {
     if (empty) {
-      queryHandler.onNoResults().foreach(inner.onError)
+      queryHandler.onNoResults().foreach(error => {
+        inner.onError(error)
+        failed = true
+      })
     }
     inner.onResultCompleted(statistics)
   }
@@ -81,15 +86,23 @@ class SystemCommandQuerySubscriber(inner: QuerySubscriber, queryHandler: QueryHa
     empty = false
     inner.onRecord()
   }
+
   override def onRecordCompleted(): Unit = inner.onRecordCompleted()
 
   override def onField(offset: Int, value: AnyValue): Unit = {
-    queryHandler.onResult(offset, value).foreach(inner.onError)
+    queryHandler.onResult(offset, value).foreach(error => {
+      inner.onError(error)
+      failed = true
+    })
     inner.onField(offset, value)
   }
+
   override def onError(throwable: Throwable): Unit = {
-      inner.onError(queryHandler.onError(throwable))
+    inner.onError(queryHandler.onError(throwable))
+    failed = true
   }
+
+  def hasFailed: Boolean = failed
 
   override def equals(obj: Any): Boolean = inner.equals(obj)
 }

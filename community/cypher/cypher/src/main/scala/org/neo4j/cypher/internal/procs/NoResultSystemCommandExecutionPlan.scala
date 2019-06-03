@@ -64,3 +64,15 @@ case class NoRuntimeResult(subscriber: QuerySubscriber) extends EmptyQuerySubscr
 
   override def queryProfile(): QueryProfile = QueryProfile.NONE
 }
+
+case object FailedRuntimeResult extends RuntimeResult {
+  override def fieldNames(): Array[String] = Array.empty
+  override def queryStatistics(): QueryStatistics = QueryStatistics()
+  override def consumptionState: RuntimeResult.ConsumptionState = ConsumptionState.EXHAUSTED
+  override def close(): Unit = {}
+  override def queryProfile(): QueryProfile = QueryProfile.NONE
+  override def request(numberOfRecords: Long): Unit = {}
+  override def cancel(): Unit = {}
+  override def await(): Boolean = false
+}
+

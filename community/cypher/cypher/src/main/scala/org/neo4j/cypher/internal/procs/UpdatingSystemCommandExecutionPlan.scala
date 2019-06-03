@@ -47,14 +47,19 @@ case class UpdatingSystemCommandExecutionPlan(name: String, normalExecutionEngin
                    subscriber: QuerySubscriber): RuntimeResult = {
 
     val sourceResult = source.map(_.run(ctx,doProfile,params,prePopulateResults,ignore,subscriber))
+    sourceResult match {
+      case Some(FailedRuntimeResult) => FailedRuntimeResult
+      case _ =>
+        val tc: TransactionalContext = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
+        if (!tc.securityContext().isAdmin) throw new AuthorizationViolationException(PERMISSION_DENIED)
+        val systemSubscriber = new SystemCommandQuerySubscriber(subscriber, queryHandler)
+        val execution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, systemSubscriber)
+        execution.request(Long.MaxValue)
+        execution.await()
 
-    val tc: TransactionalContext = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
-    if (!tc.securityContext().isAdmin) throw new AuthorizationViolationException(PERMISSION_DENIED)
-    val execution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, new SystemCommandQuerySubscriber(subscriber, queryHandler))
-    execution.request(Long.MaxValue)
-    execution.await()
-
-    sourceResult.getOrElse(SchemaWriteRuntimeResult(ctx, subscriber))
+        if (systemSubscriber.hasFailed) FailedRuntimeResult
+        else sourceResult.getOrElse(SchemaWriteRuntimeResult(ctx, subscriber))
+    }
   }
 
   override def runtimeName: RuntimeName = SystemCommandRuntimeName
