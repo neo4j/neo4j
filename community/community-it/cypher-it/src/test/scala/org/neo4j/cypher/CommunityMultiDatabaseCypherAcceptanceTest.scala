@@ -97,6 +97,44 @@ class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite
       Map("name" -> "system", "status" -> onlineStatus, "default" -> false)))
      }
 
+  test("should show default database") {
+    // GIVEN
+    setup( defaultConfig )
+
+    // WHEN
+    val result = execute("SHOW DEFAULT DATABASE")
+
+    // THEN
+    result.toList should be(List(Map("name" -> "neo4j", "status" -> onlineStatus)))
+  }
+
+  test("should show custom default database using show default database command") {
+    // GIVEN
+    val config = Config.defaults()
+    config.augment(default_database, "foo")
+    setup(config)
+
+    // WHEN
+    val result = execute("SHOW DEFAULT DATABASE")
+
+    // THEN
+    result.toList should be(List(Map("name" -> "foo", "status" -> onlineStatus)))
+
+    // WHEN
+    val result2 = execute("SHOW DATABASE neo4j")
+
+    // THEN
+    result2.toList should be(empty)
+  }
+
+  test("should fail when showing default database when not on system database") {
+    the [DatabaseManagementException] thrownBy {
+      // WHEN
+      execute("SHOW DEFAULT DATABASE")
+      // THEN
+    } should have message "Trying to run `CATALOG SHOW DEFAULT DATABASE` against non-system database."
+  }
+
   test("should fail on create database from community") {
     setup( defaultConfig )
     assertFailure("CREATE DATABASE foo", "Unsupported management command: CREATE DATABASE foo")
