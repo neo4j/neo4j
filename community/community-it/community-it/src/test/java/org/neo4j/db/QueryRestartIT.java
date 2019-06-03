@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -34,6 +35,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.snapshot.TestTransactionVersionContextSupplier;
 import org.neo4j.snapshot.TestVersionContext;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -57,15 +61,22 @@ class QueryRestartIT
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void setUp()
+    void setUp() throws IOException
     {
         storeDir = testDirectory.directory();
         testContextSupplier = new TestTransactionVersionContextSupplier();
         database = startSnapshotQueryDb();
         createData();
+        // Checkpoint to make the counts store flush its changes map so that it will need to read on next query
+        checkpoint();
 
         testCursorContext = TestVersionContext.testCursorContext( managementService, DEFAULT_DATABASE_NAME );
         testContextSupplier.setCursorContext( testCursorContext );
+    }
+
+    private void checkpoint() throws IOException
+    {
+        ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "Test" ) );
     }
 
     @AfterEach
