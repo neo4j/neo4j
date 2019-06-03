@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
 import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NameValidator}
+import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NameValidator, NormalizedDatabaseName}
 import org.neo4j.cypher.internal.planner.spi.ProcedurePlannerName
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
@@ -152,31 +152,31 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
 
       // SHOW DATABASE foo
       case ShowDatabase(dbName) =>
-        Some(plans.ShowDatabase(new DatabaseId(dbName)))
+        Some(plans.ShowDatabase(NormalizedDatabaseName(dbName)))
 
       // CREATE DATABASE foo
       case CreateDatabase(dbName) =>
-        val dbId = new DatabaseId(dbName)
-        NameValidator.assertValidDatabaseName(dbId)
-        Some(plans.CreateDatabase(dbId))
+        val normalizedName = NormalizedDatabaseName(dbName)
+        NameValidator.assertValidDatabaseName(normalizedName)
+        Some(plans.CreateDatabase(normalizedName))
 
       // DROP DATABASE foo
       case DropDatabase(dbName) =>
-        val dbId = new DatabaseId(dbName)
+        val normalizedName = NormalizedDatabaseName(dbName)
         Some(plans.DropDatabase(
-          Some(plans.EnsureValidNonDefaultDatabase(dbId, "drop")),
-          dbId))
+          Some(plans.EnsureValidNonDefaultDatabase(normalizedName, "drop")),
+          normalizedName))
 
       // START DATABASE foo
       case StartDatabase(dbName) =>
-        Some(plans.StartDatabase(new DatabaseId(dbName)))
+        Some(plans.StartDatabase(NormalizedDatabaseName(dbName)))
 
       // STOP DATABASE foo
       case StopDatabase(dbName) =>
-        val dbId = new DatabaseId(dbName)
+        val normalizedName = NormalizedDatabaseName(dbName)
         Some(plans.StopDatabase(
-          Some(plans.EnsureValidNonDefaultDatabase(dbId, "stop")),
-          dbId))
+          Some(plans.EnsureValidNonDefaultDatabase(normalizedName, "stop")),
+          normalizedName))
 
       case _ => None
     }

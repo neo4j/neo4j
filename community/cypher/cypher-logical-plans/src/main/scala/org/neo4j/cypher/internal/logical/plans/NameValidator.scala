@@ -57,10 +57,10 @@ object NameValidator {
            |Use simple ascii characters, numbers and underscores.""".stripMargin)
   }
 
-  def assertValidDatabaseName(id: DatabaseId): Unit = {
-    if (id == null) throw new InvalidArgumentException("The provided database name is empty.")
+  def assertValidDatabaseName(normalizedName: NormalizedDatabaseName): Unit = {
+    if (normalizedName == null) throw new InvalidArgumentException("The provided database name is empty.")
 
-    val name = id.name()
+    val name = normalizedName.name
     if (name.isEmpty)
       throw new InvalidArgumentException("The provided database name is empty.")
     if (name.length < 3 || name.length > 63)

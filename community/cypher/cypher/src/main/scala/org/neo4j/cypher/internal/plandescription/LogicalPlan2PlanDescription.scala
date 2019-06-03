@@ -215,31 +215,31 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case ShowPrivileges(scope) =>
         PlanDescriptionImpl(id, "ShowPrivileges", NoChildren, Seq(Scope(Prettifier.extractScope(scope))), variables)
 
-      case ShowDatabase(dbId) =>
-        val dbName = Database(Prettifier.escapeName(dbId.name()))
+      case ShowDatabase(normalizedName) =>
+        val dbName = Database(Prettifier.escapeName(normalizedName.name))
         PlanDescriptionImpl(id, "ShowDatabase", NoChildren, Seq(dbName), variables)
 
       case ShowDatabases() =>
         PlanDescriptionImpl(id, "ShowDatabases", NoChildren, Seq.empty, variables)
 
-      case CreateDatabase(dbId) =>
-        val dbName = Database(Prettifier.escapeName(dbId.name()))
+      case CreateDatabase(normalizedName) =>
+        val dbName = Database(Prettifier.escapeName(normalizedName.name))
         PlanDescriptionImpl(id, "CreateDatabase", NoChildren, Seq(dbName), variables)
 
-      case DropDatabase(_, dbId) =>
-        val dbName = Database(Prettifier.escapeName(dbId.name()))
+      case DropDatabase(_, normalizedName) =>
+        val dbName = Database(Prettifier.escapeName(normalizedName.name))
         PlanDescriptionImpl(id, "DropDatabase", NoChildren, Seq(dbName), variables)
 
-      case StartDatabase(dbId) =>
-        val dbName = Database(Prettifier.escapeName(dbId.name()))
+      case StartDatabase(normalizedName) =>
+        val dbName = Database(Prettifier.escapeName(normalizedName.name))
         PlanDescriptionImpl(id, "StartDatabase", NoChildren, Seq(dbName), variables)
 
-      case StopDatabase(_, dbId) =>
-        val dbName = Database(Prettifier.escapeName(dbId.name()))
+      case StopDatabase(_, normalizedName) =>
+        val dbName = Database(Prettifier.escapeName(normalizedName.name))
         PlanDescriptionImpl(id, "StopDatabase", NoChildren, Seq(dbName), variables)
 
-      case EnsureValidNonDefaultDatabase(dbId, _) =>
-        val dbName = Database(Prettifier.escapeName(dbId.name()))
+      case EnsureValidNonDefaultDatabase(normalizedName, _) =>
+        val dbName = Database(Prettifier.escapeName(normalizedName.name))
         PlanDescriptionImpl(id, "EnsureValidNonDefaultDatabase", NoChildren, Seq(dbName), variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
