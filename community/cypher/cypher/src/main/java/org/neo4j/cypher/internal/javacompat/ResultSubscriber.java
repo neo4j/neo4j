@@ -30,6 +30,8 @@ import java.util.Map;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.CypherExecutionException;
+import org.neo4j.cypher.exceptionHandler;
+import org.neo4j.cypher.exceptionHandler$;
 import org.neo4j.cypher.internal.result.string.ResultStringBuilder;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
@@ -46,6 +48,7 @@ import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.utils.ValuesException;
 
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.WRITE;
@@ -355,9 +358,17 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
     {
         String[] fieldNames = execution.fieldNames();
         HashMap<String,Object> result = new HashMap<>();
-        for ( int i = 0; i < fieldNames.length; i++ )
+
+        try
         {
-            result.put( fieldNames[i], currentRecord[i].map( valueMapper ) );
+            for ( int i = 0; i < fieldNames.length; i++ )
+            {
+                result.put( fieldNames[i], currentRecord[i].map( valueMapper ) );
+            }
+        }
+        catch ( Throwable t )
+        {
+            throw converted( t );
         }
         return result;
     }
@@ -377,6 +388,18 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
         if ( e instanceof CypherException )
         {
             cypherException = (CypherException) e;
+        }
+        else if ( e instanceof org.neo4j.cypher.internal.v4_0.util.CypherException )
+        {
+            cypherException = ((org.neo4j.cypher.internal.v4_0.util.CypherException) e).mapToPublic( exceptionHandler$.MODULE$ );
+        }
+        else if ( e instanceof ValuesException )
+        {
+            cypherException = exceptionHandler.mapToCypher( (ValuesException) e );
+        }
+        else if ( e instanceof ArithmeticException )
+        {
+            cypherException = exceptionHandler.arithmeticException( e.getMessage(), e );
         }
         else if ( e instanceof RuntimeException )
         {
