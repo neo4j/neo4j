@@ -336,6 +336,7 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
         {
             materializeResult = new ArrayList<>(  );
             fetchResults( Long.MAX_VALUE );
+            close();
         }
     }
 
