@@ -33,9 +33,9 @@ import org.neo4j.lock.LockTracer;
 
 import static org.neo4j.lock.ResourceTypes.NODE;
 
-public abstract class DeadlockCompatibility extends LockCompatibilityTestSupport
+abstract class DeadlockCompatibility extends LockCompatibilityTestSupport
 {
-    public DeadlockCompatibility( LockingCompatibilityTestSuite suite )
+    DeadlockCompatibility( LockingCompatibilityTestSuite suite )
     {
         super( suite );
     }

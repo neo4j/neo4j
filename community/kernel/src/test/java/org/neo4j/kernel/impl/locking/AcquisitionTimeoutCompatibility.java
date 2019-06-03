@@ -37,17 +37,16 @@ import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public abstract class AcquisitionTimeoutCompatibility extends LockCompatibilityTestSupport
+abstract class AcquisitionTimeoutCompatibility extends LockCompatibilityTestSupport
 {
     private FakeClock clock;
-    private Config customConfig;
     private Locks lockManager;
     private Locks.Client client;
     private Locks.Client client2;
 
-    public AcquisitionTimeoutCompatibility( LockingCompatibilityTestSuite suite )
+    AcquisitionTimeoutCompatibility( LockingCompatibilityTestSuite suite )
     {
         super( suite );
     }
@@ -55,7 +54,7 @@ public abstract class AcquisitionTimeoutCompatibility extends LockCompatibilityT
     @BeforeEach
     void setUp()
     {
-        customConfig = Config.defaults( GraphDatabaseSettings.lock_acquisition_timeout, "100ms" );
+        Config customConfig = Config.defaults( GraphDatabaseSettings.lock_acquisition_timeout, "100ms" );
         clock = Clocks.fakeClock(100000, TimeUnit.MINUTES);
         lockManager = suite.createLockManager( customConfig, clock );
         client = lockManager.newClient();
@@ -139,16 +138,9 @@ public abstract class AcquisitionTimeoutCompatibility extends LockCompatibilityT
         verifyAcquisitionFailure( exclusiveLockAcquisition );
     }
 
-    private void verifyAcquisitionFailure( Future<Boolean> lockAcquisition ) throws InterruptedException
+    private void verifyAcquisitionFailure( Future<Boolean> lockAcquisition )
     {
-        try
-        {
-            lockAcquisition.get();
-            fail( "Lock acquisition should fail." );
-        }
-        catch ( ExecutionException e )
-        {
-            assertThat( Exceptions.rootCause( e ), instanceOf( LockAcquisitionTimeoutException.class ) );
-        }
+        ExecutionException exception = assertThrows( ExecutionException.class, lockAcquisition::get );
+        assertThat( Exceptions.rootCause( exception ), instanceOf( LockAcquisitionTimeoutException.class ) );
     }
 }

@@ -34,6 +34,7 @@ import org.neo4j.test.extension.actors.Actors;
 
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -251,19 +252,6 @@ class GBPTreeLockTest
         }
     }
 
-    private void assertThrow( Runnable unlock )
-    {
-        try
-        {
-            unlock.run();
-            fail( "Should have failed" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // good
-        }
-    }
-
     private void assertBlock( Runnable runLock, Runnable runUnlock ) throws Exception
     {
         Future<Object> future = executor.submit( () ->
@@ -278,15 +266,15 @@ class GBPTreeLockTest
 
     private void assertUU()
     {
-        assertThrow( lock::writerUnlock );
-        assertThrow( lock::cleanerUnlock );
-        assertThrow( lock::writerAndCleanerUnlock );
+        assertThrows( IllegalStateException.class, lock::writerUnlock );
+        assertThrows( IllegalStateException.class, lock::cleanerUnlock );
+        assertThrows( IllegalStateException.class, lock::writerAndCleanerUnlock );
     }
 
     private void assertUL() throws Exception
     {
-        assertThrow( lock::writerUnlock );
-        assertThrow( lock::writerAndCleanerUnlock );
+        assertThrows( IllegalStateException.class, lock::writerUnlock );
+        assertThrows( IllegalStateException.class, lock::writerAndCleanerUnlock );
         copy = lock.copy();
         assertBlock( copy::cleanerLock, copy::cleanerUnlock );
         copy = lock.copy();
@@ -295,8 +283,8 @@ class GBPTreeLockTest
 
     private void assertLU() throws Exception
     {
-        assertThrow( lock::cleanerUnlock );
-        assertThrow( lock::writerAndCleanerUnlock );
+        assertThrows( IllegalStateException.class, lock::cleanerUnlock );
+        assertThrows( IllegalStateException.class, lock::writerAndCleanerUnlock );
         copy = lock.copy();
         assertBlock( copy::writerLock, copy::writerUnlock );
     }

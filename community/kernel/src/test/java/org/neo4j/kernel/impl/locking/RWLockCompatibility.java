@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -33,7 +32,7 @@ import org.neo4j.lock.LockTracer;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.lock.ResourceTypes.NODE;
 
 /**
@@ -41,9 +40,9 @@ import static org.neo4j.lock.ResourceTypes.NODE;
  * It has been ported to test {@link org.neo4j.kernel.impl.locking.Locks}
  * to ensure implementors of that API don't fall in any of the traps this test suite sets for them.
  */
-public abstract class RWLockCompatibility extends LockCompatibilityTestSupport
+abstract class RWLockCompatibility extends LockCompatibilityTestSupport
 {
-    public RWLockCompatibility( LockingCompatibilityTestSuite suite )
+    RWLockCompatibility( LockingCompatibilityTestSuite suite )
     {
         super( suite );
     }
@@ -51,47 +50,15 @@ public abstract class RWLockCompatibility extends LockCompatibilityTestSupport
     @Test
     void testSingleThread()
     {
-        try
-        {
-            clientA.releaseExclusive( NODE, 1L );
-            fail( "Invalid release should throw exception" );
-        }
-        catch ( Exception e )
-        {
-            // good
-        }
-        try
-        {
-            clientA.releaseShared( NODE, 1L );
-            fail( "Invalid release should throw exception" );
-        }
-        catch ( Exception e )
-        {
-            // good
-        }
+        assertThrows( Exception.class, () -> clientA.releaseExclusive( NODE, 1L ), "Invalid release should throw exception" );
+        assertThrows( Exception.class, () -> clientA.releaseShared( NODE, 1L ), "Invalid release should throw exception" );
 
         clientA.acquireShared( LockTracer.NONE, NODE, 1L );
-        try
-        {
-            clientA.releaseExclusive( NODE, 1L );
-            fail( "Invalid release should throw exception" );
-        }
-        catch ( Exception e )
-        {
-            // good
-        }
-
+        assertThrows( Exception.class, () -> clientA.releaseExclusive( NODE, 1L ), "Invalid release should throw exception" );
         clientA.releaseShared( NODE, 1L );
+
         clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
-        try
-        {
-            clientA.releaseShared( NODE, 1L );
-            fail( "Invalid release should throw exception" );
-        }
-        catch ( Exception e )
-        {
-            // good
-        }
+        assertThrows( Exception.class, () -> clientA.releaseShared( NODE, 1L ), "Invalid release should throw exception" );
         clientA.releaseExclusive( NODE, 1L );
 
         clientA.acquireShared( LockTracer.NONE, NODE, 1L );

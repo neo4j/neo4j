@@ -28,12 +28,11 @@ import org.neo4j.lock.ResourceTypes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.lock.ResourceTypes.NODE;
 
-public abstract class CloseCompatibility extends LockCompatibilityTestSupport
+abstract class CloseCompatibility extends LockCompatibilityTestSupport
 {
-    public CloseCompatibility( LockingCompatibilityTestSuite suite )
+    CloseCompatibility( LockingCompatibilityTestSuite suite )
     {
         super( suite );
     }
@@ -51,15 +50,7 @@ public abstract class CloseCompatibility extends LockCompatibilityTestSupport
         locks.close();
 
         // THEN
-        try
-        {
-            locks.newClient();
-            fail( "Should fail" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // Good
-        }
+        assertThrows( IllegalStateException.class, locks::newClient );
     }
 
     @Test

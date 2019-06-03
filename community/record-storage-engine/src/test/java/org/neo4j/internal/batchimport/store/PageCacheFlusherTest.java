@@ -31,6 +31,7 @@ import org.neo4j.test.extension.actors.Actor;
 import org.neo4j.test.extension.actors.Actors;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -79,15 +80,8 @@ class PageCacheFlusherTest
         flusher.run();
 
         // WHEN
-        try
-        {
-            flusher.halt();
-            fail();
-        }
-        catch ( RuntimeException e )
-        {
-            // THEN
-            assertSame( failure, e );
-        }
+        RuntimeException e = assertThrows( RuntimeException.class, flusher::halt );
+        // THEN
+        assertSame( failure, e );
     }
 }

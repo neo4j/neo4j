@@ -41,7 +41,9 @@ import org.neo4j.test.extension.actors.Actors;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.time.Clocks;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @Actors
@@ -104,7 +106,7 @@ public abstract class LockCompatibilityTestSupport
         private final Actor thread;
         private final Locks.Client client;
 
-        protected LockCommand( Actor thread, Locks.Client client )
+        LockCommand( Actor thread, Locks.Client client )
         {
             this.thread = thread;
             this.client = client;
@@ -115,7 +117,7 @@ public abstract class LockCompatibilityTestSupport
             return thread.submit( this );
         }
 
-        public Future<Void> callAndAssertWaiting()
+        Future<Void> callAndAssertWaiting()
         {
             Future<Void> otherThreadLock = call();
             try
@@ -191,40 +193,14 @@ public abstract class LockCompatibilityTestSupport
         };
     }
 
-    protected void assertNotWaiting( Locks.Client client, Future<Void> lock )
+    void assertNotWaiting( Locks.Client client, Future<Void> lock )
     {
-        try
-        {
-            lock.get( 5, TimeUnit.SECONDS );
-        }
-        catch ( ExecutionException | TimeoutException | InterruptedException e )
-        {
-            throw new RuntimeException( "Waiting for lock timed out!" );
-        }
+        assertDoesNotThrow( () -> lock.get( 5, TimeUnit.SECONDS ), "Waiting for lock timed out!" );
     }
 
-    protected void assertWaiting( Locks.Client client, Future<Void> lock )
+    void assertWaiting( Locks.Client client, Future<Void> lock )
     {
-        try
-        {
-            lock.get(10, TimeUnit.MILLISECONDS);
-            fail( "Should be waiting." );
-        }
-        catch ( TimeoutException e )
-        {
-            // Ok
-        }
-        catch ( ExecutionException | InterruptedException e )
-        {
-            throw new RuntimeException( e );
-        }
-        try
-        {
-            clientToThreadMap.get( client ).untilWaiting();
-        }
-        catch ( InterruptedException e )
-        {
-            throw new IllegalStateException( e );
-        }
+        assertThrows( TimeoutException.class, () -> lock.get( 10, TimeUnit.MILLISECONDS ) );
+        assertDoesNotThrow( () -> clientToThreadMap.get( client ).untilWaiting() );
     }
 }

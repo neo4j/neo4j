@@ -29,9 +29,9 @@ import org.neo4j.lock.ResourceType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.lock.ResourceTypes.NODE;
 
-public abstract class LockReentrancyCompatibility extends LockCompatibilityTestSupport
+abstract class LockReentrancyCompatibility extends LockCompatibilityTestSupport
 {
-    public LockReentrancyCompatibility( LockingCompatibilityTestSuite suite )
+    LockReentrancyCompatibility( LockingCompatibilityTestSuite suite )
     {
         super( suite );
     }

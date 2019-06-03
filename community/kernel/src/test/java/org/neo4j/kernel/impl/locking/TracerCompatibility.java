@@ -32,9 +32,9 @@ import org.neo4j.lock.ResourceType;
 import static java.lang.String.format;
 import static org.neo4j.lock.ResourceTypes.NODE;
 
-public abstract class TracerCompatibility extends LockCompatibilityTestSupport
+abstract class TracerCompatibility extends LockCompatibilityTestSupport
 {
-    public TracerCompatibility( LockingCompatibilityTestSuite suite )
+    TracerCompatibility( LockingCompatibilityTestSuite suite )
     {
         super( suite );
     }

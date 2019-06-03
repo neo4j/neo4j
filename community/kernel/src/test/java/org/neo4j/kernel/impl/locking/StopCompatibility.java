@@ -51,7 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.lock.ResourceTypes.NODE;
 
-public abstract class StopCompatibility extends LockCompatibilityTestSupport
+abstract class StopCompatibility extends LockCompatibilityTestSupport
 {
     private static final long FIRST_NODE_ID = 42;
     private static final long SECOND_NODE_ID = 4242;
@@ -59,7 +59,7 @@ public abstract class StopCompatibility extends LockCompatibilityTestSupport
 
     private Locks.Client client;
 
-    public StopCompatibility( LockingCompatibilityTestSuite suite )
+    StopCompatibility( LockingCompatibilityTestSuite suite )
     {
         super( suite );
     }
@@ -620,22 +620,16 @@ public abstract class StopCompatibility extends LockCompatibilityTestSupport
         assertTrue( lockAcquisition.completed(), "locking thread seem to be still in progress" );
     }
 
-    private void assertLockAcquisitionFailed( LockAcquisition lockAcquisition ) throws Exception
+    private void assertLockAcquisitionFailed( LockAcquisition lockAcquisition )
     {
         ExecutionException executionException = null;
         for ( int i = 0; i < 30; i++ )
         {
-            try
+            Exception e = assertThrows( Exception.class, lockAcquisition::result );
+            if ( e instanceof ExecutionException )
             {
-                lockAcquisition.result();
-                fail( "Transaction termination expected" );
-            }
-            catch ( ExecutionException e )
-            {
-                executionException = e;
-            }
-            catch ( TimeoutException ignore )
-            {
+                executionException = (ExecutionException) e;
+                break;
             }
         }
         assertNotNull( executionException, "execution should fail" );

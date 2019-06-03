@@ -51,8 +51,9 @@ import org.neo4j.test.extension.actors.Actor;
 import org.neo4j.test.extension.actors.Actors;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
@@ -151,15 +152,7 @@ class CheckPointerConstraintCreationDeadlockIT
             }
 
             createNode( db, "A" );
-            try
-            {
-                createNode( db, "A" );
-                fail( "Should have failed" );
-            }
-            catch ( ConstraintViolationException e )
-            {
-                // THEN good
-            }
+            assertThrows( ConstraintViolationException.class, () -> createNode( db, "A" ) );
         }
         finally
         {
@@ -190,16 +183,9 @@ class CheckPointerConstraintCreationDeadlockIT
         {
             transactions.forEach( tx ->
             {
-                try
-                {
-                    // It will matter if the transactions are supplied all in the same batch or one by one
-                    // since the CountsTracker#apply lock is held and released per transaction
-                    commitProcess.commit( new TransactionToApply( tx ), NULL, EXTERNAL );
-                }
-                catch ( TransactionFailureException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                // It will matter if the transactions are supplied all in the same batch or one by one
+                // since the CountsTracker#apply lock is held and released per transaction
+                assertDoesNotThrow( () -> commitProcess.commit( new TransactionToApply( tx ), NULL, EXTERNAL ) );
             } );
             return null;
         } );

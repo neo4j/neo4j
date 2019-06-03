@@ -67,6 +67,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
@@ -394,16 +395,8 @@ class CountsTrackerTest
             Thread.sleep( 10 );
         }
         clock.forward( Config.defaults().get( GraphDatabaseSettings.counts_store_rotation_timeout ).toMillis() * 2, MILLISECONDS );
-        try
-        {
-            rotation.get();
-            fail( "Should've failed rotation due to timeout" );
-        }
-        catch ( ExecutionException e )
-        {
-            // good
-            assertTrue( e.getCause() instanceof RotationTimeoutException );
-        }
+        ExecutionException e = assertThrows( ExecutionException.class, rotation::get, "Should've failed rotation due to timeout" );
+        assertTrue( e.getCause() instanceof RotationTimeoutException, "Should've failed rotation due to timeout" );
 
         // THEN
         Register.DoubleLongRegister register = Registers.newDoubleLongRegister();

@@ -34,9 +34,9 @@ import static org.neo4j.lock.ResourceTypes.NODE;
  * Tests simple acquiring and releasing of single locks.
  * For testing "stacking" locks on the same client, see {@link LockReentrancyCompatibility}.
  **/
-public abstract class AcquireAndReleaseLocksCompatibility extends LockCompatibilityTestSupport
+abstract class AcquireAndReleaseLocksCompatibility extends LockCompatibilityTestSupport
 {
-    public AcquireAndReleaseLocksCompatibility( LockingCompatibilityTestSuite suite )
+    AcquireAndReleaseLocksCompatibility( LockingCompatibilityTestSuite suite )
     {
         super( suite );
     }

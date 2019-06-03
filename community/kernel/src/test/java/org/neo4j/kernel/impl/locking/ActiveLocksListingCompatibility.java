@@ -35,9 +35,9 @@ import static org.neo4j.lock.ResourceTypes.LABEL;
 import static org.neo4j.lock.ResourceTypes.NODE;
 import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
 
-public abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupport
+abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupport
 {
-    public ActiveLocksListingCompatibility( LockingCompatibilityTestSuite suite )
+    ActiveLocksListingCompatibility( LockingCompatibilityTestSuite suite )
     {
         super( suite );
     }
