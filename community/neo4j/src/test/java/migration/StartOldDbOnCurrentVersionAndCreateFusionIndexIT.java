@@ -81,7 +81,6 @@ import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.test.Unzip.unzip;
 
 @ExtendWith( TestDirectoryExtension.class )
-@Disabled
 class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
 {
     private static final String ZIP_FILE_3_5 = "3_5-db.zip";
@@ -142,10 +141,10 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             {
                 db.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
                 Node node = db.createNode( Label.label( "Fts1" ), Label.label( "Fts2" ), Label.label( "Fts3" ), Label.label( "Fts4" ) );
-                node.setProperty( "prop1", "a" );
-                node.setProperty( "prop2", "a" );
-                node.createRelationshipTo( node, RelationshipType.withName( "FtsRel1" ) ).setProperty( "prop1", "a" );
-                node.createRelationshipTo( node, RelationshipType.withName( "FtsRel2" ) ).setProperty( "prop2", "a" );
+                node.setProperty( "prop1", "abc" );
+                node.setProperty( "prop2", "abc" );
+                node.createRelationshipTo( node, RelationshipType.withName( "FtsRel1" ) ).setProperty( "prop1", "abc" );
+                node.createRelationshipTo( node, RelationshipType.withName( "FtsRel2" ) ).setProperty( "prop2", "abc" );
                 tx.success();
             }
             try ( Transaction tx = db.beginTx() )
@@ -276,19 +275,19 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
                 assertFalse( fts4props.hasNext() );
                 // TODO verify the index configuration of 'fts3' -- it is eventually consistent.
 
-                try ( var result = db.execute( "CALL db.index.fulltext.queryNodes( 'fts1', 'a' )" ).stream() )
+                try ( var result = db.execute( "CALL db.index.fulltext.queryNodes( 'fts1', 'abc' )" ).stream() )
                 {
                     assertEquals( result.count(), 1L );
                 }
-                try ( var result = db.execute( "CALL db.index.fulltext.queryNodes( 'fts2', 'a' )" ).stream() )
+                try ( var result = db.execute( "CALL db.index.fulltext.queryNodes( 'fts2', 'abc' )" ).stream() )
                 {
                     assertEquals( result.count(), 1L );
                 }
-                try ( var result = db.execute( "CALL db.index.fulltext.queryNodes( 'fts3', 'a' )" ).stream() )
+                try ( var result = db.execute( "CALL db.index.fulltext.queryNodes( 'fts3', 'abc' )" ).stream() )
                 {
                     assertEquals( result.count(), 1L );
                 }
-                try ( var result = db.execute( "CALL db.index.fulltext.queryRelationships( 'fts4', 'a' )" ).stream() )
+                try ( var result = db.execute( "CALL db.index.fulltext.queryRelationships( 'fts4', 'abc' )" ).stream() )
                 {
                     assertEquals( result.count(), 2L );
                 }
