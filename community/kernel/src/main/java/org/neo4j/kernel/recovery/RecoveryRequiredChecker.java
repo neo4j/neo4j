@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.recovery;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.Set;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -36,6 +34,8 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONITOR;
+import static org.neo4j.kernel.recovery.RecoveryStoreFileHelper.allIdFilesExist;
+import static org.neo4j.kernel.recovery.RecoveryStoreFileHelper.allStoreFilesExist;
 
 /**
  * Utility that can determine if a given store will need recovery.
@@ -67,11 +67,11 @@ class RecoveryRequiredChecker
         {
             return false;
         }
-        if ( !allIdFilesExist( databaseLayout ) )
+        if ( !allIdFilesExist( databaseLayout, fs ) )
         {
             return true;
         }
-        if ( !allStoreFilesExist( databaseLayout ) )
+        if ( !allStoreFilesExist( databaseLayout, fs ) )
         {
             return true;
         }
@@ -85,26 +85,5 @@ class RecoveryRequiredChecker
                 .withConfig( config )
                 .withLogEntryReader( reader ).build();
         return new LogTailScanner( logFiles, reader, new Monitors() );
-    }
-
-    private boolean allIdFilesExist( DatabaseLayout databaseLayout )
-    {
-        return databaseLayout.idFiles().stream().allMatch( fs::fileExists );
-    }
-
-    private boolean allStoreFilesExist( DatabaseLayout databaseLayout )
-    {
-        Set<File> storeFiles = databaseLayout.storeFiles();
-        // count store files will be checked separately since presence of both files is not required
-        storeFiles.remove( databaseLayout.countStoreA() );
-        storeFiles.remove( databaseLayout.countStoreB() );
-        // index statistics is not mandatory store to have
-        storeFiles.remove( databaseLayout.indexStatisticsStore() );
-        return storeFiles.stream().allMatch( fs::fileExists ) && oneOfCountStoreFilesExist( databaseLayout );
-    }
-
-    private boolean oneOfCountStoreFilesExist( DatabaseLayout databaseLayout )
-    {
-        return fs.fileExists( databaseLayout.countStoreA() ) || fs.fileExists( databaseLayout.countStoreB() );
     }
 }

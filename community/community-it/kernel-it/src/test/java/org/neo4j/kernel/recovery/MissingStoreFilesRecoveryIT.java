@@ -24,6 +24,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.IOException;
+
+import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -39,6 +42,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class MissingStoreFilesRecoveryIT
@@ -73,14 +77,38 @@ class MissingStoreFilesRecoveryIT
     }
 
     @Test
-    void databaseStartFailingOnMissingFilesAndMissedTxLogs()
+    void databaseStartFailingOnMissingFilesAndMissedTxLogs() throws IOException
     {
         fileSystem.deleteFile( databaseLayout.nodeStore() );
+        fileSystem.deleteRecursively( databaseLayout.getTransactionLogsDirectory() );
 
         managementService = serviceBuilder.build();
         DatabaseManager<?> databaseManager = getDatabaseManager();
         var databaseContext = databaseManager.getDatabaseContext( databaseId ).get();
         assertTrue( databaseContext.isFailed() );
+    }
+
+    @Test
+    void databaseStartForcedOnMissingFilesAndMissedTxLogs() throws IOException
+    {
+        fileSystem.deleteFile( databaseLayout.nodeStore() );
+        fileSystem.deleteRecursively( databaseLayout.getTransactionLogsDirectory() );
+
+        managementService = serviceBuilder.setConfig( fail_on_missing_files, Settings.FALSE ).build();
+        DatabaseManager<?> databaseManager = getDatabaseManager();
+        var databaseContext = databaseManager.getDatabaseContext( databaseId ).get();
+        assertFalse( databaseContext.isFailed() );
+    }
+
+    @Test
+    void databaseFilesRestoredAfterRecovery()
+    {
+        fileSystem.deleteFile( databaseLayout.relationshipGroupStore() );
+
+        DatabaseManager<?> databaseManager = getDatabaseManager();
+        var databaseContext = databaseManager.getDatabaseContext( databaseId ).get();
+        assertFalse( databaseContext.isFailed() );
+        fileSystem.fileExists( databaseLayout.relationshipGroupStore() );
     }
 
     @Test

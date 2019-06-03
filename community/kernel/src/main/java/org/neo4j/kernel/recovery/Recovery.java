@@ -70,6 +70,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
@@ -105,6 +106,7 @@ import static java.util.stream.Collectors.toList;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
+import static org.neo4j.kernel.recovery.RecoveryStoreFileHelper.allStoreFilesExist;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.storageengine.api.StorageEngineFactory.selectStorageEngine;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
@@ -265,6 +267,7 @@ public final class Recovery
         {
             return;
         }
+        checkAllFilesPresence( fs, databaseLayout, config, recoveryLog );
         LifeSupport recoveryLife = new LifeSupport();
         Monitors monitors = new Monitors( globalMonitors );
         DatabasePageCache databasePageCache = new DatabasePageCache( pageCache, EmptyVersionContextSupplier.EMPTY );
@@ -367,20 +370,26 @@ public final class Recovery
         }
     }
 
-    private static void checkForMissingLogFiles( Config config, LogTailScanner logTailScanner, Log recoveryLog )
+    private static void checkAllFilesPresence( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, Config config, Log recoveryLog )
     {
-        if ( logTailScanner.getTailInformation().logsMissing() )
+        if ( allStoreFilesExist( databaseLayout, fileSystem ) )
         {
-            if ( config.get( GraphDatabaseSettings.fail_on_missing_files ) )
-            {
-                throw new RuntimeException(
-                        "Transaction logs are missing and recovery is not possible. To force the database to start anyway, you can specify '" +
-                                GraphDatabaseSettings.fail_on_missing_files.name() + "=false'. This will create new transaction log and " +
-                                "will update database metadata accordingly. Doing this means your database " +
-                                "integrity might be compromised, please consider restoring from a consistent backup instead." );
-            }
-            recoveryLog.warn( "No transaction logs were detected, but recovery was forced by user." );
+            return;
         }
+        if ( isFirstTransactionLogFileExist( databaseLayout, fileSystem ) )
+        {
+            return;
+        }
+        if ( config.get( GraphDatabaseSettings.fail_on_missing_files ) )
+        {
+            throw new RuntimeException(
+                    "Transaction logs are missing and recovery is not possible. To force the database to start anyway, you can specify '" +
+                            GraphDatabaseSettings.fail_on_missing_files.name() + "=false'. This will create new transaction log and " +
+                            "will update database metadata accordingly. Doing this means your database " +
+                            "integrity might be compromised, please consider restoring from a consistent backup instead." );
+        }
+        recoveryLog.warn(
+                "Recovery detected that some store files are missing and full transaction logs are not present, but recovery was forced by user." );
     }
 
     private static TransactionLogsRecovery transactionLogRecovery( FileSystemAbstraction fileSystemAbstraction, TransactionIdStore transactionIdStore,
@@ -442,6 +451,12 @@ public final class Recovery
                         "integrity might be compromised, please consider restoring from a consistent backup instead.", t );
     }
 
+    private static boolean isFirstTransactionLogFileExist( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem )
+    {
+        TransactionLogFilesHelper logFilesHelper = new TransactionLogFilesHelper( fileSystem, databaseLayout.getTransactionLogsDirectory() );
+        return fileSystem.fileExists( logFilesHelper.getLogFileForVersion( 0 ) );
+    }
+
     // We need to create monitors that do not allow listener registration here since at this point another version of extensions already stared by owning
     // database life and if we will allow registration of listeners here we will end-up having same event captured by multiple listeners resulting in
     // for example duplicated logging records in user facing logs
@@ -475,6 +490,22 @@ public final class Recovery
         public void init()
         {
             checkForMissingLogFiles( config, logTailScanner, recoveryLog );
+        }
+
+        private static void checkForMissingLogFiles( Config config, LogTailScanner logTailScanner, Log recoveryLog )
+        {
+            if ( logTailScanner.getTailInformation().logsMissing() )
+            {
+                if ( config.get( GraphDatabaseSettings.fail_on_missing_files ) )
+                {
+                    throw new RuntimeException(
+                            "Transaction logs are missing and recovery is not possible. To force the database to start anyway, you can specify '" +
+                                    GraphDatabaseSettings.fail_on_missing_files.name() + "=false'. This will create new transaction log and " +
+                                    "will update database metadata accordingly. Doing this means your database " +
+                                    "integrity might be compromised, please consider restoring from a consistent backup instead." );
+                }
+                recoveryLog.warn( "No transaction logs were detected, but recovery was forced by user." );
+            }
         }
     }
 }
