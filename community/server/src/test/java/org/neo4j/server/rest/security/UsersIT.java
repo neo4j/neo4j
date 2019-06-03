@@ -27,8 +27,8 @@ import org.junit.Test;
 import java.io.IOException;
 import javax.ws.rs.core.HttpHeaders;
 
+import org.neo4j.annotations.documented.Documented;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.RESTRequestGenerator;

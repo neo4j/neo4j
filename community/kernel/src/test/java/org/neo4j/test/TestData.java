@@ -32,7 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.annotations.documented.Documented;
 
 public class TestData<T> implements TestRule
 {

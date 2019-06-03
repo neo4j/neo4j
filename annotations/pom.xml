@@ -54,6 +54,8 @@
     </licenses>
 
     <properties>
+        <license-text.header>headers/GPL-3-header.txt</license-text.header>
+        <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
         <moduleName>org.neo4j.annotations</moduleName>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>

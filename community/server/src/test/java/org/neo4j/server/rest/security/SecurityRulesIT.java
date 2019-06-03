@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest.security;
 
+import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,10 +27,9 @@ import org.junit.Test;
 import java.net.URI;
 import javax.ws.rs.core.MediaType;
 
-import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.annotations.documented.Documented;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
-import org.dummy.web.service.DummyThirdPartyWebService;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RESTRequestGenerator;
