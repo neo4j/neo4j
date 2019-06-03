@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.{Notification, Result}
-import org.neo4j.kernel.impl.query.{QueryExecution, RecordingQuerySubscriber}
+import org.neo4j.kernel.impl.query.{QueryExecution, QuerySubscription, RecordingQuerySubscriber}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -85,44 +85,63 @@ object RewindableExecutionResult {
     } finally in.close()
   }
 
-  def apply(runtimeResult: RuntimeResult, queryContext: QueryContext, subscriber: RecordingQuerySubscriber): RewindableExecutionResult = {
+  def apply(runtimeResult: RuntimeResult, queryContext: QueryContext,
+            subscriber: RecordingQuerySubscriber): RewindableExecutionResult = {
     try {
-      val columns = runtimeResult.fieldNames()
-      runtimeResult.request(Long.MaxValue)
-      runtimeResult.await()
+      apply(runtimeResult,
+            queryContext,
+            subscriber,
+            runtimeResult.fieldNames(),
+            NormalMode,
+            InternalPlanDescription.error("Can't get plan description from RuntimeResult"),
+            Seq.empty
+            )
+    } finally runtimeResult.close()
+  }
+
+  def apply(result: QueryExecution, queryContext: QueryContext,
+            subscriber: RecordingQuerySubscriber): RewindableExecutionResult = {
+    try {
+      val (executionMode, notifications) = result match {
+        case r: InternalExecutionResult => (r.executionMode, r.notifications.toSeq)
+        case _ => (NormalMode, Seq.empty)
+      }
+
+      apply(result,
+            queryContext,
+            subscriber,
+            result.fieldNames(),
+            executionMode,
+            result.executionPlanDescription().asInstanceOf[InternalPlanDescription],
+            notifications
+            )
+    } finally result.cancel()
+  }
+
+  def apply(subscription: QuerySubscription,
+            queryContext: QueryContext,
+            subscriber: RecordingQuerySubscriber,
+            columns: Array[String],
+            executionMode: ExecutionMode,
+            planDescription: InternalPlanDescription,
+            notifications: Seq[Notification]): RewindableExecutionResult = {
+    try {
+      subscription.request(Long.MaxValue)
+      subscriber.assertNoErrors()
+      subscription.await()
       val result = new ArrayBuffer[Map[String, AnyRef]]()
       subscriber.getOrThrow().asScala.foreach( record => {
         val row = columns.zipWithIndex.map {
           case (value, index) => value -> scalaValues.asDeepScalaValue(queryContext.asObject(record(index))).asInstanceOf[AnyRef]
         }
-        result.append(row.toMap)
+        if (row.nonEmpty) result.append(row.toMap)
       })
-
-
-      new RewindableExecutionResultImplementation(columns, result, NormalMode, null, runtimeResult.queryStatistics(),
-                                                  Seq.empty)
-    } finally runtimeResult.close()
-  }
-
-  def apply(runtimeResult: QueryExecution, queryContext: QueryContext, subscriber: RecordingQuerySubscriber): RewindableExecutionResult = {
-    try {
-      val columns = runtimeResult.fieldNames()
-      runtimeResult.request(Long.MaxValue)
-      subscriber.assertNoErrors()
-      runtimeResult.await()
-
-      val result: Seq[Map[String, AnyRef]] = subscriber.getOrThrow().asScala.map(row => {
-        (columns.zipWithIndex map {
-          case (value, index) => value -> scalaValues.asDeepScalaValue(queryContext.asObject(row(index))).asInstanceOf[AnyRef]
-        }).toMap
-      })
-
       new RewindableExecutionResultImplementation(columns,
                                                   result,
-                                                  runtimeResult.asInstanceOf[InternalExecutionResult].executionMode,
-                                                  runtimeResult.executionPlanDescription().asInstanceOf[InternalPlanDescription],
+                                                  executionMode,
+                                                  planDescription,
                                                   subscriber.queryStatistics().asInstanceOf[QueryStatistics],
-                                                  runtimeResult.getNotifications.asScala)
-    } finally runtimeResult.cancel()
+                                                  notifications)
+    } finally subscription.cancel()
   }
 }

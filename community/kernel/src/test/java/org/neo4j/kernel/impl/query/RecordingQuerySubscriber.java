@@ -70,7 +70,7 @@ public class RecordingQuerySubscriber implements QuerySubscriber
 
     public List<AnyValue[]> getOrThrow() throws Throwable
     {
-       assertNoErrors();
+        assertNoErrors();
         return all;
     }
 
