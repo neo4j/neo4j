@@ -24,6 +24,7 @@ import java.util.function.Function;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.ConstraintViolationException;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
@@ -59,7 +60,12 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
         // First get a recent handle on the database representing the system graph
         GraphDatabaseFacade system = databaseManager.getDatabaseContext( new DatabaseId( SYSTEM_DATABASE_NAME ) ).orElseThrow(
                 () -> new IllegalStateException( "No database called `" + SYSTEM_DATABASE_NAME + "` was found." ) ).databaseFacade();
+        initializeSystemGraph( system );
+    }
 
+    public void initializeSystemGraph( GraphDatabaseService system ) throws Exception
+    {
+        // First get a recent handle on the database representing the system graph
         if ( isSystemGraphEmpty( system ) )
         {
             // If the system graph has not been initialized (typically the first time you start neo4j) we set it up by
@@ -74,7 +80,7 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
         }
     }
 
-    private boolean isSystemGraphEmpty( GraphDatabaseFacade system )
+    private boolean isSystemGraphEmpty( GraphDatabaseService system )
     {
         boolean hasDatabaseNodes = false;
         try ( Transaction tx = system.beginTx() )
@@ -90,7 +96,7 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
         return !hasDatabaseNodes;
     }
 
-    private void setupDefaultDatabasesAndConstraints( GraphDatabaseFacade system ) throws InvalidArgumentsException
+    private void setupDefaultDatabasesAndConstraints( GraphDatabaseService system ) throws InvalidArgumentsException
     {
         try ( Transaction tx = system.beginTx() )
         {
@@ -102,7 +108,7 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
         newDb( system, SYSTEM_DATABASE_NAME, false );
     }
 
-    private void updateDefaultDatabase( GraphDatabaseFacade system, boolean stopOld ) throws InvalidArgumentsException
+    private void updateDefaultDatabase( GraphDatabaseService system, boolean stopOld ) throws InvalidArgumentsException
     {
         assertValidDbName( defaultDbName );
         boolean defaultFound;
@@ -159,7 +165,7 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
         }
     }
 
-    private void newDb( GraphDatabaseFacade system, String dbName, boolean defaultDb ) throws InvalidArgumentsException
+    private void newDb( GraphDatabaseService system, String dbName, boolean defaultDb ) throws InvalidArgumentsException
     {
         assertValidDbName( dbName );
         try ( Transaction tx = system.beginTx() )

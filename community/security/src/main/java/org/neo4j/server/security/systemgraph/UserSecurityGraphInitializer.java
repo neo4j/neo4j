@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.function.Supplier;
 
 import org.neo4j.dbms.database.SystemGraphInitializer;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.Credential;
@@ -65,9 +66,21 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
         this.secureHasher = secureHasher;
     }
 
+    @Override
+    public void initializeSecurityGraph( GraphDatabaseService database ) throws Exception
+    {
+        systemGraphInitializer.initializeSystemGraph( database );
+        doInitializeSecurityGraph();
+    }
+
     public void initializeSecurityGraph() throws Exception
     {
         systemGraphInitializer.initializeSystemGraph();
+        doInitializeSecurityGraph();
+    }
+
+    private void doInitializeSecurityGraph() throws Exception
+    {
         // If the system graph has not been initialized (typically the first time you start neo4j) we set it up by:
         // 1) Try to migrate users from the auth file
         // 2) If no users were migrated, create one default user

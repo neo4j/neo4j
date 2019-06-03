@@ -19,9 +19,24 @@
  */
 package org.neo4j.server.security.systemgraph;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+
 public interface SecurityGraphInitializer
 {
     void initializeSecurityGraph() throws Exception;
 
-    SecurityGraphInitializer NO_OP = () -> {};
+    void initializeSecurityGraph( GraphDatabaseService database ) throws Exception;
+
+    SecurityGraphInitializer NO_OP = new SecurityGraphInitializer()
+    {
+        @Override
+        public void initializeSecurityGraph()
+        {
+        }
+
+        @Override
+        public void initializeSecurityGraph( GraphDatabaseService database )
+        {
+        }
+    };
 }
