@@ -38,7 +38,6 @@ import org.neo4j.string.UTF8;
 
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_USER_NAME;
-import static org.neo4j.kernel.impl.query.QuerySubscriber.DO_NOTHING_SUBSCRIBER;
 
 public class UserSecurityGraphInitializer implements SecurityGraphInitializer
 {
@@ -156,9 +155,11 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
     }
 
     private void setupConstraints() throws InvalidArgumentsException
+
     {
         // Ensure that multiple users cannot have the same name and are indexed
-        queryExecutor.executeQuery( "CREATE CONSTRAINT ON (u:User) ASSERT u.name IS UNIQUE", Collections.emptyMap(),DO_NOTHING_SUBSCRIBER );
+        queryExecutor.executeQuery( "CREATE CONSTRAINT ON (u:User) ASSERT u.name IS UNIQUE", Collections.emptyMap(),
+                new ErrorPreservingQuerySubscriber() );
     }
 
     private boolean onlyDefaultUserWithDefaultPassword() throws Exception

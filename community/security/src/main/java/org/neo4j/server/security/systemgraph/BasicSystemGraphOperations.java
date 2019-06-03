@@ -24,8 +24,6 @@ import java.util.Set;
 
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.impl.query.QuerySubscriber;
-import org.neo4j.kernel.impl.query.QuerySubscriberAdapter;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.SecureHasher;
@@ -81,7 +79,7 @@ public class BasicSystemGraphOperations
         String query = "MATCH (u:User {name: $name}) RETURN u.credentials, u.passwordChangeRequired, u.suspended";
         Map<String,Object> params = map( "name", username );
 
-        final QuerySubscriber subscriber = new QuerySubscriberAdapter()
+        final ErrorPreservingQuerySubscriber subscriber = new ErrorPreservingQuerySubscriber()
         {
             private AnyValue[] fields;
 

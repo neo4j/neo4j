@@ -27,21 +27,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.neo4j.graphdb.QueryExecutionException;
+import org.neo4j.cypher.CypherExecutionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.impl.query.QuerySubscriber;
-import org.neo4j.kernel.impl.query.QuerySubscriberAdapter;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.query.QuerySubscriber.DO_NOTHING_SUBSCRIBER;
-
 public interface QueryExecutor
 {
-    void executeQuery( String query, Map<String,Object> params, QuerySubscriber subscriber );
+    void executeQuery( String query, Map<String,Object> params, ErrorPreservingQuerySubscriber subscriber );
 
     Transaction beginTx();
 
@@ -54,10 +51,10 @@ public interface QueryExecutor
     {
         MutableLong count = new MutableLong( -1 );
 
-        QuerySubscriber subscriber = new QuerySubscriberAdapter()
+        ErrorPreservingQuerySubscriber subscriber = new ErrorPreservingQuerySubscriber()
         {
             @Override
-            public void onField( int offset, AnyValue value ) throws Exception
+            public void onField( int offset, AnyValue value )
             {
                 if ( offset == 0 )
                 {
@@ -72,18 +69,25 @@ public interface QueryExecutor
 
     default void executeQueryWithConstraint( String query, Map<String,Object> params, String failureMessage ) throws InvalidArgumentsException
     {
-        try
+        ErrorPreservingQuerySubscriber subscriber = new ErrorPreservingQuerySubscriber();
+        executeQuery( query, params, subscriber );
+        Throwable error = subscriber.errorOrNull();
+
+        if ( error != null )
         {
-            executeQuery( query, params, DO_NOTHING_SUBSCRIBER );
-        }
-        catch ( Exception e )
-        {
-            if ( e instanceof QueryExecutionException &&
-                    ( (QueryExecutionException) e).getStatusCode().contains( "ConstraintValidationFailed" ) )
+            if ( error instanceof CypherExecutionException &&
+                 ((CypherExecutionException) error).status() == Status.Schema.ConstraintValidationFailed )
             {
                 throw new InvalidArgumentsException( failureMessage );
             }
-            throw e;
+            else if ( error instanceof RuntimeException )
+            {
+                throw (RuntimeException) error;
+            }
+            else
+            {
+                throw new InvalidArgumentsException( error.getMessage(), error );
+            }
         }
     }
 
@@ -91,10 +95,10 @@ public interface QueryExecutor
     {
         MutableBoolean paramCheck = new MutableBoolean( false );
 
-        QuerySubscriber subscriber = new QuerySubscriberAdapter()
+        ErrorPreservingQuerySubscriber subscriber = new ErrorPreservingQuerySubscriber()
         {
             @Override
-            public void onRecord() throws Exception
+            public void onRecord()
             {
                 paramCheck.setTrue(); // If we get a result row, we know that the user and/or role specified in the params exist
             }
@@ -118,10 +122,10 @@ public interface QueryExecutor
     {
         Set<String> resultSet = new TreeSet<>();
 
-        QuerySubscriber subscriber = new QuerySubscriberAdapter()
+        ErrorPreservingQuerySubscriber subscriber = new ErrorPreservingQuerySubscriber()
         {
             @Override
-            public void onField( int offset, AnyValue value ) throws Exception
+            public void onField( int offset, AnyValue value )
             {
                 if ( offset == 0 )
                 {
@@ -139,7 +143,7 @@ public interface QueryExecutor
         MutableBoolean success = new MutableBoolean( false );
         Set<String> resultSet = new TreeSet<>();
 
-        QuerySubscriber subscriber = new QuerySubscriberAdapter()
+        ErrorPreservingQuerySubscriber subscriber = new ErrorPreservingQuerySubscriber()
         {
             @Override
             public void onRecord()

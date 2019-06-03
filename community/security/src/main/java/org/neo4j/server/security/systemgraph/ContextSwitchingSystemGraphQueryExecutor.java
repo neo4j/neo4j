@@ -53,7 +53,7 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
     }
 
     @Override
-    public void executeQuery( String query, Map<String,Object> params, QuerySubscriber subscriber )
+    public void executeQuery( String query, Map<String,Object> params, ErrorPreservingQuerySubscriber subscriber )
     {
         final ThreadToStatementContextBridge statementContext = threadToStatementContextBridge;
 
@@ -80,14 +80,17 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
         }
     }
 
-    private void systemDbExecute( String query, Map<String,Object> parameters, QuerySubscriber subscriber )
+    private void systemDbExecute( String query, Map<String,Object> parameters, ErrorPreservingQuerySubscriber subscriber )
     {
         // NOTE: This transaction is executed with AUTH_DISABLED.
         // We need to make sure this method is only accessible from a SecurityContext with admin rights.
         try ( Transaction transaction = getSystemDb().beginTx() )
         {
             systemDbExecuteWithinTransaction( query, parameters, subscriber );
-            transaction.success();
+            if ( !subscriber.hasError() )
+            {
+                transaction.success();
+            }
         }
     }
 

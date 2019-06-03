@@ -151,7 +151,6 @@ trait ExecutionEngineHelper {
                                               subscriber),
                               new TransactionBoundQueryContext(TransactionalContextWrapper(context)),
                               subscriber)
-
   }
 
   def executeOfficial(q: String, params: (String, Any)*): Result =
