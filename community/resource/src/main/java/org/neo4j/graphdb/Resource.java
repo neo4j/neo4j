@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb;
 
-import org.neo4j.annotations.PublicApi;
+import org.neo4j.annotations.api.PublicApi;
 
 /**
  * Resource that should be closed when not needed anymore. Extends {@link AutoCloseable}

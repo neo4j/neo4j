@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb;
 
-import org.neo4j.annotations.PublicApi;
+import org.neo4j.annotations.api.PublicApi;
 
 /**
  * An acquired lock on an entity for a transaction, acquired from

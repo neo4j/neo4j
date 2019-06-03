@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb;
 
-import org.neo4j.annotations.PublicApi;
+import org.neo4j.annotations.api.PublicApi;
 
 /**
  * Represents statistics about the effects of a query.

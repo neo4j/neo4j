@@ -21,7 +21,7 @@ package org.neo4j.graphdb;
 
 import java.util.stream.Stream;
 
-import org.neo4j.annotations.PublicApi;
+import org.neo4j.annotations.api.PublicApi;
 
 /**
  * {@link Iterable} whose {@link ResourceIterator iterators} have associated resources

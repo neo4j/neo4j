@@ -23,7 +23,7 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.annotations.PublicApi;
+import org.neo4j.annotations.api.PublicApi;
 
 /**
  * Represents the result of {@link GraphDatabaseService#execute(String, java.util.Map) executing} a query.

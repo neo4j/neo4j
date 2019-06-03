@@ -19,12 +19,14 @@
  */
 package org.neo4j.graphdb.event;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 
 /**
  * Represents an assigned or removed label for a node.
  */
+@PublicApi
 public interface LabelEntry
 {
     /**

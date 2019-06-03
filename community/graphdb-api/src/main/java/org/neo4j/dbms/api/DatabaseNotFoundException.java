@@ -19,7 +19,7 @@
  */
 package org.neo4j.dbms.api;
 
-import org.neo4j.annotations.PublicApi;
+import org.neo4j.annotations.api.PublicApi;
 
 /**
  * A {@link DatabaseManagementService} tried to perform some operation on a database, but no database with that name currently exists.

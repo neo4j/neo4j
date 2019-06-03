@@ -19,7 +19,7 @@
  */
 package org.neo4j.dbms.api;
 
-import org.neo4j.annotations.PublicApi;
+import org.neo4j.annotations.api.PublicApi;
 
 /**
  * General exception, thrown in the event of errors when managing individual databases.

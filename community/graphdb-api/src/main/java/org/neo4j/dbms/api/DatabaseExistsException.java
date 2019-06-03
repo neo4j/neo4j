@@ -19,7 +19,7 @@
  */
 package org.neo4j.dbms.api;
 
-import org.neo4j.annotations.PublicApi;
+import org.neo4j.annotations.api.PublicApi;
 
 /**
  * A {@link DatabaseManagementService} tried to create a new database, but a database with that name already exists.

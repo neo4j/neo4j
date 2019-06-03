@@ -27,9 +27,9 @@ import java.util.stream.Stream;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.harness.internal.InProcessNeo4j;
+import org.neo4j.harness.internal.Neo4j;
 import org.neo4j.harness.internal.Neo4jBuilder;
 import org.neo4j.harness.internal.TestNeo4jBuilders;
-import org.neo4j.harness.junit.Neo4j;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Mode;

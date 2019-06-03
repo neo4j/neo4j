@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphalgo;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphalgo.impl.path.AStar;
 import org.neo4j.graphalgo.impl.path.AllPaths;
 import org.neo4j.graphalgo.impl.path.AllSimplePaths;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.impl.util.NoneStrictMath;
  * graph algorithms for Neo4j. The algorithms exposed here are implementations
  * which are tested extensively and also scale on bigger graphs.
  */
+@PublicApi
 public abstract class GraphAlgoFactory
 {
     /**

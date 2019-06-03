@@ -22,7 +22,7 @@ package org.neo4j.graphdb;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.annotations.PublicApi;
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;

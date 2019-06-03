@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.event;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -36,6 +37,7 @@ import org.neo4j.graphdb.Relationship;
  * @param <T> The type of the entity the property belongs to, either
  *            {@link Node} or {@link Relationship}.
  */
+@PublicApi
 public interface PropertyEntry<T extends PropertyContainer>
 {
     /**

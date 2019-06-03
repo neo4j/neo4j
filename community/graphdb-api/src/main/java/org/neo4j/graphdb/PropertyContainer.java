@@ -21,7 +21,7 @@ package org.neo4j.graphdb;
 
 import java.util.Map;
 
-import org.neo4j.annotations.PublicApi;
+import org.neo4j.annotations.api.PublicApi;
 
 /**
  * Defines a common API for handling properties on both {@link Node nodes} and

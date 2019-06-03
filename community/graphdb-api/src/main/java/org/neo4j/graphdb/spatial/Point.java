@@ -19,11 +19,14 @@
  */
 package org.neo4j.graphdb.spatial;
 
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * A point is a geometry described by a single coordinate in space.
  * <p>
  * A call to {@link #getCoordinates()} must return a single element list.
  */
+@PublicApi
 public interface Point extends Geometry
 {
     /**

@@ -22,6 +22,7 @@ package org.neo4j.harness.junit.extension;
 import java.io.File;
 import java.util.function.Function;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.harness.internal.Neo4jBuilder;
@@ -35,6 +36,7 @@ import static org.neo4j.harness.internal.TestNeo4jBuilders.newInProcessBuilder;
 /**
  * {@link Neo4jExtension} extension builder.
  */
+@PublicApi
 public class Neo4jExtensionBuilder
 {
     private Neo4jBuilder builder;

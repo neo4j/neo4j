@@ -19,8 +19,6 @@
  */
 package org.neo4j.harness.internal;
 
-import org.neo4j.harness.junit.Neo4j;
-
 /**
  * Builder for constructing and starting Neo4j for test purposes.
  */

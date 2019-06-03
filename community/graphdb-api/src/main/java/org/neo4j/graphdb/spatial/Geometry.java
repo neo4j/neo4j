@@ -21,10 +21,12 @@ package org.neo4j.graphdb.spatial;
 
 import java.util.List;
 
+import org.neo4j.annotations.api.PublicApi;
 
 /**
  * A geometry is defined by a list of coordinates and a coordinate reference system.
  */
+@PublicApi
 public interface Geometry
 {
     /**

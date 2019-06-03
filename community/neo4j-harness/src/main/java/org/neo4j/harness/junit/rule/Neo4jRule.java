@@ -29,6 +29,7 @@ import java.net.URI;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
@@ -50,6 +51,7 @@ import static org.neo4j.harness.internal.TestNeo4jBuilders.newInProcessBuilder;
  * <p>
  * In case if starting embedded web server is not desirable it can be fully disabled by using {@link #withDisabledServer()} configuration option.
  */
+@PublicApi
 public class Neo4jRule implements TestRule
 {
     private Neo4jBuilder builder;

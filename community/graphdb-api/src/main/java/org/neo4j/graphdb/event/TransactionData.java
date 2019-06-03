@@ -21,7 +21,7 @@ package org.neo4j.graphdb.event;
 
 import java.util.Map;
 
-import org.neo4j.annotations.PublicApi;
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 

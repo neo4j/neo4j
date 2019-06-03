@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphalgo;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.Node;
 
 /**
@@ -28,6 +29,7 @@ import org.neo4j.graphdb.Node;
  * @author Mattias Persson
  * @param <T> The data type of the estimated weight.
  */
+@PublicApi
 public interface EstimateEvaluator<T>
 {
     /**

@@ -21,7 +21,7 @@ package org.neo4j.graphdb;
 
 import java.util.Iterator;
 
-import org.neo4j.annotations.PublicApi;
+import org.neo4j.annotations.api.PublicApi;
 
 /**
  * Represents a path in the graph. A path starts with a node followed by

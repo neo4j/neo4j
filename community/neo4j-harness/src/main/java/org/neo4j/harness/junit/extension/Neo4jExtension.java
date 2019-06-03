@@ -29,10 +29,11 @@ import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.harness.internal.InProcessNeo4j;
+import org.neo4j.harness.internal.Neo4j;
 import org.neo4j.harness.internal.Neo4jBuilder;
-import org.neo4j.harness.junit.Neo4j;
 
 import static org.neo4j.harness.internal.TestNeo4jBuilders.newInProcessBuilder;
 
@@ -65,6 +66,7 @@ import static org.neo4j.harness.internal.TestNeo4jBuilders.newInProcessBuilder;
  *  </code>
  * </pre>
  */
+@PublicApi
 public class Neo4jExtension implements BeforeAllCallback, AfterAllCallback, ParameterResolver
 {
     private static final String NEO4J_NAMESPACE = "neo4j-extension";

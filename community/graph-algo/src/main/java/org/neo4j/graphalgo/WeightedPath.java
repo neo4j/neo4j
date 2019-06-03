@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphalgo;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.Path;
 
 /**
@@ -26,6 +27,7 @@ import org.neo4j.graphdb.Path;
  *
  * @author Tobias Ivarsson
  */
+@PublicApi
 public interface WeightedPath extends Path
 {
     /**

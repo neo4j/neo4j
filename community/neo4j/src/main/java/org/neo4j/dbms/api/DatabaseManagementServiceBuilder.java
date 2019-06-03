@@ -31,6 +31,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Edition;
@@ -56,6 +57,7 @@ import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 /**
  * Creates a {@link DatabaseManagementService} with Community Edition features.
  */
+@PublicApi
 public class DatabaseManagementServiceBuilder
 {
     protected final List<ExtensionFactory<?>> extensions = new ArrayList<>();

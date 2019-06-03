@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb.event;
 
-import org.neo4j.annotations.PublicApi;
+import org.neo4j.annotations.api.PublicApi;
 
 /**
  * Event context propagated to database event listeners as part of any event notification.
