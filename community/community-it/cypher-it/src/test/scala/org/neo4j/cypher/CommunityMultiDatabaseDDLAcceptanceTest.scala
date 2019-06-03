@@ -20,20 +20,22 @@
 package org.neo4j.cypher
 
 import java.io.File
-import java.util.Optional
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.{DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME, default_database}
 import org.neo4j.cypher.internal.DatabaseStatus
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.dbms.database.{DatabaseContext, DatabaseManager, DefaultSystemGraphInitializer}
+import org.neo4j.dbms.database.DefaultSystemGraphInitializer
+import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.database.TestDatabaseIdRepository
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.logging.Log
 import org.neo4j.server.security.auth.{InMemoryUserRepository, SecureHasher}
 import org.neo4j.server.security.systemgraph.{BasicSystemGraphOperations, ContextSwitchingSystemGraphQueryExecutor, UserSecurityGraphInitializer}
 
-class CommunityMultiDatabaseDDLAcceptanceTest extends ExecutionEngineFunSuite with GraphDatabaseTestSupport {
+import scala.collection.Map
+
+class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase {
   private val onlineStatus = DatabaseStatus.Online.stringValue()
   private val defaultConfig = Config.defaults()
   private val databaseIdRepository = new TestDatabaseIdRepository()
@@ -68,9 +70,30 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends ExecutionEngineFunSuite wi
     result2.toList should be(empty)
   }
 
+  test("should give nothing when showing a non-existing database") {
+    // GIVEN
+    setup(defaultConfig)
+    selectDatabase(SYSTEM_DATABASE_NAME)
+
+    // WHEN
+    val result = execute("SHOW DATABASE foo")
+
+    // THEN
+    result.toList should be(List.empty)
+
+    // and an invalid (non-existing) one
+    // WHEN
+    val result2 = execute("SHOW DATABASE ``")
+
+    // THEN
+    result2.toList should be(List.empty)
+  }
+
   test("should fail when showing a database when not on system database") {
+    // GIVEN
     setup(defaultConfig)
     selectDatabase(DEFAULT_DATABASE_NAME)
+
     the [DatabaseManagementException] thrownBy {
       // WHEN
       execute("SHOW DATABASE neo4j")
@@ -78,7 +101,7 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends ExecutionEngineFunSuite wi
     } should have message "Trying to run `CATALOG SHOW DATABASE` against non-system database."
   }
 
-  test("should show default and system databases") {
+  test("should show default databases") {
     // GIVEN
     setup( defaultConfig )
 
@@ -105,6 +128,18 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends ExecutionEngineFunSuite wi
       Map("name" -> "foo", "status" -> onlineStatus, "default" -> true),
       Map("name" -> "system", "status" -> onlineStatus, "default" -> false)))
      }
+
+  test("should fail when showing databases when not on system database") {
+    // GIVEN
+    setup(defaultConfig)
+    selectDatabase(DEFAULT_DATABASE_NAME)
+
+    the [DatabaseManagementException] thrownBy {
+      // WHEN
+      execute("SHOW DATABASES")
+      // THEN
+    } should have message "Trying to run `CATALOG SHOW DATABASES` against non-system database."
+  }
 
   test("should show default database") {
     // GIVEN
@@ -194,13 +229,12 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends ExecutionEngineFunSuite wi
     graphOps = managementService.database(SYSTEM_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
 
-    val manager = databaseManager()
-    val queryExecutor: ContextSwitchingSystemGraphQueryExecutor = new ContextSwitchingSystemGraphQueryExecutor(manager, threadToStatementContextBridge(), databaseIdRepository)
+    val queryExecutor: ContextSwitchingSystemGraphQueryExecutor = new ContextSwitchingSystemGraphQueryExecutor(databaseManager, threadToStatementContextBridge(), databaseIdRepository)
     val secureHasher: SecureHasher = new SecureHasher
     val systemGraphOperations: BasicSystemGraphOperations = new BasicSystemGraphOperations(queryExecutor, secureHasher)
 
     val securityGraphInitializer = new UserSecurityGraphInitializer(
-      new DefaultSystemGraphInitializer(manager, databaseIdRepository, config),
+      new DefaultSystemGraphInitializer(databaseManager, databaseIdRepository, config),
       queryExecutor,
       mock[Log],
       systemGraphOperations,
@@ -212,29 +246,10 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends ExecutionEngineFunSuite wi
     selectDatabase(SYSTEM_DATABASE_NAME)
   }
 
-  private def databaseManager() = graph.getDependencyResolver.resolveDependency(classOf[DatabaseManager[DatabaseContext]])
-
-  private def threadToStatementContextBridge() = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
-
-  private def selectDatabase(name: String): Unit = {
-    val manager = databaseManager()
-    val maybeCtx: Optional[DatabaseContext] = manager.getDatabaseContext(databaseIdRepository.get(name))
-    val dbCtx: DatabaseContext = maybeCtx.orElseGet(() => throw new RuntimeException(s"No such database: $name"))
-    graphOps = dbCtx.databaseFacade()
-    graph = new GraphDatabaseCypherService(graphOps)
-    eengine = ExecutionEngineHelper.createEngine(graph)
+  private def threadToStatementContextBridge(): ThreadToStatementContextBridge = {
+    graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
   }
 
-  private def assertFailure(command: String, errorMsg: String): Unit = {
-    try {
-      // WHEN
-      execute(command)
-
-      fail("Expected error " + errorMsg)
-    } catch {
-      // THEN
-      case e: Exception =>
-        e.getMessage should be(errorMsg)
-    }
-  }
+  // Use the default value instead of the new value in CommunityDDLAcceptanceTestBase
+  override def databaseConfig(): Map[Setting[_], String] = Map()
 }
