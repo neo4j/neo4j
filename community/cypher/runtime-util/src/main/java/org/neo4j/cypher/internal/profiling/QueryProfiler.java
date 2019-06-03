@@ -19,30 +19,11 @@
  */
 package org.neo4j.cypher.internal.profiling;
 
-public interface QueryExecutionEvent extends AutoCloseable
+import org.neo4j.cypher.internal.v4_0.util.attribution.Id;
+
+public interface QueryProfiler
 {
-    void dbHit();
+    OperatorProfileEvent executeOperator( Id queryId );
 
-    void row();
-
-    @Override
-    void close();
-
-    QueryExecutionEvent NONE = new QueryExecutionEvent()
-    {
-        @Override
-        public void dbHit()
-        {
-        }
-
-        @Override
-        public void row()
-        {
-        }
-
-        @Override
-        public void close()
-        {
-        }
-    };
+    QueryProfiler NONE = queryId -> OperatorProfileEvent.NONE;
 }

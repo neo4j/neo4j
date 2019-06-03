@@ -17,25 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.planner.spi
+package org.neo4j.cypher.internal.profiling;
 
-/**
-  * Expose various query execution kernel statistics
-  */
-trait KernelStatisticProvider {
-  /**
-    * @return observed page cache hits that was caused by particular query execution
-    */
-  def getPageCacheHits: Long
+public interface OperatorProfileEvent extends AutoCloseable
+{
+    void dbHit();
 
-  /**
-    * @return observer page cache misses that was caused by particular query execution
-    */
-  def getPageCacheMisses: Long
-}
+    void row();
 
-object EmptyKernelStatisticProvider extends KernelStatisticProvider {
-  override def getPageCacheHits: Long = 0
+    void rows(int n);
 
-  override def getPageCacheMisses: Long = 0
+    @Override
+    void close();
+
+    OperatorProfileEvent NONE = new OperatorProfileEvent()
+    {
+        @Override
+        public void dbHit()
+        {
+        }
+
+        @Override
+        public void row()
+        {
+        }
+
+        @Override
+        public void rows( int n )
+        {
+        }
+
+        @Override
+        public void close()
+        {
+        }
+    };
 }

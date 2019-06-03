@@ -134,7 +134,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
               runtime: CypherRuntime[CONTEXT],
               input: InputValues): RecordingRuntimeResult = {
     val subscriber = new RecordingQuerySubscriber
-    val result = runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (_, result) => result, subscriber)
+    val result = runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (_, result) => result, subscriber, profile = false)
     RecordingRuntimeResult(result, subscriber)
   }
 
@@ -142,13 +142,13 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
               runtime: CypherRuntime[CONTEXT],
               input: InputDataStream,
               subscriber: QuerySubscriber): RuntimeResult =
-    runtimeTestSupport.run(logicalQuery, runtime, input, (_, result) => result, subscriber)
+    runtimeTestSupport.run(logicalQuery, runtime, input, (_, result) => result, subscriber, profile = false)
 
   def execute(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT],
               inputStream: InputDataStream): RecordingRuntimeResult = {
     val subscriber = new RecordingQuerySubscriber
-    val result = runtimeTestSupport.run(logicalQuery, runtime, inputStream, (_, result) => result,subscriber)
+    val result = runtimeTestSupport.run(logicalQuery, runtime, inputStream, (_, result) => result,subscriber, profile = false)
     RecordingRuntimeResult(result, subscriber)
   }
 
@@ -156,16 +156,16 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
               runtime: CypherRuntime[CONTEXT]
              ): RecordingRuntimeResult = {
     val subscriber = new RecordingQuerySubscriber
-    val result = runtimeTestSupport.run(logicalQuery, runtime, NoInput, (_, result) => result, subscriber)
+    val result = runtimeTestSupport.run(logicalQuery, runtime, NoInput, (_, result) => result, subscriber, profile = false)
     RecordingRuntimeResult(result, subscriber)
   }
 
   def execute(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT],  subscriber: QuerySubscriber): RuntimeResult =
-    runtimeTestSupport.run(logicalQuery, runtime, NoInput, (_, result) => result, subscriber)
+    runtimeTestSupport.run(logicalQuery, runtime, NoInput, (_, result) => result, subscriber, profile = false)
 
   def execute(executablePlan: ExecutionPlan): RecordingRuntimeResult = {
     val subscriber = new RecordingQuerySubscriber
-    val result = runtimeTestSupport.run(executablePlan, NoInput, (_, result) => result, subscriber)
+    val result = runtimeTestSupport.run(executablePlan, NoInput, (_, result) => result, subscriber, profile = false)
     RecordingRuntimeResult(result, subscriber)
   }
 
@@ -173,13 +173,20 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
                 runtime: CypherRuntime[CONTEXT]): ExecutionPlan =
     runtimeTestSupport.compile(logicalQuery, runtime)
 
+  def profile(logicalQuery: LogicalQuery,
+              runtime: CypherRuntime[CONTEXT]): RecordingRuntimeResult = {
+    val subscriber = new RecordingQuerySubscriber
+    val result = runtimeTestSupport.run(logicalQuery, runtime, NoInput, (_, result) => result, subscriber, profile = true)
+    RecordingRuntimeResult(result, subscriber)
+  }
+
   def executeAndContext(logicalQuery: LogicalQuery,
                         runtime: CypherRuntime[CONTEXT],
-                        input: InputValues
+                        input: InputValues,
+                        profile: Boolean = false
                        ): (RecordingRuntimeResult, CONTEXT) = {
     val subscriber = new RecordingQuerySubscriber
-    val (result, context) = runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (context, result) => (result, context),
-                           subscriber)
+    val (result, context) = runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (context, result) => (result, context), subscriber, profile)
     (RecordingRuntimeResult(result, subscriber), context)
   }
 

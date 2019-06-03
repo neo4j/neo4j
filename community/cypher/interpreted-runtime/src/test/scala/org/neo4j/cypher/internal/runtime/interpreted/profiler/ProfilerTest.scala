@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.profiler
 
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.planner.spi.{EmptyKernelStatisticProvider, KernelStatisticProvider}
+import org.neo4j.cypher.internal.profiling.{NoKernelStatisticProvider, KernelStatisticProvider}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.InterpretedCommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{NestedPipeExpression, ProjectedPath}
@@ -250,7 +250,7 @@ class ProfilerTest extends CypherFunSuite {
       profiled2.query.asInstanceOf[ProfilingPipeQueryContext].count should equal(1)
     }
 
-  private def prepareQueryContext(statisticProvider: KernelStatisticProvider = EmptyKernelStatisticProvider) = {
+  private def prepareQueryContext(statisticProvider: KernelStatisticProvider = NoKernelStatisticProvider) = {
     val queryContext = mock[QueryContext]
     val transactionalContext = mock[QueryTransactionalContext]
     when(queryContext.transactionalContext).thenReturn(transactionalContext)

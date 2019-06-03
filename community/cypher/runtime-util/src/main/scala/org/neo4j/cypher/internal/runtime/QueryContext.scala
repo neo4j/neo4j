@@ -24,7 +24,8 @@ import java.util.Optional
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
-import org.neo4j.cypher.internal.planner.spi.{IdempotentResult, KernelStatisticProvider, TokenContext}
+import org.neo4j.cypher.internal.planner.spi.{IdempotentResult, TokenContext}
+import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.EntityNotFoundException
 import org.neo4j.graphdb.{Path, PropertyContainer}

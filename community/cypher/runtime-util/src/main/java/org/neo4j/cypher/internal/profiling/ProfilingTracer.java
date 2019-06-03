@@ -22,12 +22,11 @@ package org.neo4j.cypher.internal.profiling;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.cypher.internal.planner.spi.KernelStatisticProvider;
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id;
 import org.neo4j.cypher.result.OperatorProfile;
 import org.neo4j.cypher.result.QueryProfile;
 
-public class ProfilingTracer implements QueryExecutionTracer, QueryProfile
+public class ProfilingTracer implements QueryProfiler, QueryProfile
 {
     public interface Clock
     {
@@ -36,11 +35,11 @@ public class ProfilingTracer implements QueryExecutionTracer, QueryProfile
         Clock SYSTEM_TIMER = System::nanoTime;
     }
 
-    private static final Data ZERO = new Data();
+    private static final ProfilingTracerData ZERO = new ProfilingTracerData();
 
     private final Clock clock;
     private final KernelStatisticProvider statisticProvider;
-    private final Map<Integer, Data> data = new HashMap<>();
+    private final Map<Integer,ProfilingTracerData> data = new HashMap<>();
 
     public ProfilingTracer( KernelStatisticProvider statisticProvider )
     {
@@ -54,9 +53,9 @@ public class ProfilingTracer implements QueryExecutionTracer, QueryProfile
     }
 
     @Override
-    public OperatorProfile operatorProfile( int query )
+    public OperatorProfile operatorProfile( int operatorId )
     {
-        Data value = data.get( query );
+        ProfilingTracerData value = data.get( operatorId );
         return value == null ? ZERO : value;
     }
 
@@ -76,27 +75,27 @@ public class ProfilingTracer implements QueryExecutionTracer, QueryProfile
     }
 
     @Override
-    public QueryExecutionEvent executeOperator( Id queryId )
+    public OperatorProfileEvent executeOperator( Id queryId )
     {
-        Data queryData = this.data.get( queryId.x() );
+        ProfilingTracerData queryData = this.data.get( queryId.x() );
         if ( queryData == null )
         {
-            queryData = new Data();
+            queryData = new ProfilingTracerData();
             this.data.put( queryId.x(), queryData );
         }
         return new ExecutionEvent( clock, statisticProvider, queryData );
     }
 
-    private static class ExecutionEvent implements QueryExecutionEvent
+    private static class ExecutionEvent implements OperatorProfileEvent
     {
         private final long start;
         private final Clock clock;
         private final KernelStatisticProvider statisticProvider;
-        private final Data data;
+        private final ProfilingTracerData data;
         private long hitCount;
         private long rowCount;
 
-        ExecutionEvent( Clock clock, KernelStatisticProvider statisticProvider, Data data )
+        ExecutionEvent( Clock clock, KernelStatisticProvider statisticProvider, ProfilingTracerData data )
         {
             this.clock = clock;
             this.statisticProvider = statisticProvider;
@@ -127,53 +126,11 @@ public class ProfilingTracer implements QueryExecutionTracer, QueryProfile
         {
             rowCount++;
         }
-    }
-
-    private static class Data implements OperatorProfile
-    {
-        private long time;
-        private long hits;
-        private long rows;
-        private long pageCacheHits;
-        private long pageCacheMisses;
-
-        public void update( long time, long hits, long rows, long pageCacheHits, long pageCacheMisses )
-        {
-            this.time += time;
-            this.hits += hits;
-            this.rows += rows;
-            this.pageCacheHits += pageCacheHits;
-            this.pageCacheMisses += pageCacheMisses;
-        }
 
         @Override
-        public long time()
+        public void rows( int n )
         {
-            return time;
-        }
-
-        @Override
-        public long dbHits()
-        {
-            return hits;
-        }
-
-        @Override
-        public long rows()
-        {
-            return rows;
-        }
-
-        @Override
-        public long pageCacheHits()
-        {
-            return pageCacheHits;
-        }
-
-        @Override
-        public long pageCacheMisses()
-        {
-            return pageCacheMisses;
+            rowCount += n;
         }
     }
 }

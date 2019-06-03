@@ -17,13 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.profiling;
+package org.neo4j.cypher.internal.profiling
 
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id;
+import org.neo4j.cypher.result.OperatorProfile
 
-public interface QueryExecutionTracer
-{
-    QueryExecutionEvent executeOperator( Id queryId );
+/**
+  * Expose various query execution kernel statistics
+  */
+trait KernelStatisticProvider {
+  /**
+    * @return observed page cache hits that was caused by particular query execution
+    */
+  def getPageCacheHits: Long
 
-    QueryExecutionTracer NONE = queryId -> QueryExecutionEvent.NONE;
+  /**
+    * @return observer page cache misses that was caused by particular query execution
+    */
+  def getPageCacheMisses: Long
+}
+
+object NoKernelStatisticProvider extends KernelStatisticProvider {
+  override def getPageCacheHits: Long = OperatorProfile.NO_DATA
+
+  override def getPageCacheMisses: Long = OperatorProfile.NO_DATA
 }

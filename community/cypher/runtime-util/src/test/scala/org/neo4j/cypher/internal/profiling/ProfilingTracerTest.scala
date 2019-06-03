@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.profiling
 
-import org.neo4j.cypher.internal.planner.spi.{EmptyKernelStatisticProvider, KernelStatisticProvider}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer
@@ -41,7 +40,7 @@ class ProfilingTracerTest extends CypherFunSuite {
     // given
     val clock = new Clock
     val operatorId = id
-    val tracer = new ProfilingTracer(clock, EmptyKernelStatisticProvider)
+    val tracer = new ProfilingTracer(clock, NoKernelStatisticProvider)
     val event = tracer.executeOperator(operatorId)
 
     // when
@@ -56,7 +55,7 @@ class ProfilingTracerTest extends CypherFunSuite {
     // given
     val clock = new Clock
     val operatorId = id
-    val tracer = new ProfilingTracer(clock, EmptyKernelStatisticProvider)
+    val tracer = new ProfilingTracer(clock, NoKernelStatisticProvider)
 
     // when
     val event1 = tracer.executeOperator(operatorId)
@@ -74,7 +73,7 @@ class ProfilingTracerTest extends CypherFunSuite {
   test("shouldReportDbHitsOfQueryExecution") {
     // given
     val operatorId = id
-    val tracer = new ProfilingTracer(EmptyKernelStatisticProvider)
+    val tracer = new ProfilingTracer(NoKernelStatisticProvider)
     val event = tracer.executeOperator(operatorId)
 
     // when
@@ -91,7 +90,7 @@ class ProfilingTracerTest extends CypherFunSuite {
   test("shouldReportRowsOfQueryExecution") {
     // given
     val operatorId = id
-    val tracer = new ProfilingTracer(EmptyKernelStatisticProvider)
+    val tracer = new ProfilingTracer(NoKernelStatisticProvider)
     val event = tracer.executeOperator(operatorId)
 
     // when

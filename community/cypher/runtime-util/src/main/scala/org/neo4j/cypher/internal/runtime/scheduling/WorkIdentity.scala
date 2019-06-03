@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.runtime.scheduling
 
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 
 object WorkIdentity {
   def fromPlan(plan: LogicalPlan): WorkIdentity =
-    WorkIdentityImpl(plan.id.x, plan.getClass.getSimpleName)
+    WorkIdentityImpl(plan.id, plan.getClass.getSimpleName)
 
   def fromFusedPlans(fusedPlans: Iterable[LogicalPlan]): WorkIdentity = {
-    WorkIdentityImpl(fusedPlans.head.id.x, s"Fused(${fusedPlans.map(_.getClass.getSimpleName).mkString("->")})")
+    WorkIdentityImpl(fusedPlans.head.id, s"Fused(${fusedPlans.map(_.getClass.getSimpleName).mkString("->")})")
   }
 }
 
@@ -39,7 +40,7 @@ trait WorkIdentity {
     * Identifies the work/computation performed by this task, as opposed to identifying the task itself.
     * If multiple different tasks all execute the same logic (e.g., operator pipeline) they should return the same <code>workId</code>.
     */
-  def workId: Int
+  def workId: Id
 
   /**
     * Describes the work/computation performed by this task, as opposed to describing the task itself.
@@ -50,6 +51,6 @@ trait WorkIdentity {
   def workDescription: String
 }
 
-case class WorkIdentityImpl(workId: Int, workDescription: String) extends WorkIdentity with HasWorkIdentity {
+case class WorkIdentityImpl(workId: Id, workDescription: String) extends WorkIdentity with HasWorkIdentity {
   override def workIdentity: WorkIdentity = this
 }
