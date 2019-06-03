@@ -54,7 +54,7 @@ public class QueryInvalidationIT
     @Rule
     public final DbmsRule db = new ImpermanentDbmsRule()
             .withSetting( GraphDatabaseSettings.query_statistics_divergence_threshold, "0.1" )
-            .withSetting( GraphDatabaseSettings.cypher_min_replan_interval, "100ms" );
+            .withSetting( GraphDatabaseSettings.cypher_min_replan_interval, "1s" );
 
     @Test
     public void shouldRePlanAfterDataChangesFromAnEmptyDatabase() throws Exception
@@ -67,7 +67,7 @@ public class QueryInvalidationIT
         // - execute the query without the existence data -
         executeDistantFriendsCountQuery( USERS );
 
-        long replanTime = System.currentTimeMillis() + 150;
+        long replanTime = System.currentTimeMillis() + 1_800;
 
         // - create data -
         createData( 0, USERS, CONNECTIONS );
