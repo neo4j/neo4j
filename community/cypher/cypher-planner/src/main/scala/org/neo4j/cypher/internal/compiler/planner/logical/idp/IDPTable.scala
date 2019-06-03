@@ -36,7 +36,7 @@ class IDPTable[Result, Attribute](private val map: mutable.Map[(Goal, Attribute)
     val buffer = new ArrayBuffer[(Attribute, Result)]()
     map.foreach {
       goal_attr_result =>
-        if (goal_attr_result._1._1 == goal) {
+        if (sameGoal(goal, goal_attr_result._1._1)) {
           buffer += ((goal_attr_result._1._2, goal_attr_result._2))
         }
     }
@@ -52,6 +52,11 @@ class IDPTable[Result, Attribute](private val map: mutable.Map[(Goal, Attribute)
   def removeAllTracesOf(goal: Goal): Unit = {
     val toDrop = map.keysIterator.filter { case (entry, _) => (entry & goal).nonEmpty }
     toDrop.foreach(map.remove)
+  }
+
+  private def sameGoal(goalA: Goal, goalB: Goal) = {
+    (goalA eq goalB) ||
+      (goalA.size == goalB.size && goalA.subsetOf(goalB))
   }
 
   override def toString: String = s"IDPPlanTable(numberOfPlans=$size, largestSolved=${map.keySet.map(_._1.size).max})"
