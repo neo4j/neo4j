@@ -59,7 +59,10 @@ public class RecordingQuerySubscriber implements QuerySubscriber
     @Override
     public void onError( Throwable throwable )
     {
-        this.throwable = throwable;
+        if ( this.throwable == null )
+        {
+            this.throwable = throwable;
+        }
     }
 
     @Override
