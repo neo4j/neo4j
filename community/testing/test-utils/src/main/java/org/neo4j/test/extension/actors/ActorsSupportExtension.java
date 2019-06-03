@@ -35,7 +35,7 @@ import org.neo4j.test.extension.Inject;
 import static java.lang.String.format;
 import static org.neo4j.test.ReflectionUtil.getAllFields;
 
-public class ActorsExtension implements TestInstancePostProcessor, AfterEachCallback
+public class ActorsSupportExtension implements TestInstancePostProcessor, AfterEachCallback
 {
     private static final Namespace NAMESPACE = Namespace.create( "neo4j", "actors" );
     private static final String ACTOR_MANAGER = "ACTOR_MANAGER";
