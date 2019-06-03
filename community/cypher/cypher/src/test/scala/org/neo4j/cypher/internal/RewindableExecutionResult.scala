@@ -108,6 +108,7 @@ object RewindableExecutionResult {
     try {
       val columns = runtimeResult.fieldNames()
       runtimeResult.request(Long.MaxValue)
+      subscriber.assertNoErrors()
       runtimeResult.await()
 
       val result: Seq[Map[String, AnyRef]] = subscriber.getOrThrow().asScala.map(row => {

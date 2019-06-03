@@ -70,12 +70,16 @@ public class RecordingQuerySubscriber implements QuerySubscriber
 
     public List<AnyValue[]> getOrThrow() throws Throwable
     {
+       assertNoErrors();
+        return all;
+    }
+
+    public void assertNoErrors() throws Throwable
+    {
         if ( throwable != null )
         {
             throw throwable;
         }
-
-        return all;
     }
 
     public QueryStatistics queryStatistics()

@@ -341,6 +341,7 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
         try
         {
             execution.request( numberOfResults );
+            assertNoErrors();
             execution.await();
         }
         catch ( Exception e )

@@ -101,8 +101,8 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
 
   private def closeAndCallOnError(t: Throwable): Unit = {
     try {
-      close(Error(t))
       subscriber.onError(t)
+      close(Error(t))
     } catch {
       case _: Throwable =>
       // ignore
