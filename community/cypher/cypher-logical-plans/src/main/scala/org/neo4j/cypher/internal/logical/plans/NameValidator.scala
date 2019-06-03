@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.logical.plans
 import java.util.regex.Pattern
 
 import org.neo4j.cypher.internal.v4_0.util.InvalidArgumentException
-import org.neo4j.kernel.database.DatabaseId
 
 object NameValidator {
   // Allow all ascii from '!' to '~', apart from ',' and ':' which are used as separators in flat file
