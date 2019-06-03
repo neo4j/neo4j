@@ -83,30 +83,16 @@ import static org.neo4j.util.concurrent.Runnables.runAll;
  */
 public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> extends NativeIndexPopulator<KEY,VALUE>
 {
-    /**
-     * Base size of blocks of entries. As entries gets written to a BlockStorage, they are buffered up to this size, then sorted and written out.
-     * As blocks gets merged into bigger blocks, this is still the size of the read buffer for each block no matter its size.
-     * Each thread has its own buffer when writing and each thread has {@link #MERGE_FACTOR} buffers when merging.
-     * The memory usage will be at its biggest during merge and a total memory usage sum can be calculated like so:
-     *
-     * {@link #BLOCK_SIZE} * numberOfPopulationWorkers * {@link #MERGE_FACTOR}
-     *
-     * where typically {@link BatchingMultipleIndexPopulator} controls the number of population workers. The setting
-     * `unsupported.dbms.multi_threaded_schema_index_population_enabled` controls whether or not the multi-threaded {@link BatchingMultipleIndexPopulator}
-     * is used, otherwise a single-threaded populator is used instead.
-     */
-    private static final String BLOCK_SIZE = FeatureToggles.getString( BlockBasedIndexPopulator.class, "blockSize", "1M" );
-
-    /**
-     * When merging all blocks together the algorithm does multiple passes over the block storage, until the number of blocks reaches 1.
-     * Every pass does one or more merges and every merge merges up to {@link #MERGE_FACTOR} number of blocks into one block,
-     * i.e. the number of blocks shrinks by a factor {@link #MERGE_FACTOR} every pass, until one block is left.
-     */
-    private static final int MERGE_FACTOR = FeatureToggles.getInteger( BlockBasedIndexPopulator.class, "mergeFactor", 8 );
+    public static final String BLOCK_SIZE_NAME = "blockSize";
 
     private final IndexDirectoryStructure directoryStructure;
     private final IndexDropAction dropAction;
     private final boolean archiveFailedIndex;
+    /**
+     * When merging all blocks together the algorithm does multiple passes over the block storage, until the number of blocks reaches 1.
+     * Every pass does one or more merges and every merge merges up to {@link #mergeFactor} number of blocks into one block,
+     * i.e. the number of blocks shrinks by a factor {@link #mergeFactor} every pass, until one block is left.
+     */
     private final int mergeFactor;
     private final BlockStorage.Monitor blockStorageMonitor;
     // written to in a synchronized method when creating new thread-local instances, read from when population completes
@@ -129,7 +115,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             IndexDirectoryStructure directoryStructure, IndexDropAction dropAction, boolean archiveFailedIndex, ByteBufferFactory bufferFactory )
     {
         this( pageCache, fs, file, layout, monitor, descriptor, spatialSettings, directoryStructure, dropAction, archiveFailedIndex, bufferFactory,
-                MERGE_FACTOR, NO_MONITOR );
+                FeatureToggles.getInteger( BlockBasedIndexPopulator.class, "mergeFactor", 8 ), NO_MONITOR );
     }
 
     BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File file, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
@@ -164,9 +150,21 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         }
     }
 
+    /**
+     * Base size of blocks of entries. As entries gets written to a BlockStorage, they are buffered up to this size, then sorted and written out.
+     * As blocks gets merged into bigger blocks, this is still the size of the read buffer for each block no matter its size.
+     * Each thread has its own buffer when writing and each thread has {@link #mergeFactor} buffers when merging.
+     * The memory usage will be at its biggest during merge and a total memory usage sum can be calculated like so:
+     *
+     * blockSize * numberOfPopulationWorkers * {@link #mergeFactor}
+     *
+     * where typically {@link BatchingMultipleIndexPopulator} controls the number of population workers. The setting
+     * `unsupported.dbms.multi_threaded_schema_index_population_enabled` controls whether or not the multi-threaded {@link BatchingMultipleIndexPopulator}
+     * is used, otherwise a single-threaded populator is used instead.
+     */
     public static int parseBlockSize()
     {
-        long blockSize = ByteUnit.parse( BLOCK_SIZE );
+        long blockSize = ByteUnit.parse( FeatureToggles.getString( BlockBasedIndexPopulator.class, BLOCK_SIZE_NAME, "1M" ) );
         Preconditions.checkArgument( blockSize >= 20 && blockSize < Integer.MAX_VALUE, "Block size need to fit in int. Was " + blockSize );
         return (int) blockSize;
     }

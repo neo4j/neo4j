@@ -31,7 +31,7 @@ import java.util.concurrent.Executors;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.io.ByteUnit;
+import org.neo4j.kernel.impl.index.schema.BlockBasedIndexPopulator;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexPopulator;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -42,12 +42,13 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator.MAXIMUM_NUMBER_OF_WORKERS_NAME;
-import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.BATCH_SIZE_NAME;
+import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.kernel.impl.index.schema.BlockBasedIndexPopulator.BLOCK_SIZE_NAME;
 import static org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider.BLOCK_BASED_POPULATION_NAME;
 
 public class BlockBasedIndexPopulationMemoryUsageIT
 {
+    private static final long TEST_BLOCK_SIZE = kibiBytes( 64 );
     private static final String[] KEYS = {"key1", "key2", "key3", "key4"};
     private static final Label[] LABELS = {label( "Label1" ), label( "Label2" ), label( "Label3" ), label( "Label4" )};
 
@@ -59,17 +60,15 @@ public class BlockBasedIndexPopulationMemoryUsageIT
     {
         // Configure populator so that it will use block-based population and reduce batch size and increase number of workers
         // so that population will very likely create more batches in more threads (affecting number of buffers used)
-        FeatureToggles.set( GenericNativeIndexPopulator.class, BLOCK_BASED_POPULATION_NAME, "true" );
-        FeatureToggles.set( BatchingMultipleIndexPopulator.class, MAXIMUM_NUMBER_OF_WORKERS_NAME, "16" );
-        FeatureToggles.set( MultipleIndexPopulator.class, BATCH_SIZE_NAME, "100" );
+        FeatureToggles.set( GenericNativeIndexPopulator.class, BLOCK_BASED_POPULATION_NAME, true );
+        FeatureToggles.set( BlockBasedIndexPopulator.class, BLOCK_SIZE_NAME, TEST_BLOCK_SIZE );
     }
 
     @AfterClass
     public static void restoreFeatureToggles()
     {
         FeatureToggles.clear( GenericNativeIndexPopulator.class, BLOCK_BASED_POPULATION_NAME );
-        FeatureToggles.clear( BatchingMultipleIndexPopulator.class, MAXIMUM_NUMBER_OF_WORKERS_NAME );
-        FeatureToggles.clear( MultipleIndexPopulator.class, BATCH_SIZE_NAME );
+        FeatureToggles.clear( BlockBasedIndexPopulator.class, BLOCK_SIZE_NAME );
     }
 
     @Test
@@ -85,9 +84,10 @@ public class BlockBasedIndexPopulationMemoryUsageIT
         monitor.called.await();
 
         // then all in all the peak memory usage with the introduction of the more sophisticated ByteBufferFactory
-        // the memory consumption, given all parameters of data size, number of workers and number of indexes will amount
+        // given all parameters of data size, number of workers and number of indexes will amount
         // to a maximum of 10 MiB. Previously this would easily be 10-fold of that for this scenario.
-        assertThat( monitor.peakDirectMemoryUsage, lessThan( ByteUnit.mebiBytes( 10 ) + 1 ) );
+        long targetMemoryConsumption = TEST_BLOCK_SIZE * (8 /*mergeFactor*/ + 1 /*write buffer*/) * 8 /*numberOfWorkers*/;
+        assertThat( monitor.peakDirectMemoryUsage, lessThan( targetMemoryConsumption + 1 ) );
     }
 
     private void createLotsOfIndexesInOneTransaction()
@@ -113,6 +113,15 @@ public class BlockBasedIndexPopulationMemoryUsageIT
             catch ( IllegalStateException e )
             {
                 // Just wait longer
+                try
+                {
+                    Thread.sleep( 100 );
+                }
+                catch ( InterruptedException e1 )
+                {
+                    // Not sure we can do anything about this, other than just break this loop
+                    break;
+                }
             }
         }
     }
