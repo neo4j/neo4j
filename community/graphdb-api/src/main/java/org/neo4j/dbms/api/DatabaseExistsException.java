@@ -19,9 +19,12 @@
  */
 package org.neo4j.dbms.api;
 
+import org.neo4j.annotations.PublicApi;
+
 /**
  * A {@link DatabaseManagementService} tried to create a new database, but a database with that name already exists.
  */
+@PublicApi
 public class DatabaseExistsException extends DatabaseManagementException
 {
     public DatabaseExistsException()

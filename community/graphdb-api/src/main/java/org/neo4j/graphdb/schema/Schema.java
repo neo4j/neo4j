@@ -21,6 +21,7 @@ package org.neo4j.graphdb.schema;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.annotations.PublicApi;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 
@@ -32,6 +33,7 @@ import org.neo4j.graphdb.RelationshipType;
  * backwards compatibility is only guaranteed for clients of this interface, not for
  * implementors.
  */
+@PublicApi
 public interface Schema
 {
     /**

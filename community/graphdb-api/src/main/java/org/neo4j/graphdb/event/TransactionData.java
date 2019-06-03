@@ -21,6 +21,7 @@ package org.neo4j.graphdb.event;
 
 import java.util.Map;
 
+import org.neo4j.annotations.PublicApi;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
@@ -34,6 +35,7 @@ import org.neo4j.graphdb.Relationship;
  * @author Tobias Ivarsson
  * @author Mattias Persson
  */
+@PublicApi
 public interface TransactionData
 {
     /**

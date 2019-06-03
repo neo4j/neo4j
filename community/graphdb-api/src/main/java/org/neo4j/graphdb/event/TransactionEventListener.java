@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.event;
 
+import org.neo4j.annotations.PublicApi;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -64,6 +65,7 @@ import org.neo4j.graphdb.TransactionFailureException;
  *            {@link #afterRollback(TransactionData, Object, GraphDatabaseService)} method, depending
  *            on whether the transaction succeeded or failed.
  */
+@PublicApi
 public interface TransactionEventListener<T>
 {
     /**

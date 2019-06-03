@@ -21,6 +21,8 @@ package org.neo4j.graphdb;
 
 import java.util.Map;
 
+import org.neo4j.annotations.PublicApi;
+
 /**
  * Defines a common API for handling properties on both {@link Node nodes} and
  * {@link Relationship relationships}.
@@ -64,6 +66,7 @@ import java.util.Map;
  * <code>java.lang.Object</code> only to avoid an explosion of overloaded
  * <code>setProperty()</code> methods.
  */
+@PublicApi
 public interface PropertyContainer
 {
     /**

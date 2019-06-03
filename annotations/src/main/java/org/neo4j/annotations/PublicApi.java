@@ -17,25 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.event;
+package org.neo4j.annotations;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * An object that describes a state from which a Neo4j Graph Database cannot
- * continue.
- *
+ * Used to mark types that are part of Neo4j public API and indicate that marked classes, interfaces, enums are intended to be used by external consumers.<br/>
+ * <li>Types that are not explicitly marked with {@code PublicApi}
+ * should be considered <b>private</b> and <b>not covered</b> by semantic versioning compatibility contracts.</li>
+ * <p>
+ * <li>Any external applications must only use types that are explicitly marked with {@code PublicApi}</li>
  */
-public enum ErrorState
+@Retention( RetentionPolicy.SOURCE )
+@Target( {ElementType.TYPE} )
+public @interface PublicApi
 {
-    /**
-     * The Graph Database failed since the storage media where the graph
-     * database data is stored is full and cannot be written to.
-     */
-    STORAGE_MEDIA_FULL,
-
-    /**
-     * Not more transactions can be started or committed during this session
-     * and the database needs to be shut down, possible for maintenance before
-     * it can be started again.
-     */
-    TX_MANAGER_NOT_OK,
 }

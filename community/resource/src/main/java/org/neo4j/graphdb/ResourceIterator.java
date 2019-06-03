@@ -24,6 +24,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.neo4j.annotations.PublicApi;
+
 import static java.util.Spliterators.spliteratorUnknownSize;
 
 /**
@@ -37,6 +39,7 @@ import static java.util.Spliterators.spliteratorUnknownSize;
  *
  * @see ResourceIterable
  */
+@PublicApi
 public interface ResourceIterator<T> extends Iterator<T>, Resource
 {
     /**

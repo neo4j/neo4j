@@ -19,11 +19,14 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.annotations.PublicApi;
+
 /**
  * An Entity is a {@link PropertyContainer} that is persisted in the database, and identified by an {@link #getId() id}.
  * <p>
  * {@link Node Nodes} and {@link Relationship Relationships} are Entities.
  */
+@PublicApi
 public interface Entity extends PropertyContainer
 {
     /**

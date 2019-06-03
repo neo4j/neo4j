@@ -19,10 +19,13 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.annotations.PublicApi;
+
 /**
  * Resource that should be closed when not needed anymore. Extends {@link AutoCloseable}
  * with {@link #close()} not throwing any checked exception.
  */
+@PublicApi
 public interface Resource extends AutoCloseable
 {
     @Override

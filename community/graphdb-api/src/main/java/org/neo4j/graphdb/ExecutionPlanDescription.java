@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.annotations.PublicApi;
 import org.neo4j.internal.helpers.MathUtil;
 
 /**
@@ -30,6 +31,7 @@ import org.neo4j.internal.helpers.MathUtil;
  *
  * Execution plans form a tree of execution steps.  Each step is described by a {@link ExecutionPlanDescription} object.
  */
+@PublicApi
 public interface ExecutionPlanDescription
 {
     /**

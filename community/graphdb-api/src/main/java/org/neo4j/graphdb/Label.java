@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.annotations.PublicApi;
+
 /**
  * A label is a grouping facility for {@link Node} where all nodes having a label
  * are part of the same group. Labels on nodes are optional and any node can
@@ -56,6 +58,7 @@ package org.neo4j.graphdb;
  *
  * @see Node
  */
+@PublicApi
 public interface Label
 {
     /**

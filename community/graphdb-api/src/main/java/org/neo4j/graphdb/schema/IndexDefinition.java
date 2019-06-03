@@ -19,12 +19,14 @@
  */
 package org.neo4j.graphdb.schema;
 
+import org.neo4j.annotations.PublicApi;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 
 /**
  * Definition for an index.
  */
+@PublicApi
 public interface IndexDefinition
 {
     /**

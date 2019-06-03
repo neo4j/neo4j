@@ -22,6 +22,7 @@ package org.neo4j.graphdb;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.annotations.PublicApi;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -35,6 +36,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
  * {@link Transaction transactional context}. Failure to do so will result in a
  * {@link NotInTransactionException} being thrown.
  */
+@PublicApi
 public interface GraphDatabaseService
 {
     /**

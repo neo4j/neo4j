@@ -19,12 +19,15 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.annotations.PublicApi;
+
 /**
  * Represents statistics about the effects of a query.
  *
  * If the query did not perform any {@link #containsUpdates() updates}, all the methods of this interface will return
  * {@code 0}.
  */
+@PublicApi
 public interface QueryStatistics
 {
     // NOTE: If you change this interface, be sure to update bolt

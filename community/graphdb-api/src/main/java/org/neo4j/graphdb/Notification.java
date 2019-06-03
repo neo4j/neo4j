@@ -19,11 +19,14 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.annotations.PublicApi;
+
 /**
  * Representation for notifications found when executing a query.
  *
  * A notification can be visualized in a client pinpointing problems or other information about the query.
  */
+@PublicApi
 public interface Notification
 {
     /**

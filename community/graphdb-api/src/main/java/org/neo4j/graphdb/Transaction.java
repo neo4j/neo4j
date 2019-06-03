@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.annotations.PublicApi;
+
 /**
  * A programmatically handled transaction.
  * <p>
@@ -70,6 +72,7 @@ package org.neo4j.graphdb;
  * Note however, that the {@link ResourceIterator} should be {@link ResourceIterator#close() closed} as soon as
  * possible if you don't intend to exhaust the iterator.
  */
+@PublicApi
 public interface Transaction extends AutoCloseable
 {
     /**

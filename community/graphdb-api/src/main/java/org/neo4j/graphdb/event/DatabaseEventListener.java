@@ -19,10 +19,13 @@
  */
 package org.neo4j.graphdb.event;
 
+import org.neo4j.annotations.PublicApi;
+
 /**
  * Event listener interface for independent database life cycle events.
  * Listeners are invoked on the same thread as event handling itself as result any blocking operation in the listener will block execution of the event.
  */
+@PublicApi
 public interface DatabaseEventListener
 {
     /**

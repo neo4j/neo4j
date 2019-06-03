@@ -21,6 +21,8 @@ package org.neo4j.graphdb;
 
 import java.util.Iterator;
 
+import org.neo4j.annotations.PublicApi;
+
 /**
  * Represents a path in the graph. A path starts with a node followed by
  * pairs of {@link Relationship} and {@link Node} objects. The shortest path
@@ -30,6 +32,7 @@ import java.util.Iterator;
  * position of the traverser is represented by each such path. The current
  * node in such a traversal is reached via {@link Path#endNode()}.
  */
+@PublicApi
 public interface Path extends Iterable<PropertyContainer>
 {
     /**

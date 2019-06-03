@@ -23,6 +23,8 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.annotations.PublicApi;
+
 /**
  * Represents the result of {@link GraphDatabaseService#execute(String, java.util.Map) executing} a query.
  * <p>
@@ -77,6 +79,7 @@ import java.util.Map;
  * distinguish between these cases the {@link QueryExecutionType} {@linkplain #getQueryExecutionType() of this result}
  * can be queried.
  */
+@PublicApi
 public interface Result extends ResourceIterator<Map<String,Object>>
 {
     /**

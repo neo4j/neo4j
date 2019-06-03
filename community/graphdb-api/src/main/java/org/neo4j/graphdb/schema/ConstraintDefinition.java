@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.schema;
 
+import org.neo4j.annotations.PublicApi;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 
@@ -28,6 +29,7 @@ import org.neo4j.graphdb.RelationshipType;
  * <b>Note:</b> This interface is going to be changed/removed in next major release to better cope with node and
  * relationship constraints which are quite different concepts.
  */
+@PublicApi
 public interface ConstraintDefinition
 {
     /**

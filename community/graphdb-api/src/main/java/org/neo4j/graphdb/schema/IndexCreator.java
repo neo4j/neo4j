@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.schema;
 
+import org.neo4j.annotations.PublicApi;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -33,6 +34,7 @@ import org.neo4j.graphdb.Node;
  *
  * @see Schema
  */
+@PublicApi
 public interface IndexCreator
 {
     /**

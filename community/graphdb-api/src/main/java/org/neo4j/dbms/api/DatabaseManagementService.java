@@ -21,6 +21,7 @@ package org.neo4j.dbms.api;
 
 import java.util.List;
 
+import org.neo4j.annotations.PublicApi;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.event.TransactionEventListener;
@@ -28,6 +29,7 @@ import org.neo4j.graphdb.event.TransactionEventListener;
 /**
  * The {@link DatabaseManagementService} provides an API to manage databases and provided access to the managed database services.
  */
+@PublicApi
 public interface DatabaseManagementService
 {
     /**

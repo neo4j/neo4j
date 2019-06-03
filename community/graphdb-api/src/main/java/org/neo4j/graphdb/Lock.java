@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.annotations.PublicApi;
+
 /**
  * An acquired lock on an entity for a transaction, acquired from
  * {@link Transaction#acquireWriteLock(PropertyContainer)} or
@@ -29,6 +31,7 @@ package org.neo4j.graphdb;
  *
  * @author Mattias Persson
  */
+@PublicApi
 public interface Lock
 {
     /**

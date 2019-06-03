@@ -19,9 +19,12 @@
  */
 package org.neo4j.graphdb.event;
 
+import org.neo4j.annotations.PublicApi;
+
 /**
  * Event context propagated to database event listeners as part of any event notification.
  */
+@PublicApi
 public interface DatabaseEventContext
 {
     String getDatabaseName();

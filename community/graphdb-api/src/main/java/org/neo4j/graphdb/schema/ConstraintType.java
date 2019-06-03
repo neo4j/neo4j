@@ -19,10 +19,13 @@
  */
 package org.neo4j.graphdb.schema;
 
+import org.neo4j.annotations.PublicApi;
+
 /**
  * Constraint type. Used with {@link ConstraintDefinition#getConstraintType()} to see
  * of which type a constraint is.
  */
+@PublicApi
 public enum ConstraintType
 {
     UNIQUENESS,

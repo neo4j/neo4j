@@ -19,10 +19,13 @@
  */
 package org.neo4j.dbms.api;
 
+import org.neo4j.annotations.PublicApi;
+
 /**
  * General exception, thrown in the event of errors when managing individual databases.
  * @see DatabaseManagementService
  */
+@PublicApi
 public class DatabaseManagementException extends RuntimeException
 {
     public DatabaseManagementException()

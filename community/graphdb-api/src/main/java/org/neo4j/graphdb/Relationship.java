@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.annotations.PublicApi;
+
 /**
  * A relationship between two nodes in the graph. A relationship has a start
  * node, an end node and a {@link RelationshipType type}. You can attach
@@ -70,6 +72,7 @@ package org.neo4j.graphdb;
  * when nodes and relationships are deleted, which means it's bad practice to
  * refer to them this way. Instead, use application generated ids.
  */
+@PublicApi
 public interface Relationship extends Entity
 {
     /**

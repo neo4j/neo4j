@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.schema;
 
+import org.neo4j.annotations.PublicApi;
 import org.neo4j.graphdb.ConstraintViolationException;
 
 /**
@@ -35,6 +36,7 @@ import org.neo4j.graphdb.ConstraintViolationException;
  *
  * @see Schema
  */
+@PublicApi
 public interface ConstraintCreator
 {
     /**

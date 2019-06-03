@@ -59,4 +59,11 @@
         </plugins>
     </build>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>annotations</artifactId>
+        </dependency>
+    </dependencies>
+
 </project>
