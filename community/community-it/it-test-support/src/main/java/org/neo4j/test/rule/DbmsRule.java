@@ -27,9 +27,11 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
+import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -243,8 +245,11 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
         createResources();
         try
         {
+            Dependencies dependencies = new Dependencies();
+            dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
             databaseBuilder = newFactory();
             databaseBuilder.setMonitors( monitors );
+            databaseBuilder.setExternalDependencies( dependencies );
             configure( databaseBuilder );
             globalConfig.forEach( databaseBuilder::setConfig );
         }
