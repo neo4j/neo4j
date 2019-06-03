@@ -31,8 +31,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -98,8 +100,11 @@ public class DbRepresentation
 
     public static DbRepresentation of( File databaseDirectory, Config config )
     {
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will change the backup
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseDirectory.getParentFile() )
                 .setConfigRaw( config.getRaw() )
+                .setExternalDependencies( dependencies )
                 .build();
         GraphDatabaseService db = managementService.database( config.get( default_database ) );
         try
