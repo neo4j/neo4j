@@ -63,7 +63,7 @@ object NameValidator {
     val name = id.name()
     if (name.isEmpty)
       throw new InvalidArgumentException("The provided database name is empty.")
-    if (name.length < 3 || name.length > 95) // TODO should be 63 but currently tests have longer
+    if (name.length < 3 || name.length > 63)
       throw new InvalidArgumentException("The provided database name must have a length between 3 and 63 characters.")
     if (!isLowerCaseLetter(name(0).toInt))
       throw new InvalidArgumentException(s"Database name '$name' is not starting with an ASCII alphabetic character.")
