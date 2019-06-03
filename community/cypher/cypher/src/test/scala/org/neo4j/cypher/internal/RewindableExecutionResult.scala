@@ -94,7 +94,7 @@ object RewindableExecutionResult {
             runtimeResult.fieldNames(),
             NormalMode,
             () => InternalPlanDescription.error("Can't get plan description from RuntimeResult"),
-            Seq.empty
+            Set.empty
             )
     } finally runtimeResult.close()
   }
@@ -103,8 +103,8 @@ object RewindableExecutionResult {
             subscriber: RecordingQuerySubscriber): RewindableExecutionResult = {
     try {
       val (executionMode, notifications) = result match {
-        case r: InternalExecutionResult => (r.executionMode, r.notifications.toSeq)
-        case _ => (NormalMode, Seq.empty)
+        case r: InternalExecutionResult => (r.executionMode, r.notifications.toSet)
+        case _ => (NormalMode, Set.empty[Notification])
       }
 
       apply(result,
@@ -124,7 +124,7 @@ object RewindableExecutionResult {
             columns: Array[String],
             executionMode: ExecutionMode,
             planDescription: () => InternalPlanDescription,
-            notifications: Seq[Notification]): RewindableExecutionResult = {
+            notifications: Set[Notification]): RewindableExecutionResult = {
     try {
       subscription.request(Long.MaxValue)
       subscriber.assertNoErrors()
