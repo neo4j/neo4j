@@ -46,6 +46,10 @@ class ActorImpl implements Actor
 
     private <T> void enqueue( FutureTask<T> task )
     {
+        if ( stopped )
+        {
+            throw new IllegalStateException( "Test actor is stopped: " + thread );
+        }
         queue.offer( task );
         if ( !started.get() && started.compareAndSet( false, true ) )
         {

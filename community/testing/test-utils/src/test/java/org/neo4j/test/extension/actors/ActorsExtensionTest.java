@@ -107,10 +107,20 @@ class ActorsExtensionTest
         void untilMethodsMustThrowIfActorIsStopped() throws Exception
         {
             actor.submit( () -> {} ).get(); // Ensure that the actor has started.
-            ActorImpl actorImpl = (ActorImpl) this.actor;
+            ActorImpl actorImpl = (ActorImpl) actor;
             actorImpl.stop();
             actorImpl.join();
-            assertThrows( AssertionError.class, () -> this.actor.untilWaiting() );
+            assertThrows( AssertionError.class, () -> actor.untilWaiting() );
+        }
+
+        @Test
+        void submitMethodsMustThrowIfActorIsStopped() throws Exception
+        {
+            actor.submit( () -> {} ).get(); // Ensure that the actor has started.
+            ActorImpl actorImpl = (ActorImpl) actor;
+            actorImpl.stop();
+            actorImpl.join();
+            assertThrows( IllegalStateException.class, () -> actor.submit( () -> {} ) );
         }
 
         @Test
