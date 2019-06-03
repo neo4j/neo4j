@@ -130,7 +130,10 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
   override def request(numberOfRows: Long): Unit =
     runSafely(inner.request(numberOfRows))(closeAndCallOnError)
 
-  override def cancel(): Unit = runSafely(inner.cancel())(closeAndCallOnError)
+  override def cancel(): Unit = runSafely{
+    monitor.endSuccess(query)
+    inner.cancel()
+  }(closeAndCallOnError)
 
   override def await(): Boolean = {
     val hasMore = runSafely(inner.await())(e => {
