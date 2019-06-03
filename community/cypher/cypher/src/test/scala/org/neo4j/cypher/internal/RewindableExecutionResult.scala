@@ -93,7 +93,7 @@ object RewindableExecutionResult {
             subscriber,
             runtimeResult.fieldNames(),
             NormalMode,
-            InternalPlanDescription.error("Can't get plan description from RuntimeResult"),
+            () => InternalPlanDescription.error("Can't get plan description from RuntimeResult"),
             Seq.empty
             )
     } finally runtimeResult.close()
@@ -112,7 +112,7 @@ object RewindableExecutionResult {
             subscriber,
             result.fieldNames(),
             executionMode,
-            result.executionPlanDescription().asInstanceOf[InternalPlanDescription],
+            () => result.executionPlanDescription().asInstanceOf[InternalPlanDescription],
             notifications
             )
     } finally result.cancel()
@@ -123,7 +123,7 @@ object RewindableExecutionResult {
             subscriber: RecordingQuerySubscriber,
             columns: Array[String],
             executionMode: ExecutionMode,
-            planDescription: InternalPlanDescription,
+            planDescription: () => InternalPlanDescription,
             notifications: Seq[Notification]): RewindableExecutionResult = {
     try {
       subscription.request(Long.MaxValue)
@@ -139,7 +139,7 @@ object RewindableExecutionResult {
       new RewindableExecutionResultImplementation(columns,
                                                   result,
                                                   executionMode,
-                                                  planDescription,
+                                                  planDescription(),
                                                   subscriber.queryStatistics().asInstanceOf[QueryStatistics],
                                                   notifications)
     } finally subscription.cancel()
