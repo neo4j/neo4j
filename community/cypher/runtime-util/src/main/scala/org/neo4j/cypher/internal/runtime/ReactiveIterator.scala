@@ -51,7 +51,7 @@ class ReactiveIterator(inner: Iterator[Array[AnyValue]], result: RuntimeResult, 
   }
 
   private def serveResults(): Unit = {
-    while (inner.hasNext && served < demand) {
+    while (inner.hasNext && served < demand && !cancelled) {
       val values = next()
       subscriber.onRecord()
       var i = 0

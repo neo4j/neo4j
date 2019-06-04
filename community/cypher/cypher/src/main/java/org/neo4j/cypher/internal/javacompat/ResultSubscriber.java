@@ -121,6 +121,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
                 if ( !visitor.visit( new ResultRowImpl( createPublicRecord() ) ) )
                 {
                     execution.cancel();
+                    visitor = null;
                 }
             }
             catch ( Exception exception )
@@ -420,7 +421,10 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
         assertNoErrors();
         for ( Map<String,Object> materialized : materializeResult )
         {
-            visitor.visit( new ResultRowImpl( materialized ) );
+            if (!visitor.visit( new ResultRowImpl( materialized ) ) )
+            {
+                break;
+            }
         }
     }
 
