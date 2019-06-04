@@ -50,12 +50,12 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.AbstractConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
@@ -434,11 +434,6 @@ class BuiltInProceduresTest
             for ( int i = 0; i < anyValue.length; i++ )
             {
                 AnyValue value = anyValue[i];
-                //TODO: this is temporary just for flaky test investigation
-                if ( value == null )
-                {
-                    throw new NullPointerException( String.format( "Procedure returned null in row, results=%s", Arrays.toString( anyValue ) ) );
-                }
                 values[i] = value.map( valueMapper );
             }
             toReturn.add( values );

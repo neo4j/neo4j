@@ -51,7 +51,6 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.longValue;
@@ -161,66 +160,42 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
 
     private AnyValue toNeo4jValue( Object attributeValue )
     {
-        //TODO: this extra error checking is temporary just for handling a flaky test
-        try
+        // These branches as per {@link javax.management.openmbean.OpenType#ALLOWED_CLASSNAMES_LIST}
+        if ( isSimpleType( attributeValue ) )
         {
-            // These branches as per {@link javax.management.openmbean.OpenType#ALLOWED_CLASSNAMES_LIST}
-            if ( isSimpleType( attributeValue ) )
+            return ValueUtils.of( attributeValue );
+        }
+        else if ( attributeValue.getClass().isArray() )
+        {
+            if ( isSimpleType( attributeValue.getClass().getComponentType() ) )
             {
                 return ValueUtils.of( attributeValue );
             }
-            else if ( attributeValue.getClass().isArray() )
-            {
-                if ( isSimpleType( attributeValue.getClass().getComponentType() ) )
-                {
-                    return ValueUtils.of( attributeValue );
-                }
-                else
-                {
-                    return toNeo4jValue( (Object[]) attributeValue );
-                }
-            }
-            else if ( attributeValue instanceof CompositeData )
-            {
-                return toNeo4jValue( (CompositeData) attributeValue );
-            }
-            else if ( attributeValue instanceof ObjectName )
-            {
-                return stringValue( ((ObjectName) attributeValue).getCanonicalName() );
-            }
-            else if ( attributeValue instanceof TabularData )
-            {
-                return toNeo4jValue( (Map<?,?>) attributeValue );
-            }
-            else if ( attributeValue instanceof Date )
-            {
-                return longValue( ((Date) attributeValue).getTime() );
-            }
             else
             {
-                // Don't convert objects that are not OpenType values
-                return NO_VALUE;
+                return toNeo4jValue( (Object[]) attributeValue );
             }
         }
-        catch ( Exception e )
+        else if ( attributeValue instanceof CompositeData )
         {
-            if ( attributeValue == null )
-            {
-                throw new IllegalArgumentException( "Failed to convert null to NO_VALUE", e );
-            }
-            else
-            {
-                ClassLoader classLoader = attributeValue.getClass().getClassLoader();
-                throw new IllegalArgumentException(
-                        format(
-                                "class=%s%n" +
-                                "classLoader=%s%n" +
-                                "classLoader-name=%s%n",
-                                attributeValue.getClass().getName(),
-                                classLoader != null ? classLoader.toString() : "null",
-                                classLoader != null ? classLoader.getName() : "null" ), e );
-
-            }
+            return toNeo4jValue( (CompositeData) attributeValue );
+        }
+        else if ( attributeValue instanceof ObjectName )
+        {
+            return stringValue( ((ObjectName) attributeValue).getCanonicalName() );
+        }
+        else if ( attributeValue instanceof TabularData )
+        {
+            return toNeo4jValue( (Map<?,?>) attributeValue );
+        }
+        else if ( attributeValue instanceof Date )
+        {
+            return longValue( ((Date) attributeValue).getTime() );
+        }
+        else
+        {
+            // Don't convert objects that are not OpenType values
+            return NO_VALUE;
         }
     }
 
@@ -243,15 +218,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
         MapValueBuilder properties = new MapValueBuilder();
         for ( String key : composite.getCompositeType().keySet() )
         {
-            //TODO: this extra error checking is temporary just for handling a flaky test
-            try
-            {
-                properties.add( key, toNeo4jValue( composite.get( key ) ) );
-            }
-            catch ( Exception e )
-            {
-                throw new IllegalArgumentException( format( "Failed to convert for key=%s", key ) );
-            }
+            properties.add( key, toNeo4jValue( composite.get( key ) ) );
         }
 
         MapValueBuilder out = new MapValueBuilder();
