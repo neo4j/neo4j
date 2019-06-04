@@ -21,12 +21,13 @@ package org.neo4j.kernel.impl.locking;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.lock.LockTracer;
@@ -41,52 +42,45 @@ abstract class DeadlockCompatibility extends LockCompatibilityTestSupport
     }
 
     @Test
-    void shouldDetectTwoClientExclusiveDeadlock()
+    void shouldDetectTwoClientExclusiveDeadlock() throws Exception
     {
-        assertDetectsDeadlock(
-                acquireExclusive( clientA, LockTracer.NONE, NODE, 1L ),
-                acquireExclusive( clientB, LockTracer.NONE, NODE, 2L ),
+        acquireExclusive( clientA, LockTracer.NONE, NODE, 1L ).call().get();
+        acquireExclusive( clientB, LockTracer.NONE, NODE, 2L ).call().get();
 
+        assertDetectsDeadlock(
                 acquireExclusive( clientB, LockTracer.NONE, NODE, 1L ),
                 acquireExclusive( clientA, LockTracer.NONE, NODE, 2L ) );
     }
 
     @Test
-    void shouldDetectThreeClientExclusiveDeadlock()
+    void shouldDetectThreeClientExclusiveDeadlock() throws Exception
     {
-        assertDetectsDeadlock(
-                acquireExclusive( clientA, LockTracer.NONE, NODE, 1L ),
-                acquireExclusive( clientB, LockTracer.NONE, NODE, 2L ),
-                acquireExclusive( clientC, LockTracer.NONE, NODE, 3L ),
+        acquireExclusive( clientA, LockTracer.NONE, NODE, 1L ).call().get();
+        acquireExclusive( clientB, LockTracer.NONE, NODE, 2L ).call().get();
+        acquireExclusive( clientC, LockTracer.NONE, NODE, 3L ).call().get();
 
+        assertDetectsDeadlock(
                 acquireExclusive( clientB, LockTracer.NONE, NODE, 1L ),
                 acquireExclusive( clientC, LockTracer.NONE, NODE, 2L ),
                 acquireExclusive( clientA, LockTracer.NONE, NODE, 3L ) );
     }
 
     @Test
-    void shouldDetectMixedExclusiveAndSharedDeadlock()
+    void shouldDetectMixedExclusiveAndSharedDeadlock() throws Exception
     {
-        assertDetectsDeadlock(
-                acquireShared( clientA, LockTracer.NONE, NODE, 1L ),
-                acquireExclusive( clientB, LockTracer.NONE, NODE, 2L ),
+        acquireShared( clientA, LockTracer.NONE, NODE, 1L ).call().get();
+        acquireExclusive( clientB, LockTracer.NONE, NODE, 2L ).call().get();
 
+        assertDetectsDeadlock(
                 acquireExclusive( clientB, LockTracer.NONE, NODE, 1L ),
                 acquireShared( clientA, LockTracer.NONE, NODE, 2L ) );
     }
 
     private void assertDetectsDeadlock( LockCommand... commands )
     {
-        List<Future<Void>> calls = new ArrayList<>();
-        for ( LockCommand command : commands )
-        {
-            Future<Void> call = command.call();
-            calls.add( call );
-            if ( tryDetectDeadlock( call ) )
-            {
-                return;
-            }
-        }
+        List<Future<Void>> calls = Arrays.stream( commands )
+                .map( LockCommand::call )
+                .collect( Collectors.toList() );
 
         long timeout = System.currentTimeMillis() + (1000 * 10);
         while ( System.currentTimeMillis() < timeout )
