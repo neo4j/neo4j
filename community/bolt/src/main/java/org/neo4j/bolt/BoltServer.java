@@ -32,6 +32,7 @@ import org.neo4j.bolt.runtime.BoltStateMachineFactoryImpl;
 import org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory;
 import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
 import org.neo4j.bolt.runtime.ExecutorBoltSchedulerProvider;
+import org.neo4j.bolt.runtime.NettyThreadFactory;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
 import org.neo4j.bolt.transport.BoltProtocolFactory;
@@ -118,6 +119,7 @@ public class BoltServer extends LifecycleAdapter
 
         if ( !config.enabledBoltConnectors().isEmpty() )
         {
+            jobScheduler.setThreadFactory( Group.BOLT_NETWORK_IO, NettyThreadFactory::new );
             NettyServer server = new NettyServer( jobScheduler.threadFactory( Group.BOLT_NETWORK_IO ),
                     createConnectors( boltProtocolFactory, throttleGroup, log ), connectorPortRegister, userLog );
             life.add( server );

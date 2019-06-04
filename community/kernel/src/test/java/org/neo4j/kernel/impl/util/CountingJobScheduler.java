@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
 
 public class CountingJobScheduler implements JobScheduler
 {
@@ -49,6 +50,12 @@ public class CountingJobScheduler implements JobScheduler
     public void setParallelism( Group group, int parallelism )
     {
         delegate.setParallelism( group, parallelism );
+    }
+
+    @Override
+    public void setThreadFactory( Group group, SchedulerThreadFactoryFactory threadFactory )
+    {
+        delegate.setThreadFactory( group, threadFactory );
     }
 
     @Override

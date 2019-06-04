@@ -133,7 +133,7 @@ class TimeBasedTaskSchedulerTest
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
         handle.waitTermination();
-        pools.getThreadPool( Group.STORAGE_MAINTENANCE, null ).shutDown();
+        pools.getThreadPool( Group.STORAGE_MAINTENANCE ).shutDown();
         assertThat( counter.get(), is( 1 ) );
     }
 
@@ -183,7 +183,7 @@ class TimeBasedTaskSchedulerTest
             clock.forward( 100, TimeUnit.NANOSECONDS );
         }
         semaphore.release( Integer.MAX_VALUE );
-        pools.getThreadPool( Group.STORAGE_MAINTENANCE, null ).shutDown();
+        pools.getThreadPool( Group.STORAGE_MAINTENANCE ).shutDown();
         assertThat( counter.get(), is( 1 ) );
     }
 
@@ -215,7 +215,7 @@ class TimeBasedTaskSchedulerTest
         handle.cancel( false );
         clock.forward( 10, TimeUnit.NANOSECONDS );
         scheduler.tick();
-        pools.getThreadPool( Group.STORAGE_MAINTENANCE, null ).shutDown();
+        pools.getThreadPool( Group.STORAGE_MAINTENANCE ).shutDown();
         assertThat( counter.get(), is( 0 ) );
         assertThat( cancelListener, contains( Boolean.FALSE ) );
         assertThrows( CancellationException.class, handle::waitTermination );
@@ -243,7 +243,7 @@ class TimeBasedTaskSchedulerTest
         scheduler.tick();
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
-        pools.getThreadPool( Group.STORAGE_MAINTENANCE, null ).shutDown();
+        pools.getThreadPool( Group.STORAGE_MAINTENANCE ).shutDown();
         assertThat( counter.get(), is( 2 ) );
         assertThat( cancelListener, contains( Boolean.TRUE ) );
     }
@@ -273,7 +273,7 @@ class TimeBasedTaskSchedulerTest
         // tick will remove cancelled tasks
         assertEquals( 0, scheduler.tasksLeft() );
 
-        pools.getThreadPool( Group.STORAGE_MAINTENANCE, null ).shutDown();
+        pools.getThreadPool( Group.STORAGE_MAINTENANCE ).shutDown();
         assertThat( counter.get(), is( 1 ) );
     }
 

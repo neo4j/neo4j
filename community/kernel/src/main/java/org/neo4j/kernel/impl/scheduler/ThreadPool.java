@@ -27,28 +27,28 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.SchedulerThreadFactory;
+import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
 
 final class ThreadPool
 {
-    private final GroupedDaemonThreadFactory threadFactory;
+    private final SchedulerThreadFactory threadFactory;
     private final InterruptableThreadFactory interruptableThreadFactory;
     private final ExecutorService executor;
     private final ConcurrentHashMap<Object,Future<?>> registry;
     private InterruptedException shutdownInterrupted;
 
-    ThreadPool( Group group, ThreadGroup parentThreadGroup )
+    static class ThreadPoolParameters
     {
-        threadFactory = new GroupedDaemonThreadFactory( group, parentThreadGroup );
-        interruptableThreadFactory = new InterruptableThreadFactory( group, parentThreadGroup );
-        executor = group.buildExecutorService( threadFactory );
-        registry = new ConcurrentHashMap<>();
+        volatile int desiredParallelism;
+        volatile SchedulerThreadFactoryFactory providedThreadFactory = GroupedDaemonThreadFactory::new;
     }
 
-    ThreadPool( Group group, ThreadGroup parentThreadGroup, int parallelism )
+    ThreadPool( Group group, ThreadGroup parentThreadGroup, ThreadPoolParameters parameters )
     {
-        threadFactory = new GroupedDaemonThreadFactory( group, parentThreadGroup );
+        threadFactory = parameters.providedThreadFactory.newSchedulerThreadFactory( group, parentThreadGroup );
         interruptableThreadFactory = new InterruptableThreadFactory( group, parentThreadGroup );
-        executor = group.buildExecutorService( threadFactory, parallelism );
+        executor = group.buildExecutorService( threadFactory, parameters.desiredParallelism );
         registry = new ConcurrentHashMap<>();
     }
 

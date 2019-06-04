@@ -28,10 +28,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.kernel.impl.scheduler.ThreadPool.ThreadPoolParameters;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
 import org.neo4j.time.Clocks;
 
 public class CentralJobScheduler extends LifecycleAdapter implements JobScheduler, AutoCloseable
@@ -40,10 +42,9 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
 
     private final TimeBasedTaskScheduler scheduler;
     private final Thread schedulerThread;
-    private final ConcurrentHashMap<Group,Integer> desiredParallelism;
-
     private final TopLevelGroup topLevelGroup;
     private final ThreadPoolManager pools;
+    private final ConcurrentHashMap<Group,ThreadPoolParameters> extraParameters;
 
     private volatile boolean started;
 
@@ -64,13 +65,13 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
 
     protected CentralJobScheduler()
     {
-        desiredParallelism = new ConcurrentHashMap<>( 4 );
         topLevelGroup = new TopLevelGroup();
         pools = new ThreadPoolManager( topLevelGroup );
-        ThreadFactory threadFactory = new GroupedDaemonThreadFactory( Group.TASK_SCHEDULER, topLevelGroup );
         scheduler = new TimeBasedTaskScheduler( Clocks.nanoClock(), pools );
+        extraParameters = new ConcurrentHashMap<>();
 
         // The scheduler thread runs at slightly elevated priority for timeliness, and is started in init().
+        ThreadFactory threadFactory = new GroupedDaemonThreadFactory( Group.TASK_SCHEDULER, topLevelGroup );
         schedulerThread = threadFactory.newThread( scheduler );
         int priority = Thread.NORM_PRIORITY + 1;
         schedulerThread.setPriority( priority );
@@ -91,7 +92,15 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     @Override
     public void setParallelism( Group group, int parallelism )
     {
-        desiredParallelism.putIfAbsent( group, parallelism );
+        pools.assumeNotStarted( group );
+        extraParameters.computeIfAbsent( group, g -> new ThreadPoolParameters() ).desiredParallelism = parallelism;
+    }
+
+    @Override
+    public void setThreadFactory( Group group, SchedulerThreadFactoryFactory threadFactory )
+    {
+        pools.assumeNotStarted( group );
+        extraParameters.computeIfAbsent( group, g -> new ThreadPoolParameters() ).providedThreadFactory = threadFactory;
     }
 
     @Override
@@ -118,7 +127,7 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
 
     private ThreadPool getThreadPool( Group group )
     {
-        return pools.getThreadPool( group, desiredParallelism.get( group ) );
+        return pools.getThreadPool( group, extraParameters.get( group ) );
     }
 
     @Override

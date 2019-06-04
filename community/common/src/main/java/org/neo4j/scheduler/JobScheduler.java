@@ -50,6 +50,15 @@ public interface JobScheduler extends Lifecycle, AutoCloseable
     void setParallelism( Group group, int parallelism );
 
     /**
+     * Assign a {@link SchedulerThreadFactory} to a given group. This only has an effect if the underlying scheduler for the given group has not already been
+     * started.
+     *
+     * @param group The group to assign the given thread factory for.
+     * @param threadFactory The thread factory to assign.
+     */
+    void setThreadFactory( Group group, SchedulerThreadFactoryFactory threadFactory );
+
+    /**
      * Expose a group scheduler as an {@link Executor}.
      * <p>
      * <strong>NOTE:</strong> The returned instance might be an implementation of the {@link ExecutorService} interface. If so, then it is <em>NOT</em> allowed

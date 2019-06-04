@@ -105,7 +105,7 @@ final class ScheduledJobHandle extends AtomicInteger implements JobHandle
     {
         if ( compareAndSet( RUNNABLE, SUBMITTED ) )
         {
-            latestHandle = pools.getThreadPool( group, null ).submit( task );
+            latestHandle = pools.getThreadPool( group ).submit( task );
             handleRelease.release();
         }
     }

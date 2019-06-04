@@ -28,6 +28,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
 public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements BoltSchedulerProvider
@@ -54,6 +55,7 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
     @Override
     public void start()
     {
+        scheduler.setThreadFactory( Group.BOLT_WORKER, NettyThreadFactory::new );
         forkJoinThreadPool = new ForkJoinPool();
         config.enabledBoltConnectors().forEach( connector ->
         {

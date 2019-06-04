@@ -64,9 +64,9 @@ public enum Group
 
     // BOLT.
     /** Network IO threads for the Bolt protocol. */
-    BOLT_NETWORK_IO( "BoltNetworkIO" ),
+    BOLT_NETWORK_IO( "BoltNetworkIO", ExecutorServiceFactory.unschedulable() ),
     /** Transaction processing threads for Bolt. */
-    BOLT_WORKER( "BoltWorker" ),
+    BOLT_WORKER( "BoltWorker", ExecutorServiceFactory.unschedulable() ),
 
     // CAUSAL CLUSTER, TOPOLOGY & BACKUP.
     RAFT_CLIENT( "RaftClient" ),
@@ -123,11 +123,6 @@ public enum Group
     public String threadName()
     {
         return "neo4j." + groupName() + "-" + threadCounter.incrementAndGet();
-    }
-
-    public ExecutorService buildExecutorService( SchedulerThreadFactory factory )
-    {
-        return executorServiceFactory.build( this, factory );
     }
 
     public ExecutorService buildExecutorService( SchedulerThreadFactory factory, int parallelism )

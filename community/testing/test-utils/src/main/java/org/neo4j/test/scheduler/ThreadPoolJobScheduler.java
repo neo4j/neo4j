@@ -31,6 +31,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
 
@@ -65,6 +66,12 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
 
     @Override
     public void setParallelism( Group group, int parallelism )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void setThreadFactory( Group group, SchedulerThreadFactoryFactory threadFactory )
     {
         throw new UnsupportedOperationException();
     }

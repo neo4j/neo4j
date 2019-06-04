@@ -27,6 +27,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
 
 public class JobSchedulerAdapter extends LifecycleAdapter implements JobScheduler
 {
@@ -37,6 +38,11 @@ public class JobSchedulerAdapter extends LifecycleAdapter implements JobSchedule
 
     @Override
     public void setParallelism( Group group, int parallelism )
+    {
+    }
+
+    @Override
+    public void setThreadFactory( Group group, SchedulerThreadFactoryFactory threadFactory )
     {
     }
 

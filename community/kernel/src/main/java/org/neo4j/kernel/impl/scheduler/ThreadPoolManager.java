@@ -24,6 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.scheduler.Group;
 
+import static java.util.Objects.requireNonNullElseGet;
+
 final class ThreadPoolManager
 {
     private final ConcurrentHashMap<Group,ThreadPool> pools;
@@ -36,22 +38,31 @@ final class ThreadPoolManager
         pools = new ConcurrentHashMap<>();
     }
 
-    ThreadPool getThreadPool( Group group, Integer desiredParallelism )
+    ThreadPool getThreadPool( Group group )
     {
-        return pools.computeIfAbsent( group, g -> createThreadPool( g, desiredParallelism ) );
+        return getThreadPool( group, null );
     }
 
-    private synchronized ThreadPool createThreadPool( Group group, Integer desiredParallelism )
+    ThreadPool getThreadPool( Group group, ThreadPool.ThreadPoolParameters parameters )
+    {
+        return pools.computeIfAbsent( group, g -> createThreadPool( g, parameters ) );
+    }
+
+    void assumeNotStarted( Group group )
+    {
+        if ( pools.containsKey( group ) )
+        {
+            throw new IllegalStateException( group.groupName() + " is already been started. " );
+        }
+    }
+
+    private synchronized ThreadPool createThreadPool( Group group, ThreadPool.ThreadPoolParameters parameters )
     {
         if ( shutdown )
         {
             throw new IllegalStateException( "ThreadPoolManager is shutdown." );
         }
-        if ( desiredParallelism != null )
-        {
-            return new ThreadPool( group, topLevelGroup, desiredParallelism );
-        }
-        return new ThreadPool( group, topLevelGroup );
+        return new ThreadPool( group, topLevelGroup, requireNonNullElseGet( parameters, ThreadPool.ThreadPoolParameters::new ) );
     }
 
     synchronized InterruptedException shutDownAll()

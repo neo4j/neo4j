@@ -17,13 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.runtime;
+package org.neo4j.scheduler;
 
-import java.time.Duration;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadFactory;
-
-public interface ExecutorFactory
+public interface SchedulerThreadFactoryFactory
 {
-    ExecutorService create( int corePoolSize, int maxPoolSize, Duration keepAlive, int queueSize, boolean startCoreThreads, ThreadFactory threadFactory );
+    SchedulerThreadFactory newSchedulerThreadFactory( Group group, ThreadGroup parentThreadGroup );
 }
