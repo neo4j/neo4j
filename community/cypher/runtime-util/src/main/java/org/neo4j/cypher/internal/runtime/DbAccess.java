@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime;
 
+import java.util.Optional;
+
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -26,8 +28,6 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.NodeValue;
-import org.neo4j.values.virtual.RelationshipValue;
 
 /**
  * Used to expose db access to expressions
@@ -90,7 +90,17 @@ public interface DbAccess extends EntityById
 
     AnyValue callFunction( int id, AnyValue[] args, String[] allowed );
 
-    boolean hasTxStatePropertyForCachedNodeProperty( long nodeId, int propertyKeyId );
+    /**
+     * @return `Optional.empty` if TxState has no changes.
+     *         `Optional.of(true)` if the property was changed.
+     *         `Optional.of(false)` if the property or the entity were deleted in TxState.
+     */
+    Optional<Boolean> hasTxStatePropertyForCachedNodeProperty( long nodeId, int propertyKeyId );
 
-    boolean hasTxStatePropertyForCachedRelationshipProperty( long relId, int propertyKeyId );
+    /**
+     * @return `Optional.empty` if TxState has no changes.
+     *         `Optional.of(true)` if the property was changed.
+     *         `Optional.of(false)` if the property or the entity were deleted in TxState.
+     */
+    Optional<Boolean> hasTxStatePropertyForCachedRelationshipProperty( long relId, int propertyKeyId );
 }

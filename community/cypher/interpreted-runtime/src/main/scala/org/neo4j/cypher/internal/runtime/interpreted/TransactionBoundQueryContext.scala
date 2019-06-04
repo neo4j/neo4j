@@ -478,16 +478,16 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
     }
 
-    override def hasTxStatePropertyForCachedProperty(nodeId: Long, propertyKeyId: Int): Boolean = {
+    override def hasTxStatePropertyForCachedProperty(nodeId: Long, propertyKeyId: Int): Option[Boolean] = {
       if (isDeletedInThisTx(nodeId)) {
         // Node deleted in TxState
-        false
+        Some(false)
       } else {
         val nodePropertyInTx = reads().nodePropertyChangeInTransactionOrNull(nodeId, propertyKeyId)
         nodePropertyInTx match {
-          case null => true // no changes in TxState. Property is cached, so it must exist.
-          case Values.NO_VALUE => false // property removed in TxState
-          case _ => true // property changed in TxState
+          case null => None // no changes in TxState.
+          case Values.NO_VALUE => Some(false) // property removed in TxState
+          case _ => Some(true) // property changed in TxState
         }
       }
     }
@@ -679,16 +679,16 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     override def getTxStateProperty(relId: Long, propertyKeyId: Int): Value =
       getTxStateRelationshipPropertyOrNull(relId, propertyKeyId)
 
-    override def hasTxStatePropertyForCachedProperty(relId: Long, propertyKeyId: Int): Boolean = {
+    override def hasTxStatePropertyForCachedProperty(relId: Long, propertyKeyId: Int): Option[Boolean] = {
       if (isDeletedInThisTx(relId)) {
         // Relationship deleted in TxState
-        false
+        Some(false)
       } else {
         val relPropertyInTx = reads().relationshipPropertyChangeInTransactionOrNull(relId, propertyKeyId)
         relPropertyInTx match {
-          case null => true // no changes in TxState. Property is cached, so it must exist.
-          case Values.NO_VALUE => false // property removed in TxState
-          case _ => true // property changed in TxState
+          case null => None // no changes in TxState.
+          case Values.NO_VALUE => Some(false) // property removed in TxState
+          case _ => Some(true) // property changed in TxState
         }
       }
     }

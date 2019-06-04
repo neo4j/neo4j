@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime
 
 import java.net.URL
+import java.util.Optional
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -228,11 +229,19 @@ trait QueryContext extends TokenContext with DbAccess {
                                        propertyCursor: PropertyCursor): Boolean =
     relationshipOps.hasProperty(relationship, property, relationshipScanCursor, propertyCursor)
 
-  override def hasTxStatePropertyForCachedNodeProperty(nodeId: Long, propertyKeyId: Int): Boolean =
-    nodeOps.hasTxStatePropertyForCachedProperty(nodeId, propertyKeyId)
+  override def hasTxStatePropertyForCachedNodeProperty(nodeId: Long, propertyKeyId: Int): Optional[java.lang.Boolean] = {
+    nodeOps.hasTxStatePropertyForCachedProperty(nodeId, propertyKeyId) match {
+      case None => Optional.empty()
+      case Some(bool) => Optional.of(bool)
+    }
+  }
 
-  override def hasTxStatePropertyForCachedRelationshipProperty(relId: Long, propertyKeyId: Int): Boolean =
-    relationshipOps.hasTxStatePropertyForCachedProperty(relId, propertyKeyId)
+  override def hasTxStatePropertyForCachedRelationshipProperty(relId: Long, propertyKeyId: Int): Optional[java.lang.Boolean] = {
+    relationshipOps.hasTxStatePropertyForCachedProperty(relId, propertyKeyId)match {
+      case None => Optional.empty()
+      case Some(bool) => Optional.of(bool)
+    }
+  }
 }
 
 trait Operations[T, CURSOR] {
@@ -255,11 +264,11 @@ trait Operations[T, CURSOR] {
   def getTxStateProperty(obj: Long, propertyKeyId: Int): Value
 
   /**
-    * @return `true` if TxState has no changes, which indicates the cached property must exist,
-    *        or if the property was changed.
-    *        `false` if the property or the entity were deleted in TxState.
+    * @return `None` if TxState has no changes.
+    *         `Some(true)` if the property was changed.
+    *         `Some(false)` if the property or the entity were deleted in TxState.
     */
-  def hasTxStatePropertyForCachedProperty(entityId: Long, propertyKeyId: Int): Boolean
+  def hasTxStatePropertyForCachedProperty(entityId: Long, propertyKeyId: Int): Option[Boolean]
 
   def propertyKeyIds(obj: Long, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int]
 

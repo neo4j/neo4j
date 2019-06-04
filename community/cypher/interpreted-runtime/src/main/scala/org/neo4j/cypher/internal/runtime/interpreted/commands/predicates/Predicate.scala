@@ -189,7 +189,25 @@ case class CachedNodePropertyExists(cachedNodeProperty: Expression) extends Pred
         if (nodeId == StatementConstants.NO_SUCH_NODE) {
           None
         } else {
-          Some(state.query.nodeOps.hasTxStatePropertyForCachedProperty(nodeId, cp.getPropertyKey(state.query)))
+          cp.getPropertyKey(state.query) match {
+            case StatementConstants.NO_SUCH_PROPERTY_KEY =>
+              Some(false)
+            case propId =>
+              state.query.nodeOps.hasTxStatePropertyForCachedProperty(nodeId, propId) match {
+                case None => // no change in TX state
+                 cp.getCachedProperty(m) match {
+                   case null =>
+                     // the cached node property has been invalidated
+                     Some(state.query.nodeOps.hasProperty(nodeId, propId, state.cursors.nodeCursor, state.cursors.propertyCursor))
+                   case Values.NO_VALUE =>
+                     Some(false)
+                   case _ =>
+                     Some(true)
+                 }
+                case changedInTXState =>
+                  changedInTXState
+              }
+          }
         }
       case _ => throw new CypherTypeException("Expected " + cachedNodeProperty + " to be a cached node property.")
     }
@@ -214,7 +232,25 @@ case class CachedRelationshipPropertyExists(cachedRelProperty: Expression) exten
         if (relId == StatementConstants.NO_SUCH_RELATIONSHIP) {
           None
         } else {
-          Some(state.query.relationshipOps.hasTxStatePropertyForCachedProperty(relId, cp.getPropertyKey(state.query)))
+          cp.getPropertyKey(state.query) match {
+            case StatementConstants.NO_SUCH_PROPERTY_KEY =>
+              Some(false)
+            case propId =>
+              state.query.relationshipOps.hasTxStatePropertyForCachedProperty(relId, propId) match {
+                case None => // no change in TX state
+                  cp.getCachedProperty(m) match {
+                    case null =>
+                      // the cached rel property has been invalidated
+                      Some(state.query.relationshipOps.hasProperty(relId, propId, state.cursors.relationshipScanCursor, state.cursors.propertyCursor))
+                    case Values.NO_VALUE =>
+                      Some(false)
+                    case _ =>
+                      Some(true)
+                  }
+                case changedInTXState =>
+                  changedInTXState
+              }
+          }
         }
       case _ => throw new CypherTypeException("Expected " + cachedRelProperty + " to be a cached relationship property.")
     }
@@ -224,7 +260,7 @@ case class CachedRelationshipPropertyExists(cachedRelProperty: Expression) exten
 
   override def containsIsNull = false
 
-  override def rewrite(f: Expression => Expression): Expression = f(CachedNodePropertyExists(cachedRelProperty.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(CachedRelationshipPropertyExists(cachedRelProperty.rewrite(f)))
 
   override def arguments: Seq[Expression] = Seq(cachedRelProperty)
 

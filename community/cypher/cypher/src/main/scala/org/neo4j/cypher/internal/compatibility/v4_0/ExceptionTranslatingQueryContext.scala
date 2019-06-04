@@ -317,7 +317,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
     override def getTxStateProperty(obj: Long, propertyKeyId: Int): Value =
       translateException(inner.getTxStateProperty(obj, propertyKeyId))
 
-    override def hasTxStatePropertyForCachedProperty(entityId: Long, propertyKeyId: Int): Boolean =
+    override def hasTxStatePropertyForCachedProperty(entityId: Long, propertyKeyId: Int): Option[Boolean] =
       translateException(inner.hasTxStatePropertyForCachedProperty(entityId, propertyKeyId))
 
     override def acquireExclusiveLock(obj: Long): Unit =

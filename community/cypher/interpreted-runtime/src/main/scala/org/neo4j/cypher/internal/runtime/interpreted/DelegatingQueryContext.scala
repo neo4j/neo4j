@@ -292,7 +292,7 @@ class DelegatingOperations[T, CURSOR](protected val inner: Operations[T, CURSOR]
   override def hasProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean =
     singleDbHit(inner.hasProperty(obj, propertyKeyId, cursor, propertyCursor))
 
-  override def hasTxStatePropertyForCachedProperty(nodeId: Long, propertyKeyId: Int): Boolean =
+  override def hasTxStatePropertyForCachedProperty(nodeId: Long, propertyKeyId: Int): Option[Boolean] =
     inner.hasTxStatePropertyForCachedProperty(nodeId, propertyKeyId)
 
   override def propertyKeyIds(obj: Long, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int] =
