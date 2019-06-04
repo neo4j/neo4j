@@ -320,14 +320,15 @@ case class ExpressionStringifier(
   }
 
   def quote(txt: String): String = {
-    val containsSingle = txt.contains('\'')
-    val containsDouble = txt.contains('"')
+    val str = txt.replaceAll("\\\\", "\\\\\\\\")
+    val containsSingle = str.contains('\'')
+    val containsDouble = str.contains('"')
     if (containsDouble && containsSingle)
-      "\"" + txt.replaceAll("\"", "\\\\\"") + "\""
+      "\"" + str.replaceAll("\"", "\\\\\"") + "\""
     else if (containsDouble)
-      "'" + txt + "'"
+      "'" + str + "'"
     else
-      "\"" + txt + "\""
+      "\"" + str + "\""
   }
 }
 
