@@ -21,13 +21,10 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.Test;
 
-import java.util.HashMap;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.ValueMerger.MergeResult;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -38,9 +35,7 @@ import static org.neo4j.internal.helpers.ArrayUtil.array;
 
 public class ThrowingConflictDetectorTest
 {
-    private static final ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );
-    private static final IndexSpecificSpaceFillingCurveSettingsCache specificSettings =
-            new IndexSpecificSpaceFillingCurveSettingsCache( configuredSettings, new HashMap<>() );
+    private static final IndexSpecificSpaceFillingCurveSettings specificSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
     private final ThrowingConflictDetector<GenericKey,NativeIndexValue> detector = new ThrowingConflictDetector<>( true );
 
     @Test

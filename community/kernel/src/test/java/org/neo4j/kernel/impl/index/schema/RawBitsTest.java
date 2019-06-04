@@ -24,13 +24,11 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -41,12 +39,10 @@ import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRA
 
 public class RawBitsTest
 {
-    private static final ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );
-    private static final IndexSpecificSpaceFillingCurveSettingsCache specificSettings =
-            new IndexSpecificSpaceFillingCurveSettingsCache( configuredSettings, new HashMap<>() );
+    private static final IndexSpecificSpaceFillingCurveSettings specificSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
     public GenericLayout layout = new GenericLayout( 1, specificSettings );
 
-    final List<Object> objects = Arrays.asList(
+    private final List<Object> objects = Arrays.asList(
             Double.NEGATIVE_INFINITY,
             -Double.MAX_VALUE,
             Long.MIN_VALUE,

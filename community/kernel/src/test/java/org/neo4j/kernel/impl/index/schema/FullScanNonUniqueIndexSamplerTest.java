@@ -22,15 +22,13 @@ package org.neo4j.kernel.impl.index.schema;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.HashMap;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexSample;
-import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
@@ -46,9 +44,7 @@ import static org.neo4j.values.storable.ValueGroup.NUMBER;
 
 public class FullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil<GenericKey,NativeIndexValue>
 {
-    private static final ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );
-    private static final IndexSpecificSpaceFillingCurveSettingsCache specificSettings =
-            new IndexSpecificSpaceFillingCurveSettingsCache( configuredSettings, new HashMap<>() );
+    private static final IndexSpecificSpaceFillingCurveSettings specificSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
 
     @Test
     public void shouldIncludeAllValuesInTree() throws Exception
