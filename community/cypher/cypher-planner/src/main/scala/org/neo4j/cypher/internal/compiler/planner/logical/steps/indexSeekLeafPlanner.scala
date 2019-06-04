@@ -47,6 +47,7 @@ object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
                                                           properties,
                                                           valueExpr,
                                                           solvedPredicates,
+                                                          predicatesForCardinalityEstimation,
                                                           hint,
                                                           argumentIds,
                                                           providedOrder,

@@ -367,21 +367,29 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                               properties: Seq[IndexedProperty],
                               valueExpr: QueryExpression[Expression],
                               solvedPredicates: Seq[Expression] = Seq.empty,
+                              solvedPredicatesForCardinalityEstimation: Seq[Expression] = Seq.empty,
                               solvedHint: Option[UsingIndexHint] = None,
                               argumentIds: Set[String],
                               providedOrder: ProvidedOrder,
                               interestingOrder: InterestingOrder,
                               context: LogicalPlanningContext): LogicalPlan = {
-    val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
+    val queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
-    )
+    // We know solvedPredicates is a subset of solvedPredicatesForCardinalityEstimation
+    val solved = RegularPlannerQuery(queryGraph = queryGraph)
+    val solvedForCardinalityEstimation = RegularPlannerQuery(queryGraph.addPredicates(solvedPredicatesForCardinalityEstimation: _*))
+
     val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, interestingOrder, context)
     val rewrittenValueExpr = valueExpr.map(solver.solve(_))
     val newArguments = solver.newArguments
-    val plan = annotate(NodeUniqueIndexSeek(idName, label, properties, rewrittenValueExpr, argumentIds ++ newArguments, toIndexOrder(providedOrder)), solved, providedOrder, context)
+    val plan = NodeUniqueIndexSeek(idName, label, properties, rewrittenValueExpr, argumentIds ++ newArguments, toIndexOrder(providedOrder))
+    val cardinality = cardinalityModel(solvedForCardinalityEstimation, context.input, context.semanticTable)
+    solveds.set(plan.id, solved)
+    cardinalities.set(plan.id, cardinality)
+    providedOrders.set(plan.id, providedOrder)
     solver.rewriteLeafPlan(plan)
   }
 
