@@ -36,7 +36,7 @@ public abstract class NaiveQuerySubscription implements RuntimeResult
     private int servedRecords;
     private List<AnyValue[]> materializedResult;
     private final QuerySubscriber subscriber;
-    private Exception error;
+    private Throwable error;
     private boolean cancelled;
 
     protected NaiveQuerySubscription( QuerySubscriber subscriber )
@@ -76,17 +76,25 @@ public abstract class NaiveQuerySubscription implements RuntimeResult
         return hasMore && !cancelled;
     }
 
-    private void serveResults() throws Exception
+    private void serveResults()
     {
-        for ( ; servedRecords < requestedRecords && servedRecords < materializedResult.size(); servedRecords++ )
+        try
         {
-            subscriber.onRecord();
-            AnyValue[] current = materializedResult.get( servedRecords );
-            for ( int offset = 0; offset < current.length; offset++ )
+            for ( ; servedRecords < requestedRecords && servedRecords < materializedResult.size(); servedRecords++ )
             {
-                subscriber.onField( offset, current[offset] );
+                subscriber.onRecord();
+                AnyValue[] current = materializedResult.get( servedRecords );
+                for ( int offset = 0; offset < current.length; offset++ )
+                {
+                    subscriber.onField( offset, current[offset] );
+                }
+                subscriber.onRecordCompleted();
             }
-            subscriber.onRecordCompleted();
+        }
+        catch ( Throwable t )
+        {
+            error = t;
+            servedRecords = materializedResult.size();
         }
     }
 
