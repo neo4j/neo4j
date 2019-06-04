@@ -22,8 +22,8 @@ package org.neo4j.cypher
 import java.io.File
 import java.util.Optional
 
-import org.neo4j.configuration.GraphDatabaseSettings.{SYSTEM_DATABASE_NAME, default_database}
-import org.neo4j.configuration.{Config, GraphDatabaseSettings}
+import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseSettings.{DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME, default_database}
 import org.neo4j.cypher.internal.DatabaseStatus
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.dbms.database.{DatabaseContext, DatabaseManager, DefaultSystemGraphInitializer}
@@ -128,6 +128,8 @@ class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite
   }
 
   test("should fail when showing default database when not on system database") {
+    setup(defaultConfig)
+    selectDatabase(DEFAULT_DATABASE_NAME)
     the [DatabaseManagementException] thrownBy {
       // WHEN
       execute("SHOW DEFAULT DATABASE")
@@ -198,7 +200,7 @@ class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite
       secureHasher)
 
     securityGraphInitializer.initializeSecurityGraph()
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
   }
 
   private def databaseManager() = graph.getDependencyResolver.resolveDependency(classOf[DatabaseManager[DatabaseContext]])
