@@ -44,4 +44,13 @@ public interface QuerySubscription
      * @return <tt>true</tt> if there is more data in the stream, otherwise <tt>false</tt>
      */
     boolean await() throws Exception;
+
+    /**
+     * Consumes all results.
+     */
+    default void consumeAll() throws Exception
+    {
+        request( Long.MAX_VALUE );
+        await();
+    }
 }

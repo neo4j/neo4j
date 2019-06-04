@@ -54,8 +54,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String, normalExecutionEngin
         if (!tc.securityContext().isAdmin) throw new AuthorizationViolationException(PERMISSION_DENIED)
         val systemSubscriber = new SystemCommandQuerySubscriber(subscriber, queryHandler)
         val execution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, systemSubscriber)
-        execution.request(Long.MaxValue)
-        execution.await()
+        execution.consumeAll()
 
         if (systemSubscriber.hasFailed) FailedRuntimeResult
         else sourceResult.getOrElse(SchemaWriteRuntimeResult(ctx, subscriber))

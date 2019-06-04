@@ -100,8 +100,7 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
         QueryExecution result = getSystemDb().execute( query, parameters, subscriber );
         try
         {
-            result.request( Long.MAX_VALUE );
-            result.await();
+            result.consumeAll();
         }
         catch ( Exception e )
         {

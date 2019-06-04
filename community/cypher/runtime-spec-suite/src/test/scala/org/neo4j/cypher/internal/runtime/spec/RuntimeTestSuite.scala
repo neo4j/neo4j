@@ -473,8 +473,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
 case class RecordingRuntimeResult(runtimeResult: RuntimeResult, recordingQuerySubscriber: RecordingQuerySubscriber) {
   def awaitAll(): IndexedSeq[Array[AnyValue]] = {
-    runtimeResult.request(Long.MaxValue)
-    runtimeResult.await()
+    runtimeResult.consumeAll()
     recordingQuerySubscriber.getOrThrow().asScala.toIndexedSeq
   }
 
