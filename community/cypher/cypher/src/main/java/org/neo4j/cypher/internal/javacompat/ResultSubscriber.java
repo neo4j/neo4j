@@ -53,6 +53,12 @@ import org.neo4j.values.utils.ValuesException;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.WRITE;
 
+/**
+ * A {@link QuerySubscriber} that implements the {@link Result} interface.
+ * <p>
+ * This implementation wraps a {@link QueryExecution} and presents both an iterator-based API and a visitor-based API
+ * using the underlying {@link QueryExecution} to serve the results.
+ */
 public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> implements QuerySubscriber, Result, QueryExecutionProvider
 {
     private final DefaultValueMapper valueMapper;
@@ -65,6 +71,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
     private Exception visitException;
     private List<Map<String,Object>> materializeResult;
     private Iterator<Map<String,Object>> materializedIterator;
+    private boolean checkIfMaterialized = true;
 
     public ResultSubscriber( TransactionalContext context )
     {
@@ -77,19 +84,6 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
     {
         this.execution = execution;
         assertNoErrors();
-        // By policy we materialize the result directly unless it's a read only query.
-        QueryExecutionType.QueryType queryType = execution.executionType().queryType();
-        if ( queryType != READ_ONLY )
-        {
-            materializeResult();
-            assertNoErrors();
-        }
-
-        // ... and if we do not return any rows, we close all resources.
-        if ( queryType == WRITE || execution.fieldNames().length == 0 )
-        {
-            close();
-        }
     }
 
     // QuerySubscriber part
@@ -102,6 +96,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
     @Override
     public void onRecord()
     {
+        //do nothing
     }
 
     @Override
@@ -239,6 +234,10 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
                 ResultStringBuilder.apply( execution.fieldNames(), context );
         try
         {
+            //don't materialize since that will close down the underlying transaction
+            //and we need it to be open in order to serialize nodes, relationships, and
+            //paths
+            checkIfMaterialized = false;
             accept( stringBuilder );
             stringBuilder.result( writer, statistics );
             for ( Notification notification : getNotifications() )
@@ -263,7 +262,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
     public <VisitationException extends Exception> void accept( ResultVisitor<VisitationException> visitor )
             throws VisitationException
     {
-        if ( materializeResult != null )
+        if ( materialize() )
         {
             acceptFromMaterialized( visitor );
         }
@@ -271,12 +270,13 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
         {
             acceptFromSubscriber( visitor );
         }
+        close();
     }
 
     @Override
     protected Map<String,Object> fetchNextOrNull()
     {
-        if ( materializeResult != null )
+        if ( materialize() )
         {
             return nextFromMaterialized();
         }
@@ -338,7 +338,6 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
         {
             materializeResult = new ArrayList<>(  );
             fetchResults( Long.MAX_VALUE );
-            close();
         }
     }
 
@@ -439,6 +438,34 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
             throw (VisitationException) visitException;
         }
         assertNoErrors();
+    }
+
+    /**
+     * Checks if result needs to be materialised and if so materializes the result
+     *
+     * @return <tt>true</tt> if results has been materialized otherwise <tt>false</tt>
+     */
+    private boolean materialize()
+    {
+        if ( checkIfMaterialized )
+        {
+            // By policy we materialize the result directly unless it's a read only query.
+            QueryExecutionType.QueryType queryType = execution.executionType().queryType();
+            if ( queryType != READ_ONLY )
+            {
+                materializeResult();
+                assertNoErrors();
+            }
+
+            // ... and if we do not return any rows, we close all resources.
+            if ( queryType == WRITE || execution.fieldNames().length == 0 )
+            {
+                close();
+            }
+            checkIfMaterialized = false;
+        }
+
+        return materializeResult != null;
     }
 
     //TODO please make this go away
