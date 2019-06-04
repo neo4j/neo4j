@@ -329,8 +329,8 @@ class MapExecutionContextTest extends CypherFunSuite {
     left should not be theSameInstanceAs(right)
     val newKey = "this key should not yet exist in left or right"
     val newCachedPropertyKey = prop("n", newKey)
-    an[NoSuchElementException] should be thrownBy left.getCachedProperty(newCachedPropertyKey)
-    an[NoSuchElementException] should be thrownBy right.getCachedProperty(newCachedPropertyKey)
+    left.getCachedProperty(newCachedPropertyKey) shouldBe null
+    right.getCachedProperty(newCachedPropertyKey) shouldBe null
 
     // when (left is modified)
     left.set(newKey, BooleanValue.TRUE)
@@ -339,7 +339,7 @@ class MapExecutionContextTest extends CypherFunSuite {
     // then (only left should be modified)
     left.getByName(newKey) should equal(BooleanValue.TRUE)
     left.getCachedProperty(newCachedPropertyKey) should equal(BooleanValue.FALSE)
-    an[NoSuchElementException] should be thrownBy right.getCachedProperty(newCachedPropertyKey)
+    right.getCachedProperty(newCachedPropertyKey) shouldBe null
   }
 
   private def prop(node: String, prop: String) =
