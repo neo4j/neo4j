@@ -299,17 +299,26 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                               properties: Seq[IndexedProperty],
                               valueExpr: QueryExpression[Expression],
                               solvedPredicates: Seq[Expression] = Seq.empty,
+                              solvedPredicatesForCardinalityEstimation: Seq[Expression] = Seq.empty,
                               solvedHint: Option[UsingIndexHint] = None,
                               argumentIds: Set[String],
                               providedOrder: ProvidedOrder,
                               context: LogicalPlanningContext): LogicalPlan = {
-    val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
+    val queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
-    )
-    annotate(NodeUniqueIndexSeek(idName, label, properties, valueExpr, argumentIds, toIndexOrder(providedOrder)), solved, providedOrder, context)
+    // We know solvedPredicates is a subset of solvedPredicatesForCardinalityEstimation
+    val solved = RegularPlannerQuery(queryGraph = queryGraph)
+    val solvedForCardinalityEstimation = RegularPlannerQuery(queryGraph.addPredicates(solvedPredicatesForCardinalityEstimation: _*))
+
+    val plan = NodeUniqueIndexSeek(idName, label, properties, valueExpr, argumentIds, toIndexOrder(providedOrder))
+    val cardinality = cardinalityModel(solvedForCardinalityEstimation, context.input, context.semanticTable)
+    solveds.set(plan.id, solved)
+    cardinalities.set(plan.id, cardinality)
+    providedOrders.set(plan.id, providedOrder)
+    plan
   }
 
   def planAssertSameNode(node: String, left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
