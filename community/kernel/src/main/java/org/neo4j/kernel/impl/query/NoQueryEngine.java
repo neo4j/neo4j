@@ -42,12 +42,6 @@ enum NoQueryEngine implements QueryExecutionEngine
     }
 
     @Override
-    public Result profileQuery( String query, MapValue parameter, TransactionalContext context, boolean prePopulate )
-    {
-        throw noQueryEngine();
-    }
-
-    @Override
     public boolean isPeriodicCommit( String query )
     {
         throw noQueryEngine();

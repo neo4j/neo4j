@@ -125,24 +125,6 @@ public class ExecutionEngine implements QueryExecutionEngine
     }
 
     @Override
-    public Result profileQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate )
-            throws QueryExecutionKernelException
-    {
-        try
-        {
-            ResultSubscriber subscriber = new ResultSubscriber( context );
-            QueryExecution queryExecution =
-                    cypherExecutionEngine.execute( query, parameters, context, true, prePopulate, subscriber );
-            subscriber.init( queryExecution );
-            return subscriber;
-        }
-        catch ( CypherException e )
-        {
-            throw new QueryExecutionKernelException( e );
-        }
-    }
-
-    @Override
     public boolean isPeriodicCommit( String query )
     {
         return cypherExecutionEngine.isPeriodicCommit( query );
