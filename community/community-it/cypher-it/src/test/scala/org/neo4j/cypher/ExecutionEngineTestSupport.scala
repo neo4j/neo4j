@@ -144,7 +144,7 @@ trait ExecutionEngineHelper {
     val subscriber = new RecordingQuerySubscriber
     val context = graph.transactionalContext(query = q -> params.toMap)
     RewindableExecutionResult(eengine.execute(q,
-                                              ExecutionEngineHelper.asMapValue(params.toMap),
+                                              ExecutionEngineHelper.asMapValue(params),
                                               context,
                                               profile = false,
                                               prePopulate = false,
