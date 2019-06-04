@@ -336,7 +336,7 @@ class CountsComputerTest
 
     private GBPTreeCountsStore createCountsStore( CountsBuilder builder )
     {
-        return new GBPTreeCountsStore( pageCache, testDirectory.databaseLayout().countStore(), immediate(), builder, false );
+        return new GBPTreeCountsStore( pageCache, testDirectory.databaseLayout().countStore(), immediate(), builder, false, GBPTreeCountsStore.NO_MONITOR );
     }
 
     private void rebuildCounts( long lastCommittedTransactionId )

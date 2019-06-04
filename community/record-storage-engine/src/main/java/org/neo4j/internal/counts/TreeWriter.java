@@ -28,6 +28,9 @@ import static org.neo4j.index.internal.gbptree.ValueMerger.MergeResult.REMOVED;
 import static org.neo4j.index.internal.gbptree.ValueMerger.MergeResult.REPLACED;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
+/**
+ * Writes counts directly into the tree.
+ */
 class TreeWriter implements CountUpdater.CountWriter
 {
     private static final ValueMerger<CountsKey,CountsValue> MERGER =

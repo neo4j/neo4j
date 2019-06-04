@@ -108,6 +108,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.recordstorage.StoreTokens.allReadableTokens;
 import static org.neo4j.internal.recordstorage.StoreTokens.readOnlyTokenHolders;
@@ -212,7 +213,8 @@ public abstract class GraphStoreFixture implements AutoCloseable
             storeLife.start();
 
             CountsStore counts =
-                    new GBPTreeCountsStore( pageCache, databaseLayout().countStore(), RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, false );
+                    new GBPTreeCountsStore( pageCache, databaseLayout().countStore(), RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, false,
+                            NO_MONITOR );
             storeLife.add( CountsStore.wrapInLifecycle( counts ) );
 
             IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE,
@@ -231,7 +233,8 @@ public abstract class GraphStoreFixture implements AutoCloseable
     {
         if ( counts == null )
         {
-            counts = new GBPTreeCountsStore( pageCache, databaseLayout().countStore(), RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, true );
+            counts = new GBPTreeCountsStore( pageCache, databaseLayout().countStore(), RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, true,
+                    NO_MONITOR );
         }
         return counts;
     }

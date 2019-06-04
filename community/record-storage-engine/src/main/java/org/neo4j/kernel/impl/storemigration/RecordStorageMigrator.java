@@ -253,7 +253,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         StoreFactory oldStoreFactory = createStoreFactory( directoryLayout, oldFormat, new ScanOnOpenReadOnlyIdGeneratorFactory() );
         try ( NeoStores oldStores = oldStoreFactory.openAllNeoStores();
               GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, migrationLayout.countStore(), immediate(),
-                      new CountsComputer( oldStores, pageCache, directoryLayout ), false ) )
+                      new CountsComputer( oldStores, pageCache, directoryLayout ), false, GBPTreeCountsStore.NO_MONITOR ) )
         {
             countsStore.start();
             countsStore.checkpoint( IOLimiter.UNLIMITED );

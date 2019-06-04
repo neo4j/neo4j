@@ -53,7 +53,6 @@ import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.internal.counts.CountsKey.MAX_STRAY_TX_ID;
 import static org.neo4j.internal.counts.CountsKey.MIN_STRAY_TX_ID;
 import static org.neo4j.internal.counts.TreeWriter.merge;
@@ -68,26 +67,30 @@ import static org.neo4j.io.IOUtils.closeAllUnchecked;
  */
 public class GBPTreeCountsStore implements CountsStore
 {
+    public static final Monitor NO_MONITOR = txId -> {};
+
     private final GBPTree<CountsKey,CountsValue> tree;
     private final OutOfOrderSequence idSequence;
     private final ReadWriteLock lock = new ReentrantReadWriteLock( true );
     private final CountsLayout layout = new CountsLayout();
     private final CountsBuilder initialCountsBuilder;
     private final boolean readOnly;
+    private final Monitor monitor;
     private volatile ConcurrentHashMap<CountsKey,AtomicLong> changes = new ConcurrentHashMap<>();
     private volatile TxIdInformation txIdInformation;
     private volatile boolean started;
 
     public GBPTreeCountsStore( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCollector,
-            CountsBuilder initialCountsBuilder, boolean readOnly )
+            CountsBuilder initialCountsBuilder, boolean readOnly, Monitor monitor )
     {
         this.readOnly = readOnly;
+        this.monitor = monitor;
         CountsHeader header = new CountsHeader( TransactionIdStore.BASE_TX_ID );
-        this.tree = new GBPTree<>( pageCache, file, layout, 0, NO_MONITOR, header, header, recoveryCollector );
+        this.tree = new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, header, header, recoveryCollector );
         boolean successful = false;
         try
         {
-            this.txIdInformation = readTxIdInformation( header.value() );
+            this.txIdInformation = readTxIdInformation( header.highestGapFreeTxId() );
             // Recreate the tx id state as it was from last checkpoint (or base if empty)
             this.idSequence = new ArrayQueueOutOfOrderSequence( txIdInformation.highestGapFreeTxId, 200, EMPTY_LONG_ARRAY );
             this.txIdInformation.strayTxIds.forEach( txId -> idSequence.offer( txId, EMPTY_LONG_ARRAY ) );
@@ -158,6 +161,7 @@ public class GBPTreeCountsStore implements CountsStore
         if ( alreadyApplied || inRecoveryOnEmptyCountsStore )
         {
             lock.unlock();
+            monitor.ignoredTransaction( txId );
             return NO_OP_UPDATER;
         }
         return new CountUpdater( new MapWriter( this::readCountFromTree, changes, idSequence, txId ), lock );
@@ -346,5 +350,10 @@ public class GBPTreeCountsStore implements CountsStore
     {
         lock.lock();
         return lock;
+    }
+
+    public interface Monitor
+    {
+        void ignoredTransaction( long txId );
     }
 }

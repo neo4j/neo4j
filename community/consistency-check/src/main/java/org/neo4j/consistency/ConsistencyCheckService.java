@@ -197,7 +197,7 @@ public class ConsistencyCheckService
         StoreFactory factory =
                 new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem, immediate() ), pageCache, fileSystem, logProvider );
         CountsStore counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), RecoveryCleanupWorkCollector.ignore(),
-                new RebuildPreventingCountsInitializer(), true );
+                new RebuildPreventingCountsInitializer(), true, GBPTreeCountsStore.NO_MONITOR );
         // Don't start the counts store here as part of life, instead only shut down. This is because it's better to let FullCheck
         // start it and add its missing/broken detection where it can report to user.
         life.add( new LifecycleAdapter()

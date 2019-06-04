@@ -19,6 +19,11 @@
  */
 package org.neo4j.internal.counts;
 
+import org.neo4j.index.internal.gbptree.GBPTree;
+
+/**
+ * Value in a {@link GBPTree} owned by {@link GBPTreeCountsStore}.
+ */
 class CountsValue
 {
     static final int SIZE = Long.BYTES;

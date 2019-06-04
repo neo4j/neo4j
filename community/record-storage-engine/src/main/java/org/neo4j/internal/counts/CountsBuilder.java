@@ -22,6 +22,9 @@ package org.neo4j.internal.counts;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
+/**
+ * Provides counts data for building a counts store from scratch.
+ */
 public interface CountsBuilder
 {
     void initialize( CountsAccessor.Updater updater );

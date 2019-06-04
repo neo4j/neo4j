@@ -19,12 +19,17 @@
  */
 package org.neo4j.internal.counts;
 
+import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.counts.CountsVisitor;
+import org.neo4j.index.internal.gbptree.GBPTree;
 
 import static java.lang.String.format;
 
+/**
+ * Key in a {@link GBPTree} owned by {@link GBPTreeCountsStore}.
+ */
 public class CountsKey
 {
     static final int SIZE = Byte.BYTES +    // type
@@ -103,11 +108,23 @@ public class CountsKey
         return initialize( TYPE_STRAY_TX_ID, txId, 0 );
     }
 
+    /**
+     * Public utility method for instantiating a {@link CountsKey} for a node label id.
+     * @param labelId id of the label.
+     * @return a {@link CountsKey for the node label id. The returned key can be put into {@link Map maps} and similar.
+     */
     public static CountsKey nodeKey( int labelId )
     {
         return new CountsKey().initializeNode( labelId );
     }
 
+    /**
+     * Public utility method for instantiating a {@link CountsKey} for a node start/end label and relationship type id.
+     * @param startLabelId id of the label of start node.
+     * @param typeId id of the relationship type.
+     * @param endLabelId id of the label of end node.
+     * @return a {@link CountsKey for the node start/end label and relationship type id. The returned key can be put into {@link Map maps} and similar.
+     */
     public static CountsKey relationshipKey( int startLabelId, int typeId, int endLabelId )
     {
         return new CountsKey().initializeRelationship( startLabelId, typeId, endLabelId );

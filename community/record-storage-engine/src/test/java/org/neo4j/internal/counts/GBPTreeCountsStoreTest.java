@@ -24,20 +24,24 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsStore;
 import org.neo4j.counts.CountsVisitor;
-import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
+import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -52,10 +56,17 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
+import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.test.OtherThreadExecutor.command;
 import static org.neo4j.test.Race.throwing;
 
 @PageCacheExtension
@@ -82,8 +93,7 @@ class GBPTreeCountsStoreTest
     @BeforeEach
     void openCountsStore() throws Exception
     {
-        countsStore = new GBPTreeCountsStore( pageCache, directory.file( "counts.db" ), immediate(), CountsBuilder.EMPTY, false );
-        countsStore.start();
+        openCountsStore( CountsBuilder.EMPTY );
     }
 
     @AfterEach
@@ -109,7 +119,7 @@ class GBPTreeCountsStoreTest
             updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 2 ); // now at 5
         }
 
-        countsStore.checkpoint( IOLimiter.UNLIMITED );
+        countsStore.checkpoint( UNLIMITED );
 
         // when/then
         DoubleLongRegister register = Registers.newDoubleLongRegister();
@@ -153,23 +163,236 @@ class GBPTreeCountsStoreTest
             {
                 Thread.sleep( ThreadLocalRandom.current().nextInt( roundTimeMillis / 4 ) );
                 long checkpointTxId = lastClosedTxId.getHighestGapFreeNumber();
-                countsStore.checkpoint( IOLimiter.UNLIMITED );
+                countsStore.checkpoint( UNLIMITED );
                 lastCheckPointedTxId.set( checkpointTxId );
             } ) );
             race.go();
 
             // Crash here, well not really crash but close the counts store knowing that there's any number of transactions since the last checkpoint
             // and we know the last committed tx id as well as the (pessimistic) last check-pointed tx id.
-            closeCountsStore();
-
-            // Open it and recover
-            openCountsStore();
+            crashAndRestartCountsStore();
             recover( lastCheckPointedTxId.get(), nextTxId.get() );
             assertThat( nextTxId.get(), greaterThan( lastRoundClosedAt ) );
             lastRoundClosedAt = nextTxId.get();
 
             // then
             assertCountsMatchesExpected( expected );
+        }
+    }
+
+    @Test
+    void shouldNotReapplyAlreadyAppliedTransactionBelowHighestGapFree() throws Exception
+    {
+        // given
+        int labelId = 5;
+        long expectedCount = 0;
+        int delta = 3;
+        for ( long txId = BASE_TX_ID + 1; txId < 10; txId++ )
+        {
+            incrementNodeCount( txId, labelId, delta );
+            expectedCount += delta;
+        }
+        assertEquals( expectedCount, countsStore.nodeCount( labelId, Registers.newDoubleLongRegister() ).readSecond() );
+
+        // when reapplying after a restart
+        checkpointAndRestartCountsStore();
+
+        for ( long txId = BASE_TX_ID + 1; txId < 10; txId++ )
+        {
+            incrementNodeCount( txId, labelId, delta );
+        }
+        // then it should not change the delta
+        assertEquals( expectedCount, countsStore.nodeCount( labelId, Registers.newDoubleLongRegister() ).readSecond() );
+    }
+
+    @Test
+    void shouldNotReapplyAlreadyAppliedTransactionAmongStrayTxIds() throws Exception
+    {
+        // given
+        int labelId = 20;
+        incrementNodeCount( BASE_TX_ID + 1, labelId, 5 );
+        // intentionally skip BASE_TX_ID + 2
+        incrementNodeCount( BASE_TX_ID + 3, labelId, 7 );
+
+        // when
+        checkpointAndRestartCountsStore();
+        incrementNodeCount( BASE_TX_ID + 3, labelId, 7 );
+        assertEquals( 5 + 7, countsStore.nodeCount( labelId, Registers.newDoubleLongRegister() ).readSecond() );
+        incrementNodeCount( BASE_TX_ID + 2, labelId, 3 );
+
+        // then
+        assertEquals( 5 + 7 + 3, countsStore.nodeCount( labelId, Registers.newDoubleLongRegister() ).readSecond() );
+    }
+
+    @Test
+    void shouldUseCountsBuilderOnCreation() throws Exception
+    {
+        // given
+        long rebuiltAtTransactionId = 5;
+        int labelId = 3;
+        int labelId2 = 6;
+        int relationshipTypeId = 7;
+        closeCountsStore();
+        deleteCountsStore();
+
+        // when
+        TestableCountsBuilder builder = new TestableCountsBuilder( rebuiltAtTransactionId )
+        {
+            @Override
+            public void initialize( CountsAccessor.Updater updater )
+            {
+                super.initialize( updater );
+                updater.incrementNodeCount( labelId, 10 );
+                updater.incrementRelationshipCount( labelId, relationshipTypeId, labelId2, 14 );
+            }
+        };
+        openCountsStore( builder );
+        assertTrue( builder.lastCommittedTxIdCalled );
+        assertTrue( builder.initializeCalled );
+        assertEquals( 10, countsStore.nodeCount( labelId, Registers.newDoubleLongRegister() ).readSecond() );
+        assertEquals( 0, countsStore.nodeCount( labelId2, Registers.newDoubleLongRegister() ).readSecond() );
+        assertEquals( 14, countsStore.relationshipCount( labelId, relationshipTypeId, labelId2, Registers.newDoubleLongRegister() ).readSecond() );
+
+        // and when
+        checkpointAndRestartCountsStore();
+        // Re-applying a txId below or equal to the "rebuild transaction id" should not apply it
+        incrementNodeCount( rebuiltAtTransactionId - 1, labelId, 100 );
+        assertEquals( 10, countsStore.nodeCount( labelId, Registers.newDoubleLongRegister() ).readSecond() );
+        incrementNodeCount( rebuiltAtTransactionId, labelId, 100 );
+        assertEquals( 10, countsStore.nodeCount( labelId, Registers.newDoubleLongRegister() ).readSecond() );
+
+        // then
+        incrementNodeCount( rebuiltAtTransactionId + 1, labelId, 100 );
+        assertEquals( 110, countsStore.nodeCount( labelId, Registers.newDoubleLongRegister() ).readSecond() );
+    }
+
+    @Test
+    void shouldNotApplyTransactionOnCreatedCountsStoreDuringRecovery() throws Exception
+    {
+        // given
+        int labelId = 123;
+        incrementNodeCount( BASE_TX_ID + 1, labelId, 4 );
+        countsStore.checkpoint( UNLIMITED );
+        incrementNodeCount( BASE_TX_ID + 2, labelId, -2 );
+        closeCountsStore();
+        deleteCountsStore();
+        GBPTreeCountsStore.Monitor monitor = mock( GBPTreeCountsStore.Monitor.class );
+        // instantiate, but don't start
+        instantiateCountsStore( new CountsBuilder()
+        {
+            @Override
+            public void initialize( CountsAccessor.Updater updater )
+            {
+                updater.incrementNodeCount( labelId, 2 );
+            }
+
+            @Override
+            public long lastCommittedTxId()
+            {
+                return BASE_TX_ID + 2;
+            }
+        }, false, monitor );
+
+        // when doing recovery of the last transaction (since this is on an empty counts store then making the count negative, i.e. 0 - 2)
+        // applying this negative delta would have failed in the updater.
+        incrementNodeCount( BASE_TX_ID + 2, labelId, -2 );
+        verify( monitor ).ignoredTransaction( BASE_TX_ID + 2 );
+        countsStore.start();
+
+        // then
+        assertEquals( 2, countsStore.nodeCount( labelId, Registers.newDoubleLongRegister() ).readSecond() );
+    }
+
+    @Test
+    void checkpointShouldWaitForApplyingTransactionsToClose() throws Exception
+    {
+        // given
+        CountsAccessor.Updater updater1 = countsStore.apply( BASE_TX_ID + 1 );
+        CountsAccessor.Updater updater2 = countsStore.apply( BASE_TX_ID + 2 );
+
+        try ( OtherThreadExecutor<Void> checkpointer = new OtherThreadExecutor<>( "Checkpointer", null ) )
+        {
+            // when
+            Future<Object> checkpoint = checkpointer.executeDontWait( command( () -> countsStore.checkpoint( UNLIMITED ) ) );
+            checkpointer.waitUntilWaiting();
+
+            // and when closing one of the updaters it should still wait
+            updater1.close();
+            checkpointer.waitUntilWaiting();
+            assertFalse( checkpoint.isDone() );
+
+            // then when closing the other one it should be able to complete
+            updater2.close();
+            checkpoint.get();
+        }
+    }
+
+    @Test
+    void checkpointShouldBlockApplyingNewTransactions() throws Exception
+    {
+        // given
+        CountsAccessor.Updater updaterBeforeCheckpoint = countsStore.apply( BASE_TX_ID + 1 );
+
+        try ( OtherThreadExecutor<Void> checkpointer = new OtherThreadExecutor<>( "Checkpointer", null );
+              OtherThreadExecutor<AtomicReference<CountsStore.Updater>> applier = new OtherThreadExecutor<>( "Applier", new AtomicReference<>() ) )
+        {
+            // when
+            Future<Object> checkpoint = checkpointer.executeDontWait( command( () -> countsStore.checkpoint( UNLIMITED ) ) );
+            checkpointer.waitUntilWaiting();
+
+            // and when trying to open another applier it must wait
+            Future<Void> applierAfterCheckpoint = applier.executeDontWait( state ->
+            {
+                state.set( countsStore.apply( BASE_TX_ID + 2 ) );
+                return null;
+            } );
+            applier.waitUntilWaiting();
+            assertFalse( checkpoint.isDone() );
+            assertFalse( applierAfterCheckpoint.isDone() );
+
+            // then when closing first updater the checkpoint should be able to complete
+            updaterBeforeCheckpoint.close();
+            checkpoint.get();
+
+            // and then also the applier after the checkpoint should be able to continue
+            applierAfterCheckpoint.get();
+            applier.execute( state ->
+            {
+                state.get().close();
+                return null;
+            } );
+        }
+    }
+
+    @Test
+    void shouldFailApplyInReadOnlyMode() throws Exception
+    {
+        // given
+        closeCountsStore();
+        instantiateCountsStore( CountsBuilder.EMPTY, true, NO_MONITOR );
+        countsStore.start();
+
+        // then
+        assertThrows( IllegalStateException.class, () -> countsStore.apply( BASE_TX_ID + 1 ) );
+    }
+
+    @Test
+    void shouldNotCheckpointInReadOnlyMode() throws Exception
+    {
+        // given
+        closeCountsStore();
+        instantiateCountsStore( CountsBuilder.EMPTY, true, NO_MONITOR );
+        countsStore.start();
+
+        // then it's fine to call checkpoint, because no changes can actually be made on a read-only counts store anyway
+        countsStore.checkpoint( UNLIMITED );
+    }
+
+    private void incrementNodeCount( long txId, int labelId, int delta )
+    {
+        try ( CountsAccessor.Updater updater = countsStore.apply( txId ) )
+        {
+            updater.incrementNodeCount( labelId, delta );
         }
     }
 
@@ -238,6 +461,65 @@ class GBPTreeCountsStoreTest
                 }
                 expected.computeIfAbsent( expectedKey, k -> new AtomicLong() ).addAndGet( delta );
             }
+        }
+    }
+
+    private void checkpointAndRestartCountsStore() throws Exception
+    {
+        countsStore.checkpoint( UNLIMITED );
+        closeCountsStore();
+        openCountsStore();
+    }
+
+    private void crashAndRestartCountsStore() throws Exception
+    {
+        closeCountsStore();
+        openCountsStore();
+    }
+
+    private void deleteCountsStore()
+    {
+        directory.getFileSystem().deleteFile( countsStoreFile() );
+    }
+
+    private File countsStoreFile()
+    {
+        return directory.file( "counts.db" );
+    }
+
+    private void openCountsStore( CountsBuilder builder ) throws Exception
+    {
+        instantiateCountsStore( builder, false, NO_MONITOR );
+        countsStore.start();
+    }
+
+    private void instantiateCountsStore( CountsBuilder builder, boolean readOnly, GBPTreeCountsStore.Monitor monitor )
+    {
+        countsStore = new GBPTreeCountsStore( pageCache, countsStoreFile(), immediate(), builder, readOnly, monitor );
+    }
+
+    private static class TestableCountsBuilder implements CountsBuilder
+    {
+        private final long rebuiltAtTransactionId;
+        boolean lastCommittedTxIdCalled;
+        boolean initializeCalled;
+
+        TestableCountsBuilder( long rebuiltAtTransactionId )
+        {
+            this.rebuiltAtTransactionId = rebuiltAtTransactionId;
+        }
+
+        @Override
+        public void initialize( CountsAccessor.Updater updater )
+        {
+            initializeCalled = true;
+        }
+
+        @Override
+        public long lastCommittedTxId()
+        {
+            lastCommittedTxIdCalled = true;
+            return rebuiltAtTransactionId;
         }
     }
 }

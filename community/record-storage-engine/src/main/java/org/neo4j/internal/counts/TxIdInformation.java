@@ -21,6 +21,9 @@ package org.neo4j.internal.counts;
 
 import org.eclipse.collections.api.set.primitive.LongSet;
 
+/**
+ * Information about applied transaction, written during checkpoint and read on opening the {@link GBPTreeCountsStore}.
+ */
 class TxIdInformation
 {
     final long highestGapFreeTxId;
@@ -32,6 +35,11 @@ class TxIdInformation
         this.strayTxIds = strayTxIds;
     }
 
+    /**
+     * Given the transaction id information decides whether or not the given txId has already been applied to the counts store.
+     * @param txId the transaction id to check whether or not it has already been applied to the counts store.
+     * @return whether or not the supplied txId has already been applied to the tree.
+     */
     boolean txIdIsAlreadyApplied( long txId )
     {
         return txId <= highestGapFreeTxId || strayTxIds.contains( txId );

@@ -575,10 +575,8 @@ public class BatchInserterImpl implements BatchInserter
 
     private void rebuildCounts()
     {
-        try ( GBPTreeCountsStore counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), RecoveryCleanupWorkCollector.immediate(),
-                new CountsComputer( neoStores, pageCache, databaseLayout ), false ) )
-        {   // Just let it rebuild itself here
-        }
+        new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), RecoveryCleanupWorkCollector.immediate(),
+                new CountsComputer( neoStores, pageCache, databaseLayout ), false, GBPTreeCountsStore.NO_MONITOR ).close();
     }
 
     private void createEmptyTransactionLog()

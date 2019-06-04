@@ -188,7 +188,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             {
                 return neoStores.getMetaDataStore().getLastCommittedTransactionId();
             }
-        }, readOnly );
+        }, readOnly, GBPTreeCountsStore.NO_MONITOR );
     }
 
     @Override
