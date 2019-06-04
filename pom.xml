@@ -172,15 +172,23 @@
             </execution>
           </executions>
           <configuration>
+            <additionalJOption>-J--add-exports=jdk.javadoc/jdk.javadoc.internal.tool=ALL-UNNAMED</additionalJOption>
+            <doclet>org.neo4j.annotations.api.PublicApiDoclet</doclet>
+            <docletArtifact>
+              <groupId>org.neo4j</groupId>
+              <artifactId>annotations</artifactId>
+              <version>${project.version}</version>
+            </docletArtifact>
             <header>Neo4j</header>
             <doctitle>Neo4j ${project.version} API</doctitle>
             <windowtitle>Neo4j ${project.version} API</windowtitle>
             <show>public</show>
 
-            <detectLinks>false</detectLinks>
-            <detectOfflineLinks>false</detectOfflineLinks>
             <quiet>true</quiet>
             <reportOutputDirectory>${project.build.directory}/apidocs</reportOutputDirectory>
+            <links>
+              <link>https://docs.oracle.com/en/java/javase/${maven.compiler.source}/docs/api</link>
+            </links>
 
             <!-- Defines grouping for overview -->
             <groups>
