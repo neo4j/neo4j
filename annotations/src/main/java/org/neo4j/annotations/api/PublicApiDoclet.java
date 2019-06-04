@@ -102,6 +102,11 @@ public class PublicApiDoclet extends StandardDoclet
             {
                 return true;
             }
+            Element enclosingElement = element.getEnclosingElement();
+            if ( enclosingElement != null && enclosingElement.getAnnotation( PublicApi.class ) != null )
+            {
+                return true;
+            }
             if ( element instanceof PackageElement )
             {
                 return includePackage( (PackageElement) element );
