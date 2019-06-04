@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 
 import scala.collection.Map
 
@@ -28,7 +28,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should show default user") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
 
     // WHEN
     val result = execute("SHOW USERS")
@@ -47,7 +47,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should fail on creating user from community") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
     assertFailure("CREATE USER foo SET PASSWORD 'xxx'", "Unsupported management command: CREATE USER foo SET PASSWORD 'xxx'")
@@ -55,7 +55,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should fail on creating already existing user with correct error message") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
     assertFailure("CREATE USER neo4j SET PASSWORD 'xxx'", "Unsupported management command: CREATE USER neo4j SET PASSWORD 'xxx'")
@@ -63,7 +63,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should fail on dropping user from community") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
     assertFailure("DROP USER neo4j", "Unsupported management command: DROP USER neo4j")
@@ -71,7 +71,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should fail on dropping non-existing user with correct error message") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
     assertFailure("DROP USER foo", "Unsupported management command: DROP USER foo")
@@ -79,7 +79,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should fail on altering user from community") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
     assertFailure("ALTER USER neo4j SET PASSWORD 'xxx'", "Unsupported management command: ALTER USER neo4j SET PASSWORD 'xxx'")
@@ -87,7 +87,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should fail on altering non-existing user with correct error message") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
     assertFailure("ALTER USER foo SET PASSWORD 'xxx'", "Unsupported management command: ALTER USER foo SET PASSWORD 'xxx'")
