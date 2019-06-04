@@ -421,7 +421,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
         assertNoErrors();
         for ( Map<String,Object> materialized : materializeResult )
         {
-            if (!visitor.visit( new ResultRowImpl( materialized ) ) )
+            if ( !visitor.visit( new ResultRowImpl( materialized ) ) )
             {
                 break;
             }
