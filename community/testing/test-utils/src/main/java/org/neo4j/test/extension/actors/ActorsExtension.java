@@ -26,6 +26,15 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.neo4j.test.extension.Inject;
+
+/**
+ * This JUnit 5 extension enables the {@link Inject injection} of {@link Actor} fields.
+ * <p>
+ * Multiple actor fields can be injected, and each field will have its own independent actor, named after the field.
+ * <p>
+ * This makes it easy to write tests that use multiple threads.
+ */
 @Target( {ElementType.TYPE} )
 @Retention( RetentionPolicy.RUNTIME )
 @ExtendWith( {ActorsSupportExtension.class} )

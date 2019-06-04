@@ -22,6 +22,7 @@ package org.neo4j.test.extension.actors;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Executable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -163,6 +164,31 @@ class ActorsSupportExtensionTest
                 Thread.currentThread().interrupt();
                 // The actor will not be waiting. It will be in BLOCKED state, because that's how 'synchronized' works.
                 assertThrows( InterruptedException.class, actor::untilWaiting );
+            }
+        }
+
+        /**
+         * This is the example code used in the javadoc for {@link Actor#untilWaitingIn(Executable)}.
+         */
+        @Test
+        void example() throws Exception
+        {
+            actor.submit( new Sleeper()::sleep );
+            actor.untilWaitingIn( Sleeper.class.getMethod( "sleep" ) );
+            actor.interrupt();
+        }
+
+        class Sleeper
+        {
+            public void sleep()
+            {
+                try
+                {
+                    Thread.sleep( 1_000 );
+                }
+                catch ( InterruptedException ignore )
+                {
+                }
             }
         }
     }
