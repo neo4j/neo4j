@@ -24,12 +24,10 @@ import org.mockito.Mockito._
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.ExecutionEngine
-import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.javacompat.{GraphDatabaseCypherService, ResultSubscriber}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Result
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
+import org.neo4j.graphdb.Result.ResultRow
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
@@ -46,9 +44,15 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
   private def runQuery(query: String): (ExecutingQuery, Result) = {
     val context = db.transactionalContext(query = query -> Map.empty)
     val executingQuery = context.executingQuery()
-    val queryContext = new TransactionBoundQueryContext(TransactionalContextWrapper(context))(mock[IndexSearchMonitor])
-    val executionResult = graph.execute(executingQuery.queryText(), ExecutionEngineHelper.asMap(executingQuery.queryParameters(), queryContext))
-    (executingQuery, executionResult)
+    val result = new ResultSubscriber(context)
+    val executionResult = engine.execute(executingQuery.queryText(),
+                                         executingQuery.queryParameters(),
+                                         context,
+                                         profile = false,
+                                         prePopulate = false,
+                                         result)
+    result.init(executionResult)
+    (executingQuery, result)
   }
 
   test("monitor is not called if iterator not exhausted") {
@@ -64,7 +68,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     val (query, result) = runQuery("RETURN 42")
 
     while (result.hasNext) {
-      verify(monitor, never).endSuccess(query)
       result.next()
     }
 
@@ -174,7 +177,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
 
     //then
     while (result.hasNext) {
-      verify(monitor, never).endSuccess(context)
       result.next()
     }
     verify(monitor).endSuccess(context)
@@ -185,9 +187,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     val (context, result) = runQuery("RETURN [1, 2, 3, 4, 5]")
 
     //then
-    result.accept(new ResultVisitor[Exception] {
-      override def visit(row: ResultRow): Boolean = true
-    })
+    result.accept((_: ResultRow) => true)
 
     verify(monitor).endSuccess(context)
   }

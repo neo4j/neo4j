@@ -53,7 +53,7 @@ import org.neo4j.values.utils.ValuesException;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.WRITE;
 
-class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> implements QuerySubscriber, Result, QueryExecutionProvider
+public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> implements QuerySubscriber, Result, QueryExecutionProvider
 {
     private final DefaultValueMapper valueMapper;
     private final TransactionalContext context;
@@ -66,7 +66,7 @@ class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> i
     private List<Map<String,Object>> materializeResult;
     private Iterator<Map<String,Object>> materializedIterator;
 
-    ResultSubscriber( TransactionalContext context )
+    public ResultSubscriber( TransactionalContext context )
     {
         this.context = context;
         this.valueMapper = new DefaultValueMapper(
