@@ -25,7 +25,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 
 import static java.util.Optional.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
+import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 class CapableIndexDescriptorTest

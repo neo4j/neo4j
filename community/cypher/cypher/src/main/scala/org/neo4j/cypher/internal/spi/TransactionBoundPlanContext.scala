@@ -31,7 +31,8 @@ import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId, symbols => t
 import org.neo4j.exceptions.KernelException
 import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs, _}
-import org.neo4j.internal.schema.{ConstraintDescriptor, IndexKind, SchemaDescriptor}
+import org.neo4j.internal.schema
+import org.neo4j.internal.schema.{ConstraintDescriptor, IndexKind, IndexLimitation, IndexOrder, IndexValueCapability, SchemaDescriptor}
 import org.neo4j.values.storable.ValueCategory
 
 import scala.collection.JavaConverters._
@@ -94,9 +95,9 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
            reference.orderCapability(tps.map(typeToValueCategory): _*) match {
             case Array() => IndexOrderCapability.NONE
             case Array(IndexOrder.ASCENDING, IndexOrder.DESCENDING) => IndexOrderCapability.BOTH
-            case Array(api.IndexOrder.DESCENDING, api.IndexOrder.ASCENDING) => IndexOrderCapability.BOTH
-            case Array(api.IndexOrder.ASCENDING) => IndexOrderCapability.ASC
-            case Array(api.IndexOrder.DESCENDING) => IndexOrderCapability.DESC
+            case Array(IndexOrder.DESCENDING, schema.IndexOrder.ASCENDING) => IndexOrderCapability.BOTH
+            case Array(schema.IndexOrder.ASCENDING) => IndexOrderCapability.ASC
+            case Array(schema.IndexOrder.DESCENDING) => IndexOrderCapability.DESC
             case _ => IndexOrderCapability.NONE
           }
         }
@@ -105,7 +106,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
               // As soon as the kernel provides an array of IndexValueCapability, this mapping can change
             case IndexValueCapability.YES => tps.map(_ => CanGetValue)
             case IndexValueCapability.PARTIAL => tps.map(_ => DoNotGetValue)
-            case api.IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
+            case IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
           }
         }
         if (reference.getIndexType.getKind != IndexKind.GENERAL || reference.limitations().contains(IndexLimitation.EVENTUALLY_CONSISTENT)) {

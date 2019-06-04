@@ -24,7 +24,7 @@ import java.util.List;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;

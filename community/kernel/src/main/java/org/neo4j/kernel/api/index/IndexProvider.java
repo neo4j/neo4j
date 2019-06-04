@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.index;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexProviderDescriptor;

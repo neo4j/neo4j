@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 

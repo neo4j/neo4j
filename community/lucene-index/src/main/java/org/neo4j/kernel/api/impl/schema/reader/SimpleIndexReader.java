@@ -44,7 +44,7 @@ import java.util.function.Function;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.internal.helpers.TaskControl;
-import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType;
 import org.neo4j.internal.kernel.api.QueryContext;

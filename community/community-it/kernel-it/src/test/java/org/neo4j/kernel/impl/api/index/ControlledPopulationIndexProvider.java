@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;

@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;

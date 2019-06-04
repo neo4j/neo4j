@@ -41,7 +41,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.index.label.LabelScanReader;
-import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;

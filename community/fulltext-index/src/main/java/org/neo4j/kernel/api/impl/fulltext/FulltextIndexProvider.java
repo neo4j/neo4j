@@ -30,7 +30,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
-import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexConfig;

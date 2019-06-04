@@ -30,7 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;

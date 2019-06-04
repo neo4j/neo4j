@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.internal.schema;
 
 import org.neo4j.values.storable.ValueCategory;
 
@@ -36,27 +36,27 @@ public interface IndexCapability
 
     /**
      * What possible orderings is this index capable to provide for a query on given combination of {@link ValueCategory}.
-     * Ordering of ValueCategory correspond to ordering of related {@link IndexReference#properties()}.
+     * Ordering of ValueCategory correspond to ordering of related {@link SchemaDescriptor#getPropertyIds()}.
      *
      * @param valueCategories Ordered array of {@link ValueCategory ValueCategories} for which index should be queried. Note that valueCategory
-     * must correspond to related {@link IndexReference#properties()}. A {@code null} value in the array
+     * must correspond to related {@link SchemaDescriptor#getPropertyIds()}. A {@code null} value in the array
      * ({@code new ValueCategory[]{null}}) is interpreted as a wildcard for any {@link ValueCategory}. Note that this is not the same as
      * {@code order(null)} which is undefined.
      * @return {@link IndexOrder} array containing all possible orderings for provided value categories or empty array if no explicit
-     * ordering is possible or if length of {@code valueCategories} and {@link IndexReference#properties()} differ.
+     * ordering is possible or if length of {@code valueCategories} and {@link SchemaDescriptor#getPropertyIds()} differ.
      */
     IndexOrder[] orderCapability( ValueCategory... valueCategories );
 
     /**
      * Is the index capable of providing values for a query on given combination of {@link ValueCategory}.
-     * Ordering of ValueCategory correspond to ordering of {@code properties} in related {@link IndexReference}.
+     * Ordering of ValueCategory correspond to ordering of {@link SchemaDescriptor#getPropertyIds()}.
      *
      * @param valueCategories Ordered array of {@link ValueCategory ValueCategories} for which index should be queried. Note that valueCategory
-     * must correspond to related {@link IndexReference#properties()}. {@link ValueCategory#UNKNOWN} can be used as a wildcard for
+     * must correspond to related {@link SchemaDescriptor#getPropertyIds()}. {@link ValueCategory#UNKNOWN} can be used as a wildcard for
      * any {@link ValueCategory}. Behaviour is undefined for empty {@code null} array and {@code null} values in array.
      * @return {@link IndexValueCapability#YES} if index is capable of providing values for query on provided array of value categories,
      * {@link IndexValueCapability#NO} if not or {@link IndexValueCapability#PARTIAL} for some results. If length of
-     * {@code valueCategories} and {@link IndexReference#properties()} differ {@link IndexValueCapability#NO} is returned.
+     * {@code valueCategories} and {@link SchemaDescriptor#getPropertyIds()} differ {@link IndexValueCapability#NO} is returned.
      */
     IndexValueCapability valueCapability( ValueCategory... valueCategories );
 

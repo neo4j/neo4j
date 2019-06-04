@@ -33,7 +33,7 @@ import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.Seeker;
-import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.test.extension.Inject;

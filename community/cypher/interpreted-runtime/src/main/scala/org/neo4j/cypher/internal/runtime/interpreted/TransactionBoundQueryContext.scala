@@ -39,12 +39,13 @@ import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
+import org.neo4j.internal
 import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.{allCursor, incomingCursor, outgoingCursor}
 import org.neo4j.internal.kernel.api.helpers._
-import org.neo4j.internal.kernel.api.{IndexQuery, IndexReadSession, IndexReference, InternalIndexState, KernelReadTracer, NodeCursor, NodeValueIndexCursor, PropertyCursor, Read, RelationshipScanCursor, TokenRead, IndexOrder => KernelIndexOrder}
-import org.neo4j.internal.schema.SchemaDescriptor
+import org.neo4j.internal.kernel.api.{IndexQuery, IndexReadSession, IndexReference, InternalIndexState, KernelReadTracer, NodeCursor, NodeValueIndexCursor, PropertyCursor, Read, RelationshipScanCursor, TokenRead}
+import org.neo4j.internal.schema.{SchemaDescriptor, IndexOrder => KernelIndexOrder}
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
@@ -935,7 +936,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     cursor
   }
 
-  private def asKernelIndexOrder(indexOrder: IndexOrder): api.IndexOrder = indexOrder match {
+  private def asKernelIndexOrder(indexOrder: IndexOrder): internal.schema.IndexOrder = indexOrder match {
     case IndexOrderAscending => KernelIndexOrder.ASCENDING
     case IndexOrderDescending => KernelIndexOrder.DESCENDING
     case IndexOrderNone => KernelIndexOrder.NONE

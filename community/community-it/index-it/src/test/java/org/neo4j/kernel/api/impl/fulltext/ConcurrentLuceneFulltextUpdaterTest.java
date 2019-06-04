@@ -27,7 +27,7 @@ import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.IndexReference;

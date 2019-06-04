@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Optional;
 
-import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexReference;
-import org.neo4j.internal.kernel.api.IndexValueCapability;
+import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.DefaultIndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;

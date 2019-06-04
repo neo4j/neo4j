@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.util.function.Function;
 
-import org.neo4j.internal.kernel.api.IndexCapability;
-import org.neo4j.internal.kernel.api.IndexLimitation;
-import org.neo4j.internal.kernel.api.IndexOrder;
-import org.neo4j.internal.kernel.api.IndexValueCapability;
+import org.neo4j.internal.schema.IndexCapability;
+import org.neo4j.internal.schema.IndexLimitation;
+import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.values.storable.ValueCategory;
 
 public class FusionIndexCapability implements IndexCapability

@@ -24,7 +24,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.index.label.LabelScan;
 import org.neo4j.internal.index.label.LabelScanReader;
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.IndexReference;

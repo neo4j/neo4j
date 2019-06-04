@@ -26,7 +26,7 @@ import java.util.Arrays;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;

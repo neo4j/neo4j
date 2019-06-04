@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;

@@ -27,7 +27,7 @@ import java.util.EnumMap;
 import java.util.function.Function;
 
 import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;

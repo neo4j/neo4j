@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 

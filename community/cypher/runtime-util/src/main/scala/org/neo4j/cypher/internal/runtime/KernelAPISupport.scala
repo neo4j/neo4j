@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.internal.kernel
+import org.neo4j.internal.schema
 import org.neo4j.values.storable.ValueGroup
 
 object KernelAPISupport {
@@ -34,10 +34,10 @@ object KernelAPISupport {
                                           ValueGroup.ZONED_TIME,
                                           ValueGroup.DURATION)
 
-  def asKernelIndexOrder(indexOrder: plans.IndexOrder): kernel.api.IndexOrder =
+  def asKernelIndexOrder(indexOrder: plans.IndexOrder): schema.IndexOrder =
     indexOrder match {
-      case plans.IndexOrderAscending => kernel.api.IndexOrder.ASCENDING
-      case plans.IndexOrderDescending => kernel.api.IndexOrder.DESCENDING
-      case plans.IndexOrderNone => kernel.api.IndexOrder.NONE
+      case plans.IndexOrderAscending => schema.IndexOrder.ASCENDING
+      case plans.IndexOrderDescending => schema.IndexOrder.DESCENDING
+      case plans.IndexOrderNone => schema.IndexOrder.NONE
     }
 }

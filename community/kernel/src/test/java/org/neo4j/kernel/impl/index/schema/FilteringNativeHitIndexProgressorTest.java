@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import org.neo4j.index.internal.gbptree.Seeker;
-import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.test.extension.Inject;

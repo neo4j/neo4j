@@ -42,7 +42,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;

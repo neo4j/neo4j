@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;

@@ -59,7 +59,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
+import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.simpleNameLookup;
 import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;

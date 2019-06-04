@@ -21,12 +21,11 @@ package org.neo4j.cypher.internal.spi
 
 import org.neo4j.cypher.internal.planner.spi.{IndexLimitation, SlowContains, IndexDescriptor => CypherIndexDescriptor}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundTokenContext
-import org.neo4j.internal.kernel
-import org.neo4j.internal.kernel.api.{IndexLimitation => KernelIndexLimitation}
-import org.neo4j.internal.schema.{LabelSchemaDescriptor, SchemaDescriptor}
+import org.neo4j.internal.schema
+import org.neo4j.internal.schema.{LabelSchemaDescriptor, SchemaDescriptor, IndexLimitation => KernelIndexLimitation}
 
 trait IndexDescriptorCompatibility {
-  def kernelToCypher(limitation: kernel.api.IndexLimitation): IndexLimitation = {
+  def kernelToCypher(limitation: schema.IndexLimitation): IndexLimitation = {
     limitation match {
       case KernelIndexLimitation.SLOW_CONTAINS => SlowContains
       case _ => throw new IllegalStateException("Missing kernel to cypher mapping for limitation: " + limitation)

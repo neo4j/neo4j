@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.internal.kernel.api.IndexCapability;
-import org.neo4j.internal.kernel.api.IndexLimitation;
-import org.neo4j.internal.kernel.api.IndexOrder;
-import org.neo4j.internal.kernel.api.IndexValueCapability;
+import org.neo4j.internal.schema.IndexCapability;
+import org.neo4j.internal.schema.IndexLimitation;
+import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.values.storable.ValueCategory;

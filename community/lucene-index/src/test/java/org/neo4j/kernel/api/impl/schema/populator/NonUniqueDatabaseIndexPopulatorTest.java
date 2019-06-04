@@ -31,7 +31,7 @@ import java.util.List;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.IOUtils;

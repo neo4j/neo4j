@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.Resource;
-import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
 import org.neo4j.internal.kernel.api.QueryContext;

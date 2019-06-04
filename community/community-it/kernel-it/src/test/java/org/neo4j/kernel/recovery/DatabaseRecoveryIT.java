@@ -55,7 +55,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.io.ByteUnit;

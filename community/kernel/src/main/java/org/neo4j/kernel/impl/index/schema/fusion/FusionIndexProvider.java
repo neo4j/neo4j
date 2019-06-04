@@ -24,7 +24,7 @@ import java.util.EnumMap;
 import java.util.List;
 
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
