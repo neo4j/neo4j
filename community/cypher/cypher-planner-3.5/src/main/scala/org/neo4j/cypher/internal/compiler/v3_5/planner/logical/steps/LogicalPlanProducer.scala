@@ -313,10 +313,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solved = RegularPlannerQuery(queryGraph = queryGraph)
     val solvedForCardinalityEstimation = RegularPlannerQuery(queryGraph.addPredicates(solvedPredicatesForCardinalityEstimation: _*))
 
-    val plan = NodeUniqueIndexSeek(idName, label, properties, valueExpr, argumentIds, toIndexOrder(providedOrder)), solved, providedOrder, context)
+    val plan = NodeUniqueIndexSeek(idName, label, properties, valueExpr, argumentIds, toIndexOrder(providedOrder))
     val cardinality = cardinalityModel(solvedForCardinalityEstimation, context.input, context.semanticTable)
     solveds.set(plan.id, solved)
     cardinalities.set(plan.id, cardinality)
+    providedOrders.set(plan.id, providedOrder)
     plan
   }
 
