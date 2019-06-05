@@ -62,7 +62,7 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
     // SHOW DEFAULT DATABASE
     case ShowDefaultDatabase() => (_, _, _) =>
       SystemCommandExecutionPlan("ShowDefaultDatabase", normalExecutionEngine,
-        "MATCH (d:Database {default: true}) RETURN d.name as name, d.status as status", VirtualValues.EMPTY_MAP)
+        "MATCH (d:Database {default: true}) RETURN d.name as name", VirtualValues.EMPTY_MAP)
 
     // SHOW DATABASE foo
     case ShowDatabase(normalizedName) => (_, _, _) =>

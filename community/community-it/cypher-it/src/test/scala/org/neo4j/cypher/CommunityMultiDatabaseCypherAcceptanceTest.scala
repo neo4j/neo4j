@@ -105,7 +105,7 @@ class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite
     val result = execute("SHOW DEFAULT DATABASE")
 
     // THEN
-    result.toList should be(List(Map("name" -> "neo4j", "status" -> onlineStatus)))
+    result.toList should be(List(Map("name" -> "neo4j")))
   }
 
   test("should show custom default database using show default database command") {
@@ -118,7 +118,7 @@ class CommunityMultiDatabaseCypherAcceptanceTest extends ExecutionEngineFunSuite
     val result = execute("SHOW DEFAULT DATABASE")
 
     // THEN
-    result.toList should be(List(Map("name" -> "foo", "status" -> onlineStatus)))
+    result.toList should be(List(Map("name" -> "foo")))
 
     // WHEN
     val result2 = execute("SHOW DATABASE neo4j")
