@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
+import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.utils.ValuesException;
 
@@ -84,6 +85,13 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
     {
         this.execution = execution;
         assertNoErrors();
+        // if we do not return any rows, we close all resources.
+        if ( execution.executionType().queryType() == WRITE || execution.fieldNames().length == 0 )
+        {
+            fetchResults( Long.MAX_VALUE );
+            assertNoErrors();
+            close();
+        }
     }
 
     // QuerySubscriber part
@@ -299,6 +307,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
         }
         else
         {
+            close();
             return null;
         }
     }
@@ -315,6 +324,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
         }
         else
         {
+            close();
             return null;
         }
     }
@@ -456,15 +466,15 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
                 materializeResult();
                 assertNoErrors();
             }
-
-            // ... and if we do not return any rows, we close all resources.
-            if ( queryType == WRITE || execution.fieldNames().length == 0 )
-            {
-                close();
-            }
             checkIfMaterialized = false;
         }
 
+        return materializeResult != null;
+    }
+
+    @VisibleForTesting
+    boolean isMaterialized()
+    {
         return materializeResult != null;
     }
 
