@@ -110,8 +110,8 @@ public class CypherExecutorTest
         cypherExecutor.createTransactionContext( QUERY, VirtualValues.emptyMap(), request );
 
         verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-        logProvider.assertContainsMessageContaining( "Fail to parse `max-execution-time` header with value: 'not a " +
-                                                     "number'. Should be a positive number." );
+        logProvider.rawMessageMatcher().assertContains(
+                "Fail to parse `max-execution-time` header with value: 'not a number'. Should be a positive number." );
     }
 
     @Test

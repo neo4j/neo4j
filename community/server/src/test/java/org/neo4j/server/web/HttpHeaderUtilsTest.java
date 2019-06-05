@@ -76,7 +76,7 @@ public class HttpHeaderUtilsTest
         Log log = logProvider.getLog( HttpServletRequest.class );
         long transactionTimeout = getTransactionTimeout( request, log );
         assertEquals( "Transaction timeout not specified.", 0, transactionTimeout );
-        logProvider.assertContainsMessageContaining("Fail to parse `max-execution-time` " +
+        logProvider.rawMessageMatcher().assertContains("Fail to parse `max-execution-time` " +
                 "header with value: 'aa'. Should be a positive number.");
     }
 

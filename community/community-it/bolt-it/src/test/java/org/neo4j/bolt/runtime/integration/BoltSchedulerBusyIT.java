@@ -125,7 +125,7 @@ public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
             assertThat( connection3, util.eventuallyReceives(
                     msgFailure( Status.Request.NoThreadsAvailable, "There are no available threads to serve this request at the moment" ) ) );
 
-            userLogProvider.assertContainsMessageContaining(
+            userLogProvider.rawMessageMatcher().assertContains(
                     "since there are no available threads to serve it at the moment. You can retry at a later time" );
             internalLogProvider.assertAtLeastOnce( AssertableLogProvider
                     .inLog( startsWith( BoltConnection.class.getPackage().getName() ) )
@@ -160,9 +160,10 @@ public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
         server.shutdownDatabase();
 
         // Expect no scheduling error logs
-        userLogProvider.assertNoLogCallContaining(
+        userLogProvider.rawMessageMatcher().assertNotContains(
                 "since there are no available threads to serve it at the moment. You can retry at a later time" );
-        internalLogProvider.assertNoLogCallContaining( "since there are no available threads to serve it at the moment. You can retry at a later time" );
+        internalLogProvider.rawMessageMatcher().assertNotContains(
+                "since there are no available threads to serve it at the moment. You can retry at a later time" );
     }
 
     private TransportConnection enterStreaming() throws Throwable

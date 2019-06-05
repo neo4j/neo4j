@@ -164,7 +164,7 @@ public class NeoStoreDataSourceTest
         DataSourceDiagnostics.TRANSACTION_RANGE.dump( dataSource, logger );
 
         // THEN
-        logProvider.assertContainsMessageContaining( "No transactions" );
+        logProvider.rawMessageMatcher().assertContains( "No transactions" );
     }
 
     @Test
@@ -182,8 +182,8 @@ public class NeoStoreDataSourceTest
         DataSourceDiagnostics.TRANSACTION_RANGE.dump( dataSource, logger );
 
         // THEN
-        logProvider.assertContainsMessageContaining( "transaction " + (prevLogLastTxId + 1) );
-        logProvider.assertContainsMessageContaining( "version " + logVersion );
+        logProvider.rawMessageMatcher().assertContains( "transaction " + (prevLogLastTxId + 1) );
+        logProvider.rawMessageMatcher().assertContains( "version " + logVersion );
     }
 
     @Test
@@ -201,8 +201,8 @@ public class NeoStoreDataSourceTest
         DataSourceDiagnostics.TRANSACTION_RANGE.dump( dataSource, logger );
 
         // THEN
-        logProvider.assertContainsMessageContaining( "transaction " + (prevLogLastTxId + 1) );
-        logProvider.assertContainsMessageContaining( "version " + (logVersion + 1) );
+        logProvider.rawMessageMatcher().assertContains( "transaction " + (prevLogLastTxId + 1) );
+        logProvider.rawMessageMatcher().assertContains( "version " + (logVersion + 1) );
     }
 
     @Test

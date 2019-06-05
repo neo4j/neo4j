@@ -93,8 +93,8 @@ public class DatabaseHealthTest
 
         assertFalse( databaseHealth.isHealthy() );
         assertTrue( databaseHealth.healed() );
-        logProvider.assertContainsLogCallContaining( "Database health set to OK" );
-        logProvider.assertNoMessagesContaining( "Database encountered a critical error and can't be healed. Restart required." );
+        logProvider.rawMessageMatcher().assertContains( "Database health set to OK" );
+        logProvider.rawMessageMatcher().assertNotContains( "Database encountered a critical error and can't be healed. Restart required." );
     }
 
     @Test
@@ -111,8 +111,8 @@ public class DatabaseHealthTest
 
         assertFalse( databaseHealth.isHealthy() );
         assertFalse( databaseHealth.healed() );
-        logProvider.assertNoMessagesContaining( "Database health set to OK" );
-        logProvider.assertContainsLogCallContaining(
+        logProvider.rawMessageMatcher().assertNotContains( "Database health set to OK" );
+        logProvider.rawMessageMatcher().assertContains(
                 "Database encountered a critical error and can't be healed. Restart required." );
     }
 }

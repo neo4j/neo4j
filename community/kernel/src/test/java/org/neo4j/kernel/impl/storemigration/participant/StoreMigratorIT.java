@@ -193,7 +193,7 @@ public class StoreMigratorIT
                 databaseLayout, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
                 logService.getInternalLogProvider(), EmptyVersionContextSupplier.EMPTY );
         storeFactory.openAllNeoStores().close();
-        logProvider.assertNoLogCallContaining( "ERROR" );
+        logProvider.rawMessageMatcher().assertNotContains( "ERROR" );
     }
 
     @Test

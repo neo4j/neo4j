@@ -336,9 +336,9 @@ public class ConstraintIndexCreatorTest
 
         creator.createUniquenessConstraintIndex( transaction, descriptor, "indexProviderByName-1.0" );
 
-        logProvider.assertContainsLogCallContaining( "Starting constraint creation: %s." );
-        logProvider.assertContainsLogCallContaining( "Constraint %s populated, starting verification." );
-        logProvider.assertContainsLogCallContaining( "Constraint %s verified." );
+        logProvider.rawMessageMatcher().assertContains( "Starting constraint creation: %s." );
+        logProvider.rawMessageMatcher().assertContains( "Constraint %s populated, starting verification." );
+        logProvider.rawMessageMatcher().assertContains( "Constraint %s verified." );
     }
 
     private class StubKernel implements Kernel

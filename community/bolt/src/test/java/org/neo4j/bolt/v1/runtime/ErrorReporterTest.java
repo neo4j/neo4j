@@ -69,12 +69,12 @@ public class ErrorReporterTest
         reporter.report( error );
 
         // then
-        userLog.assertContainsLogCallContaining( "Client triggered an unexpected error" );
-        userLog.assertContainsLogCallContaining( reference.toString() );
-        userLog.assertContainsLogCallContaining( "Database error" );
+        userLog.rawMessageMatcher().assertContains( "Client triggered an unexpected error" );
+        userLog.rawMessageMatcher().assertContains( reference.toString() );
+        userLog.rawMessageMatcher().assertContains( "Database error" );
 
-        internalLog.assertContainsLogCallContaining( reference.toString() );
-        internalLog.assertContainsLogCallContaining( "Database error" );
+        internalLog.rawMessageMatcher().assertContains( reference.toString() );
+        internalLog.rawMessageMatcher().assertContains( "Database error" );
     }
 
     private static ErrorReporter newErrorReporter( LogProvider userLog, LogProvider internalLog )

@@ -76,21 +76,21 @@ class KernelTransactionTimeoutMonitorTest
 
         verify( tx1, never() ).markForTermination( Status.Transaction.TransactionTimedOut );
         verify( tx2, never() ).markForTermination( Status.Transaction.TransactionTimedOut );
-        logProvider.assertNoMessagesContaining( "timeout" );
+        logProvider.rawMessageMatcher().assertNotContains( "timeout" );
 
         fakeClock.forward( 2, TimeUnit.MILLISECONDS );
         transactionMonitor.run();
 
         verify( tx1 ).markForTermination( EXPECTED_REUSE_COUNT, Status.Transaction.TransactionTimedOut );
         verify( tx2, never() ).markForTermination( Status.Transaction.TransactionTimedOut );
-        logProvider.assertContainsLogCallContaining( "timeout" );
+        logProvider.rawMessageMatcher().assertContains( "timeout" );
 
         logProvider.clear();
         fakeClock.forward( 10, TimeUnit.MILLISECONDS );
         transactionMonitor.run();
 
         verify( tx2 ).markForTermination( EXPECTED_REUSE_COUNT, Status.Transaction.TransactionTimedOut );
-        logProvider.assertContainsLogCallContaining( "timeout" );
+        logProvider.rawMessageMatcher().assertContains( "timeout" );
     }
 
     @Test
@@ -113,7 +113,7 @@ class KernelTransactionTimeoutMonitorTest
 
         verify( tx1, never() ).markForTermination( Status.Transaction.TransactionTimedOut );
         verify( tx2, never() ).markForTermination( Status.Transaction.TransactionTimedOut );
-        logProvider.assertNoMessagesContaining( "timeout" );
+        logProvider.rawMessageMatcher().assertNotContains( "timeout" );
     }
 
     private KernelTransactionMonitor buildTransactionMonitor()

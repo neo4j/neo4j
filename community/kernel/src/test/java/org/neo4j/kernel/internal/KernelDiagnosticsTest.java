@@ -61,7 +61,7 @@ public class KernelDiagnosticsTest
         KernelDiagnostics.StoreFiles storeFiles = new KernelDiagnostics.StoreFiles( layout );
         storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
 
-        logProvider.assertContainsMessageContaining( "100 / 40 / 40" );
+        logProvider.rawMessageMatcher().assertContains( "100 / 40 / 40" );
     }
 
     @Test
@@ -80,8 +80,8 @@ public class KernelDiagnosticsTest
         KernelDiagnostics.StoreFiles storeFiles = new KernelDiagnostics.StoreFiles( layout );
         storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
 
-        logProvider.assertContainsMessageContaining( "Total size of store: 4.00 kB" );
-        logProvider.assertContainsMessageContaining( "Total size of mapped files: 3.00 kB" );
+        logProvider.rawMessageMatcher().assertContains( "Total size of store: 4.00 kB" );
+        logProvider.rawMessageMatcher().assertContains( "Total size of mapped files: 3.00 kB" );
     }
 
     private File directory( File parent, String name ) throws IOException
