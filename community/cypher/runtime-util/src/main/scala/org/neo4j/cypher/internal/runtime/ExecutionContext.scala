@@ -69,14 +69,14 @@ trait ExecutionContext {
   /**
     * Returns the cached property value
     *   or NO_VALUE if the entity does not have the property,
-    *   or null     if this cached value has been invalidated, or does not exist.
+    *   or null     if this cached value has been invalidated, or the property value has not been cached.
     */
   def getCachedProperty(key: ASTCachedProperty): Value
 
   /**
     * Returns the cached property value
     *   or NO_VALUE if the entity does not have the property,
-    *   or null     if this cached value has been invalidated, or does not exist.
+    *   or null     if this cached value has been invalidated, or the property value has not been cached.
     */
   def getCachedPropertyAt(offset: Int): Value
 
