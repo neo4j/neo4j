@@ -69,7 +69,14 @@ public enum SourceCode implements CodeGeneratorOption
         @Override
         protected void visitSource( TypeReference reference, CharSequence sourceCode )
         {
-            System.out.println( "=== Generated class " + reference.fullName() + " ===\n" + sourceCode );
+            String[] lines = sourceCode.toString().split( "\\n" );
+            System.out.println( "=== Generated class " + reference.fullName() + " ===\n" );
+            for ( int i = 0; i < lines.length; i++ )
+            {
+                System.out.print(i + 1);
+                System.out.print('\t');
+                System.out.println(lines[i]);
+            }
         }
 
         @Override
