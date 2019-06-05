@@ -462,7 +462,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         openIdGenerator();
 
         long defraggedCount = 0;
-        boolean fastRebuild = isOnlyFastIdGeneratorRebuildEnabled( configuration );
+        boolean fastRebuild = configuration.get( GraphDatabaseSettings.rebuild_idgenerators_fast );
 
         try
         {
@@ -490,11 +490,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             closeIdGenerator();
             openIdGenerator();
         }
-    }
-
-    protected boolean isOnlyFastIdGeneratorRebuildEnabled( Config config )
-    {
-        return config.get( GraphDatabaseSettings.rebuild_idgenerators_fast );
     }
 
     private long rebuildIdGeneratorSlow( PageCursor cursor, int recordsPerPage, int blockSize,

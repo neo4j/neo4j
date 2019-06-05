@@ -73,12 +73,6 @@ public abstract class TokenStore<RECORD extends TokenRecord>
         return nameStore;
     }
 
-    @Override
-    protected boolean isOnlyFastIdGeneratorRebuildEnabled( Config config )
-    {
-        return false;
-    }
-
     public List<NamedToken> getTokens()
     {
         return readAllTokens( false );
