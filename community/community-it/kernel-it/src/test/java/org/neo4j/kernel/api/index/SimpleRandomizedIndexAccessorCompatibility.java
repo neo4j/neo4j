@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueType;
@@ -41,6 +43,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
+import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
@@ -60,8 +64,8 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
     {
         // given
         ValueType[] types = randomSetOfSupportedTypes();
-        List<Value> values = generateValuesFromType( types );
-        List<IndexEntryUpdate<?>> updates = generateUpdatesFromValues( values );
+        List<Value> values = generateValuesFromType( types, new HashSet<>(), 30_000 );
+        List<IndexEntryUpdate<?>> updates = generateUpdatesFromValues( values, new MutableLong() );
         updateAndCommit( updates );
 
         // when
@@ -80,12 +84,58 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
         Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
         // given
         ValueType[] types = randomSetOfSupportedAndSortableTypes();
-        List<Value> values = generateValuesFromType( types );
-        List<IndexEntryUpdate<?>> updates = generateUpdatesFromValues( values );
-        updateAndCommit( updates );
-        TreeSet<IndexEntryUpdate> sortedValues = new TreeSet<>( ( u1, u2 ) -> Values.COMPARATOR.compare( u1.values()[0], u2.values()[0] ) );
-        sortedValues.addAll( updates );
+        Set<Value> uniqueValues = new HashSet<>();
+        TreeSet<ValueAndId> sortedValues = new TreeSet<>( ( v1, v2 ) -> Values.COMPARATOR.compare( v1.value, v2.value ) );
+        MutableLong nextId = new MutableLong();
 
+        // A couple of rounds of updates followed by lots of range verifications
+        for ( int i = 0; i < 5; i++ )
+        {
+            List<IndexEntryUpdate<?>> updates = new ArrayList<>();
+            if ( i == 0 )
+            {
+                // The initial batch of data can simply be additions
+                updates = generateUpdatesFromValues( generateValuesFromType( types, uniqueValues, 20_000 ), nextId );
+                sortedValues.addAll( updates.stream().map( u -> new ValueAndId( u.values()[0], u.getEntityId() ) ).collect( Collectors.toList() ) );
+            }
+            else
+            {
+                // Then do all sorts of updates
+                for ( int j = 0; j < 1_000; j++ )
+                {
+                    int type = random.intBetween( 0, 2 );
+                    if ( type == 0 )
+                    {   // add
+                        Value value = generateUniqueRandomValue( types, uniqueValues );
+                        long id = nextId.getAndIncrement();
+                        sortedValues.add( new ValueAndId( value, id ) );
+                        updates.add( add( id, descriptor.schema(), value ) );
+                    }
+                    else if ( type == 1 )
+                    {   // update
+                        ValueAndId existing = random.among( sortedValues.toArray( new ValueAndId[0] ) );
+                        sortedValues.remove( existing );
+                        Value newValue = generateUniqueRandomValue( types, uniqueValues );
+                        uniqueValues.remove( existing.value );
+                        sortedValues.add( new ValueAndId( newValue, existing.id ) );
+                        updates.add( change( existing.id, descriptor.schema(), existing.value, newValue ) );
+                    }
+                    else
+                    {   // remove
+                        ValueAndId existing = random.among( sortedValues.toArray( new ValueAndId[0] ) );
+                        sortedValues.remove( existing );
+                        uniqueValues.remove( existing.value );
+                        updates.add( remove( existing.id, descriptor.schema(), existing.value ) );
+                    }
+                }
+            }
+            updateAndCommit( updates );
+            verifyRandomRanges( types, sortedValues );
+        }
+    }
+
+    private void verifyRandomRanges( ValueType[] types, TreeSet<ValueAndId> sortedValues ) throws Exception
+    {
         for ( int i = 0; i < 100; i++ )
         {
             // Construct a random range query of random value type
@@ -117,40 +167,57 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
         }
     }
 
-    private List<Long> expectedIds( TreeSet<IndexEntryUpdate> sortedValues, Value from, Value to, boolean fromInclusive, boolean toInclusive )
+    private List<Long> expectedIds( TreeSet<ValueAndId> sortedValues, Value from, Value to, boolean fromInclusive, boolean toInclusive )
     {
-        return sortedValues.subSet( add( 0, descriptor.schema(), from ), fromInclusive, add( 0, descriptor.schema(), to ), toInclusive )
+        return sortedValues.subSet( new ValueAndId( from, 0L ), fromInclusive, new ValueAndId( to, 0L ), toInclusive )
                 .stream()
-                .map( IndexEntryUpdate::getEntityId )
+                .map( v -> v.id )
                 .sorted( Long::compare )
                 .collect( Collectors.toList() );
     }
 
-    private List<Value> generateValuesFromType( ValueType[] types )
+    private List<Value> generateValuesFromType( ValueType[] types, Set<Value> duplicateChecker, int count )
     {
         List<Value> values = new ArrayList<>();
-        Set<Value> duplicateChecker = new HashSet<>();
-        for ( long i = 0; i < 30_000; i++ )
+        for ( long i = 0; i < count; i++ )
         {
-            Value value;
-            do
-            {
-                value = random.randomValues().nextValueOfTypes( types );
-            }
-            while ( !duplicateChecker.add( value ) );
+            Value value = generateUniqueRandomValue( types, duplicateChecker );
             values.add( value );
         }
         return values;
     }
 
-    private List<IndexEntryUpdate<?>> generateUpdatesFromValues( List<Value> values )
+    private Value generateUniqueRandomValue( ValueType[] types, Set<Value> duplicateChecker )
+    {
+        Value value;
+        do
+        {
+            value = random.randomValues().nextValueOfTypes( types );
+        }
+        while ( !duplicateChecker.add( value ) );
+        return value;
+    }
+
+    private List<IndexEntryUpdate<?>> generateUpdatesFromValues( List<Value> values, MutableLong nextId )
     {
         List<IndexEntryUpdate<?>> updates = new ArrayList<>();
-        int id = 0;
         for ( Value value : values )
         {
-            updates.add( add( id++, descriptor.schema(), value ) );
+            IndexEntryUpdate<SchemaDescriptor> update = add( nextId.getAndIncrement(), descriptor.schema(), value );
+            updates.add( update );
         }
         return updates;
+    }
+
+    private static class ValueAndId
+    {
+        private final Value value;
+        private final long id;
+
+        ValueAndId( Value value, long id )
+        {
+            this.value = value;
+            this.id = id;
+        }
     }
 }
