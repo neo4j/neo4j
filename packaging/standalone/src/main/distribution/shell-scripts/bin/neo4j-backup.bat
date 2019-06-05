@@ -19,5 +19,5 @@ rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 SETLOCAL
 
-Powershell -NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass -File %~dp0neo4j-backup.ps1 %*
+Powershell -NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass -File "%~dp0neo4j-backup.ps1" %*
 EXIT /B %ERRORLEVEL%
