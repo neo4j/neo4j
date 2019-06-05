@@ -56,7 +56,7 @@ public class LogHeader
     @Override
     public int hashCode()
     {
-        int result = (int) logFormatVersion;
+        int result = logFormatVersion;
         result = 31 * result + (int) (logVersion ^ (logVersion >>> 32));
         result = 31 * result + (int) (lastCommittedTxId ^ (lastCommittedTxId >>> 32));
         return result;

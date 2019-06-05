@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -37,6 +38,7 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
 public class DefaultRecoveryService implements RecoveryService
 {
@@ -45,24 +47,44 @@ public class DefaultRecoveryService implements RecoveryService
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
     private final LogVersionRepository logVersionRepository;
+    private final LogFiles logFiles;
+    private final StoreInfo storeInfo;
     private final Log log;
 
     DefaultRecoveryService( StorageEngine storageEngine, LogTailScanner logTailScanner, TransactionIdStore transactionIdStore,
-            LogicalTransactionStore logicalTransactionStore, LogVersionRepository logVersionRepository, RecoveryStartInformationProvider.Monitor monitor,
-            Log log )
+            LogicalTransactionStore logicalTransactionStore, LogVersionRepository logVersionRepository, LogFiles logFiles, StoreInfo storeInfo,
+            RecoveryStartInformationProvider.Monitor monitor, Log log )
     {
         this.storageEngine = storageEngine;
         this.transactionIdStore = transactionIdStore;
         this.logicalTransactionStore = logicalTransactionStore;
         this.logVersionRepository = logVersionRepository;
+        this.logFiles = logFiles;
+        this.storeInfo = storeInfo;
         this.log = log;
         this.recoveryStartInformationProvider = new RecoveryStartInformationProvider( logTailScanner, monitor );
     }
 
     @Override
-    public RecoveryStartInformation getRecoveryStartInformation()
+    public RecoveryStartInformation getRecoveryStartInformation() throws IOException
     {
-        return recoveryStartInformationProvider.get();
+        RecoveryStartInformation recoveryStartInformation = recoveryStartInformationProvider.get();
+        if ( storeInfo.isAllStoreFilesPresent() )
+        {
+            // regular recovery
+            return recoveryStartInformation;
+        }
+        // not all store files are present and forced or recovery from the beginning is required
+        if ( recoveryStartInformation.isMissingLogs() )
+        {
+            // nothing we can help with: tx logs missing and files are missing so return information about missing log files
+            return recoveryStartInformation;
+        }
+        // in all other scenarios we try to recover as much as possible from the beginning of available transaction logs
+        long lowestAvailableLogFile = logFiles.getLowestLogVersion();
+        LogPosition firstAvailableLogFileStart = new LogPosition( lowestAvailableLogFile, LOG_HEADER_SIZE );
+        long firstTxToRecoverId = logFiles.getLogFileInformation().getFirstExistingEntryId();
+        return new RecoveryStartInformation( firstAvailableLogFileStart, firstTxToRecoverId );
     }
 
     @Override

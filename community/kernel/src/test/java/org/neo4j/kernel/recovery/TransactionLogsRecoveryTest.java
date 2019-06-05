@@ -35,6 +35,7 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -47,7 +48,6 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
-import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -92,7 +92,6 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIME
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class TransactionLogsRecoveryTest
 {
-
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
     @Inject
@@ -106,22 +105,25 @@ class TransactionLogsRecoveryTest
     private LogEntry lastCommittedTxCommitEntry;
     private LogEntry expectedStartEntry;
     private LogEntry expectedCommitEntry;
-    private LogEntry expectedCheckPointEntry;
     private Monitors monitors = new Monitors();
     private final SimpleLogVersionRepository versionRepository = new SimpleLogVersionRepository();
     private LogFiles logFiles;
     private File storeDir;
     private Lifecycle schemaLife;
+    private StoreInfo storeInfo;
 
     @BeforeEach
     void setUp() throws Exception
     {
         storeDir = directory.storeDir();
-        logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
+        DatabaseLayout databaseLayout = directory.databaseLayout();
+        logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( logEntryReader() )
                 .build();
+        storeInfo = mock( StoreInfo.class );
+        when( storeInfo.isAllStoreFilesPresent() ).thenReturn( true );
         schemaLife = new LifecycleAdapter();
     }
 
@@ -146,7 +148,6 @@ class TransactionLogsRecoveryTest
 
             // check point pointing to the previously committed transaction
             writer.writeCheckPointEntry( lastCommittedTxPosition );
-            expectedCheckPointEntry = new CheckPoint( lastCommittedTxPosition );
 
             // tx committed after checkpoint
             consumer.accept( marker );
@@ -173,7 +174,7 @@ class TransactionLogsRecoveryTest
                     monitors, false );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
-                    txStore, versionRepository,  NO_MONITOR, mock( Log.class ) )
+                    txStore, versionRepository, logFiles, storeInfo, NO_MONITOR, mock( Log.class ) )
             {
                 private int nr;
 
@@ -273,7 +274,7 @@ class TransactionLogsRecoveryTest
                     monitors, false );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
-                    txStore, versionRepository, NO_MONITOR, mock( Log.class ) )
+                    txStore, versionRepository, logFiles, storeInfo, NO_MONITOR, mock( Log.class ) )
             {
                 @Override
                 public void startRecovery()
@@ -446,7 +447,7 @@ class TransactionLogsRecoveryTest
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader, monitors, false );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
-                    txStore, versionRepository, NO_MONITOR, mock( Log.class ) )
+                    txStore, versionRepository, logFiles, storeInfo, NO_MONITOR, mock( Log.class ) )
             {
                 @Override
                 public void startRecovery()

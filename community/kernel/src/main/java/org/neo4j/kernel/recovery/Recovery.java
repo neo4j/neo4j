@@ -106,7 +106,6 @@ import static java.util.stream.Collectors.toList;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
-import static org.neo4j.kernel.recovery.RecoveryStoreFileHelper.allStoreFilesExist;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.storageengine.api.StorageEngineFactory.selectStorageEngine;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
@@ -267,7 +266,8 @@ public final class Recovery
         {
             return;
         }
-        checkAllFilesPresence( fs, databaseLayout, config, recoveryLog );
+        StoreInfo storeInfo = new StoreInfo( databaseLayout, fs );
+        checkAllFilesPresence( storeInfo, config, recoveryLog );
         LifeSupport recoveryLife = new LifeSupport();
         Monitors monitors = new Monitors( globalMonitors );
         DatabasePageCache databasePageCache = new DatabasePageCache( pageCache, EmptyVersionContextSupplier.EMPTY );
@@ -337,7 +337,7 @@ public final class Recovery
         TransactionLogsRecovery transactionLogsRecovery =
                 transactionLogRecovery( fs, transactionIdStore, logTailScanner, monitors.newMonitor( RecoveryMonitor.class ),
                         monitors.newMonitor( RecoveryStartInformationProvider.Monitor.class ), logFiles, storageEngine, transactionStore, logVersionRepository,
-                        schemaLife, databaseLayout, failOnCorruptedLogFiles, recoveryLog );
+                        schemaLife, databaseLayout, storeInfo, failOnCorruptedLogFiles, recoveryLog );
 
         CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, labelScanStore, storageEngine );
         CheckPointerImpl checkPointer =
@@ -370,13 +370,13 @@ public final class Recovery
         }
     }
 
-    private static void checkAllFilesPresence( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, Config config, Log recoveryLog )
+    private static void checkAllFilesPresence( StoreInfo storeInfo, Config config, Log recoveryLog )
     {
-        if ( allStoreFilesExist( databaseLayout, fileSystem ) )
+        if ( storeInfo.isAllStoreFilesPresent() )
         {
             return;
         }
-        if ( isFirstTransactionLogFileExist( databaseLayout, fileSystem ) )
+        if ( storeInfo.isFirstLogFileExist() )
         {
             return;
         }
@@ -395,10 +395,10 @@ public final class Recovery
     private static TransactionLogsRecovery transactionLogRecovery( FileSystemAbstraction fileSystemAbstraction, TransactionIdStore transactionIdStore,
             LogTailScanner tailScanner, RecoveryMonitor recoveryMonitor, RecoveryStartInformationProvider.Monitor positionMonitor, LogFiles logFiles,
             StorageEngine storageEngine, LogicalTransactionStore logicalTransactionStore, LogVersionRepository logVersionRepository,
-            Lifecycle schemaLife, DatabaseLayout databaseLayout, boolean failOnCorruptedLogFiles, Log log )
+            Lifecycle schemaLife, DatabaseLayout databaseLayout, StoreInfo storeInfo, boolean failOnCorruptedLogFiles, Log log )
     {
         RecoveryService recoveryService = new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, logicalTransactionStore,
-                logVersionRepository, positionMonitor, log );
+                logVersionRepository, logFiles, storeInfo, positionMonitor, log );
         CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator( databaseLayout.databaseDirectory(), logFiles, fileSystemAbstraction );
         ProgressReporter progressReporter = new LogProgressReporter( log );
         return new TransactionLogsRecovery( recoveryService, logsTruncator, schemaLife, recoveryMonitor, progressReporter, failOnCorruptedLogFiles );
