@@ -73,7 +73,7 @@ public class ConsistencySummaryStatistics
         return totalInconsistencyCount.get();
     }
 
-    void update( RecordType recordType, int errors, int warnings )
+    public void update( RecordType recordType, int errors, int warnings )
     {
         if ( errors > 0 )
         {
