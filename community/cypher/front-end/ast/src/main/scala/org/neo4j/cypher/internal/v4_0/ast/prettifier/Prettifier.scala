@@ -77,8 +77,9 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
         s"$$${initialParameterPassword.get.name}"
       else "'******'"
       val passwordString = s"SET PASSWORD $password CHANGE ${if (!requirePasswordChange) "NOT " else ""}REQUIRED"
-      val statusString = s"SET STATUS ${if (suspended) "SUSPENDED" else "ACTIVE"}"
-      s"${x.name} $userNameString $passwordString $statusString"
+      val statusString = if(suspended.isDefined) s" SET STATUS ${if (suspended.get) "SUSPENDED" else "ACTIVE"}"
+                         else ""
+      s"${x.name} $userNameString $passwordString$statusString"
 
     case x @ DropUser(userName) =>
       s"${x.name} ${Prettifier.escapeName(userName)}"

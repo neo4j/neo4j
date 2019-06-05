@@ -54,20 +54,20 @@ trait Statement extends Parser
     // CREATE USER username SET PASSWORD stringLiteralPassword optionalStatus
     group(keyword("CREATE USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
     optionalStatus) ~~>> ((userName, initialPassword, suspended) =>
-      ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange = true, suspended.getOrElse(false))) |
+      ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange = true, suspended)) |
     // CREATE USER username SET PASSWORD stringLiteralPassword optionalRequirePasswordChange optionalStatus
     group(keyword("CREATE USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
     optionalRequirePasswordChange ~~ optionalStatus) ~~>> ((userName, initialPassword, requirePasswordChange, suspended) =>
-      ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange.getOrElse(true), suspended.getOrElse(false))) |
+      ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange.getOrElse(true), suspended)) |
     //
     // CREATE USER username SET PASSWORD parameterPassword optionalStatus
     group(keyword("CREATE USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
     optionalStatus) ~~>> ((userName, initialPassword, suspended) =>
-      ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange = true, suspended.getOrElse(false))) |
+      ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange = true, suspended)) |
     // CREATE USER username SET PASSWORD parameterPassword optionalRequirePasswordChange optionalStatus
     group(keyword("CREATE USER") ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
     optionalRequirePasswordChange ~~ optionalStatus) ~~>> ((userName, initialPassword, requirePasswordChange, suspended) =>
-      ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange.getOrElse(true), suspended.getOrElse(false)))
+      ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange.getOrElse(true), suspended))
   }
 
   def DropUser: Rule1[DropUser] = rule("CATALOG DROP USER") {

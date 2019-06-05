@@ -46,75 +46,75 @@ class SecurityDDLParserTest
   //  Creating user
 
   test("CATALOG CREATE USER foo SET PASSWORD 'password'") {
-    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = false))
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = None))
   }
 
   test("CREATE USER `foo` SET PASSwORD 'password'") {
-    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = false))
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = None))
   }
 
   test("CREATE USER `!#\"~` SeT PASSWORD 'password'") {
-    yields(ast.CreateUser("!#\"~", Some("password"), None, requirePasswordChange = true, suspended = false))
+    yields(ast.CreateUser("!#\"~", Some("password"), None, requirePasswordChange = true, suspended = None))
   }
 
   test("CREATE USER foo SeT PASSWORD 'pasS5Wor%d'") {
-    yields(ast.CreateUser("foo", Some("pasS5Wor%d"), None, requirePasswordChange = true, suspended = false))
+    yields(ast.CreateUser("foo", Some("pasS5Wor%d"), None, requirePasswordChange = true, suspended = None))
   }
 
   test("CREATE USER foo SET PASSwORD ''") {
-    yields(ast.CreateUser("foo", Some(""), None, requirePasswordChange = true, suspended = false))
+    yields(ast.CreateUser("foo", Some(""), None, requirePasswordChange = true, suspended = None))
   }
 
   test("CREATE uSER foo SET PASSWORD $password") {
-    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = false))
+    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = None))
   }
 
   test("CREaTE USER foo SET PASSWORD 'password' CHANGE REQUIRED") {
-    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = false))
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = None))
   }
 
   test("CATALOG CREATE USER foo SET PASSWORD $password CHANGE REQUIRED") {
-    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = false))
+    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = None))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE required") {
-    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = false))
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = None))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' CHAngE NOT REQUIRED") {
-    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = false, suspended = false))
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = false, suspended = None))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE NOT REQUIRED") {
-    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = false, suspended = false))
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = false, suspended = None))
   }
 
   test("CREATE USER foo SET PASSWORD $password SET  PASSWORD CHANGE NOT REQUIRED") {
-    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = false, suspended = false))
+    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = false, suspended = None))
   }
 
   test("CATALOG CREATE USER foo SET PASSWORD 'password' SET STATUS SUSPENDed") {
-    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = true))
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = Some(true)))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET STATUS ACtiVE") {
-    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = false))
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = Some(false)))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE NOT REQUIRED SET   STATuS SUSPENDED") {
-    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = false, suspended = true))
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = false, suspended = Some(true)))
   }
 
   test("CREATE USER foo SET PASSWORD $password CHANGE REQUIRED SET STATUS SUSPENDED") {
-    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = true))
+    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = Some(true)))
   }
 
   test("CREATE USER `` SET PASSwORD 'password'") {
-    yields(ast.CreateUser("", Some("password"), None, requirePasswordChange = true, suspended = false))
+    yields(ast.CreateUser("", Some("password"), None, requirePasswordChange = true, suspended = None))
   }
 
   test("CREATE USER `f:oo` SET PASSWORD 'password'") {
-    yields(ast.CreateUser("f:oo", Some("password"), None, requirePasswordChange = true, suspended = false))
+    yields(ast.CreateUser("f:oo", Some("password"), None, requirePasswordChange = true, suspended = None))
   }
 
   test("CREATE USER foo") {

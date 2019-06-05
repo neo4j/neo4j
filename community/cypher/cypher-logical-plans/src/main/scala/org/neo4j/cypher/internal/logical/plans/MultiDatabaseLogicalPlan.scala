@@ -60,7 +60,7 @@ abstract class SecurityManagementLogicalPlan(source: Option[MultiDatabaseLogical
 // Security management commands
 case class ShowUsers()(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
 case class CreateUser(userName: String, initialStringPassword: Option[String], initialParameterPassword: Option[Parameter],
-                      requirePasswordChange: Boolean, suspended: Boolean)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
+                      requirePasswordChange: Boolean, suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
 case class DropUser(userName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
 case class AlterUser(userName: String, initialStringPassword: Option[String], initialParameterPassword: Option[Parameter],
                      requirePasswordChange: Option[Boolean], suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan

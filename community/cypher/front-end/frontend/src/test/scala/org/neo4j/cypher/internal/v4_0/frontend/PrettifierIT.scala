@@ -205,13 +205,13 @@ class PrettifierIT extends CypherFunSuite {
           |RETURN $node AS n""".stripMargin,
 
       "create user abc set password 'foo'" ->
-        "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
+        "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED",
 
       "create user abc set password 'foo' change required" ->
-        "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
+        "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED",
 
       "create user abc set password 'foo' change not required" ->
-        "CREATE USER abc SET PASSWORD '******' CHANGE NOT REQUIRED SET STATUS ACTIVE",
+        "CREATE USER abc SET PASSWORD '******' CHANGE NOT REQUIRED",
 
       "create user abc set password 'foo' set status active" ->
         "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
@@ -232,7 +232,7 @@ class PrettifierIT extends CypherFunSuite {
         "CREATE USER abc SET PASSWORD '******' CHANGE NOT REQUIRED SET STATUS SUSPENDED",
 
       "create user `ab%$c` set password 'foo'" ->
-        "CREATE USER `ab%$c` SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
+        "CREATE USER `ab%$c` SET PASSWORD '******' CHANGE REQUIRED",
 
       "alter user abc set password 'foo'" ->
         "ALTER USER abc SET PASSWORD '******'",

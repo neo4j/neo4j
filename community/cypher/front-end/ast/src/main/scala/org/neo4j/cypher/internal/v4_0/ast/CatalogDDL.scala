@@ -54,7 +54,7 @@ final case class CreateUser(userName: String,
                             initialStringPassword: Option[String],
                             initialParameterPassword: Option[Parameter],
                             requirePasswordChange: Boolean,
-                            suspended: Boolean)(val position: InputPosition) extends MultiDatabaseDDL {
+                            suspended: Option[Boolean])(val position: InputPosition) extends MultiDatabaseDDL {
   assert(initialStringPassword.isDefined || initialParameterPassword.isDefined)
   assert(!(initialStringPassword.isDefined && initialParameterPassword.isDefined))
 
