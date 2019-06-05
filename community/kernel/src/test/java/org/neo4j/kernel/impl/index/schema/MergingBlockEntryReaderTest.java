@@ -170,7 +170,8 @@ class MergingBlockEntryReaderTest
     private List<BlockEntry<MutableLong,MutableLong>> someBlockEntries( Set<MutableLong> uniqueKeys )
     {
         List<BlockEntry<MutableLong,MutableLong>> entries = new ArrayList<>();
-        for ( int i = 0; i < rnd.nextInt( 10 ); i++ )
+        int size = rnd.nextInt( 10 );
+        for ( int i = 0; i < size; i++ )
         {
             MutableLong key;
             do
