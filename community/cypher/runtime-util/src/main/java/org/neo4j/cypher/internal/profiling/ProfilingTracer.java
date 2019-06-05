@@ -39,7 +39,7 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
 
     private final Clock clock;
     private final KernelStatisticProvider statisticProvider;
-    private final Map<Integer,ProfilingTracerData> data = new HashMap<>();
+    private final Map<Integer, ProfilingTracerData> data = new HashMap<>();
 
     public ProfilingTracer( KernelStatisticProvider statisticProvider )
     {
@@ -59,60 +59,64 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
         return value == null ? ZERO : value;
     }
 
-    public long timeOf( Id query )
+    public long timeOf( Id operatorId )
     {
-        return operatorProfile( query.x() ).time();
+        return operatorProfile( operatorId.x() ).time();
     }
 
-    public long dbHitsOf( Id query )
+    public long dbHitsOf( Id operatorId )
     {
-        return operatorProfile( query.x() ).dbHits();
+        return operatorProfile( operatorId.x() ).dbHits();
     }
 
-    public long rowsOf( Id query )
+    public long rowsOf( Id operatorId )
     {
-        return operatorProfile( query.x() ).rows();
+        return operatorProfile( operatorId.x() ).rows();
     }
 
     @Override
-    public OperatorProfileEvent executeOperator( Id queryId )
+    public OperatorProfileEvent executeOperator( Id operatorId )
     {
-        ProfilingTracerData queryData = this.data.get( queryId.x() );
-        if ( queryData == null )
+        return executeOperator( operatorId, true );
+    }
+
+    public OperatorProfileEvent executeOperator( Id operatorId, boolean trackTime )
+    {
+        ProfilingTracerData operatorData = this.data.get( operatorId.x() );
+        if ( operatorData == null )
         {
-            queryData = new ProfilingTracerData();
-            this.data.put( queryId.x(), queryData );
+            operatorData = new ProfilingTracerData();
+            this.data.put( operatorId.x(), operatorData );
         }
-        return new ExecutionEvent( clock, statisticProvider, queryData );
+        if ( trackTime )
+        {
+            return new TimeTrackingExecutionEvent( clock, statisticProvider, operatorData );
+        }
+        else
+        {
+            return new ExecutionEvent( statisticProvider, operatorData );
+        }
     }
 
     private static class ExecutionEvent implements OperatorProfileEvent
     {
-        private final long start;
-        private final Clock clock;
-        private final KernelStatisticProvider statisticProvider;
-        private final ProfilingTracerData data;
-        private long hitCount;
-        private long rowCount;
+        final ProfilingTracerData data;
+        final KernelStatisticProvider statisticProvider;
+        long hitCount;
+        long rowCount;
 
-        ExecutionEvent( Clock clock, KernelStatisticProvider statisticProvider, ProfilingTracerData data )
+        ExecutionEvent( KernelStatisticProvider statisticProvider, ProfilingTracerData data )
         {
-            this.clock = clock;
             this.statisticProvider = statisticProvider;
             this.data = data;
-            this.start = clock.nanoTime();
         }
 
         @Override
         public void close()
         {
-            long executionTime = clock.nanoTime() - start;
             long pageCacheHits = statisticProvider.getPageCacheHits();
             long pageCacheFaults = statisticProvider.getPageCacheMisses();
-            if ( data != null )
-            {
-                data.update( executionTime, hitCount, rowCount, pageCacheHits, pageCacheFaults );
-            }
+            data.update( OperatorProfile.NO_DATA, hitCount, rowCount, pageCacheHits, pageCacheFaults );
         }
 
         @Override
@@ -131,6 +135,28 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
         public void rows( int n )
         {
             rowCount += n;
+        }
+    }
+
+    private static class TimeTrackingExecutionEvent extends ExecutionEvent
+    {
+        private final long start;
+        private final Clock clock;
+
+        TimeTrackingExecutionEvent( Clock clock, KernelStatisticProvider statisticProvider, ProfilingTracerData data )
+        {
+            super( statisticProvider, data );
+            this.clock = clock;
+            this.start = clock.nanoTime();
+        }
+
+        @Override
+        public void close()
+        {
+            long pageCacheHits = statisticProvider.getPageCacheHits();
+            long pageCacheFaults = statisticProvider.getPageCacheMisses();
+            long executionTime = clock.nanoTime() - start;
+            data.update( executionTime, hitCount, rowCount, pageCacheHits, pageCacheFaults );
         }
     }
 }

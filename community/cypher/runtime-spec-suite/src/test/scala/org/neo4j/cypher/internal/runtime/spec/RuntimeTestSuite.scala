@@ -152,6 +152,14 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     RecordingRuntimeResult(result, subscriber)
   }
 
+  def profile(logicalQuery: LogicalQuery,
+              runtime: CypherRuntime[CONTEXT],
+              input: InputValues): RecordingRuntimeResult = {
+    val subscriber = new RecordingQuerySubscriber
+    val result = runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (_, result) => result, subscriber, profile = true)
+    RecordingRuntimeResult(result, subscriber)
+  }
+
   def execute(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT]
              ): RecordingRuntimeResult = {

@@ -25,5 +25,25 @@ public interface QueryProfiler
 {
     OperatorProfileEvent executeOperator( Id queryId );
 
-    QueryProfiler NONE = queryId -> OperatorProfileEvent.NONE;
+    OperatorProfileEvent executeOperator( Id operatorId, boolean trackTime );
+
+    default OperatorProfileEvent executeOperator( int operatorId, boolean trackTime )
+    {
+        return executeOperator( new Id(operatorId), trackTime );
+    }
+
+    QueryProfiler NONE = new QueryProfiler()
+    {
+        @Override
+        public OperatorProfileEvent executeOperator( Id queryId )
+        {
+            return OperatorProfileEvent.NONE;
+        }
+
+        @Override
+        public OperatorProfileEvent executeOperator( Id operatorId, boolean trackTime )
+        {
+            return OperatorProfileEvent.NONE;
+        }
+    };
 }
