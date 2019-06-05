@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -46,7 +47,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -143,7 +143,8 @@ class ConstraintIndexCreatorTest
         UniquePropertyValueValidationException exception = assertThrows( UniquePropertyValueValidationException.class,
                 () -> creator.createUniquenessConstraintIndex( transaction, descriptor, getDefaultProvider() ) );
         assertEquals( "Existing data does not satisfy CONSTRAINT ON ( label[123]:label[123] ) " +
-                "ASSERT label[123].property[456] IS UNIQUE: Both node 2 and node 1 share the property IndexingServiceTestalue ( String(\"a\") )", exception.getMessage() );
+                "ASSERT label[123].property[456] IS UNIQUE: Both node 2 and node 1 share the property IndexingServiceTestalue ( String(\"a\") )",
+                exception.getMessage() );
         assertEquals( 2, kernel.transactions.size() );
         KernelTransactionImplementation tx1 = kernel.transactions.get( 0 );
         SchemaDescriptor newIndex = index.schema();
