@@ -106,7 +106,7 @@ public class ConfiguringPageCacheFactoryTest
         // Then
         assertThat( PageSwapperFactoryForTesting.countCreatedPageSwapperFactories(), is( 1 ) );
         assertThat( PageSwapperFactoryForTesting.countConfiguredPageSwapperFactories(), is( 1 ) );
-        logProvider.assertContainsMessageContaining( TEST_PAGESWAPPER_NAME );
+        logProvider.rawMessageMatcher().assertContains( TEST_PAGESWAPPER_NAME );
     }
 
     @Test( expected = IllegalArgumentException.class )

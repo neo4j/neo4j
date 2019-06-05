@@ -49,7 +49,7 @@ class TransactionRangeDiagnosticsTest
         new TransactionRangeDiagnostics( database ).dump( logger );
 
         // THEN
-        logProvider.assertContainsMessageContaining( "No transactions" );
+        logProvider.rawMessageMatcher().assertContains( "No transactions" );
     }
 
     @Test
@@ -67,8 +67,8 @@ class TransactionRangeDiagnosticsTest
         new TransactionRangeDiagnostics( database ).dump( logger );
 
         // THEN
-        logProvider.assertContainsMessageContaining( "transaction " + (prevLogLastTxId + 1) );
-        logProvider.assertContainsMessageContaining( "version " + logVersion );
+        logProvider.rawMessageMatcher().assertContains( "transaction " + (prevLogLastTxId + 1) );
+        logProvider.rawMessageMatcher().assertContains( "version " + logVersion );
     }
 
     @Test
@@ -86,8 +86,8 @@ class TransactionRangeDiagnosticsTest
         new TransactionRangeDiagnostics( database ).dump( logger );
 
         // THEN
-        logProvider.assertContainsMessageContaining( "transaction " + (prevLogLastTxId + 1) );
-        logProvider.assertContainsMessageContaining( "version " + (logVersion + 1) );
+        logProvider.rawMessageMatcher().assertContains( "transaction " + (prevLogLastTxId + 1) );
+        logProvider.rawMessageMatcher().assertContains( "version " + (logVersion + 1) );
     }
 
     private static Database databaseWithLogFilesContainingLowestTxId( LogFiles files )

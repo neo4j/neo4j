@@ -190,7 +190,7 @@ class EntryCountThresholdTest
         EntryCountThreshold threshold = createThreshold( 0 );
 
         assertFalse( threshold.reached( file, 1, info ) );
-        logProvider.assertLogStringContains( "Fail to get id of the first entry in the next transaction log file. Requested version: 2" );
+        logProvider.rawMessageMatcher().assertContains( "Fail to get id of the first entry in the next transaction log file. Requested version: 2" );
     }
 
     @Test
@@ -200,7 +200,7 @@ class EntryCountThresholdTest
         EntryCountThreshold threshold = createThreshold( 0 );
 
         assertFalse( threshold.reached( file, 1, info ) );
-        logProvider.assertLogStringContains( "Error on attempt to get entry ids from transaction log files. Checked version: 1" );
+        logProvider.rawMessageMatcher().assertContains( "Error on attempt to get entry ids from transaction log files. Checked version: 1" );
     }
 
     private EntryCountThreshold createThreshold( int maxTxCount )

@@ -268,11 +268,11 @@ public abstract class NativeIndexProviderTests
         assertEquals( expected, state );
         if ( InternalIndexState.POPULATING == expected )
         {
-            logging.assertContainsLogCallContaining( "Failed to open index" );
+            logging.rawMessageMatcher().assertContains( "Failed to open index" );
         }
         else
         {
-            logging.assertNoLogCallContaining( "Failed to open index" );
+            logging.rawMessageMatcher().assertNotContains( "Failed to open index" );
         }
     }
 

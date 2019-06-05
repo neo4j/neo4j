@@ -46,7 +46,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class } )
 class RecoveryLogIT
 {
-
     @Inject
     private TestDirectory testDirectory;
     @Inject
@@ -104,7 +103,6 @@ class RecoveryLogIT
         managementService.database( DEFAULT_DATABASE_NAME );
 
         //Check for 'Recovery completed' log containing 'time spent' entry
-        provider.assertContainsMessageMatching( matchesPattern( ".*Recovery completed.*time\\sspent.*" ) );
+        provider.rawMessageMatcher().assertContains( matchesPattern( ".*Recovery completed.*time\\sspent.*" ) );
     }
-
 }

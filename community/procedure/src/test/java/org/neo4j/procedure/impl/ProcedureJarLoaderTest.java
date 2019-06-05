@@ -248,7 +248,8 @@ public class ProcedureJarLoaderTest
 
         // when
         assertThrows( ZipException.class, () -> jarloader.loadProceduresFromDir( parentDir( theJar ) ) );
-        logProvider.assertContainsLogCallContaining( escapeJava( String.format( "Plugin jar file: %s corrupted.", new File( theJar.toURI() ).toPath() ) ) );
+        logProvider.internalToStringMessageMatcher().assertContains(
+                escapeJava( String.format( "Plugin jar file: %s corrupted.", new File( theJar.toURI() ).toPath() ) ) );
     }
 
     @Test
@@ -267,7 +268,8 @@ public class ProcedureJarLoaderTest
 
         // when
         assertThrows( ZipException.class, () -> jarloader.loadProceduresFromDir( parentDir( theJar ) ) );
-        logProvider.assertContainsLogCallContaining( escapeJava( String.format( "Plugin jar file: %s corrupted.", fileWithSpacesInName.toPath() ) ) );
+        logProvider.internalToStringMessageMatcher().assertContains(
+                escapeJava( String.format( "Plugin jar file: %s corrupted.", fileWithSpacesInName.toPath() ) ) );
     }
 
     @Test

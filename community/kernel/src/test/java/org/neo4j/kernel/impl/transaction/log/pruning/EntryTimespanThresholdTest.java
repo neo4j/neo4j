@@ -88,6 +88,6 @@ class EntryTimespanThresholdTest
         // when
         threshold.init();
         assertFalse( threshold.reached( file, version, source ) );
-        logProvider.assertLogStringContains( "Fail to get timestamp info from transaction log file" );
+        logProvider.rawMessageMatcher().assertContains( "Fail to get timestamp info from transaction log file" );
     }
 }

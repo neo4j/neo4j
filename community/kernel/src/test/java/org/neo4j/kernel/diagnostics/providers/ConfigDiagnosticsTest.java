@@ -41,10 +41,10 @@ class ConfigDiagnosticsTest
         ConfigDiagnostics configDiagnostics = new ConfigDiagnostics( config );
         configDiagnostics.dump( log.infoLogger() );
 
-        logProvider.assertLogStringContains( "DBMS provided settings:" );
-        logProvider.assertLogStringContains( max_concurrent_transactions.name() + "=400" );
-        logProvider.assertLogStringContains( default_database.name() + "=testDb" );
-        logProvider.assertNoMessagesContaining( "No provided DBMS settings." );
+        logProvider.formattedMessageMatcher().assertContains( "DBMS provided settings:" );
+        logProvider.formattedMessageMatcher().assertContains( max_concurrent_transactions.name() + "=400" );
+        logProvider.formattedMessageMatcher().assertContains( default_database.name() + "=testDb" );
+        logProvider.formattedMessageMatcher().assertNotContains( "No provided DBMS settings." );
     }
 
     @Test
@@ -55,7 +55,7 @@ class ConfigDiagnosticsTest
         ConfigDiagnostics configDiagnostics = new ConfigDiagnostics( config );
         configDiagnostics.dump( log.infoLogger() );
 
-        logProvider.assertLogStringContains( "No provided DBMS settings." );
-        logProvider.assertNoMessagesContaining( "DBMS provided settings" );
+        logProvider.formattedMessageMatcher().assertContains( "No provided DBMS settings." );
+        logProvider.formattedMessageMatcher().assertNotContains( "DBMS provided settings" );
     }
 }

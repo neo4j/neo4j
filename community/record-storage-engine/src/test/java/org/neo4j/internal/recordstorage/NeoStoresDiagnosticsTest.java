@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 
 import static org.mockito.Mockito.doThrow;
@@ -54,8 +53,9 @@ class NeoStoresDiagnosticsTest
 
         idUsage.dump( logger );
 
-        logProvider.assertContainsMessageContaining( "Diagnostics not available" );
-        logProvider.assertContainsMessageContaining( errorMessage );
-        logProvider.assertNoLogCallContaining( "Exception" );
+        AssertableLogProvider.MessageMatcher messageMatcher = logProvider.rawMessageMatcher();
+        messageMatcher.assertContains( "Diagnostics not available" );
+        messageMatcher.assertContains( errorMessage );
+        messageMatcher.assertNotContains( "Exception" );
     }
 }

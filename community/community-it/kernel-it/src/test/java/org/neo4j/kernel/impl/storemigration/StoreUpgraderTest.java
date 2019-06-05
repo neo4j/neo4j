@@ -320,9 +320,10 @@ public class StoreUpgraderTest
                 new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) ).migrateIfNeeded( databaseLayout );
 
         // Then
-        logProvider.assertContainsLogCallContaining( "Store files" );
-        logProvider.assertContainsLogCallContaining( "Indexes" );
-        logProvider.assertContainsLogCallContaining( "Successfully finished" );
+        AssertableLogProvider.MessageMatcher messageMatcher = logProvider.rawMessageMatcher();
+        messageMatcher.assertContains( "Store files" );
+        messageMatcher.assertContains( "Indexes" );
+        messageMatcher.assertContains( "Successfully finished" );
     }
 
     @Test
@@ -371,8 +372,8 @@ public class StoreUpgraderTest
         newUpgrader( check, pageCache, config, new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) )
                 .migrateIfNeeded( migrationLayout );
 
-        logProvider.assertContainsLogCallContaining( "Starting transaction logs migration." );
-        logProvider.assertContainsLogCallContaining( "Transaction logs migration completed." );
+        logProvider.rawMessageMatcher().assertContains( "Starting transaction logs migration." );
+        logProvider.rawMessageMatcher().assertContains( "Transaction logs migration completed." );
         assertThat( getLogFiles( migrationLayout.databaseDirectory() ), emptyArray() );
         File databaseTransactionLogsHome = new File( txRoot, migrationLayout.getDatabaseName() );
         assertTrue( fileSystem.fileExists( databaseTransactionLogsHome ) );

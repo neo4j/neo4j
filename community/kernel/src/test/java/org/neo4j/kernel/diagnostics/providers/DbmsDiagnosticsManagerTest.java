@@ -112,8 +112,8 @@ class DbmsDiagnosticsManagerTest
 
         diagnosticsManager.dumpAll();
 
-        logProvider.assertContainsMessageContaining( "Database: " + DEFAULT_DATABASE_NAME.toLowerCase() );
-        logProvider.assertLogStringContains( "Database is stopped." );
+        logProvider.formattedMessageMatcher().assertContains( "Database: " + DEFAULT_DATABASE_NAME.toLowerCase() );
+        logProvider.formattedMessageMatcher().assertContains( "Database is stopped." );
     }
 
     @Test
@@ -133,7 +133,7 @@ class DbmsDiagnosticsManagerTest
         diagnosticsManager.dumpAll();
         for ( int i = 0; i < numberOfDatabases; i++ )
         {
-            logProvider.assertContainsMessageContaining( "Database: " + i );
+            logProvider.formattedMessageMatcher().assertContains( "Database: " + i );
         }
 
     }
@@ -151,25 +151,25 @@ class DbmsDiagnosticsManagerTest
 
     private void assertContainsSystemDiagnostics()
     {
-        logProvider.assertContainsMessageContaining( "System diagnostics" );
-        logProvider.assertContainsMessageContaining( "System memory information" );
-        logProvider.assertContainsMessageContaining( "JVM memory information" );
-        logProvider.assertContainsMessageContaining( "(IANA) TimeZone database version" );
-        logProvider.assertContainsMessageContaining( "Operating system information" );
-        logProvider.assertContainsMessageContaining( "System properties" );
-        logProvider.assertContainsMessageContaining( "JVM information" );
-        logProvider.assertContainsMessageContaining( "Java classpath" );
-        logProvider.assertContainsMessageContaining( "Library path" );
-        logProvider.assertContainsMessageContaining( "Network information" );
-        logProvider.assertContainsMessageContaining( "DBMS config" );
+        logProvider.rawMessageMatcher().assertContains( "System diagnostics" );
+        logProvider.rawMessageMatcher().assertContains( "System memory information" );
+        logProvider.rawMessageMatcher().assertContains( "JVM memory information" );
+        logProvider.rawMessageMatcher().assertContains( "(IANA) TimeZone database version" );
+        logProvider.rawMessageMatcher().assertContains( "Operating system information" );
+        logProvider.rawMessageMatcher().assertContains( "System properties" );
+        logProvider.rawMessageMatcher().assertContains( "JVM information" );
+        logProvider.rawMessageMatcher().assertContains( "Java classpath" );
+        logProvider.rawMessageMatcher().assertContains( "Library path" );
+        logProvider.rawMessageMatcher().assertContains( "Network information" );
+        logProvider.rawMessageMatcher().assertContains( "DBMS config" );
     }
 
     private void assertContainsDatabaseDiagnostics()
     {
-        logProvider.assertContainsMessageContaining( "Database: " + DEFAULT_DATABASE_NAME.toLowerCase() );
-        logProvider.assertContainsMessageContaining( "Version" );
-        logProvider.assertContainsMessageContaining( "Store files" );
-        logProvider.assertContainsMessageContaining( "Transaction log" );
+        logProvider.rawMessageMatcher().assertContains( "Database: " + DEFAULT_DATABASE_NAME.toLowerCase() );
+        logProvider.rawMessageMatcher().assertContains( "Version" );
+        logProvider.rawMessageMatcher().assertContains( "Store files" );
+        logProvider.rawMessageMatcher().assertContains( "Transaction log" );
     }
 
     private Database prepareDatabase()

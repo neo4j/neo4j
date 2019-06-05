@@ -116,7 +116,7 @@ class FileWatchIT
             deleteFile( databaseLayout.databaseDirectory(), fileName );
             deletionListener.awaitDeletionNotification();
 
-            logProvider.assertLogStringContains( "'" + fileName + "' which belongs to the '" + databaseLayout.databaseDirectory().getName() +
+            logProvider.formattedMessageMatcher().assertContains( "'" + fileName + "' which belongs to the '" + databaseLayout.databaseDirectory().getName() +
                     "' database was deleted while it was running." );
         } );
     }
@@ -137,7 +137,7 @@ class FileWatchIT
                         .build();
                 db = managementService.database( DEFAULT_DATABASE_NAME );
 
-                logProvider.assertContainsMessageContaining(
+                logProvider.formattedMessageMatcher().assertContains(
                         "Can not create file watcher for current file system. " + "File monitoring capabilities for store files will be disabled." );
             }
             finally
@@ -247,7 +247,7 @@ class FileWatchIT
 
             eventListener.awaitDeletionNotification();
 
-            logProvider.assertLogStringContains( "'" + storeDirectoryName + "' which belongs to the '" +
+            logProvider.formattedMessageMatcher().assertContains( "'" + storeDirectoryName + "' which belongs to the '" +
                     databaseLayout.databaseDirectory().getName() + "' database was deleted while it was running." );
         } );
     }
@@ -269,7 +269,7 @@ class FileWatchIT
                         .build();
                 db = managementService.database( DEFAULT_DATABASE_NAME );
 
-                logProvider.assertContainsMessageContaining( "File watcher disabled by configuration." );
+                logProvider.formattedMessageMatcher().assertContains( "File watcher disabled by configuration." );
             }
             finally
             {

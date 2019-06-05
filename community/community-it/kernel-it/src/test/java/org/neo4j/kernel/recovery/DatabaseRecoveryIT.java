@@ -207,8 +207,8 @@ class DatabaseRecoveryIT
         {
             assertEquals( 10, count( recoveredDatabase.getAllNodes() ) );
         }
-        logProvider.assertContainsMessageContaining( "10% completed" );
-        logProvider.assertContainsMessageContaining( "100% completed" );
+        logProvider.rawMessageMatcher().assertContains( "10% completed" );
+        logProvider.rawMessageMatcher().assertContains( "100% completed" );
 
         recoveredService.shutdown();
     }

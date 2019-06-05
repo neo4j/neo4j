@@ -19,12 +19,15 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import java.time.Clock;
+
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 
 import static java.lang.String.format;
+import static org.neo4j.internal.helpers.Format.duration;
 
 class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
 {
@@ -32,14 +35,23 @@ class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
     static final String MESSAGE_COMPLETED = "Successfully finished upgrade of database";
     static final String TX_LOGS_MIGRATION_STARTED = "Starting transaction logs migration.";
     static final String TX_LOGS_MIGRATION_COMPLETED = "Transaction logs migration completed.";
+    private static final String MESSAGE_COMPLETED_WITH_DURATION = MESSAGE_COMPLETED + ", took %s";
 
     private final Log log;
+    private final Clock clock;
     private int numStages;
     private int currentStage;
+    private long startTime;
 
     VisibleMigrationProgressMonitor( Log log )
     {
+        this( log, Clock.systemUTC() );
+    }
+
+    VisibleMigrationProgressMonitor( Log log, Clock clock )
+    {
         this.log = log;
+        this.clock = clock;
     }
 
     @Override
@@ -47,6 +59,7 @@ class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
     {
         this.numStages = numStages;
         log.info( MESSAGE_STARTED );
+        startTime = clock.millis();
     }
 
     @Override
@@ -59,7 +72,8 @@ class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
     @Override
     public void completed()
     {
-        log.info( MESSAGE_COMPLETED );
+        long time = clock.millis() - startTime;
+        log.info( MESSAGE_COMPLETED_WITH_DURATION, duration( time ) );
     }
 
     @Override

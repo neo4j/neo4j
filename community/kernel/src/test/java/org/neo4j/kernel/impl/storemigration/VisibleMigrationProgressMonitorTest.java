@@ -21,9 +21,12 @@ package org.neo4j.kernel.impl.storemigration;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
+import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.containsString;
 
@@ -70,19 +73,37 @@ class VisibleMigrationProgressMonitorTest
         monitor.startTransactionLogsMigration();
         monitor.completeTransactionLogsMigration();
 
-        logProvider.assertContainsMessageContaining( VisibleMigrationProgressMonitor.TX_LOGS_MIGRATION_STARTED );
-        logProvider.assertContainsMessageContaining( VisibleMigrationProgressMonitor.TX_LOGS_MIGRATION_COMPLETED );
+        logProvider.rawMessageMatcher().assertContains( VisibleMigrationProgressMonitor.TX_LOGS_MIGRATION_STARTED );
+        logProvider.rawMessageMatcher().assertContains( VisibleMigrationProgressMonitor.TX_LOGS_MIGRATION_COMPLETED );
+    }
+
+    @Test
+    void shouldIncludeDurationInCompletionMessage()
+    {
+        // given
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        Log log = logProvider.getLog( getClass() );
+        FakeClock clock = new FakeClock();
+        VisibleMigrationProgressMonitor monitor = new VisibleMigrationProgressMonitor( log, clock );
+
+        // when
+        monitor.started( 1 );
+        clock.forward( 1500, TimeUnit.MILLISECONDS );
+        monitor.completed();
+
+        // then
+        logProvider.formattedMessageMatcher().assertContains( "took 1s 500ms" );
     }
 
     private void verifySectionReportedCorrectly( AssertableLogProvider logProvider )
     {
-        logProvider.assertContainsMessageContaining( VisibleMigrationProgressMonitor.MESSAGE_STARTED );
+        logProvider.formattedMessageMatcher().assertContains( VisibleMigrationProgressMonitor.MESSAGE_STARTED );
         for ( int i = 10; i <= 100; i += 10 )
         {
-            logProvider.assertContainsMessageContaining( i + "%" );
+            logProvider.formattedMessageMatcher().assertContains( i + "%" );
         }
         logProvider.assertNone( AssertableLogProvider.inLog( VisibleMigrationProgressMonitor.class ).info( containsString( "110%" ) ) );
-        logProvider.assertContainsMessageContaining( VisibleMigrationProgressMonitor.MESSAGE_COMPLETED );
+        logProvider.formattedMessageMatcher().assertContains( VisibleMigrationProgressMonitor.MESSAGE_COMPLETED );
     }
 
     private void monitorSection( VisibleMigrationProgressMonitor monitor, String name, int max, int... steps )

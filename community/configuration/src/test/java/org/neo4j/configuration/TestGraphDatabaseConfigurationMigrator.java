@@ -117,7 +117,7 @@ class TestGraphDatabaseConfigurationMigrator
 
     private void assertContainsWarningMessage()
     {
-        logProvider.assertContainsMessageContaining( "WARNING! Deprecated configuration options used. See manual for details" );
+        logProvider.rawMessageMatcher().assertContains( "WARNING! Deprecated configuration options used. See manual for details" );
     }
 
     private void assertContainsWarningMessage( String deprecationMessage )
@@ -125,7 +125,7 @@ class TestGraphDatabaseConfigurationMigrator
         assertContainsWarningMessage();
         if ( StringUtils.isNotEmpty( deprecationMessage ) )
         {
-            logProvider.assertContainsMessageContaining( deprecationMessage );
+            logProvider.rawMessageMatcher().assertContains( deprecationMessage );
         }
     }
 }

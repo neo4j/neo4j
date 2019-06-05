@@ -62,6 +62,7 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
@@ -72,7 +73,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -503,9 +503,10 @@ public class IndexingServiceTest
         indexingService.init();
 
         // then
-        onBothLogProviders( logProvider -> logProvider.assertNoMessagesContaining( "IndexingService.init: Deprecated index providers in use:" ) );
-        onBothLogProviders( logProvider -> internalLogProvider.assertNoMessagesContaining( nativeBtree10Descriptor.name() ) );
-        onBothLogProviders( logProvider -> internalLogProvider.assertNoMessagesContaining( fulltextDescriptor.name() ) );
+        onBothLogProviders(
+                logProvider -> logProvider.rawMessageMatcher().assertNotContains( "IndexingService.init: Deprecated index providers in use:" ) );
+        onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNotContains( nativeBtree10Descriptor.name() ) );
+        onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNotContains( fulltextDescriptor.name() ) );
     }
 
     @Test
@@ -539,9 +540,10 @@ public class IndexingServiceTest
         indexingService.start();
 
         // then
-        onBothLogProviders( logProvider -> internalLogProvider.assertNoMessagesContaining( "IndexingService.start: Deprecated index providers in use:" ) );
-        onBothLogProviders( logProvider -> internalLogProvider.assertNoMessagesContaining( nativeBtree10Descriptor.name() ) );
-        onBothLogProviders( logProvider -> internalLogProvider.assertNoMessagesContaining( fulltextDescriptor.name() ) );
+        AssertableLogProvider.MessageMatcher messageMatcher = internalLogProvider.rawMessageMatcher();
+        onBothLogProviders( logProvider -> messageMatcher.assertNotContains( "IndexingService.start: Deprecated index providers in use:" ) );
+        onBothLogProviders( logProvider -> messageMatcher.assertNotContains( nativeBtree10Descriptor.name() ) );
+        onBothLogProviders( logProvider -> messageMatcher.assertNotContains( fulltextDescriptor.name() ) );
     }
 
     @Test
@@ -1043,8 +1045,8 @@ public class IndexingServiceTest
             barrier.release();
             exceptionBarrier.await();
 
-            internalLogProvider.assertContainsMessageContaining( expectedCause.getMessage() );
-            internalLogProvider.assertContainsMessageContaining( String.format( "Index %s entered %s state ", indexRule.toString(), FAILED ) );
+            internalLogProvider.rawMessageMatcher().assertContains( expectedCause.getMessage() );
+            internalLogProvider.rawMessageMatcher().assertContains( String.format( "Index %s entered %s state ", indexRule.toString(), FAILED ) );
         }
         finally
         {

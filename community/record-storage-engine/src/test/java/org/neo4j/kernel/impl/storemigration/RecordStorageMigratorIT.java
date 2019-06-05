@@ -186,7 +186,7 @@ public class RecordStorageMigratorIT
                 databaseLayout, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
                 logService.getInternalLogProvider() );
         storeFactory.openAllNeoStores().close();
-        logProvider.assertNoLogCallContaining( "ERROR" );
+        logProvider.rawMessageMatcher().assertNotContains( "ERROR" );
     }
 
     @Test

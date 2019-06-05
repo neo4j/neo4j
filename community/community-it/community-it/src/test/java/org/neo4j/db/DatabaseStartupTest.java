@@ -189,17 +189,17 @@ class DatabaseStartupTest
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
-            logProvider.assertContainsMessageContaining( "System diagnostics" );
-            logProvider.assertContainsMessageContaining( "System memory information" );
-            logProvider.assertContainsMessageContaining( "JVM memory information" );
-            logProvider.assertContainsMessageContaining( "Operating system information" );
-            logProvider.assertContainsMessageContaining( "JVM information" );
-            logProvider.assertContainsMessageContaining( "Java classpath" );
-            logProvider.assertContainsMessageContaining( "Library path" );
-            logProvider.assertContainsMessageContaining( "System properties" );
-            logProvider.assertContainsMessageContaining( "(IANA) TimeZone database version" );
-            logProvider.assertContainsMessageContaining( "Network information" );
-            logProvider.assertContainsMessageContaining( "DBMS config" );
+            logProvider.rawMessageMatcher().assertContains( "System diagnostics" );
+            logProvider.rawMessageMatcher().assertContains( "System memory information" );
+            logProvider.rawMessageMatcher().assertContains( "JVM memory information" );
+            logProvider.rawMessageMatcher().assertContains( "Operating system information" );
+            logProvider.rawMessageMatcher().assertContains( "JVM information" );
+            logProvider.rawMessageMatcher().assertContains( "Java classpath" );
+            logProvider.rawMessageMatcher().assertContains( "Library path" );
+            logProvider.rawMessageMatcher().assertContains( "System properties" );
+            logProvider.rawMessageMatcher().assertContains( "(IANA) TimeZone database version" );
+            logProvider.rawMessageMatcher().assertContains( "Network information" );
+            logProvider.rawMessageMatcher().assertContains( "DBMS config" );
         }
         finally
         {
