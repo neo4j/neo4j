@@ -57,7 +57,7 @@ import org.neo4j.values.utils.ValuesException;
  * This implementation wraps a {@link QueryExecution} and presents both an iterator-based API and a visitor-based API
  * using the underlying {@link QueryExecution} to serve the results.
  */
-public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> implements QuerySubscriber, Result, QueryExecutionProvider
+public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Object>> implements QuerySubscriber, Result
 {
     private final DefaultValueMapper valueMapper;
     private final TransactionalContext context;
@@ -440,12 +440,5 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
     public boolean isMaterialized()
     {
         return materializeResult != null;
-    }
-
-    //TODO please make this go away
-    @Override
-    public QueryExecution queryExecution()
-    {
-        return execution;
     }
 }
