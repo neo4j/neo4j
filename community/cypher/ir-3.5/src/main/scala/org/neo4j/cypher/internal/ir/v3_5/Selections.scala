@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.ir.v3_5
 
 import org.neo4j.cypher.internal.ir.v3_5.helpers.ExpressionConverters._
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.expressions.functions.Exists
 
 case class Selections(predicates: Set[Predicate] = Set.empty) {
   def isEmpty = predicates.isEmpty
@@ -38,10 +39,10 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
   def patternPredicatesGiven(ids: Set[String]): Seq[Expression] = predicatesGiven(ids).filter(containsPatternPredicates)
 
   private def containsPatternPredicates(e: Expression): Boolean = e match {
-    case _: PatternExpression      => true
-    case Not(_: PatternExpression) => true
-    case Ors(exprs)                => exprs.exists(containsPatternPredicates)
-    case _                         => false
+    case Exists(_: PatternExpression)      => true
+    case Not(Exists(_: PatternExpression)) => true
+    case Ors(exprs)                        => exprs.exists(containsPatternPredicates)
+    case _                                 => false
   }
 
   def flatPredicates: Seq[Expression] =
