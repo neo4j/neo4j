@@ -29,10 +29,8 @@ import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySubscriber}
   * Ensures execution results are closed. This is tricky because we try to be smart about
   * closing results automatically when
   *
-  *  1) all result rows have been seen through iterator
-  *  2) all result rows have been seen through visitor
-  *  3) all result rows have been seen through dumpToString
-  *  4) any operator throws an exception
+  *  1) all result rows have been seen through the reactive API
+  *  2) any operator throws an exception
   *
   * In addition we also have special handling for suppressing exceptions thrown on close()
   * after responding to a 4).

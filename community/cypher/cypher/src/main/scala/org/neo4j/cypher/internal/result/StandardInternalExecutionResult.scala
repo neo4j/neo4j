@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.result
 
 import org.neo4j.cypher.internal.RuntimeName
+import org.neo4j.cypher.internal.javacompat.ResultSubscriber
 import org.neo4j.cypher.internal.plandescription.{InternalPlanDescription, PlanDescriptionBuilder}
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v4_0.util.{ProfilerStatisticsNotReadyException, TaskCloser}
@@ -41,6 +42,23 @@ class StandardInternalExecutionResult(context: QueryContext,
   self =>
 
   override def initiate(): Unit = {
+    subscriber match {
+      case coreAPI: ResultSubscriber =>
+        // OBS: check before materialization
+        val consumedBeforeInit = runtimeResult.consumptionState == ConsumptionState.EXHAUSTED
+
+        // By policy we materialize the result directly unless it's a read only query.
+        if (queryType != READ_ONLY) {
+          coreAPI.materialize(this)
+        }
+
+        // ... and if we do not return any rows, we close all resources.
+        if (consumedBeforeInit || queryType == WRITE || fieldNames().isEmpty) {
+          close(Success)
+        }
+
+      case _ => //do nothing
+    }
   }
 
   /*

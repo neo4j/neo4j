@@ -20,8 +20,6 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,21 +49,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
-import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_WRITE;
-import static org.neo4j.graphdb.QueryExecutionType.QueryType.WRITE;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 class ResultSubscriberTest
 {
-    @ParameterizedTest
-    @EnumSource( value = QueryType.class, names = {"READ_ONLY", "READ_WRITE"} )
-    void shouldGetAllResultsViaAcceptAnClose( QueryType type )
+   @Test
+    void shouldGetAllResultsViaAcceptAndClose( )
     {
         // Given
         ResultSubscriber subscriber = subscriber();
         TestQueryExecution queryExecution = queryExecution( subscriber )
                 .withFields( "a", "b" )
-                .withType( type )
                 .withRecords(
                         record( 11, 12 ),
                         record( 21, 22 ),
@@ -88,15 +82,13 @@ class ResultSubscriberTest
         assertTrue( queryExecution.isClosed() );
     }
 
-    @ParameterizedTest
-    @EnumSource( value = QueryType.class, names = {"READ_ONLY", "READ_WRITE"} )
-    void shouldGetPartialResultsViaAcceptAndClose( QueryType type )
+    @Test
+    void shouldGetPartialResultsViaAcceptAndClose( )
     {
         // Given
         ResultSubscriber subscriber = subscriber();
         TestQueryExecution queryExecution = queryExecution( subscriber )
                 .withFields( "a", "b" )
-                .withType( type )
                 .withRecords(
                         record( 11, 12 ),
                         record( 21, 22 ),
@@ -115,14 +107,12 @@ class ResultSubscriberTest
         assertTrue( queryExecution.isClosed() );
     }
 
-    @ParameterizedTest
-    @EnumSource( value = QueryType.class, names = {"READ_ONLY", "READ_WRITE"} )
-    void shouldGetAllResultsViaIterator( QueryType type )
+    @Test
+    void shouldGetAllResultsViaIterator( )
     {
         // Given
         ResultSubscriber subscriber = subscriber();
         queryExecution( subscriber )
-                .withType( type )
                 .withFields( "a", "b" )
                 .withRecords(
                         record( 11, 12 ),
@@ -141,14 +131,12 @@ class ResultSubscriberTest
         ) ) );
     }
 
-    @ParameterizedTest
-    @EnumSource( value = QueryType.class, names = {"READ_ONLY", "READ_WRITE"} )
+   @Test
     void shouldCloseAfterExhaustingIterator( QueryType type )
     {
         // Given
         ResultSubscriber subscriber = subscriber();
         TestQueryExecution queryExecution = queryExecution( subscriber )
-                .withType( type )
                 .withFields( "a", "b" )
                 .withRecords(
                         record( 11, 12 ),
@@ -170,62 +158,6 @@ class ResultSubscriberTest
         assertFalse( subscriber.hasNext() );
 
         assertTrue( queryExecution.isClosed() );
-    }
-
-    @Test
-    void shouldCloseWriteOnlyQueriesDirectly( )
-    {
-        // Given
-        TestQueryExecution queryExecution = queryExecution( subscriber() )
-                .withType( WRITE )
-                .queryExecution();
-
-        // Then
-        assertTrue( queryExecution.isClosed() );
-    }
-
-    @Test
-    void shouldCloseReadWriteQueriesWithoutColumnsDirectly( )
-    {
-        // Given
-        TestQueryExecution queryExecution = queryExecution( subscriber() )
-                .withType( READ_WRITE )
-                .queryExecution();
-
-        // Then
-        assertTrue( queryExecution.isClosed() );
-    }
-
-    @Test
-    void shouldNotMaterializeNorCloseReadOnlyResult()
-    {
-        // Given
-        ResultSubscriber subscriber = subscriber();
-        TestQueryExecution queryExecution = queryExecution( subscriber )
-                .withFields( "a" )
-                .withRecords( record( "hello" ) )
-                .withType( READ_ONLY )
-                .queryExecution();
-
-        // Then
-        assertFalse( subscriber.isMaterialized() );
-        assertFalse( queryExecution.isClosed() );
-    }
-
-    @Test
-    void shouldMaterializeButNotCloseReadWriteResult()
-    {
-        // Given
-        ResultSubscriber subscriber = subscriber();
-        TestQueryExecution queryExecution = queryExecution( subscriber )
-                .withFields( "a" )
-                .withRecords( record( "hello" ) )
-                .withType( READ_WRITE )
-                .queryExecution();
-
-        // Then
-        assertTrue( subscriber.isMaterialized() );
-        assertFalse( queryExecution.isClosed() );
     }
 
     private static ResultSubscriber subscriber()
@@ -253,7 +185,6 @@ class ResultSubscriberTest
     {
         private final ResultSubscriber subscriber;
         private String[] fields = new String[0];
-        private QueryExecutionType type = QueryExecutionType.query( READ_ONLY );
         private Iterator<AnyValue[]> results = Collections.emptyIterator();
 
         private QueryExecutionBuilder( ResultSubscriber subscriber )
@@ -267,12 +198,6 @@ class ResultSubscriberTest
             return this;
         }
 
-        QueryExecutionBuilder withType( QueryType queryType )
-        {
-            this.type = QueryExecutionType.query( queryType );
-            return this;
-        }
-
         QueryExecutionBuilder withRecords( AnyValue[]... results )
         {
             this.results = asList( results ).iterator();
@@ -281,7 +206,7 @@ class ResultSubscriberTest
 
         TestQueryExecution queryExecution()
         {
-            TestQueryExecution execution = new TestQueryExecution( subscriber, fields, type, results );
+            TestQueryExecution execution = new TestQueryExecution( subscriber, fields, results );
             subscriber.init( execution );
             return execution;
         }
@@ -291,18 +216,16 @@ class ResultSubscriberTest
     {
         private final QuerySubscriber subscriber;
         private final String[] fields;
-        private final QueryExecutionType type;
         private final Iterator<AnyValue[]> results;
         private long demand;
         private long served;
         private boolean cancelled;
 
         private TestQueryExecution( QuerySubscriber subscriber, String[] fields,
-                QueryExecutionType type, Iterator<AnyValue[]> results )
+                Iterator<AnyValue[]> results )
         {
             this.subscriber = subscriber;
             this.fields = fields;
-            this.type = type;
             this.results = results;
             try
             {
@@ -317,7 +240,7 @@ class ResultSubscriberTest
         @Override
         public QueryExecutionType executionType()
         {
-            return type;
+            return QueryExecutionType.query( READ_ONLY );
         }
 
         @Override

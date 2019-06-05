@@ -51,9 +51,6 @@ import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.utils.ValuesException;
 
-import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
-import static org.neo4j.graphdb.QueryExecutionType.QueryType.WRITE;
-
 /**
  * A {@link QuerySubscriber} that implements the {@link Result} interface.
  * <p>
@@ -72,7 +69,6 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
     private Exception visitException;
     private List<Map<String,Object>> materializeResult;
     private Iterator<Map<String,Object>> materializedIterator;
-    private boolean checkIfMaterialized = true;
 
     public ResultSubscriber( TransactionalContext context )
     {
@@ -85,13 +81,13 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
     {
         this.execution = execution;
         assertNoErrors();
-        // if we do not return any rows, we close all resources.
-        if ( execution.executionType().queryType() == WRITE || execution.fieldNames().length == 0 )
-        {
-            fetchResults( Long.MAX_VALUE );
-            assertNoErrors();
-            close();
-        }
+    }
+
+    public void materialize( QueryExecution execution )
+    {
+       this.execution = execution;
+       this.materializeResult = new ArrayList<>(  );
+       fetchResults( Long.MAX_VALUE );
     }
 
     // QuerySubscriber part
@@ -245,7 +241,6 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
             //don't materialize since that will close down the underlying transaction
             //and we need it to be open in order to serialize nodes, relationships, and
             //paths
-            checkIfMaterialized = false;
             accept( stringBuilder );
             stringBuilder.result( writer, statistics );
             for ( Notification notification : getNotifications() )
@@ -270,7 +265,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
     public <VisitationException extends Exception> void accept( ResultVisitor<VisitationException> visitor )
             throws VisitationException
     {
-        if ( materialize() )
+        if ( isMaterialized() )
         {
             acceptFromMaterialized( visitor );
         }
@@ -284,7 +279,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
     @Override
     protected Map<String,Object> fetchNextOrNull()
     {
-        if ( materialize() )
+        if ( isMaterialized() )
         {
             return nextFromMaterialized();
         }
@@ -339,15 +334,6 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
         if ( currentRecord.length > 0 )
         {
             currentRecord[0] = null;
-        }
-    }
-
-    private void materializeResult()
-    {
-        if ( materializeResult == null )
-        {
-            materializeResult = new ArrayList<>(  );
-            fetchResults( Long.MAX_VALUE );
         }
     }
 
@@ -450,30 +436,8 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
         assertNoErrors();
     }
 
-    /**
-     * Checks if result needs to be materialised and if so materializes the result
-     *
-     * @return <tt>true</tt> if results has been materialized otherwise <tt>false</tt>
-     */
-    private boolean materialize()
-    {
-        if ( checkIfMaterialized )
-        {
-            // By policy we materialize the result directly unless it's a read only query.
-            QueryExecutionType.QueryType queryType = execution.executionType().queryType();
-            if ( queryType != READ_ONLY )
-            {
-                materializeResult();
-                assertNoErrors();
-            }
-            checkIfMaterialized = false;
-        }
-
-        return materializeResult != null;
-    }
-
     @VisibleForTesting
-    boolean isMaterialized()
+    public boolean isMaterialized()
     {
         return materializeResult != null;
     }
